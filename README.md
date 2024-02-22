@@ -45,6 +45,8 @@
 
 ---
 
+
+
 > [!WARNING]
 > The API is not stable; use at your own risk.
 
@@ -57,12 +59,29 @@ Optype is available as [`optype`](https://pypi.org/project/optype/) on PyPI:
 pip install optype
 ```
 
+
 ## Getting started
 
-*Coming soon*
+<!-- TODO -->
+...
 
 
 ## Reference
+
+All of the types here live in the root `optype` namespace.
+They are runtime checkable, so that you can do e.g.
+`isinstance('snail', optype.CanAdd)`, in case you want to check whether
+`snail` implements `__add__`.
+
+> [!NOTE]
+> It is bad practise to use a `typing.Protocol` as base class for your
+> implementation. Because of `@typing.runtime_checkable`, you can use
+> `isinstance` either way.
+
+Unlike e.g. `collections.abc`, the `optype` protocols aren't abstract.
+This makes it easier to create sub-protocols, and provides a clearer
+distinction between *interface* and *implementation*.
+
 
 ### Elementary interfaces for the special methods
 
@@ -71,10 +90,38 @@ also known as "magic"- or "dunder"- methods. See the [python documentation
 ](https://docs.python.org/3/reference/datamodel.html#special-method-names) for
 details.
 
+#### Strict type conversion
 
-####
+The return type of these special methods is *invariant*. Python will raise an
+error if some other (sub)type is returned.
+This is why these `optype` interfaces don't accept generic type arguments.
 
-#### Comparisons
+**Builtin type constructors:**
+
+| Type         | Signature                      | Expression         |
+| ------------ | ------------------------------ | ------------------ |
+| `CanBool`    | `__bool__(self) -> bool`       | `bool(self)`       |
+| `CanInt`     | `__int__(self) -> int`         | `int(self)`        |
+| `CanFloat`   | `__float__(self) -> float`     | `float(self)`      |
+| `CanComplex` | `__complex__(self) -> complex` | `complex(self)`    |
+| `CanBytes`   | `__bytes__(self) -> bytes`     | `bytes(self)`      |
+| `CanStr`     | `__str__(self) -> str`         | `str(self)`        |
+
+**Other builtin functions:**
+
+| Type            | Signature                      | Expression   |
+| --------------- | ------------------------------ | ------------ |
+| `CanRepr`       | `__repr__(self) -> str`        | `repr(self)` |
+| `CanHash`       | `__hash__(self) -> int`        | `hash(self)` |
+| `CanLen`        | `__len__(self) -> int`         | `len(self)`  |
+| `CanLengthHint` | `__length_hint__(self) -> int` | [docs](LH)   |
+| `CanIndex`      | `__index__(self) -> int`       | [docs](IX)   |
+
+
+[LH]: https://docs.python.org/3/reference/datamodel.html#object.__length_hint__
+[IX]: https://docs.python.org/3/reference/datamodel.html#object.__index__
+
+#### Comparisons operators
 
 Generally these methods return a `bool`. But in theory, anything can be
 returned (even if it doesn't implement `__bool__`).
@@ -167,29 +214,43 @@ returned (even if it doesn't implement `__bool__`).
 | `CanIXor[X, Y]`      | `__ixor__(self, x: X) -> Y`      | `self ^= x`  |
 | `CanIOr[X, Y]`       | `__ior__(self, x: X) -> Y`       | `self \|= x` |
 
-
-**Ternary**
-
 <!-- TODO:  implement separate ternary pow -->
-...
+
 
 ### Containers
 
-<!-- TODO: CanContains, CanGetitem, CanSetitem, CanDelitem, CanMissing  -->
+| Type               | Signature                              | Expression    |
+| ------------------ | -------------------------------------- | ------------- |
+| `CanContains[K]`   | `__contains__(self, k: K) -> bool`     | `x in self`   |
+| `CanDelitem[K]`    | `__delitem__(self, k: K) -> None`      | `del self[k]` |
+| `CanGetitem[K, V]` | `__getitem__(self, k: K) -> V`         | `self[k]`     |
+| `CanMissing[K, V]` | `__missing__(self, k: K) -> V`         | [docs](GM)    |
+| `CanSetitem[K, V]` | `__setitem__(self, k: K, v: V) -> None`| `self[k] = v` |
 
+
+[GM]: https://docs.python.org/3/reference/datamodel.html#object.__missing__
 
 ### Iteration
 
 **Sync**
 
-<!-- TODO -->
-...
+| Type                       | Signature                 | Expression       |
+| -------------------------- | ------------------------- | ---------------- |
+| `CanNext[V]`               | `__next__(self) -> V`     | `next(self)`     |
+| `CanIter[Y: CanNext[Any]]` | `__iter__(self) -> Y`     | `iter(self)`     |
+| `CanReversed[Y]` (*)       | `__reversed__(self) -> Y` | `reversed(self)` |
+
+(*) Although not strictly required, `Y@CanReversed` should be iterable.
 
 **Async**
 
-<!-- TODO -->
-...
 
+| Type                         | Signature               | Expression       |
+| ---------------------------- | ----------------------- | ---------------- |
+| `CanAnext[V]` (**)            | `__anext__(self) -> V`  | `anext(self)`    |
+| `CanAiter[Y: CanAnext[Any]]` | `__aiter__(self) -> Y`  | `aiter(self)`    |
+
+(**) Although not strictly required, `V@CanAnext` should be an `Awaitable`.
 
 
 ### Generic interfaces for builtins
@@ -212,3 +273,12 @@ denotes an optional parameter).
 **Decorators**:
 - `@typing.runtime_checkable`
 - `@typing.final`
+
+
+## Roadmap
+
+- Single-method protocols for descriptors
+- Build a replacement for the `operator` standard library, with
+  runtime-accessible type annotations
+- Protocols for numpy's dunder methods
+- Backport to Python 3.11 and 3.10
