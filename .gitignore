@@ -1,0 +1,27 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+site/
+
+# Unit test
+.cache
+.pyright/
+.pytest_cache/
+.ruff_cache/
+
+# Environments
+.env
+.venv/
+venv/
+
+# IntelliJ
+.idea/
+.run
+
+# VSCode settings
+.vscode/settings.json

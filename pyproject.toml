@@ -1,0 +1,206 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry]
+name = "optype"
+version = "0.0.0"
+description = "Typing Protocols for Precise Type Hints in Python 3.12+"
+authors = ["Joren Hammudoglu <jhammudoglu@gmail.com>"]
+license = "BSD-3-Clause"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = '^3.6.2'
+codespell = "^2.2.6"
+pyright = "^1.1.351"
+pytest = "^8.0.1"
+ruff = "^0.2.2"
+
+[tool.poetry.group.github]
+optional = true
+[tool.poetry.group.github.dependencies]
+pytest-github-actions-annotate-failures = ">=0.2,<1.0"
+
+
+[tool.codespell]
+context = 2
+ignore-words-list = "cange"  # CanGe
+skip = """\
+    ./.venv,\
+    ./.vscode,\
+    *.lock,\
+    *.pyc,\
+    *.js,\
+"""
+
+
+
+[tool.pyright]
+include = ["optype", "tests"]
+stubPath = "."
+venvPath = "."
+venv = ".venv"
+pythonVersion = "3.12"
+pythonPlatform = "All"
+typeCheckingMode = "strict"
+useLibraryCodeForTypes = false
+
+strictListInference = true
+strictDictionaryInference = true
+strictSetInference = true
+deprecateTypingAliases = true
+disableBytesTypePromotions = true
+reportPropertyTypeMismatch = "error"
+reportMissingTypeStubs = "error"
+reportImportCycles = "error"
+reportUnusedImport = "none"  # already covered by ruff
+reportUnusedClass = "warning"
+reportUnusedFunction = "warning"
+reportUnusedVariable = "warning"
+reportConstantRedefinition = "error"
+reportInconsistentConstructor = "error"
+reportMissingTypeArgument = "error"
+reportUninitializedInstanceVariable = "error"
+reportCallInDefaultInitializer = "error"
+reportUnnecessaryIsInstance = "warning"
+reportUnnecessaryCast = "warning"
+reportUnnecessaryComparison = "warning"
+reportUnnecessaryContains = "warning"
+reportImplicitStringConcatenation = "none"
+reportInvalidStubStatement = "error"
+reportIncompleteStub = "error"
+reportUnusedCallResult = "warning"
+reportUnusedCoroutine = "error"
+reportUnusedExpression = "warning"
+reportUnnecessaryTypeIgnoreComment = "error"
+reportMatchNotExhaustive = "error"
+reportShadowedImports = "error"
+
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["optype", "tests"]
+addopts = [
+    "-ra",
+    "--doctest-modules",
+    "--exitfirst",
+    "--showlocals",
+    "--strict-config",
+    "--strict-markers",
+]
+doctest_optionflags = [
+    "NORMALIZE_WHITESPACE",
+    "IGNORE_EXCEPTION_DETAIL",
+    "ELLIPSIS",
+]
+filterwarnings = ["error"]
+xfail_strict = true
+
+
+[tool.ruff]
+src = ["optype", "tests"]
+target-version = "py312"
+line-length = 79
+indent-width = 4
+show-fixes = true
+force-exclude = true
+extend-exclude = [
+    ".github",
+    ".venv",
+    ".vscode",
+]
+
+[tool.ruff.lint]
+ignore-init-module-imports = true
+preview = true
+select = [
+    "F",        # pyflakes
+    "E",        # pycodestyle error
+    "W",        # pycodestyle warning
+    "I",        # isort
+    "N",        # pep8-naming
+    "UP",       # pyupgrade
+    "YTT",      # flake8-2020
+    "ANN",      # flake8-annotations
+    "BLE",      # flake8-blind-except
+    "B",        # flake8-bugbear
+    "A",        # flake8-builtins
+    "COM",      # flake8-commas
+    "C4",       # flake8-comprehensions
+    "DTZ",      # flake8-datetimez
+    "T10",      # flake8-debugger
+    "EXE",      # flake8-executable
+    "FA",       # flake8-future-annotations
+    "ISC",      # flake8-implicit-str-concat
+    "ICN",      # flake8-import-conventions
+    "G",        # flake8-logging-format
+    "INP",      # flake8-no-pep420
+    "PIE",      # flake8-pie
+    "T20",      # flake8-print
+    "PYI",      # flake8-pyi
+    "PT",       # flake8-pytest-style
+    "Q",        # flake8-quotes
+    "RSE",      # flake8-raise
+    "RET",      # flake8-return
+    "SLF",      # flake8-self
+    "SLOT",     # flake8-slots
+    "SIM",      # flake8-simplify
+    "TID",      # flake8-tidy-imports
+    "TCH",      # flake8-type-checking
+    "ARG",      # flake8-unused-arguments
+    "PTH",      # flake8-use-pathlib
+    # "ERA",      # eradicate   # (rebellion!)
+    "PGH",      # pygrep-hooks
+    "PL",       # pylint
+    "TRY",      # tryceratops
+    "FLY",      # flynt
+    "PERF",     # perflint,
+    "FURB",     # refurb
+    "RUF",       # ruff
+]
+extend-safe-fixes = [
+    # pyupgrade
+    "UP040",     # non-pep695-type-alias
+]
+extend-ignore = [
+    # flake8-annotations
+    "ANN001",   # missing-type-function-argument (deprecated)
+    "ANN002",   # missing-type-args (deprecated)
+
+    # pylint
+    "PLW1641",  # eq-without-hash (buggy; doesn't consider super)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+    "ANN",      # flake8-annotations
+]
+
+[tool.ruff.lint.pycodestyle]
+max-line-length = 79
+
+[tool.ruff.lint.flake8-pytest-style]
+mark-parentheses = true
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "single"
+
+[tool.ruff.lint.isort]
+case-sensitive = true
+combine-as-imports = true
+force-wrap-aliases = true
+known-first-party = ["optype"]
+no-lines-before = ["future", "local-folder"]
+
+[tool.ruff.format]
+# keep in sync with .editorconfig
+line-ending = "lf"
+indent-style = "space"
+quote-style = "single"
+docstring-code-format = true
+skip-magic-trailing-comma = true
