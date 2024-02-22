@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "optype"
-version = "0.0.0"
+version = "0.1.0"
 description = "Typing Protocols for Precise Type Hints in Python 3.12+"
 authors = ["Joren Hammudoglu <jhammudoglu@gmail.com>"]
 license = "BSD-3-Clause"
@@ -37,7 +37,6 @@ skip = """\
     *.pyc,\
     *.js,\
 """
-
 
 
 [tool.pyright]
@@ -162,10 +161,6 @@ select = [
     "PERF",     # perflint,
     "FURB",     # refurb
     "RUF",       # ruff
-]
-extend-safe-fixes = [
-    # pyupgrade
-    "UP040",     # non-pep695-type-alias
 ]
 extend-ignore = [
     # flake8-annotations
