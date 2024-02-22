@@ -87,6 +87,7 @@ __all__ = (
     'HasWeakCallableProxy',
     'HasWeakProxy',
     'HasWeakReference',
+    'Slice',
     '__version__',
 )
 
@@ -168,6 +169,7 @@ from ._nullops import (
     CanRepr,
     CanStr,
 )
+from ._slice import Slice
 from ._specialattrs import (
     HasAnnotations,
     HasDict,
