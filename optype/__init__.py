@@ -16,6 +16,7 @@ __all__ = (
     'CanFloat',
     'CanFloor',
     'CanFloordiv',
+    'CanFormat',
     'CanGe',
     'CanGetitem',
     'CanGt',
@@ -111,6 +112,7 @@ from ._binops import (
     CanXor,
 )
 from ._binops_i import (
+    CanFormat,
     CanIAdd,
     CanIAnd,
     CanIFloordiv,
