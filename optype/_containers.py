@@ -3,12 +3,12 @@ import typing as _tp
 
 
 @_tp.runtime_checkable
-class CanContains[X](_tp.Protocol):
+class CanContains[K](_tp.Protocol):
     # vibrantly generic
     """
     `other in self`
     """
-    def __contains__(self, __other: X) -> bool: ...
+    def __contains__(self, __other: K) -> bool: ...
 
 @_tp.runtime_checkable
 class CanGetitem[K, V](_tp.Protocol):

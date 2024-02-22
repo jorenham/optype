@@ -1,6 +1,6 @@
 __all__ = (
-    'CanAIter',
-    'CanANext',
+    'CanAiter',
+    'CanAnext',
     'CanAbs',
     'CanAdd',
     'CanAnd',
@@ -40,7 +40,7 @@ __all__ = (
     'CanIter',
     'CanLe',
     'CanLen',
-    'CanLenHint',
+    'CanLengthHint',
     'CanLshift',
     'CanLt',
     'CanMatmul',
@@ -167,7 +167,7 @@ from ._nullops import (
     CanIndex,
     CanInt,
     CanLen,
-    CanLenHint,
+    CanLengthHint,
     CanRepr,
     CanStr,
 )
@@ -184,8 +184,8 @@ from ._specialattrs import (
     HasWeakReference,
 )
 from ._unops import (
-    CanAIter,
-    CanANext,
+    CanAiter,
+    CanAnext,
     CanAbs,
     CanCeil,
     CanDir,

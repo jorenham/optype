@@ -83,19 +83,11 @@ class CanCeil[Y](_tp.Protocol):
 # iteration
 
 @_tp.runtime_checkable
-class CanReversed[Y](_tp.Protocol):
-    """
-    `reversed(self)`
-    """
-    def __reversed__(self) -> Y: ...
-
-
-@_tp.runtime_checkable
-class CanNext[Y](_tp.Protocol):
+class CanNext[V](_tp.Protocol):
     """
     `next(self)`
     """
-    def __next__(self) -> Y: ...
+    def __next__(self) -> V: ...
 
 
 @_tp.runtime_checkable
@@ -106,18 +98,25 @@ class CanIter[Y: CanNext[_tp.Any]](_tp.Protocol):
     def __iter__(self) -> Y: ...
 
 
+@_tp.runtime_checkable
+class CanReversed[Y](_tp.Protocol):
+    """
+    `reversed(self)`
+    """
+    def __reversed__(self) -> Y: ...
+
 # async iteration
 
 @_tp.runtime_checkable
-class CanANext[Y](_tp.Protocol):
+class CanAnext[V](_tp.Protocol):
     """
     `anext(self)`
     """
-    def __anext__(self) -> Y: ...
+    def __anext__(self) -> V: ...
 
 
 @_tp.runtime_checkable
-class CanAIter[Y: CanANext[_tp.Any]](_tp.Protocol):
+class CanAiter[Y: CanAnext[_tp.Any]](_tp.Protocol):
     """
     `aiter(self)`
     """
@@ -127,5 +126,6 @@ class CanAIter[Y: CanANext[_tp.Any]](_tp.Protocol):
 # introspection
 
 @_tp.runtime_checkable
-class CanDir[T: _abc.Iterable[_tp.Any]](_tp.Protocol):
-    def __dir__(self) -> T: ...
+class CanDir[Vs: _abc.Iterable[_tp.Any]](_tp.Protocol):
+    # TODO: don't use collections.abc
+    def __dir__(self) -> Vs: ...

@@ -5,7 +5,6 @@ Note that this might not seem DRY, since many of the protocols are already in
 `typing.Supports`. But the problem with those is, that they are also
 metaclasses, and that I (@jorenham) apparently am turing into a typing-purist.
 """
-import types as _ts
 import typing as _tp
 
 # type conversion
@@ -79,13 +78,13 @@ class CanLen(_tp.Protocol):
     def __len__(self) -> int: ...
 
 @_tp.runtime_checkable
-class CanLenHint(_tp.Protocol):
+class CanLengthHint(_tp.Protocol):
     """
     - approximation of `len(self)`
     - purely for optimization purposes
     - must be `>=0` or `NotImplemented`
     """
-    def __len__(self) -> int | _ts.NotImplementedType: ...
+    def __length_hint__(self) -> int: ...
 
 
 # fingerprinting
