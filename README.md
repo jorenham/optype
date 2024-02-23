@@ -53,12 +53,13 @@
 
 ## Installation
 
-Optype is available as [`optype`](https://pypi.org/project/optype/) on PyPI:
+Optype is available as [`optype`](OPTYPE) on PyPI:
 
 ```shell
 pip install optype
 ```
 
+[OPTYPE]: https://pypi.org/project/optype/
 
 ## Getting started
 
@@ -86,9 +87,10 @@ distinction between *interface* and *implementation*.
 ### Elementary interfaces for the special methods
 
 Single-method `typing.Protocol` definitions for each of the "special methods",
-also known as "magic"- or "dunder"- methods. See the [python documentation
-](https://docs.python.org/3/reference/datamodel.html#special-method-names) for
+also known as "magic"- or "dunder"- methods. See the [Python docs](SM) for
 details.
+
+[SM]: https://docs.python.org/3/reference/datamodel.html#special-method-names
 
 #### Strict type conversion
 
