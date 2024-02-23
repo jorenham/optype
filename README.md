@@ -45,10 +45,8 @@
 
 ---
 
-
-
 > [!WARNING]
-> The API is not stable; use at your own risk.
+> The API is not stable; use it at your own risk.
 
 
 ## Installation
@@ -69,28 +67,33 @@ pip install optype
 
 ## Reference
 
-All of the types here live in the root `optype` namespace.
-They are runtime checkable, so that you can do e.g.
+All [typing protocols](PC) here live in the root `optype` namespace.
+They are [runtime-checkable](RC) so that you can do e.g.
 `isinstance('snail', optype.CanAdd)`, in case you want to check whether
 `snail` implements `__add__`.
 
 > [!NOTE]
-> It is bad practise to use a `typing.Protocol` as base class for your
-> implementation. Because of `@typing.runtime_checkable`, you can use
+> It is bad practice to use a [`typing.Protocol`](PC) as base class for your
+> implementation. Because of [`@typing.runtime_checkable`](RC), you can use
 > `isinstance` either way.
 
-Unlike e.g. `collections.abc`, the `optype` protocols aren't abstract.
-This makes it easier to create sub-protocols, and provides a clearer
-distinction between *interface* and *implementation*.
+Unlike`collections.abc`, `optype`'s protocols aren't abstract base classes,
+i.e. they don't extend `abc.ABC`, only `typing.Protocol`.
+This allows the `optype` protocols to be used as building blocks for `.pyi`
+type stubs.
+
+[PC]: https://typing.readthedocs.io/en/latest/spec/protocol.html
+[RC]: https://typing.readthedocs.io/en/latest/spec/protocol.html#runtime-checkable-decorator-and-narrowing-types-by-isinstance
 
 
 ### Elementary interfaces for the special methods
 
-Single-method `typing.Protocol` definitions for each of the "special methods",
-also known as "magic"- or "dunder"- methods. See the [Python docs](SM) for
-details.
+Single-method [`typing.Protocol`](PC) definitions for each of the "special
+methods", also known as "magic"- or "dunder" methods.
+See the [Python docs](SM) for details.
 
 [SM]: https://docs.python.org/3/reference/datamodel.html#special-method-names
+
 
 #### Strict type conversion
 
@@ -100,14 +103,14 @@ This is why these `optype` interfaces don't accept generic type arguments.
 
 **Builtin type constructors:**
 
-| Type         | Signature                      | Expression         |
-| ------------ | ------------------------------ | ------------------ |
-| `CanBool`    | `__bool__(self) -> bool`       | `bool(self)`       |
-| `CanInt`     | `__int__(self) -> int`         | `int(self)`        |
-| `CanFloat`   | `__float__(self) -> float`     | `float(self)`      |
-| `CanComplex` | `__complex__(self) -> complex` | `complex(self)`    |
-| `CanBytes`   | `__bytes__(self) -> bytes`     | `bytes(self)`      |
-| `CanStr`     | `__str__(self) -> str`         | `str(self)`        |
+| Type         | Signature                      | Expression      |
+| ------------ | ------------------------------ | --------------- |
+| `CanBool`    | `__bool__(self) -> bool`       | `bool(self)`    |
+| `CanInt`     | `__int__(self) -> int`         | `int(self)`     |
+| `CanFloat`   | `__float__(self) -> float`     | `float(self)`   |
+| `CanComplex` | `__complex__(self) -> complex` | `complex(self)` |
+| `CanBytes`   | `__bytes__(self) -> bytes`     | `bytes(self)`   |
+| `CanStr`     | `__str__(self) -> str`         | `str(self)`     |
 
 **Other builtin functions:**
 
@@ -123,11 +126,11 @@ This is why these `optype` interfaces don't accept generic type arguments.
 [LH]: https://docs.python.org/3/reference/datamodel.html#object.__length_hint__
 [IX]: https://docs.python.org/3/reference/datamodel.html#object.__index__
 
+
 #### Comparisons operators
 
 Generally these methods return a `bool`. But in theory, anything can be
 returned (even if it doesn't implement `__bool__`).
-
 
 | Type           | Signature                  | Expression  | Expr. Reflected |
 | -------------- | -------------------------- | ----------- | --------------- |
@@ -137,6 +140,30 @@ returned (even if it doesn't implement `__bool__`).
 | `CanGt[X, Y]`  | `__gt__(self, x: X) -> Y`  | `self > x`  | `x < self`      |
 | `CanEq[X, Y]`  | `__eq__(self, x: X) -> Y`  | `self == x` | `x == self`     |
 | `CanNe[X, Y]`  | `__ne__(self, x: X) -> Y`  | `self != x` | `x != self`     |
+
+
+#### Rounding
+
+| Type               | Signature                     | Expression            |
+| ------------------ | ----------------------------- | --------------------- |
+| `CanRound1[Y1]`    | `__round__(self) -> Y1`       | `round(self)`         |
+| `CanRound2[N, Y2]` | `__round__(self, n: N) -> Y2` | `round(self, n: N)`   |
+
+For convenience, `optype` also provides their intersection type
+`CanRound[N, Y1, Y2] =: CanRound1[Y1] & CanRound2[N, Y2]`, whose signature
+overloads those of the `CanRound1` and `CanRound2`.
+
+For instance, `float` is a `CanRound[int, int, float]` and `int` a
+`CanRound[int, int, int]`.
+
+| Type           | Signature               | Expression         |
+| -------------- | ----------------------- | ------------------ |
+| `CanTrunc[Y]`  | `__trunc__(self) -> Y`  | `math.trunc(self)` |
+| `CanFloor[Y]`  | `__floor__(self) -> Y`  | `math.floor(self)` |
+| `CanCeil[Y]`   | `__ceil__(self) -> Y`   | `math.ceil(self)`  |
+
+Note that the type parameter `Y` is unbounded, because technically these
+methods can return any type.
 
 
 #### Arithmetic and bitwise operators
@@ -149,10 +176,6 @@ returned (even if it doesn't implement `__bool__`).
 | `CanNeg[Y]`    | `__neg__(self) -> Y`    | `-self`            |
 | `CanInvert[Y]` | `__invert__(self) -> Y` | `~self`            |
 | `CanAbs[Y]`    | `__abs__(self) -> Y`    | `abs(self)`        |
-| `CanRound0[Y]` | `__round__(self) -> Y`  | `round(self)`      |
-| `CanTrunc[Y]`  | `__trunc__(self) -> Y`  | `math.trunc(self)` |
-| `CanFloor[Y]`  | `__floor__(self) -> Y`  | `math.floor(self)` |
-| `CanCeil[Y]`   | `__ceil__(self) -> Y`   | `math.ceil(self)`  |
 
 
 **Binary:**
@@ -167,18 +190,19 @@ returned (even if it doesn't implement `__bool__`).
 | `CanFloordiv[X, Y]` | `__floordiv__(self, x: X) -> Y` | `self // x`       |
 | `CanMod[X, Y]`      | `__mod__(self, x: X) -> Y`      | `self % x`        |
 | `CanDivmod[X, Y]`   | `__divmod__(self, x: X) -> Y`   | `divmod(self, x)` |
-| `CanPow[X, Y]`      | `__pow__(self, x: X) -> Y`      | `self ** x`       |
+| `CanPow2[X, Y]`     | `__pow__(self, x: X) -> Y`      | `self ** x`       |
+| `CanPow3[X, M, Y]`  | `__pow__(self, x: X, m: M) -> Y`| `pow(self, x, m)` |
 | `CanLshift[X, Y]`   | `__lshift__(self, x: X) -> Y`   | `self << x`       |
 | `CanRshift[X, Y]`   | `__rshift__(self, x: X) -> Y`   | `self >> x`       |
 | `CanAnd[X, Y]`      | `__and__(self, x: X) -> Y`      | `self & x`        |
 | `CanXor[X, Y]`      | `__xor__(self, x: X) -> Y`      | `self ^ x`        |
 | `CanOr[X, Y]`       | `__or__(self, x: X) -> Y`       | `self \| x`       |
 
-<!-- TODO; implement separate binary round -->
-
+Additionally, there is the intersection type
+`CanPow[X, M, Y2, Y3] =: CanPow2[X, Y2] & CanPow3[X, M, Y3]`, whose signature
+overloads those of the `CanPow2` and `CanPow3`.
 
 **Binary (reflected):**
-
 
 | Type                 | Signature                        | Expression        |
 | -------------------- | -------------------------------- | ----------------- |
@@ -232,6 +256,7 @@ returned (even if it doesn't implement `__bool__`).
 
 [GM]: https://docs.python.org/3/reference/datamodel.html#object.__missing__
 
+
 ### Iteration
 
 **Sync**
@@ -246,10 +271,9 @@ returned (even if it doesn't implement `__bool__`).
 
 **Async**
 
-
 | Type                         | Signature               | Expression       |
 | ---------------------------- | ----------------------- | ---------------- |
-| `CanAnext[V]` (**)            | `__anext__(self) -> V`  | `anext(self)`    |
+| `CanAnext[V]` (**)           | `__anext__(self) -> V`  | `anext(self)`    |
 | `CanAiter[Y: CanAnext[Any]]` | `__aiter__(self) -> Y`  | `aiter(self)`    |
 
 (**) Although not strictly required, `V@CanAnext` should be an `Awaitable`.
@@ -277,9 +301,8 @@ denotes an optional parameter).
 - `@typing.final`
 
 
-## Roadmap
+## Future plans
 
-- Single-method protocols for descriptors
 - Build a replacement for the `operator` standard library, with
   runtime-accessible type annotations
 - Protocols for numpy's dunder methods
