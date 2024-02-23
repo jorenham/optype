@@ -1,9 +1,9 @@
 __all__ = (
-    'CanAiter',
-    'CanAnext',
     'CanAbs',
     'CanAdd',
+    'CanAiter',
     'CanAnd',
+    'CanAnext',
     'CanBool',
     'CanBytes',
     'CanCeil',
@@ -184,9 +184,9 @@ from ._specialattrs import (
     HasWeakReference,
 )
 from ._unops import (
+    CanAbs,
     CanAiter,
     CanAnext,
-    CanAbs,
     CanCeil,
     CanDir,
     CanFloor,
