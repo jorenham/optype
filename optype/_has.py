@@ -27,7 +27,7 @@ class _HasDocProp(Protocol):
     def __doc__(self) -> str | None: ...  # type: ignore[override]
 
 
-type HasDoc = _HasDocAttr | _HasDocProp
+HasDoc = _HasDocAttr | _HasDocProp
 
 
 @runtime_checkable
@@ -41,7 +41,7 @@ class _HasNameProp(Protocol):
     def __name__(self) -> str: ...
 
 
-type HasName = _HasNameAttr | _HasNameProp
+HasName = _HasNameAttr | _HasNameProp
 
 
 @runtime_checkable
@@ -60,7 +60,7 @@ class _HasModuleProp(Protocol):
     def __module__(self) -> str: ...  # type: ignore[override]
 
 
-type HasModule = _HasModuleAttr | _HasModuleProp
+HasModule = _HasModuleAttr | _HasModuleProp
 
 
 @runtime_checkable
@@ -69,7 +69,19 @@ class HasAnnotations[V](Protocol):
     __annotations__: dict[str, V]
 
 
-# weakref
+@runtime_checkable
+class HasMatchArgs[Ks: tuple[str, ...] | list[str]](Protocol):
+    __match_args__: Ks
+
+
+# Module `dataclasses`
+# https://docs.python.org/3/library/dataclasses.html
+
+# TODO: HasDataclassFields
+
+
+# Module `weakref`
+# https://docs.python.org/3/library/weakref.html
 
 @runtime_checkable
 class HasWeakReference(Protocol):
@@ -91,21 +103,3 @@ class _HasWeakProxy(Protocol):
 
 type HasWeakProxy = HasWeakCallableProxy[..., Any] | _HasWeakProxy
 """An object referenced by a `weakref.proxy` (not the proxy itself)."""
-
-
-# Unary operators
-# TODO: type-cast methods, e.g. `__int__`
-# TODO: strict int methods: `__len__`, `__index__`, `__hash__`
-# TODO: strint str methods: `__repr__`
-
-
-# Binary operators
-# TODO; `__contains__`
-# TODO: `class Cannot*: ...` variants that return `NotImplementedType`
-
-
-# TODO: __getitem__ and __missing__
-# TODO: __getattr__
-
-# TODO: __init_subclass__ ?
-# TODO: __class_getitem__ ?

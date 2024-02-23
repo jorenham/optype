@@ -18,8 +18,8 @@ class CanNext[V](Protocol):
     def __next__(self) -> V: ...
 
 @runtime_checkable
-class CanIter[Y: CanNext[Any]](Protocol):
-    def __iter__(self) -> Y: ...
+class CanIter[Vs: CanNext[Any]](Protocol):
+    def __iter__(self) -> Vs: ...
 
 
 # 3.3.1. Basic customization
@@ -29,7 +29,7 @@ class CanIter[Y: CanNext[Any]](Protocol):
 # TODO: __init__
 
 @runtime_checkable
-class CanDel[Y: str](Protocol):
+class CanDel(Protocol):
     def __del__(self) -> Any: ...
 
 @runtime_checkable
@@ -50,6 +50,7 @@ class CanBytes[Y: bytes](Protocol):
 @runtime_checkable
 class CanFormat[X: str, Y: str](Protocol):
     def __format__(self, __x: X) -> Y: ...   # type: ignore[override]
+
 
 @runtime_checkable
 class CanLt[X, Y](Protocol):
@@ -74,6 +75,7 @@ class CanGt[X, Y](Protocol):
 @runtime_checkable
 class CanGe[X, Y](Protocol):
     def __ge__(self, __x: X) -> Y: ...
+
 
 @runtime_checkable
 class CanHash(Protocol):
@@ -505,12 +507,6 @@ class CanWith[V](CanEnter[V], CanExit, Protocol):
     """Intersection type of `CanEnter[V] & CanExit`, i.e. a contextmanager."""
 
 
-# 3.3.10. Customizing positional arguments in class pattern matching
-# https://docs.python.org/3/reference/datamodel.html#customizing-positional-arguments-in-class-pattern-matching
-
-# TODO: HasMatchArgs
-
-
 # 3.3.11. Emulating buffer types
 # https://docs.python.org/3/reference/datamodel.html#emulating-buffer-types
 
@@ -564,9 +560,32 @@ class CanAiter[Y: CanAnext[Any]](Protocol):
 # 3.4.4. Asynchronous Context Managers
 # https://docs.python.org/3/reference/datamodel.html#asynchronous-context-managers
 
-# TODO: CanAenter
-# TODO: CanAexit
-# TODO: CanAsyncWith = CanAenter & CanAexit
+@runtime_checkable
+class CanAenter[V](Protocol):
+    def __aenter__(self) -> CanAwait[V]: ...
+
+@runtime_checkable
+class CanAexit(Protocol):
+    @overload
+    def __aexit__(
+        self, __tp: None,
+        __ex: None,
+        __tb: None,
+    ) -> CanAwait[None]: ...
+    @overload
+    def __aexit__(
+        self,
+        __tp: type[BaseException],
+        __ex: BaseException,
+        __tb: TracebackType,
+    ) -> CanAwait[bool | None]: ...
+
+@runtime_checkable
+class CanAsyncWith[V](CanAenter[V], CanAexit, Protocol):
+    """
+    Intersection type of `CanAenter[V] & CanAexit`, i.e. an async
+    contextmanager.
+    """
 
 
 # Module `abc`
