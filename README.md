@@ -1,6 +1,10 @@
 <h1 align="center">optype</h1>
 
 <p align="center">
+    <i>One protocol, one method.</i>
+</p>
+
+<p align="center">
     Building blocks for precise & flexible type hints.
 </p>
 
@@ -33,7 +37,7 @@
         <img
             alt="Ruff"
             src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json"
-        >
+        />
     </a>
     <a href="https://github.com/microsoft/pyright">
         <img
@@ -86,22 +90,22 @@ type stubs.
 [RC]: https://typing.readthedocs.io/en/latest/spec/protocol.html#runtime-checkable-decorator-and-narrowing-types-by-isinstance
 
 
-### Elementary interfaces for the special methods
+### Elementary typing protocols
 
-Single-method [`typing.Protocol`](PC) definitions for each of the "special
-methods", also known as "magic"- or "dunder" methods.
-See the [Python docs](SM) for details.
+A collection of `optype` single-method [`typing.Protocol`](PC) interfaces for
+most of the "special methods", also known as "dunder" (double underscore)
+methods.
+
+See the [Python docs](SM) for more info.
 
 [SM]: https://docs.python.org/3/reference/datamodel.html#special-method-names
 
 
-#### Strict type conversion
+#### Type conversion
 
 The return type of these special methods is *invariant*. Python will raise an
 error if some other (sub)type is returned.
 This is why these `optype` interfaces don't accept generic type arguments.
-
-**Builtin type constructors:**
 
 | Type         | Signature                      | Expression      |
 | ------------ | ------------------------------ | --------------- |
@@ -112,97 +116,184 @@ This is why these `optype` interfaces don't accept generic type arguments.
 | `CanBytes`   | `__bytes__(self) -> bytes`     | `bytes(self)`   |
 | `CanStr`     | `__str__(self) -> str`         | `str(self)`     |
 
-**Other builtin functions:**
 
-| Type            | Signature                      | Expression   |
-| --------------- | ------------------------------ | ------------ |
-| `CanRepr`       | `__repr__(self) -> str`        | `repr(self)` |
-| `CanHash`       | `__hash__(self) -> int`        | `hash(self)` |
-| `CanLen`        | `__len__(self) -> int`         | `len(self)`  |
-| `CanLengthHint` | `__length_hint__(self) -> int` | [docs](LH)   |
-| `CanIndex`      | `__index__(self) -> int`       | [docs](IX)   |
+These formatting methods are allowed to return instances that are a subtype
+of the `str` builtin. The same holds for the `__format__` argument.
+So if you're a 10x developer that wants to hack Python's f-strings, but only
+if your type hints are spot-on; `optype` is you friend.
 
-
-[LH]: https://docs.python.org/3/reference/datamodel.html#object.__length_hint__
-[IX]: https://docs.python.org/3/reference/datamodel.html#object.__index__
+| Type                       | Signature                     | Expression     |
+| -------------------------- | ------------------------------| -------------- |
+| `CanRepr[Y: str]`          | `__repr__(self) -> T`         | `repr(_)`      |
+| `CanFormat[X: str, Y: str]`| `__format__(self, x: X) -> Y` | `format(_, x)` |
 
 
-#### Comparisons operators
+#### "Rich comparison" operators
 
-Generally these methods return a `bool`. But in theory, anything can be
-returned (even if it doesn't implement `__bool__`).
+These special methods generally a `bool`. However, instances of any type can
+be returned.
 
 | Type           | Signature                  | Expression  | Expr. Reflected |
 | -------------- | -------------------------- | ----------- | --------------- |
 | `CanLt[X, Y]`  | `__lt__(self, x: X) -> Y`  | `self < x`  | `x > self`      |
 | `CanLe[X, Y]`  | `__le__(self, x: X) -> Y`  | `self <= x` | `x >= self`     |
-| `CanGe[X, Y]`  | `__ge__(self, x: X) -> Y`  | `self >= x` | `x <= self`     |
-| `CanGt[X, Y]`  | `__gt__(self, x: X) -> Y`  | `self > x`  | `x < self`      |
 | `CanEq[X, Y]`  | `__eq__(self, x: X) -> Y`  | `self == x` | `x == self`     |
 | `CanNe[X, Y]`  | `__ne__(self, x: X) -> Y`  | `self != x` | `x != self`     |
+| `CanGt[X, Y]`  | `__gt__(self, x: X) -> Y`  | `self > x`  | `x < self`      |
+| `CanGe[X, Y]`  | `__ge__(self, x: X) -> Y`  | `self >= x` | `x <= self`     |
 
 
-#### Rounding
+#### Attribute access
 
-| Type               | Signature                     | Expression            |
-| ------------------ | ----------------------------- | --------------------- |
-| `CanRound1[Y1]`    | `__round__(self) -> Y1`       | `round(self)`         |
-| `CanRound2[N, Y2]` | `__round__(self, n: N) -> Y2` | `round(self, n: N)`   |
+<table>
+    <tr>
+        <th>Type</th>
+        <th>Signature</th>
+        <th>Expression</th>
+    </tr>
+    <tr>
+        <td><code>CanGetattr[K: str, V]</code></td>
+        <td><code>__getattr__(self, k: K) -> V</code></td>
+        <td><code>v = self.k</code> or <code>v = getattr(self, k)</code></td>
+    </tr>
+    <tr>
+        <td><code>CanGetattribute[K: str, V]</code></td>
+        <td><code>__getattribute__(self, k: K) -> V</code></td>
+        <td><code>v = self.k</code> or <code>v = getattr(self, k)</code></td>
+    </tr>
+    <tr>
+        <td><code>CanSetattr[K: str, V]</code></td>
+        <td><code>__setattr__(self, k: K, v: V)</code></td>
+        <td><code>self.k = v</code> or <code>setattr(self, k, v)</code></td>
+    </tr>
+    <tr>
+        <td><code>CanDelattr[K: str]</code></td>
+        <td><code>__delattr__(self, k: K)</code></td>
+        <td><code>del self.k</code> or <code>delattr(self, k)</code></td>
+    </tr>
+    <tr>
+        <td><code>CanDir[Vs: CanIter[Any]]</code></td>
+        <td><code>__dir__(self) -> Vs</code></td>
+        <td><code>dir(self)</code></td>
+    </tr>
+</table>
 
-For convenience, `optype` also provides their intersection type
-`CanRound[N, Y1, Y2] =: CanRound1[Y1] & CanRound2[N, Y2]`, whose signature
-overloads those of the `CanRound1` and `CanRound2`.
 
-For instance, `float` is a `CanRound[int, int, float]` and `int` a
-`CanRound[int, int, int]`.
+#### Descriptors
 
-| Type           | Signature               | Expression         |
-| -------------- | ----------------------- | ------------------ |
-| `CanTrunc[Y]`  | `__trunc__(self) -> Y`  | `math.trunc(self)` |
-| `CanFloor[Y]`  | `__floor__(self) -> Y`  | `math.floor(self)` |
-| `CanCeil[Y]`   | `__ceil__(self) -> Y`   | `math.ceil(self)`  |
-
-Note that the type parameter `Y` is unbounded, because technically these
-methods can return any type.
+<!-- TODO: CanGet[Bound], CanSet, CanDelete -->
+...
 
 
-#### Arithmetic and bitwise operators
+#### Customizing class creation
 
-**Unary:**
-
-| Type           | Signature               | Expression         |
-| -------------- | ----------------------- | ------------------ |
-| `CanPos[Y]`    | `__pos__(self) -> Y`    | `+self`            |
-| `CanNeg[Y]`    | `__neg__(self) -> Y`    | `-self`            |
-| `CanInvert[Y]` | `__invert__(self) -> Y` | `~self`            |
-| `CanAbs[Y]`    | `__abs__(self) -> Y`    | `abs(self)`        |
+<!-- TODO: CanInitSubclass, CanSetName -->
+...
 
 
-**Binary:**
+#### Callable objects
 
-| Type                | Signature                       | Expression        |
-| ------------------- | ------------------------------- | ----------------- |
-| `CanAdd[X, Y]`      | `__add__(self, x: X) -> Y`      | `self + x`        |
-| `CanSub[X, Y]`      | `__sub__(self, x: X) -> Y`      | `self - x`        |
-| `CanMul[X, Y]`      | `__mul__(self, x: X) -> Y`      | `self * x`        |
-| `CanMatmul[X, Y]`   | `__matmul__(self, x: X) -> Y`   | `self @ x`        |
-| `CanTruediv[X, Y]`  | `__truediv__(self, x: X) -> Y`  | `self / x`        |
-| `CanFloordiv[X, Y]` | `__floordiv__(self, x: X) -> Y` | `self // x`       |
-| `CanMod[X, Y]`      | `__mod__(self, x: X) -> Y`      | `self % x`        |
-| `CanDivmod[X, Y]`   | `__divmod__(self, x: X) -> Y`   | `divmod(self, x)` |
-| `CanPow2[X, Y]`     | `__pow__(self, x: X) -> Y`      | `self ** x`       |
-| `CanPow3[X, M, Y]`  | `__pow__(self, x: X, m: M) -> Y`| `pow(self, x, m)` |
-| `CanLshift[X, Y]`   | `__lshift__(self, x: X) -> Y`   | `self << x`       |
-| `CanRshift[X, Y]`   | `__rshift__(self, x: X) -> Y`   | `self >> x`       |
-| `CanAnd[X, Y]`      | `__and__(self, x: X) -> Y`      | `self & x`        |
-| `CanXor[X, Y]`      | `__xor__(self, x: X) -> Y`      | `self ^ x`        |
-| `CanOr[X, Y]`       | `__or__(self, x: X) -> Y`       | `self \| x`       |
+<!-- TODO: CanCall, ...? -->
+...
+
+
+#### Iteration
+
+The operand `x` of `iter(_)` is within Python known as an *iterable*, which is
+what `collections.abc.Iterable[K]` is often used for (e.g. as base class, or
+for instance checking).
+
+The `optype` analogue is `CanIter[Ks]`, which as the name suggests,
+also implements `__iter__`. But unlike `Iterable[K]`, its type parameter `Ks`
+binds to the return type of `iter(_)`. This makes it possible to annotate the
+specific type of the *iterable* that `iter(_)` returns. `Iterable[K]` is only
+able to annotate the type of the iterated value. To see why that isn't
+possible, see [python/typing#548](https://github.com/python/typing/issues/548).
+
+The `collections.abc.Iterator[K]` is even more awkward; it is a subtype of
+`Iterable[K]`. For those familiar with `collections.abc` this might come as a
+surprise, but an iterator only needs to implement `__next__`, `__iter__` isn't
+needed. This means that the `Iterator[K]` is unnecessarily restrictive.
+Apart from that being theoretically "ugly", it has significant performance
+implications, because the time-complexity of `isinstance` on a
+`typing.Protocol` is $O(n)$, with the $n$ referring to the amount of members.
+So even if the overhead of the inheritance and the `abc.ABC` usage is ignored,
+`collections.abc.Iterator` is twice as slow as it needs to be.
+
+That's one of the (many) reasons that `optype.CanNext[V]` and
+`optype.CanNext[V]` are the better alternatives to `Iterable` and `Iterator`
+from the abracadabra collections. This is how they are defined:
+
+| Type                        | Signature              | Expression     |
+| --------------------------- | ---------------------- | -------------- |
+| `CanNext[V]`                | `__next__(self) -> V`  | `next(self)`   |
+| `CanIter[Vs: CanNext[Any]]` | `__iter__(self) -> Vs` | `iter(self)`   |
+
+
+
+
+#### Containers
+
+
+| Type                  | Signature                          | Expression     |
+| --------------------- | ---------------------------------- | -------------- |
+| `CanLen`              | `__len__(self) -> int`             | `len(self)`    |
+| `CanLengthHint`       | `__length_hint__(self) -> int`     | [docs](LH)     |
+| `CanGetitem[K, V]`    | `__getitem__(self, k: K) -> V`     | `self[k]`      |
+| `CanSetitem[K, V]`    | `__setitem__(self, k: K, v: V)`    | `self[k] = v`  |
+| `CanDelitem[K]`       | `__delitem__(self, k: K)`          | `del self[k]`  |
+| `CanMissing[K, V]`    | `__missing__(self, k: K) -> V`     | [docs](GM)     |
+| `CanReversed[Y]` [^4] | `__reversed__(self) -> Y`          |`reversed(self)`|
+| `CanContains[K]`      | `__contains__(self, k: K) -> bool` | `x in self`    |
+
+
+For indexing or locating container values, the following special methods are
+relevant:
+
+| Type            | Signature                | Expression   |
+| --------------- | ------------------------ | ------------ |
+| `CanHash`       | `__hash__(self) -> int`  | `hash(self)` |
+| `CanIndex`      | `__index__(self) -> int` | [docs](IX)   |
+
+
+[^4]:  Although not strictly required, `Y@CanReversed` should be a `CanNext`.
+[LH]: https://docs.python.org/3/reference/datamodel.html#object.__length_hint__
+[GM]: https://docs.python.org/3/reference/datamodel.html#object.__missing__
+[IX]: https://docs.python.org/3/reference/datamodel.html#object.__index__
+
+
+
+#### Numeric operations
+
+> [!TIP]
+> If you're unfamiliar with customizing operators, check out the official
+> [Python docs](NT).
+
+| Type                | Signature                       | Expression         |
+| ------------------- | ------------------------------- | ------------------ |
+| `CanAdd[X, Y]`      | `__add__(self, x: X) -> Y`      | `self + x`         |
+| `CanSub[X, Y]`      | `__sub__(self, x: X) -> Y`      | `self - x`         |
+| `CanMul[X, Y]`      | `__mul__(self, x: X) -> Y`      | `self * x`         |
+| `CanMatmul[X, Y]`   | `__matmul__(self, x: X) -> Y`   | `self @ x`         |
+| `CanTruediv[X, Y]`  | `__truediv__(self, x: X) -> Y`  | `self / x`         |
+| `CanFloordiv[X, Y]` | `__floordiv__(self, x: X) -> Y` | `self // x`        |
+| `CanMod[X, Y]`      | `__mod__(self, x: X) -> Y`      | `self % x`         |
+| `CanDivmod[X, Y]`   | `__divmod__(self, x: X) -> Y`   | `divmod(self, x)`  |
+| `CanPow2[X, Y]`     | `__pow__(self, x: X) -> Y`      | `self ** x`        |
+| `CanPow3[X, M, Y]`  | `__pow__(self, x: X, m: M) -> Y`| `pow(self, x, m)`  |
+| `CanLshift[X, Y]`   | `__lshift__(self, x: X) -> Y`   | `self << x`        |
+| `CanRshift[X, Y]`   | `__rshift__(self, x: X) -> Y`   | `self >> x`        |
+| `CanAnd[X, Y]`      | `__and__(self, x: X) -> Y`      | `self & x`         |
+| `CanXor[X, Y]`      | `__xor__(self, x: X) -> Y`      | `self ^ x`         |
+| `CanOr[X, Y]`       | `__or__(self, x: X) -> Y`       | `self \| x`        |
 
 Additionally, there is the intersection type
-`CanPow[X, M, Y2, Y3] =: CanPow2[X, Y2] & CanPow3[X, M, Y3]`, whose signature
-overloads those of the `CanPow2` and `CanPow3`.
+`CanPow[X, M, Y2, Y3] =: CanPow2[X, Y2] & CanPow3[X, M, Y3]`, overloading
+both `__pow__` method signatures. Note that the `2` and `3` suffixes refer
+to the *arity* (#parameters) of the operators.
 
-**Binary (reflected):**
+For the binary infix operators above, `optype` additionally provides
+interfaces with reflected (swapped) operands:
 
 | Type                 | Signature                        | Expression        |
 | -------------------- | -------------------------------- | ----------------- |
@@ -221,8 +312,11 @@ overloads those of the `CanPow2` and `CanPow3`.
 | `CanRXor[X, Y]`      | `__rxor__(self, x: X) -> Y`      | `x ^ self`        |
 | `CanROr[X, Y]`       | `__ror__(self, x: X) -> Y`       | `x \| self`       |
 
+Note that `CanRPow` corresponds to `CanPow2`; the 3-parameter "modulo" `pow`
+does not reflect in Python.
 
-**Binary (augmented / in-place):**
+Similarly, the augmented assignment operators are described by the following
+`optype` interfaces:
 
 | Type                 | Signature                        | Expression   |
 | -------------------- | -------------------------------- | ------------ |
@@ -240,43 +334,73 @@ overloads those of the `CanPow2` and `CanPow3`.
 | `CanIXor[X, Y]`      | `__ixor__(self, x: X) -> Y`      | `self ^= x`  |
 | `CanIOr[X, Y]`       | `__ior__(self, x: X) -> Y`       | `self \|= x` |
 
-<!-- TODO:  implement separate ternary pow -->
+Additionally, there are the unary arithmetic operators:
+
+| Type                | Signature                       | Expression         |
+| ------------------- | ------------------------------- | ------------------ |
+| `CanPos[Y]`         | `__pos__(self) -> Y`            | `+self`            |
+| `CanNeg[Y]`         | `__neg__(self) -> Y`            | `-self`            |
+| `CanInvert[Y]`      | `__invert__(self) -> Y`         | `~self`            |
+| `CanAbs[Y]`         | `__abs__(self) -> Y`            | `abs(self)`        |
 
 
-### Containers
+The `round` function comes in two flavors:
 
-| Type               | Signature                              | Expression    |
-| ------------------ | -------------------------------------- | ------------- |
-| `CanContains[K]`   | `__contains__(self, k: K) -> bool`     | `x in self`   |
-| `CanDelitem[K]`    | `__delitem__(self, k: K) -> None`      | `del self[k]` |
-| `CanGetitem[K, V]` | `__getitem__(self, k: K) -> V`         | `self[k]`     |
-| `CanMissing[K, V]` | `__missing__(self, k: K) -> V`         | [docs](GM)    |
-| `CanSetitem[K, V]` | `__setitem__(self, k: K, v: V) -> None`| `self[k] = v` |
+| Type               | Signature                     | Expression            |
+| ------------------ | ----------------------------- | --------------------- |
+| `CanRound1[Y1]`    | `__round__(self) -> Y1`       | `round(self)`         |
+| `CanRound2[N, Y2]` | `__round__(self, n: N) -> Y2` | `round(self, n: N)`   |
+
+For convenience, `optype` also provides their intersection type
+`CanRound[N, Y1, Y2] =: CanRound1[Y1] & CanRound2[N, Y2]`, whose signature
+overloads those of the `CanRound1` and `CanRound2`.
+To illustrate; `float` is a `CanRound[int, int, float]` and `int` a
+`CanRound[int, int, int]`.
+
+And finally, the remaining rounding functions:
+
+| Type           | Signature               | Expression         |
+| -------------- | ----------------------- | ------------------ |
+| `CanTrunc[Y]`  | `__trunc__(self) -> Y`  | `math.trunc(self)` |
+| `CanFloor[Y]`  | `__floor__(self) -> Y`  | `math.floor(self)` |
+| `CanCeil[Y]`   | `__ceil__(self) -> Y`   | `math.ceil(self)`  |
+
+Note that the type parameter `Y` is unbounded, because technically these
+methods can return any type.
 
 
-[GM]: https://docs.python.org/3/reference/datamodel.html#object.__missing__
+[NT]: https://docs.python.org/3/reference/datamodel.html#emulating-numeric-types
 
 
-### Iteration
+#### Async objects
 
-**Sync**
+| Type          | Signature                                    | Expression   |
+| ------------- | -------------------------------------------- | ------------ |
+| `CanAwait[V]` | `__await__(self) -> Generator[Any, None, V]` | `await self` |
 
-| Type                       | Signature                 | Expression       |
-| -------------------------- | ------------------------- | ---------------- |
-| `CanNext[V]`               | `__next__(self) -> V`     | `next(self)`     |
-| `CanIter[Y: CanNext[Any]]` | `__iter__(self) -> Y`     | `iter(self)`     |
-| `CanReversed[Y]` (*)       | `__reversed__(self) -> Y` | `reversed(self)` |
 
-(*) Although not strictly required, `Y@CanReversed` should be iterable.
+#### Async Iteration
 
-**Async**
+Yes, you guessed it right; the abracadabra collections repeated their mistakes
+with their async iterablors (or something like that).
+But fret not, the `optype` alternatives are right here:
 
-| Type                         | Signature               | Expression       |
-| ---------------------------- | ----------------------- | ---------------- |
-| `CanAnext[V]` (**)           | `__anext__(self) -> V`  | `anext(self)`    |
-| `CanAiter[Y: CanAnext[Any]]` | `__aiter__(self) -> Y`  | `aiter(self)`    |
+| `CanAnext[V]`            | `__anext__(self) -> V` | `anext(self)` |
+| `CanAiter[Vs: CanAnext]` | `__aiter__(self) -> Y` | `aiter(self)` |
 
-(**) Although not strictly required, `V@CanAnext` should be an `Awaitable`.
+
+But wait, shouldn't `V` be `Awaitable`? Well, only if you don't want to get
+fired...
+Technically speaking, `__anext__` can return any type, and `anext` will pass
+it along without nagging (instance checks are slow, now stop bothering that
+liberal).
+Just because something is legal, doesn't mean it's a good idea (don't eat the
+yellow snow).
+
+#### Async context managers
+
+<!-- TODO -->
+...
 
 
 ### Generic interfaces for builtins
