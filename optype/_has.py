@@ -2,41 +2,41 @@
 """
 Elementary interfaces for special "dunder" attributes.
 """
-import typing as _tp
+from typing import TYPE_CHECKING, Any, Protocol, Self, runtime_checkable
 
-if _tp.TYPE_CHECKING:
+
+if TYPE_CHECKING:
     import weakref as _weakref
 
 
 # special attributes
 
-@_tp.runtime_checkable
-class HasDict[V](_tp.Protocol):
+@runtime_checkable
+class HasDict[V](Protocol):
     __dict__: dict[str, V]
 
 
-@_tp.runtime_checkable
-class _HasDocAttr(_tp.Protocol):
+@runtime_checkable
+class _HasDocAttr(Protocol):
     __doc__: str | None
 
 
-@_tp.runtime_checkable
-class _HasDocProp(_tp.Protocol):
+@runtime_checkable
+class _HasDocProp(Protocol):
     @property
     def __doc__(self) -> str | None: ...  # type: ignore[override]
 
 
 type HasDoc = _HasDocAttr | _HasDocProp
-"""Note that with (c)python's `-OO` flag, any generated `__doc__` is `None`."""
 
 
-@_tp.runtime_checkable
-class _HasNameAttr(_tp.Protocol):
+@runtime_checkable
+class _HasNameAttr(Protocol):
     __name__: str
 
 
-@_tp.runtime_checkable
-class _HasNameProp(_tp.Protocol):
+@runtime_checkable
+class _HasNameProp(Protocol):
     @property
     def __name__(self) -> str: ...
 
@@ -44,17 +44,18 @@ class _HasNameProp(_tp.Protocol):
 type HasName = _HasNameAttr | _HasNameProp
 
 
-@_tp.runtime_checkable
-class HasQualname(_tp.Protocol):
+@runtime_checkable
+class HasQualname(Protocol):
     __qualname__: str
 
 
-@_tp.runtime_checkable
-class _HasModuleAttr(_tp.Protocol):
+@runtime_checkable
+class _HasModuleAttr(Protocol):
     __module__: str
 
 
-class _HasModuleProp(_tp.Protocol):
+@runtime_checkable
+class _HasModuleProp(Protocol):
     @property
     def __module__(self) -> str: ...  # type: ignore[override]
 
@@ -62,31 +63,33 @@ class _HasModuleProp(_tp.Protocol):
 type HasModule = _HasModuleAttr | _HasModuleProp
 
 
-@_tp.runtime_checkable
-class HasAnnotations[V](_tp.Protocol):
+@runtime_checkable
+class HasAnnotations[V](Protocol):
     """Note that the `V` type is hard to accurately define; blame PEP 563."""
     __annotations__: dict[str, V]
 
 
-@_tp.runtime_checkable
-class HasWeakReference(_tp.Protocol):
+# weakref
+
+@runtime_checkable
+class HasWeakReference(Protocol):
     """An object referenced by a `weakref.ReferenceType[Self]`."""
-    __weakref__: '_weakref.ReferenceType[_tp.Self]'
+    __weakref__: '_weakref.ReferenceType[Self]'
 
 
-@_tp.runtime_checkable
-class HasWeakCallableProxy[**Xs, Y](_tp.Protocol):
+@runtime_checkable
+class HasWeakCallableProxy[**Xs, Y](Protocol):
     """A callable referenced by a `weakref.CallableProxyType[Self]`."""
-    __weakref__: '_weakref.CallableProxyType[_tp.Self]'
+    __weakref__: '_weakref.CallableProxyType[Self]'
 
     def __call__(self, *__args: Xs.args, **__kwargs: Xs.kwargs) -> Y: ...
 
-@_tp.runtime_checkable
-class _HasWeakProxy(_tp.Protocol):
-    __weakref__: '_weakref.ProxyType[_tp.Self]'
+@runtime_checkable
+class _HasWeakProxy(Protocol):
+    __weakref__: '_weakref.ProxyType[Self]'
 
 
-type HasWeakProxy = HasWeakCallableProxy[..., _tp.Any] | _HasWeakProxy
+type HasWeakProxy = HasWeakCallableProxy[..., Any] | _HasWeakProxy
 """An object referenced by a `weakref.proxy` (not the proxy itself)."""
 
 

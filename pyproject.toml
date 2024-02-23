@@ -43,12 +43,12 @@ skip = """\
 include = ["optype", "tests"]
 exclude = [
     "**/__pycache__",
+    "**/.vscode",
     ".venv",
     ".git",
     ".github",
     ".pytest_cache",
     ".ruff_cache",
-    ".vscode",
     "dist",
 ]
 stubPath = "."
@@ -88,6 +88,7 @@ reportUnusedCoroutine = "error"
 reportUnusedExpression = "warning"
 reportUnnecessaryTypeIgnoreComment = "error"
 reportMatchNotExhaustive = "error"
+reportImplicitOverride = "warning"
 reportShadowedImports = "error"
 
 
@@ -170,12 +171,13 @@ select = [
     "FLY",      # flynt
     "PERF",     # perflint,
     "FURB",     # refurb
-    "RUF",       # ruff
+    "RUF",      # ruff
 ]
 extend-ignore = [
     # flake8-annotations
     "ANN001",   # missing-type-function-argument (deprecated)
     "ANN002",   # missing-type-args (deprecated)
+    "ANN401",   # any-type (unreasonable)
 
     # pylint
     "PLW1641",  # eq-without-hash (buggy; doesn't consider super)
@@ -200,6 +202,8 @@ case-sensitive = true
 combine-as-imports = true
 force-wrap-aliases = true
 known-first-party = ["optype"]
+lines-between-types = 0
+lines-after-imports = 2
 no-lines-before = ["future", "local-folder"]
 
 [tool.ruff.format]

@@ -3,10 +3,11 @@ from __future__ import annotations
 
 import typing as _tp
 
+
 if _tp.TYPE_CHECKING:
     import types as _ts
 
-    from ._nullops import CanIndex as _CanIndex
+    from ._can import CanIndex as _CanIndex
 
 
 @_tp.final
@@ -22,9 +23,9 @@ class Slice[A, B, S](_tp.Protocol):
     def __new__(cls, __start: A, __stop: B) -> Slice[A, B, None]: ...
     @_tp.overload
     def __new__(cls, __start: A, __stop: B, __step: S) -> Slice[A, B, S]: ...
-
+    @_tp.override
     def __eq__(self, __other: object) -> bool: ...
-
+    @_tp.override
     def __ne__(self, __other: object) -> bool: ...
 
     def __lt__(self, __other: object) -> bool | _ts.NotImplementedType: ...

@@ -1,0 +1,495 @@
+# ruff: noqa: PYI034
+from typing import Any, Protocol, overload, override, runtime_checkable
+
+
+# Iterator types
+# https://docs.python.org/3/library/stdtypes.html#iterator-types
+
+@runtime_checkable
+class CanNext[V](Protocol):
+    def __next__(self) -> V: ...
+
+@runtime_checkable
+class CanIter[Y: CanNext[Any]](Protocol):
+    def __iter__(self) -> Y: ...
+
+
+# 3.3.1. Basic customization
+# https://docs.python.org/3/reference/datamodel.html#basic-customization
+
+# TODO: __new__
+# TODO: __init__
+
+@runtime_checkable
+class CanDel[Y: str](Protocol):
+    def __del__(self) -> Any: ...
+
+@runtime_checkable
+class CanRepr[Y: str](Protocol):
+    @override
+    def __repr__(self) -> Y: ...
+
+@runtime_checkable
+class CanStr[Y: str](Protocol):
+    """By default, each `object` has a `__str__` method."""
+    @override
+    def __str__(self) -> Y: ...
+
+@runtime_checkable
+class CanBytes[Y: bytes](Protocol):
+    def __bytes__(self) -> Y: ...
+
+@runtime_checkable
+class CanFormat[X: str, Y: str](Protocol):
+    # typeshed's object.__format__ stub is unnecessarily restrictive
+    def __format__(self, __x: X) -> Y: ...   # type: ignore[override]
+
+@runtime_checkable
+class CanLt[X, Y](Protocol):
+    def __lt__(self, __x: X, /) -> Y: ...
+
+@runtime_checkable
+class CanLe[X, Y](Protocol):
+    def __le__(self, __x: X, /) -> Y: ...
+
+@runtime_checkable
+class CanEq[X, Y](Protocol):
+    def __eq__(self, __x: X, /) -> Y: ...  # type: ignore[override]
+
+@runtime_checkable
+class CanNe[X, Y](Protocol):
+    def __ne__(self, __x: X, /) -> Y: ...  # type: ignore[override]
+
+@runtime_checkable
+class CanGt[X, Y](Protocol):
+    def __gt__(self, __x: X, /) -> Y: ...
+
+@runtime_checkable
+class CanGe[X, Y](Protocol):
+    def __ge__(self, __x: X, /) -> Y: ...
+
+@runtime_checkable
+class CanHash(Protocol):
+    @override
+    def __hash__(self) -> int: ...
+
+@runtime_checkable
+class CanBool(Protocol):
+    def __bool__(self) -> bool: ...
+
+
+# 3.3.2. Customizing attribute access
+# https://docs.python.org/3/reference/datamodel.html#customizing-attribute-access
+
+@runtime_checkable
+class CanGetattr[K: str, V](Protocol):
+    def __getattr__(self, __k: K) -> V: ...
+
+@runtime_checkable
+class CanGetattribute[K: str, V](Protocol):
+    """Note that `isinstance(x, CanGetattribute)` is always true."""
+    @override
+    def __getattribute__(self, __k: K) -> V: ...  # type: ignore[override]
+
+@runtime_checkable
+class CanSetattr[K: str, V](Protocol):
+    """Note that `isinstance(x, CanSetattr)` is always true."""
+    @override
+    def __setattr__(self, __k: K, __v: V) -> Any: ...  # type: ignore[override]
+
+@runtime_checkable
+class CanDelattr[K: str](Protocol):
+    @override
+    def __delattr__(self, __k: K) -> Any: ...  # type: ignore[override]
+
+@runtime_checkable
+class CanDir[Vs: CanIter[Any]](Protocol):
+    @override
+    def __dir__(self) -> Vs: ...
+
+
+# 3.3.2.2. Implementing Descriptors
+# https://docs.python.org/3/reference/datamodel.html#implementing-descriptors
+
+# TODO: CanGet
+# TODO: CanSet
+# TODO: CanDelete
+# TODO: HasObjclass
+
+# 3.3.2.4. `__slots__`
+# https://docs.python.org/3/reference/datamodel.html#slots
+
+# TODO HasSlots
+
+
+# 3.3.3. Customizing class creation
+# https://docs.python.org/3/reference/datamodel.html#customizing-class-creation
+
+# TODO: CanInitSubclass
+# TODO: CanSetName
+
+# 3.3.3.2. Resolving MRO entries
+# https://docs.python.org/3/reference/datamodel.html#resolving-mro-entries
+
+# TODO: CanMroEntries
+
+# 3.3.3.4. Preparing the class namespace
+# https://docs.python.org/3/reference/datamodel.html#preparing-the-class-namespace
+
+# TODO: CanPrepare
+
+# 3.3.3.6. Creating the class object
+# https://docs.python.org/3/reference/datamodel.html#creating-the-class-object
+
+# TODO: HasClass
+
+
+# 3.3.4. Customizing instance and subclass checks
+# https://docs.python.org/3/reference/datamodel.html#customizing-instance-and-subclass-checks
+
+# TODO: CanInstancecheck
+# TODO: CanSubclasscheck
+
+
+# 3.3.5. Emulating generic types
+# https://docs.python.org/3/reference/datamodel.html#emulating-generic-types
+
+# TODO: CanClassGetItem
+
+
+# 3.3.6. Emulating callable objects
+# https://docs.python.org/3/reference/datamodel.html#emulating-callable-objects
+
+# TODO: CanCall
+
+
+# 3.3.7. Emulating container types
+# https://docs.python.org/3/reference/datamodel.html#emulating-container-types
+
+@runtime_checkable
+class CanLen(Protocol):
+    def __len__(self) -> int: ...
+
+@runtime_checkable
+class CanLengthHint(Protocol):
+    def __length_hint__(self) -> int: ...
+
+@runtime_checkable
+class CanGetitem[K, V](Protocol):
+    def __getitem__(self, __k: K) -> V: ...
+
+@runtime_checkable
+class CanSetitem[K, V](Protocol):
+    def __setitem__(self, __k: K, __v: V) -> None: ...
+
+@runtime_checkable
+class CanDelitem[K](Protocol):
+    def __delitem__(self, __k: K) -> None: ...
+
+@runtime_checkable
+class CanMissing[K, V](Protocol):
+    def __missing__(self, __k: K) -> V: ...
+
+@runtime_checkable
+class CanReversed[Y](Protocol):
+    def __reversed__(self) -> Y: ...
+
+@runtime_checkable
+class CanContains[K](Protocol):
+    def __contains__(self, __k: K) -> bool: ...
+
+
+# 3.3.8. Emulating numeric types
+# https://docs.python.org/3/reference/datamodel.html#emulating-numeric-types
+
+@runtime_checkable
+class CanAdd[X, Y](Protocol):
+    def __add__(self, __x: X, /) -> Y: ...
+
+@runtime_checkable
+class CanSub[X, Y](Protocol):
+    def __sub__(self, __x: X, /) -> Y: ...
+
+@runtime_checkable
+class CanMul[X, Y](Protocol):
+    def __mul__(self, __x: X) -> Y: ...
+
+@runtime_checkable
+class CanMatmul[X, Y](Protocol):
+    def __matmul__(self, __x: X) -> Y: ...
+
+@runtime_checkable
+class CanTruediv[X, Y](Protocol):
+    def __truediv__(self, __x: X) -> Y: ...
+
+@runtime_checkable
+class CanFloordiv[X, Y](Protocol):
+    def __floordiv__(self, __x: X) -> Y: ...
+
+@runtime_checkable
+class CanMod[X, Y](Protocol):
+    def __mod__(self, __x: X) -> Y: ...
+
+@runtime_checkable
+class CanDivmod[X, Y](Protocol):
+    def __divmod__(self, __x: X) -> Y: ...
+
+@runtime_checkable
+class CanPow2[X, Y2](Protocol):
+    def __pow__(self, __x: X) -> Y2: ...
+
+@runtime_checkable
+class CanPow3[X, M, Y3](Protocol):
+    def __pow__(self, __x: X, __m: M) -> Y3: ...
+
+@runtime_checkable
+class CanPow[X, M, Y2, Y3](CanPow2[X, Y2], CanPow3[X, M, Y3], Protocol):
+    @overload
+    def __pow__(self, __x: X) -> Y2: ...
+    @overload
+    def __pow__(self, __x: X, __m: M) -> Y3: ...
+
+@runtime_checkable
+class CanLshift[X, Y](Protocol):
+    def __lshift__(self, __x: X, /) -> Y: ...
+
+@runtime_checkable
+class CanRshift[X, Y](Protocol):
+    def __rshift__(self, __x: X, /) -> Y: ...
+
+@runtime_checkable
+class CanAnd[X, Y](Protocol):
+    def __and__(self, __x: X, /) -> Y: ...
+
+@runtime_checkable
+class CanXor[X, Y](Protocol):
+    def __xor__(self, __x: X, /) -> Y: ...
+
+@runtime_checkable
+class CanOr[X, Y](Protocol):
+    def __or__(self, __x: X, /) -> Y: ...
+
+
+@runtime_checkable
+class CanRAdd[X, Y](Protocol):
+    def __radd__(self, __x: X, /) -> Y: ...
+
+@runtime_checkable
+class CanRSub[X, Y](Protocol):
+    def __rsub__(self, __x: X, /) -> Y: ...
+
+@runtime_checkable
+class CanRMul[X, Y](Protocol):
+    def __rmul__(self, __x: X) -> Y: ...
+
+@runtime_checkable
+class CanRMatmul[X, Y](Protocol):
+    def __rmatmul__(self, __x: X) -> Y: ...
+
+@runtime_checkable
+class CanRTruediv[X, Y](Protocol):
+    def __rtruediv__(self, __x: X) -> Y: ...
+
+@runtime_checkable
+class CanRFloordiv[X, Y](Protocol):
+    def __rfloordiv__(self, __x: X) -> Y: ...
+
+@runtime_checkable
+class CanRMod[X, Y](Protocol):
+    def __rmod__(self, __x: X) -> Y: ...
+
+@runtime_checkable
+class CanRDivmod[X, Y](Protocol):
+    def __rdivmod__(self, __x: X) -> Y: ...
+
+@runtime_checkable
+class CanRPow[X, Y](Protocol):
+    def __rpow__(self, __x: X) -> Y: ...
+
+@runtime_checkable
+class CanRLshift[X, Y](Protocol):
+    def __rlshift__(self, __x: X, /) -> Y: ...
+
+@runtime_checkable
+class CanRRshift[X, Y](Protocol):
+    def __rrshift__(self, __x: X, /) -> Y: ...
+
+@runtime_checkable
+class CanRAnd[X, Y](Protocol):
+    def __rand__(self, __x: X, /) -> Y: ...
+
+@runtime_checkable
+class CanRXor[X, Y](Protocol):
+    def __rxor__(self, __x: X, /) -> Y: ...
+
+@runtime_checkable
+class CanROr[X, Y](Protocol):
+    def __ror__(self, __x: X, /) -> Y: ...
+
+
+@runtime_checkable
+class CanIAdd[X, Y](Protocol):
+    def __iadd__(self, __x: X, /) -> Y: ...
+
+@runtime_checkable
+class CanISub[X, Y](Protocol):
+    def __isub__(self, __x: X, /) -> Y: ...
+
+@runtime_checkable
+class CanIMul[X, Y](Protocol):
+    def __imul__(self, __x: X) -> Y: ...
+
+@runtime_checkable
+class CanIMatmul[X, Y](Protocol):
+    def __imatmul__(self, __x: X) -> Y: ...
+
+@runtime_checkable
+class CanITruediv[X, Y](Protocol):
+    def __itruediv__(self, __x: X) -> Y: ...
+
+@runtime_checkable
+class CanIFloordiv[X, Y](Protocol):
+    def __ifloordiv__(self, __x: X) -> Y: ...
+
+@runtime_checkable
+class CanIMod[X, Y](Protocol):
+    def __imod__(self, __x: X) -> Y: ...
+
+@runtime_checkable
+class CanIPow[X, Y](Protocol):
+    # no augmented pow/3 exists
+    def __ipow__(self, __x: X) -> Y: ...
+
+@runtime_checkable
+class CanILshift[X, Y](Protocol):
+    def __ilshift__(self, __x: X, /) -> Y: ...
+
+@runtime_checkable
+class CanIRshift[X, Y](Protocol):
+    def __irshift__(self, __x: X, /) -> Y: ...
+
+@runtime_checkable
+class CanIAnd[X, Y](Protocol):
+    def __iand__(self, __x: X, /) -> Y: ...
+
+@runtime_checkable
+class CanIXor[X, Y](Protocol):
+    def __ixor__(self, __x: X, /) -> Y: ...
+
+@runtime_checkable
+class CanIOr[X, Y](Protocol):
+    def __ior__(self, __x: X, /) -> Y: ...
+
+
+@runtime_checkable
+class CanNeg[Y](Protocol):
+    def __neg__(self) -> Y: ...
+
+@runtime_checkable
+class CanPos[Y](Protocol):
+    def __pos__(self) -> Y: ...
+
+@runtime_checkable
+class CanAbs[Y](Protocol):
+    def __abs__(self) -> Y: ...
+
+@runtime_checkable
+class CanInvert[Y](Protocol):
+    def __invert__(self) -> Y: ...
+
+
+@runtime_checkable
+class CanComplex(Protocol):
+    def __complex__(self) -> complex: ...
+
+@runtime_checkable
+class CanFloat(Protocol):
+    def __float__(self) -> float: ...
+
+@runtime_checkable
+class CanInt(Protocol):
+    def __int__(self) -> int: ...
+
+@runtime_checkable
+class CanIndex(Protocol):
+    def __index__(self) -> int: ...
+
+
+@runtime_checkable
+class CanRound1[Y](Protocol):
+    def __round__(self) -> Y: ...
+
+@runtime_checkable
+class CanRound2[N, Y](Protocol):
+    def __round__(self, __n: N) -> Y: ...
+
+@runtime_checkable
+class CanRound[N, Y1, Y2](CanRound1[Y1], CanRound2[N, Y2], Protocol):
+    @overload
+    def __round__(self) -> Y1: ...
+    @overload
+    def __round__(self, __n: N) -> Y2: ...
+
+@runtime_checkable
+class CanTrunc[Y](Protocol):
+    def __trunc__(self) -> Y: ...
+
+@runtime_checkable
+class CanFloor[Y](Protocol):
+    def __floor__(self) -> Y: ...
+
+@runtime_checkable
+class CanCeil[Y](Protocol):
+    def __ceil__(self) -> Y: ...
+
+
+# 3.3.9. With Statement Context Managers
+# https://docs.python.org/3/reference/datamodel.html#with-statement-context-managers
+
+# TODO: CanEnter
+# TODO: CanExit
+# TODO: CanWith = CanEnter & CanExit
+
+# 3.3.10. Customizing positional arguments in class pattern matching
+# https://docs.python.org/3/reference/datamodel.html#customizing-positional-arguments-in-class-pattern-matching
+
+# TODO: HasMatchArgs
+
+
+# 3.3.11. Emulating buffer types
+# https://docs.python.org/3/reference/datamodel.html#emulating-buffer-types
+
+# TODO: CanBuffer
+# TODO: CanReleaseBuffer
+
+
+# 3.4.1. Awaitable Objects
+# https://docs.python.org/3/reference/datamodel.html#awaitable-objects
+
+# TODO: CanAwait
+
+
+# 3.4.2. Coroutine Objects
+# https://docs.python.org/3/reference/datamodel.html#coroutine-objects
+
+# TODO: .send(_), .throw(_), .throw(_, _), .throw(_, _, _), .close() ???
+
+
+# 3.4.3. Asynchronous Iterators
+# https://docs.python.org/3/reference/datamodel.html#asynchronous-iterators
+
+@runtime_checkable
+class CanAnext[V](Protocol):
+    def __anext__(self) -> V: ...
+
+@runtime_checkable
+class CanAiter[Y: CanAnext[Any]](Protocol):
+    def __aiter__(self) -> Y: ...
+
+
+# 3.4.4. Asynchronous Context Managers
+# https://docs.python.org/3/reference/datamodel.html#asynchronous-context-managers
+
+# TODO: CanAenter
+# TODO: CanAexit
+# TODO: CanAsyncWith = CanAenter & CanAexit
