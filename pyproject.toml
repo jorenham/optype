@@ -41,6 +41,16 @@ skip = """\
 
 [tool.pyright]
 include = ["optype", "tests"]
+exclude = [
+    "**/__pycache__",
+    ".venv",
+    ".git",
+    ".github",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".vscode",
+    "dist",
+]
 stubPath = "."
 venvPath = "."
 venv = ".venv"
