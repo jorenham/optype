@@ -1,5 +1,13 @@
 # ruff: noqa: PYI034
-from typing import Any, Protocol, overload, override, runtime_checkable
+from collections.abc import Generator
+from types import TracebackType
+from typing import (
+    Any,
+    Protocol,
+    overload,
+    override,
+    runtime_checkable,
+)
 
 
 # Iterator types
@@ -41,32 +49,31 @@ class CanBytes[Y: bytes](Protocol):
 
 @runtime_checkable
 class CanFormat[X: str, Y: str](Protocol):
-    # typeshed's object.__format__ stub is unnecessarily restrictive
     def __format__(self, __x: X) -> Y: ...   # type: ignore[override]
 
 @runtime_checkable
 class CanLt[X, Y](Protocol):
-    def __lt__(self, __x: X, /) -> Y: ...
+    def __lt__(self, __x: X) -> Y: ...
 
 @runtime_checkable
 class CanLe[X, Y](Protocol):
-    def __le__(self, __x: X, /) -> Y: ...
+    def __le__(self, __x: X) -> Y: ...
 
 @runtime_checkable
 class CanEq[X, Y](Protocol):
-    def __eq__(self, __x: X, /) -> Y: ...  # type: ignore[override]
+    def __eq__(self, __x: X) -> Y: ...  # type: ignore[override]
 
 @runtime_checkable
 class CanNe[X, Y](Protocol):
-    def __ne__(self, __x: X, /) -> Y: ...  # type: ignore[override]
+    def __ne__(self, __x: X) -> Y: ...  # type: ignore[override]
 
 @runtime_checkable
 class CanGt[X, Y](Protocol):
-    def __gt__(self, __x: X, /) -> Y: ...
+    def __gt__(self, __x: X) -> Y: ...
 
 @runtime_checkable
 class CanGe[X, Y](Protocol):
-    def __ge__(self, __x: X, /) -> Y: ...
+    def __ge__(self, __x: X) -> Y: ...
 
 @runtime_checkable
 class CanHash(Protocol):
@@ -111,9 +118,25 @@ class CanDir[Vs: CanIter[Any]](Protocol):
 # 3.3.2.2. Implementing Descriptors
 # https://docs.python.org/3/reference/datamodel.html#implementing-descriptors
 
-# TODO: CanGet
-# TODO: CanSet
-# TODO: CanDelete
+@runtime_checkable
+class CanGetBound[T, V](Protocol):
+    def __get__(self, __obj: T, __cls: type[T] | None = ...) -> V: ...
+
+@runtime_checkable
+class CanGet[T, U, V](CanGetBound[T, V], Protocol):
+    @overload
+    def __get__(self, __obj: None, __cls: type[T]) -> U: ...
+    @overload
+    def __get__(self, __obj: T, __cls: type[T] | None = ...) -> V: ...
+
+@runtime_checkable
+class CanSet[T, V](Protocol):
+    def __set__(self, __obj: T, __v: V) -> Any: ...
+
+@runtime_checkable
+class CanDelete[T](Protocol):
+    def __delete__(self, __obj: T) -> Any: ...
+
 # TODO: HasObjclass
 
 # 3.3.2.4. `__slots__`
@@ -125,8 +148,21 @@ class CanDir[Vs: CanIter[Any]](Protocol):
 # 3.3.3. Customizing class creation
 # https://docs.python.org/3/reference/datamodel.html#customizing-class-creation
 
-# TODO: CanInitSubclass
-# TODO: CanSetName
+@runtime_checkable
+class CanInitSubclass[**Ps](Protocol):
+    # no positional-only are allowed
+    # cannot `Unpack` type args: https://github.com/python/typing/issues/1399
+    # workaround: use `**Ps` instead of `Ps: TypedDict`
+    def __init_subclass__(
+        cls,
+        *__dont_use_these_args: Ps.args,
+        **__kwargs: Ps.kwargs,
+    ) -> Any: ...
+
+@runtime_checkable
+class CanSetName[T](Protocol):
+    def __set_name__(self, __cls: type[T], __name: str) -> Any: ...
+
 
 # 3.3.3.2. Resolving MRO entries
 # https://docs.python.org/3/reference/datamodel.html#resolving-mro-entries
@@ -160,7 +196,9 @@ class CanDir[Vs: CanIter[Any]](Protocol):
 # 3.3.6. Emulating callable objects
 # https://docs.python.org/3/reference/datamodel.html#emulating-callable-objects
 
-# TODO: CanCall
+@runtime_checkable
+class CanCall[**Xs, Y](Protocol):
+    def __call__(self, *__xa: Xs.args, **__xk: Xs.kwargs) -> Y: ...
 
 
 # 3.3.7. Emulating container types
@@ -446,9 +484,26 @@ class CanCeil[Y](Protocol):
 # 3.3.9. With Statement Context Managers
 # https://docs.python.org/3/reference/datamodel.html#with-statement-context-managers
 
-# TODO: CanEnter
-# TODO: CanExit
-# TODO: CanWith = CanEnter & CanExit
+@runtime_checkable
+class CanEnter[V](Protocol):
+    def __enter__(self) -> V: ...
+
+@runtime_checkable
+class CanExit(Protocol):
+    @overload
+    def __exit__(self, __tp: None, __ex: None, __tb: None) -> None: ...
+    @overload
+    def __exit__(
+        self,
+        __tp: type[BaseException],
+        __ex: BaseException,
+        __tb: TracebackType,
+    ) -> None: ...
+
+@runtime_checkable
+class CanWith[V](CanEnter[V], CanExit, Protocol):
+    """Intersection type of `CanEnter[V] & CanExit`, i.e. a contextmanager."""
+
 
 # 3.3.10. Customizing positional arguments in class pattern matching
 # https://docs.python.org/3/reference/datamodel.html#customizing-positional-arguments-in-class-pattern-matching
@@ -459,20 +514,39 @@ class CanCeil[Y](Protocol):
 # 3.3.11. Emulating buffer types
 # https://docs.python.org/3/reference/datamodel.html#emulating-buffer-types
 
-# TODO: CanBuffer
-# TODO: CanReleaseBuffer
+
+@runtime_checkable
+class CanBuffer[B: int](Protocol):
+    def __buffer__(self, __b: B) -> memoryview: ...
+
+@runtime_checkable
+class CanReleaseBuffer(Protocol):
+    def __release_buffer__(self, __v: memoryview) -> None: ...
 
 
 # 3.4.1. Awaitable Objects
 # https://docs.python.org/3/reference/datamodel.html#awaitable-objects
 
-# TODO: CanAwait
+
+# This should be `None | asyncio.Future[Any]`. But that would make this
+# incompatible with `collections.abc.Awaitable`, because it (annoyingly)
+# uses `Any`...
+type _MaybeFuture = Any
 
 
-# 3.4.2. Coroutine Objects
-# https://docs.python.org/3/reference/datamodel.html#coroutine-objects
-
-# TODO: .send(_), .throw(_), .throw(_, _), .throw(_, _, _), .close() ???
+@runtime_checkable
+class CanAwait[V](Protocol):
+    # Technically speaking, this can return any
+    # `CanNext[None | asyncio.Future[Any]]`. But in theory, the return value
+    # of generators are currently impossible to type, because the return value
+    # of a `yield from _` is # piggybacked using a `raise StopIteration(value)`
+    # from `__next__`. So that also makes `__await__` theoretically
+    # impossible to type. In practice, typecheckers work around that, by
+    # accepting the lie called `collections.abc.Generator`...
+    @overload
+    def __await__(self: 'CanAwait[None]') -> CanNext[_MaybeFuture]: ...
+    @overload
+    def __await__(self: 'CanAwait[V]') -> Generator[_MaybeFuture, None, V]: ...
 
 
 # 3.4.3. Asynchronous Iterators
@@ -493,3 +567,33 @@ class CanAiter[Y: CanAnext[Any]](Protocol):
 # TODO: CanAenter
 # TODO: CanAexit
 # TODO: CanAsyncWith = CanAenter & CanAexit
+
+
+# Module `abc`
+# https://docs.python.org/3/library/abc.html
+# TODO: CanSubclasshook
+
+
+# Module `copy`
+# https://docs.python.org/3/library/copy.html
+
+# TODO: CanCopy
+# TODO: CanDeepCopy
+# TODO: CanReplace (py313+)
+
+
+# Module `pickle`
+# https://docs.python.org/3/library/pickle.html#pickling-class-instances
+
+# TODO: CanGetnewargsEx
+# TODO: CanGetnewargs
+# TODO: CanGetstate
+# TODO: CanSetstate
+# TODO: CanReduce
+# TODO: CanReduceEx
+
+
+# Module `sys`
+# https://docs.python.org/3/library/sys.html
+
+# TODO: CanSizeof
