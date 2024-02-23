@@ -179,6 +179,9 @@ extend-ignore = [
     "ANN002",   # missing-type-args (deprecated)
     "ANN401",   # any-type (unreasonable)
 
+    # flake8-pyi
+    "PYI036",   # bad-exit-annotation (FP with more precise overloads)
+
     # pylint
     "PLW1641",  # eq-without-hash (buggy; doesn't consider super)
 ]
