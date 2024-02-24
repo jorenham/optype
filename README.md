@@ -49,10 +49,6 @@
 
 ---
 
-> [!WARNING]
-> The API is not stable; use it at your own risk.
-
-
 ## Installation
 
 Optype is available as [`optype`](OPTYPE) on PyPI:
@@ -90,18 +86,7 @@ type stubs.
 [RC]: https://typing.readthedocs.io/en/latest/spec/protocol.html#runtime-checkable-decorator-and-narrowing-types-by-isinstance
 
 
-### Elementary typing protocols
-
-A collection of `optype` single-method [`typing.Protocol`](PC) interfaces for
-most of the "special methods", also known as "dunder" (double underscore)
-methods.
-
-See the [Python docs](SM) for more info.
-
-[SM]: https://docs.python.org/3/reference/datamodel.html#special-method-names
-
-
-#### Type conversion
+### Type conversion
 
 The return type of these special methods is *invariant*. Python will raise an
 error if some other (sub)type is returned.
@@ -128,7 +113,7 @@ if your type hints are spot-on; `optype` is you friend.
 | `CanFormat[X: str, Y: str]`| `__format__(self, x: X) -> Y` | `format(_, x)` |
 
 
-#### "Rich comparison" operators
+### "Rich comparison" operators
 
 These special methods generally a `bool`. However, instances of any type can
 be returned.
@@ -143,7 +128,7 @@ be returned.
 | `CanGe[X, Y]`  | `__ge__(self, x: X) -> Y`  | `self >= x` | `x <= self`     |
 
 
-#### Attribute access
+### Attribute access
 
 <table>
     <tr>
@@ -179,25 +164,7 @@ be returned.
 </table>
 
 
-#### Descriptors
-
-<!-- TODO: CanGet[Bound], CanSet, CanDelete -->
-...
-
-
-#### Customizing class creation
-
-<!-- TODO: CanInitSubclass, CanSetName -->
-...
-
-
-#### Callable objects
-
-<!-- TODO: CanCall, ...? -->
-...
-
-
-#### Iteration
+### Iteration
 
 The operand `x` of `iter(_)` is within Python known as an *iterable*, which is
 what `collections.abc.Iterable[K]` is often used for (e.g. as base class, or
@@ -230,9 +197,7 @@ from the abracadabra collections. This is how they are defined:
 | `CanIter[Vs: CanNext[Any]]` | `__iter__(self) -> Vs` | `iter(self)`   |
 
 
-
-
-#### Containers
+### Containers
 
 
 | Type                  | Signature                          | Expression     |
@@ -262,30 +227,47 @@ relevant:
 [IX]: https://docs.python.org/3/reference/datamodel.html#object.__index__
 
 
+### Descriptors
 
-#### Numeric operations
+<!-- TODO: CanGet[Bound], CanSet, CanDelete -->
+...
+
+
+### Customizing class creation
+
+<!-- TODO: CanInitSubclass, CanSetName -->
+...
+
+
+### Callable objects
+
+<!-- TODO: CanCall, ...? -->
+...
+
+
+### Numeric operations
 
 > [!TIP]
 > If you're unfamiliar with customizing operators, check out the official
 > [Python docs](NT).
 
-| Type                | Signature                       | Expression         |
-| ------------------- | ------------------------------- | ------------------ |
-| `CanAdd[X, Y]`      | `__add__(self, x: X) -> Y`      | `self + x`         |
-| `CanSub[X, Y]`      | `__sub__(self, x: X) -> Y`      | `self - x`         |
-| `CanMul[X, Y]`      | `__mul__(self, x: X) -> Y`      | `self * x`         |
-| `CanMatmul[X, Y]`   | `__matmul__(self, x: X) -> Y`   | `self @ x`         |
-| `CanTruediv[X, Y]`  | `__truediv__(self, x: X) -> Y`  | `self / x`         |
-| `CanFloordiv[X, Y]` | `__floordiv__(self, x: X) -> Y` | `self // x`        |
-| `CanMod[X, Y]`      | `__mod__(self, x: X) -> Y`      | `self % x`         |
-| `CanDivmod[X, Y]`   | `__divmod__(self, x: X) -> Y`   | `divmod(self, x)`  |
-| `CanPow2[X, Y]`     | `__pow__(self, x: X) -> Y`      | `self ** x`        |
-| `CanPow3[X, M, Y]`  | `__pow__(self, x: X, m: M) -> Y`| `pow(self, x, m)`  |
-| `CanLshift[X, Y]`   | `__lshift__(self, x: X) -> Y`   | `self << x`        |
-| `CanRshift[X, Y]`   | `__rshift__(self, x: X) -> Y`   | `self >> x`        |
-| `CanAnd[X, Y]`      | `__and__(self, x: X) -> Y`      | `self & x`         |
-| `CanXor[X, Y]`      | `__xor__(self, x: X) -> Y`      | `self ^ x`         |
-| `CanOr[X, Y]`       | `__or__(self, x: X) -> Y`       | `self \| x`        |
+| Type                | Signature                        | Expression         |
+| ------------------- | -------------------------------- | ------------------ |
+| `CanAdd[X, Y]`      | `__add__(self, x: X) -> Y`       | `self + x`         |
+| `CanSub[X, Y]`      | `__sub__(self, x: X) -> Y`       | `self - x`         |
+| `CanMul[X, Y]`      | `__mul__(self, x: X) -> Y`       | `self * x`         |
+| `CanMatmul[X, Y]`   | `__matmul__(self, x: X) -> Y`    | `self @ x`         |
+| `CanTruediv[X, Y]`  | `__truediv__(self, x: X) -> Y`   | `self / x`         |
+| `CanFloordiv[X, Y]` | `__floordiv__(self, x: X) -> Y`  | `self // x`        |
+| `CanMod[X, Y]`      | `__mod__(self, x: X) -> Y`       | `self % x`         |
+| `CanDivmod[X, Y]`   | `__divmod__(self, x: X) -> Y`    | `divmod(self, x)`  |
+| `CanPow2[X, Y]`     | `__pow__(self, x: X) -> Y`       | `self ** x`        |
+| `CanPow3[X, M, Y]`  | `__pow__(self, x: X, m: M) -> Y` | `pow(self, x, m)`  |
+| `CanLshift[X, Y]`   | `__lshift__(self, x: X) -> Y`    | `self << x`        |
+| `CanRshift[X, Y]`   | `__rshift__(self, x: X) -> Y`    | `self >> x`        |
+| `CanAnd[X, Y]`      | `__and__(self, x: X) -> Y`       | `self & x`         |
+| `CanXor[X, Y]`      | `__xor__(self, x: X) -> Y`       | `self ^ x`         |
+| `CanOr[X, Y]`       | `__or__(self, x: X) -> Y`        | `self \| x`        |
 
 Additionally, there is the intersection type
 `CanPow[X, M, Y2, Y3] =: CanPow2[X, Y2] & CanPow3[X, M, Y3]`, overloading
@@ -343,7 +325,6 @@ Additionally, there are the unary arithmetic operators:
 | `CanInvert[Y]`      | `__invert__(self) -> Y`         | `~self`            |
 | `CanAbs[Y]`         | `__abs__(self) -> Y`            | `abs(self)`        |
 
-
 The `round` function comes in two flavors:
 
 | Type               | Signature                     | Expression            |
@@ -368,28 +349,62 @@ And finally, the remaining rounding functions:
 Note that the type parameter `Y` is unbounded, because technically these
 methods can return any type.
 
-
 [NT]: https://docs.python.org/3/reference/datamodel.html#emulating-numeric-types
 
 
-#### Async objects
+### Context managers
+
+Support for the `with` statement.
+
+| Type           | Signature                                  |
+| -------------- | ------------------------------------------ |
+| `CanEnter[V]`  | `__enter__(self) -> V`                     |
+| `CanExit[R]`   | `__exit__(self, *exc_info: *ExcInfo) -> R` |
+
+In case of errors, the type alias `ExcInfo` will be
+`tuple[type[E], E, types.TracebackType]`, where `E` is some `BaseException`.
+On the other hand, if no errors are raised (without being silenced),
+then `Excinfo` will be `None` in triplicate.
+
+Because everyone that enters must also leave (that means you too, Barry),
+`optype` provides the *intersection type*
+`CanWith[V, R] = CanEnter[V] & CanExit[R]`.
+If you're thinking of an insect-themed sect right now, that's ok --
+intersection types aren't real (yet..?).
+To put your mind at ease, here's how it's implemented:
+
+```python
+class CanWith[V, R](CanEnter[V], CanExit[R]):
+    # You won't find any bugs here :)
+    ...
+```
+
+
+### Async objects
+
+The `optype` variant of `collections.abc.Awaitable[V]`. The only difference
+is that `optype.CanAwait[V]` is a pure interface, whereas `Awaitable` is
+also an abstract base class.
 
 | Type          | Signature                                    | Expression   |
 | ------------- | -------------------------------------------- | ------------ |
 | `CanAwait[V]` | `__await__(self) -> Generator[Any, None, V]` | `await self` |
 
 
-#### Async Iteration
+### Async Iteration
 
 Yes, you guessed it right; the abracadabra collections repeated their mistakes
 with their async iterablors (or something like that).
+
 But fret not, the `optype` alternatives are right here:
 
+| Type                     | Signature              | Expression    |
+| ------------------------ | ---------------------- | ------------- |
 | `CanAnext[V]`            | `__anext__(self) -> V` | `anext(self)` |
 | `CanAiter[Vs: CanAnext]` | `__aiter__(self) -> Y` | `aiter(self)` |
 
 
-But wait, shouldn't `V` be `Awaitable`? Well, only if you don't want to get
+But wait, shouldn't `V` be a `CanAwait`? Well, only if you don't want to get
 fired...
 Technically speaking, `__anext__` can return any type, and `anext` will pass
 it along without nagging (instance checks are slow, now stop bothering that
@@ -397,37 +412,32 @@ liberal).
 Just because something is legal, doesn't mean it's a good idea (don't eat the
 yellow snow).
 
-#### Async context managers
+
+### Async context managers
+
+Support for the `async with` statement.
+
+| Type           | Signature                                                  |
+| -------------- | ---------------------------------------------------------- |
+| `CanAenter[V]` | `__aenter__(self) -> CanAwait[V]`                          |
+| `CanAexit[R]`  | `__aexit__(self, *exc_info: *ExcInfo) -> CanAwait[R]`      |
+
+And just like `CanWith[V, R]` for sync [context managers](#context-managers),
+there is the `CanAsyncWith[V, R] = CanAenter[V] & CanAexit[R]` intersection
+type.
+
+### `weakref`
 
 <!-- TODO -->
 ...
 
 
-### Generic interfaces for builtins
-
-#### `optype.Slice[A, B, S]`
-
-A generic interface of the builin
-[`slice`](https://docs.python.org/3/library/functions.html#slice) object.
-
-**Signatures**:
-
-- `(B) -> Slice[None, B, None]`
-- `(A, B) -> Slice[A, B, None]`
-- `(A, B, S) -> Slice[A, B, S]`
-
-these are valid for the `slice(start?, stop, step?)` constructor,
-and for the extended indexing syntax `_[start? : stop? : step?]` (the `?`
-denotes an optional parameter).
-
-**Decorators**:
-- `@typing.runtime_checkable`
-- `@typing.final`
-
 
 ## Future plans
 
-- Build a replacement for the `operator` standard library, with
-  runtime-accessible type annotations
-- Protocols for numpy's dunder methods
-- Backport to Python 3.11 and 3.10
+- Build a drop-in replacement for the `operator` standard library, with
+  runtime-accessible type annotations, and more operators.
+- More standard library protocols, e.g. `copy`, `dataclasses`, `pickle`.
+- Dependency-free third-party type support, e.g. protocols for `numpy`'s array
+  interface.
+- Support for Python versions before 3.12.
