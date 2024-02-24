@@ -121,22 +121,18 @@ class CanDir[Vs: CanIter[Any]](Protocol):
 # https://docs.python.org/3/reference/datamodel.html#implementing-descriptors
 
 @runtime_checkable
-class CanGetBound[T, V](Protocol):
-    def __get__(self, __obj: T, __cls: type[T] | None = ...) -> V: ...
-
-@runtime_checkable
-class CanGet[T, U, V](CanGetBound[T, V], Protocol):
+class CanGet[T, U, V](Protocol):
     @overload
     def __get__(self, __obj: None, __cls: type[T]) -> U: ...
     @overload
     def __get__(self, __obj: T, __cls: type[T] | None = ...) -> V: ...
 
 @runtime_checkable
-class CanSet[T, V](Protocol):
+class CanSet[T: object, V](Protocol):
     def __set__(self, __obj: T, __v: V) -> Any: ...
 
 @runtime_checkable
-class CanDelete[T](Protocol):
+class CanDelete[T: object](Protocol):
     def __delete__(self, __obj: T) -> Any: ...
 
 # TODO: HasObjclass
@@ -200,7 +196,7 @@ class CanSetName[T](Protocol):
 
 @runtime_checkable
 class CanCall[**Xs, Y](Protocol):
-    def __call__(self, *__xa: Xs.args, **__xk: Xs.kwargs) -> Y: ...
+    def __call__(self, *__xs: Xs.args, **__kxs: Xs.kwargs) -> Y: ...
 
 
 # 3.3.7. Emulating container types
