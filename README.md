@@ -191,10 +191,10 @@ That's one of the (many) reasons that `optype.CanNext[V]` and
 `optype.CanNext[V]` are the better alternatives to `Iterable` and `Iterator`
 from the abracadabra collections. This is how they are defined:
 
-| Type                        | Signature              | Expression     |
-| --------------------------- | ---------------------- | -------------- |
-| `CanNext[V]`                | `__next__(self) -> V`  | `next(self)`   |
-| `CanIter[Vs: CanNext[Any]]` | `__iter__(self) -> Vs` | `iter(self)`   |
+| Type                        | Signature              | Expression   |
+| --------------------------- | ---------------------- | ------------ |
+| `CanNext[V]`                | `__next__(self) -> V`  | `next(self)` |
+| `CanIter[Vs: CanNext[Any]]` | `__iter__(self) -> Vs` | `iter(self)` |
 
 
 ### Containers
@@ -215,10 +215,10 @@ from the abracadabra collections. This is how they are defined:
 For indexing or locating container values, the following special methods are
 relevant:
 
-| Type            | Signature                | Expression   |
-| --------------- | ------------------------ | ------------ |
-| `CanHash`       | `__hash__(self) -> int`  | `hash(self)` |
-| `CanIndex`      | `__index__(self) -> int` | [docs](IX)   |
+| Type       | Signature                | Expression   |
+| ---------- | ------------------------ | ------------ |
+| `CanHash`  | `__hash__(self) -> int`  | `hash(self)` |
+| `CanIndex` | `__index__(self) -> int` | [docs](IX)   |
 
 
 [^4]:  Although not strictly required, `Y@CanReversed` should be a `CanNext`.
@@ -229,27 +229,65 @@ relevant:
 
 ### Descriptors
 
-<!-- TODO: CanGet[Bound], CanSet, CanDelete -->
-...
+Interfaces for [descriptors](https://docs.python.org/3/howto/descriptor.html).
 
+<table>
+    <tr>
+        <th>Type</th>
+        <th>Signature</th>
+    </tr>
+    <tr>
+        <td><code>CanGet[T: object, U, V]</code></td>
+        <td>
+            <code>__get__(self, obj: None, cls: type[T]) -> U</code><br/>
+            <code>__get__(self, obj: T, cls: type[T] | None = ...) -> V</code>
+        </td>
+    </tr>
+    <tr>
+        <td><code>CanSet[T: object, V]</code></td>
+        <td><code>__set__(self, obj: T, v: V) -> Any</code></td>
+    </tr>
+    <tr>
+        <td><code>CanDelete[T: object]</code></td>
+        <td><code>__delete__(self, obj: T) -> Any</code></td>
+    </tr>
+    <tr>
+        <td><code>CanSetName[T: object]</code></td>
+        <td>
+            <code>__set_name__(self, cls: type[T], name: str) -> Any</code>
+        </td>
+    </tr>
+</table>
 
-### Customizing class creation
-
-<!-- TODO: CanInitSubclass, CanSetName -->
+<!-- ### Type and object Lifecycle -->
+<!-- TODO: CanInitSubclass, CanNew, CanInit, CanDel -->
 ...
 
 
 ### Callable objects
 
-<!-- TODO: CanCall, ...? -->
-...
+Like `collections.abc.Callable`, but without esoteric hacks.
+
+<table>
+    <tr>
+        <th>Type</th>
+        <th>Signature</th>
+        <th>Expression</th>
+    </tr>
+    <tr>
+        <td><code>CanCall[**Xs, Y]</code></td>
+        <td>
+            <code>__call__(self, *xs: Xs.args, **kxs: Xs.kwargs) -> Y</code>
+        </td>
+        <td><code>self(*xs, **kxs)</code></td>
+    </tr>
+</table>
 
 
 ### Numeric operations
 
-> [!TIP]
-> If you're unfamiliar with customizing operators, check out the official
-> [Python docs](NT).
+For describing things that act like numbers. See the [Python docs](NT) for more
+info.
 
 | Type                | Signature                        | Expression         |
 | ------------------- | -------------------------------- | ------------------ |
@@ -270,7 +308,7 @@ relevant:
 | `CanOr[X, Y]`       | `__or__(self, x: X) -> Y`        | `self \| x`        |
 
 Additionally, there is the intersection type
-`CanPow[X, M, Y2, Y3] =: CanPow2[X, Y2] & CanPow3[X, M, Y3]`, overloading
+`CanPow[X, M, Y2, Y3] =: CanPow2[X, Y2] & CanPow3[X, M, Y3]`, that overloads
 both `__pow__` method signatures. Note that the `2` and `3` suffixes refer
 to the *arity* (#parameters) of the operators.
 
@@ -425,12 +463,6 @@ Support for the `async with` statement.
 And just like `CanWith[V, R]` for sync [context managers](#context-managers),
 there is the `CanAsyncWith[V, R] = CanAenter[V] & CanAexit[R]` intersection
 type.
-
-### `weakref`
-
-<!-- TODO -->
-...
-
 
 
 ## Future plans
