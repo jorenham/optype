@@ -2,11 +2,7 @@
 """
 Elementary interfaces for special "dunder" attributes.
 """
-from typing import TYPE_CHECKING, Any, Protocol, Self, runtime_checkable
-
-
-if TYPE_CHECKING:
-    import weakref as _weakref
+from typing import Protocol, runtime_checkable
 
 
 # special attributes
@@ -78,28 +74,3 @@ class HasMatchArgs[Ks: tuple[str, ...] | list[str]](Protocol):
 # https://docs.python.org/3/library/dataclasses.html
 
 # TODO: HasDataclassFields
-
-
-# Module `weakref`
-# https://docs.python.org/3/library/weakref.html
-
-@runtime_checkable
-class HasWeakReference(Protocol):
-    """An object referenced by a `weakref.ReferenceType[Self]`."""
-    __weakref__: '_weakref.ReferenceType[Self]'
-
-
-@runtime_checkable
-class HasWeakCallableProxy[**Xs, Y](Protocol):
-    """A callable referenced by a `weakref.CallableProxyType[Self]`."""
-    __weakref__: '_weakref.CallableProxyType[Self]'
-
-    def __call__(self, *__args: Xs.args, **__kwargs: Xs.kwargs) -> Y: ...
-
-@runtime_checkable
-class _HasWeakProxy(Protocol):
-    __weakref__: '_weakref.ProxyType[Self]'
-
-
-type HasWeakProxy = HasWeakCallableProxy[..., Any] | _HasWeakProxy
-"""An object referenced by a `weakref.proxy` (not the proxy itself)."""
