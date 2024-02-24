@@ -2,10 +2,23 @@
 """
 Elementary interfaces for special "dunder" attributes.
 """
-from typing import Protocol, runtime_checkable
+from types import CodeType, ModuleType
+from typing import Any, Protocol, Self, override, runtime_checkable
+
+from ._can import CanCall, CanIter
 
 
-# special attributes
+# Instances
+
+@runtime_checkable
+class HasMatchArgs[Ks: tuple[str, ...] | list[str]](Protocol):
+    __match_args__: Ks
+
+
+@runtime_checkable
+class HasSlots[S: str | CanIter[Any]](Protocol):
+    __slots__: S
+
 
 @runtime_checkable
 class HasDict[V](Protocol):
@@ -13,31 +26,25 @@ class HasDict[V](Protocol):
 
 
 @runtime_checkable
-class _HasDocAttr(Protocol):
-    __doc__: str | None
-
-
-@runtime_checkable
-class _HasDocProp(Protocol):
+class HasClass(Protocol):
     @property
-    def __doc__(self) -> str | None: ...  # type: ignore[override]
-
-
-HasDoc = _HasDocAttr | _HasDocProp
+    @override
+    def __class__(self) -> type[Self]: ...
+    @__class__.setter
+    def __class__(self, __cls: type[Self]) -> None:
+        """Don't."""
 
 
 @runtime_checkable
-class _HasNameAttr(Protocol):
+class HasModule(Protocol):
+    __module__: str
+
+
+# __name__ and __qualname__ generally are a package deal
+
+@runtime_checkable
+class HasName(Protocol):
     __name__: str
-
-
-@runtime_checkable
-class _HasNameProp(Protocol):
-    @property
-    def __name__(self) -> str: ...
-
-
-HasName = _HasNameAttr | _HasNameProp
 
 
 @runtime_checkable
@@ -46,28 +53,47 @@ class HasQualname(Protocol):
 
 
 @runtime_checkable
-class _HasModuleAttr(Protocol):
-    __module__: str
+class HasNames(HasName, HasQualname, Protocol): ...
 
+
+# docs and type hints
 
 @runtime_checkable
-class _HasModuleProp(Protocol):
-    @property
-    def __module__(self) -> str: ...  # type: ignore[override]
-
-
-HasModule = _HasModuleAttr | _HasModuleProp
+class HasDoc(Protocol):
+    __doc__: str | None
 
 
 @runtime_checkable
 class HasAnnotations[V](Protocol):
-    """Note that the `V` type is hard to accurately define; blame PEP 563."""
     __annotations__: dict[str, V]
 
 
 @runtime_checkable
-class HasMatchArgs[Ks: tuple[str, ...] | list[str]](Protocol):
-    __match_args__: Ks
+class HasTypeParams[*Ps](Protocol):
+    # Note that `*Ps: (TypeVar, ParamSpec, TypeVarTuple)` should hold
+    __type_params__: tuple[*Ps]
+
+
+# functions and methods
+
+@runtime_checkable
+class HasFunc[**Xs, Y](Protocol):
+    __func__: CanCall[Xs, Y]
+
+
+@runtime_checkable
+class HasWrapped[**Xs, Y](Protocol):
+    __wrapped__: CanCall[Xs, Y]
+
+
+@runtime_checkable
+class HasSelf[T: object | ModuleType]:
+    @property
+    def __self__(self) -> T: ...
+
+@runtime_checkable
+class HasCode(Protocol):
+    __code__: CodeType
 
 
 # Module `dataclasses`
