@@ -491,19 +491,19 @@ class CanEnter[V](Protocol):
     def __enter__(self) -> V: ...
 
 @runtime_checkable
-class CanExit(Protocol):
+class CanExit[R](Protocol):
     @overload
     def __exit__(self, __tp: None, __ex: None, __tb: None) -> None: ...
     @overload
-    def __exit__(
+    def __exit__[E: BaseException](
         self,
-        __tp: type[BaseException],
-        __ex: BaseException,
+        __tp: type[E],
+        __ex: E,
         __tb: TracebackType,
-    ) -> None: ...
+    ) -> R: ...
 
 @runtime_checkable
-class CanWith[V](CanEnter[V], CanExit, Protocol):
+class CanWith[V, R](CanEnter[V], CanExit[R], Protocol):
     """Intersection type of `CanEnter[V] & CanExit`, i.e. a contextmanager."""
 
 
@@ -565,23 +565,24 @@ class CanAenter[V](Protocol):
     def __aenter__(self) -> CanAwait[V]: ...
 
 @runtime_checkable
-class CanAexit(Protocol):
+class CanAexit[R](Protocol):
     @overload
     def __aexit__(
-        self, __tp: None,
+        self,
+        __tp: None,
         __ex: None,
         __tb: None,
     ) -> CanAwait[None]: ...
     @overload
-    def __aexit__(
+    def __aexit__[E: BaseException](
         self,
-        __tp: type[BaseException],
-        __ex: BaseException,
+        __tp: type[E],
+        __ex: E,
         __tb: TracebackType,
-    ) -> CanAwait[bool | None]: ...
+    ) -> CanAwait[R]: ...
 
 @runtime_checkable
-class CanAsyncWith[V](CanAenter[V], CanAexit, Protocol):
+class CanAsyncWith[V, R](CanAenter[V], CanAexit[R], Protocol):
     """
     Intersection type of `CanAenter[V] & CanAexit`, i.e. an async
     contextmanager.
