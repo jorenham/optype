@@ -108,7 +108,7 @@ So if you're a 10x developer that wants to hack Python's f-strings, but only
 if your type hints are spot-on; `optype` is you friend.
 
 | Type                       | Signature                     | Expression     |
-| -------------------------- | ------------------------------| -------------- |
+| -------------------------- | ----------------------------- | -------------- |
 | `CanRepr[Y: str]`          | `__repr__(self) -> T`         | `repr(_)`      |
 | `CanFormat[X: str, Y: str]`| `__format__(self, x: X) -> Y` | `format(_, x)` |
 
@@ -139,22 +139,34 @@ be returned.
     <tr>
         <td><code>CanGetattr[K: str, V]</code></td>
         <td><code>__getattr__(self, k: K) -> V</code></td>
-        <td><code>v = self.k</code> or <code>v = getattr(self, k)</code></td>
+        <td>
+            <code>v = self.k</code> or<br/>
+            <code>v = getattr(self, k)</code>
+        </td>
     </tr>
     <tr>
         <td><code>CanGetattribute[K: str, V]</code></td>
         <td><code>__getattribute__(self, k: K) -> V</code></td>
-        <td><code>v = self.k</code> or <code>v = getattr(self, k)</code></td>
+        <td>
+            <code>v = self.k</code> or <br/>
+            <code>v = getattr(self, k)</code>
+        </td>
     </tr>
     <tr>
         <td><code>CanSetattr[K: str, V]</code></td>
         <td><code>__setattr__(self, k: K, v: V)</code></td>
-        <td><code>self.k = v</code> or <code>setattr(self, k, v)</code></td>
+        <td>
+            <code>self.k = v</code> or<br/>
+            <code>setattr(self, k, v)</code>
+        </td>
     </tr>
     <tr>
         <td><code>CanDelattr[K: str]</code></td>
         <td><code>__delattr__(self, k: K)</code></td>
-        <td><code>del self.k</code> or <code>delattr(self, k)</code></td>
+        <td>
+            <code>del self.k</code> or<br/>
+            <code>delattr(self, k)</code>
+        </td>
     </tr>
     <tr>
         <td><code>CanDir[Vs: CanIter[Any]]</code></td>
@@ -199,7 +211,6 @@ from the abracadabra collections. This is how they are defined:
 
 ### Containers
 
-
 | Type                  | Signature                          | Expression     |
 | --------------------- | ---------------------------------- | -------------- |
 | `CanLen`              | `__len__(self) -> int`             | `len(self)`    |
@@ -211,7 +222,6 @@ from the abracadabra collections. This is how they are defined:
 | `CanReversed[Y]` [^4] | `__reversed__(self) -> Y`          |`reversed(self)`|
 | `CanContains[K]`      | `__contains__(self, k: K) -> bool` | `x in self`    |
 
-
 For indexing or locating container values, the following special methods are
 relevant:
 
@@ -219,7 +229,6 @@ relevant:
 | ---------- | ------------------------ | ------------ |
 | `CanHash`  | `__hash__(self) -> int`  | `hash(self)` |
 | `CanIndex` | `__index__(self) -> int` | [docs](IX)   |
-
 
 [^4]:  Although not strictly required, `Y@CanReversed` should be a `CanNext`.
 [LH]: https://docs.python.org/3/reference/datamodel.html#object.__length_hint__
@@ -258,10 +267,6 @@ Interfaces for [descriptors](https://docs.python.org/3/howto/descriptor.html).
         </td>
     </tr>
 </table>
-
-<!-- ### Type and object Lifecycle -->
-<!-- TODO: CanInitSubclass, CanNew, CanInit, CanDel -->
-...
 
 
 ### Callable objects
@@ -356,23 +361,43 @@ Similarly, the augmented assignment operators are described by the following
 
 Additionally, there are the unary arithmetic operators:
 
-| Type                | Signature                       | Expression         |
-| ------------------- | ------------------------------- | ------------------ |
-| `CanPos[Y]`         | `__pos__(self) -> Y`            | `+self`            |
-| `CanNeg[Y]`         | `__neg__(self) -> Y`            | `-self`            |
-| `CanInvert[Y]`      | `__invert__(self) -> Y`         | `~self`            |
-| `CanAbs[Y]`         | `__abs__(self) -> Y`            | `abs(self)`        |
+| Type               | Signature                     | Expression        |
+| ------------------ | ----------------------------- | ----------------- |
+| `CanPos[Y]`        | `__pos__(self) -> Y`          | `+self`           |
+| `CanNeg[Y]`        | `__neg__(self) -> Y`          | `-self`           |
+| `CanInvert[Y]`     | `__invert__(self) -> Y`       | `~self`           |
+| `CanAbs[Y]`        | `__abs__(self) -> Y`          | `abs(self)`       |
 
-The `round` function comes in two flavors:
+The `round` function comes in two flavors, and their overloaded intersection:
 
-| Type               | Signature                     | Expression            |
-| ------------------ | ----------------------------- | --------------------- |
-| `CanRound1[Y1]`    | `__round__(self) -> Y1`       | `round(self)`         |
-| `CanRound2[N, Y2]` | `__round__(self, n: N) -> Y2` | `round(self, n: N)`   |
+<table>
+    <tr>
+        <th>Type</th>
+        <th>Signature</th>
+        <th>Expression</th>
+    </tr>
+    <tr>
+        <td><code>CanRound1[Y1]</code></td>
+        <td><code>__round__(self) -> Y1</code></td>
+        <td><code>round(self)</code></td>
+    </tr>
+    <tr>
+        <td><code>CanRound2[N, Y2]</code></td>
+        <td><code>__round__(self, n: N) -> Y2</code></td>
+        <td><code>round(self, n)</code></td>
+    </tr>
+    <tr>
+        <td><code>CanRound[N, Y1, Y2]</code></td>
+        <td>
+            <code>__round__(self) -> Y1</code></br>
+            <code>__round__(self, n: N) -> Y2</code>
+        </td>
+        <td><code>round(self[, n: N])</code></td>
+    </tr>
+</table>
 
-For convenience, `optype` also provides their intersection type
-`CanRound[N, Y1, Y2] =: CanRound1[Y1] & CanRound2[N, Y2]`, whose signature
-overloads those of the `CanRound1` and `CanRound2`.
+The last "double" signature denotes overloading.
+
 To illustrate; `float` is a `CanRound[int, int, float]` and `int` a
 `CanRound[int, int, int]`.
 
@@ -418,6 +443,12 @@ class CanWith[V, R](CanEnter[V], CanExit[R]):
 ```
 
 
+### Buffer types
+
+<!-- TODO -->
+...
+
+
 ### Async objects
 
 The `optype` variant of `collections.abc.Awaitable[V]`. The only difference
@@ -440,7 +471,6 @@ But fret not, the `optype` alternatives are right here:
 | ------------------------ | ---------------------- | ------------- |
 | `CanAnext[V]`            | `__anext__(self) -> V` | `anext(self)` |
 | `CanAiter[Vs: CanAnext]` | `__aiter__(self) -> Y` | `aiter(self)` |
-
 
 But wait, shouldn't `V` be a `CanAwait`? Well, only if you don't want to get
 fired...
@@ -467,9 +497,14 @@ type.
 
 ## Future plans
 
-- Build a drop-in replacement for the `operator` standard library, with
+- Support for Python versions before 3.12.
+- A drop-in replacement for the `operator` standard library, with
   runtime-accessible type annotations, and more operators.
 - More standard library protocols, e.g. `copy`, `dataclasses`, `pickle`.
+- Typed mixins for DRY implementation of operator, e.g. for comparison ops
+  `GeFromLt`, `GtFromLe`, etc as a typed alternative for
+  `functools.total_ordering`. Similarly for numeric types, with e.g. `__add__`
+  and `__neg__`  a mixin could generate `__pos__` and `__sub__`, or with
+  `__mod__` and `__truediv__` a mixin could generate `__`
 - Dependency-free third-party type support, e.g. protocols for `numpy`'s array
   interface.
-- Support for Python versions before 3.12.
