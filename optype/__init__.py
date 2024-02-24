@@ -112,7 +112,6 @@ __all__ = (
     'HasWeakCallableProxy',
     'HasWeakProxy',
     'HasWeakReference',
-    'Slice',
     '__version__',
 )
 
@@ -235,7 +234,6 @@ from ._has import (
     HasWeakProxy,
     HasWeakReference,
 )
-from ._slice import Slice
 
 
 __version__: str = _metadata.version(__package__ or __file__.split('/')[-1])
