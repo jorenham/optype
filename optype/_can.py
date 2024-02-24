@@ -1,13 +1,7 @@
 # ruff: noqa: PYI034
-from collections.abc import Generator
+from collections.abc import Generator  # sadge :(
 from types import TracebackType
-from typing import (
-    Any,
-    Protocol,
-    overload,
-    override,
-    runtime_checkable,
-)
+from typing import Any, Protocol, overload, override, runtime_checkable
 
 
 # Iterator types
@@ -25,12 +19,9 @@ class CanIter[Vs: CanNext[Any]](Protocol):
 # 3.3.1. Basic customization
 # https://docs.python.org/3/reference/datamodel.html#basic-customization
 
-# TODO: __new__
-# TODO: __init__
-
-@runtime_checkable
-class CanDel(Protocol):
-    def __del__(self) -> Any: ...
+# @runtime_checkable
+# class CanDel(Protocol):
+#     def __del__(self) -> Any: ...
 
 @runtime_checkable
 class CanRepr[Y: str](Protocol):
@@ -146,16 +137,16 @@ class CanDelete[T: object](Protocol):
 # 3.3.3. Customizing class creation
 # https://docs.python.org/3/reference/datamodel.html#customizing-class-creation
 
-@runtime_checkable
-class CanInitSubclass[**Ps](Protocol):
-    # no positional-only are allowed
-    # cannot `Unpack` type args: https://github.com/python/typing/issues/1399
-    # workaround: use `**Ps` instead of `Ps: TypedDict`
-    def __init_subclass__(
-        cls,
-        *__dont_use_these_args: Ps.args,
-        **__kwargs: Ps.kwargs,
-    ) -> Any: ...
+# @runtime_checkable
+# class CanInitSubclass[**Ps](Protocol):
+#     # no positional-only are allowed
+#     # cannot `Unpack` type args: https://github.com/python/typing/issues/1399
+#     # workaround: use `**Ps` instead of `Ps: TypedDict`
+#     def __init_subclass__(
+#         cls,
+#         *__dont_use_these_args: Ps.args,
+#         **__kwargs: Ps.kwargs,
+#     ) -> Any: ...
 
 @runtime_checkable
 class CanSetName[T](Protocol):
@@ -587,7 +578,7 @@ class CanAsyncWith[V, R](CanAenter[V], CanAexit[R], Protocol):
 
 # Module `abc`
 # https://docs.python.org/3/library/abc.html
-# TODO: CanSubclasshook
+# TODO: CanSubclasshook?
 
 
 # Module `copy`
