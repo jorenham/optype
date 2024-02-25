@@ -5,7 +5,10 @@ Elementary interfaces for special "dunder" attributes.
 from types import CodeType, ModuleType
 from typing import Any, Protocol, Self, override, runtime_checkable
 
-from ._can import CanCall, CanIter
+from ._can import (
+    CanCall as _CanCall,
+    CanIter as _CanIter,
+)
 
 
 # Instances
@@ -16,7 +19,7 @@ class HasMatchArgs[Ks: tuple[str, ...] | list[str]](Protocol):
 
 
 @runtime_checkable
-class HasSlots[S: str | CanIter[Any]](Protocol):
+class HasSlots[S: str | _CanIter[Any]](Protocol):
     __slots__: S
 
 
@@ -78,16 +81,16 @@ class HasTypeParams[*Ps](Protocol):
 
 @runtime_checkable
 class HasFunc[**Xs, Y](Protocol):
-    __func__: CanCall[Xs, Y]
+    __func__: _CanCall[Xs, Y]
 
 
 @runtime_checkable
 class HasWrapped[**Xs, Y](Protocol):
-    __wrapped__: CanCall[Xs, Y]
+    __wrapped__: _CanCall[Xs, Y]
 
 
 @runtime_checkable
-class HasSelf[T: object | ModuleType]:
+class HasSelf[T: object | ModuleType](Protocol):
     @property
     def __self__(self) -> T: ...
 

@@ -188,7 +188,11 @@ extend-ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = [
-    "ANN",      # flake8-annotations
+    # flake8-annotations
+    "ANN201",   # missing-return-type-undocumented-public-function
+
+    # flake8-self
+    "SLF001",   # private-member-access
 ]
 
 [tool.ruff.lint.pycodestyle]
