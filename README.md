@@ -56,11 +56,10 @@ Optype is available as [`optype`](OPTYPE) on PyPI:
 ```shell
 pip install optype
 ```
-
 [OPTYPE]: https://pypi.org/project/optype/
 
-## Getting started
 
+<!-- ## Getting started -->
 <!-- TODO -->
 ...
 
@@ -442,12 +441,22 @@ class CanWith[V, R](CanEnter[V], CanExit[R]):
     ...
 ```
 
-
 ### Buffer types
 
-<!-- TODO -->
-...
+Interfaces for emulating buffer types.
 
+| Type                | Signature                                  |
+| ------------------- | ------------------------------------------ |
+| `CanBuffer[B: int]` | `__buffer__(self, flags: B) -> memoryview` |
+| `CanReleaseBuffer`  | `__release_buffer__(self) -> None`         |
+
+The `flags: B` parameter accepts integers within the `[1, 1023]` interval.
+Note that the `CanReleaseBuffer` isn't always needed.
+See the [Python docs](BP) or [`inspect.BufferFlags`](BF) for more info.
+
+
+[BP]: https://docs.python.org/3/reference/datamodel.html#python-buffer-protocol
+[BD]: https://docs.python.org/3/library/inspect.html#inspect.BufferFlags
 
 ### Async objects
 
