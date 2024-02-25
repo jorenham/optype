@@ -1,7 +1,13 @@
 # ruff: noqa: PYI034
 from collections.abc import Generator  # sadge :(
 from types import TracebackType
-from typing import Any, Protocol, overload, override, runtime_checkable
+from typing import (
+    Any,
+    Protocol,
+    overload,
+    override,
+    runtime_checkable,
+)
 
 
 # Iterator types
@@ -40,7 +46,8 @@ class CanBytes[Y: bytes](Protocol):
 
 @runtime_checkable
 class CanFormat[X: str, Y: str](Protocol):
-    def __format__(self, __x: X) -> Y: ...   # type: ignore[override]
+    @override
+    def __format__(self, __x: X) -> Y: ...   # pyright:ignore[reportIncompatibleMethodOverride]
 
 
 @runtime_checkable
@@ -53,11 +60,13 @@ class CanLe[X, Y](Protocol):
 
 @runtime_checkable
 class CanEq[X, Y](Protocol):
-    def __eq__(self, __x: X) -> Y: ...  # type: ignore[override]
+    @override
+    def __eq__(self, __x: X, /) -> Y: ...  # pyright:ignore[reportIncompatibleMethodOverride]
 
 @runtime_checkable
 class CanNe[X, Y](Protocol):
-    def __ne__(self, __x: X) -> Y: ...  # type: ignore[override]
+    @override
+    def __ne__(self, __x: X) -> Y: ...  # pyright:ignore[reportIncompatibleMethodOverride]
 
 @runtime_checkable
 class CanGt[X, Y](Protocol):
@@ -89,18 +98,18 @@ class CanGetattr[K: str, V](Protocol):
 class CanGetattribute[K: str, V](Protocol):
     """Note that `isinstance(x, CanGetattribute)` is always true."""
     @override
-    def __getattribute__(self, __k: K) -> V: ...  # type: ignore[override]
+    def __getattribute__(self, __k: K) -> V: ...  # pyright:ignore[reportIncompatibleMethodOverride]
 
 @runtime_checkable
 class CanSetattr[K: str, V](Protocol):
     """Note that `isinstance(x, CanSetattr)` is always true."""
     @override
-    def __setattr__(self, __k: K, __v: V) -> Any: ...  # type: ignore[override]
+    def __setattr__(self, __k: K, __v: V) -> Any: ...  # pyright:ignore[reportIncompatibleMethodOverride]
 
 @runtime_checkable
 class CanDelattr[K: str](Protocol):
     @override
-    def __delattr__(self, __k: K) -> Any: ...  # type: ignore[override]
+    def __delattr__(self, __k: K) -> Any: ...  # pyright:ignore[reportIncompatibleMethodOverride]
 
 @runtime_checkable
 class CanDir[Vs: CanIter[Any]](Protocol):
@@ -125,13 +134,6 @@ class CanSet[T: object, V](Protocol):
 @runtime_checkable
 class CanDelete[T: object](Protocol):
     def __delete__(self, __obj: T) -> Any: ...
-
-# TODO: HasObjclass
-
-# 3.3.2.4. `__slots__`
-# https://docs.python.org/3/reference/datamodel.html#slots
-
-# TODO HasSlots
 
 
 # 3.3.3. Customizing class creation
@@ -162,11 +164,6 @@ class CanSetName[T](Protocol):
 # https://docs.python.org/3/reference/datamodel.html#preparing-the-class-namespace
 
 # TODO: CanPrepare
-
-# 3.3.3.6. Creating the class object
-# https://docs.python.org/3/reference/datamodel.html#creating-the-class-object
-
-# TODO: HasClass
 
 
 # 3.3.4. Customizing instance and subclass checks
