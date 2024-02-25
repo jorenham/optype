@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "optype"
-version = "0.0.0"
+version = "0.1.0"
 description = "Typing Protocols for Precise Type Hints in Python 3.12+"
 authors = ["Joren Hammudoglu <jhammudoglu@gmail.com>"]
 license = "BSD-3-Clause"
@@ -39,9 +39,18 @@ skip = """\
 """
 
 
-
 [tool.pyright]
 include = ["optype", "tests"]
+exclude = [
+    "**/__pycache__",
+    "**/.vscode",
+    ".venv",
+    ".git",
+    ".github",
+    ".pytest_cache",
+    ".ruff_cache",
+    "dist",
+]
 stubPath = "."
 venvPath = "."
 venv = ".venv"
@@ -79,6 +88,7 @@ reportUnusedCoroutine = "error"
 reportUnusedExpression = "warning"
 reportUnnecessaryTypeIgnoreComment = "error"
 reportMatchNotExhaustive = "error"
+reportImplicitOverride = "warning"
 reportShadowedImports = "error"
 
 
@@ -161,16 +171,16 @@ select = [
     "FLY",      # flynt
     "PERF",     # perflint,
     "FURB",     # refurb
-    "RUF",       # ruff
-]
-extend-safe-fixes = [
-    # pyupgrade
-    "UP040",     # non-pep695-type-alias
+    "RUF",      # ruff
 ]
 extend-ignore = [
     # flake8-annotations
     "ANN001",   # missing-type-function-argument (deprecated)
     "ANN002",   # missing-type-args (deprecated)
+    "ANN401",   # any-type (unreasonable)
+
+    # flake8-pyi
+    "PYI036",   # bad-exit-annotation (FP with more precise overloads)
 
     # pylint
     "PLW1641",  # eq-without-hash (buggy; doesn't consider super)
@@ -178,7 +188,11 @@ extend-ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = [
-    "ANN",      # flake8-annotations
+    # flake8-annotations
+    "ANN201",   # missing-return-type-undocumented-public-function
+
+    # flake8-self
+    "SLF001",   # private-member-access
 ]
 
 [tool.ruff.lint.pycodestyle]
@@ -195,6 +209,8 @@ case-sensitive = true
 combine-as-imports = true
 force-wrap-aliases = true
 known-first-party = ["optype"]
+lines-between-types = 0
+lines-after-imports = 2
 no-lines-before = ["future", "local-folder"]
 
 [tool.ruff.format]
