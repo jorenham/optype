@@ -511,11 +511,11 @@ class CanAwait[V](Protocol):
 # https://docs.python.org/3/reference/datamodel.html#asynchronous-iterators
 
 @runtime_checkable
-class CanAnext[V](Protocol):
+class CanANext[V](Protocol):
     def __anext__(self) -> V: ...
 
 @runtime_checkable
-class CanAiter[Y: CanAnext[Any]](Protocol):
+class CanAIter[Y: CanANext[Any]](Protocol):
     def __aiter__(self) -> Y: ...
 
 
@@ -523,11 +523,11 @@ class CanAiter[Y: CanAnext[Any]](Protocol):
 # https://docs.python.org/3/reference/datamodel.html#asynchronous-context-managers
 
 @runtime_checkable
-class CanAenter[V](Protocol):
+class CanAEnter[V](Protocol):
     def __aenter__(self) -> CanAwait[V]: ...
 
 @runtime_checkable
-class CanAexit[R](Protocol):
+class CanAExit[R](Protocol):
     @overload
     def __aexit__(
         self,
@@ -544,7 +544,7 @@ class CanAexit[R](Protocol):
     ) -> CanAwait[R]: ...
 
 @runtime_checkable
-class CanAsyncWith[V, R](CanAenter[V], CanAexit[R], Protocol): ...
+class CanAsyncWith[V, R](CanAEnter[V], CanAExit[R], Protocol): ...
 
 
 # standard library `copy`

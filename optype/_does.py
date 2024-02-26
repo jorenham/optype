@@ -382,13 +382,77 @@ class DoesIOr(Protocol):
 
 
 # unary arithmetic
-# TODO: neg, pos, abs, invert
 
-# indexing
-# TODO: hash, index
+@final
+class DoesNeg(Protocol):
+    def __call__[Y](self, __o: _c.CanNeg[Y], /) -> Y: ...
+
+@final
+class DoesPos(Protocol):
+    def __call__[Y](self, __o: _c.CanPos[Y], /) -> Y: ...
+
+@final
+class DoesAbs(Protocol):
+    def __call__[Y](self, __o: _c.CanAbs[Y], /) -> Y: ...
+
+@final
+class DoesInvert(Protocol):
+    def __call__[Y](self, __o: _c.CanInvert[Y], /) -> Y: ...
+
+
+# fingerprinting
+
+@final
+class DoesHash(Protocol):
+    def __call__[Y](self, __o: _c.CanHash, /) -> int: ...
+
+@final
+class DoesIndex(Protocol):
+    def __call__[Y](self, __o: _c.CanIndex, /) -> int: ...
+
 
 # rounding
-# TODO: round, trunc, floor, ceil
+
+@final
+class DoesRound(Protocol):
+    @overload
+    def __call__[Y](self, __o: _c.CanRound1[Y], /) -> Y: ...
+    @overload
+    def __call__[N, Y](self, __o: _c.CanRound2[N, Y], __n: N, /) -> Y: ...
+
+@final
+class DoesTrunc(Protocol):
+    def __call__[Y](self, __o: _c.CanTrunc[Y], /) -> Y: ...
+
+@final
+class DoesFloor(Protocol):
+    def __call__[Y](self, __o: _c.CanFloor[Y], /) -> Y: ...
+
+@final
+class DoesCeil(Protocol):
+    def __call__[Y](self, __o: _c.CanCeil[Y], /) -> Y: ...
+
 
 # async iteration
-# TODO: aiter, anext
+
+@final
+class DoesANext(Protocol):
+    # https://docs.python.org/3/library/functions.html#next
+    @overload
+    def __call__[V](self, __vs: _c.CanNext[V], /) -> V: ...
+    @overload
+    def __call__[V, V0](self, __vs: _c.CanNext[V], __v0: V0, /) -> V | V0: ...
+
+@final
+class DoesAIter(Protocol):
+    # https://docs.python.org/3/library/functions.html#iter
+    @overload
+    def __call__[Vs: _c.CanNext[Any]](self, __vs: _c.CanIter[Vs], /) -> Vs: ...
+    @overload
+    def __call__[V](
+        self, __vs: _c.CanGetitem[_c.CanIndex, V], /,
+    ) -> _c.CanIterNext[V]: ...
+    @overload
+    def __call__[V, S: object | None](
+        self, __f: _c.CanCall[[], V | S], __s: S, /,
+    ) -> _c.CanIterNext[V]: ...

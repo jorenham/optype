@@ -1,11 +1,11 @@
 __all__ = (
+    'CanAEnter',
+    'CanAExit',
+    'CanAIter',
+    'CanANext',
     'CanAbs',
     'CanAdd',
-    'CanAenter',
-    'CanAexit',
-    'CanAiter',
     'CanAnd',
-    'CanAnext',
     'CanAsyncWith',
     'CanAwait',
     'CanBool',
@@ -122,13 +122,13 @@ __all__ = (
 from importlib import metadata as _metadata
 
 from ._can import (
+    CanAEnter,
+    CanAExit,
+    CanAIter,
+    CanANext,
     CanAbs,
     CanAdd,
-    CanAenter,
-    CanAexit,
-    CanAiter,
     CanAnd,
-    CanAnext,
     CanAsyncWith,
     CanAwait,
     CanBool,
