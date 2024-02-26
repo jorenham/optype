@@ -83,7 +83,7 @@ reportUnnecessaryContains = "warning"
 reportImplicitStringConcatenation = "none"
 reportInvalidStubStatement = "error"
 reportIncompleteStub = "error"
-reportUnusedCallResult = "warning"
+# reportUnusedCallResult = "warning"
 reportUnusedCoroutine = "error"
 reportUnusedExpression = "warning"
 reportUnnecessaryTypeIgnoreComment = "error"
@@ -184,6 +184,9 @@ extend-ignore = [
 
     # pylint
     "PLW1641",  # eq-without-hash (buggy; doesn't consider super)
+
+    # refurb
+    "FURB118",  # reimplemented-operator (that's kinda the point, bro)
 ]
 
 [tool.ruff.lint.per-file-ignores]
