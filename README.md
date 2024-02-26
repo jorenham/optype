@@ -349,9 +349,13 @@ yellow snow).
 | `CanGetitem[K, V]`    | `__getitem__(self, k: K) -> V`     | `self[k]`      |
 | `CanSetitem[K, V]`    | `__setitem__(self, k: K, v: V)`    | `self[k] = v`  |
 | `CanDelitem[K]`       | `__delitem__(self, k: K)`          | `del self[k]`  |
-| `CanMissing[K, V]`    | `__missing__(self, k: K) -> V`     | [docs](GM)     |
+| `CanMissing[K, M]`    | `__missing__(self, k: K) -> V`     | [docs](GM)     |
 | `CanReversed[Y]` [^4] | `__reversed__(self) -> Y`          |`reversed(self)`|
 | `CanContains[K]`      | `__contains__(self, k: K) -> bool` | `x in self`    |
+
+Because `CanMissing[K, M]` generally doesn't show itself without
+`CanGetitem[K, V]` there to hold its hand, `optype` conveniently stitched them
+together as `optype.CanGetMissing[K, V, M]`.
 
 Additionally, `optype` provides protocols for types with (custom) *hash* or
 *index* methods:
