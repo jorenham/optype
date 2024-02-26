@@ -439,22 +439,13 @@ class DoesCeil(Protocol):
 
 @final
 class DoesANext(Protocol):
-    # https://docs.python.org/3/library/functions.html#next
     @overload
-    def __call__[V](self, __vs: _c.CanNext[V], /) -> V: ...
+    def __call__[V](self, __o: _c.CanANext[V], /) -> V: ...
     @overload
-    def __call__[V, V0](self, __vs: _c.CanNext[V], __v0: V0, /) -> V | V0: ...
+    async def __call__[V, V0](
+        self, __o: _c.CanANext[_c.CanAwait[V]], __v0: V0, /,
+    ) -> V | V0: ...
 
 @final
 class DoesAIter(Protocol):
-    # https://docs.python.org/3/library/functions.html#iter
-    @overload
-    def __call__[Vs: _c.CanNext[Any]](self, __vs: _c.CanIter[Vs], /) -> Vs: ...
-    @overload
-    def __call__[V](
-        self, __vs: _c.CanGetitem[_c.CanIndex, V], /,
-    ) -> _c.CanIterNext[V]: ...
-    @overload
-    def __call__[V, S: object | None](
-        self, __f: _c.CanCall[[], V | S], __s: S, /,
-    ) -> _c.CanIterNext[V]: ...
+    def __call__[Y: _c.CanANext[Any]](self, __o: _c.CanAIter[Y], /) -> Y: ...

@@ -552,6 +552,10 @@ class CanAExit[R](Protocol):
 class CanAsyncWith[V, R](CanAEnter[V], CanAExit[R], Protocol): ...
 
 
+# path-like
+# TODO: CanFspath[P: str | bytes]
+
+
 # standard library `copy`
 # https://docs.python.org/3/library/copy.html
 # TODO: CanCopy
