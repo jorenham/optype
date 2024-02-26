@@ -507,8 +507,6 @@ type.
 ## Future plans
 
 - Support for Python versions before 3.12.
-- A drop-in replacement for the `operator` standard library, with
-  runtime-accessible type annotations, and more operators.
 - More standard library protocols, e.g. `copy`, `dataclasses`, `pickle`.
 - Typed mixins for DRY implementation of operator, e.g. for comparison ops
   `GeFromLt`, `GtFromLe`, etc as a typed alternative for
