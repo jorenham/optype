@@ -26,6 +26,7 @@ do_format: _d.DoesFormat = format
 do_lt: _d.DoesLt = _o.lt
 do_le: _d.DoesLe = _o.le
 do_eq: _d.DoesEq = _o.eq
+do_ne: _d.DoesEq = _o.ne
 do_gt: _d.DoesGt = _o.gt
 do_ge: _d.DoesGe = _o.ge
 
