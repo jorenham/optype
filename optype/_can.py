@@ -421,7 +421,10 @@ class CanIndex(Protocol):
 
 @runtime_checkable
 class CanRound1[Y](Protocol):
+    @overload
     def __round__(self) -> Y: ...
+    @overload
+    def __round__(self, __n: None = ...) -> Y: ...
 
 @runtime_checkable
 class CanRound2[N, Y](Protocol):
@@ -431,6 +434,8 @@ class CanRound2[N, Y](Protocol):
 class CanRound[N, Y1, Y2](CanRound1[Y1], CanRound2[N, Y2], Protocol):
     @overload
     def __round__(self) -> Y1: ...
+    @overload
+    def __round__(self, __n: None = ...) -> Y1: ...
     @overload
     def __round__(self, __n: N) -> Y2: ...
 
