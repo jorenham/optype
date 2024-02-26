@@ -183,14 +183,6 @@ class CanSetName[T](Protocol):
 # TODO: CanSubclasscheck
 
 
-# 3.3.5. Emulating generic types
-# https://docs.python.org/3/reference/datamodel.html#emulating-generic-types
-
-@runtime_checkable
-class CanClassGetitem[K, V](Protocol):
-    def __class_getitem__(cls, __k: K) -> V: ...
-
-
 # 3.3.6. Emulating callable objects
 # https://docs.python.org/3/reference/datamodel.html#emulating-callable-objects
 

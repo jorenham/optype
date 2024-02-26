@@ -46,19 +46,11 @@ def do_call[**Xs, Y](
 
 # containers
 
-type _CanSubscript[K, V, M] = (
-    type[_c.CanClassGetitem[K, V]]
-    | _c.CanGetitem[K, V]
-    | _c.CanGetMissing[K, V, M]
-)
+type _CanSubscript[K, V, M] = _c.CanGetitem[K, V] | _c.CanGetMissing[K, V, M]
 
 
 def do_getitem[K, V, M](obj: _CanSubscript[K, V, M], key: K, /) -> V | M:
     """Same as `value = obj[key]`."""
-    if isinstance(obj, type):
-        # type checkers generally can't deal with a custom __class_getitem__
-        return obj.__class_getitem__(key)
-
     return obj[key]
 
 

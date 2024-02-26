@@ -138,11 +138,7 @@ class DoesCall(Protocol):
 
 # containers and subscritable types
 
-type _CanSubscript[K, V, M] = (
-    type[_c.CanClassGetitem[K, V]]
-    | _c.CanGetitem[K, V]
-    | _c.CanGetMissing[K, V, M]
-)
+type _CanSubscript[K, V, M] = _c.CanGetitem[K, V] | _c.CanGetMissing[K, V, M]
 
 
 @final
