@@ -514,7 +514,6 @@ See the [Python docs](BP) or [`inspect.BufferFlags`](BF) for more info.
 - Typed mixins for DRY implementation of operator, e.g. for comparison ops
   `GeFromLt`, `GtFromLe`, etc as a typed alternative for
   `functools.total_ordering`. Similarly for numeric types, with e.g. `__add__`
-  and `__neg__`  a mixin could generate `__pos__` and `__sub__`, or with
-  `__mod__` and `__truediv__` a mixin could generate `__`
+  and `__neg__`  a mixin could generate `__pos__` and `__sub__`.
 - Dependency-free third-party type support, e.g. protocols for `numpy`'s array
   interface.
