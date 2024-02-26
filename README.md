@@ -474,20 +474,22 @@ also an abstract base class.
 Yes, you guessed it right; the abracadabra collections repeated their mistakes
 with their async iterablors (or something like that).
 
-But fret not, the `optype` alternatives are right here:
+But fret not; the `optype` alternatives are right here:
 
 | Type                     | Signature              | Expression    |
 | ------------------------ | ---------------------- | ------------- |
-| `CanAnext[V]`            | `__anext__(self) -> V` | `anext(self)` |
-| `CanAiter[Vs: CanAnext]` | `__aiter__(self) -> Y` | `aiter(self)` |
+| `CanANext[V]`            | `__anext__(self) -> V` | `anext(self)` |
+| `CanAIter[Vs: CanAnext]` | `__aiter__(self) -> Y` | `aiter(self)` |
 
 But wait, shouldn't `V` be a `CanAwait`? Well, only if you don't want to get
 fired...
 Technically speaking, `__anext__` can return any type, and `anext` will pass
 it along without nagging (instance checks are slow, now stop bothering that
-liberal).
+liberal). For details, see the discussion at [python/typeshed#7491](AN).
 Just because something is legal, doesn't mean it's a good idea (don't eat the
 yellow snow).
+
+[AN]: https://github.com/python/typeshed/pull/7491
 
 
 ### Async context managers
@@ -496,8 +498,8 @@ Support for the `async with` statement.
 
 | Type           | Signature                                                  |
 | -------------- | ---------------------------------------------------------- |
-| `CanAenter[V]` | `__aenter__(self) -> CanAwait[V]`                          |
-| `CanAexit[R]`  | `__aexit__(self, *exc_info: *ExcInfo) -> CanAwait[R]`      |
+| `CanAEnter[V]` | `__aenter__(self) -> CanAwait[V]`                          |
+| `CanAExit[R]`  | `__aexit__(self, *exc_info: *ExcInfo) -> CanAwait[R]`      |
 
 And just like `CanWith[V, R]` for sync [context managers](#context-managers),
 there is the `CanAsyncWith[V, R] = CanAenter[V] & CanAexit[R]` intersection
