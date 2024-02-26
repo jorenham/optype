@@ -4,7 +4,6 @@ from types import TracebackType
 from typing import (
     Any,
     Protocol,
-    Self,
     overload,
     override,
     runtime_checkable,
@@ -21,12 +20,6 @@ class CanNext[V](Protocol):
 @runtime_checkable
 class CanIter[Vs: CanNext[Any]](Protocol):
     def __iter__(self) -> Vs: ...
-
-@runtime_checkable
-class CanIterNext[V](CanIter['CanIterNext[Any]'], CanNext[V], Protocol):
-    @override
-    def __iter__(self) -> Self: ...
-
 
 # 3.3.1. Basic customization
 # https://docs.python.org/3/reference/datamodel.html#basic-customization

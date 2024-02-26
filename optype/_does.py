@@ -1,9 +1,18 @@
-from typing import Any, Protocol, final, overload
+from typing import Any, Protocol, Self, final, overload, override
 
 import optype._can as _c
 
 
 # iteration
+
+class _CanIterNext[V](
+    _c.CanIter['_CanIterNext[Any]'],
+    _c.CanNext[V],
+    Protocol,
+):
+    @override
+    def __iter__(self) -> Self: ...
+
 
 @final
 class DoesNext(Protocol):
@@ -21,11 +30,11 @@ class DoesIter(Protocol):
     @overload
     def __call__[V](
         self, __vs: _c.CanGetitem[_c.CanIndex, V], /,
-    ) -> _c.CanIterNext[V]: ...
+    ) -> _CanIterNext[V]: ...
     @overload
     def __call__[V, S: object | None](
         self, __f: _c.CanCall[[], V | S], __s: S, /,
-    ) -> _c.CanIterNext[V]: ...
+    ) -> _CanIterNext[V]: ...
 
 
 # formatting
