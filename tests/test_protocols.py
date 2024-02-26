@@ -9,8 +9,10 @@ from .helpers import (
     get_callable_members,
     get_protocol_members,
     get_protocols,
+    is_dunder,
     is_protocol,
     is_runtime_protocol,
+    pascamel_to_snake,
 )
 
 
@@ -84,33 +86,34 @@ def test_name_matches_dunder(cls: type):
     assert members
 
     member_count = len(members)
-    super_count = sum(map(is_protocol, cls.mro()[1:-1]))
+    parents = list(filter(is_protocol, cls.mro()[1:]))
+
+    # this test should probably be split up...
 
     if member_count > 1:
-        assert super_count == member_count
-        return
+        # ensure #parent protocols == #members (including inherited)
+        assert len(parents) == member_count
 
-    # convert CamelCase to to snake_case (ignoring the first char, which
-    # could be an async (A), augmented (I), or reflected (R) binop name prefix)
-    member_expect = ''.join(
-        f'_{c}' if i > 1 and c.isupper() else c
-        for i, c in enumerate(name.removeprefix(prefix))
-    ).lower()
-    # sanity checks (a bit out-of-scope, but humankind will probably survive)
-    assert member_expect.isidentifier()
-    assert '__' not in member_expect
-    assert member_expect[0] != '_'
-    assert member_expect[-1] != '_'
+        members_concrete = set(members)
+        for parent in parents:
+            members_concrete.difference_update(get_protocol_members(parent))
 
-    # remove potential trailing arity digit
-    if member_expect[-1].isdigit():
-        member_expect = member_expect[:-1]
-    # another misplaced check (ah well, let's hope the extinction event is fun)
-    assert not member_expect[-1].isdigit()
+        assert not members_concrete
+    else:
+        # remove the `Can`, `Has`, or `Does` prefix
+        stem = name.removeprefix(prefix)
+        # strip the arity digit if exists
+        if stem[-1].isdigit():
+            stem = stem[:-1]
+            assert stem[-1].isalpha()
 
-    member = next(iter(members))
-    if member[:2] == member[-2:] == '__':
-        # add some thunder... or was is döner...? wait, no; dunder!.
-        member_expect = f'__{member_expect}__'
+        # the `1` arg ensures that any potential leading `A`, `I` or `R` chars
+        # won't have a `_` directly after (i.e. considers `stem[:2].lower()`).
+        member_predict = pascamel_to_snake(stem, 1)
+        member_expect = next(iter(members))
 
-    assert member == member_expect
+        # prevent comparing apples with oranges: paint the apples orange!
+        if is_dunder(member_expect):
+            member_predict = f'__{member_predict}__'
+
+        assert member_predict == member_expect
