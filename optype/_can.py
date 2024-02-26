@@ -31,10 +31,6 @@ class CanIterNext[V](CanIter['CanIterNext[Any]'], CanNext[V], Protocol):
 # 3.3.1. Basic customization
 # https://docs.python.org/3/reference/datamodel.html#basic-customization
 
-# @runtime_checkable
-# class CanDel(Protocol):
-#     def __del__(self) -> Any: ...
-
 @runtime_checkable
 class CanRepr[Y: str](Protocol):
     @override
@@ -149,38 +145,9 @@ class CanDelete[T: object](Protocol):
 # 3.3.3. Customizing class creation
 # https://docs.python.org/3/reference/datamodel.html#customizing-class-creation
 
-# @runtime_checkable
-# class CanInitSubclass[**Ps](Protocol):
-#     # no positional-only are allowed
-#     # cannot `Unpack` type args: https://github.com/python/typing/issues/1399
-#     # workaround: use `**Ps` instead of `Ps: TypedDict`
-#     def __init_subclass__(
-#         cls,
-#         *__dont_use_these_args: Ps.args,
-#         **__kwargs: Ps.kwargs,
-#     ) -> Any: ...
-
 @runtime_checkable
 class CanSetName[T](Protocol):
     def __set_name__(self, __cls: type[T], __name: str) -> Any: ...
-
-
-# 3.3.3.2. Resolving MRO entries
-# https://docs.python.org/3/reference/datamodel.html#resolving-mro-entries
-
-# TODO: CanMroEntries
-
-# 3.3.3.4. Preparing the class namespace
-# https://docs.python.org/3/reference/datamodel.html#preparing-the-class-namespace
-
-# TODO: CanPrepare
-
-
-# 3.3.4. Customizing instance and subclass checks
-# https://docs.python.org/3/reference/datamodel.html#customizing-instance-and-subclass-checks
-
-# TODO: CanInstancecheck
-# TODO: CanSubclasscheck
 
 
 # 3.3.6. Emulating callable objects
@@ -227,8 +194,7 @@ class CanMissing[K, V](Protocol):
     def __missing__(self, __k: K) -> V: ...
 
 @runtime_checkable
-class CanGetMissing[K, V, M](CanGetitem[K, V], CanMissing[K, M], Protocol):
-    ...
+class CanGetMissing[K, V, M](CanGetitem[K, V], CanMissing[K, M], Protocol): ...
 
 
 # 3.3.8. Emulating numeric types
@@ -302,6 +268,8 @@ class CanOr[X, Y](Protocol):
     def __or__(self, __x: X, /) -> Y: ...
 
 
+# reflected
+
 @runtime_checkable
 class CanRAdd[X, Y](Protocol):
     def __radd__(self, __x: X, /) -> Y: ...
@@ -358,6 +326,7 @@ class CanRXor[X, Y](Protocol):
 class CanROr[X, Y](Protocol):
     def __ror__(self, __x: X, /) -> Y: ...
 
+# augmented / in-place
 
 @runtime_checkable
 class CanIAdd[X, Y](Protocol):
@@ -412,6 +381,7 @@ class CanIXor[X, Y](Protocol):
 class CanIOr[X, Y](Protocol):
     def __ior__(self, __x: X, /) -> Y: ...
 
+# unary arithmetic
 
 @runtime_checkable
 class CanNeg[Y](Protocol):
@@ -429,6 +399,7 @@ class CanAbs[Y](Protocol):
 class CanInvert[Y](Protocol):
     def __invert__(self) -> Y: ...
 
+# numeric conversion
 
 @runtime_checkable
 class CanComplex(Protocol):
@@ -446,6 +417,7 @@ class CanInt(Protocol):
 class CanIndex(Protocol):
     def __index__(self) -> int: ...
 
+# rounding
 
 @runtime_checkable
 class CanRound1[Y](Protocol):
@@ -495,13 +467,11 @@ class CanExit[R](Protocol):
     ) -> R: ...
 
 @runtime_checkable
-class CanWith[V, R](CanEnter[V], CanExit[R], Protocol):
-    """Intersection type of `CanEnter[V] & CanExit`, i.e. a contextmanager."""
+class CanWith[V, R](CanEnter[V], CanExit[R], Protocol): ...
 
 
 # 3.3.11. Emulating buffer types
 # https://docs.python.org/3/reference/datamodel.html#emulating-buffer-types
-
 
 @runtime_checkable
 class CanBuffer[B: int](Protocol):
@@ -574,29 +544,18 @@ class CanAexit[R](Protocol):
     ) -> CanAwait[R]: ...
 
 @runtime_checkable
-class CanAsyncWith[V, R](CanAenter[V], CanAexit[R], Protocol):
-    """
-    Intersection type of `CanAenter[V] & CanAexit`, i.e. an async
-    contextmanager.
-    """
+class CanAsyncWith[V, R](CanAenter[V], CanAexit[R], Protocol): ...
 
 
-# Module `abc`
-# https://docs.python.org/3/library/abc.html
-# TODO: CanSubclasshook?
-
-
-# Module `copy`
+# standard library `copy`
 # https://docs.python.org/3/library/copy.html
-
 # TODO: CanCopy
 # TODO: CanDeepCopy
 # TODO: CanReplace (py313+)
 
 
-# Module `pickle`
+# standard library `pickle`
 # https://docs.python.org/3/library/pickle.html#pickling-class-instances
-
 # TODO: CanGetnewargsEx
 # TODO: CanGetnewargs
 # TODO: CanGetstate
@@ -605,7 +564,29 @@ class CanAsyncWith[V, R](CanAenter[V], CanAexit[R], Protocol):
 # TODO: CanReduceEx
 
 
-# Module `sys`
-# https://docs.python.org/3/library/sys.html
+# 3rd-party library `numpy`
+# https://numpy.org/devdocs/reference/arrays.classes.html
+# https://numpy.org/devdocs/user/basics.subclassing.html
+# TODO: __array__
+# TODO: __array_ufunc__ (this one is pretty awesome)
+# TODO: __array_function__
+# TODO: __array_finalize__
+# TODO (maybe): __array_prepare__
+# TODO (maybe): __array_priority__
+# TODO (maybe): __array_wrap__
+# https://numpy.org/doc/stable/reference/arrays.interface.html
+# TODO: __array_interface__
+# TODO (maybe): __array_struct__
 
-# TODO: CanSizeof
+
+# Array API
+# https://data-apis.org/array-api/latest/API_specification/array_object.html
+# TODO: __array_namespace__
+# TODO: __dlpack__
+# TODO: __dlpack_device__
+
+
+# Dataframe API
+# https://data-apis.org/dataframe-api/draft/API_specification/index.html
+# TODO: __dataframe_namespace__
+# TODO: __column_namespace__
