@@ -1,3 +1,4 @@
+import math as _math
 import operator as _o
 from typing import TYPE_CHECKING
 
@@ -6,19 +7,22 @@ import optype._does as _d
 
 
 # iteration
-
 do_next: _d.DoesNext = next
 do_iter: _d.DoesIter = iter
 
 
-# formatting
+# async iteration
+# (the typeshed stubs for `round` are unnecessarily strict)
+do_anext: _d.DoesANext = anext  # pyright: ignore[reportAssignmentType]
+do_aiter: _d.DoesAIter = aiter
 
+
+# formatting
 do_repr: _d.DoesRepr = repr
 do_format: _d.DoesFormat = format
 
 
 # rich comparison
-
 do_lt: _d.DoesLt = _o.lt
 do_le: _d.DoesLe = _o.le
 do_eq: _d.DoesEq = _o.eq
@@ -27,7 +31,6 @@ do_ge: _d.DoesGe = _o.ge
 
 
 # attributes
-
 do_getattr: _d.DoesGetattr = getattr
 do_setattr: _d.DoesSetattr = setattr
 do_delattr: _d.DoesDelattr = delattr
@@ -46,10 +49,9 @@ def do_call[**Xs, Y](
 
 # containers
 
-type _CanSubscript[K, V, M] = _c.CanGetitem[K, V] | _c.CanGetMissing[K, V, M]
-
-
-def do_getitem[K, V, M](obj: _CanSubscript[K, V, M], key: K, /) -> V | M:
+def do_getitem[K, V, M](
+    obj:  _c.CanGetitem[K, V] | _c.CanGetMissing[K, V, M], key: K, /,
+) -> V | M:
     """Same as `value = obj[key]`."""
     return obj[key]
 
@@ -70,7 +72,6 @@ def do_contains[K](obj: _c.CanContains[K], key: K, /) -> bool:
 
 
 # infix ops
-
 do_add: _d.DoesAdd = _o.add
 do_sub: _d.DoesSub = _o.sub
 do_mul: _d.DoesMul = _o.mul
@@ -88,9 +89,8 @@ do_or: _d.DoesOr = _o.or_
 
 
 # reflected ops
-
-# a DRY `do_r*` decorator won't work; the overloads get lost during casting to
-# `CanCall` or `Callable` (within the decorator function signature).
+# (a DRY `do_r*` decorator won't work; the overloads get lost during casting to
+# `CanCall` or `Callable`, within the decorator function signature).
 
 def do_radd[X, Y](a: _c.CanRAdd[X, Y], b: X) -> Y:
     """Same as `b + a`."""
@@ -163,7 +163,6 @@ def do_ror[X, Y](a: _c.CanROr[X, Y], b: X) -> Y:
 
 
 # augmented ops
-
 do_iadd: _d.DoesIAdd = _o.iadd
 do_isub: _d.DoesISub = _o.isub
 do_imul: _d.DoesIMul = _o.imul
@@ -179,8 +178,27 @@ do_ixor: _d.DoesIXor = _o.ixor
 do_ior: _d.DoesIOr = _o.ior
 
 
-# type-check the custom ops
+# unary ops
+do_neg: _d.DoesNeg = _o.neg
+do_pos: _d.DoesPos = _o.pos
+do_abs: _d.DoesAbs = abs
+do_invert: _d.DoesInvert = _o.invert
 
+
+# fingerprinting
+do_hash: _d.DoesHash = hash
+do_index: _d.DoesIndex = _o.index
+
+
+# rounding
+# (the typeshed stubs for `round` are unnecessarily strict)
+do_round: _d.DoesRound = round  # pyright: ignore[reportAssignmentType]
+do_trunc: _d.DoesTrunc = _math.trunc
+do_floor: _d.DoesFloor = _math.floor
+do_ceil: _d.DoesCeil = _math.ceil
+
+
+# type-check the custom ops
 if TYPE_CHECKING:
     _do_call: _d.DoesCall = do_call
 
