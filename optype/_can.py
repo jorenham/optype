@@ -4,6 +4,7 @@ from types import TracebackType
 from typing import (
     Any,
     Protocol,
+    Self,
     overload,
     override,
     runtime_checkable,
@@ -20,6 +21,11 @@ class CanNext[V](Protocol):
 @runtime_checkable
 class CanIter[Vs: CanNext[Any]](Protocol):
     def __iter__(self) -> Vs: ...
+
+@runtime_checkable
+class CanIterNext[V](CanIter['CanIterNext[Any]'], CanNext[V], Protocol):
+    @override
+    def __iter__(self) -> Self: ...
 
 
 # 3.3.1. Basic customization
@@ -48,6 +54,10 @@ class CanBytes[Y: bytes](Protocol):
 class CanFormat[X: str, Y: str](Protocol):
     @override
     def __format__(self, __x: X) -> Y: ...   # pyright:ignore[reportIncompatibleMethodOverride]
+
+
+# 3.3.1. Basic customization - Rich comparison method
+# https://docs.python.org/3/reference/datamodel.html#object.__lt__
 
 
 @runtime_checkable
@@ -211,16 +221,20 @@ class CanDelitem[K](Protocol):
     def __delitem__(self, __k: K) -> None: ...
 
 @runtime_checkable
-class CanMissing[K, V](Protocol):
-    def __missing__(self, __k: K) -> V: ...
-
-@runtime_checkable
 class CanReversed[Y](Protocol):
     def __reversed__(self) -> Y: ...
 
 @runtime_checkable
 class CanContains[K](Protocol):
     def __contains__(self, __k: K) -> bool: ...
+
+@runtime_checkable
+class CanMissing[K, V](Protocol):
+    def __missing__(self, __k: K) -> V: ...
+
+@runtime_checkable
+class CanGetMissing[K, V, M](CanGetitem[K, V], CanMissing[K, M], Protocol):
+    ...
 
 
 # 3.3.8. Emulating numeric types
