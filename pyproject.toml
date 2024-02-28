@@ -5,8 +5,8 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "optype"
-version = "0.1.0"
-description = "Typing Protocols for Precise Type Hints in Python 3.12+"
+version = "0.2.0"
+description = "Building blocks for precise & flexible Python type hints"
 authors = ["Joren Hammudoglu <jhammudoglu@gmail.com>"]
 license = "BSD-3-Clause"
 readme = "README.md"
@@ -23,7 +23,7 @@ pyright = "^1.1.351"
 ruff = "^0.2.2"
 
 [tool.poetry.group.test.dependencies]
-pytest = "^8.0.1"
+pytest = "^8.0.2"
 
 [tool.poetry.group.test-github]
 optional = true
