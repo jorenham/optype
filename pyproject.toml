@@ -16,14 +16,18 @@ python = "^3.12"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = '^3.6.2'
+
+[tool.poetry.group.lint.dependencies]
 codespell = "^2.2.6"
 pyright = "^1.1.351"
-pytest = "^8.0.1"
 ruff = "^0.2.2"
 
-[tool.poetry.group.github]
+[tool.poetry.group.test.dependencies]
+pytest = "^8.0.1"
+
+[tool.poetry.group.test-github]
 optional = true
-[tool.poetry.group.github.dependencies]
+[tool.poetry.group.test-github.dependencies]
 pytest-github-actions-annotate-failures = ">=0.2,<1.0"
 
 
@@ -35,7 +39,7 @@ skip = """\
     ./.vscode,\
     *.lock,\
     *.pyc,\
-    *.js,\
+    *.js\
 """
 
 
