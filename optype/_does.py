@@ -22,6 +22,7 @@ class DoesNext(Protocol):
     @overload
     def __call__[V, V0](self, __vs: _c.CanNext[V], __v0: V0, /) -> V | V0: ...
 
+
 @final
 class DoesIter(Protocol):
     # https://docs.python.org/3/library/functions.html#iter
@@ -44,6 +45,7 @@ class DoesRepr(Protocol):
     # https://docs.python.org/3/library/functions.html#repr
     def __call__[Y: str](self, __o: _c.CanRepr[Y], /) -> Y: ...
 
+
 @final
 class DoesFormat(Protocol):
     # https://docs.python.org/3/library/functions.html#format
@@ -61,12 +63,14 @@ class DoesLt(Protocol):
     @overload
     def __call__[X, Y](self, __x: X, __o: _c.CanGt[X, Y], /) -> Y: ...
 
+
 @final
 class DoesLe(Protocol):
     @overload
     def __call__[X, Y](self, __o: _c.CanLe[X, Y], __x: X, /) -> Y: ...
     @overload
     def __call__[X, Y](self, __x: X, __o: _c.CanGe[X, Y], /) -> Y: ...
+
 
 @final
 class DoesEq(Protocol):
@@ -75,6 +79,7 @@ class DoesEq(Protocol):
     @overload
     def __call__[X, Y](self, __x: X, __o: _c.CanEq[X, Y], /) -> Y: ...
 
+
 @final
 class DoesNe(Protocol):
     @overload
@@ -82,12 +87,14 @@ class DoesNe(Protocol):
     @overload
     def __call__[X, Y](self, __x: X, __o: _c.CanNe[X, Y], /) -> Y: ...
 
+
 @final
 class DoesGt(Protocol):
     @overload
     def __call__[X, Y](self, __o: _c.CanGt[X, Y], __x: X, /) -> Y: ...
     @overload
     def __call__[X, Y](self, __x: X, __o: _c.CanLt[X, Y], /) -> Y: ...
+
 
 @final
 class DoesGe(Protocol):
@@ -112,6 +119,7 @@ class DoesGetattr(Protocol):
         self, __o: _CanGetAttr[K, V], __k: K, __v0: V0, /,
     ) -> V | V0: ...
 
+
 @final
 class DoesSetattr(Protocol):
     # https://docs.python.org/3/library/functions.html#setattr
@@ -119,10 +127,12 @@ class DoesSetattr(Protocol):
         self, __o: _c.CanSetattr[K, V], __k: K, __v: V, /,
     ) -> None: ...
 
+
 @final
 class DoesDelattr(Protocol):
     # https://docs.python.org/3/library/functions.html#delattr
     def __call__[K: str](self, __o: _c.CanDelattr[K], __k: K, /) -> None: ...
+
 
 @final
 class DoesDir(Protocol):
@@ -156,15 +166,18 @@ class DoesGetitem(Protocol):
         self, __o: _CanSubscript[K, V, M], __k: K, /,
     ) -> V | M: ...
 
+
 @final
 class DoesSetitem(Protocol):
     def __call__[K, V](
         self, __o: _c.CanSetitem[K, V], __k: K, __v: V, /,
     ) -> None: ...
 
+
 @final
 class DoesDelitem(Protocol):
     def __call__[K](self, __o: _c.CanDelitem[K], __k: K, /) -> None: ...
+
 
 @final
 class DoesContains(Protocol):
@@ -180,12 +193,14 @@ class DoesAdd(Protocol):
     @overload
     def __call__[X, Y](self, __x: X, __o: _c.CanRAdd[X, Y], /) -> Y: ...
 
+
 @final
 class DoesSub(Protocol):
     @overload
     def __call__[X, Y](self, __o: _c.CanSub[X, Y], __x: X, /) -> Y: ...
     @overload
     def __call__[X, Y](self, __x: X, __o: _c.CanRSub[X, Y], /) -> Y: ...
+
 
 @final
 class DoesMul(Protocol):
@@ -194,12 +209,14 @@ class DoesMul(Protocol):
     @overload
     def __call__[X, Y](self, __x: X, __o: _c.CanRMul[X, Y], /) -> Y: ...
 
+
 @final
 class DoesMatmul(Protocol):
     @overload
     def __call__[X, Y](self, __o: _c.CanMatmul[X, Y], __x: X, /) -> Y: ...
     @overload
     def __call__[X, Y](self, __x: X, __o: _c.CanRMatmul[X, Y], /) -> Y: ...
+
 
 @final
 class DoesTruediv(Protocol):
@@ -208,12 +225,14 @@ class DoesTruediv(Protocol):
     @overload
     def __call__[X, Y](self, __x: X, __o: _c.CanRTruediv[X, Y], /) -> Y: ...
 
+
 @final
 class DoesFloordiv(Protocol):
     @overload
     def __call__[X, Y](self, __o: _c.CanFloordiv[X, Y], __x: X, /) -> Y: ...
     @overload
     def __call__[X, Y](self, __x: X, __o: _c.CanRFloordiv[X, Y], /) -> Y: ...
+
 
 @final
 class DoesMod(Protocol):
@@ -222,12 +241,14 @@ class DoesMod(Protocol):
     @overload
     def __call__[X, Y](self, __x: X, __o: _c.CanRMod[X, Y], /) -> Y: ...
 
+
 @final
 class DoesDivmod(Protocol):
     @overload
     def __call__[X, Y](self, __o: _c.CanDivmod[X, Y], __x: X, /) -> Y: ...
     @overload
     def __call__[X, Y](self, __x: X, __o: _c.CanRDivmod[X, Y], /) -> Y: ...
+
 
 @final
 class DoesPow(Protocol):
@@ -240,12 +261,14 @@ class DoesPow(Protocol):
     @overload
     def __call__[X, Y](self, __x: X, __o: _c.CanRPow[X, Y], /) -> Y: ...
 
+
 @final
 class DoesLshift(Protocol):
     @overload
     def __call__[X, Y](self, __o: _c.CanLshift[X, Y], __x: X, /) -> Y: ...
     @overload
     def __call__[X, Y](self, __x: X, __o: _c.CanRLshift[X, Y], /) -> Y: ...
+
 
 @final
 class DoesRshift(Protocol):
@@ -254,6 +277,7 @@ class DoesRshift(Protocol):
     @overload
     def __call__[X, Y](self, __x: X, __o: _c.CanRRshift[X, Y], /) -> Y: ...
 
+
 @final
 class DoesAnd(Protocol):
     @overload
@@ -261,12 +285,14 @@ class DoesAnd(Protocol):
     @overload
     def __call__[X, Y](self, __x: X, __o: _c.CanRAnd[X, Y], /) -> Y: ...
 
+
 @final
 class DoesXor(Protocol):
     @overload
     def __call__[X, Y](self, __o: _c.CanXor[X, Y], __x: X, /) -> Y: ...
     @overload
     def __call__[X, Y](self, __x: X, __o: _c.CanRXor[X, Y], /) -> Y: ...
+
 
 @final
 class DoesOr(Protocol):
@@ -282,53 +308,66 @@ class DoesOr(Protocol):
 class DoesRAdd(Protocol):
     def __call__[X, Y](self, __o: _c.CanRAdd[X, Y], __x: X, /) -> Y: ...
 
+
 @final
 class DoesRSub(Protocol):
     def __call__[X, Y](self, __o: _c.CanRSub[X, Y], __x: X, /) -> Y: ...
+
 
 @final
 class DoesRMul(Protocol):
     def __call__[X, Y](self, __o: _c.CanRMul[X, Y], __x: X, /) -> Y: ...
 
+
 @final
 class DoesRMatmul(Protocol):
     def __call__[X, Y](self, __o: _c.CanRMatmul[X, Y], __x: X, /) -> Y: ...
+
 
 @final
 class DoesRTruediv(Protocol):
     def __call__[X, Y](self, __o: _c.CanRTruediv[X, Y], __x: X, /) -> Y: ...
 
+
 @final
 class DoesRFloordiv(Protocol):
     def __call__[X, Y](self, __o: _c.CanRFloordiv[X, Y], __x: X, /) -> Y: ...
+
 
 @final
 class DoesRMod(Protocol):
     def __call__[X, Y](self, __o: _c.CanRMod[X, Y], __x: X, /) -> Y: ...
 
+
 @final
 class DoesRDivmod(Protocol):
     def __call__[X, Y](self, __o: _c.CanRDivmod[X, Y], __x: X, /) -> Y: ...
+
 
 @final
 class DoesRPow(Protocol):
     def __call__[X, Y](self, __o: _c.CanRPow[X, Y], __x: X, /) -> Y: ...
 
+
 @final
 class DoesRLshift(Protocol):
     def __call__[X, Y](self, __o: _c.CanRLshift[X, Y], __x: X, /) -> Y: ...
+
 
 @final
 class DoesRRshift(Protocol):
     def __call__[X, Y](self, __o: _c.CanRRshift[X, Y], __x: X, /) -> Y: ...
 
+
 @final
 class DoesRAnd(Protocol):
     def __call__[X, Y](self, __o: _c.CanRAnd[X, Y], __x: X, /) -> Y: ...
 
+
 @final
 class DoesRXor(Protocol):
     def __call__[X, Y](self, __o: _c.CanRXor[X, Y], __x: X, /) -> Y: ...
+
 
 @final
 class DoesROr(Protocol):
@@ -341,49 +380,61 @@ class DoesROr(Protocol):
 class DoesIAdd(Protocol):
     def __call__[X, Y](self, __o: _c.CanIAdd[X, Y], __x: X, /) -> Y: ...
 
+
 @final
 class DoesISub(Protocol):
     def __call__[X, Y](self, __o: _c.CanISub[X, Y], __x: X, /) -> Y: ...
+
 
 @final
 class DoesIMul(Protocol):
     def __call__[X, Y](self, __o: _c.CanIMul[X, Y], __x: X, /) -> Y: ...
 
+
 @final
 class DoesIMatmul(Protocol):
     def __call__[X, Y](self, __o: _c.CanIMatmul[X, Y], __x: X, /) -> Y: ...
+
 
 @final
 class DoesITruediv(Protocol):
     def __call__[X, Y](self, __o: _c.CanITruediv[X, Y], __x: X, /) -> Y: ...
 
+
 @final
 class DoesIFloordiv(Protocol):
     def __call__[X, Y](self, __o: _c.CanIFloordiv[X, Y], __x: X, /) -> Y: ...
+
 
 @final
 class DoesIMod(Protocol):
     def __call__[X, Y](self, __o: _c.CanMod[X, Y], __x: X, /) -> Y: ...
 
+
 @final
 class DoesIPow(Protocol):
     def __call__[X, Y](self, __o: _c.CanIPow[X, Y], __x: X, /) -> Y: ...
+
 
 @final
 class DoesILshift(Protocol):
     def __call__[X, Y](self, __o: _c.CanILshift[X, Y], __x: X, /) -> Y: ...
 
+
 @final
 class DoesIRshift(Protocol):
     def __call__[X, Y](self, __o: _c.CanIRshift[X, Y], __x: X, /) -> Y: ...
+
 
 @final
 class DoesIAnd(Protocol):
     def __call__[X, Y](self, __o: _c.CanIAnd[X, Y], __x: X, /) -> Y: ...
 
+
 @final
 class DoesIXor(Protocol):
     def __call__[X, Y](self, __o: _c.CanIXor[X, Y], __x: X, /) -> Y: ...
+
 
 @final
 class DoesIOr(Protocol):
@@ -396,13 +447,16 @@ class DoesIOr(Protocol):
 class DoesNeg(Protocol):
     def __call__[Y](self, __o: _c.CanNeg[Y], /) -> Y: ...
 
+
 @final
 class DoesPos(Protocol):
     def __call__[Y](self, __o: _c.CanPos[Y], /) -> Y: ...
 
+
 @final
 class DoesAbs(Protocol):
     def __call__[Y](self, __o: _c.CanAbs[Y], /) -> Y: ...
+
 
 @final
 class DoesInvert(Protocol):
@@ -414,6 +468,7 @@ class DoesInvert(Protocol):
 @final
 class DoesHash(Protocol):
     def __call__[Y](self, __o: _c.CanHash, /) -> int: ...
+
 
 @final
 class DoesIndex(Protocol):
@@ -431,13 +486,16 @@ class DoesRound(Protocol):
     @overload
     def __call__[N, Y](self, __o: _c.CanRound2[N, Y], __n: N, /) -> Y: ...
 
+
 @final
 class DoesTrunc(Protocol):
     def __call__[Y](self, __o: _c.CanTrunc[Y], /) -> Y: ...
 
+
 @final
 class DoesFloor(Protocol):
     def __call__[Y](self, __o: _c.CanFloor[Y], /) -> Y: ...
+
 
 @final
 class DoesCeil(Protocol):
@@ -454,6 +512,7 @@ class DoesANext(Protocol):
     async def __call__[V, V0](
         self, __o: _c.CanANext[_c.CanAwait[V]], __v0: V0, /,
     ) -> V | V0: ...
+
 
 @final
 class DoesAIter(Protocol):
