@@ -32,7 +32,7 @@ jobs:
         run: poetry check
 
       - name: poetry install
-        run: poetry install --only lint --sync
+        run: poetry install --sync
 
       - name: codespell
         run: poetry run codespell .
