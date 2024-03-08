@@ -19,7 +19,7 @@ pre-commit = '^3.6.2'
 
 [tool.poetry.group.lint.dependencies]
 codespell = "^2.2.6"
-pyright = "^1.1.352"
+pyright = "^1.1.353"
 ruff = "^0.3.1"
 
 [tool.poetry.group.test.dependencies]
@@ -123,11 +123,7 @@ line-length = 79
 indent-width = 4
 show-fixes = true
 force-exclude = true
-extend-exclude = [
-    ".github",
-    ".venv",
-    ".vscode",
-]
+extend-exclude = [".github", ".vscode"]
 
 [tool.ruff.lint]
 ignore-init-module-imports = true
@@ -202,14 +198,11 @@ extend-ignore = [
     "SLF001",   # private-member-access
 ]
 
-[tool.ruff.lint.pycodestyle]
-max-line-length = 79
-
-[tool.ruff.lint.flake8-pytest-style]
-mark-parentheses = true
-
 [tool.ruff.lint.flake8-quotes]
 inline-quotes = "single"
+
+[tool.ruff.lint.flake8-type-checking]
+strict = true
 
 [tool.ruff.lint.isort]
 case-sensitive = true
@@ -218,7 +211,6 @@ force-wrap-aliases = true
 known-first-party = ["optype"]
 lines-between-types = 0
 lines-after-imports = 2
-no-lines-before = ["future", "local-folder"]
 
 [tool.ruff.format]
 # keep in sync with .editorconfig
