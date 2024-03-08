@@ -5,6 +5,7 @@ import optype._can
 import optype._do
 import optype._does
 import optype._has
+
 from .helpers import (
     get_callable_members,
     get_protocol_members,
