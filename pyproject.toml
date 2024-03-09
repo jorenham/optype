@@ -5,8 +5,8 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "optype"
-version = "0.1.0"
-description = "Typing Protocols for Precise Type Hints in Python 3.12+"
+version = "0.2.0"
+description = "Building blocks for precise & flexible Python type hints"
 authors = ["Joren Hammudoglu <jhammudoglu@gmail.com>"]
 license = "BSD-3-Clause"
 readme = "README.md"
@@ -16,15 +16,19 @@ python = "^3.12"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = '^3.6.2'
-codespell = "^2.2.6"
-pyright = "^1.1.351"
-pytest = "^8.0.1"
-ruff = "^0.2.2"
 
-[tool.poetry.group.github]
+[tool.poetry.group.lint.dependencies]
+codespell = "^2.2.6"
+pyright = "^1.1.353"
+ruff = "^0.3.2"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.0.2"
+
+[tool.poetry.group.test-github]
 optional = true
-[tool.poetry.group.github.dependencies]
-pytest-github-actions-annotate-failures = ">=0.2,<1.0"
+[tool.poetry.group.test-github.dependencies]
+pytest-github-actions-annotate-failures = ">=0.2.0,<1.0"
 
 
 [tool.codespell]
@@ -35,7 +39,7 @@ skip = """\
     ./.vscode,\
     *.lock,\
     *.pyc,\
-    *.js,\
+    *.js\
 """
 
 
@@ -83,7 +87,7 @@ reportUnnecessaryContains = "warning"
 reportImplicitStringConcatenation = "none"
 reportInvalidStubStatement = "error"
 reportIncompleteStub = "error"
-reportUnusedCallResult = "warning"
+# reportUnusedCallResult = "warning"
 reportUnusedCoroutine = "error"
 reportUnusedExpression = "warning"
 reportUnnecessaryTypeIgnoreComment = "error"
@@ -119,11 +123,7 @@ line-length = 79
 indent-width = 4
 show-fixes = true
 force-exclude = true
-extend-exclude = [
-    ".github",
-    ".venv",
-    ".vscode",
-]
+extend-exclude = [".github", ".vscode"]
 
 [tool.ruff.lint]
 ignore-init-module-imports = true
@@ -184,6 +184,9 @@ extend-ignore = [
 
     # pylint
     "PLW1641",  # eq-without-hash (buggy; doesn't consider super)
+
+    # refurb
+    "FURB118",  # reimplemented-operator (that's kinda the point, bro)
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -195,14 +198,11 @@ extend-ignore = [
     "SLF001",   # private-member-access
 ]
 
-[tool.ruff.lint.pycodestyle]
-max-line-length = 79
-
-[tool.ruff.lint.flake8-pytest-style]
-mark-parentheses = true
-
 [tool.ruff.lint.flake8-quotes]
 inline-quotes = "single"
+
+[tool.ruff.lint.flake8-type-checking]
+strict = true
 
 [tool.ruff.lint.isort]
 case-sensitive = true
@@ -211,7 +211,6 @@ force-wrap-aliases = true
 known-first-party = ["optype"]
 lines-between-types = 0
 lines-after-imports = 2
-no-lines-before = ["future", "local-folder"]
 
 [tool.ruff.format]
 # keep in sync with .editorconfig

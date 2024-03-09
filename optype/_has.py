@@ -94,6 +94,7 @@ class HasSelf[T: object | ModuleType](Protocol):
     @property
     def __self__(self) -> T: ...
 
+
 @runtime_checkable
 class HasCode(Protocol):
     __code__: CodeType
