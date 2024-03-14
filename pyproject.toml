@@ -44,7 +44,7 @@ skip = """\
 
 
 [tool.pyright]
-include = ["optype", "tests"]
+include = ["optype", "examples", "tests"]
 exclude = [
     "**/__pycache__",
     "**/.vscode",
@@ -98,7 +98,7 @@ reportShadowedImports = "error"
 
 [tool.pytest.ini_options]
 minversion = "8.0"
-testpaths = ["optype", "tests"]
+testpaths = ["optype", "examples", "tests"]
 addopts = [
     "-ra",
     "--doctest-modules",
