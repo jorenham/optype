@@ -1,0 +1,22 @@
+{
+  "default": true,
+  "MD007": {
+    "indent": 4
+  },
+  "MD033": {
+    "allowed_elements": [
+      "h1",
+      "p",
+      "br",
+      "a",
+      "i",
+      "code",
+      "img",
+      "table",
+      "tr",
+      "th",
+      "td"
+    ]
+  },
+  "no-hard-tabs": true
+}

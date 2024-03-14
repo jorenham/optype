@@ -6,6 +6,20 @@ import optype._can as _c
 import optype._does as _d
 
 
+# type conversion
+do_bool: _d.DoesBool = bool
+do_int: _d.DoesInt = int
+do_float: _d.DoesFloat = float
+do_complex: _d.DoesComplex = complex
+do_bytes: _d.DoesBytes = bytes
+do_str: _d.DoesStr = str
+
+
+# formatting
+do_repr: _d.DoesRepr = repr
+do_format: _d.DoesFormat = format
+
+
 # iteration
 do_next: _d.DoesNext = next
 do_iter: _d.DoesIter = iter
@@ -15,11 +29,6 @@ do_iter: _d.DoesIter = iter
 # (the typeshed stubs for `round` are unnecessarily strict)
 do_anext: _d.DoesANext = anext  # pyright: ignore[reportAssignmentType]
 do_aiter: _d.DoesAIter = aiter
-
-
-# formatting
-do_repr: _d.DoesRepr = repr
-do_format: _d.DoesFormat = format
 
 
 # rich comparison

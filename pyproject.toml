@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "optype"
-version = "0.2.0"
+version = "0.2.1"
 description = "Building blocks for precise & flexible Python type hints"
 authors = ["Joren Hammudoglu <jhammudoglu@gmail.com>"]
 license = "BSD-3-Clause"
@@ -19,11 +19,11 @@ pre-commit = '^3.6.2'
 
 [tool.poetry.group.lint.dependencies]
 codespell = "^2.2.6"
-pyright = "^1.1.353"
+pyright = "^1.1.354"
 ruff = "^0.3.2"
 
 [tool.poetry.group.test.dependencies]
-pytest = "^8.0.2"
+pytest = "^8.1.1"
 
 [tool.poetry.group.test-github]
 optional = true
@@ -44,7 +44,7 @@ skip = """\
 
 
 [tool.pyright]
-include = ["optype", "tests"]
+include = ["optype", "examples", "tests"]
 exclude = [
     "**/__pycache__",
     "**/.vscode",
@@ -98,7 +98,7 @@ reportShadowedImports = "error"
 
 [tool.pytest.ini_options]
 minversion = "8.0"
-testpaths = ["optype", "tests"]
+testpaths = ["optype", "examples", "tests"]
 addopts = [
     "-ra",
     "--doctest-modules",

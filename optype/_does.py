@@ -38,6 +38,44 @@ class DoesIter(Protocol):
     ) -> _CanIterNext[V]: ...
 
 
+# type conversion
+
+@final
+class DoesBool(Protocol):
+    # https://docs.python.org/3/library/functions.html#bool
+    def __call__(self, __o: _c.CanBool, /) -> bool: ...
+
+
+@final
+class DoesInt(Protocol):
+    # https://docs.python.org/3/library/functions.html#int
+    def __call__(self, __o: _c.CanInt, /) -> int: ...
+
+
+@final
+class DoesFloat(Protocol):
+    # https://docs.python.org/3/library/functions.html#float
+    def __call__(self, __o: _c.CanFloat, /) -> float: ...
+
+
+@final
+class DoesComplex(Protocol):
+    # https://docs.python.org/3/library/functions.html#complex
+    def __call__(self, __o: _c.CanComplex, /) -> complex: ...
+
+
+@final
+class DoesStr(Protocol):
+    # https://docs.python.org/3/library/functions.html#func-str
+    def __call__[Y: str](self, __o: _c.CanStr[Y], /) -> Y: ...
+
+
+@final
+class DoesBytes(Protocol):
+    # https://docs.python.org/3/library/functions.html#func-bytes
+    def __call__[Y: bytes](self, __o: _c.CanBytes[Y], /) -> Y: ...
+
+
 # formatting
 
 @final
