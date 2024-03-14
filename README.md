@@ -109,41 +109,55 @@ This is why these `optype` interfaces don't accept generic type arguments.
 
 <table>
     <tr>
-        <th align="center">operator</th>
+        <th colspan="3" align="center">operator</th>
         <th colspan="2" align="center">operand</th>
     </tr>
     <tr>
         <td>expression</td>
+        <th>function</th>
+        <th>type</th>
         <td>method</td>
         <th>type</th>
     </tr>
     <tr>
         <td><code>bool(_)</code></td>
+        <td><code>do_bool</code></td>
+        <td><code>DoesBool</code></td>
         <td><code>__bool__</code></td>
         <td><code>CanBool</code></td>
     </tr>
     <tr>
         <td><code>int(_)</code></td>
+        <td><code>do_int</code></td>
+        <td><code>DoesInt</code></td>
         <td><code>__int__</code></td>
         <td><code>CanInt</code></td>
     </tr>
     <tr>
         <td><code>float(_)</code></td>
+        <td><code>do_float</code></td>
+        <td><code>DoesFloat</code></td>
         <td><code>__float__</code></td>
         <td><code>CanFloat</code></td>
     </tr>
     <tr>
         <td><code>complex(_)</code></td>
+        <td><code>do_complex</code></td>
+        <td><code>DoesComplex</code></td>
         <td><code>__complex__</code></td>
         <td><code>CanComplex</code></td>
     </tr>
     <tr>
         <td><code>bytes(_)</code></td>
+        <td><code>do_bytes</code></td>
+        <td><code>DoesBytes</code></td>
         <td><code>__bytes__</code></td>
         <td><code>CanBytes</code></td>
     </tr>
     <tr>
         <td><code>str(_)</code></td>
+        <td><code>do_str</code></td>
+        <td><code>DoesStr</code></td>
         <td><code>__str__</code></td>
         <td><code>CanStr</code></td>
     </tr>
