@@ -56,8 +56,8 @@ Optype is available as [`optype`][OPTYPE] on PyPI:
 ```shell
 pip install optype
 ```
-[OPTYPE]: https://pypi.org/project/optype/
 
+[OPTYPE]: https://pypi.org/project/optype/
 
 ## Overview
 
@@ -81,7 +81,6 @@ There are four flavors of things that live within `optype`,
   `operators`, has runtime-accessible type annotations, and uses a fully
   predictable naming scheme.
 
-
 ## Reference
 
 All [typing protocols][PC] here live in the root `optype` namespace.
@@ -101,7 +100,6 @@ type stubs.
 
 [PC]: https://typing.readthedocs.io/en/latest/spec/protocol.html
 [RC]: https://typing.readthedocs.io/en/latest/spec/protocol.html#runtime-checkable-decorator-and-narrowing-types-by-isinstance
-
 
 ### Type conversion
 
@@ -156,7 +154,6 @@ of the `str` builtin. The same holds for the `__format__` argument.
 So if you're a 10x developer that wants to hack Python's f-strings, but only
 if your type hints are spot-on; `optype` is you friend.
 
-
 <table>
     <tr>
         <th colspan="3" align="center">operator</th>
@@ -184,7 +181,6 @@ if your type hints are spot-on; `optype` is you friend.
         <td><code>CanFormat[X: str, Y: str]</code></td>
     </tr>
 </table>
-
 
 ### "Rich comparison" operators
 
@@ -254,7 +250,6 @@ be returned.
     </tr>
 </table>
 
-
 ### Callable objects
 
 Unlike `operator`, `optype` provides the operator for callable objects:
@@ -283,7 +278,6 @@ and doesn't use esoteric hacks.
         <td><code>CanCall[**Xs, Y]</code></td>
     </tr>
 </table>
-
 
 ### Numeric operations
 
@@ -417,7 +411,6 @@ info.
         <td><code>CanOr[X, Y]</code></td>
     </tr>
 </table>
-
 
 Note that because `pow()` can take an optional third argument, `optype`
 provides separate interfaces for `pow()` with two and three arguments.
@@ -654,7 +647,6 @@ Similarly, the augmented assignment operators are described by the following
     </tr>
 </table>
 
-
 Additionally, there are the unary arithmetic operators:
 
 <table>
@@ -698,7 +690,6 @@ Additionally, there are the unary arithmetic operators:
         <td><code>CanAbs[Y]</code></td>
     </tr>
 </table>
-
 
 The `round()` built-in function takes an optional second argument.
 From a typing perspective, `round()` has two overloads, one with 1 parameter,
@@ -804,7 +795,6 @@ have them return an `int`.
 [MATH]: https://docs.python.org/3/library/math.html
 [NT]: https://docs.python.org/3/reference/datamodel.html#emulating-numeric-types
 
-
 ### Async objects
 
 The `optype` variant of `collections.abc.Awaitable[V]`. The only difference
@@ -827,7 +817,6 @@ also an abstract base class.
         <td><code>CanAwait[V]</code></td>
     </tr>
 </table>
-
 
 ### Iteration
 
@@ -884,7 +873,6 @@ from the abracadabra collections. This is how they are defined:
     </tr>
 </table>
 
-
 ### Async Iteration
 
 Yes, you guessed it right; the abracadabra collections made the exact same
@@ -929,7 +917,6 @@ Just because something is legal, doesn't mean it's a good idea (don't eat the
 yellow snow).
 
 [AN]: https://github.com/python/typeshed/pull/7491
-
 
 ### Containers
 
@@ -1047,9 +1034,6 @@ Additionally, `optype` provides protocols for types with (custom) *hash* or
     </tr>
 </table>
 
-[GM]: https://docs.python.org/3/reference/datamodel.html#object.__missing__
-
-
 ### Attribute access
 
 <table>
@@ -1103,7 +1087,6 @@ Additionally, `optype` provides protocols for types with (custom) *hash* or
     </tr>
 </table>
 
-
 ### Descriptors
 
 Interfaces for [descriptors](https://docs.python.org/3/howto/descriptor.html).
@@ -1143,7 +1126,6 @@ Interfaces for [descriptors](https://docs.python.org/3/howto/descriptor.html).
     </tr>
 </table>
 
-
 ### Context managers
 
 Support for the `with` statement.
@@ -1175,7 +1157,6 @@ Support for the `with` statement.
     </tr>
 </table>
 
-
 For the `async with` statement the interfaces look very similar:
 
 <table>
@@ -1205,7 +1186,6 @@ For the `async with` statement the interfaces look very similar:
     </tr>
 </table>
 
-
 ### Buffer types
 
 Interfaces for emulating buffer types using the [buffer protocol][BP].
@@ -1232,10 +1212,7 @@ Interfaces for emulating buffer types using the [buffer protocol][BP].
     </tr>
 </table>
 
-
-
 [BP]: https://docs.python.org/3/reference/datamodel.html#python-buffer-protocol
-
 
 ## Future plans
 
