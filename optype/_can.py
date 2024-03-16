@@ -31,10 +31,11 @@ class CanIter[Vs: CanNext[Any]](Protocol):
 
 
 @runtime_checkable
-class CanIterSelf[V](CanNext[V], Protocol):
+class CanIterSelf[V](CanNext[V], CanIter[CanNext[V]], Protocol):
     """
     Equivalent to `collections.abc.Iterator[T]`, minus the `abc` nonsense.
     """
+    @override
     def __iter__(self) -> Self: ...
 
 
@@ -654,8 +655,9 @@ class CanAIter[Y: CanANext[Any]](Protocol):
 
 
 @runtime_checkable
-class CanAIterSelf[V](CanANext[V], Protocol):
+class CanAIterSelf[V](CanANext[V], CanAIter[CanANext[V]], Protocol):
     """A less inflexible variant of `collections.abc.AsyncIterator[T]`."""
+    @override
     def __aiter__(self) -> Self: ...
 
 
