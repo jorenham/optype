@@ -4,6 +4,7 @@ from types import TracebackType
 from typing import (
     Any,
     Protocol,
+    Self,
     overload,
     override,
     runtime_checkable,
@@ -12,6 +13,7 @@ from typing import (
 
 # Iterator types
 # https://docs.python.org/3/library/stdtypes.html#iterator-types
+
 
 @runtime_checkable
 class CanNext[V](Protocol):
@@ -26,6 +28,14 @@ class CanNext[V](Protocol):
 class CanIter[Vs: CanNext[Any]](Protocol):
     """Similar to `collections.abc.Iterable`, but more flexible."""
     def __iter__(self) -> Vs: ...
+
+
+@runtime_checkable
+class CanIterSelf[V](CanNext[V], Protocol):
+    """
+    Equivalent to `collections.abc.Iterator[T]`, minus the `abc` nonsense.
+    """
+    def __iter__(self) -> Self: ...
 
 
 # 3.3.1. Basic customization
@@ -92,7 +102,6 @@ class CanHash(Protocol):
 
 @runtime_checkable
 class CanLt[X, Y](Protocol):
-    """"""
     def __lt__(self, __x: X) -> Y: ...
 
 
@@ -642,6 +651,12 @@ class CanANext[V](Protocol):
 @runtime_checkable
 class CanAIter[Y: CanANext[Any]](Protocol):
     def __aiter__(self) -> Y: ...
+
+
+@runtime_checkable
+class CanAIterSelf[V](CanANext[V], Protocol):
+    """A less inflexible variant of `collections.abc.AsyncIterator[T]`."""
+    def __aiter__(self) -> Self: ...
 
 
 # 3.4.4. Asynchronous Context Managers
