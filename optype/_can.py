@@ -15,12 +15,18 @@ from typing import (
 
 @runtime_checkable
 class CanNext[V](Protocol):
+    """
+    Similar to `collections.abc.Iterator`, but without the (often redundant)
+    requirement to also have a `__iter__` method.
+    """
     def __next__(self) -> V: ...
 
 
 @runtime_checkable
 class CanIter[Vs: CanNext[Any]](Protocol):
+    """Similar to `collections.abc.Iterable`, but more flexible."""
     def __iter__(self) -> Vs: ...
+
 
 # 3.3.1. Basic customization
 # https://docs.python.org/3/reference/datamodel.html#basic-customization
@@ -28,26 +34,56 @@ class CanIter[Vs: CanNext[Any]](Protocol):
 
 @runtime_checkable
 class CanRepr[Y: str](Protocol):
+    """
+    Each `object` has a *co*variant `__repr__: (CanRepr[Y]) -> Y` method.
+    That means that if `__repr__` returns an instance of a custom `str`
+    subtype `Y <: str`, then `repr()` will also return `Y` (i.e. no upcasting).
+    """
     @override
     def __repr__(self) -> Y: ...
 
 
 @runtime_checkable
 class CanStr[Y: str](Protocol):
-    """By default, each `object` has a `__str__` method."""
+    """
+    Each `object` has a *co*variant `__str__: (CanStr[Y]) -> Y` method on `+Y`.
+    That means that if `__str__()` returns an instance of a custom `str`
+    subtype `Y <: str`, then `str()` will also return `Y` (i.e. no upcasting).
+    """
     @override
     def __str__(self) -> Y: ...
 
 
 @runtime_checkable
 class CanBytes[Y: bytes](Protocol):
+    """
+    The `__bytes__: (CanBytes[Y]) -> Y` method is *co*variant on `+Y`.
+    So if `__bytes__` returns an instance of a custom `bytes` subtype
+    `Y <: bytes`, then `bytes()` will also return `Y` (i.e. no upcasting).
+    """
     def __bytes__(self) -> Y: ...
 
 
 @runtime_checkable
 class CanFormat[X: str, Y: str](Protocol):
+    """
+    Each `object` has a `__format__: (CanFormat[X, Y], X) -> Y` method, with
+    `-X` *contra*variant, and `+Y` *co*variant. Both `X` and `Y` can be `str`
+    or `str` subtypes. Note that `format()` *does not* upcast `Y` to `str`.
+    """
     @override
     def __format__(self, __x: X) -> Y: ...   # pyright:ignore[reportIncompatibleMethodOverride]
+
+
+@runtime_checkable
+class CanBool(Protocol):
+    def __bool__(self) -> bool: ...
+
+
+@runtime_checkable
+class CanHash(Protocol):
+    @override
+    def __hash__(self) -> int: ...
 
 
 # 3.3.1. Basic customization - Rich comparison method
@@ -56,6 +92,7 @@ class CanFormat[X: str, Y: str](Protocol):
 
 @runtime_checkable
 class CanLt[X, Y](Protocol):
+    """"""
     def __lt__(self, __x: X) -> Y: ...
 
 
@@ -66,12 +103,29 @@ class CanLe[X, Y](Protocol):
 
 @runtime_checkable
 class CanEq[X, Y](Protocol):
+    """
+    Unfortunately, `typeshed` incorrectly annotates `object.__eq__` as
+    `(Self, object) -> bool`.
+    As a counter-example, consider `numpy.ndarray`. It's `__eq__` method
+    returns a boolean (mask) array of the same shape as the input array.
+    Moreover, `numpy.ndarray` doesn't even implement `CanBool` (`bool()`
+    raises a `TypeError` for shapes of size > 1).
+    There is nothing wrong with this implementation, even though `typeshed`
+    (incorrectly) won't allow it (because `numpy.ndarray <: object`).
+
+    So in reality, it should be `__eq__: (Self, X) -> Y`, with `-X` unbounded
+    and *contra*variant, and `+Y` unbounded and *co*variant.
+    """
     @override
     def __eq__(self, __x: X, /) -> Y: ...  # pyright:ignore[reportIncompatibleMethodOverride]
 
 
 @runtime_checkable
 class CanNe[X, Y](Protocol):
+    """
+    Just like `__eq__`, The `__ne__` method is incorrectly annotated in
+    `typeshed`. See `CanEq` for why this is, and how `optype` fixes this.
+    """
     @override
     def __ne__(self, __x: X) -> Y: ...  # pyright:ignore[reportIncompatibleMethodOverride]
 
@@ -84,17 +138,6 @@ class CanGt[X, Y](Protocol):
 @runtime_checkable
 class CanGe[X, Y](Protocol):
     def __ge__(self, __x: X) -> Y: ...
-
-
-@runtime_checkable
-class CanHash(Protocol):
-    @override
-    def __hash__(self) -> int: ...
-
-
-@runtime_checkable
-class CanBool(Protocol):
-    def __bool__(self) -> bool: ...
 
 
 # 3.3.2. Customizing attribute access
