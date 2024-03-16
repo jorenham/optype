@@ -60,7 +60,7 @@ def test_does_has_do(cls: type):
     name = cls.__name__.removeprefix('Does')
     assert name != cls.__name__
 
-    do_name = f'do_{name.lower()}'
+    do_name = f'do_{pascamel_to_snake(name, 1)}'
     do_op = getattr(optype._do, do_name, None)
     assert do_op is not None, do_name
     assert callable(do_op), do_name

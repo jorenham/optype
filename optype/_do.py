@@ -49,15 +49,21 @@ do_dir: _d.DoesDir = dir
 
 # callables
 
-def do_call[**Xs, Y](
-    func: _c.CanCall[Xs, Y],
-    *args: Xs.args,
-    **kwargs: Xs.kwargs,
-) -> Y:
-    return func(*args, **kwargs)
+# def do_call[**Xs, Y](
+#     func: _c.CanCall[Xs, Y],
+#     *args: Xs.args,
+#     **kwargs: Xs.kwargs,
+# ) -> Y:
+#     return func(*args, **kwargs)
+
+do_call: _d.DoesCall = _o.call
 
 
-# containers
+# containers and sequences
+
+do_len: _d.DoesLen = len
+do_length_hint: _d.DoesLengthHint = _o.length_hint
+
 
 def do_getitem[K, V, M](
     obj:  _c.CanGetitem[K, V] | _c.CanGetMissing[K, V, M], key: K, /,
