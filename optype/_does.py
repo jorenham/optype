@@ -446,7 +446,7 @@ class DoesIFloordiv(Protocol):
 
 @final
 class DoesIMod(Protocol):
-    def __call__[X, Y](self, __o: _c.CanMod[X, Y], __x: X, /) -> Y: ...
+    def __call__[X, Y](self, __o: _c.CanIMod[X, Y], __x: X, /) -> Y: ...
 
 
 @final
