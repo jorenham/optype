@@ -195,6 +195,17 @@ class DoesCall(Protocol):
 
 # containers and subscritable types
 
+
+@final
+class DoesLen(Protocol):
+    def __call__(self, __o: _c.CanLen, /) -> int: ...
+
+
+@final
+class DoesLengthHint(Protocol):
+    def __call__(self, __o: _c.CanLengthHint, /) -> int: ...
+
+
 type _CanSubscript[K, V, M] = _c.CanGetitem[K, V] | _c.CanGetMissing[K, V, M]
 
 
@@ -446,7 +457,7 @@ class DoesIFloordiv(Protocol):
 
 @final
 class DoesIMod(Protocol):
-    def __call__[X, Y](self, __o: _c.CanMod[X, Y], __x: X, /) -> Y: ...
+    def __call__[X, Y](self, __o: _c.CanIMod[X, Y], __x: X, /) -> Y: ...
 
 
 @final

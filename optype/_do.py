@@ -35,7 +35,7 @@ do_aiter: _d.DoesAIter = aiter
 do_lt: _d.DoesLt = _o.lt
 do_le: _d.DoesLe = _o.le
 do_eq: _d.DoesEq = _o.eq
-do_ne: _d.DoesEq = _o.ne
+do_ne: _d.DoesNe = _o.ne
 do_gt: _d.DoesGt = _o.gt
 do_ge: _d.DoesGe = _o.ge
 
@@ -49,15 +49,21 @@ do_dir: _d.DoesDir = dir
 
 # callables
 
-def do_call[**Xs, Y](
-    func: _c.CanCall[Xs, Y],
-    *args: Xs.args,
-    **kwargs: Xs.kwargs,
-) -> Y:
-    return func(*args, **kwargs)
+# def do_call[**Xs, Y](
+#     func: _c.CanCall[Xs, Y],
+#     *args: Xs.args,
+#     **kwargs: Xs.kwargs,
+# ) -> Y:
+#     return func(*args, **kwargs)
+
+do_call: _d.DoesCall = _o.call
 
 
-# containers
+# containers and sequences
+
+do_len: _d.DoesLen = len
+do_length_hint: _d.DoesLengthHint = _o.length_hint
+
 
 def do_getitem[K, V, M](
     obj:  _c.CanGetitem[K, V] | _c.CanGetMissing[K, V, M], key: K, /,

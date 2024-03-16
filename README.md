@@ -887,6 +887,12 @@ from the abracadabra collections. This is how they are defined:
     </tr>
 </table>
 
+For the sake of compatibility with `collections.abc`, there is
+`optype.CanIterSelf[T]`, which is a protocol whose `__iter__` returns
+`typing.Self`, as well as a `__next__` method that returns `T`.
+I.e. it is equivalent to `collections.abc.Iterator[T]`, but without the `abc`
+nonsense.
+
 ### Async Iteration
 
 Yes, you guessed it right; the abracadabra collections made the exact same
@@ -918,7 +924,7 @@ But fret not; the `optype` alternatives are right here:
         <td><code>do_aiter</code></td>
         <td><code>DoesAIter</code></td>
         <td><code>__aiter__</code></td>
-        <td><code>CanANext[Vs: CanAnext]</code></td>
+        <td><code>CanAIter[Vs: CanAnext]</code></td>
     </tr>
 </table>
 
@@ -929,6 +935,9 @@ it along without nagging (instance checks are slow, now stop bothering that
 liberal). For details, see the discussion at [python/typeshed#7491][AN].
 Just because something is legal, doesn't mean it's a good idea (don't eat the
 yellow snow).
+
+Additionally, there is `optype.CanAIterSelf[V]`, with both the
+`__aiter__() -> Self` and the `__anext__() -> V` methods.
 
 [AN]: https://github.com/python/typeshed/pull/7491
 
@@ -948,8 +957,8 @@ yellow snow).
     </tr>
     <tr>
         <td><code>len(_)</code></td>
-        <td></td>
-        <td></td>
+        <td><code>do_len</code></td>
+        <td><code>DoesLen</code></td>
         <td><code>__len__</code></td>
         <td><code>CanLen</code></td>
     </tr>
@@ -958,8 +967,8 @@ yellow snow).
             <code>_.__length_hint__()</code>
             (<a href="https://docs.python.org/3/reference/datamodel.html#object.__length_hint__">docs</a>)
         </td>
-        <td></td>
-        <td></td>
+        <td><code>do_length_hint</code></td>
+        <td><code>DoesLengthHint</code></td>
         <td><code>__length_hint__</code></td>
         <td><code>CanLengthHint</code></td>
     </tr>
