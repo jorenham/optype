@@ -91,7 +91,7 @@ class CanHash(Protocol):
 
 
 @runtime_checkable
-class CanLt[X, Y: CanBool](Protocol):
+class CanLt[X, Y](Protocol):
     """"""
     def __lt__(self, __x: X) -> Y: ...
 
