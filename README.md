@@ -957,8 +957,8 @@ Additionally, there is `optype.CanAIterSelf[V]`, with both the
     </tr>
     <tr>
         <td><code>len(_)</code></td>
-        <td></td>
-        <td></td>
+        <td><code>do_len</code></td>
+        <td><code>DoesLen</code></td>
         <td><code>__len__</code></td>
         <td><code>CanLen</code></td>
     </tr>
@@ -967,8 +967,8 @@ Additionally, there is `optype.CanAIterSelf[V]`, with both the
             <code>_.__length_hint__()</code>
             (<a href="https://docs.python.org/3/reference/datamodel.html#object.__length_hint__">docs</a>)
         </td>
-        <td></td>
-        <td></td>
+        <td><code>do_length_hint</code></td>
+        <td><code>DoesLengthHint</code></td>
         <td><code>__length_hint__</code></td>
         <td><code>CanLengthHint</code></td>
     </tr>
