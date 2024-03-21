@@ -86,6 +86,8 @@ def do_delitem[K](obj: _c.CanDelitem[K], key: K, /) -> None:
     del obj[key]
 
 
+# `operator.contains` cannot be used, as it incorrectly requires `key`
+# to be an **invariant** `object` instance...
 def do_contains[K](obj: _c.CanContains[K], key: K, /) -> bool:
     """Same as `key in obj`."""
     return key in obj
