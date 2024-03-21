@@ -658,7 +658,7 @@ class CanAIter[Y: CanANext[Any]](Protocol):
 class CanAIterSelf[V](CanANext[V], CanAIter[CanANext[V]], Protocol):
     """A less inflexible variant of `collections.abc.AsyncIterator[T]`."""
     @override
-    def __aiter__(self) -> Self: ...
+    def __aiter__(self) -> 'CanAIterSelf[V]': ...  # `Self` doesn't work here?
 
 
 # 3.4.4. Asynchronous Context Managers
