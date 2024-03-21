@@ -742,3 +742,42 @@ class CanReplaceSelf[V](CanReplace['CanReplaceSelf[Any]', V], Protocol):
     """Variant of `CanReplace` that returns `Self`."""
     @override
     def __replace__(self, /, **changes: V) -> Self: ...
+
+
+# `pickle` stdlib
+# https://docs.python.org/3.13/library/pickle.html
+
+
+@runtime_checkable
+class CanReduce[R: str | tuple[Any, ...]](Protocol):
+    @override
+    def __reduce__(self) -> R: ...
+
+
+@runtime_checkable
+class CanReduceEx[R: str | tuple[Any, ...]](Protocol):
+    @override
+    def __reduce_ex__(self, protocol: CanIndex, /) -> R: ...
+
+
+@runtime_checkable
+class CanGetstate[S: object](Protocol):
+    @override
+    def __getstate__(self) -> S: ...
+
+
+@runtime_checkable
+class CanSetstate[S: object](Protocol):
+    def __setstate__(self, state: S, /) -> None: ...
+
+
+@runtime_checkable
+class CanGetnewargs[*Args](Protocol):
+    def __new__(cls, *__args: *Args) -> Self: ...
+    def __getnewargs__(self) -> tuple[*Args]: ...
+
+
+@runtime_checkable
+class CanGetnewargsEx[*Args, Kw](Protocol):
+    def __new__(cls, *__args: *Args, **__kwargs: Kw) -> Self: ...
+    def __getnewargs_ex__(self) -> tuple[tuple[*Args], dict[str, Kw]]: ...
