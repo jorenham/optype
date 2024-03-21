@@ -233,6 +233,20 @@ class DoesContains(Protocol):
     def __call__[K](self, __o: _c.CanContains[K], __k: K, /) -> bool: ...
 
 
+@final
+class DoesReversed(Protocol):
+    """
+    This is correct type of `builtins.reversed`.
+
+    Note that typeshed's annotations for `reversed` are completely wrong:
+    https://github.com/python/typeshed/issues/11645
+    """
+    @overload
+    def __call__[Vs](self, __o: _c.CanReversed[Vs], /) -> Vs: ...
+    @overload
+    def __call__[V](self, __o: _c.CanSequence[Any, V], /) -> reversed[V]: ...
+
+
 # binary infix operators
 
 @final

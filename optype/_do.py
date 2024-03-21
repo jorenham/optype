@@ -67,6 +67,7 @@ do_length_hint: _d.DoesLengthHint = _o.length_hint
 
 # `operator.getitem` isn't used, because it has an (unreasonably loose, and
 # redundant) overload for `(Sequence[T], slice) -> Sequence[T]`
+# https://github.com/python/typeshed/blob/main/stdlib/_operator.pyi#L84-L86
 def do_getitem[K, V, M](
     obj:  _c.CanGetitem[K, V] | _c.CanGetMissing[K, V, M],
     key: K,
@@ -91,6 +92,11 @@ def do_delitem[K](obj: _c.CanDelitem[K], key: K, /) -> None:
 def do_contains[K](obj: _c.CanContains[K], key: K, /) -> bool:
     """Same as `key in obj`."""
     return key in obj
+
+
+# `builtins.reversed` is annotated incorrectly within typeshed:
+# https://github.com/python/typeshed/issues/11645
+do_reversed: _d.DoesReversed = reversed  # pyright: ignore[reportAssignmentType]
 
 
 # infix ops
