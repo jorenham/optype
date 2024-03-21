@@ -198,12 +198,6 @@ extend-ignore = [
     "SLF001",   # private-member-access
 ]
 
-[tool.ruff.lint.flake8-quotes]
-inline-quotes = "single"
-
-[tool.ruff.lint.flake8-type-checking]
-strict = true
-
 [tool.ruff.lint.isort]
 case-sensitive = true
 combine-as-imports = true
@@ -211,6 +205,17 @@ force-wrap-aliases = true
 known-first-party = ["optype"]
 lines-between-types = 0
 lines-after-imports = 2
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "single"
+
+[tool.ruff.lint.flake8-type-checking]
+strict = true
+
+[tool.ruff.lint.pylint]
+allow-dunder-method-names = [
+    "__replace__",  # used by `copy.replace` in Python 3.13+
+]
 
 [tool.ruff.format]
 # keep in sync with .editorconfig

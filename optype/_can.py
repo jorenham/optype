@@ -700,3 +700,45 @@ class CanAExit[R](Protocol):
 
 @runtime_checkable
 class CanAsyncWith[V, R](CanAEnter[V], CanAExit[R], Protocol): ...
+
+
+# `copy` stdlib
+# https://docs.python.org/3.13/library/copy.html
+
+
+@runtime_checkable
+class CanCopy[T](Protocol):
+    """Support for creating shallow copies through `copy.copy`."""
+    def __copy__(self) -> T: ...
+
+
+@runtime_checkable
+class CanDeepcopy[T](Protocol):
+    """Support for creating deep copies through `copy.deepcopy`."""
+    def __deepcopy__(self, memo: dict[int, Any], /) -> T: ...
+
+
+@runtime_checkable
+class CanReplace[T, V](Protocol):
+    """Support for `copy.replace` in Python 3.13+."""
+    def __replace__(self, /, **changes: V) -> T: ...
+
+
+@runtime_checkable
+class CanCopySelf(CanCopy['CanCopySelf'], Protocol):
+    """Variant of `CanCopy` that returns `Self` (as it should)."""
+    @override
+    def __copy__(self) -> Self: ...
+
+
+class CanDeepcopySelf(CanDeepcopy['CanDeepcopySelf'], Protocol):
+    """Variant of `CanDeepcopy` that returns `Self` (as it should)."""
+    @override
+    def __deepcopy__(self, memo: dict[int, Any], /) -> Self: ...
+
+
+@runtime_checkable
+class CanReplaceSelf[V](CanReplace['CanReplaceSelf[Any]', V], Protocol):
+    """Variant of `CanReplace` that returns `Self`."""
+    @override
+    def __replace__(self, /, **changes: V) -> Self: ...
