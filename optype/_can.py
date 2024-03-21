@@ -268,6 +268,17 @@ class CanMissing[K, V](Protocol):
 class CanGetMissing[K, V, M](CanGetitem[K, V], CanMissing[K, M], Protocol): ...
 
 
+@runtime_checkable
+class CanSequence[I: 'CanIndex', V](CanLen, CanGetitem[I, V], Protocol):
+    """
+    A sequence is an object with a __len__ method and a
+    __getitem__ method that takes int(-like) argument as key (the index).
+    Additionally, it is expected to be 0-indexed (the first element is at
+    index 0) and "dense" (i.e. the indices are consecutive integers, and are
+    obtainable with e.g. `range(len(_))`).
+    """
+
+
 # 3.3.8. Emulating numeric types
 # https://docs.python.org/3/reference/datamodel.html#emulating-numeric-types
 
@@ -425,8 +436,8 @@ class CanRXor[X, Y](Protocol):
 class CanROr[X, Y](Protocol):
     def __ror__(self, __x: X, /) -> Y: ...
 
-# augmented / in-place
 
+# augmented / in-place
 
 @runtime_checkable
 class CanIAdd[X, Y](Protocol):
@@ -493,8 +504,8 @@ class CanIXor[X, Y](Protocol):
 class CanIOr[X, Y](Protocol):
     def __ior__(self, __x: X, /) -> Y: ...
 
-# unary arithmetic
 
+# unary arithmetic
 
 @runtime_checkable
 class CanNeg[Y](Protocol):
@@ -515,8 +526,8 @@ class CanAbs[Y](Protocol):
 class CanInvert[Y](Protocol):
     def __invert__(self) -> Y: ...
 
-# numeric conversion
 
+# numeric conversion
 
 @runtime_checkable
 class CanComplex(Protocol):
