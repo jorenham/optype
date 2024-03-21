@@ -1244,11 +1244,53 @@ Interfaces for emulating buffer types using the [buffer protocol][BP].
 
 [BP]: https://docs.python.org/3/reference/datamodel.html#python-buffer-protocol
 
+### `copy`
+
+For the [`copy`][CP] standard library, `optype` provides the following
+interfaces:
+
+<table>
+    <tr>
+        <th align="center">operator</th>
+        <th colspan="2" align="center">operand</th>
+    </tr>
+    <tr>
+        <td>expression</td>
+        <td>method(s)</td>
+        <th>type</th>
+    </tr>
+    <tr>
+        <td><code>copy.copy(_)</code></td>
+        <td><code>__copy__</code></td>
+        <td><code>CanCopy[T]</code></td>
+    </tr>
+    <tr>
+        <td><code>copy.deepcopy(_, memo={})</code></td>
+        <td><code>__deepcopy__</code></td>
+        <td><code>CanDeepcopy[T]</code></td>
+    </tr>
+    <tr>
+        <td><code>copy.replace(_, **changes: V)</code> (Python 3.13+)</td>
+        <td><code>__replace__</code></td>
+        <td><code>CanReplace[T, V]</code></td>
+    </tr>
+</table>
+
+And for convenience, there are the runtime-checkable aliases for all three
+interfaces, with `T` bound to `Self`. These are roughly equivalent to:
+
+```python
+type CanCopySelf = CanCopy[CanCopySelf]
+type CanDeepcopySelf = CanDeepcopy[CanDeepcopySelf]
+type CanReplaceSelf[V] = CanReplace[CanReplaceSelf[V], V]
+```
+
+[CP]: https://docs.python.org/3.13/library/copy.html
+
 ## Future plans
 
 - Support for Python versions before 3.12 (#19).
 - More standard library protocols, e.g.
-    - `copy` (#20)
     - `dataclasses` (#21)
     - `pickle` (#22).
     - `typing.NamedTuple` (#23)
