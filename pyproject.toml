@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "optype"
-version = "0.2.2"
+version = "0.3.0"
 description = "Building blocks for precise & flexible Python type hints"
 authors = ["Joren Hammudoglu <jhammudoglu@gmail.com>"]
 license = "BSD-3-Clause"
@@ -19,8 +19,8 @@ pre-commit = '^3.6.2'
 
 [tool.poetry.group.lint.dependencies]
 codespell = "^2.2.6"
-pyright = "^1.1.354"
-ruff = "^0.3.3"
+pyright = "^1.1.355"
+ruff = "^0.3.4"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.1.1"
@@ -198,12 +198,6 @@ extend-ignore = [
     "SLF001",   # private-member-access
 ]
 
-[tool.ruff.lint.flake8-quotes]
-inline-quotes = "single"
-
-[tool.ruff.lint.flake8-type-checking]
-strict = true
-
 [tool.ruff.lint.isort]
 case-sensitive = true
 combine-as-imports = true
@@ -211,6 +205,17 @@ force-wrap-aliases = true
 known-first-party = ["optype"]
 lines-between-types = 0
 lines-after-imports = 2
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "single"
+
+[tool.ruff.lint.flake8-type-checking]
+strict = true
+
+[tool.ruff.lint.pylint]
+allow-dunder-method-names = [
+    "__replace__",  # used by `copy.replace` in Python 3.13+
+]
 
 [tool.ruff.format]
 # keep in sync with .editorconfig

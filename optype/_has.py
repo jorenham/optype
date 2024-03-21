@@ -2,13 +2,12 @@
 """
 Elementary interfaces for special "dunder" attributes.
 """
+from collections.abc import Callable
+from dataclasses import Field as _Field
 from types import CodeType, ModuleType
-from typing import Any, Protocol, Self, override, runtime_checkable
+from typing import Any, ClassVar, Protocol, Self, override, runtime_checkable
 
-from ._can import (
-    CanCall as _CanCall,
-    CanIter as _CanIter,
-)
+from ._can import CanIter as _CanIter
 
 
 # Instances
@@ -81,12 +80,12 @@ class HasTypeParams[*Ps](Protocol):
 
 @runtime_checkable
 class HasFunc[**Xs, Y](Protocol):
-    __func__: _CanCall[Xs, Y]
+    __func__: Callable[Xs, Y]
 
 
 @runtime_checkable
 class HasWrapped[**Xs, Y](Protocol):
-    __wrapped__: _CanCall[Xs, Y]
+    __wrapped__: Callable[Xs, Y]
 
 
 @runtime_checkable
@@ -103,4 +102,7 @@ class HasCode(Protocol):
 # Module `dataclasses`
 # https://docs.python.org/3/library/dataclasses.html
 
-# TODO: HasDataclassFields
+@runtime_checkable
+class HasDataclassFields(Protocol):
+    """Can be used to check whether a type or instance is a dataclass."""
+    __dataclass_fields__: ClassVar[dict[str, _Field[Any]]]

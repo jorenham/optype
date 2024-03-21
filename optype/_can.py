@@ -268,6 +268,17 @@ class CanMissing[K, V](Protocol):
 class CanGetMissing[K, V, M](CanGetitem[K, V], CanMissing[K, M], Protocol): ...
 
 
+@runtime_checkable
+class CanSequence[I: 'CanIndex', V](CanLen, CanGetitem[I, V], Protocol):
+    """
+    A sequence is an object with a __len__ method and a
+    __getitem__ method that takes int(-like) argument as key (the index).
+    Additionally, it is expected to be 0-indexed (the first element is at
+    index 0) and "dense" (i.e. the indices are consecutive integers, and are
+    obtainable with e.g. `range(len(_))`).
+    """
+
+
 # 3.3.8. Emulating numeric types
 # https://docs.python.org/3/reference/datamodel.html#emulating-numeric-types
 
@@ -425,8 +436,8 @@ class CanRXor[X, Y](Protocol):
 class CanROr[X, Y](Protocol):
     def __ror__(self, __x: X, /) -> Y: ...
 
-# augmented / in-place
 
+# augmented / in-place
 
 @runtime_checkable
 class CanIAdd[X, Y](Protocol):
@@ -493,8 +504,8 @@ class CanIXor[X, Y](Protocol):
 class CanIOr[X, Y](Protocol):
     def __ior__(self, __x: X, /) -> Y: ...
 
-# unary arithmetic
 
+# unary arithmetic
 
 @runtime_checkable
 class CanNeg[Y](Protocol):
@@ -515,8 +526,8 @@ class CanAbs[Y](Protocol):
 class CanInvert[Y](Protocol):
     def __invert__(self) -> Y: ...
 
-# numeric conversion
 
+# numeric conversion
 
 @runtime_checkable
 class CanComplex(Protocol):
@@ -658,7 +669,7 @@ class CanAIter[Y: CanANext[Any]](Protocol):
 class CanAIterSelf[V](CanANext[V], CanAIter[CanANext[V]], Protocol):
     """A less inflexible variant of `collections.abc.AsyncIterator[T]`."""
     @override
-    def __aiter__(self) -> Self: ...
+    def __aiter__(self) -> 'CanAIterSelf[V]': ...  # `Self` doesn't work here?
 
 
 # 3.4.4. Asynchronous Context Managers
@@ -691,50 +702,82 @@ class CanAExit[R](Protocol):
 class CanAsyncWith[V, R](CanAEnter[V], CanAExit[R], Protocol): ...
 
 
-# path-like
-# TODO: CanFspath[P: str | bytes]
+# `copy` stdlib
+# https://docs.python.org/3.13/library/copy.html
 
 
-# standard library `copy`
-# https://docs.python.org/3/library/copy.html
-# TODO: CanCopy
-# TODO: CanDeepCopy
-# TODO: CanReplace (py313+)
+@runtime_checkable
+class CanCopy[T](Protocol):
+    """Support for creating shallow copies through `copy.copy`."""
+    def __copy__(self) -> T: ...
 
 
-# standard library `pickle`
-# https://docs.python.org/3/library/pickle.html#pickling-class-instances
-# TODO: CanGetnewargsEx
-# TODO: CanGetnewargs
-# TODO: CanGetstate
-# TODO: CanSetstate
-# TODO: CanReduce
-# TODO: CanReduceEx
+@runtime_checkable
+class CanDeepcopy[T](Protocol):
+    """Support for creating deep copies through `copy.deepcopy`."""
+    def __deepcopy__(self, memo: dict[int, Any], /) -> T: ...
 
 
-# 3rd-party library `numpy`
-# https://numpy.org/devdocs/reference/arrays.classes.html
-# https://numpy.org/devdocs/user/basics.subclassing.html
-# TODO: __array__
-# TODO: __array_ufunc__ (this one is pretty awesome)
-# TODO: __array_function__
-# TODO: __array_finalize__
-# TODO (maybe): __array_prepare__
-# TODO (maybe): __array_priority__
-# TODO (maybe): __array_wrap__
-# https://numpy.org/doc/stable/reference/arrays.interface.html
-# TODO: __array_interface__
-# TODO (maybe): __array_struct__
+@runtime_checkable
+class CanReplace[T, V](Protocol):
+    """Support for `copy.replace` in Python 3.13+."""
+    def __replace__(self, /, **changes: V) -> T: ...
 
 
-# Array API
-# https://data-apis.org/array-api/latest/API_specification/array_object.html
-# TODO: __array_namespace__
-# TODO: __dlpack__
-# TODO: __dlpack_device__
+@runtime_checkable
+class CanCopySelf(CanCopy['CanCopySelf'], Protocol):
+    """Variant of `CanCopy` that returns `Self` (as it should)."""
+    @override
+    def __copy__(self) -> Self: ...
 
 
-# Dataframe API
-# https://data-apis.org/dataframe-api/draft/API_specification/index.html
-# TODO: __dataframe_namespace__
-# TODO: __column_namespace__
+class CanDeepcopySelf(CanDeepcopy['CanDeepcopySelf'], Protocol):
+    """Variant of `CanDeepcopy` that returns `Self` (as it should)."""
+    @override
+    def __deepcopy__(self, memo: dict[int, Any], /) -> Self: ...
+
+
+@runtime_checkable
+class CanReplaceSelf[V](CanReplace['CanReplaceSelf[Any]', V], Protocol):
+    """Variant of `CanReplace` that returns `Self`."""
+    @override
+    def __replace__(self, /, **changes: V) -> Self: ...
+
+
+# `pickle` stdlib
+# https://docs.python.org/3.13/library/pickle.html
+
+
+@runtime_checkable
+class CanReduce[R: str | tuple[Any, ...]](Protocol):
+    @override
+    def __reduce__(self) -> R: ...
+
+
+@runtime_checkable
+class CanReduceEx[R: str | tuple[Any, ...]](Protocol):
+    @override
+    def __reduce_ex__(self, protocol: CanIndex, /) -> R: ...
+
+
+@runtime_checkable
+class CanGetstate[S: object](Protocol):
+    @override
+    def __getstate__(self) -> S: ...
+
+
+@runtime_checkable
+class CanSetstate[S: object](Protocol):
+    def __setstate__(self, state: S, /) -> None: ...
+
+
+@runtime_checkable
+class CanGetnewargs[*Args](Protocol):
+    def __new__(cls, *__args: *Args) -> Self: ...
+    def __getnewargs__(self) -> tuple[*Args]: ...
+
+
+@runtime_checkable
+class CanGetnewargsEx[*Args, Kw](Protocol):
+    def __new__(cls, *__args: *Args, **__kwargs: Kw) -> Self: ...
+    def __getnewargs_ex__(self) -> tuple[tuple[*Args], dict[str, Kw]]: ...

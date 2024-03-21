@@ -65,8 +65,13 @@ do_len: _d.DoesLen = len
 do_length_hint: _d.DoesLengthHint = _o.length_hint
 
 
+# `operator.getitem` isn't used, because it has an (unreasonably loose, and
+# redundant) overload for `(Sequence[T], slice) -> Sequence[T]`
+# https://github.com/python/typeshed/blob/main/stdlib/_operator.pyi#L84-L86
 def do_getitem[K, V, M](
-    obj:  _c.CanGetitem[K, V] | _c.CanGetMissing[K, V, M], key: K, /,
+    obj:  _c.CanGetitem[K, V] | _c.CanGetMissing[K, V, M],
+    key: K,
+    /,
 ) -> V | M:
     """Same as `value = obj[key]`."""
     return obj[key]
@@ -82,9 +87,20 @@ def do_delitem[K](obj: _c.CanDelitem[K], key: K, /) -> None:
     del obj[key]
 
 
+def do_missing[K, V](obj: _c.CanMissing[K, V], key: K, /) -> V:
+    return obj.__missing__(key)
+
+
+# `operator.contains` cannot be used, as it incorrectly requires `key`
+# to be an **invariant** `object` instance...
 def do_contains[K](obj: _c.CanContains[K], key: K, /) -> bool:
     """Same as `key in obj`."""
     return key in obj
+
+
+# `builtins.reversed` is annotated incorrectly within typeshed:
+# https://github.com/python/typeshed/issues/11645
+do_reversed: _d.DoesReversed = reversed  # pyright: ignore[reportAssignmentType]
 
 
 # infix ops
@@ -221,6 +237,7 @@ if TYPE_CHECKING:
     _do_getitem: _d.DoesGetitem = do_getitem
     _do_setitem: _d.DoesSetitem = do_setitem
     _do_delitem: _d.DoesDelitem = do_delitem
+    _do_missing: _d.DoesMissing = do_missing
     _do_contains: _d.DoesContains = do_contains
 
     _do_radd: _d.DoesRAdd = do_radd

@@ -189,7 +189,7 @@ if your type hints are spot-on; `optype` is you friend.
     </tr>
     <tr>
         <td><code>format(_, x)</code></td>
-        <td><code>do_format(_, x)</code></td>
+        <td><code>do_format</code></td>
         <td><code>DoesFormat</code></td>
         <td><code>__format__</code></td>
         <td><code>CanFormat[X: str, Y: str]</code></td>
@@ -371,7 +371,7 @@ info.
             <code>_ ** x</code><br/>
             <code>pow(_, x)</code>
         </td>
-        <td><code>do_pow</code></td>
+        <td><code>do_pow/2</code></td>
         <td><code>DoesPow</code></td>
         <td><code>__pow__</code></td>
         <td>
@@ -381,7 +381,7 @@ info.
     </tr>
     <tr>
         <td><code>pow(_, x, m)</code></td>
-        <td><code>do_pow</code></td>
+        <td><code>do_pow/3</code></td>
         <td><code>DoesPow</code></td>
         <td><code>__pow__</code></td>
         <td>
@@ -727,7 +727,7 @@ Additionally, `optype` also provides their (overloaded) intersection type:
     </tr>
     <tr>
         <td><code>round(_)</code></td>
-        <td><code>do_round</code></td>
+        <td><code>do_round/1</code></td>
         <td><code>DoesRound</code></td>
         <td><code>__round__/1</code></td>
         <td>
@@ -737,7 +737,7 @@ Additionally, `optype` also provides their (overloaded) intersection type:
     </tr>
     <tr>
         <td><code>round(_, n)</code></td>
-        <td><code>do_round</code></td>
+        <td><code>do_round/2</code></td>
         <td><code>DoesRound</code></td>
         <td><code>__round__/2</code></td>
         <td>
@@ -746,8 +746,11 @@ Additionally, `optype` also provides their (overloaded) intersection type:
         </td>
     </tr>
     <tr>
-        <td><code>round(_, n=None)</code></td>
-        <td><code>do_round(_, n=None)</code></td>
+        <td><code>round(_, n=...)</code></td>
+        <td>
+            <code>do_round/1</code><br/>
+            <code>do_round/2</code>
+        </td>
         <td><code>DoesRound</code></td>
         <td><code>__round__</code></td>
         <td><code>CanRound[N, Y1, Y2]</code></td>
@@ -873,14 +876,14 @@ from the abracadabra collections. This is how they are defined:
     </tr>
     <tr>
         <td><code>next(_)</code></td>
-        <td><code>do_next</code></td>
+        <td><code>do_next/1</code></td>
         <td><code>DoesNext</code></td>
         <td><code>__next__</code></td>
         <td><code>CanNext[V]</code></td>
     </tr>
     <tr>
         <td><code>iter(_)</code></td>
-        <td><code>do_iter</code></td>
+        <td><code>do_iter/1</code></td>
         <td><code>DoesIter</code></td>
         <td><code>__iter__</code></td>
         <td><code>CanIter[Vs: CanNext]</code></td>
@@ -984,8 +987,8 @@ Additionally, there is `optype.CanAIterSelf[V]`, with both the
             <code>_.__missing__()</code>
             (<a href="https://docs.python.org/3/reference/datamodel.html#object.__missing__">docs</a>)
         </td>
-        <td></td>
-        <td></td>
+        <td><code>do_missing</code></td>
+        <td><code>DoesMissing</code></td>
         <td><code>__missing__</code></td>
         <td><code>CanMissing[K, V]</code></td>
     </tr>
@@ -1012,16 +1015,20 @@ Additionally, there is `optype.CanAIterSelf[V]`, with both the
     </tr>
     <tr>
         <td><code>reversed(_)</code></td>
-        <td></td>
-        <td></td>
+        <td><code>do_reversed</code></td></td>
+        <td><code>DoesReversed</code></td>
         <td><code>__reversed__</code></td>
-        <td><code>CanReversed[Y]</code></td>
+        <td><code>CanReversed[Vs] | CanSequence[V]</code></td>
     </tr>
 </table>
 
 Because `CanMissing[K, M]` generally doesn't show itself without
 `CanGetitem[K, V]` there to hold its hand, `optype` conveniently stitched them
 together as `optype.CanGetMissing[K, V, M]`.
+
+Similarly, there is `optype.CanSequence[I: CanIndex, V]`, which is the
+combination of both `CanLen` and `CanItem[I, V]`, and serves as a more
+specific and flexible `collections.abc.Sequence[V]`.
 
 Additionally, `optype` provides protocols for types with (custom) *hash* or
 *index* methods:
@@ -1237,13 +1244,122 @@ Interfaces for emulating buffer types using the [buffer protocol][BP].
 
 [BP]: https://docs.python.org/3/reference/datamodel.html#python-buffer-protocol
 
+### `copy`
+
+For the [`copy`][CP] standard library, `optype` provides the following
+interfaces:
+
+<table>
+    <tr>
+        <th align="center">operator</th>
+        <th colspan="2" align="center">operand</th>
+    </tr>
+    <tr>
+        <td>expression</td>
+        <td>method</td>
+        <th>type</th>
+    </tr>
+    <tr>
+        <td><code>copy.copy(_)</code></td>
+        <td><code>__copy__</code></td>
+        <td><code>CanCopy[T]</code></td>
+    </tr>
+    <tr>
+        <td><code>copy.deepcopy(_, memo={})</code></td>
+        <td><code>__deepcopy__</code></td>
+        <td><code>CanDeepcopy[T]</code></td>
+    </tr>
+    <tr>
+        <td><code>copy.replace(_, **changes: V)</code> (Python 3.13+)</td>
+        <td><code>__replace__</code></td>
+        <td><code>CanReplace[T, V]</code></td>
+    </tr>
+</table>
+
+And for convenience, there are the runtime-checkable aliases for all three
+interfaces, with `T` bound to `Self`. These are roughly equivalent to:
+
+```python
+type CanCopySelf = CanCopy[CanCopySelf]
+type CanDeepcopySelf = CanDeepcopy[CanDeepcopySelf]
+type CanReplaceSelf[V] = CanReplace[CanReplaceSelf[V], V]
+```
+
+[CP]: https://docs.python.org/3/library/copy.html
+
+### `pickle`
+
+For the [`pickle`][PK] standard library, `optype` provides the following
+interfaces:
+
+[PK]: https://docs.python.org/3/library/pickle.html
+
+<table>
+    <tr>
+        <th>method(s)</th>
+        <th>signature (bound)</th>
+        <th>type</th>
+    </tr>
+    <tr>
+        <td><code>__reduce__</code></td>
+        <td><code>() -> R</code></td>
+        <td><code>CanReduce[R: str | tuple]</code></td>
+    </tr>
+    <tr>
+        <td><code>__reduce_ex__</code></td>
+        <td><code>(CanIndex) -> R</code></td>
+        <td><code>CanReduceEx[R: str | tuple]</code></td>
+    </tr>
+    <tr>
+        <td><code>__getstate__</code></td>
+        <td><code>() -> State</code></td>
+        <td><code>CanGetstate[State: object]</code></td>
+    </tr>
+    <tr>
+        <td><code>__setstate__</code></td>
+        <td><code>(State) -> None</code></td>
+        <td><code>CanSetstate[State: object]</code></td>
+    </tr>
+    <tr>
+        <td>
+            <code>__getnewargs__</code><br>
+            <code>__new__</code>
+        </td>
+        <td>
+            <code>() -> tuple[*Args]</code><br>
+            <code>(*Args) -> Self</code><br>
+        </td>
+        <td><code>CanGetnewargs[*Args]</code></td>
+    </tr>
+    <tr>
+        <td>
+            <code>__getnewargs_ex__</code><br>
+            <code>__new__</code>
+        </td>
+        <td>
+            <code>() -> tuple[tuple[*Args], dict[str, Kw]]</code><br>
+            <code>(*Args, **dict[str, Kw]) -> Self</code><br>
+        </td>
+        <td><code>CanGetnewargsEx[*Args, Kw]</code></td>
+    </tr>
+</table>
+
+### `dataclasses`
+
+For the [`dataclasses`][DC] standard library, `optype` provides the
+`optype.HasDataclassFields` interface
+It can conveniently be used to check whether a type or instance is a
+dataclass, i.e. `isinstance(obj, optype.HasDataclassFields)`.
+
+[DC]: https://docs.python.org/3/library/dataclasses.html
+
 ## Future plans
 
-- Support for Python versions before 3.12.
-- More standard library protocols, e.g. `copy`, `dataclasses`, `pickle`.
-- Typed mixins for DRY implementation of operator, e.g. for comparison ops
-  `GeFromLt`, `GtFromLe`, etc as a typed alternative for
-  `functools.total_ordering`. Similarly for numeric types, with e.g. `__add__`
-  and `__neg__`  a mixin could generate `__pos__` and `__sub__`.
-- Dependency-free third-party type support, e.g. protocols for `numpy`'s array
-  interface.
+- Support for Python versions before 3.12 (#19).
+- [numpy][NP] interfaces for arrays-like types (no deps) (#24)
+- [array-api][API-ND] interfaces (no deps) (#25)
+- [dataframe-api][API-DF] interfaces (no deps) (#26)
+
+[NP]: https://github.com/numpy/numpy
+[API-ND]: https://data-apis.org/array-api/latest/
+[API-DF]: https://data-apis.org/dataframe-api/draft/index.html
