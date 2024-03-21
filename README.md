@@ -371,7 +371,7 @@ info.
             <code>_ ** x</code><br/>
             <code>pow(_, x)</code>
         </td>
-        <td><code>do_pow</code></td>
+        <td><code>do_pow/2</code></td>
         <td><code>DoesPow</code></td>
         <td><code>__pow__</code></td>
         <td>
@@ -381,7 +381,7 @@ info.
     </tr>
     <tr>
         <td><code>pow(_, x, m)</code></td>
-        <td><code>do_pow</code></td>
+        <td><code>do_pow/3</code></td>
         <td><code>DoesPow</code></td>
         <td><code>__pow__</code></td>
         <td>
@@ -876,14 +876,14 @@ from the abracadabra collections. This is how they are defined:
     </tr>
     <tr>
         <td><code>next(_)</code></td>
-        <td><code>do_next</code></td>
+        <td><code>do_next/1</code></td>
         <td><code>DoesNext</code></td>
         <td><code>__next__</code></td>
         <td><code>CanNext[V]</code></td>
     </tr>
     <tr>
         <td><code>iter(_)</code></td>
-        <td><code>do_iter</code></td>
+        <td><code>do_iter/1</code></td>
         <td><code>DoesIter</code></td>
         <td><code>__iter__</code></td>
         <td><code>CanIter[Vs: CanNext]</code></td>
