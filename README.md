@@ -1356,9 +1356,6 @@ dataclass, i.e. `isinstance(obj, optype.HasDataclassFields)`.
 ## Future plans
 
 - Support for Python versions before 3.12 (#19).
-- More standard library protocols, e.g.
-    - `dataclasses` (#21)
-    - `typing.NamedTuple` (#23)
 - [numpy][NP] interfaces for arrays-like types (no deps) (#24)
 - [array-api][API-ND] interfaces (no deps) (#25)
 - [dataframe-api][API-DF] interfaces (no deps) (#26)
