@@ -987,8 +987,8 @@ Additionally, there is `optype.CanAIterSelf[V]`, with both the
             <code>_.__missing__()</code>
             (<a href="https://docs.python.org/3/reference/datamodel.html#object.__missing__">docs</a>)
         </td>
-        <td></td>
-        <td></td>
+        <td><code>do_missing</code></td>
+        <td><code>DoesMissing</code></td>
         <td><code>__missing__</code></td>
         <td><code>CanMissing[K, V]</code></td>
     </tr>

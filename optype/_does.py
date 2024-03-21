@@ -229,6 +229,11 @@ class DoesDelitem(Protocol):
 
 
 @final
+class DoesMissing(Protocol):
+    def __call__[K, V](self, __o: _c.CanMissing[K, V], __k: K, /) -> V: ...
+
+
+@final
 class DoesContains(Protocol):
     def __call__[K](self, __o: _c.CanContains[K], __k: K, /) -> bool: ...
 

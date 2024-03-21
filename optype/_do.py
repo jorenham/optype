@@ -87,6 +87,10 @@ def do_delitem[K](obj: _c.CanDelitem[K], key: K, /) -> None:
     del obj[key]
 
 
+def do_missing[K, V](obj: _c.CanMissing[K, V], key: K, /) -> V:
+    return obj.__missing__(key)
+
+
 # `operator.contains` cannot be used, as it incorrectly requires `key`
 # to be an **invariant** `object` instance...
 def do_contains[K](obj: _c.CanContains[K], key: K, /) -> bool:
@@ -233,6 +237,7 @@ if TYPE_CHECKING:
     _do_getitem: _d.DoesGetitem = do_getitem
     _do_setitem: _d.DoesSetitem = do_setitem
     _do_delitem: _d.DoesDelitem = do_delitem
+    _do_missing: _d.DoesMissing = do_missing
     _do_contains: _d.DoesContains = do_contains
 
     _do_radd: _d.DoesRAdd = do_radd
