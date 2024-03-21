@@ -1256,7 +1256,7 @@ interfaces:
     </tr>
     <tr>
         <td>expression</td>
-        <td>method(s)</td>
+        <td>method</td>
         <th>type</th>
     </tr>
     <tr>
@@ -1285,14 +1285,70 @@ type CanDeepcopySelf = CanDeepcopy[CanDeepcopySelf]
 type CanReplaceSelf[V] = CanReplace[CanReplaceSelf[V], V]
 ```
 
-[CP]: https://docs.python.org/3.13/library/copy.html
+[CP]: https://docs.python.org/3/library/copy.html
+
+### `pickle`
+
+For the [`pickle`][PK] standard library, `optype` provides the following
+interfaces:
+
+[PK]: https://docs.python.org/3/library/pickle.html
+
+<table>
+    <tr>
+        <th>method(s)</th>
+        <th>signature (bound)</th>
+        <th>type</th>
+    </tr>
+    <tr>
+        <td><code>__reduce__</code></td>
+        <td><code>() -> R</code></td>
+        <td><code>CanReduce[R: str | tuple]</code></td>
+    </tr>
+    <tr>
+        <td><code>__reduce_ex__</code></td>
+        <td><code>(CanIndex) -> R</code></td>
+        <td><code>CanReduceEx[R: str | tuple]</code></td>
+    </tr>
+    <tr>
+        <td><code>__getstate__</code></td>
+        <td><code>() -> State</code></td>
+        <td><code>CanGetstate[State: object]</code></td>
+    </tr>
+    <tr>
+        <td><code>__setstate__</code></td>
+        <td><code>(State) -> None</code></td>
+        <td><code>CanSetstate[State: object]</code></td>
+    </tr>
+    <tr>
+        <td>
+            <code>__getnewargs__</code><br>
+            <code>__new__</code>
+        </td>
+        <td>
+            <code>() -> tuple[*Args]</code><br>
+            <code>(*Args) -> Self</code><br>
+        </td>
+        <td><code>CanGetnewargs[*Args]</code></td>
+    </tr>
+    <tr>
+        <td>
+            <code>__getnewargs_ex__</code><br>
+            <code>__new__</code>
+        </td>
+        <td>
+            <code>() -> tuple[tuple[*Args], dict[str, Kw]]</code><br>
+            <code>(*Args, **dict[str, Kw]) -> Self</code><br>
+        </td>
+        <td><code>CanGetnewargsEx[*Args, Kw]</code></td>
+    </tr>
+</table>
 
 ## Future plans
 
 - Support for Python versions before 3.12 (#19).
 - More standard library protocols, e.g.
     - `dataclasses` (#21)
-    - `pickle` (#22).
     - `typing.NamedTuple` (#23)
 - [numpy][NP] interfaces for arrays-like types (no deps) (#24)
 - [array-api][API-ND] interfaces (no deps) (#25)
