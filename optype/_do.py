@@ -65,8 +65,12 @@ do_len: _d.DoesLen = len
 do_length_hint: _d.DoesLengthHint = _o.length_hint
 
 
+# `operator.getitem` isn't used, because it has an (unreasonably loose, and
+# redundant) overload for `(Sequence[T], slice) -> Sequence[T]`
 def do_getitem[K, V, M](
-    obj:  _c.CanGetitem[K, V] | _c.CanGetMissing[K, V, M], key: K, /,
+    obj:  _c.CanGetitem[K, V] | _c.CanGetMissing[K, V, M],
+    key: K,
+    /,
 ) -> V | M:
     """Same as `value = obj[key]`."""
     return obj[key]
