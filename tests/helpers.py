@@ -35,8 +35,11 @@ def get_protocol_members(cls: type) -> frozenset[str]:
     members = annotations.keys() | {
         name for name, v in vars(cls).items()
         if (
-            callable(v) and (
-                v.__module__ == module or (
+            name != '__new__'
+            and callable(v)
+            and (
+                v.__module__ == module
+                or (
                     # Fun fact: Each `@overload` returns the same dummy
                     # function; so there's no reference your wrapped method :).
                     # Oh and BTW; `typing.get_overloads` only works on the
