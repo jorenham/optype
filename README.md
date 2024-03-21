@@ -987,8 +987,8 @@ Additionally, there is `optype.CanAIterSelf[V]`, with both the
             <code>_.__missing__()</code>
             (<a href="https://docs.python.org/3/reference/datamodel.html#object.__missing__">docs</a>)
         </td>
-        <td></td>
-        <td></td>
+        <td><code>do_missing</code></td>
+        <td><code>DoesMissing</code></td>
         <td><code>__missing__</code></td>
         <td><code>CanMissing[K, V]</code></td>
     </tr>
@@ -1015,16 +1015,20 @@ Additionally, there is `optype.CanAIterSelf[V]`, with both the
     </tr>
     <tr>
         <td><code>reversed(_)</code></td>
-        <td></td>
-        <td></td>
+        <td><code>do_reversed</code></td></td>
+        <td><code>DoesReversed</code></td>
         <td><code>__reversed__</code></td>
-        <td><code>CanReversed[Y]</code></td>
+        <td><code>CanReversed[Vs] | CanSequence[V]</code></td>
     </tr>
 </table>
 
 Because `CanMissing[K, M]` generally doesn't show itself without
 `CanGetitem[K, V]` there to hold its hand, `optype` conveniently stitched them
 together as `optype.CanGetMissing[K, V, M]`.
+
+Similarly, there is `optype.CanSequence[I: CanIndex, V]`, which is the
+combination of both `CanLen` and `CanItem[I, V]`, and serves as a more
+specific and flexible `collections.abc.Sequence[V]`.
 
 Additionally, `optype` provides protocols for types with (custom) *hash* or
 *index* methods:
