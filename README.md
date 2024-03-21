@@ -1344,6 +1344,15 @@ interfaces:
     </tr>
 </table>
 
+### `dataclasses`
+
+For the [`dataclasses`][DC] standard library, `optype` provides the
+`optype.HasDataclassFields` interface
+It can conveniently be used to check whether a type or instance is a
+dataclass, i.e. `isinstance(obj, optype.HasDataclassFields)`.
+
+[DC]: https://docs.python.org/3/library/dataclasses.html
+
 ## Future plans
 
 - Support for Python versions before 3.12 (#19).
