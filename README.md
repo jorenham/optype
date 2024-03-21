@@ -189,7 +189,7 @@ if your type hints are spot-on; `optype` is you friend.
     </tr>
     <tr>
         <td><code>format(_, x)</code></td>
-        <td><code>do_format(_, x)</code></td>
+        <td><code>do_format</code></td>
         <td><code>DoesFormat</code></td>
         <td><code>__format__</code></td>
         <td><code>CanFormat[X: str, Y: str]</code></td>
@@ -727,7 +727,7 @@ Additionally, `optype` also provides their (overloaded) intersection type:
     </tr>
     <tr>
         <td><code>round(_)</code></td>
-        <td><code>do_round</code></td>
+        <td><code>do_round/1</code></td>
         <td><code>DoesRound</code></td>
         <td><code>__round__/1</code></td>
         <td>
@@ -737,7 +737,7 @@ Additionally, `optype` also provides their (overloaded) intersection type:
     </tr>
     <tr>
         <td><code>round(_, n)</code></td>
-        <td><code>do_round</code></td>
+        <td><code>do_round/2</code></td>
         <td><code>DoesRound</code></td>
         <td><code>__round__/2</code></td>
         <td>
@@ -746,8 +746,11 @@ Additionally, `optype` also provides their (overloaded) intersection type:
         </td>
     </tr>
     <tr>
-        <td><code>round(_, n=None)</code></td>
-        <td><code>do_round(_, n=None)</code></td>
+        <td><code>round(_, n=...)</code></td>
+        <td>
+            <code>do_round/1</code><br/>
+            <code>do_round/2</code>
+        </td>
         <td><code>DoesRound</code></td>
         <td><code>__round__</code></td>
         <td><code>CanRound[N, Y1, Y2]</code></td>
@@ -1239,11 +1242,16 @@ Interfaces for emulating buffer types using the [buffer protocol][BP].
 
 ## Future plans
 
-- Support for Python versions before 3.12.
-- More standard library protocols, e.g. `copy`, `dataclasses`, `pickle`.
-- Typed mixins for DRY implementation of operator, e.g. for comparison ops
-  `GeFromLt`, `GtFromLe`, etc as a typed alternative for
-  `functools.total_ordering`. Similarly for numeric types, with e.g. `__add__`
-  and `__neg__`  a mixin could generate `__pos__` and `__sub__`.
-- Dependency-free third-party type support, e.g. protocols for `numpy`'s array
-  interface.
+- Support for Python versions before 3.12 (#19).
+- More standard library protocols, e.g.
+    - `copy` (#20)
+    - `dataclasses` (#21)
+    - `pickle` (#22).
+    - `typing.NamedTuple` (#23)
+- [numpy][NP] interfaces for arrays-like types (no deps) (#24)
+- [array-api][API-ND] interfaces (no deps) (#25)
+- [dataframe-api][API-DF] interfaces (no deps) (#26)
+
+[NP]: https://github.com/numpy/numpy
+[API-ND]: https://data-apis.org/array-api/latest/
+[API-DF]: https://data-apis.org/dataframe-api/draft/index.html
