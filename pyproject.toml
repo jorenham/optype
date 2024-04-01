@@ -60,6 +60,7 @@ pythonPlatform = "All"
 typeCheckingMode = "all"
 useLibraryCodeForTypes = false
 reportAny = false
+reportUnusedCallResult = false
 
 
 [tool.pytest.ini_options]
@@ -92,13 +93,16 @@ ignore-init-module-imports = true
 preview = true
 select = [
     "F",        # pyflakes
-    "E",        # pycodestyle error
-    "W",        # pycodestyle warning
+    "E",        # pycodestyle: error
+    "W",        # pycodestyle: warning
+    "C90",      # mccabe
     "I",        # isort
     "N",        # pep8-naming
     "UP",       # pyupgrade
     "YTT",      # flake8-2020
     "ANN",      # flake8-annotations
+    "ASYNC",    # flake8-async
+    "TRIO",     # flake8-trio
     "BLE",      # flake8-blind-except
     "B",        # flake8-bugbear
     "A",        # flake8-builtins
@@ -106,6 +110,7 @@ select = [
     "C4",       # flake8-comprehensions
     "DTZ",      # flake8-datetimez
     "T10",      # flake8-debugger
+    "EM",       # flake8-errmsg
     "EXE",      # flake8-executable
     "FA",       # flake8-future-annotations
     "ISC",      # flake8-implicit-str-concat
@@ -126,13 +131,19 @@ select = [
     "TCH",      # flake8-type-checking
     "ARG",      # flake8-unused-arguments
     "PTH",      # flake8-use-pathlib
+    "TD",       # flake8-todos
+    "FIX",      # flake8-fixme
     "ERA",      # eradicate
+    "PD",       # pandas-vet
     "PGH",      # pygrep-hooks
     "PL",       # pylint
     "TRY",      # tryceratops
     "FLY",      # flynt
+    "NPY",      # numpy
+    "AIR",      # airflow
     "PERF",     # perflint,
     "FURB",     # refurb
+    "LOG",      # flake8-logging
     "RUF",      # ruff
 ]
 extend-ignore = [
@@ -142,16 +153,23 @@ extend-ignore = [
     "ANN401",   # any-type (unreasonable)
 
     # flake8-pyi
-    "PYI036",   # bad-exit-annotation (FP with more precise overloads)
+    "PYI036",   # bad-exit-annotation (unreasonable)
 
     # pylint
     "PLW1641",  # eq-without-hash (buggy; doesn't consider super)
 
     # refurb
-    "FURB118",  # reimplemented-operator (that's kinda the point, bro)
+    "FURB118",  # reimplemented-operator (unreasonable)
 ]
 
 [tool.ruff.lint.per-file-ignores]
+"examples/*" = [
+    # isort
+    "I001",     # unsorted-imports
+
+    # flake8-no-pep420
+    "INP001",   # implicit-namespace-package
+]
 "tests/*" = [
     # flake8-annotations
     "ANN201",   # missing-return-type
@@ -163,7 +181,6 @@ extend-ignore = [
 [tool.ruff.lint.isort]
 case-sensitive = true
 combine-as-imports = true
-force-wrap-aliases = true
 known-first-party = ["optype"]
 lines-between-types = 0
 lines-after-imports = 2
