@@ -5,8 +5,8 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "optype"
-version = "0.3.0"
-description = "Building blocks for precise & flexible Python type hints"
+version = "0.3.1"
+description = "Building blocks for precise type hints in Python 3.12+"
 authors = ["Joren Hammudoglu <jhammudoglu@gmail.com>"]
 license = "BSD-3-Clause"
 readme = "README.md"
@@ -15,12 +15,12 @@ readme = "README.md"
 python = "^3.12"
 
 [tool.poetry.group.dev.dependencies]
-pre-commit = '^3.6.2'
+pre-commit = '^3.7.0'
 
 [tool.poetry.group.lint.dependencies]
 codespell = "^2.2.6"
-pyright = "^1.1.355"
-ruff = "^0.3.4"
+basedpyright = "^1.8.0"
+ruff = "^0.3.5"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.1.1"
@@ -34,66 +34,33 @@ pytest-github-actions-annotate-failures = ">=0.2.0,<1.0"
 [tool.codespell]
 context = 2
 ignore-words-list = "cange"  # CanGe
-skip = """\
-    ./.venv,\
-    ./.vscode,\
-    *.lock,\
-    *.pyc,\
-    *.js\
-"""
 
 
-[tool.pyright]
-include = ["optype", "examples", "tests"]
+[tool.basedpyright]
+include = [
+    "optype",
+    "examples",
+    "tests"
+]
 exclude = [
     "**/__pycache__",
-    "**/.vscode",
-    ".venv",
     ".git",
     ".github",
     ".pytest_cache",
     ".ruff_cache",
-    "dist",
+    ".venv",
+    ".vscode",
+    "dist"
 ]
 stubPath = "."
 venvPath = "."
 venv = ".venv"
 pythonVersion = "3.12"
 pythonPlatform = "All"
-typeCheckingMode = "strict"
+typeCheckingMode = "all"
 useLibraryCodeForTypes = false
-
-strictListInference = true
-strictDictionaryInference = true
-strictSetInference = true
-deprecateTypingAliases = true
-disableBytesTypePromotions = true
-reportPropertyTypeMismatch = "error"
-reportMissingTypeStubs = "error"
-reportImportCycles = "error"
-reportUnusedImport = "none"  # already covered by ruff
-reportUnusedClass = "warning"
-reportUnusedFunction = "warning"
-reportUnusedVariable = "warning"
-reportConstantRedefinition = "error"
-reportInconsistentConstructor = "error"
-reportMissingTypeArgument = "error"
-reportUninitializedInstanceVariable = "error"
-reportCallInDefaultInitializer = "error"
-reportUnnecessaryIsInstance = "warning"
-reportUnnecessaryCast = "warning"
-reportUnnecessaryComparison = "warning"
-reportUnnecessaryContains = "warning"
-reportImplicitStringConcatenation = "none"
-reportInvalidStubStatement = "error"
-reportIncompleteStub = "error"
-# reportUnusedCallResult = "warning"
-reportUnusedCoroutine = "error"
-reportUnusedExpression = "warning"
-reportUnnecessaryTypeIgnoreComment = "error"
-reportMatchNotExhaustive = "error"
-reportImplicitOverride = "warning"
-reportShadowedImports = "error"
+reportAny = false
+reportUnusedCallResult = false
 
 
 [tool.pytest.ini_options]
@@ -102,10 +69,6 @@ testpaths = ["optype", "examples", "tests"]
 addopts = [
     "-ra",
     "--doctest-modules",
-    "--exitfirst",
-    "--showlocals",
-    "--strict-config",
-    "--strict-markers",
 ]
 doctest_optionflags = [
     "NORMALIZE_WHITESPACE",
@@ -130,13 +93,16 @@ ignore-init-module-imports = true
 preview = true
 select = [
     "F",        # pyflakes
-    "E",        # pycodestyle error
-    "W",        # pycodestyle warning
+    "E",        # pycodestyle: error
+    "W",        # pycodestyle: warning
+    "C90",      # mccabe
     "I",        # isort
     "N",        # pep8-naming
     "UP",       # pyupgrade
     "YTT",      # flake8-2020
     "ANN",      # flake8-annotations
+    "ASYNC",    # flake8-async
+    "TRIO",     # flake8-trio
     "BLE",      # flake8-blind-except
     "B",        # flake8-bugbear
     "A",        # flake8-builtins
@@ -144,6 +110,7 @@ select = [
     "C4",       # flake8-comprehensions
     "DTZ",      # flake8-datetimez
     "T10",      # flake8-debugger
+    "EM",       # flake8-errmsg
     "EXE",      # flake8-executable
     "FA",       # flake8-future-annotations
     "ISC",      # flake8-implicit-str-concat
@@ -164,13 +131,19 @@ select = [
     "TCH",      # flake8-type-checking
     "ARG",      # flake8-unused-arguments
     "PTH",      # flake8-use-pathlib
-    # "ERA",      # eradicate   # (rebellion!)
+    "TD",       # flake8-todos
+    "FIX",      # flake8-fixme
+    "ERA",      # eradicate
+    "PD",       # pandas-vet
     "PGH",      # pygrep-hooks
     "PL",       # pylint
     "TRY",      # tryceratops
     "FLY",      # flynt
+    "NPY",      # numpy
+    "AIR",      # airflow
     "PERF",     # perflint,
     "FURB",     # refurb
+    "LOG",      # flake8-logging
     "RUF",      # ruff
 ]
 extend-ignore = [
@@ -180,19 +153,26 @@ extend-ignore = [
     "ANN401",   # any-type (unreasonable)
 
     # flake8-pyi
-    "PYI036",   # bad-exit-annotation (FP with more precise overloads)
-
-    # pylint
-    "PLW1641",  # eq-without-hash (buggy; doesn't consider super)
+    "PYI036",   # bad-exit-annotation (unreasonable)
 
     # refurb
-    "FURB118",  # reimplemented-operator (that's kinda the point, bro)
+    "FURB118",  # reimplemented-operator (unreasonable)
 ]
 
 [tool.ruff.lint.per-file-ignores]
+"examples/*" = [
+    # isort
+    "I001",     # unsorted-imports
+
+    # flake8-no-pep420
+    "INP001",   # implicit-namespace-package
+
+    # pylint
+    "PLR2004",  # magic-value-comparison
+]
 "tests/*" = [
     # flake8-annotations
-    "ANN201",   # missing-return-type-undocumented-public-function
+    "ANN201",   # missing-return-type
 
     # flake8-self
     "SLF001",   # private-member-access
@@ -201,7 +181,6 @@ extend-ignore = [
 [tool.ruff.lint.isort]
 case-sensitive = true
 combine-as-imports = true
-force-wrap-aliases = true
 known-first-party = ["optype"]
 lines-between-types = 0
 lines-after-imports = 2

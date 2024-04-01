@@ -112,7 +112,7 @@ class CanLe[X, Y](Protocol):
 
 
 @runtime_checkable
-class CanEq[X, Y](Protocol):
+class CanEq[X, Y](Protocol):  # noqa: PLW1641
     """
     Unfortunately, `typeshed` incorrectly annotates `object.__eq__` as
     `(Self, object) -> bool`.

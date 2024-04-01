@@ -8,9 +8,7 @@ build/
 dist/
 site/
 
-# Unit test
-.cache
-.pyright/
+# Cache
 .pytest_cache/
 .ruff_cache/
 
@@ -21,7 +19,4 @@ venv/
 
 # IntelliJ
 .idea/
-.run
-
-# VSCode settings
-.vscode/settings.json
+.run/

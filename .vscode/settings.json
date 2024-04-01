@@ -1,0 +1,5 @@
+{
+  "git.branchProtection": ["master"],
+  "githubPullRequests.overrideDefaultBranch": "dev",
+  "python.languageServer": "None"
+}

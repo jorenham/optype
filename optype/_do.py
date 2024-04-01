@@ -49,13 +49,6 @@ do_dir: _d.DoesDir = dir
 
 # callables
 
-# def do_call[**Xs, Y](
-#     func: _c.CanCall[Xs, Y],
-#     *args: Xs.args,
-#     **kwargs: Xs.kwargs,
-# ) -> Y:
-#     return func(*args, **kwargs)
-
 do_call: _d.DoesCall = _o.call
 
 
