@@ -1,0 +1,14 @@
+{
+  "recommendations": [
+    "charliermarsh.ruff",
+    "codezombiech.gitignore",
+    "davidanson.vscode-markdownlint",
+    "detachhead.basedpyright",
+    "editorconfig.editorconfig",
+    "elagil.pre-commit-helper",
+    "ms-python.python",
+    "serhioromano.vscode-gitflow",
+    "zeshuaro.vscode-python-poetry"
+  ],
+  "unwantedRecommendations": ["ms-python.vscode-pylance"]
+}
