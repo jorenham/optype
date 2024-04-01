@@ -59,6 +59,47 @@ pip install optype
 
 [OPTYPE]: https://pypi.org/project/optype/
 
+## Example
+
+Let's say you're writing a `twice(x)` function, that evaluates `2 * x`.
+Implementing it is trivial, but what about the type annotations?
+
+Because `twice(2) == 4`, `twice(3.14) == 6.28` and `twice('I') = 'II'`, it
+might seem like a good idea to type it as `twice[T](x: T) -> T: ...`.
+However, that wouldn't include cases such as `twice(True) == 2` or
+`twice((42, True)) == (42, True, 42, True)`, where the input- and output types
+differ.
+Moreover, `twice` should accept *any* type with a custom `__rmul__` method
+that accepts `2` as argument.
+
+This is where `optype` comes in handy, which has single-method protocols for
+*all* the builtin special methods.
+For `twice`, we can use `optype.CanRMul[X, Y]`, which, as the name suggests,
+is a protocol with (only) the `def __rmul__(self, x: X) -> Y: ...` method.
+With this, the `twice` function can written as:
+
+```python
+import typing
+import optype
+
+type Two = typing.Literal[2]
+
+def twice[Y](x: optype.CanRMul[Two, Y], /) -> Y:
+    return 2 * x
+```
+
+But what about types that implement `__add__` but not `__radd__`?
+In this case, we could return `x * 2` as fallback.
+Because the `optype.Can*` protocols are runtime-checkable, the revised
+`twice2` function can be compactly written as:
+
+```python
+def twice2[Y](x: optype.CanRMul[Two, Y] | optype.CanMul[Two, Y], /) -> Y:
+    return 2 * x if isinstance(x, optype.CanRMul) else x * 2
+```
+
+See [`examples/twice.py`](examples/twice.py) for the full example.
+
 ## Overview
 
 The API of `optype` is flat; a single `import optype` is all you need.

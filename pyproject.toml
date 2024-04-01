@@ -169,6 +169,9 @@ extend-ignore = [
 
     # flake8-no-pep420
     "INP001",   # implicit-namespace-package
+
+    # pylint
+    "PLR2004",  # magic-value-comparison
 ]
 "tests/*" = [
     # flake8-annotations
