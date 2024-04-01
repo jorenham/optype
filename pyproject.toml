@@ -19,7 +19,6 @@ pre-commit = '^3.7.0'
 
 [tool.poetry.group.lint.dependencies]
 codespell = "^2.2.6"
-# pyright = "^1.1.356"
 basedpyright = "^1.8.0"
 ruff = "^0.3.4"
 
@@ -69,10 +68,6 @@ testpaths = ["optype", "examples", "tests"]
 addopts = [
     "-ra",
     "--doctest-modules",
-    "--exitfirst",
-    "--showlocals",
-    "--strict-config",
-    "--strict-markers",
 ]
 doctest_optionflags = [
     "NORMALIZE_WHITESPACE",
@@ -131,7 +126,7 @@ select = [
     "TCH",      # flake8-type-checking
     "ARG",      # flake8-unused-arguments
     "PTH",      # flake8-use-pathlib
-    # "ERA",      # eradicate   # (rebellion!)
+    "ERA",      # eradicate
     "PGH",      # pygrep-hooks
     "PL",       # pylint
     "TRY",      # tryceratops
