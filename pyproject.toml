@@ -155,9 +155,6 @@ extend-ignore = [
     # flake8-pyi
     "PYI036",   # bad-exit-annotation (unreasonable)
 
-    # pylint
-    "PLW1641",  # eq-without-hash (buggy; doesn't consider super)
-
     # refurb
     "FURB118",  # reimplemented-operator (unreasonable)
 ]
