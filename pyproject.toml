@@ -19,7 +19,8 @@ pre-commit = '^3.7.0'
 
 [tool.poetry.group.lint.dependencies]
 codespell = "^2.2.6"
-pyright = "^1.1.356"
+# pyright = "^1.1.356"
+basedpyright = "^1.8.0"
 ruff = "^0.3.4"
 
 [tool.poetry.group.test.dependencies]
@@ -34,66 +35,32 @@ pytest-github-actions-annotate-failures = ">=0.2.0,<1.0"
 [tool.codespell]
 context = 2
 ignore-words-list = "cange"  # CanGe
-skip = """\
-    ./.venv,\
-    ./.vscode,\
-    *.lock,\
-    *.pyc,\
-    *.js\
-"""
 
 
-[tool.pyright]
-include = ["optype", "examples", "tests"]
+[tool.basedpyright]
+include = [
+    "optype",
+    "examples",
+    "tests"
+]
 exclude = [
     "**/__pycache__",
-    "**/.vscode",
-    ".venv",
     ".git",
     ".github",
     ".pytest_cache",
     ".ruff_cache",
-    "dist",
+    ".venv",
+    ".vscode",
+    "dist"
 ]
 stubPath = "."
 venvPath = "."
 venv = ".venv"
 pythonVersion = "3.12"
 pythonPlatform = "All"
-typeCheckingMode = "strict"
+typeCheckingMode = "all"
 useLibraryCodeForTypes = false
-
-strictListInference = true
-strictDictionaryInference = true
-strictSetInference = true
-deprecateTypingAliases = true
-disableBytesTypePromotions = true
-reportPropertyTypeMismatch = "error"
-reportMissingTypeStubs = "error"
-reportImportCycles = "error"
-reportUnusedImport = "none"  # already covered by ruff
-reportUnusedClass = "warning"
-reportUnusedFunction = "warning"
-reportUnusedVariable = "warning"
-reportConstantRedefinition = "error"
-reportInconsistentConstructor = "error"
-reportMissingTypeArgument = "error"
-reportUninitializedInstanceVariable = "error"
-reportCallInDefaultInitializer = "error"
-reportUnnecessaryIsInstance = "warning"
-reportUnnecessaryCast = "warning"
-reportUnnecessaryComparison = "warning"
-reportUnnecessaryContains = "warning"
-reportImplicitStringConcatenation = "none"
-reportInvalidStubStatement = "error"
-reportIncompleteStub = "error"
-# reportUnusedCallResult = "warning"
-reportUnusedCoroutine = "error"
-reportUnusedExpression = "warning"
-reportUnnecessaryTypeIgnoreComment = "error"
-reportMatchNotExhaustive = "error"
-reportImplicitOverride = "warning"
-reportShadowedImports = "error"
+reportAny = false
 
 
 [tool.pytest.ini_options]
@@ -192,7 +159,7 @@ extend-ignore = [
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = [
     # flake8-annotations
-    "ANN201",   # missing-return-type-undocumented-public-function
+    "ANN201",   # missing-return-type
 
     # flake8-self
     "SLF001",   # private-member-access

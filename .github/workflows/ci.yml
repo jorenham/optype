@@ -40,8 +40,8 @@ jobs:
       - name: ruff check
         run: poetry run ruff check --output-format=github .
 
-      - name: pyright
-        run: poetry run pyright
+      - name: basedpyright
+        run: poetry run basedpyright
 
   test:
     timeout-minutes: 5
