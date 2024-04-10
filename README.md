@@ -11,38 +11,38 @@
 <p align="center">
     <a href="https://github.com/jorenham/optype/actions?query=workflow%3ACI">
         <img
-            alt="Continuous Integration"
+            alt="optype - CI"
             src="https://github.com/jorenham/optype/workflows/CI/badge.svg"
         />
     </a>
     <a href="https://pypi.org/project/optype/">
         <img
-            alt="PyPI"
+            alt="optype - PyPI"
             src="https://img.shields.io/pypi/v/optype?style=flat"
         />
     </a>
     <a href="https://github.com/jorenham/optype">
         <img
-            alt="Python Versions"
+            alt="optype - Python Versions"
             src="https://img.shields.io/pypi/pyversions/optype?style=flat"
         />
     </a>
     <a href="https://github.com/jorenham/optype">
         <img
-            alt="License"
+            alt="optype - license"
             src="https://img.shields.io/github/license/jorenham/optype?style=flat"
+        />
+    </a>
+    <a href="https://detachhead.github.io/basedpyright">
+        <img
+            alt="optype - basedpyright"
+            src="https://img.shields.io/badge/basedpyright-checked-42b983"
         />
     </a>
     <a href="https://github.com/astral-sh/ruff">
         <img
-            alt="Ruff"
+            alt="optype - ruff"
             src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json"
-        />
-    </a>
-    <a href="https://github.com/microsoft/pyright">
-        <img
-            alt="Checked with pyright"
-            src="https://microsoft.github.io/pyright/img/pyright_badge.svg"
         />
     </a>
 </p>
