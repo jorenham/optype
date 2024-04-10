@@ -19,7 +19,7 @@ pre-commit = '^3.7.0'
 
 [tool.poetry.group.lint.dependencies]
 codespell = "^2.2.6"
-basedpyright = "^1.8.0"
+basedpyright = "^1.10.0"
 ruff = "^0.3.5"
 
 [tool.poetry.group.test.dependencies]
@@ -58,7 +58,6 @@ venv = ".venv"
 pythonVersion = "3.12"
 pythonPlatform = "All"
 typeCheckingMode = "all"
-useLibraryCodeForTypes = false
 reportAny = false
 reportUnusedCallResult = false
 
@@ -80,7 +79,7 @@ xfail_strict = true
 
 
 [tool.ruff]
-src = ["optype", "tests"]
+src = ["optype", "examples", "tests"]
 target-version = "py312"
 line-length = 79
 indent-width = 4
@@ -150,13 +149,13 @@ extend-ignore = [
     # flake8-annotations
     "ANN001",   # missing-type-function-argument (deprecated)
     "ANN002",   # missing-type-args (deprecated)
-    "ANN401",   # any-type (unreasonable)
+    "ANN401",   # any-type
 
     # flake8-pyi
-    "PYI036",   # bad-exit-annotation (unreasonable)
+    "PYI036",   # bad-exit-annotation
 
     # refurb
-    "FURB118",  # reimplemented-operator (unreasonable)
+    "FURB118",  # reimplemented-operator
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -193,7 +192,7 @@ strict = true
 
 [tool.ruff.lint.pylint]
 allow-dunder-method-names = [
-    "__replace__",  # used by `copy.replace` in Python 3.13+
+    "__replace__"   # used by `copy.replace` in Python 3.13+
 ]
 
 [tool.ruff.format]
