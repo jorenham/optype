@@ -15,6 +15,11 @@ classifiers = [
     "Operating System :: OS Independent",
     "Typing :: Typed",
 ]
+repository = "https://github.com/jorenham/optype/"
+documentation = "https://github.com/jorenham/optype?tab=readme-ov-file#optype"
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/jorenham/optype/issues"
+"Changelog" = "https://github.com/jorenham/optype/releases"
 
 [tool.poetry.dependencies]
 python = "^3.12"
