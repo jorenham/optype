@@ -43,6 +43,12 @@ jobs:
       - name: basedpyright
         run: poetry run basedpyright
 
+      - name: markdownlint
+        uses: DavidAnson/markdownlint-cli2-action@v16
+        with:
+          config: '.markdownlint.jsonc'
+          globs: '**/*.md'
+
   test:
     timeout-minutes: 5
 
