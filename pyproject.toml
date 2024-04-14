@@ -6,10 +6,15 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry]
 name = "optype"
 version = "0.3.1"
-description = "Building blocks for precise type hints in Python 3.12+"
+description = "Building blocks for precise & flexible type hints"
 authors = ["Joren Hammudoglu <jhammudoglu@gmail.com>"]
 license = "BSD-3-Clause"
 readme = "README.md"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Operating System :: OS Independent",
+    "Typing :: Typed",
+]
 
 [tool.poetry.dependencies]
 python = "^3.12"
@@ -162,17 +167,14 @@ extend-ignore = [
 "examples/*" = [
     # isort
     "I001",     # unsorted-imports
-
     # flake8-no-pep420
     "INP001",   # implicit-namespace-package
-
     # pylint
     "PLR2004",  # magic-value-comparison
 ]
 "tests/*" = [
     # flake8-annotations
     "ANN201",   # missing-return-type
-
     # flake8-self
     "SLF001",   # private-member-access
 ]
@@ -181,8 +183,8 @@ extend-ignore = [
 case-sensitive = true
 combine-as-imports = true
 known-first-party = ["optype"]
-lines-between-types = 0
 lines-after-imports = 2
+lines-between-types = 0
 
 [tool.ruff.lint.flake8-quotes]
 inline-quotes = "single"
