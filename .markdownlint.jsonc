@@ -3,6 +3,9 @@
   "MD007": {
     "indent": 4
   },
+  "MD013": {
+    "line_length": 79
+  },
   "MD033": {
     "allowed_elements": [
       "h1",
