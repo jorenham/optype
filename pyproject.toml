@@ -23,14 +23,16 @@ documentation = "https://github.com/jorenham/optype?tab=readme-ov-file#optype"
 
 [tool.poetry.dependencies]
 python = "^3.11"
+typing-extensions = { version = "^4.7.1", python = "<3.12" }
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = '^3.7.0'
 
 [tool.poetry.group.lint.dependencies]
-codespell = "^2.2.6"
 basedpyright = "^1.10.1"
+codespell = "^2.2.6"
 ruff = "^0.3.7"
+typing-extensions = "*"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.1.1"
@@ -70,6 +72,8 @@ pythonPlatform = "All"
 typeCheckingMode = "all"
 reportAny = false
 reportUnusedCallResult = false
+# because of `sys.version_info()` conditionals
+reportUnreachable = false
 
 
 [tool.pytest.ini_options]
