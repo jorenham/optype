@@ -26,7 +26,7 @@ documentation = "https://github.com/jorenham/optype?tab=readme-ov-file#optype"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-typing-extensions = { version = ">=4.5", python = "<3.12" }
+typing-extensions = {version = ">=4.5", python = "<3.12"}
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = '^3.7.0'
@@ -39,6 +39,7 @@ typing-extensions = "*"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.1.1"
+typing-extensions = "*"
 
 [tool.poetry.group.test-github]
 optional = true
