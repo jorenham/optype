@@ -2,29 +2,55 @@
 """
 Elementary interfaces for special "dunder" attributes.
 """
+import sys
 from collections.abc import Callable
 from dataclasses import Field as _Field
 from types import CodeType, ModuleType
-from typing import Any, ClassVar, Protocol, Self, override, runtime_checkable
+from typing import (
+    Any,
+    ClassVar,
+    ParamSpec,
+    Protocol,
+    Self,
+    TypeVar,
+    TypeVarTuple,
+    Unpack,
+    runtime_checkable,
+)
+
+
+if sys.version_info < (3, 12):
+    from typing_extensions import override
+else:
+    from typing import override
 
 from ._can import CanIter as _CanIter
+
+
+_V = TypeVar('_V')
+_V_match_args = TypeVar('_V_match_args', bound=tuple[str, ...] | list[str])
+_V_slots = TypeVar('_V_slots', bound=str | _CanIter[Any])
+
+_Xs = ParamSpec('_Xs')
+_Xss = TypeVarTuple('_Xss')
+_Y = TypeVar('_Y')
 
 
 # Instances
 
 @runtime_checkable
-class HasMatchArgs[Ks: tuple[str, ...] | list[str]](Protocol):
-    __match_args__: Ks
+class HasMatchArgs(Protocol[_V_match_args]):
+    __match_args__: _V_match_args
 
 
 @runtime_checkable
-class HasSlots[S: str | _CanIter[Any]](Protocol):
-    __slots__: S
+class HasSlots(Protocol[_V_slots]):
+    __slots__: _V_slots
 
 
 @runtime_checkable
-class HasDict[V](Protocol):
-    __dict__: dict[str, V]
+class HasDict(Protocol[_V]):
+    __dict__: dict[str, _V]
 
 
 @runtime_checkable
@@ -66,32 +92,35 @@ class HasDoc(Protocol):
 
 
 @runtime_checkable
-class HasAnnotations[V](Protocol):
-    __annotations__: dict[str, V]
+class HasAnnotations(Protocol[_V]):
+    __annotations__: dict[str, _V]
 
 
 @runtime_checkable
-class HasTypeParams[*Ps](Protocol):
+class HasTypeParams(Protocol[Unpack[_Xss]]):
     # Note that `*Ps: (TypeVar, ParamSpec, TypeVarTuple)` should hold
-    __type_params__: tuple[*Ps]
+    __type_params__: tuple[Unpack[_Xss]]
 
 
 # functions and methods
 
 @runtime_checkable
-class HasFunc[**Xs, Y](Protocol):
-    __func__: Callable[Xs, Y]
+class HasFunc(Protocol[_Xs, _Y]):
+    __func__: Callable[_Xs, _Y]
 
 
 @runtime_checkable
-class HasWrapped[**Xs, Y](Protocol):
-    __wrapped__: Callable[Xs, Y]
+class HasWrapped(Protocol[_Xs, _Y]):
+    __wrapped__: Callable[_Xs, _Y]
+
+
+_T_self_co = TypeVar('_T_self_co', bound=object | ModuleType, covariant=True)
 
 
 @runtime_checkable
-class HasSelf[T: object | ModuleType](Protocol):
+class HasSelf(Protocol[_T_self_co]):
     @property
-    def __self__(self) -> T: ...
+    def __self__(self) -> _T_self_co: ...
 
 
 @runtime_checkable
