@@ -1,9 +1,18 @@
 import math as _math
 import operator as _o
-from typing import TYPE_CHECKING
+import sys as _sys
+from typing import TYPE_CHECKING, ParamSpec, TypeVar
 
 import optype._can as _c
 import optype._does as _d
+
+
+_K = TypeVar('_K')
+_V = TypeVar('_V')
+_D = TypeVar('_D')
+_X = TypeVar('_X')
+_Y = TypeVar('_Y')
+_Xss = ParamSpec('_Xss')
 
 
 # type conversion
@@ -49,7 +58,16 @@ do_dir: _d.DoesDir = dir
 
 # callables
 
-do_call: _d.DoesCall = _o.call
+if _sys.version_info < (3, 11):
+    def do_call(
+        f: _c.CanCall[_Xss, _Y],
+        /,
+        *args: _Xss.args,
+        **kwargs: _Xss.kwargs,
+    ) -> _Y:
+        return f(*args, **kwargs)
+else:
+    do_call: _d.DoesCall = _o.call
 
 
 # containers and sequences
@@ -61,32 +79,32 @@ do_length_hint: _d.DoesLengthHint = _o.length_hint
 # `operator.getitem` isn't used, because it has an (unreasonably loose, and
 # redundant) overload for `(Sequence[T], slice) -> Sequence[T]`
 # https://github.com/python/typeshed/blob/main/stdlib/_operator.pyi#L84-L86
-def do_getitem[K, V, M](
-    obj:  _c.CanGetitem[K, V] | _c.CanGetMissing[K, V, M],
-    key: K,
+def do_getitem(
+    obj:  _c.CanGetitem[_K, _V] | _c.CanGetMissing[_K, _V, _D],
+    key: _K,
     /,
-) -> V | M:
+) -> _V | _D:
     """Same as `value = obj[key]`."""
     return obj[key]
 
 
-def do_setitem[K, V](obj: _c.CanSetitem[K, V], key: K, value: V, /) -> None:
+def do_setitem(obj: _c.CanSetitem[_K, _V], key: _K, value: _V, /) -> None:
     """Same as `obj[key] = value`."""
     obj[key] = value
 
 
-def do_delitem[K](obj: _c.CanDelitem[K], key: K, /) -> None:
+def do_delitem(obj: _c.CanDelitem[_K], key: _K, /) -> None:
     """Same as `del obj[key]`."""
     del obj[key]
 
 
-def do_missing[K, V](obj: _c.CanMissing[K, V], key: K, /) -> V:
+def do_missing(obj: _c.CanMissing[_K, _V], key: _K, /) -> _V:
     return obj.__missing__(key)
 
 
 # `operator.contains` cannot be used, as it incorrectly requires `key`
 # to be an **invariant** `object` instance...
-def do_contains[K](obj: _c.CanContains[K], key: K, /) -> bool:
+def do_contains(obj: _c.CanContains[_K], key: _K, /) -> bool:
     """Same as `key in obj`."""
     return key in obj
 
@@ -117,72 +135,73 @@ do_or: _d.DoesOr = _o.or_
 # (a DRY `do_r*` decorator won't work; the overloads get lost during casting to
 # `CanCall` or `Callable`, within the decorator function signature).
 
-def do_radd[X, Y](a: _c.CanRAdd[X, Y], b: X) -> Y:
+
+def do_radd(a: _c.CanRAdd[_X, _Y], b: _X) -> _Y:
     """Same as `b + a`."""
     return b + a
 
 
-def do_rsub[X, Y](a: _c.CanRSub[X, Y], b: X) -> Y:
+def do_rsub(a: _c.CanRSub[_X, _Y], b: _X) -> _Y:
     """Same as `b - a`."""
     return b - a
 
 
-def do_rmul[X, Y](a: _c.CanRMul[X, Y], b: X) -> Y:
+def do_rmul(a: _c.CanRMul[_X, _Y], b: _X) -> _Y:
     """Same as `b * a`."""
     return b * a
 
 
-def do_rmatmul[X, Y](a: _c.CanRMatmul[X, Y], b: X) -> Y:
+def do_rmatmul(a: _c.CanRMatmul[_X, _Y], b: _X) -> _Y:
     """Same as `b @ a`."""
     return b @ a
 
 
-def do_rtruediv[X, Y](a: _c.CanRTruediv[X, Y], b: X) -> Y:
+def do_rtruediv(a: _c.CanRTruediv[_X, _Y], b: _X) -> _Y:
     """Same as `b / a`."""
     return b / a
 
 
-def do_rfloordiv[X, Y](a: _c.CanRFloordiv[X, Y], b: X) -> Y:
+def do_rfloordiv(a: _c.CanRFloordiv[_X, _Y], b: _X) -> _Y:
     """Same as `b // a`."""
     return b // a
 
 
-def do_rmod[X, Y](a: _c.CanRMod[X, Y], b: X) -> Y:
+def do_rmod(a: _c.CanRMod[_X, _Y], b: _X) -> _Y:
     """Same as `b % a`."""
     return b % a
 
 
-def do_rdivmod[X, Y](a: _c.CanRDivmod[X, Y], b: X) -> Y:
+def do_rdivmod(a: _c.CanRDivmod[_X, _Y], b: _X) -> _Y:
     """Same as `divmod(b, a)`."""
     return divmod(b, a)
 
 
-def do_rpow[X, Y](a: _c.CanRPow[X, Y], b: X) -> Y:
+def do_rpow(a: _c.CanRPow[_X, _Y], b: _X) -> _Y:
     """Same as `b ** a`."""
     return b ** a
 
 
-def do_rlshift[X, Y](a: _c.CanRLshift[X, Y], b: X) -> Y:
+def do_rlshift(a: _c.CanRLshift[_X, _Y], b: _X) -> _Y:
     """Same as `b << a`."""
     return b << a
 
 
-def do_rrshift[X, Y](a: _c.CanRRshift[X, Y], b: X) -> Y:
+def do_rrshift(a: _c.CanRRshift[_X, _Y], b: _X) -> _Y:
     """Same as `b >> a`."""
     return b >> a
 
 
-def do_rand[X, Y](a: _c.CanRAnd[X, Y], b: X) -> Y:
+def do_rand(a: _c.CanRAnd[_X, _Y], b: _X) -> _Y:
     """Same as `b & a`."""
     return b & a
 
 
-def do_rxor[X, Y](a: _c.CanRXor[X, Y], b: X) -> Y:
+def do_rxor(a: _c.CanRXor[_X, _Y], b: _X) -> _Y:
     """Same as `b ^ a`."""
     return b ^ a
 
 
-def do_ror[X, Y](a: _c.CanROr[X, Y], b: X) -> Y:
+def do_ror(a: _c.CanROr[_X, _Y], b: _X) -> _Y:
     """Same as `b | a`."""
     return b | a
 

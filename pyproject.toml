@@ -5,25 +5,42 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "optype"
-version = "0.3.1"
-description = "Building blocks for precise type hints in Python 3.12+"
+version = "0.4.0"
+description = "Building blocks for precise & flexible type hints"
 authors = ["Joren Hammudoglu <jhammudoglu@gmail.com>"]
 license = "BSD-3-Clause"
 readme = "README.md"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Operating System :: OS Independent",
+    "Typing :: Typed",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+repository = "https://github.com/jorenham/optype/"
+documentation = "https://github.com/jorenham/optype?tab=readme-ov-file#optype"
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/jorenham/optype/issues"
+"Changelog" = "https://github.com/jorenham/optype/releases"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.10"
+typing-extensions = {version = ">=4.5", python = "<3.12"}
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = '^3.7.0'
 
 [tool.poetry.group.lint.dependencies]
+basedpyright = "^1.10.1"
 codespell = "^2.2.6"
-basedpyright = "^1.8.0"
-ruff = "^0.3.5"
+ruff = "^0.3.7"
+typing-extensions = "*"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.1.1"
+typing-extensions = "*"
 
 [tool.poetry.group.test-github]
 optional = true
@@ -55,12 +72,13 @@ exclude = [
 stubPath = "."
 venvPath = "."
 venv = ".venv"
-pythonVersion = "3.12"
+pythonVersion = "3.10"
 pythonPlatform = "All"
 typeCheckingMode = "all"
-useLibraryCodeForTypes = false
 reportAny = false
 reportUnusedCallResult = false
+# because of `sys.version_info()` conditionals
+reportUnreachable = false
 
 
 [tool.pytest.ini_options]
@@ -80,8 +98,8 @@ xfail_strict = true
 
 
 [tool.ruff]
-src = ["optype", "tests"]
-target-version = "py312"
+src = ["optype", "examples", "tests"]
+target-version = "py310"
 line-length = 79
 indent-width = 4
 show-fixes = true
@@ -150,30 +168,27 @@ extend-ignore = [
     # flake8-annotations
     "ANN001",   # missing-type-function-argument (deprecated)
     "ANN002",   # missing-type-args (deprecated)
-    "ANN401",   # any-type (unreasonable)
+    "ANN401",   # any-type
 
     # flake8-pyi
-    "PYI036",   # bad-exit-annotation (unreasonable)
+    "PYI036",   # bad-exit-annotation
 
     # refurb
-    "FURB118",  # reimplemented-operator (unreasonable)
+    "FURB118",  # reimplemented-operator
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "examples/*" = [
     # isort
     "I001",     # unsorted-imports
-
     # flake8-no-pep420
     "INP001",   # implicit-namespace-package
-
     # pylint
     "PLR2004",  # magic-value-comparison
 ]
 "tests/*" = [
     # flake8-annotations
     "ANN201",   # missing-return-type
-
     # flake8-self
     "SLF001",   # private-member-access
 ]
@@ -182,8 +197,8 @@ extend-ignore = [
 case-sensitive = true
 combine-as-imports = true
 known-first-party = ["optype"]
-lines-between-types = 0
 lines-after-imports = 2
+lines-between-types = 0
 
 [tool.ruff.lint.flake8-quotes]
 inline-quotes = "single"
@@ -193,7 +208,7 @@ strict = true
 
 [tool.ruff.lint.pylint]
 allow-dunder-method-names = [
-    "__replace__",  # used by `copy.replace` in Python 3.13+
+    "__replace__"   # used by `copy.replace` in Python 3.13+
 ]
 
 [tool.ruff.format]
