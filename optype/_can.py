@@ -10,7 +10,6 @@ from typing import (
     TypeAlias,
     TypeVar,
     TypeVarTuple,
-    Unpack,
     overload,
     runtime_checkable,
 )
@@ -857,15 +856,15 @@ class CanSetstate(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanGetnewargs(Protocol[Unpack[_Xs]]):
-    def __new__(cls, *__args: Unpack[_Xs]) -> Self: ...
-    def __getnewargs__(self) -> tuple[Unpack[_Xs]]: ...
+class CanGetnewargs(Protocol[*_Xs]):
+    def __new__(cls, *__args: *_Xs) -> Self: ...
+    def __getnewargs__(self) -> tuple[*_Xs]: ...
 
 
 @runtime_checkable
-class CanGetnewargsEx(Protocol[Unpack[_Xs], _V]):
-    def __new__(cls, *__args: Unpack[_Xs], **__kwargs: _V) -> Self: ...
+class CanGetnewargsEx(Protocol[*_Xs, _V]):
+    def __new__(cls, *__args: *_Xs, **__kwargs: _V) -> Self: ...
     def __getnewargs_ex__(self) -> tuple[
-        tuple[Unpack[_Xs]],
+        tuple[*_Xs],
         dict[str, _V],
     ]: ...

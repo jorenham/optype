@@ -14,7 +14,6 @@ from typing import (
     Self,
     TypeVar,
     TypeVarTuple,
-    Unpack,
     runtime_checkable,
 )
 
@@ -31,8 +30,8 @@ _V = TypeVar('_V')
 _V_match_args = TypeVar('_V_match_args', bound=tuple[str, ...] | list[str])
 _V_slots = TypeVar('_V_slots', bound=str | _CanIter[Any])
 
-_Xs = ParamSpec('_Xs')
-_Xss = TypeVarTuple('_Xss')
+_Xs = TypeVarTuple('_Xs')
+_Xss = ParamSpec('_Xss')
 _Y = TypeVar('_Y')
 
 
@@ -97,21 +96,21 @@ class HasAnnotations(Protocol[_V]):
 
 
 @runtime_checkable
-class HasTypeParams(Protocol[Unpack[_Xss]]):
+class HasTypeParams(Protocol[*_Xs]):
     # Note that `*Ps: (TypeVar, ParamSpec, TypeVarTuple)` should hold
-    __type_params__: tuple[Unpack[_Xss]]
+    __type_params__: tuple[*_Xs]
 
 
 # functions and methods
 
 @runtime_checkable
-class HasFunc(Protocol[_Xs, _Y]):
-    __func__: Callable[_Xs, _Y]
+class HasFunc(Protocol[_Xss, _Y]):
+    __func__: Callable[_Xss, _Y]
 
 
 @runtime_checkable
-class HasWrapped(Protocol[_Xs, _Y]):
-    __wrapped__: Callable[_Xs, _Y]
+class HasWrapped(Protocol[_Xss, _Y]):
+    __wrapped__: Callable[_Xss, _Y]
 
 
 _T_self_co = TypeVar('_T_self_co', bound=object | ModuleType, covariant=True)
