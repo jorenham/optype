@@ -131,7 +131,7 @@ Because the `optype.Can*` protocols are runtime-checkable, the revised
 ```python
 from optype import CanMul
 
-def twice(x: CanMul[Two, Y] | CanRMul[Two, Y]) -> Y:
+def twice(x: CanRMul[Two, Y] | CanMul[Two, Y]) -> Y:
     return 2 * x if isinstance(x, CanRMul) else x * 2
 ```
 
@@ -141,7 +141,7 @@ def twice(x: CanMul[Two, Y] | CanRMul[Two, Y]) -> Y:
 ```python
 from optype import CanMul
 
-def twice[Y](x: CanMul[Two, Y] | CanRMul[Two, Y]) -> Y:
+def twice[Y](x: CanRMul[Two, Y] | CanMul[Two, Y]) -> Y:
     return 2 * x if isinstance(x, CanRMul) else x * 2
 ```
 
