@@ -1,10 +1,11 @@
 import typing
 import optype
 
-type Two = typing.Literal[2]
+Two: typing.TypeAlias = typing.Literal[2]
+Y = typing.TypeVar('Y')
 
 
-def twice[Y](x: optype.CanRMul[Two, Y], /) -> Y:
+def twice(x: optype.CanRMul[Two, Y], /) -> Y:
     return 2 * x
 
 
@@ -14,12 +15,15 @@ typing.assert_type(twice(str(-1 / 12)), str)
 typing.assert_type(twice([object()]), list[object])
 
 
+Ts = typing.TypeVarTuple('Ts')
+
+
 @typing.final
-class RMulArgs[*Ts]:
+class RMulArgs(typing.Generic[*Ts]):
     def __init__(self, *args: *Ts) -> None:
         self.args = args
 
-    def __rmul__[Y: int](self, y: Two, /) -> 'RMulArgs[*Ts, *Ts]':
+    def __rmul__(self, y: Two, /) -> 'RMulArgs[*Ts, *Ts]':
         if y != 2:
             return NotImplemented
         return RMulArgs(*self.args, *self.args)
@@ -30,7 +34,7 @@ typing.assert_type(twice(RMulArgs(42, True)), RMulArgs[int, bool, int, bool])
 ###
 
 
-def twice2[Y](x: optype.CanRMul[Two, Y] | optype.CanMul[Two, Y], /) -> Y:
+def twice2(x: optype.CanRMul[Two, Y] | optype.CanMul[Two, Y], /) -> Y:
     return 2 * x if isinstance(x, optype.CanRMul) else x * 2
 
 
