@@ -118,7 +118,7 @@ def twice[Y](x: CanRMul[Two, Y]) -> Y:
 But what about types that implement `__add__` but not `__radd__`?
 In this case, we could return `x * 2` as fallback (assuming commutativity).
 Because the `optype.Can*` protocols are runtime-checkable, the revised
-`twice` function can be compactly written as:
+`twice2` function can be compactly written as:
 
 <table>
 <tr>
@@ -131,7 +131,7 @@ Because the `optype.Can*` protocols are runtime-checkable, the revised
 ```python
 from optype import CanMul
 
-def twice(x: CanRMul[Two, Y] | CanMul[Two, Y]) -> Y:
+def twice2(x: CanRMul[Two, Y] | CanMul[Two, Y]) -> Y:
     return 2 * x if isinstance(x, CanRMul) else x * 2
 ```
 
@@ -141,7 +141,7 @@ def twice(x: CanRMul[Two, Y] | CanMul[Two, Y]) -> Y:
 ```python
 from optype import CanMul
 
-def twice[Y](x: CanRMul[Two, Y] | CanMul[Two, Y]) -> Y:
+def twice2[Y](x: CanRMul[Two, Y] | CanMul[Two, Y]) -> Y:
     return 2 * x if isinstance(x, CanRMul) else x * 2
 ```
 
