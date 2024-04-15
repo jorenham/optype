@@ -1,13 +1,17 @@
 # %%
+import sys
 from typing import (
     Generic,
     Literal,
     TypeAlias,
     TypeVar,
-    TypeVarTuple,
-    assert_type,
     final,
 )
+if sys.version_info < (3, 12):
+    from typing_extensions import TypeVarTuple, Unpack, assert_type
+else:
+    from typing import TypeVarTuple, Unpack, assert_type
+
 from optype import CanMul, CanRMul
 
 Y = TypeVar('Y')
@@ -30,11 +34,11 @@ Ts = TypeVarTuple('Ts')
 
 
 @final
-class RMulArgs(Generic[*Ts]):
-    def __init__(self, *args: *Ts) -> None:
+class RMulArgs(Generic[Unpack[Ts]]):
+    def __init__(self, *args: Unpack[Ts]) -> None:
         self.args = args
 
-    def __rmul__(self, y: Two, /) -> 'RMulArgs[*Ts, *Ts]':
+    def __rmul__(self, y: Two, /) -> 'RMulArgs[Unpack[Ts], Unpack[Ts]]':
         if y != 2:
             return NotImplemented
         return RMulArgs(*self.args, *self.args)

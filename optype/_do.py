@@ -1,9 +1,18 @@
 import math as _math
 import operator as _o
-from typing import TYPE_CHECKING, TypeVar
+import sys as _sys
+from typing import TYPE_CHECKING, ParamSpec, TypeVar
 
 import optype._can as _c
 import optype._does as _d
+
+
+_K = TypeVar('_K')
+_V = TypeVar('_V')
+_D = TypeVar('_D')
+_X = TypeVar('_X')
+_Y = TypeVar('_Y')
+_Xss = ParamSpec('_Xss')
 
 
 # type conversion
@@ -49,18 +58,22 @@ do_dir: _d.DoesDir = dir
 
 # callables
 
-do_call: _d.DoesCall = _o.call
+if _sys.version_info < (3, 11):
+    def do_call(
+        f: _c.CanCall[_Xss, _Y],
+        /,
+        *args: _Xss.args,
+        **kwargs: _Xss.kwargs,
+    ) -> _Y:
+        return f(*args, **kwargs)
+else:
+    do_call: _d.DoesCall = _o.call
 
 
 # containers and sequences
 
 do_len: _d.DoesLen = len
 do_length_hint: _d.DoesLengthHint = _o.length_hint
-
-
-_K = TypeVar('_K')
-_V = TypeVar('_V')
-_D = TypeVar('_D')
 
 
 # `operator.getitem` isn't used, because it has an (unreasonably loose, and
@@ -121,10 +134,6 @@ do_or: _d.DoesOr = _o.or_
 # reflected ops
 # (a DRY `do_r*` decorator won't work; the overloads get lost during casting to
 # `CanCall` or `Callable`, within the decorator function signature).
-
-
-_X = TypeVar('_X')
-_Y = TypeVar('_Y')
 
 
 def do_radd(a: _c.CanRAdd[_X, _Y], b: _X) -> _Y:

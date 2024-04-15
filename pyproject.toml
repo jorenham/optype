@@ -14,6 +14,7 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Operating System :: OS Independent",
     "Typing :: Typed",
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -25,7 +26,7 @@ documentation = "https://github.com/jorenham/optype?tab=readme-ov-file#optype"
 "Changelog" = "https://github.com/jorenham/optype/releases"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.10"
 typing-extensions = {version = ">=4.5", python = "<3.12"}
 
 [tool.poetry.group.dev.dependencies]
@@ -71,7 +72,7 @@ exclude = [
 stubPath = "."
 venvPath = "."
 venv = ".venv"
-pythonVersion = "3.11"
+pythonVersion = "3.10"
 pythonPlatform = "All"
 typeCheckingMode = "all"
 reportAny = false
@@ -98,7 +99,7 @@ xfail_strict = true
 
 [tool.ruff]
 src = ["optype", "examples", "tests"]
-target-version = "py311"
+target-version = "py310"
 line-length = 79
 indent-width = 4
 show-fixes = true
