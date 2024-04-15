@@ -11,12 +11,15 @@ from typing import (
     ClassVar,
     ParamSpec,
     Protocol,
-    Self,
     TypeVar,
-    TypeVarTuple,
     runtime_checkable,
 )
 
+
+if sys.version_info < (3, 11):
+    from typing_extensions import Self, TypeVarTuple, Unpack
+else:
+    from typing import Self, TypeVarTuple, Unpack
 
 if sys.version_info < (3, 12):
     from typing_extensions import override
@@ -96,9 +99,9 @@ class HasAnnotations(Protocol[_V]):
 
 
 @runtime_checkable
-class HasTypeParams(Protocol[*_Xs]):
+class HasTypeParams(Protocol[Unpack[_Xs]]):
     # Note that `*Ps: (TypeVar, ParamSpec, TypeVarTuple)` should hold
-    __type_params__: tuple[*_Xs]
+    __type_params__: tuple[Unpack[_Xs]]
 
 
 # functions and methods

@@ -1,24 +1,28 @@
 # ruff: noqa: PYI034
 import sys
-from collections.abc import Generator  # sadge :(
+from collections.abc import Generator
 from types import TracebackType
 from typing import (
     Any,
     ParamSpec,
     Protocol,
-    Self,
     TypeAlias,
     TypeVar,
-    TypeVarTuple,
     overload,
     runtime_checkable,
 )
 
 
+if sys.version_info < (3, 11):
+    from typing_extensions import Self, TypeVarTuple, Unpack
+else:
+    from typing import Self, TypeVarTuple, Unpack
+
 if sys.version_info < (3, 12):
     from typing_extensions import override
 else:
     from typing import override
+
 
 # Iterator types
 # https://docs.python.org/3/library/stdtypes.html#iterator-types
@@ -846,7 +850,6 @@ class CanReduceEx(Protocol[_Y_str_tuple_co]):
 
 @runtime_checkable
 class CanGetstate(Protocol[_T_co]):
-    @override
     def __getstate__(self) -> _T_co: ...
 
 
@@ -856,15 +859,15 @@ class CanSetstate(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanGetnewargs(Protocol[*_Xs]):
-    def __new__(cls, *__args: *_Xs) -> Self: ...
-    def __getnewargs__(self) -> tuple[*_Xs]: ...
+class CanGetnewargs(Protocol[Unpack[_Xs]]):
+    def __new__(cls, *__args: Unpack[_Xs]) -> Self: ...
+    def __getnewargs__(self) -> tuple[Unpack[_Xs]]: ...
 
 
 @runtime_checkable
-class CanGetnewargsEx(Protocol[*_Xs, _V]):
-    def __new__(cls, *__args: *_Xs, **__kwargs: _V) -> Self: ...
+class CanGetnewargsEx(Protocol[Unpack[_Xs], _V]):
+    def __new__(cls, *__args: Unpack[_Xs], **__kwargs: _V) -> Self: ...
     def __getnewargs_ex__(self) -> tuple[
-        tuple[*_Xs],
+        tuple[Unpack[_Xs]],
         dict[str, _V],
     ]: ...
