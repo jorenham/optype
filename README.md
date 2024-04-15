@@ -78,25 +78,76 @@ For `twice`, we can use `optype.CanRMul[X, Y]`, which, as the name suggests,
 is a protocol with (only) the `def __rmul__(self, x: X) -> Y: ...` method.
 With this, the `twice` function can written as:
 
+<table>
+<tr>
+<th>Python 3.11</th>
+<th>Python 3.12</th>
+</tr>
+<tr>
+<td>
+
 ```python
-import typing
-import optype
+from typing import Literal, TypeAlias, TypeVar
+from optype import CanRMul
 
-type Two = typing.Literal[2]
+Y = TypeVar('Y')
+Two: TypeAlias = Literal[2]
 
-def twice[Y](x: optype.CanRMul[Two, Y], /) -> Y:
+def twice(x: CanRMul[Two, Y]) -> Y:
     return 2 * x
 ```
 
-But what about types that implement `__add__` but not `__radd__`?
-In this case, we could return `x * 2` as fallback.
-Because the `optype.Can*` protocols are runtime-checkable, the revised
-`twice2` function can be compactly written as:
+</td>
+<td>
 
 ```python
-def twice2[Y](x: optype.CanRMul[Two, Y] | optype.CanMul[Two, Y], /) -> Y:
-    return 2 * x if isinstance(x, optype.CanRMul) else x * 2
+from typing import Literal
+from optype import CanRMul
+
+
+type Two = Literal[2]
+
+def twice[Y](x: CanRMul[Two, Y]) -> Y:
+    return 2 * x
 ```
+
+</td>
+</tr>
+</table>
+
+But what about types that implement `__add__` but not `__radd__`?
+In this case, we could return `x * 2` as fallback (assuming commutativity).
+Because the `optype.Can*` protocols are runtime-checkable, the revised
+`twice` function can be compactly written as:
+
+<table>
+<tr>
+<th>Python 3.11</th>
+<th>Python 3.12</th>
+</tr>
+<tr>
+<td>
+
+```python
+from optype import CanMul
+
+def twice(x: CanMul[Two, Y] | CanRMul[Two, Y]) -> Y:
+    return 2 * x if isinstance(x, CanRMul) else x * 2
+```
+
+</td>
+<td>
+
+```python
+from optype import CanMul
+
+def twice[Y](x: CanMul[Two, Y] | CanRMul[Two, Y]) -> Y:
+    return 2 * x if isinstance(x, CanRMul) else x * 2
+```
+
+</td>
+</tr>
+</table>
 
 See [`examples/twice.py`](examples/twice.py) for the full example.
 
