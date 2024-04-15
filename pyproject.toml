@@ -14,6 +14,9 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Operating System :: OS Independent",
     "Typing :: Typed",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 repository = "https://github.com/jorenham/optype/"
 documentation = "https://github.com/jorenham/optype?tab=readme-ov-file#optype"
@@ -22,18 +25,21 @@ documentation = "https://github.com/jorenham/optype?tab=readme-ov-file#optype"
 "Changelog" = "https://github.com/jorenham/optype/releases"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.11"
+typing-extensions = {version = ">=4.5", python = "<3.12"}
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = '^3.7.0'
 
 [tool.poetry.group.lint.dependencies]
-codespell = "^2.2.6"
 basedpyright = "^1.10.1"
+codespell = "^2.2.6"
 ruff = "^0.3.7"
+typing-extensions = "*"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.1.1"
+typing-extensions = "*"
 
 [tool.poetry.group.test-github]
 optional = true
@@ -65,11 +71,13 @@ exclude = [
 stubPath = "."
 venvPath = "."
 venv = ".venv"
-pythonVersion = "3.12"
+pythonVersion = "3.11"
 pythonPlatform = "All"
 typeCheckingMode = "all"
 reportAny = false
 reportUnusedCallResult = false
+# because of `sys.version_info()` conditionals
+reportUnreachable = false
 
 
 [tool.pytest.ini_options]
@@ -90,7 +98,7 @@ xfail_strict = true
 
 [tool.ruff]
 src = ["optype", "examples", "tests"]
-target-version = "py312"
+target-version = "py311"
 line-length = 79
 indent-width = 4
 show-fixes = true

@@ -78,25 +78,76 @@ For `twice`, we can use `optype.CanRMul[X, Y]`, which, as the name suggests,
 is a protocol with (only) the `def __rmul__(self, x: X) -> Y: ...` method.
 With this, the `twice` function can written as:
 
+<table>
+<tr>
+<th>Python 3.11</th>
+<th>Python 3.12</th>
+</tr>
+<tr>
+<td>
+
 ```python
-import typing
-import optype
+from typing import Literal, TypeAlias, TypeVar
+from optype import CanRMul
 
-type Two = typing.Literal[2]
+Y = TypeVar('Y')
+Two: TypeAlias = Literal[2]
 
-def twice[Y](x: optype.CanRMul[Two, Y], /) -> Y:
+def twice(x: CanRMul[Two, Y]) -> Y:
     return 2 * x
 ```
 
+</td>
+<td>
+
+```python
+from typing import Literal
+from optype import CanRMul
+
+
+type Two = Literal[2]
+
+def twice[Y](x: CanRMul[Two, Y]) -> Y:
+    return 2 * x
+```
+
+</td>
+</tr>
+</table>
+
 But what about types that implement `__add__` but not `__radd__`?
-In this case, we could return `x * 2` as fallback.
+In this case, we could return `x * 2` as fallback (assuming commutativity).
 Because the `optype.Can*` protocols are runtime-checkable, the revised
 `twice2` function can be compactly written as:
 
+<table>
+<tr>
+<th>Python 3.11</th>
+<th>Python 3.12</th>
+</tr>
+<tr>
+<td>
+
 ```python
-def twice2[Y](x: optype.CanRMul[Two, Y] | optype.CanMul[Two, Y], /) -> Y:
-    return 2 * x if isinstance(x, optype.CanRMul) else x * 2
+from optype import CanMul
+
+def twice2(x: CanRMul[Two, Y] | CanMul[Two, Y]) -> Y:
+    return 2 * x if isinstance(x, CanRMul) else x * 2
 ```
+
+</td>
+<td>
+
+```python
+from optype import CanMul
+
+def twice2[Y](x: CanRMul[Two, Y] | CanMul[Two, Y]) -> Y:
+    return 2 * x if isinstance(x, CanRMul) else x * 2
+```
+
+</td>
+</tr>
+</table>
 
 See [`examples/twice.py`](examples/twice.py) for the full example.
 
@@ -1396,7 +1447,6 @@ dataclass, i.e. `isinstance(obj, optype.HasDataclassFields)`.
 
 ## Future plans
 
-- Support for Python versions before 3.12 (#19).
 - [numpy][NP] interfaces for arrays-like types (no deps) (#24)
 - [array-api][API-ND] interfaces (no deps) (#25)
 - [dataframe-api][API-DF] interfaces (no deps) (#26)

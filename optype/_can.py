@@ -1,37 +1,72 @@
 # ruff: noqa: PYI034
+import sys
 from collections.abc import Generator  # sadge :(
 from types import TracebackType
 from typing import (
     Any,
+    ParamSpec,
     Protocol,
     Self,
+    TypeAlias,
+    TypeVar,
+    TypeVarTuple,
     overload,
-    override,
     runtime_checkable,
 )
 
 
+if sys.version_info < (3, 12):
+    from typing_extensions import override
+else:
+    from typing import override
+
 # Iterator types
 # https://docs.python.org/3/library/stdtypes.html#iterator-types
 
+_T_co = TypeVar('_T_co', bound=object, covariant=True)
+_T_contra = TypeVar('_T_contra', bound=object, contravariant=True)
+
+_K_contra = TypeVar('_K_contra', contravariant=True)
+_K_str_contra = TypeVar('_K_str_contra', bound=str, contravariant=True)
+_K_idx_contra = TypeVar('_K_idx_contra', contravariant=True, bound='CanIndex')
+
+_V = TypeVar('_V')
+_V_exc = TypeVar('_V_exc', bound=BaseException)
+_V_contra = TypeVar('_V_contra', contravariant=True)
+_V_int_contra = TypeVar('_V_int_contra', bound=int, contravariant=True)
+_V_co = TypeVar('_V_co', covariant=True)
+_V_next_co = TypeVar('_V_next_co', bound='CanNext[Any]', covariant=True)
+_V_iter_co = TypeVar('_V_iter_co', bound='CanIter[Any]', covariant=True)
+_V_anext_co = TypeVar('_V_anext_co', bound='CanANext[Any]', covariant=True)
+
+_D_co = TypeVar('_D_co', covariant=True)
+
+_Y_co = TypeVar('_Y_co', covariant=True)
+_Y_str_co = TypeVar('_Y_str_co', bound=str, covariant=True)
+_Y_bytes_co = TypeVar('_Y_bytes_co', bound=bytes, covariant=True)
+
+_X_co = TypeVar('_X_co', covariant=True)
+_Xs = TypeVarTuple('_Xs')
+_Xss = ParamSpec('_Xss')
+
 
 @runtime_checkable
-class CanNext[V](Protocol):
+class CanNext(Protocol[_V_co]):
     """
     Similar to `collections.abc.Iterator`, but without the (often redundant)
     requirement to also have a `__iter__` method.
     """
-    def __next__(self) -> V: ...
+    def __next__(self) -> _V_co: ...
 
 
 @runtime_checkable
-class CanIter[Vs: CanNext[Any]](Protocol):
+class CanIter(Protocol[_V_next_co]):
     """Similar to `collections.abc.Iterable`, but more flexible."""
-    def __iter__(self) -> Vs: ...
+    def __iter__(self) -> _V_next_co: ...
 
 
 @runtime_checkable
-class CanIterSelf[V](CanNext[V], CanIter[CanNext[V]], Protocol):
+class CanIterSelf(CanNext[_V_co], CanIter[CanNext[_V_co]], Protocol[_V_co]):
     """
     Equivalent to `collections.abc.Iterator[T]`, minus the `abc` nonsense.
     """
@@ -44,46 +79,49 @@ class CanIterSelf[V](CanNext[V], CanIter[CanNext[V]], Protocol):
 
 
 @runtime_checkable
-class CanRepr[Y: str](Protocol):
+class CanRepr(Protocol[_Y_str_co]):
     """
     Each `object` has a *co*variant `__repr__: (CanRepr[Y]) -> Y` method.
     That means that if `__repr__` returns an instance of a custom `str`
     subtype `Y <: str`, then `repr()` will also return `Y` (i.e. no upcasting).
     """
     @override
-    def __repr__(self) -> Y: ...
+    def __repr__(self) -> _Y_str_co: ...
 
 
 @runtime_checkable
-class CanStr[Y: str](Protocol):
+class CanStr(Protocol[_Y_str_co]):
     """
     Each `object` has a *co*variant `__str__: (CanStr[Y]) -> Y` method on `+Y`.
     That means that if `__str__()` returns an instance of a custom `str`
     subtype `Y <: str`, then `str()` will also return `Y` (i.e. no upcasting).
     """
     @override
-    def __str__(self) -> Y: ...
+    def __str__(self) -> _Y_str_co: ...
 
 
 @runtime_checkable
-class CanBytes[Y: bytes](Protocol):
+class CanBytes(Protocol[_Y_bytes_co]):
     """
     The `__bytes__: (CanBytes[Y]) -> Y` method is *co*variant on `+Y`.
     So if `__bytes__` returns an instance of a custom `bytes` subtype
     `Y <: bytes`, then `bytes()` will also return `Y` (i.e. no upcasting).
     """
-    def __bytes__(self) -> Y: ...
+    def __bytes__(self) -> _Y_bytes_co: ...
+
+
+_X_str_contra = TypeVar('_X_str_contra', contravariant=True, bound=str)
 
 
 @runtime_checkable
-class CanFormat[X: str, Y: str](Protocol):
+class CanFormat(Protocol[_X_str_contra, _Y_str_co]):
     """
     Each `object` has a `__format__: (CanFormat[X, Y], X) -> Y` method, with
     `-X` *contra*variant, and `+Y` *co*variant. Both `X` and `Y` can be `str`
     or `str` subtypes. Note that `format()` *does not* upcast `Y` to `str`.
     """
     @override
-    def __format__(self, __x: X) -> Y: ...   # pyright:ignore[reportIncompatibleMethodOverride]
+    def __format__(self, __x: _X_str_contra) -> _Y_str_co: ...   # pyright:ignore[reportIncompatibleMethodOverride]
 
 
 @runtime_checkable
@@ -101,18 +139,22 @@ class CanHash(Protocol):
 # https://docs.python.org/3/reference/datamodel.html#object.__lt__
 
 
-@runtime_checkable
-class CanLt[X, Y](Protocol):
-    def __lt__(self, __x: X) -> Y: ...
+_X_contra = TypeVar('_X_contra', contravariant=True)
+_Y_co = TypeVar('_Y_co', covariant=True)
 
 
 @runtime_checkable
-class CanLe[X, Y](Protocol):
-    def __le__(self, __x: X) -> Y: ...
+class CanLt(Protocol[_X_contra, _Y_co]):
+    def __lt__(self, __x: _X_contra) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanEq[X, Y](Protocol):  # noqa: PLW1641
+class CanLe(Protocol[_X_contra, _Y_co]):
+    def __le__(self, __x: _X_contra) -> _Y_co: ...
+
+
+@runtime_checkable
+class CanEq(Protocol[_X_contra, _Y_co]):  # noqa: PLW1641
     """
     Unfortunately, `typeshed` incorrectly annotates `object.__eq__` as
     `(Self, object) -> bool`.
@@ -127,98 +169,105 @@ class CanEq[X, Y](Protocol):  # noqa: PLW1641
     and *contra*variant, and `+Y` unbounded and *co*variant.
     """
     @override
-    def __eq__(self, __x: X, /) -> Y: ...  # pyright:ignore[reportIncompatibleMethodOverride]
+    def __eq__(self, __x: _X_contra, /) -> _Y_co: ...  # pyright:ignore[reportIncompatibleMethodOverride]
 
 
 @runtime_checkable
-class CanNe[X, Y](Protocol):
+class CanNe(Protocol[_X_contra, _Y_co]):
     """
     Just like `__eq__`, The `__ne__` method is incorrectly annotated in
     `typeshed`. See `CanEq` for why this is, and how `optype` fixes this.
     """
     @override
-    def __ne__(self, __x: X) -> Y: ...  # pyright:ignore[reportIncompatibleMethodOverride]
+    def __ne__(self, __x: _X_contra) -> _Y_co: ...  # pyright:ignore[reportIncompatibleMethodOverride]
 
 
 @runtime_checkable
-class CanGt[X, Y](Protocol):
-    def __gt__(self, __x: X) -> Y: ...
+class CanGt(Protocol[_X_contra, _Y_co]):
+    def __gt__(self, __x: _X_contra) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanGe[X, Y](Protocol):
-    def __ge__(self, __x: X) -> Y: ...
+class CanGe(Protocol[_X_contra, _Y_co]):
+    def __ge__(self, __x: _X_contra) -> _Y_co: ...
 
 
 # 3.3.2. Customizing attribute access
 # https://docs.python.org/3/reference/datamodel.html#customizing-attribute-access
 
+
 @runtime_checkable
-class CanGetattr[K: str, V](Protocol):
-    def __getattr__(self, __k: K) -> V: ...
+class CanGetattr(Protocol[_K_str_contra, _V_co]):
+    def __getattr__(self, __k: _K_str_contra) -> _V_co: ...
 
 
 @runtime_checkable
-class CanGetattribute[K: str, V](Protocol):
+class CanGetattribute(Protocol[_K_str_contra, _V_co]):
     """Note that `isinstance(x, CanGetattribute)` is always true."""
     @override
-    def __getattribute__(self, __k: K) -> V: ...  # pyright:ignore[reportIncompatibleMethodOverride]
+    def __getattribute__(self, __k: _K_str_contra) -> _V_co: ...  # pyright:ignore[reportIncompatibleMethodOverride]
 
 
 @runtime_checkable
-class CanSetattr[K: str, V](Protocol):
+class CanSetattr(Protocol[_K_str_contra, _V_contra]):
     """Note that `isinstance(x, CanSetattr)` is always true."""
     @override
-    def __setattr__(self, __k: K, __v: V) -> Any: ...  # pyright:ignore[reportIncompatibleMethodOverride]
+    def __setattr__(self, __k: _K_str_contra, __v: _V_contra) -> Any: ...  # pyright:ignore[reportIncompatibleMethodOverride]
 
 
 @runtime_checkable
-class CanDelattr[K: str](Protocol):
+class CanDelattr(Protocol[_K_str_contra]):
     @override
-    def __delattr__(self, __k: K) -> Any: ...  # pyright:ignore[reportIncompatibleMethodOverride]
+    def __delattr__(self, __k: _K_str_contra) -> Any: ...  # pyright:ignore[reportIncompatibleMethodOverride]
 
 
 @runtime_checkable
-class CanDir[Vs: CanIter[Any]](Protocol):
+class CanDir(Protocol[_V_iter_co]):
     @override
-    def __dir__(self) -> Vs: ...
+    def __dir__(self) -> _V_iter_co: ...
 
 
 # 3.3.2.2. Implementing Descriptors
 # https://docs.python.org/3/reference/datamodel.html#implementing-descriptors
 
+
 @runtime_checkable
-class CanGet[T, U, V](Protocol):
+class CanGet(Protocol[_T_contra, _T_co, _V_co]):
     @overload
-    def __get__(self, __obj: None, __cls: type[T]) -> U: ...
+    def __get__(self, __obj: None, __cls: type[_T_contra]) -> _T_co: ...
     @overload
-    def __get__(self, __obj: T, __cls: type[T] | None = ...) -> V: ...
+    def __get__(
+        self,
+        __obj: _T_contra,
+        __cls: type[_T_contra] | None = ...,
+    ) -> _V_co: ...
 
 
 @runtime_checkable
-class CanSet[T: object, V](Protocol):
-    def __set__(self, __obj: T, __v: V) -> Any: ...
+class CanSet(Protocol[_T_contra, _V_contra]):
+    def __set__(self, __obj: _T_contra, __v: _V_contra) -> Any: ...
 
 
 @runtime_checkable
-class CanDelete[T: object](Protocol):
-    def __delete__(self, __obj: T) -> Any: ...
+class CanDelete(Protocol[_T_contra]):
+    def __delete__(self, __obj: _T_contra) -> Any: ...
 
 
 # 3.3.3. Customizing class creation
 # https://docs.python.org/3/reference/datamodel.html#customizing-class-creation
 
 @runtime_checkable
-class CanSetName[T](Protocol):
-    def __set_name__(self, __cls: type[T], __name: str) -> Any: ...
+class CanSetName(Protocol[_T_contra]):
+    def __set_name__(self, __cls: type[_T_contra], __name: str) -> Any: ...
 
 
 # 3.3.6. Emulating callable objects
 # https://docs.python.org/3/reference/datamodel.html#emulating-callable-objects
 
+
 @runtime_checkable
-class CanCall[**Xs, Y](Protocol):
-    def __call__(self, *__xs: Xs.args, **__kxs: Xs.kwargs) -> Y: ...
+class CanCall(Protocol[_Xss, _Y_co]):
+    def __call__(self, *__xs: _Xss.args, **__kw: _Xss.kwargs) -> _Y_co: ...
 
 
 # 3.3.7. Emulating container types
@@ -235,41 +284,49 @@ class CanLengthHint(Protocol):
 
 
 @runtime_checkable
-class CanGetitem[K, V](Protocol):
-    def __getitem__(self, __k: K) -> V: ...
+class CanGetitem(Protocol[_K_contra, _V_co]):
+    def __getitem__(self, __k: _K_contra) -> _V_co: ...
 
 
 @runtime_checkable
-class CanSetitem[K, V](Protocol):
-    def __setitem__(self, __k: K, __v: V) -> None: ...
+class CanSetitem(Protocol[_K_contra, _V_contra]):
+    def __setitem__(self, __k: _K_contra, __v: _V_contra) -> None: ...
 
 
 @runtime_checkable
-class CanDelitem[K](Protocol):
-    def __delitem__(self, __k: K) -> None: ...
+class CanDelitem(Protocol[_K_contra]):
+    def __delitem__(self, __k: _K_contra) -> None: ...
 
 
 @runtime_checkable
-class CanReversed[Y](Protocol):
-    def __reversed__(self) -> Y: ...
+class CanReversed(Protocol[_V_co]):
+    def __reversed__(self) -> _V_co: ...
 
 
 @runtime_checkable
-class CanContains[K](Protocol):
-    def __contains__(self, __k: K) -> bool: ...
+class CanContains(Protocol[_K_contra]):
+    def __contains__(self, __k: _K_contra) -> bool: ...
 
 
 @runtime_checkable
-class CanMissing[K, V](Protocol):
-    def __missing__(self, __k: K) -> V: ...
+class CanMissing(Protocol[_K_contra, _V_co]):
+    def __missing__(self, __k: _K_contra) -> _V_co: ...
 
 
 @runtime_checkable
-class CanGetMissing[K, V, M](CanGetitem[K, V], CanMissing[K, M], Protocol): ...
+class CanGetMissing(
+    CanGetitem[_K_contra, _V_co],
+    CanMissing[_K_contra, _D_co],
+    Protocol[_K_contra, _V_co, _D_co],
+): ...
 
 
 @runtime_checkable
-class CanSequence[I: 'CanIndex', V](CanLen, CanGetitem[I, V], Protocol):
+class CanSequence(
+    CanLen,
+    CanGetitem[_K_idx_contra, _V_co],
+    Protocol[_K_idx_contra, _V_co],
+):
     """
     A sequence is an object with a __len__ method and a
     __getitem__ method that takes int(-like) argument as key (the index).
@@ -283,248 +340,255 @@ class CanSequence[I: 'CanIndex', V](CanLen, CanGetitem[I, V], Protocol):
 # https://docs.python.org/3/reference/datamodel.html#emulating-numeric-types
 
 @runtime_checkable
-class CanAdd[X, Y](Protocol):
-    def __add__(self, __x: X, /) -> Y: ...
+class CanAdd(Protocol[_X_contra, _Y_co]):
+    def __add__(self, __x: _X_contra, /) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanSub[X, Y](Protocol):
-    def __sub__(self, __x: X, /) -> Y: ...
+class CanSub(Protocol[_X_contra, _Y_co]):
+    def __sub__(self, __x: _X_contra, /) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanMul[X, Y](Protocol):
-    def __mul__(self, __x: X) -> Y: ...
+class CanMul(Protocol[_X_contra, _Y_co]):
+    def __mul__(self, __x: _X_contra) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanMatmul[X, Y](Protocol):
-    def __matmul__(self, __x: X) -> Y: ...
+class CanMatmul(Protocol[_X_contra, _Y_co]):
+    def __matmul__(self, __x: _X_contra) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanTruediv[X, Y](Protocol):
-    def __truediv__(self, __x: X) -> Y: ...
+class CanTruediv(Protocol[_X_contra, _Y_co]):
+    def __truediv__(self, __x: _X_contra) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanFloordiv[X, Y](Protocol):
-    def __floordiv__(self, __x: X) -> Y: ...
+class CanFloordiv(Protocol[_X_contra, _Y_co]):
+    def __floordiv__(self, __x: _X_contra) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanMod[X, Y](Protocol):
-    def __mod__(self, __x: X) -> Y: ...
+class CanMod(Protocol[_X_contra, _Y_co]):
+    def __mod__(self, __x: _X_contra) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanDivmod[X, Y](Protocol):
-    def __divmod__(self, __x: X) -> Y: ...
+class CanDivmod(Protocol[_X_contra, _Y_co]):
+    def __divmod__(self, __x: _X_contra) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanPow2[X, Y2](Protocol):
-    def __pow__(self, __x: X) -> Y2: ...
+class CanPow2(Protocol[_X_contra, _Y_co]):
+    def __pow__(self, __x: _X_contra) -> _Y_co: ...
+
+
+_VY_co = TypeVar('_VY_co', covariant=True)
 
 
 @runtime_checkable
-class CanPow3[X, M, Y3](Protocol):
-    def __pow__(self, __x: X, __m: M) -> Y3: ...
+class CanPow3(Protocol[_X_contra, _V_contra, _VY_co]):
+    def __pow__(self, __x: _X_contra, __m: _V_contra) -> _VY_co: ...
 
 
 @runtime_checkable
-class CanPow[X, M, Y2, Y3](CanPow2[X, Y2], CanPow3[X, M, Y3], Protocol):
+class CanPow(
+    CanPow2[_X_contra, _Y_co],
+    CanPow3[_X_contra, _V_contra, _VY_co],
+    Protocol[_X_contra, _V_contra, _Y_co, _VY_co],
+):
     @overload
-    def __pow__(self, __x: X) -> Y2: ...
+    def __pow__(self, __x: _X_contra) -> _Y_co: ...
     @overload
-    def __pow__(self, __x: X, __m: M) -> Y3: ...
+    def __pow__(self, __x: _X_contra, __m: _V_contra) -> _VY_co: ...
 
 
 @runtime_checkable
-class CanLshift[X, Y](Protocol):
-    def __lshift__(self, __x: X, /) -> Y: ...
+class CanLshift(Protocol[_X_contra, _Y_co]):
+    def __lshift__(self, __x: _X_contra, /) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanRshift[X, Y](Protocol):
-    def __rshift__(self, __x: X, /) -> Y: ...
+class CanRshift(Protocol[_X_contra, _Y_co]):
+    def __rshift__(self, __x: _X_contra, /) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanAnd[X, Y](Protocol):
-    def __and__(self, __x: X, /) -> Y: ...
+class CanAnd(Protocol[_X_contra, _Y_co]):
+    def __and__(self, __x: _X_contra, /) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanXor[X, Y](Protocol):
-    def __xor__(self, __x: X, /) -> Y: ...
+class CanXor(Protocol[_X_contra, _Y_co]):
+    def __xor__(self, __x: _X_contra, /) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanOr[X, Y](Protocol):
-    def __or__(self, __x: X, /) -> Y: ...
+class CanOr(Protocol[_X_contra, _Y_co]):
+    def __or__(self, __x: _X_contra, /) -> _Y_co: ...
 
 
 # reflected
 
 @runtime_checkable
-class CanRAdd[X, Y](Protocol):
-    def __radd__(self, __x: X, /) -> Y: ...
+class CanRAdd(Protocol[_X_contra, _Y_co]):
+    def __radd__(self, __x: _X_contra, /) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanRSub[X, Y](Protocol):
-    def __rsub__(self, __x: X, /) -> Y: ...
+class CanRSub(Protocol[_X_contra, _Y_co]):
+    def __rsub__(self, __x: _X_contra, /) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanRMul[X, Y](Protocol):
-    def __rmul__(self, __x: X) -> Y: ...
+class CanRMul(Protocol[_X_contra, _Y_co]):
+    def __rmul__(self, __x: _X_contra) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanRMatmul[X, Y](Protocol):
-    def __rmatmul__(self, __x: X) -> Y: ...
+class CanRMatmul(Protocol[_X_contra, _Y_co]):
+    def __rmatmul__(self, __x: _X_contra) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanRTruediv[X, Y](Protocol):
-    def __rtruediv__(self, __x: X) -> Y: ...
+class CanRTruediv(Protocol[_X_contra, _Y_co]):
+    def __rtruediv__(self, __x: _X_contra) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanRFloordiv[X, Y](Protocol):
-    def __rfloordiv__(self, __x: X) -> Y: ...
+class CanRFloordiv(Protocol[_X_contra, _Y_co]):
+    def __rfloordiv__(self, __x: _X_contra) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanRMod[X, Y](Protocol):
-    def __rmod__(self, __x: X) -> Y: ...
+class CanRMod(Protocol[_X_contra, _Y_co]):
+    def __rmod__(self, __x: _X_contra) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanRDivmod[X, Y](Protocol):
-    def __rdivmod__(self, __x: X) -> Y: ...
+class CanRDivmod(Protocol[_X_contra, _Y_co]):
+    def __rdivmod__(self, __x: _X_contra) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanRPow[X, Y](Protocol):
-    def __rpow__(self, __x: X) -> Y: ...
+class CanRPow(Protocol[_X_contra, _Y_co]):
+    def __rpow__(self, __x: _X_contra) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanRLshift[X, Y](Protocol):
-    def __rlshift__(self, __x: X, /) -> Y: ...
+class CanRLshift(Protocol[_X_contra, _Y_co]):
+    def __rlshift__(self, __x: _X_contra, /) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanRRshift[X, Y](Protocol):
-    def __rrshift__(self, __x: X, /) -> Y: ...
+class CanRRshift(Protocol[_X_contra, _Y_co]):
+    def __rrshift__(self, __x: _X_contra, /) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanRAnd[X, Y](Protocol):
-    def __rand__(self, __x: X, /) -> Y: ...
+class CanRAnd(Protocol[_X_contra, _Y_co]):
+    def __rand__(self, __x: _X_contra, /) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanRXor[X, Y](Protocol):
-    def __rxor__(self, __x: X, /) -> Y: ...
+class CanRXor(Protocol[_X_contra, _Y_co]):
+    def __rxor__(self, __x: _X_contra, /) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanROr[X, Y](Protocol):
-    def __ror__(self, __x: X, /) -> Y: ...
+class CanROr(Protocol[_X_contra, _Y_co]):
+    def __ror__(self, __x: _X_contra, /) -> _Y_co: ...
 
 
 # augmented / in-place
 
 @runtime_checkable
-class CanIAdd[X, Y](Protocol):
-    def __iadd__(self, __x: X, /) -> Y: ...
+class CanIAdd(Protocol[_X_contra, _Y_co]):
+    def __iadd__(self, __x: _X_contra, /) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanISub[X, Y](Protocol):
-    def __isub__(self, __x: X, /) -> Y: ...
+class CanISub(Protocol[_X_contra, _Y_co]):
+    def __isub__(self, __x: _X_contra, /) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanIMul[X, Y](Protocol):
-    def __imul__(self, __x: X) -> Y: ...
+class CanIMul(Protocol[_X_contra, _Y_co]):
+    def __imul__(self, __x: _X_contra) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanIMatmul[X, Y](Protocol):
-    def __imatmul__(self, __x: X) -> Y: ...
+class CanIMatmul(Protocol[_X_contra, _Y_co]):
+    def __imatmul__(self, __x: _X_contra) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanITruediv[X, Y](Protocol):
-    def __itruediv__(self, __x: X) -> Y: ...
+class CanITruediv(Protocol[_X_contra, _Y_co]):
+    def __itruediv__(self, __x: _X_contra) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanIFloordiv[X, Y](Protocol):
-    def __ifloordiv__(self, __x: X) -> Y: ...
+class CanIFloordiv(Protocol[_X_contra, _Y_co]):
+    def __ifloordiv__(self, __x: _X_contra) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanIMod[X, Y](Protocol):
-    def __imod__(self, __x: X) -> Y: ...
+class CanIMod(Protocol[_X_contra, _Y_co]):
+    def __imod__(self, __x: _X_contra) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanIPow[X, Y](Protocol):
+class CanIPow(Protocol[_X_contra, _Y_co]):
     # no augmented pow/3 exists
-    def __ipow__(self, __x: X) -> Y: ...
+    def __ipow__(self, __x: _X_contra) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanILshift[X, Y](Protocol):
-    def __ilshift__(self, __x: X, /) -> Y: ...
+class CanILshift(Protocol[_X_contra, _Y_co]):
+    def __ilshift__(self, __x: _X_contra, /) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanIRshift[X, Y](Protocol):
-    def __irshift__(self, __x: X, /) -> Y: ...
+class CanIRshift(Protocol[_X_contra, _Y_co]):
+    def __irshift__(self, __x: _X_contra, /) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanIAnd[X, Y](Protocol):
-    def __iand__(self, __x: X, /) -> Y: ...
+class CanIAnd(Protocol[_X_contra, _Y_co]):
+    def __iand__(self, __x: _X_contra, /) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanIXor[X, Y](Protocol):
-    def __ixor__(self, __x: X, /) -> Y: ...
+class CanIXor(Protocol[_X_contra, _Y_co]):
+    def __ixor__(self, __x: _X_contra, /) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanIOr[X, Y](Protocol):
-    def __ior__(self, __x: X, /) -> Y: ...
+class CanIOr(Protocol[_X_contra, _Y_co]):
+    def __ior__(self, __x: _X_contra, /) -> _Y_co: ...
 
 
 # unary arithmetic
 
 @runtime_checkable
-class CanNeg[Y](Protocol):
-    def __neg__(self) -> Y: ...
+class CanNeg(Protocol[_Y_co]):
+    def __neg__(self) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanPos[Y](Protocol):
-    def __pos__(self) -> Y: ...
+class CanPos(Protocol[_Y_co]):
+    def __pos__(self) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanAbs[Y](Protocol):
-    def __abs__(self) -> Y: ...
+class CanAbs(Protocol[_Y_co]):
+    def __abs__(self) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanInvert[Y](Protocol):
-    def __invert__(self) -> Y: ...
+class CanInvert(Protocol[_Y_co]):
+    def __invert__(self) -> _Y_co: ...
 
 
 # numeric conversion
@@ -552,74 +616,80 @@ class CanIndex(Protocol):
 
 
 @runtime_checkable
-class CanRound1[Y](Protocol):
+class CanRound1(Protocol[_Y_co]):
     @overload
-    def __round__(self) -> Y: ...
+    def __round__(self) -> _Y_co: ...
     @overload
-    def __round__(self, __n: None = ...) -> Y: ...
+    def __round__(self, __n: None = ...) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanRound2[N, Y](Protocol):
-    def __round__(self, __n: N) -> Y: ...
+class CanRound2(Protocol[_V_contra, _VY_co]):
+    def __round__(self, __n: _V_contra) -> _VY_co: ...
 
 
 @runtime_checkable
-class CanRound[N, Y1, Y2](CanRound1[Y1], CanRound2[N, Y2], Protocol):
+class CanRound(
+    CanRound1[_Y_co],
+    CanRound2[_V_contra, _VY_co],
+    Protocol[_V_contra, _Y_co, _VY_co],
+):
     @overload
-    def __round__(self) -> Y1: ...
+    def __round__(self) -> _Y_co: ...
     @overload
-    def __round__(self, __n: None = ...) -> Y1: ...
+    def __round__(self, __n: None = ...) -> _Y_co: ...
     @overload
-    def __round__(self, __n: N) -> Y2: ...
+    def __round__(self, __n: _V_contra) -> _VY_co: ...
 
 
 @runtime_checkable
-class CanTrunc[Y](Protocol):
-    def __trunc__(self) -> Y: ...
+class CanTrunc(Protocol[_Y_co]):
+    def __trunc__(self) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanFloor[Y](Protocol):
-    def __floor__(self) -> Y: ...
+class CanFloor(Protocol[_Y_co]):
+    def __floor__(self) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanCeil[Y](Protocol):
-    def __ceil__(self) -> Y: ...
+class CanCeil(Protocol[_Y_co]):
+    def __ceil__(self) -> _Y_co: ...
 
 
 # 3.3.9. With Statement Context Managers
 # https://docs.python.org/3/reference/datamodel.html#with-statement-context-managers
 
+
 @runtime_checkable
-class CanEnter[V](Protocol):
-    def __enter__(self) -> V: ...
+class CanEnter(Protocol[_X_co]):
+    def __enter__(self) -> _X_co: ...
 
 
 @runtime_checkable
-class CanExit[R](Protocol):
+class CanExit(Protocol[_Y_co]):
     @overload
     def __exit__(self, __tp: None, __ex: None, __tb: None) -> None: ...
     @overload
-    def __exit__[E: BaseException](
+    def __exit__(
         self,
-        __tp: type[E],
-        __ex: E,
+        __tp: type[_V_exc],
+        __ex: _V_exc,
         __tb: TracebackType,
-    ) -> R: ...
+    ) -> _Y_co: ...
 
 
 @runtime_checkable
-class CanWith[V, R](CanEnter[V], CanExit[R], Protocol): ...
+class CanWith(CanEnter[_X_co], CanExit[_Y_co], Protocol[_X_co, _Y_co]): ...
 
 
 # 3.3.11. Emulating buffer types
 # https://docs.python.org/3/reference/datamodel.html#emulating-buffer-types
 
+
 @runtime_checkable
-class CanBuffer[B: int](Protocol):
-    def __buffer__(self, __b: B) -> memoryview: ...
+class CanBuffer(Protocol[_V_int_contra]):
+    def __buffer__(self, __b: _V_int_contra) -> memoryview: ...
 
 
 @runtime_checkable
@@ -634,11 +704,11 @@ class CanReleaseBuffer(Protocol):
 # This should be `None | asyncio.Future[Any]`. But that would make this
 # incompatible with `collections.abc.Awaitable`, because it (annoyingly)
 # uses `Any`...
-type _MaybeFuture = Any
+_MaybeFuture: TypeAlias = Any
 
 
 @runtime_checkable
-class CanAwait[V](Protocol):
+class CanAwait(Protocol[_V_co]):
     # Technically speaking, this can return any
     # `CanNext[None | asyncio.Future[Any]]`. But in theory, the return value
     # of generators are currently impossible to type, because the return value
@@ -649,39 +719,45 @@ class CanAwait[V](Protocol):
     @overload
     def __await__(self: 'CanAwait[None]') -> CanNext[_MaybeFuture]: ...
     @overload
-    def __await__(self: 'CanAwait[V]') -> Generator[_MaybeFuture, None, V]: ...
+    def __await__(
+        self: 'CanAwait[_V_co]',
+    ) -> Generator[_MaybeFuture, None, _V_co]: ...
 
 
 # 3.4.3. Asynchronous Iterators
 # https://docs.python.org/3/reference/datamodel.html#asynchronous-iterators
 
 @runtime_checkable
-class CanANext[V](Protocol):
-    def __anext__(self) -> V: ...
+class CanANext(Protocol[_V_co]):
+    def __anext__(self) -> _V_co: ...
 
 
 @runtime_checkable
-class CanAIter[Y: CanANext[Any]](Protocol):
-    def __aiter__(self) -> Y: ...
+class CanAIter(Protocol[_V_anext_co]):
+    def __aiter__(self) -> _V_anext_co: ...
 
 
 @runtime_checkable
-class CanAIterSelf[V](CanANext[V], CanAIter[CanANext[V]], Protocol):
+class CanAIterSelf(
+    CanANext[_V_co],
+    CanAIter[CanANext[_V_co]],
+    Protocol[_V_co],
+):
     """A less inflexible variant of `collections.abc.AsyncIterator[T]`."""
     @override
-    def __aiter__(self) -> 'CanAIterSelf[V]': ...  # `Self` doesn't work here?
+    def __aiter__(self) -> Self: ...
 
 
 # 3.4.4. Asynchronous Context Managers
 # https://docs.python.org/3/reference/datamodel.html#asynchronous-context-managers
 
 @runtime_checkable
-class CanAEnter[V](Protocol):
-    def __aenter__(self) -> CanAwait[V]: ...
+class CanAEnter(Protocol[_X_co]):
+    def __aenter__(self) -> CanAwait[_X_co]: ...
 
 
 @runtime_checkable
-class CanAExit[R](Protocol):
+class CanAExit(Protocol[_Y_co]):
     @overload
     def __aexit__(
         self,
@@ -690,16 +766,17 @@ class CanAExit[R](Protocol):
         __tb: None,
     ) -> CanAwait[None]: ...
     @overload
-    def __aexit__[E: BaseException](
+    def __aexit__(
         self,
-        __tp: type[E],
-        __ex: E,
+        __tp: type[_V_exc],
+        __ex: _V_exc,
         __tb: TracebackType,
-    ) -> CanAwait[R]: ...
+    ) -> CanAwait[_Y_co]: ...
 
 
 @runtime_checkable
-class CanAsyncWith[V, R](CanAEnter[V], CanAExit[R], Protocol): ...
+class CanAsyncWith(CanAEnter[_X_co], CanAExit[_Y_co], Protocol[_X_co, _Y_co]):
+    ...
 
 
 # `copy` stdlib
@@ -707,21 +784,21 @@ class CanAsyncWith[V, R](CanAEnter[V], CanAExit[R], Protocol): ...
 
 
 @runtime_checkable
-class CanCopy[T](Protocol):
+class CanCopy(Protocol[_T_co]):
     """Support for creating shallow copies through `copy.copy`."""
-    def __copy__(self) -> T: ...
+    def __copy__(self) -> _T_co: ...
 
 
 @runtime_checkable
-class CanDeepcopy[T](Protocol):
+class CanDeepcopy(Protocol[_T_co]):
     """Support for creating deep copies through `copy.deepcopy`."""
-    def __deepcopy__(self, memo: dict[int, Any], /) -> T: ...
+    def __deepcopy__(self, memo: dict[int, Any], /) -> _T_co: ...
 
 
 @runtime_checkable
-class CanReplace[T, V](Protocol):
+class CanReplace(Protocol[_V_contra, _T_co]):
     """Support for `copy.replace` in Python 3.13+."""
-    def __replace__(self, /, **changes: V) -> T: ...
+    def __replace__(self, /, **changes: _V_contra) -> _T_co: ...
 
 
 @runtime_checkable
@@ -738,46 +815,56 @@ class CanDeepcopySelf(CanDeepcopy['CanDeepcopySelf'], Protocol):
 
 
 @runtime_checkable
-class CanReplaceSelf[V](CanReplace['CanReplaceSelf[Any]', V], Protocol):
+class CanReplaceSelf(CanReplace[_V_contra, 'CanReplaceSelf[Any]'], Protocol):
     """Variant of `CanReplace` that returns `Self`."""
     @override
-    def __replace__(self, /, **changes: V) -> Self: ...
+    def __replace__(self, /, **changes: _V_contra) -> Self: ...
 
 
 # `pickle` stdlib
 # https://docs.python.org/3.13/library/pickle.html
 
 
+_Y_str_tuple_co = TypeVar(
+    '_Y_str_tuple_co',
+    covariant=True,
+    bound=str | tuple[Any, ...],
+)
+
+
 @runtime_checkable
-class CanReduce[R: str | tuple[Any, ...]](Protocol):
+class CanReduce(Protocol[_Y_str_tuple_co]):
     @override
-    def __reduce__(self) -> R: ...
+    def __reduce__(self) -> _Y_str_tuple_co: ...
 
 
 @runtime_checkable
-class CanReduceEx[R: str | tuple[Any, ...]](Protocol):
+class CanReduceEx(Protocol[_Y_str_tuple_co]):
     @override
-    def __reduce_ex__(self, protocol: CanIndex, /) -> R: ...
+    def __reduce_ex__(self, protocol: CanIndex, /) -> _Y_str_tuple_co: ...
 
 
 @runtime_checkable
-class CanGetstate[S: object](Protocol):
+class CanGetstate(Protocol[_T_co]):
     @override
-    def __getstate__(self) -> S: ...
+    def __getstate__(self) -> _T_co: ...
 
 
 @runtime_checkable
-class CanSetstate[S: object](Protocol):
-    def __setstate__(self, state: S, /) -> None: ...
+class CanSetstate(Protocol[_T_contra]):
+    def __setstate__(self, state: _T_contra, /) -> None: ...
 
 
 @runtime_checkable
-class CanGetnewargs[*Args](Protocol):
-    def __new__(cls, *__args: *Args) -> Self: ...
-    def __getnewargs__(self) -> tuple[*Args]: ...
+class CanGetnewargs(Protocol[*_Xs]):
+    def __new__(cls, *__args: *_Xs) -> Self: ...
+    def __getnewargs__(self) -> tuple[*_Xs]: ...
 
 
 @runtime_checkable
-class CanGetnewargsEx[*Args, Kw](Protocol):
-    def __new__(cls, *__args: *Args, **__kwargs: Kw) -> Self: ...
-    def __getnewargs_ex__(self) -> tuple[tuple[*Args], dict[str, Kw]]: ...
+class CanGetnewargsEx(Protocol[*_Xs, _V]):
+    def __new__(cls, *__args: *_Xs, **__kwargs: _V) -> Self: ...
+    def __getnewargs_ex__(self) -> tuple[
+        tuple[*_Xs],
+        dict[str, _V],
+    ]: ...

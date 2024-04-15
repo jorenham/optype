@@ -108,6 +108,7 @@ def get_callable_members(module: ModuleType) -> frozenset[str]:
         if not name.startswith('_')
         and callable(cls := getattr(module, name))
         and not is_protocol(cls)
+        and getattr(module, name).__module__ != 'typing'
     })
 
 
