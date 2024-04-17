@@ -22,7 +22,7 @@ repos:
         args: [--fix, --exit-non-zero-on-fix]
 
   - repo: https://github.com/DetachHead/basedpyright
-    rev: v1.10.1
+    rev: v1.10.2
     hooks:
       - id: basedpyright
 
