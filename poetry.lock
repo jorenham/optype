@@ -2,13 +2,13 @@
 
 [[package]]
 name = "basedpyright"
-version = "1.10.1"
+version = "1.10.2"
 description = "static type checking for Python (but based)"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "basedpyright-1.10.1-py3-none-any.whl", hash = "sha256:dc05a093d1f31ccef42c39c2a01efddff31c2b63f71ab06599ccf280011d45d7"},
-    {file = "basedpyright-1.10.1.tar.gz", hash = "sha256:c588721755ddfc6400b8e171d4c14eaa0eb05fd9ab4499507278c0d9994b71ca"},
+    {file = "basedpyright-1.10.2-py3-none-any.whl", hash = "sha256:f30d5dbd8f80fd5a5bc43af798e93e312f90821b3c15c2dfd9cdf019017fa649"},
+    {file = "basedpyright-1.10.2.tar.gz", hash = "sha256:5541da9d5a44cda964070315382d17e3783bde6fd4318a308484ffa3973b3494"},
 ]
 
 [package.dependencies]
@@ -372,13 +372,13 @@ files = [
 
 [[package]]
 name = "virtualenv"
-version = "20.25.1"
+version = "20.25.2"
 description = "Virtual Python Environment builder"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "virtualenv-20.25.1-py3-none-any.whl", hash = "sha256:961c026ac520bac5f69acb8ea063e8a4f071bcc9457b9c1f28f6b085c511583a"},
-    {file = "virtualenv-20.25.1.tar.gz", hash = "sha256:e08e13ecdca7a0bd53798f356d5831434afa5b07b93f0abdf0797b7a06ffe197"},
+    {file = "virtualenv-20.25.2-py3-none-any.whl", hash = "sha256:6e1281a57849c8a54da89ba82e5eb7c8937b9d057ff01aaf5bc9afaa3552e90f"},
+    {file = "virtualenv-20.25.2.tar.gz", hash = "sha256:fa7edb8428620518010928242ec17aa7132ae435319c29c1651d1cf4c4173aad"},
 ]
 
 [package.dependencies]
@@ -387,10 +387,10 @@ filelock = ">=3.12.2,<4"
 platformdirs = ">=3.9.1,<5"
 
 [package.extras]
-docs = ["furo (>=2023.7.26)", "proselint (>=0.13)", "sphinx (>=7.1.2)", "sphinx-argparse (>=0.4)", "sphinxcontrib-towncrier (>=0.2.1a0)", "towncrier (>=23.6)"]
+docs = ["furo (>=2023.7.26)", "proselint (>=0.13)", "sphinx (>=7.1.2,!=7.3)", "sphinx-argparse (>=0.4)", "sphinxcontrib-towncrier (>=0.2.1a0)", "towncrier (>=23.6)"]
 test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess (>=1)", "flaky (>=3.7)", "packaging (>=23.1)", "pytest (>=7.4)", "pytest-env (>=0.8.2)", "pytest-freezer (>=0.4.8)", "pytest-mock (>=3.11.1)", "pytest-randomly (>=3.12)", "pytest-timeout (>=2.1)", "setuptools (>=68)", "time-machine (>=2.10)"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "7d34bbb4c99377fb82bb807e73208e09a3ead2712bf59c3fe1d7b7406cac396d"
+content-hash = "a3400237e6274520da6914e1447a7ed55be70a334b12d53472b8b210a9f4c8f4"
