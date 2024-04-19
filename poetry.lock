@@ -2,13 +2,13 @@
 
 [[package]]
 name = "basedpyright"
-version = "1.10.2"
+version = "1.10.3"
 description = "static type checking for Python (but based)"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "basedpyright-1.10.2-py3-none-any.whl", hash = "sha256:f30d5dbd8f80fd5a5bc43af798e93e312f90821b3c15c2dfd9cdf019017fa649"},
-    {file = "basedpyright-1.10.2.tar.gz", hash = "sha256:5541da9d5a44cda964070315382d17e3783bde6fd4318a308484ffa3973b3494"},
+    {file = "basedpyright-1.10.3-py3-none-any.whl", hash = "sha256:c5873a22a24137630f929d6f2ab2fda099650f3d7790efbe7ee0de46b4085af9"},
+    {file = "basedpyright-1.10.3.tar.gz", hash = "sha256:02d95c5e797aa4d4b00c64423f54180274be35d7f694e9c61ef9a2551194c80e"},
 ]
 
 [package.dependencies]
@@ -393,4 +393,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "7a3cc6230f5998d509665cd60a17e87300b137c5daa1a436082027d51b85ded7"
+content-hash = "7a892437d65d633e87a0311ad3838411933a903d75528b4f0366f85a58e5872c"
