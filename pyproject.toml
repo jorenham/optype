@@ -37,6 +37,7 @@ basedpyright = "^1.10.3"
 codespell = "^2.2.6"
 ruff = "^0.4.1"
 typing-extensions = "*"
+sp-repo-review = {version = "^2024.3.10", extras = ["cli"]}
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.1.1"
@@ -82,11 +83,11 @@ reportUnreachable = false
 
 
 [tool.pytest.ini_options]
-minversion = "8.0"
-testpaths = ["optype", "examples", "tests"]
 addopts = [
     "-ra",
     "--doctest-modules",
+    "--strict-config",
+    "--strict-markers",
 ]
 doctest_optionflags = [
     "NORMALIZE_WHITESPACE",
@@ -94,7 +95,22 @@ doctest_optionflags = [
     "ELLIPSIS",
 ]
 filterwarnings = ["error"]
+log_cli_level = "INFO"
+minversion = "8.0"
+testpaths = ["optype", "examples", "tests"]
 xfail_strict = true
+
+
+[tool.repo-review]
+ignore = [
+    "PY004",    # README.md >> docs/
+    "PC110",    # optype's style >> (black | ruff-format)
+    "PC140",    # (based)pyright >> mypy (by several orders of magnitude)
+    "PC170",    # no .rst
+    "PC180",    # no .css or .js
+    "MY",       # (based)pyright >> mypy (by several orders of magnitude)
+    "RTD",      # README.md >> rtd
+]
 
 
 [tool.ruff]
@@ -164,7 +180,7 @@ select = [
     "LOG",      # flake8-logging
     "RUF",      # ruff
 ]
-extend-ignore = [
+ignore = [
     # flake8-annotations
     "ANN001",   # missing-type-function-argument (deprecated)
     "ANN002",   # missing-type-args (deprecated)
