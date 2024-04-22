@@ -46,6 +46,10 @@ jobs:
           config: ".markdownlint.jsonc"
           globs: "**/*.md"
 
+      - uses: scientific-python/repo-review@v0.10.6
+        with:
+          plugins: sp-repo-review
+
   test:
     timeout-minutes: 5
 
