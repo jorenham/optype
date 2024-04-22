@@ -28,9 +28,6 @@ jobs:
           python-version: "3.10"
           cache: poetry
 
-      - name: poetry check
-        run: poetry check
-
       - name: poetry install
         run: poetry install --sync
 
@@ -38,7 +35,7 @@ jobs:
         run: poetry run codespell .
 
       - name: ruff check
-        run: poetry run ruff check --output-format=github .
+        run: poetry run ruff check --output-format=github
 
       - name: basedpyright
         run: poetry run basedpyright
@@ -46,8 +43,12 @@ jobs:
       - name: markdownlint
         uses: DavidAnson/markdownlint-cli2-action@v16
         with:
-          config: '.markdownlint.jsonc'
-          globs: '**/*.md'
+          config: ".markdownlint.jsonc"
+          globs: "**/*.md"
+
+      - uses: scientific-python/repo-review@v0.10.6
+        with:
+          plugins: sp-repo-review
 
   test:
     timeout-minutes: 5
@@ -72,7 +73,7 @@ jobs:
           cache: poetry
 
       - name: poetry install
-        run: poetry install --only test,test-github --sync
+        run: poetry install --sync --only test,test-github
 
       - name: pytest
-        run: poetry run py.test
+        run: poetry run pytest

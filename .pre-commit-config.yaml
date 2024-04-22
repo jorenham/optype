@@ -1,3 +1,7 @@
+ci:
+  autoupdate_branch: "dev"
+  autoupdate_commit_msg: "update pre-commit hooks"
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
@@ -19,7 +23,7 @@ repos:
     rev: v0.4.1
     hooks:
       - id: ruff
-        args: [--fix, --exit-non-zero-on-fix]
+        args: [--fix, --show-fixes]
 
   - repo: https://github.com/DetachHead/basedpyright
     rev: v1.10.3

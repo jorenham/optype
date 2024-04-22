@@ -31,12 +31,14 @@ typing-extensions = {version = ">=4.5", python = "<3.12"}
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = '^3.7.0'
+tox = "^4.14.2"
 
 [tool.poetry.group.lint.dependencies]
 basedpyright = "^1.10.3"
 codespell = "^2.2.6"
 ruff = "^0.4.1"
 typing-extensions = "*"
+sp-repo-review = {version = "^2024.3.10", extras = ["cli"]}
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.1.1"
@@ -82,11 +84,11 @@ reportUnreachable = false
 
 
 [tool.pytest.ini_options]
-minversion = "8.0"
-testpaths = ["optype", "examples", "tests"]
 addopts = [
     "-ra",
     "--doctest-modules",
+    "--strict-config",
+    "--strict-markers",
 ]
 doctest_optionflags = [
     "NORMALIZE_WHITESPACE",
@@ -94,7 +96,22 @@ doctest_optionflags = [
     "ELLIPSIS",
 ]
 filterwarnings = ["error"]
+log_cli_level = "INFO"
+minversion = "8.0"
+testpaths = ["optype", "examples", "tests"]
 xfail_strict = true
+
+
+[tool.repo-review]
+ignore = [
+    "PY004",    # README.md >> docs/
+    "PC110",    # optype's style >> (black | ruff-format)
+    "PC140",    # (based)pyright >> mypy (by several orders of magnitude)
+    "PC170",    # no .rst
+    "PC180",    # no .css or .js
+    "MY",       # (based)pyright >> mypy (by several orders of magnitude)
+    "RTD",      # README.md >> rtd
+]
 
 
 [tool.ruff]
@@ -164,7 +181,7 @@ select = [
     "LOG",      # flake8-logging
     "RUF",      # ruff
 ]
-extend-ignore = [
+ignore = [
     # flake8-annotations
     "ANN001",   # missing-type-function-argument (deprecated)
     "ANN002",   # missing-type-args (deprecated)
@@ -218,3 +235,45 @@ indent-style = "space"
 quote-style = "single"
 docstring-code-format = true
 skip-magic-trailing-comma = true
+
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+isolated_build = true
+requires =
+    tox>=4
+envlist =
+    py{310,311,312,313}
+    codespell
+    ruff
+    basedpyright
+
+[testenv]
+description = pytest
+skip_install = true
+allowlist_externals = poetry
+commands_pre = poetry install --no-root --sync --only test
+commands = poetry run pytest
+
+[testenv:codespell]
+description = codespell
+skip_install = true
+allowlist_externals = poetry
+commands_pre = poetry install --no-root --sync --only lint
+commands = poetry run codespell .
+
+[testenv:ruff]
+description = ruff check
+skip_install = true
+allowlist_externals = poetry
+commands_pre = poetry install --no-root --sync --only lint
+commands = poetry run ruff check
+
+[testenv:basedpyright]
+description = basedpyright
+skip_install = true
+allowlist_externals = poetry
+commands_pre = poetry install --no-root --sync
+commands = poetry run basedpyright
+"""
