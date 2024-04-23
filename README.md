@@ -80,20 +80,22 @@ With this, the `twice` function can written as:
 
 <table>
 <tr>
-<th>Python 3.11</th>
-<th>Python 3.12</th>
+<th width="415px">Python 3.10</th>
+<th width="415px">Python 3.12+</th>
 </tr>
 <tr>
 <td>
 
 ```python
-from typing import Literal, TypeAlias, TypeVar
+from typing import Literal
+from typing import TypeAlias, TypeVar
 from optype import CanRMul
 
 Y = TypeVar('Y')
 Two: TypeAlias = Literal[2]
+RMul2: TypeAlias = CanRMul[Two, Y]
 
-def twice(x: CanRMul[Two, Y]) -> Y:
+def twice(x: RMul2[Y]) -> Y:
     return 2 * x
 ```
 
@@ -104,10 +106,10 @@ def twice(x: CanRMul[Two, Y]) -> Y:
 from typing import Literal
 from optype import CanRMul
 
-
 type Two = Literal[2]
+type RMul2[Y] = CanRMul[Two, Y]
 
-def twice[Y](x: CanRMul[Two, Y]) -> Y:
+def twice[Y](x: RMul2[Y]) -> Y:
     return 2 * x
 ```
 
@@ -122,8 +124,8 @@ Because the `optype.Can*` protocols are runtime-checkable, the revised
 
 <table>
 <tr>
-<th>Python 3.11</th>
-<th>Python 3.12</th>
+<th width="415px">Python 3.10</th>
+<th width="415px">Python 3.12+</th>
 </tr>
 <tr>
 <td>
@@ -131,8 +133,14 @@ Because the `optype.Can*` protocols are runtime-checkable, the revised
 ```python
 from optype import CanMul
 
-def twice2(x: CanRMul[Two, Y] | CanMul[Two, Y]) -> Y:
-    return 2 * x if isinstance(x, CanRMul) else x * 2
+Mul2: TypeAlias = CanMul[Two, Y]
+CMul2: TypeAlias = Mul2[Y] | RMul2[Y]
+
+def twice2(x: CMul2[Y]) -> Y:
+    if isinstance(x, CanRMul):
+        return 2 * x
+    else:
+        return x * 2
 ```
 
 </td>
@@ -141,8 +149,14 @@ def twice2(x: CanRMul[Two, Y] | CanMul[Two, Y]) -> Y:
 ```python
 from optype import CanMul
 
-def twice2[Y](x: CanRMul[Two, Y] | CanMul[Two, Y]) -> Y:
-    return 2 * x if isinstance(x, CanRMul) else x * 2
+type Mul2[Y] = CanMul[Two, Y]
+type CMul2[Y] = Mul2[Y] | RMul2[Y]
+
+def twice2[Y](x: CMul2[Y]) -> Y:
+    if isinstance(x, CanRMul):
+        return 2 * x
+    else:
+        return x * 2
 ```
 
 </td>
