@@ -21,16 +21,28 @@ classifiers = [
 ]
 repository = "https://github.com/jorenham/optype/"
 documentation = "https://github.com/jorenham/optype?tab=readme-ov-file#optype"
+
 [tool.poetry.urls]
 "Bug Tracker" = "https://github.com/jorenham/optype/issues"
 "Changelog" = "https://github.com/jorenham/optype/releases"
 
+[tool.poetry.extras]
+numpy = ["numpy"]
+
 [tool.poetry.dependencies]
+# bump to ^3.11 after 2025-04-04
+# bump to ^3.12 after 2026-04-24
 python = "^3.10"
+
 typing-extensions = {version = ">=4.7", python = "<3.13"}
 
+# https://numpy.org/neps/nep-0029-deprecation_policy.html
+#  bump to >=1.24 after 2024-06-22
+#  bump to >=1.25 after 2024-12-18
+numpy = {version = ">=1.23,<3", optional = true}
+
 [tool.poetry.group.dev.dependencies]
-pre-commit = '^3.7.1'
+pre-commit = "^3.7.1"
 tox = "^4.15.1"
 
 [tool.poetry.group.lint.dependencies]
@@ -39,11 +51,13 @@ codespell = "^2.3.0"
 ruff = "^0.4.9"
 sp-repo-review = {version = "^2024.4.23", extras = ["cli"]}
 typing-extensions = "*"
+numpy = "*"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.2.2"
 typing-extensions = "*"
 beartype = "^0.18.5"
+numpy = "*"
 
 [tool.poetry.group.test-github]
 optional = true
