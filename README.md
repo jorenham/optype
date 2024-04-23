@@ -57,7 +57,17 @@ Optype is available as [`optype`][OPTYPE] on PyPI:
 pip install optype
 ```
 
+For optional [NumPy][NUMPY] support, it is recommended to also install the `numpy`
+extra, which ensures that the installed `numpy` version is compatible with
+`optype`, following [NEP 29][NEP29]:
+
+```shell
+pip install optype[numpy]
+```
+
 [OPTYPE]: https://pypi.org/project/optype/
+[NUMPY]: https://github.com/numpy/numpy
+[NEP29]: https://numpy.org/neps/nep-0029-deprecation_policy.html
 
 ## Example
 
