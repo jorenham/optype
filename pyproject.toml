@@ -216,12 +216,10 @@ ignore = [
     "PLR2004",  # magic-value-comparison
 ]
 
-[tool.ruff.lint.isort]
-case-sensitive = true
-combine-as-imports = true
-known-first-party = ["optype"]
-lines-after-imports = 2
-lines-between-types = 0
+[tool.ruff.lint.flake8-import-conventions.extend-aliases]
+"numpy.typing" = "npt"
+"optype.numpy" = "npot"
+
 
 [tool.ruff.lint.flake8-quotes]
 inline-quotes = "single"
@@ -229,12 +227,31 @@ inline-quotes = "single"
 [tool.ruff.lint.flake8-type-checking]
 strict = true
 
+[tool.ruff.lint.isort]
+case-sensitive = true
+combine-as-imports = true
+known-first-party = ["optype"]
+known-third-party = ["numpy", "pytest"]
+lines-after-imports = 2
+lines-between-types = 0
+
 [tool.ruff.lint.pylint]
 allow-dunder-method-names = [
     "__name__",     # attr of e.g. `type`, `function`, and `property` (py3.13+)
     "__qualname__", # attr like `__name__`
     "__replace__",  # method used by `copy.replace` in Python 3.13+
     "__self__",     # attr of a bound method
+
+    # numpy array special methods
+    "__array__",
+    "__array_finalize__",
+    "__array_function__",
+    "__array_priority__",
+    "__array_ufunc__",
+    "__array_wrap__",
+    # numpy array interface protocol V3
+    "__array_interface__",
+    "__array_struct__",
 ]
 
 [tool.ruff.format]
