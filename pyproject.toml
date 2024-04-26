@@ -73,6 +73,7 @@ ignore-words-list = "cange"  # CanGe
 
 [tool.basedpyright]
 include = ["optype", "examples", "tests"]
+ignore = ["**/.venv"]
 stubPath = "."
 venvPath = "."
 venv = ".venv"
