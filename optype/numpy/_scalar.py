@@ -1,9 +1,11 @@
-# ruff: noqa: ERA001
 import ctypes as ct
-from typing import Literal, TypeAlias, TypeVar
+from typing import Final, Literal, TypeAlias, TypeVar
 
 import numpy as np
 import numpy.typing as npt
+
+
+_NP_V1: Final[bool] = np.__version__.startswith('1.')
 
 
 _T = TypeVar('_T', bound=object)
@@ -14,10 +16,12 @@ _SoloType: TypeAlias = np.dtype[_S] | type[_S]
 _DualType: TypeAlias = np.dtype[_S] | type[_T]
 
 # bool
-AnyBool: TypeAlias = np.bool_ | ct.c_bool | bool
-AnyBoolName: TypeAlias = Literal['bool', 'bool_', 'bool8']
-# AnyBool: TypeAlias = np.bool | ct.c_bool | bool
-# AnyBoolName: TypeAlias = Literal['bool', 'bool_']
+if _NP_V1:
+    AnyBool: TypeAlias = np.bool_ | ct.c_bool | bool
+    AnyBoolName: TypeAlias = Literal['bool', 'bool_', 'bool8']
+else:
+    AnyBool: TypeAlias = np.bool | ct.c_bool | bool  # noqa: NPY001
+    AnyBoolName: TypeAlias = Literal['bool', 'bool_']
 AnyBoolChar: TypeAlias = Literal['?', '=?', '<?', '>?']
 AnyBoolCode: TypeAlias = AnyBoolName | AnyBoolChar
 AnyBoolType: TypeAlias = AnyBoolCode | _DualType[np.bool_, AnyBool]
@@ -73,33 +77,39 @@ AnyUIntCType: TypeAlias = AnyUIntCCode | _DualType[np.uintc, AnyUIntC]
 
 # uintp (assuming `uint_ptr_t == size_t` like in `numpy.typing`)
 AnyUIntP: TypeAlias = np.uintp | ct.c_void_p | ct.c_size_t
-AnyUIntPName: TypeAlias = Literal['uintp', 'uint0']
-AnyUIntPChar: TypeAlias = Literal['P', '=P', '<P', '>P']
-# AnyUIntPName: TypeAlias = Literal['uintp', 'uint']
-# AnyUIntPChar: TypeAlias = Literal['N', '=N', '<N', '>N']
+if _NP_V1:
+    AnyUIntPName: TypeAlias = Literal['uintp', 'uint0']
+    AnyUIntPChar: TypeAlias = Literal['P', '=P', '<P', '>P']
+else:
+    AnyUIntPName: TypeAlias = Literal['uintp', 'uint']
+    AnyUIntPChar: TypeAlias = Literal['N', '=N', '<N', '>N']
 AnyUIntPCode: TypeAlias = AnyUIntPName | AnyUIntPChar
 AnyUIntPType: TypeAlias = AnyUIntPCode | _DualType[np.uintp, AnyUIntP]
 
 # ulong (uint on numpy^=1)
-AnyULong: TypeAlias = np.uint | ct.c_ulong
-AnyULongName: TypeAlias = Literal['ulong', 'uint']
-# AnyULong: TypeAlias = np.ulong | ct.c_ulong
-# AnyULongName: TypeAlias = Literal['ulong']
+if _NP_V1:
+    AnyULong: TypeAlias = np.uint | ct.c_ulong
+    AnyULongName: TypeAlias = Literal['ulong', 'uint']
+else:
+    AnyULong: TypeAlias = np.ulong | ct.c_ulong
+    AnyULongName: TypeAlias = Literal['ulong']
 AnyULongChar: TypeAlias = Literal['L', '=L', '<L', '>L']
 AnyULongCode: TypeAlias = AnyULongName | AnyULongChar
 AnyULongType: TypeAlias = AnyULongCode | _DualType[np.uint, AnyULong]
 
 # uint (ulong on numpy^=1, uintp on numpy^=2)
-AnyUInt: TypeAlias = np.uint | ct.c_ulong
-AnyUIntName: TypeAlias = AnyULongName
-AnyUIntChar: TypeAlias = AnyULongChar
-AnyUIntCode: TypeAlias = AnyULongCode
-AnyUIntType: TypeAlias = AnyULongType
-# AnyUInt: TypeAlias = np.uint | ct.c_void_p | ct.c_size_t
-# AnyUIntName: TypeAlias = AnyUIntPName
-# AnyUIntChar: TypeAlias = AnyUIntPChar
-# AnyUIntCode: TypeAlias = AnyUIntPCode
-# AnyUIntType: TypeAlias = AnyUIntPType
+if _NP_V1:
+    AnyUInt: TypeAlias = np.uint | ct.c_ulong
+    AnyUIntName: TypeAlias = AnyULongName
+    AnyUIntChar: TypeAlias = AnyULongChar
+    AnyUIntCode: TypeAlias = AnyULongCode
+    AnyUIntType: TypeAlias = AnyULongType
+else:
+    AnyUInt: TypeAlias = np.uint | ct.c_void_p | ct.c_size_t
+    AnyUIntName: TypeAlias = AnyUIntPName
+    AnyUIntChar: TypeAlias = AnyUIntPChar
+    AnyUIntCode: TypeAlias = AnyUIntPCode
+    AnyUIntType: TypeAlias = AnyUIntPType
 
 # ulonglong
 AnyULongLong: TypeAlias = np.ulonglong | ct.c_ulonglong
@@ -161,34 +171,39 @@ AnyIntCType: TypeAlias = AnyIntCCode | _DualType[np.intc, AnyIntC]
 
 # intp
 AnyIntP: TypeAlias = np.intp | ct.c_ssize_t
-_AnyIntPCharV1: TypeAlias = Literal['p', '=p', '<p', '>p']
-AnyIntPName: TypeAlias = Literal['intp', 'int0']
-AnyIntPChar: TypeAlias = _AnyIntPCharV1
-# AnyIntPName: TypeAlias = Literal['intp', 'intptr_t']
-# AnyIntPChar: TypeAlias = Literal['n', '=n', '<n', '>n'] | _AnyIntPCharV1
+if _NP_V1:
+    AnyIntPName: TypeAlias = Literal['intp', 'int0']
+    AnyIntPChar: TypeAlias = Literal['p', '=p', '<p', '>p']
+else:
+    AnyIntPName: TypeAlias = Literal['intp', 'int', 'int_']
+    AnyIntPChar: TypeAlias = Literal['n', '=n', '<n', '>n']
 AnyIntPCode: TypeAlias = AnyIntPName | AnyIntPChar
 AnyIntPType: TypeAlias = AnyIntPCode | _DualType[np.intp, AnyIntP]
 
 # long (int_ on numpy^=1)
-AnyLong: TypeAlias = np.int_ | ct.c_long | int
-AnyLongName: TypeAlias = Literal['long', 'int', 'int_']
-# AnyLong: TypeAlias = np.long | ct.c_long
-# AnyLongName: TypeAlias = Literal['long']
+if _NP_V1:
+    AnyLong: TypeAlias = np.int_ | ct.c_long | int
+    AnyLongName: TypeAlias = Literal['long', 'int', 'int_']
+else:
+    AnyLong: TypeAlias = np.long | ct.c_long  # noqa: NPY001
+    AnyLongName: TypeAlias = Literal['long']
 AnyLongChar: TypeAlias = Literal['l', '=l', '<l', '>l']
 AnyLongCode: TypeAlias = AnyLongName | AnyLongChar
 AnyLongType: TypeAlias = AnyLongCode | _DualType[np.int_, AnyLong]
 
 # int (long on numpy^=1, intp on numpy^=2)
-AnyInt: TypeAlias = AnyLong
-AnyIntName: TypeAlias = AnyLongName
-AnyIntChar: TypeAlias = AnyLongChar
-AnyIntCode: TypeAlias = AnyLongCode
-AnyIntType: TypeAlias = AnyLongType
-# AnyInt: TypeAlias = np.int_ | ct.c_ssize_t | int
-# AnyIntName: TypeAlias = AnyIntPName
-# AnyIntChar: TypeAlias = AnyIntPChar
-# AnyIntCode: TypeAlias = AnyIntPCode
-# AnyIntType: TypeAlias = AnyIntPType
+if _NP_V1:
+    AnyInt: TypeAlias = AnyLong
+    AnyIntName: TypeAlias = AnyLongName
+    AnyIntChar: TypeAlias = AnyLongChar
+    AnyIntCode: TypeAlias = AnyLongCode
+    AnyIntType: TypeAlias = AnyLongType
+else:
+    AnyInt: TypeAlias = np.int_ | ct.c_ssize_t | int
+    AnyIntName: TypeAlias = AnyIntPName
+    AnyIntChar: TypeAlias = AnyIntPChar
+    AnyIntCode: TypeAlias = AnyIntPCode
+    AnyIntType: TypeAlias = AnyIntPType
 
 # longlong
 AnyLongLong: TypeAlias = np.longlong | ct.c_longlong
@@ -235,30 +250,36 @@ AnySingleCode: TypeAlias = AnySingleName | AnySingleChar
 AnySingleType: TypeAlias = AnySingleCode | _DualType[np.single, AnySingle]
 
 # double
-AnyDouble: TypeAlias = np.double | ct.c_double | float
-AnyDoubleName: TypeAlias = Literal['double', 'float', 'float_']
-# AnyDouble: TypeAlias = np.double | ct.c_double
-# AnyDoubleName: TypeAlias = Literal['double', 'float']
+if _NP_V1:
+    AnyDouble: TypeAlias = np.double | ct.c_double | float
+    AnyDoubleName: TypeAlias = Literal['double', 'float', 'float_']
+else:
+    AnyDouble: TypeAlias = np.double | ct.c_double
+    AnyDoubleName: TypeAlias = Literal['double', 'float']
 AnyDoubleChar: TypeAlias = Literal['d', '=d', '<d', '>d']
 AnyDoubleCode: TypeAlias = AnyDoubleName | AnyDoubleChar
 AnyDoubleType: TypeAlias = AnyDoubleCode | _DualType[np.double, AnyDouble]
 
 # float (float_ / double on numpy^=1, float64 on numpy^=2)
-AnyFloat: TypeAlias = AnyDouble
-AnyFloatName: TypeAlias = AnyDoubleName
-AnyFloatChar: TypeAlias = AnyDoubleChar
-AnyFloatCode: TypeAlias = AnyDoubleCode
-AnyFloatType: TypeAlias = AnyDoubleType
-# AnyFloat: TypeAlias = AnyFloat64
-# AnyFloatName: TypeAlias = AnyFloat64Name
-# AnyFloatChar: TypeAlias = AnyFloat64Char
-# AnyFloatCode: TypeAlias = AnyFloat64Code
-# AnyFloatType: TypeAlias = AnyFloat64Type
+if _NP_V1:
+    AnyFloat: TypeAlias = AnyDouble
+    AnyFloatName: TypeAlias = AnyDoubleName
+    AnyFloatChar: TypeAlias = AnyDoubleChar
+    AnyFloatCode: TypeAlias = AnyDoubleCode
+    AnyFloatType: TypeAlias = AnyDoubleType
+else:
+    AnyFloat: TypeAlias = AnyFloat64
+    AnyFloatName: TypeAlias = AnyFloat64Name
+    AnyFloatChar: TypeAlias = AnyFloat64Char
+    AnyFloatCode: TypeAlias = AnyFloat64Code
+    AnyFloatType: TypeAlias = AnyFloat64Type
 
 # longdouble
 AnyLongDouble: TypeAlias = np.longdouble | ct.c_longdouble
-AnyLongDoubleName: TypeAlias = Literal['longdouble', 'longfloat']
-# AnyLongDoubleName: TypeAlias = Literal['longdouble']
+if _NP_V1:
+    AnyLongDoubleName: TypeAlias = Literal['longdouble', 'longfloat']
+else:
+    AnyLongDoubleName: TypeAlias = Literal['longdouble']
 AnyLongDoubleChar: TypeAlias = Literal['g', '=g', '<g', '>g']
 AnyLongDoubleCode: TypeAlias = AnyLongDoubleName | AnyLongDoubleChar
 AnyLongDoubleType: TypeAlias = (
@@ -281,37 +302,48 @@ AnyComplex128Type: TypeAlias = AnyComplex128Code | _SoloType[np.complex128]
 
 # csingle
 AnyCSingle: TypeAlias = np.csingle
-AnyCSingleName: TypeAlias = Literal['csingle', 'singlecomplex']
-# AnyCSingleName: TypeAlias = Literal['csingle']
+if _NP_V1:
+    AnyCSingleName: TypeAlias = Literal['csingle', 'singlecomplex']
+else:
+    AnyCSingleName: TypeAlias = Literal['csingle']
 AnyCSingleChar: TypeAlias = Literal['F', '=F', '<F', '>F']
 AnyCSingleCode: TypeAlias = AnyCSingleName | AnyCSingleChar
 AnyCSingleType: TypeAlias = AnyCSingleCode | _SoloType[np.csingle]
 
 # cdouble
 AnyCDouble: TypeAlias = np.cdouble | complex
-AnyCDoubleName: TypeAlias = Literal['cdouble', 'cfloat', 'complex', 'complex_']
-# AnyCDoubleName: TypeAlias = Literal['cdouble']
+_CDoubleNameV2: TypeAlias = Literal['cdouble', 'complex']
+if _NP_V1:
+    AnyCDoubleName: TypeAlias = _CDoubleNameV2 | Literal['complex_', 'cfloat']
+else:
+    AnyCDoubleName: TypeAlias = _CDoubleNameV2
 AnyCDoubleChar: TypeAlias = Literal['D', '=D', '<D', '>D']
 AnyCDoubleCode: TypeAlias = AnyCDoubleName | AnyCDoubleChar
 AnyCDoubleType: TypeAlias = AnyCDoubleCode | _DualType[np.cdouble, AnyCDouble]
 
 # complex (complex_ / cdouble on numpy^=1, complex128 on numpy^=2)
-AnyComplex: TypeAlias = AnyCDouble
-AnyComplexName: TypeAlias = AnyCDoubleName
-AnyComplexChar: TypeAlias = AnyCDoubleChar
-AnyComplexCode: TypeAlias = AnyCDoubleCode
-AnyComplexType: TypeAlias = AnyCDoubleType
-# AnyComplex: TypeAlias = AnyComplex128
-# AnyComplexName: TypeAlias = AnyComplex128Name
-# AnyComplexChar: TypeAlias = AnyComplex128Char
-# AnyComplexCode: TypeAlias = AnyComplex128Code
-# AnyComplexType: TypeAlias = AnyComplex128Type
+if _NP_V1:
+    AnyComplex: TypeAlias = AnyCDouble
+    AnyComplexName: TypeAlias = AnyCDoubleName
+    AnyComplexChar: TypeAlias = AnyCDoubleChar
+    AnyComplexCode: TypeAlias = AnyCDoubleCode
+    AnyComplexType: TypeAlias = AnyCDoubleType
+else:
+    AnyComplex: TypeAlias = AnyComplex128
+    AnyComplexName: TypeAlias = AnyComplex128Name
+    AnyComplexChar: TypeAlias = AnyComplex128Char
+    AnyComplexCode: TypeAlias = AnyComplex128Code
+    AnyComplexType: TypeAlias = AnyComplex128Type
 
 # clongdouble
 AnyCLongDouble: TypeAlias = np.clongdouble
-AnyCLongDoubleName: TypeAlias = Literal[
-    'clongdouble', 'clongfloat', 'longcomplex',
-]
+_CLongDoubleNameV2: TypeAlias = Literal['clongdouble']
+if _NP_V1:
+    AnyCLongDoubleName: TypeAlias = (
+        _CLongDoubleNameV2 | Literal['clongfloat', 'longcomplex']
+    )
+else:
+    AnyCLongDoubleName: TypeAlias = _CLongDoubleNameV2
 AnyCLongDoubleChar: TypeAlias = Literal['G', '=G', '<G', '>G']
 AnyCLongDoubleCode: TypeAlias = AnyCLongDoubleName | AnyCLongDoubleChar
 AnyCLongDoubleType: TypeAlias = AnyCLongDoubleCode | _SoloType[np.clongdouble]
@@ -338,21 +370,33 @@ AnyDatetime64Type: TypeAlias = AnyDatetime64Code | _SoloType[np.datetime64]
 
 # str
 AnyStr: TypeAlias = np.str_ | str
-AnyStrName: TypeAlias = Literal['str', 'str_', 'str0', 'unicode', 'unicode_']
+_StrNameV2: TypeAlias = Literal['str', 'str_', 'unicode']
+if _NP_V1:
+    AnyStrName: TypeAlias = _StrNameV2 | Literal['str0', 'unicode_']
+else:
+    AnyStrName: TypeAlias = _StrNameV2
 AnyStrChar: TypeAlias = Literal['U', '=U', '<U', '>U']
 AnyStrCode: TypeAlias = AnyStrName | AnyStrChar
 AnyStrType: TypeAlias = AnyStrCode | _DualType[np.str_, AnyStr]
 
 # bytes
 AnyBytes: TypeAlias = np.bytes_ | bytes
-AnyBytesName: TypeAlias = Literal['bytes', 'bytes_', 'bytes0']
+_BytesNameV2: TypeAlias = Literal['bytes', 'bytes_']
+if _NP_V1:
+    AnyBytesName: TypeAlias = _BytesNameV2 | Literal['bytes0']
+else:
+    AnyBytesName: TypeAlias = _BytesNameV2
 AnyBytesChar: TypeAlias = Literal['S', '=S', '<S', '>S']
 AnyBytesCode: TypeAlias = AnyBytesName | AnyBytesChar
 AnyBytesType: TypeAlias = AnyBytesCode | _DualType[np.bytes_, AnyBytes]
 
 # void
 AnyVoid: TypeAlias = np.void
-AnyVoidName: TypeAlias = Literal['void', 'void0']
+_VoidNameV2: TypeAlias = Literal['void']
+if _NP_V1:
+    AnyVoidName: TypeAlias = _VoidNameV2 | Literal['void0']
+else:
+    AnyVoidName: TypeAlias = _VoidNameV2
 AnyVoidChar: TypeAlias = Literal['V', '=V', '<V', '>V']
 AnyVoidCode: TypeAlias = AnyVoidName | AnyVoidChar
 AnyVoidType: TypeAlias = AnyVoidCode | _SoloType[np.void]

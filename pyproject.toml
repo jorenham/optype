@@ -51,12 +51,13 @@ codespell = "^2.3.0"
 ruff = "^0.4.9"
 sp-repo-review = {version = "^2024.4.23", extras = ["cli"]}
 typing-extensions = "*"
-numpy = "*"
+numpy = {version = "<2"}
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.2.2"
 typing-extensions = "*"
 beartype = "^0.18.5"
+numba = "^0.60.0"
 numpy = "*"
 
 [tool.poetry.group.test-github]
@@ -74,12 +75,14 @@ ignore-words-list = "cange,nin"  # `CanGe` and `numpy.ufunc.nin`
 [tool.basedpyright]
 include = ["optype", "examples", "tests"]
 ignore = ["**/.venv"]
+defineConstant = {"_NP_V1" = true}
 stubPath = "."
 venvPath = "."
 venv = ".venv"
 pythonVersion = "3.10"
 pythonPlatform = "All"
 typeCheckingMode = "all"
+
 reportAny = false
 reportUnusedCallResult = false
 # because of `sys.version_info()` conditionals
@@ -218,6 +221,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.flake8-import-conventions.extend-aliases]
+"ctypes" = "ct"
 "numpy.typing" = "npt"
 "optype.numpy" = "npot"
 
