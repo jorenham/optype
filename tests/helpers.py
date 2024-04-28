@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import inspect
 import sys
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast, get_args as _get_args
 
 
 if sys.version_info >= (3, 13):
-    from typing import is_protocol
+    from typing import TypeAliasType, is_protocol
 else:
-    from typing_extensions import is_protocol
+    from typing_extensions import TypeAliasType, is_protocol
 
 
 if TYPE_CHECKING:
@@ -30,6 +30,20 @@ __all__ = (
 def is_runtime_protocol(cls: type, /) -> bool:
     """Check if `cls` is a `@runtime_checkable` `typing.Protocol`."""
     return is_protocol(cls) and getattr(cls, '_is_runtime_protocol', False)
+
+
+def get_args(tp: TypeAliasType | type | str | Any, /) -> tuple[Any, ...]:
+    """
+    A less broken `typing.get_args()` that also works for type aliases defined
+    with the PEP695 `type` keyword, and recurses nested type aliases.
+    """
+    args = _get_args(tp.__value__ if isinstance(tp, TypeAliasType) else tp)
+    args_flat: list[Any] = []
+    for arg in args:
+        # recurse nested
+        args_flat.extend(get_args(arg) or [arg])
+
+    return tuple(args_flat)
 
 
 def get_protocol_members(cls: type, /) -> frozenset[str]:

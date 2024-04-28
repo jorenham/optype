@@ -223,7 +223,7 @@ ignore = [
 [tool.ruff.lint.flake8-import-conventions.extend-aliases]
 "ctypes" = "ct"
 "numpy.typing" = "npt"
-"optype.numpy" = "npot"
+"optype.numpy" = "onp"
 
 
 [tool.ruff.lint.flake8-quotes]

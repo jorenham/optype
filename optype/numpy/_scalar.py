@@ -454,6 +454,6 @@ SomeCharacter: TypeAlias = np.character | _PyCharacter | _CCharacter
 SomeFlexible: TypeAlias = np.flexible | _PyCharacter | _CCharacter
 
 # np.generic
-_PyGeneric = _PyNumber | _PyCharacter
-_CGeneric = _CNumber | _CCharacter | ct.py_object  # pyright: ignore[reportMissingTypeArgument]
+_PyGeneric: TypeAlias = _PyNumber | _PyCharacter
+_CGeneric: TypeAlias = _CNumber | _CCharacter | ct.py_object  # pyright: ignore[reportMissingTypeArgument]
 SomeGeneric: TypeAlias = np.generic | _CGeneric | _PyGeneric

@@ -57,11 +57,6 @@ class _NestedSequence(Protocol[_V_co]):
 _PyScalar: TypeAlias = bool | int | float | complex | str | bytes
 _S_py = TypeVar('_S_py', bound=_PyScalar)
 
-# `SomeScalar` has 2 bounded type params:
-# - scalar type (numpy), `: np.generic`
-# - scalar type (python), `: bool | int | float | complex | str | bytes`
-SomeScalar: TypeAlias = CanArray[tuple[()], _S] | _S_py
-
 # `SomeArray` is an array-like with at least 0 dimensions, and type params
 # - shape, `: tuple[int, ...]`
 # - scalar type (numpy), `: np.generic`
