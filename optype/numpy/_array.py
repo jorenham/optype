@@ -4,6 +4,7 @@ from collections.abc import Callable, Mapping
 from types import NotImplementedType
 from typing import (
     Any,
+    Final,
     Protocol,
     TypeAlias,
     TypeVar,
@@ -22,6 +23,8 @@ if sys.version_info < (3, 11):
     from typing_extensions import Self
 else:
     from typing import Self
+
+_NP_V1: Final[bool] = np.__version__.startswith('1.')
 
 
 _S = TypeVar('_S', bound=np.generic)
@@ -95,3 +98,15 @@ class CanArrayFunction(Protocol[_F_contra, _Y_co]):
         args: tuple[Any, ...],
         kwargs: Mapping[str, Any],
     ) -> NotImplementedType | _Y_co: ...
+
+
+_X_contra = TypeVar(
+    '_X_contra',
+    bound=np.ndarray[Any, Any],
+    contravariant=True,
+)
+
+
+@runtime_checkable
+class CanArrayFinalize(Protocol[_X_contra]):
+    def __array_finalize__(self, __obj: _X_contra) -> None: ...

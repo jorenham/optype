@@ -92,6 +92,7 @@ __all__ = (
     'AtLeast2D',
     'AtLeast3D',
     'CanArray',
+    'CanArrayFinalize',
     'CanArrayFunction',
     'CanArrayUfunc',
     'HasDType',
@@ -112,6 +113,7 @@ __all__ = (
 from ._array import (
     Array,
     CanArray,
+    CanArrayFinalize,
     CanArrayFunction,
     SomeArray,
 )
