@@ -4,6 +4,7 @@ from collections.abc import Callable, Mapping
 from types import NotImplementedType
 from typing import (
     Any,
+    ClassVar,
     Final,
     Protocol,
     TypeAlias,
@@ -100,13 +101,48 @@ class CanArrayFunction(Protocol[_F_contra, _Y_co]):
     ) -> NotImplementedType | _Y_co: ...
 
 
-_X_contra = TypeVar(
-    '_X_contra',
-    bound=np.ndarray[Any, Any],
-    contravariant=True,
-)
+_A_contra = TypeVar('_A_contra', bound=Array[Any, Any], contravariant=True)
+_A_co = TypeVar('_A_co', bound=Array[Any, Any], covariant=True)
 
 
 @runtime_checkable
-class CanArrayFinalize(Protocol[_X_contra]):
-    def __array_finalize__(self, __obj: _X_contra) -> None: ...
+class CanArrayFinalize(Protocol[_A_contra]):
+    def __array_finalize__(self, __arr: _A_contra) -> None: ...
+
+
+@runtime_checkable
+class CanArrayWrap(Protocol[_A_contra, _A_co]):
+    if _NP_V1:
+        def __array_wrap__(
+            self,
+            __arr: _A_contra,
+            context: tuple[np.ufunc, tuple[Any, ...], int] | None = None,
+        ) -> _A_co:
+            ...
+    else:
+        def __array_wrap__(
+            self,
+            __arr: _A_contra,
+            context: tuple[np.ufunc, tuple[Any, ...], int] | None = None,
+            return_scalar: bool = False,
+        ) -> _A_co:
+            ...
+
+
+_P_co = TypeVar('_P_co', bound=float, covariant=True)
+
+
+@runtime_checkable
+class _HasArrayPriorityProperty(Protocol[_P_co]):
+    @property
+    def __array_priority__(self) -> _P_co: ...
+
+
+@runtime_checkable
+class _HasArrayPriorityClassVar(Protocol):
+    __array_priority__: ClassVar[float]
+
+
+HasArrayPriority: TypeAlias = (
+    _HasArrayPriorityProperty[_P_co] | _HasArrayPriorityClassVar
+)

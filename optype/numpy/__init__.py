@@ -95,6 +95,8 @@ __all__ = (
     'CanArrayFinalize',
     'CanArrayFunction',
     'CanArrayUfunc',
+    'CanArrayWrap',
+    'HasArrayPriority',
     'HasDType',
     'SomeArray',
     'SomeCharacter',
@@ -115,6 +117,8 @@ from ._array import (
     CanArray,
     CanArrayFinalize,
     CanArrayFunction,
+    CanArrayWrap,
+    HasArrayPriority,
     SomeArray,
 )
 from ._dtype import HasDType, SomeDType
