@@ -121,3 +121,21 @@ def test_has_array_priority():
 
     arr_2d: onp.HasArrayPriority = np.array([[42]], sct)
     assert isinstance(arr_2d, onp.HasArrayPriority)
+
+
+def test_has_array_interface():
+    sct: type[np.generic] = np.uint8
+
+    scalar: onp.HasArrayInterface = sct(42)
+    assert isinstance(scalar, onp.HasArrayInterface)
+
+    arr_0d: onp.HasArrayInterface = np.array(42, sct)
+    assert isinstance(arr_0d, onp.HasArrayInterface)
+    assert not isinstance(42, onp.HasArrayInterface)
+
+    arr_1d: onp.HasArrayInterface = np.array([42], sct)
+    assert isinstance(arr_1d, onp.HasArrayInterface)
+    assert not isinstance([42], onp.HasArrayInterface)
+
+    arr_2d: onp.HasArrayInterface = np.array([[42]], sct)
+    assert isinstance(arr_2d, onp.HasArrayInterface)

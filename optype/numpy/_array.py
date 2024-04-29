@@ -1,4 +1,5 @@
 """Interfaces and type aliases for NumPy arrays, dtypes, and ufuncs."""
+import sys
 from collections.abc import Callable, Mapping
 from types import NotImplementedType
 from typing import (
@@ -7,15 +8,22 @@ from typing import (
     Protocol,
     TypeAlias,
     TypeVar,
+    TypedDict,
     overload,
     runtime_checkable,
 )
 
 import numpy as np
 
-from optype import CanIter, CanIterSelf
+from optype import CanBuffer, CanIter, CanIterSelf
 
 from ._shape import AtLeast0D
+
+
+if sys.version_info < (3, 11):
+    from typing_extensions import Required
+else:
+    from typing import Required
 
 
 _NP_V1: Final[bool] = np.__version__.startswith('1.')
@@ -129,3 +137,28 @@ class CanArrayWrap(Protocol[_A_contra, _A_co]):
 class HasArrayPriority(Protocol):
     @property
     def __array_priority__(self) -> float: ...
+
+
+_ArrayInterfaceDescr: TypeAlias = list[
+    tuple[str, str]
+    | tuple[str, str, tuple[int, ...]]
+    | tuple[str, '_ArrayInterfaceDescr']
+]
+
+
+class ArrayInterface(TypedDict, total=False):
+    data: tuple[int, bool] | CanBuffer[Any] | None
+    mask: 'HasArrayInterface | None'
+    strides: tuple[int, ...] | None
+    offset: int
+    descr: _ArrayInterfaceDescr
+    typestr: Required[str]
+    shape: Required[tuple[int, ...]]
+    version: Required[int]
+
+
+@runtime_checkable
+class HasArrayInterface(Protocol):
+    # the ugly `| dict[str, Any]` is required for numpy.typing compat
+    @property
+    def __array_interface__(self) -> ArrayInterface | dict[str, Any]: ...

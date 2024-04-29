@@ -87,6 +87,7 @@ __all__ = (
     'AnyVoid',
     'AnyVoidType',
     'Array',
+    'ArrayInterface',
     'AtLeast0D',
     'AtLeast1D',
     'AtLeast2D',
@@ -96,6 +97,7 @@ __all__ = (
     'CanArrayFunction',
     'CanArrayUfunc',
     'CanArrayWrap',
+    'HasArrayInterface',
     'HasArrayPriority',
     'HasDType',
     'SomeArray',
@@ -114,10 +116,12 @@ __all__ = (
 
 from ._array import (
     Array,
+    ArrayInterface,
     CanArray,
     CanArrayFinalize,
     CanArrayFunction,
     CanArrayWrap,
+    HasArrayInterface,
     HasArrayPriority,
     SomeArray,
 )
