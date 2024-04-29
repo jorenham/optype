@@ -1,5 +1,4 @@
 """Interfaces and type aliases for NumPy arrays, dtypes, and ufuncs."""
-import sys
 from collections.abc import Callable, Mapping
 from types import NotImplementedType
 from typing import (
@@ -15,15 +14,10 @@ from typing import (
 
 import numpy as np
 
-from optype import CanContains, CanIter, CanLen, CanNext
+from optype import CanIter, CanIterSelf
 
 from ._shape import AtLeast0D
 
-
-if sys.version_info < (3, 11):
-    from typing_extensions import Self
-else:
-    from typing import Self
 
 _NP_V1: Final[bool] = np.__version__.startswith('1.')
 
@@ -64,13 +58,13 @@ _V_co = TypeVar('_V_co', bound=object, covariant=True)
 @runtime_checkable
 class _NestedSequence(Protocol[_V_co]):
     def __len__(self) -> int: ...
-    def __getitem__(self, __i: int) -> _V_co | Self: ...
+    def __getitem__(self, __i: int) -> '_V_co | _NestedSequence[_V_co]': ...
 
 
 _PyScalar: TypeAlias = bool | int | float | complex | str | bytes
 _S_py = TypeVar('_S_py', bound=_PyScalar)
 
-# `SomeArray` is an array-like with at least 0 dimensions, and type params
+# An array-like with at least 0 dimensions, and type params
 # - shape, `: tuple[int, ...]`
 # - scalar type (numpy), `: np.generic`
 # - scalar type (python), `: bool | int | float | complex | str | bytes`
@@ -80,13 +74,6 @@ SomeArray: TypeAlias = (
     | _S_py
     | _NestedSequence[_S_py]
 )
-
-
-_T = TypeVar('_T')
-
-
-class _Container(CanLen, CanContains[_T], CanIter[CanNext[_T]]): ...
-
 
 _F_contra = TypeVar(
     '_F_contra',
@@ -101,7 +88,8 @@ class CanArrayFunction(Protocol[_F_contra, _Y_co]):
     def __array_function__(
         self,
         func: _F_contra,
-        types: _Container[type['CanArrayFunction[Any, Any]']],
+        # although this could be tighter, this ensures numpy.typing compat
+        types: CanIter[CanIterSelf[type['CanArrayFunction[Any, Any]']]],
         # ParamSpec can only be used on *args and **kwargs for some reason...
         args: tuple[Any, ...],
         kwargs: Mapping[str, Any],
