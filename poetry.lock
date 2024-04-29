@@ -519,13 +519,13 @@ testing-integration = ["build[virtualenv] (>=1.0.3)", "filelock (>=3.4.0)", "jar
 
 [[package]]
 name = "sp-repo-review"
-version = "2024.3.10"
+version = "2024.4.23"
 description = "Review repos for compliance to the Scientific-Python development guidelines"
 optional = false
 python-versions = ">=3.10"
 files = [
-    {file = "sp_repo_review-2024.3.10-py3-none-any.whl", hash = "sha256:b8fde4e044548b4bec287be928eb8a12f90dd23ee6c25617f4d70348f2c7a7ed"},
-    {file = "sp_repo_review-2024.3.10.tar.gz", hash = "sha256:c7be52cf7a8021d0f635fe88ec6a5126776f181ec3f87f266397874a7f4b5e12"},
+    {file = "sp_repo_review-2024.4.23-py3-none-any.whl", hash = "sha256:c13ed7e9136c50dd97256cf5fa3aae7aac44154789f2795d1b1486c5659a876b"},
+    {file = "sp_repo_review-2024.4.23.tar.gz", hash = "sha256:88cf57dcf7994024a9705e887c6744e923de5f0695711e29739fe7ae882fa2b8"},
 ]
 
 [package.dependencies]
@@ -534,12 +534,13 @@ repo-review = [
     {version = "*"},
     {version = "*", extras = ["cli"], optional = true, markers = "extra == \"cli\""},
 ]
+tomli = {version = "*", markers = "python_version < \"3.11\""}
 
 [package.extras]
 cli = ["repo-review[cli]"]
 dev = ["pytest (>=7)"]
 pyproject = ["validate-pyproject-schema-store[all]"]
-test = ["pytest (>=7)"]
+test = ["pytest (>=7)", "repo-review (>=0.10.6)"]
 
 [[package]]
 name = "tomli"
