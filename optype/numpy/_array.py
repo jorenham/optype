@@ -37,18 +37,25 @@ Array: TypeAlias = np.ndarray[_ND, np.dtype[_S]]
 
 @runtime_checkable
 class CanArray(Protocol[_ND, _S_co]):
-    @overload
-    def __array__(
-        self,
-        __dtype: None = None,
-        copy: bool | None = None,
-    ) -> Array[_ND, _S_co]: ...
-    @overload
-    def __array__(
-        self,
-        __dtype: np.dtype[_S],
-        copy: bool | None = None,
-    ) -> Array[_ND, _S]: ...
+    if _NP_V1:
+        @overload
+        def __array__(self) -> Array[_ND, _S_co]: ...
+        @overload
+        def __array__(self, __dtype: np.dtype[_S]) -> Array[_ND, _S]: ...
+    else:
+        @overload
+        def __array__(
+            self,
+            *,
+            copy: bool | None = ...,
+        ) -> Array[_ND, _S_co]: ...
+        @overload
+        def __array__(
+            self,
+            __dtype: np.dtype[_S],
+            *,
+            copy: bool | None = ...,
+        ) -> Array[_ND, _S]: ...
 
 
 _V_co = TypeVar('_V_co', bound=object, covariant=True)
