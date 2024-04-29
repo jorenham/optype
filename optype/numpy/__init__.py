@@ -92,6 +92,7 @@ __all__ = (
     'AtLeast2D',
     'AtLeast3D',
     'CanArray',
+    'CanArrayFunction',
     'CanArrayUfunc',
     'HasDType',
     'SomeArray',
@@ -111,6 +112,7 @@ __all__ = (
 from ._array import (
     Array,
     CanArray,
+    CanArrayFunction,
     SomeArray,
 )
 from ._dtype import HasDType, SomeDType

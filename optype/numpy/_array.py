@@ -1,8 +1,9 @@
-# ruff: noqa: ERA001, PYI018, F401
-
 """Interfaces and type aliases for NumPy arrays, dtypes, and ufuncs."""
 import sys
+from collections.abc import Callable, Mapping
+from types import NotImplementedType
 from typing import (
+    Any,
     Protocol,
     TypeAlias,
     TypeVar,
@@ -12,13 +13,15 @@ from typing import (
 
 import numpy as np
 
+from optype import CanContains, CanIter, CanLen, CanNext
+
+from ._shape import AtLeast0D
+
 
 if sys.version_info < (3, 11):
     from typing_extensions import Self
 else:
     from typing import Self
-
-from ._shape import AtLeast0D
 
 
 _S = TypeVar('_S', bound=np.generic)
@@ -44,7 +47,6 @@ class CanArray(Protocol[_ND, _S_co]):
     ) -> Array[_ND, _S]: ...
 
 
-_T = TypeVar('_T')
 _V_co = TypeVar('_V_co', bound=object, covariant=True)
 
 
@@ -67,3 +69,29 @@ SomeArray: TypeAlias = (
     | _S_py
     | _NestedSequence[_S_py]
 )
+
+
+_T = TypeVar('_T')
+
+
+class _Container(CanLen, CanContains[_T], CanIter[CanNext[_T]]): ...
+
+
+_F_contra = TypeVar(
+    '_F_contra',
+    bound=Callable[..., object],
+    contravariant=True,
+)
+_Y_co = TypeVar('_Y_co', bound=object, covariant=True)
+
+
+@runtime_checkable
+class CanArrayFunction(Protocol[_F_contra, _Y_co]):
+    def __array_function__(
+        self,
+        func: _F_contra,
+        types: _Container[type['CanArrayFunction[Any, Any]']],
+        # ParamSpec can only be used on *args and **kwargs for some reason...
+        args: tuple[Any, ...],
+        kwargs: Mapping[str, Any],
+    ) -> NotImplementedType | _Y_co: ...
