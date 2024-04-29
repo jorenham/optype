@@ -80,6 +80,7 @@ def test_can_array_finalize():
 
     arr_0d: onp.CanArrayFinalize[_Arr0D[sct]] = np.array(42, sct)
     assert isinstance(arr_0d, onp.CanArrayFinalize)
+    assert not isinstance(42, onp.CanArrayFinalize)
 
     arr_1d: onp.CanArrayFinalize[_Arr1D[sct]] = np.array([42], sct)
     assert isinstance(arr_1d, onp.CanArrayFinalize)
@@ -87,3 +88,36 @@ def test_can_array_finalize():
 
     arr_2d: onp.CanArrayFinalize[_Arr2D[sct]] = np.array([[42]], sct)
     assert isinstance(arr_2d, onp.CanArrayFinalize)
+
+
+def test_can_array_wrap():
+    sct: type[np.generic] = np.uint8
+
+    arr_0d: onp.CanArrayWrap[Any, Any] = np.array(42, sct)
+    assert isinstance(arr_0d, onp.CanArrayWrap)
+    assert not isinstance(42, onp.CanArrayWrap)
+
+    arr_1d: onp.CanArrayWrap[Any, Any] = np.array([42], sct)
+    assert isinstance(arr_1d, onp.CanArrayWrap)
+    assert not isinstance([42], onp.CanArrayWrap)
+
+    arr_2d: onp.CanArrayWrap[Any, Any] = np.array([[42]], sct)
+    assert isinstance(arr_2d, onp.CanArrayWrap)
+
+
+def test_has_array_priority():
+    sct: type[np.generic] = np.uint8
+
+    scalar: onp.HasArrayPriority = sct(42)
+    assert isinstance(scalar, onp.HasArrayPriority)
+
+    arr_0d: onp.HasArrayPriority = np.array(42, sct)
+    assert isinstance(arr_0d, onp.HasArrayPriority)
+    assert not isinstance(42, onp.HasArrayPriority)
+
+    arr_1d: onp.HasArrayPriority = np.array([42], sct)
+    assert isinstance(arr_1d, onp.HasArrayPriority)
+    assert not isinstance([42], onp.HasArrayPriority)
+
+    arr_2d: onp.HasArrayPriority = np.array([[42]], sct)
+    assert isinstance(arr_2d, onp.HasArrayPriority)

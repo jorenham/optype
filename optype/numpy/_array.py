@@ -110,27 +110,26 @@ class CanArrayWrap(Protocol[_A_contra, _A_co]):
     if _NP_V1:
         def __array_wrap__(
             self,
-            __arr: _A_contra,
-            context: tuple[np.ufunc, tuple[Any, ...], int] | None = None,
+            arr: _A_contra,
+            ctx: tuple[np.ufunc, tuple[Any, ...], int] | None = None,
+            /,
         ) -> _A_co:
             ...
     else:
         def __array_wrap__(
             self,
-            __arr: _A_contra,
-            context: tuple[np.ufunc, tuple[Any, ...], int] | None = None,
+            arr: _A_contra,
+            ctx: tuple[np.ufunc, tuple[Any, ...], int] | None = None,
+            /,
             return_scalar: bool = False,
         ) -> _A_co:
             ...
 
 
-_P_co = TypeVar('_P_co', bound=float, covariant=True)
-
-
 @runtime_checkable
-class _HasArrayPriorityProperty(Protocol[_P_co]):
+class _HasArrayPriorityProperty(Protocol):
     @property
-    def __array_priority__(self) -> _P_co: ...
+    def __array_priority__(self) -> float: ...
 
 
 @runtime_checkable
@@ -139,5 +138,5 @@ class _HasArrayPriorityClassVar(Protocol):
 
 
 HasArrayPriority: TypeAlias = (
-    _HasArrayPriorityProperty[_P_co] | _HasArrayPriorityClassVar
+    _HasArrayPriorityProperty | _HasArrayPriorityClassVar
 )
