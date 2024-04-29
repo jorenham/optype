@@ -3,7 +3,6 @@ from collections.abc import Callable, Mapping
 from types import NotImplementedType
 from typing import (
     Any,
-    ClassVar,
     Final,
     Protocol,
     TypeAlias,
@@ -127,16 +126,6 @@ class CanArrayWrap(Protocol[_A_contra, _A_co]):
 
 
 @runtime_checkable
-class _HasArrayPriorityProperty(Protocol):
+class HasArrayPriority(Protocol):
     @property
     def __array_priority__(self) -> float: ...
-
-
-@runtime_checkable
-class _HasArrayPriorityClassVar(Protocol):
-    __array_priority__: ClassVar[float]
-
-
-HasArrayPriority: TypeAlias = (
-    _HasArrayPriorityProperty | _HasArrayPriorityClassVar
-)
