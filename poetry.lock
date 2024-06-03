@@ -2,17 +2,17 @@
 
 [[package]]
 name = "basedpyright"
-version = "1.10.4"
+version = "1.12.4"
 description = "static type checking for Python (but based)"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "basedpyright-1.10.4-py3-none-any.whl", hash = "sha256:fb9eb77830eff56c52e0557ed3de165d85373b2b391dd6747ed9aa21415e8e4d"},
-    {file = "basedpyright-1.10.4.tar.gz", hash = "sha256:03136288db5f2212d3f89e3572c6833e155c60754da1779453f714468d9b8cae"},
+    {file = "basedpyright-1.12.4-py3-none-any.whl", hash = "sha256:3910c542255f5958801c8e23cef1659a499d063fff97f842b92d4ce91b138ad0"},
+    {file = "basedpyright-1.12.4.tar.gz", hash = "sha256:0fb972aabe7c1461ce4bfd6f304fd70aacdd5199ec8eb58473143ae75d78ca79"},
 ]
 
 [package.dependencies]
-nodejs-bin = ">=18.4.0a4"
+nodejs-wheel-binaries = ">=20.13.1"
 
 [[package]]
 name = "cachetools"
@@ -205,23 +205,20 @@ files = [
 setuptools = "*"
 
 [[package]]
-name = "nodejs-bin"
-version = "18.4.0a4"
-description = "Node.js is an open-source, cross-platform, back-end JavaScript runtime environment that runs on the V8 engine and executes JavaScript code outside a web browser."
+name = "nodejs-wheel-binaries"
+version = "20.14.0"
+description = "unoffical Node.js package"
 optional = false
-python-versions = "~=3.5"
+python-versions = ">=3.7"
 files = [
-    {file = "nodejs_bin-18.4.0a4-py3-none-macosx_10_9_x86_64.whl", hash = "sha256:16cb1abf7fe8c11c574e1e474d9f934a0df49a480290eae6e733d8bb09512e22"},
-    {file = "nodejs_bin-18.4.0a4-py3-none-macosx_11_0_arm64.whl", hash = "sha256:068ca987ed83ea1123775fafe5dc22d8f2ff920d7d31571e1bfe6fb1093833eb"},
-    {file = "nodejs_bin-18.4.0a4-py3-none-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:06cfeaa4d26eec94d8edb9927525ce94eb96dadc81f7d1daed42d1a7d003a4c9"},
-    {file = "nodejs_bin-18.4.0a4-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:431ee3529f4fb226ddcfd4f14cb37e7df31238c42dfd051f4bf8f0c21029b133"},
-    {file = "nodejs_bin-18.4.0a4-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:21f1f77ddc8fe05353bb6d6ee8e5a62edb3a8dcdb2740a5f9307fd8d9eef6691"},
-    {file = "nodejs_bin-18.4.0a4-py3-none-win32.whl", hash = "sha256:59671fdc563dabb8be8a0b6dae4169d780482b3c9e0fba3f9aa2b7ee8d2261ac"},
-    {file = "nodejs_bin-18.4.0a4-py3-none-win_amd64.whl", hash = "sha256:cbd509218b4b17f75ee7841f9c21d5cacc1626d3b823a652a6627dbad18228ec"},
+    {file = "nodejs_wheel_binaries-20.14.0-py2.py3-none-macosx_10_15_x86_64.whl", hash = "sha256:b877d28dee5ad53eb4522db80866d87238bbe13c1324e38ecf4fc420a367c051"},
+    {file = "nodejs_wheel_binaries-20.14.0-py2.py3-none-macosx_11_0_arm64.whl", hash = "sha256:bad91d58999ea3d3c2dfe5d8cbd1a982d8c3cfa57a28cf81a5244dbb89e6f075"},
+    {file = "nodejs_wheel_binaries-20.14.0-py2.py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:42421946e1f16f4f7327d1c9629c31de918cb8069e8ec47a38c6fff47a2de354"},
+    {file = "nodejs_wheel_binaries-20.14.0-py2.py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2e0f02502426b442f29ac35590737a152e1d99e194820fe159208efdd854b491"},
+    {file = "nodejs_wheel_binaries-20.14.0-py2.py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:e46f3fae0a99cfb6610531b9713380b417524efc6fb1077decd00b3ababfb7e6"},
+    {file = "nodejs_wheel_binaries-20.14.0-py2.py3-none-win_amd64.whl", hash = "sha256:056be3bab4181b07ea8ea56b7464919b4cee12af77a24435341c94b5eca8572e"},
+    {file = "nodejs_wheel_binaries-20.14.0.tar.gz", hash = "sha256:38e4b1b4dee08898da5fb9d813d1653162fd0e6f4ec83dc6615b2432f1fa90aa"},
 ]
-
-[package.extras]
-cmd = ["nodejs-cmd"]
 
 [[package]]
 name = "packaging"
