@@ -4,33 +4,33 @@ ci:
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
       - id: check-yaml
       - id: check-toml
 
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.41.0
+    hooks:
+      - id: markdownlint
+
   - repo: https://github.com/python-poetry/poetry
-    rev: 1.8.2
+    rev: 1.8.3
     hooks:
       - id: poetry-check
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.6
+    rev: v2.3.0
     hooks:
       - id: codespell
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.4.1
+    rev: v0.4.8
     hooks:
       - id: ruff
         args: [--fix, --show-fixes]
 
   - repo: https://github.com/DetachHead/basedpyright
-    rev: v1.10.3
+    rev: v1.12.5
     hooks:
       - id: basedpyright
-
-  - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.39.0
-    hooks:
-      - id: markdownlint
