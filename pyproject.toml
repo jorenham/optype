@@ -30,18 +30,18 @@ python = "^3.10"
 typing-extensions = {version = ">=4.5", python = "<3.12"}
 
 [tool.poetry.group.dev.dependencies]
-pre-commit = '^3.7.0'
-tox = "^4.14.2"
+pre-commit = '^3.7.1'
+tox = "^4.15.1"
 
 [tool.poetry.group.lint.dependencies]
-basedpyright = "^1.10.3"
-codespell = "^2.2.6"
-ruff = "^0.4.1"
+basedpyright = "^1.12.5"
+codespell = "^2.3.0"
+ruff = "^0.4.8"
+sp-repo-review = {version = "^2024.4.23", extras = ["cli"]}
 typing-extensions = "*"
-sp-repo-review = {version = "^2024.3.10", extras = ["cli"]}
 
 [tool.poetry.group.test.dependencies]
-pytest = "^8.1.1"
+pytest = "^8.2.2"
 typing-extensions = "*"
 
 [tool.poetry.group.test-github]
@@ -52,25 +52,12 @@ pytest-github-actions-annotate-failures = ">=0.2.0,<1.0"
 
 [tool.codespell]
 context = 2
+skip = "poetry.lock"
 ignore-words-list = "cange"  # CanGe
 
 
 [tool.basedpyright]
-include = [
-    "optype",
-    "examples",
-    "tests"
-]
-exclude = [
-    "**/__pycache__",
-    ".git",
-    ".github",
-    ".pytest_cache",
-    ".ruff_cache",
-    ".venv",
-    ".vscode",
-    "dist"
-]
+include = ["optype", "examples", "tests"]
 stubPath = "."
 venvPath = "."
 venv = ".venv"
@@ -124,7 +111,6 @@ force-exclude = true
 extend-exclude = [".github", ".vscode"]
 
 [tool.ruff.lint]
-ignore-init-module-imports = true
 preview = true
 select = [
     "F",        # pyflakes
