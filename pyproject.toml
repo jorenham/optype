@@ -27,7 +27,7 @@ documentation = "https://github.com/jorenham/optype?tab=readme-ov-file#optype"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-typing-extensions = {version = ">=4.5", python = "<3.13"}
+typing-extensions = {version = ">=4.7", python = "<3.13"}
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = '^3.7.1'
