@@ -61,7 +61,7 @@ class HasClass(Protocol):
     @override
     def __class__(self) -> type[Self]: ...
     @__class__.setter
-    def __class__(self, __cls: type[Self]) -> None:
+    def __class__(self, cls: type[Self], /) -> None:
         """Don't."""
 
 
