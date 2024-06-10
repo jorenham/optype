@@ -27,20 +27,6 @@ else:
 
 _Ignored: TypeAlias = Any
 
-_T_co = TypeVar('_T_co', bound=object, covariant=True)
-_T_contra = TypeVar('_T_contra', bound=object, contravariant=True)
-
-_V = TypeVar('_V')
-_V_co = TypeVar('_V_co', covariant=True)
-_V_contra = TypeVar('_V_contra', contravariant=True)
-_V_exc = TypeVar('_V_exc', bound=BaseException)
-_V_int_contra = TypeVar('_V_int_contra', bound=int, contravariant=True)
-_V_anext_co = TypeVar('_V_anext_co', bound='CanANext[Any]', covariant=True)
-_Y_co = TypeVar('_Y_co', covariant=True)
-_X_co = TypeVar('_X_co', covariant=True)
-_X_contra = TypeVar('_X_contra', contravariant=True)
-_Xs = TypeVarTuple('_Xs')
-
 
 # Iterator types
 # https://docs.python.org/3/library/stdtypes.html#iterator-types
@@ -568,256 +554,470 @@ class CanGetMissing(
 # 3.3.8. Emulating numeric types
 # https://docs.python.org/3/reference/datamodel.html#emulating-numeric-types
 
-@runtime_checkable
-class CanAdd(Protocol[_X_contra, _Y_co]):
-    def __add__(self, rhs: _X_contra, /) -> _Y_co: ...
+
+_T_add_contra = TypeVar('_T_add_contra', contravariant=True)
+_T_add_co = TypeVar('_T_add_co', covariant=True)
 
 
 @runtime_checkable
-class CanSub(Protocol[_X_contra, _Y_co]):
-    def __sub__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanAdd(Protocol[_T_add_contra, _T_add_co]):
+    def __add__(self, rhs: _T_add_contra, /) -> _T_add_co: ...
+
+
+_T_sub_contra = TypeVar('_T_sub_contra', contravariant=True)
+_T_sub_co = TypeVar('_T_sub_co', covariant=True)
 
 
 @runtime_checkable
-class CanMul(Protocol[_X_contra, _Y_co]):
-    def __mul__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanSub(Protocol[_T_sub_contra, _T_sub_co]):
+    def __sub__(self, rhs: _T_sub_contra, /) -> _T_sub_co: ...
+
+
+_T_mul_contra = TypeVar('_T_mul_contra', contravariant=True)
+_T_mul_co = TypeVar('_T_mul_co', covariant=True)
 
 
 @runtime_checkable
-class CanMatmul(Protocol[_X_contra, _Y_co]):
-    def __matmul__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanMul(Protocol[_T_mul_contra, _T_mul_co]):
+    def __mul__(self, rhs: _T_mul_contra, /) -> _T_mul_co: ...
+
+
+_T_matmul_contra = TypeVar('_T_matmul_contra', contravariant=True)
+_T_matmul_co = TypeVar('_T_matmul_co', covariant=True)
 
 
 @runtime_checkable
-class CanTruediv(Protocol[_X_contra, _Y_co]):
-    def __truediv__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanMatmul(Protocol[_T_matmul_contra, _T_matmul_co]):
+    def __matmul__(self, rhs: _T_matmul_contra, /) -> _T_matmul_co: ...
+
+
+_T_truediv_contra = TypeVar('_T_truediv_contra', contravariant=True)
+_T_truediv_co = TypeVar('_T_truediv_co', covariant=True)
 
 
 @runtime_checkable
-class CanFloordiv(Protocol[_X_contra, _Y_co]):
-    def __floordiv__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanTruediv(Protocol[_T_truediv_contra, _T_truediv_co]):
+    def __truediv__(self, rhs: _T_truediv_contra, /) -> _T_truediv_co: ...
+
+
+_T_floordiv_contra = TypeVar('_T_floordiv_contra', contravariant=True)
+_T_floordiv_co = TypeVar('_T_floordiv_co', covariant=True)
 
 
 @runtime_checkable
-class CanMod(Protocol[_X_contra, _Y_co]):
-    def __mod__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanFloordiv(Protocol[_T_floordiv_contra, _T_floordiv_co]):
+    def __floordiv__(self, rhs: _T_floordiv_contra, /) -> _T_floordiv_co: ...
+
+
+_T_mod_contra = TypeVar('_T_mod_contra', contravariant=True)
+_T_mod_co = TypeVar('_T_mod_co', covariant=True)
 
 
 @runtime_checkable
-class CanDivmod(Protocol[_X_contra, _Y_co]):
-    def __divmod__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanMod(Protocol[_T_mod_contra, _T_mod_co]):
+    def __mod__(self, rhs: _T_mod_contra, /) -> _T_mod_co: ...
+
+
+_T_divmod_contra = TypeVar('_T_divmod_contra', contravariant=True)
+_T_divmod_co = TypeVar('_T_divmod_co', covariant=True)
 
 
 @runtime_checkable
-class CanPow2(Protocol[_X_contra, _Y_co]):
-    def __pow__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanDivmod(Protocol[_T_divmod_contra, _T_divmod_co]):
+    def __divmod__(self, rhs: _T_divmod_contra, /) -> _T_divmod_co: ...
 
 
-_VY_co = TypeVar('_VY_co', covariant=True)
+_T_pow2_contra = TypeVar('_T_pow2_contra', contravariant=True)
+_T_pow2_co = TypeVar('_T_pow2_co', covariant=True)
 
 
 @runtime_checkable
-class CanPow3(Protocol[_X_contra, _V_contra, _VY_co]):
-    def __pow__(self, x: _X_contra, mod: _V_contra, /) -> _VY_co: ...
+class CanPow2(Protocol[_T_pow2_contra, _T_pow2_co]):
+    @overload
+    def __pow__(self, exp: _T_pow2_contra, /) -> _T_pow2_co: ...
+    @overload
+    def __pow__(
+        self,
+        exp: _T_pow2_contra,
+        mod: None = ...,
+        /,
+    ) -> _T_pow2_co: ...
+
+
+_T_pow3_contra = TypeVar('_T_pow3_contra', contravariant=True)
+_M_pow3_contra = TypeVar('_M_pow3_contra', contravariant=True)
+_T_pow3_co = TypeVar('_T_pow3_co', covariant=True)
+
+
+@runtime_checkable
+class CanPow3(Protocol[_T_pow3_contra, _M_pow3_contra, _T_pow3_co]):
+    def __pow__(
+        self,
+        exp: _T_pow3_contra,
+        mod: _M_pow3_contra,
+        /,
+    ) -> _T_pow3_co: ...
+
+
+_T_pow_contra = TypeVar('_T_pow_contra', contravariant=True)
+_M_pow_contra = TypeVar('_M_pow_contra', contravariant=True)
+_T_pow_co = TypeVar('_T_pow_co', covariant=True)
+_TM_pow_co = TypeVar('_TM_pow_co', covariant=True, default=_T_pow_co)
 
 
 @runtime_checkable
 class CanPow(
-    CanPow2[_X_contra, _Y_co],
-    CanPow3[_X_contra, _V_contra, _VY_co],
-    Protocol[_X_contra, _V_contra, _Y_co, _VY_co],
+    CanPow2[_T_pow_contra, _T_pow_co],
+    CanPow3[_T_pow_contra, _M_pow_contra, _TM_pow_co],
+    Protocol[_T_pow_contra, _M_pow_contra, _T_pow_co, _TM_pow_co],
 ):
     @overload
-    def __pow__(self, rhs: _X_contra, /) -> _Y_co: ...
+    def __pow__(self, exp: _T_pow_contra, /) -> _T_pow_co: ...
     @overload
-    def __pow__(self, x: _X_contra, mod: _V_contra, /) -> _VY_co: ...
+    def __pow__(self, exp: _T_pow_contra, mod: None = ..., /) -> _T_pow_co: ...
+    @overload
+    def __pow__(
+        self,
+        exp: _T_pow_contra,
+        mod: _M_pow_contra,
+        /,
+    ) -> _TM_pow_co: ...
+
+
+_T_lshift_contra = TypeVar('_T_lshift_contra', contravariant=True)
+_T_lshift_co = TypeVar('_T_lshift_co', covariant=True)
 
 
 @runtime_checkable
-class CanLshift(Protocol[_X_contra, _Y_co]):
-    def __lshift__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanLshift(Protocol[_T_lshift_contra, _T_lshift_co]):
+    def __lshift__(self, rhs: _T_lshift_contra, /) -> _T_lshift_co: ...
+
+
+_T_rshift_contra = TypeVar('_T_rshift_contra', contravariant=True)
+_T_rshift_co = TypeVar('_T_rshift_co', covariant=True)
 
 
 @runtime_checkable
-class CanRshift(Protocol[_X_contra, _Y_co]):
-    def __rshift__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanRshift(Protocol[_T_rshift_contra, _T_rshift_co]):
+    def __rshift__(self, rhs: _T_rshift_contra, /) -> _T_rshift_co: ...
+
+
+_T_and_contra = TypeVar('_T_and_contra', contravariant=True)
+_T_and_co = TypeVar('_T_and_co', covariant=True)
 
 
 @runtime_checkable
-class CanAnd(Protocol[_X_contra, _Y_co]):
-    def __and__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanAnd(Protocol[_T_and_contra, _T_and_co]):
+    def __and__(self, rhs: _T_and_contra, /) -> _T_and_co: ...
+
+
+_T_xor_contra = TypeVar('_T_xor_contra', contravariant=True)
+_T_xor_co = TypeVar('_T_xor_co', covariant=True)
 
 
 @runtime_checkable
-class CanXor(Protocol[_X_contra, _Y_co]):
-    def __xor__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanXor(Protocol[_T_xor_contra, _T_xor_co]):
+    def __xor__(self, rhs: _T_xor_contra, /) -> _T_xor_co: ...
+
+
+_T_or_contra = TypeVar('_T_or_contra', contravariant=True)
+_T_or_co = TypeVar('_T_or_co', covariant=True)
 
 
 @runtime_checkable
-class CanOr(Protocol[_X_contra, _Y_co]):
-    def __or__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanOr(Protocol[_T_or_contra, _T_or_co]):
+    def __or__(self, rhs: _T_or_contra, /) -> _T_or_co: ...
 
 
 # reflected
 
-@runtime_checkable
-class CanRAdd(Protocol[_X_contra, _Y_co]):
-    def __radd__(self, rhs: _X_contra, /) -> _Y_co: ...
+_T_radd_contra = TypeVar('_T_radd_contra', contravariant=True)
+_T_radd_co = TypeVar('_T_radd_co', covariant=True)
 
 
 @runtime_checkable
-class CanRSub(Protocol[_X_contra, _Y_co]):
-    def __rsub__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanRAdd(Protocol[_T_radd_contra, _T_radd_co]):
+    def __radd__(self, rhs: _T_radd_contra, /) -> _T_radd_co: ...
+
+
+_T_rsub_contra = TypeVar('_T_rsub_contra', contravariant=True)
+_T_rsub_co = TypeVar('_T_rsub_co', covariant=True)
 
 
 @runtime_checkable
-class CanRMul(Protocol[_X_contra, _Y_co]):
-    def __rmul__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanRSub(Protocol[_T_rsub_contra, _T_rsub_co]):
+    def __rsub__(self, rhs: _T_rsub_contra, /) -> _T_rsub_co: ...
+
+
+_T_rmul_contra = TypeVar('_T_rmul_contra', contravariant=True)
+_T_rmul_co = TypeVar('_T_rmul_co', covariant=True)
 
 
 @runtime_checkable
-class CanRMatmul(Protocol[_X_contra, _Y_co]):
-    def __rmatmul__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanRMul(Protocol[_T_rmul_contra, _T_rmul_co]):
+    def __rmul__(self, rhs: _T_rmul_contra, /) -> _T_rmul_co: ...
+
+
+_T_rmatmul_contra = TypeVar('_T_rmatmul_contra', contravariant=True)
+_T_rmatmul_co = TypeVar('_T_rmatmul_co', covariant=True)
 
 
 @runtime_checkable
-class CanRTruediv(Protocol[_X_contra, _Y_co]):
-    def __rtruediv__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanRMatmul(Protocol[_T_rmatmul_contra, _T_rmatmul_co]):
+    def __rmatmul__(self, rhs: _T_rmatmul_contra, /) -> _T_rmatmul_co: ...
+
+
+_T_rtruediv_contra = TypeVar('_T_rtruediv_contra', contravariant=True)
+_T_rtruediv_co = TypeVar('_T_rtruediv_co', covariant=True)
 
 
 @runtime_checkable
-class CanRFloordiv(Protocol[_X_contra, _Y_co]):
-    def __rfloordiv__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanRTruediv(Protocol[_T_rtruediv_contra, _T_rtruediv_co]):
+    def __rtruediv__(self, rhs: _T_rtruediv_contra, /) -> _T_rtruediv_co: ...
+
+
+_T_rfloordiv_contra = TypeVar('_T_rfloordiv_contra', contravariant=True)
+_T_rfloordiv_co = TypeVar('_T_rfloordiv_co', covariant=True)
 
 
 @runtime_checkable
-class CanRMod(Protocol[_X_contra, _Y_co]):
-    def __rmod__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanRFloordiv(Protocol[_T_rfloordiv_contra, _T_rfloordiv_co]):
+    def __rfloordiv__(
+        self,
+        rhs: _T_rfloordiv_contra,
+        /,
+    ) -> _T_rfloordiv_co: ...
+
+
+_T_rmod_contra = TypeVar('_T_rmod_contra', contravariant=True)
+_T_rmod_co = TypeVar('_T_rmod_co', covariant=True)
 
 
 @runtime_checkable
-class CanRDivmod(Protocol[_X_contra, _Y_co]):
-    def __rdivmod__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanRMod(Protocol[_T_rmod_contra, _T_rmod_co]):
+    def __rmod__(self, rhs: _T_rmod_contra, /) -> _T_rmod_co: ...
+
+
+_T_rdivmod_contra = TypeVar('_T_rdivmod_contra', contravariant=True)
+_T_rdivmod_co = TypeVar('_T_rdivmod_co', covariant=True)
 
 
 @runtime_checkable
-class CanRPow(Protocol[_X_contra, _Y_co]):
-    def __rpow__(self, x: _X_contra) -> _Y_co: ...
+class CanRDivmod(Protocol[_T_rdivmod_contra, _T_rdivmod_co]):
+    def __rdivmod__(self, rhs: _T_rdivmod_contra, /) -> _T_rdivmod_co: ...
+
+
+_T_rpow_contra = TypeVar('_T_rpow_contra', contravariant=True)
+_T_rpow_co = TypeVar('_T_rpow_co', covariant=True)
 
 
 @runtime_checkable
-class CanRLshift(Protocol[_X_contra, _Y_co]):
-    def __rlshift__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanRPow(Protocol[_T_rpow_contra, _T_rpow_co]):
+    def __rpow__(self, x: _T_rpow_contra) -> _T_rpow_co: ...
+
+
+_T_rlshift_contra = TypeVar('_T_rlshift_contra', contravariant=True)
+_T_rlshift_co = TypeVar('_T_rlshift_co', covariant=True)
 
 
 @runtime_checkable
-class CanRRshift(Protocol[_X_contra, _Y_co]):
-    def __rrshift__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanRLshift(Protocol[_T_rlshift_contra, _T_rlshift_co]):
+    def __rlshift__(self, rhs: _T_rlshift_contra, /) -> _T_rlshift_co: ...
+
+
+_T_rrshift_contra = TypeVar('_T_rrshift_contra', contravariant=True)
+_T_rrshift_co = TypeVar('_T_rrshift_co', covariant=True)
 
 
 @runtime_checkable
-class CanRAnd(Protocol[_X_contra, _Y_co]):
-    def __rand__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanRRshift(Protocol[_T_rrshift_contra, _T_rrshift_co]):
+    def __rrshift__(self, rhs: _T_rrshift_contra, /) -> _T_rrshift_co: ...
+
+
+_T_rand_contra = TypeVar('_T_rand_contra', contravariant=True)
+_T_rand_co = TypeVar('_T_rand_co', covariant=True)
 
 
 @runtime_checkable
-class CanRXor(Protocol[_X_contra, _Y_co]):
-    def __rxor__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanRAnd(Protocol[_T_rand_contra, _T_rand_co]):
+    def __rand__(self, rhs: _T_rand_contra, /) -> _T_rand_co: ...
+
+
+_T_rxor_contra = TypeVar('_T_rxor_contra', contravariant=True)
+_T_rxor_co = TypeVar('_T_rxor_co', covariant=True)
 
 
 @runtime_checkable
-class CanROr(Protocol[_X_contra, _Y_co]):
-    def __ror__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanRXor(Protocol[_T_rxor_contra, _T_rxor_co]):
+    def __rxor__(self, rhs: _T_rxor_contra, /) -> _T_rxor_co: ...
+
+
+_T_ror_contra = TypeVar('_T_ror_contra', contravariant=True)
+_T_ror_co = TypeVar('_T_ror_co', covariant=True)
+
+
+@runtime_checkable
+class CanROr(Protocol[_T_ror_contra, _T_ror_co]):
+    def __ror__(self, rhs: _T_ror_contra, /) -> _T_ror_co: ...
 
 
 # augmented / in-place
 
-@runtime_checkable
-class CanIAdd(Protocol[_X_contra, _Y_co]):
-    def __iadd__(self, rhs: _X_contra, /) -> _Y_co: ...
+_T_iadd_contra = TypeVar('_T_iadd_contra', contravariant=True)
+_T_iadd_co = TypeVar('_T_iadd_co', covariant=True)
 
 
 @runtime_checkable
-class CanISub(Protocol[_X_contra, _Y_co]):
-    def __isub__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanIAdd(Protocol[_T_iadd_contra, _T_iadd_co]):
+    def __iadd__(self, rhs: _T_iadd_contra, /) -> _T_iadd_co: ...
+
+
+_T_isub_contra = TypeVar('_T_isub_contra', contravariant=True)
+_T_isub_co = TypeVar('_T_isub_co', covariant=True)
 
 
 @runtime_checkable
-class CanIMul(Protocol[_X_contra, _Y_co]):
-    def __imul__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanISub(Protocol[_T_isub_contra, _T_isub_co]):
+    def __isub__(self, rhs: _T_isub_contra, /) -> _T_isub_co: ...
+
+
+_T_imul_contra = TypeVar('_T_imul_contra', contravariant=True)
+_T_imul_co = TypeVar('_T_imul_co', covariant=True)
 
 
 @runtime_checkable
-class CanIMatmul(Protocol[_X_contra, _Y_co]):
-    def __imatmul__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanIMul(Protocol[_T_imul_contra, _T_imul_co]):
+    def __imul__(self, rhs: _T_imul_contra, /) -> _T_imul_co: ...
+
+
+_T_imatmul_contra = TypeVar('_T_imatmul_contra', contravariant=True)
+_T_imatmul_co = TypeVar('_T_imatmul_co', covariant=True)
 
 
 @runtime_checkable
-class CanITruediv(Protocol[_X_contra, _Y_co]):
-    def __itruediv__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanIMatmul(Protocol[_T_imatmul_contra, _T_imatmul_co]):
+    def __imatmul__(self, rhs: _T_imatmul_contra, /) -> _T_imatmul_co: ...
+
+
+_T_itruediv_contra = TypeVar('_T_itruediv_contra', contravariant=True)
+_T_itruediv_co = TypeVar('_T_itruediv_co', covariant=True)
 
 
 @runtime_checkable
-class CanIFloordiv(Protocol[_X_contra, _Y_co]):
-    def __ifloordiv__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanITruediv(Protocol[_T_itruediv_contra, _T_itruediv_co]):
+    def __itruediv__(self, rhs: _T_itruediv_contra, /) -> _T_itruediv_co: ...
+
+
+_T_ifloordiv_contra = TypeVar('_T_ifloordiv_contra', contravariant=True)
+_T_ifloordiv_co = TypeVar('_T_ifloordiv_co', covariant=True)
 
 
 @runtime_checkable
-class CanIMod(Protocol[_X_contra, _Y_co]):
-    def __imod__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanIFloordiv(Protocol[_T_ifloordiv_contra, _T_ifloordiv_co]):
+    def __ifloordiv__(
+        self,
+        rhs: _T_ifloordiv_contra,
+        /,
+    ) -> _T_ifloordiv_co: ...
+
+
+_T_imod_contra = TypeVar('_T_imod_contra', contravariant=True)
+_T_imod_co = TypeVar('_T_imod_co', covariant=True)
 
 
 @runtime_checkable
-class CanIPow(Protocol[_X_contra, _Y_co]):
+class CanIMod(Protocol[_T_imod_contra, _T_imod_co]):
+    def __imod__(self, rhs: _T_imod_contra, /) -> _T_imod_co: ...
+
+
+_T_ipow_contra = TypeVar('_T_ipow_contra', contravariant=True)
+_T_ipow_co = TypeVar('_T_ipow_co', covariant=True)
+
+
+@runtime_checkable
+class CanIPow(Protocol[_T_ipow_contra, _T_ipow_co]):
     # no augmented pow/3 exists
-    def __ipow__(self, rhs: _X_contra, /) -> _Y_co: ...
+    def __ipow__(self, rhs: _T_ipow_contra, /) -> _T_ipow_co: ...
+
+
+_T_ilshift_contra = TypeVar('_T_ilshift_contra', contravariant=True)
+_T_ilshift_co = TypeVar('_T_ilshift_co', covariant=True)
 
 
 @runtime_checkable
-class CanILshift(Protocol[_X_contra, _Y_co]):
-    def __ilshift__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanILshift(Protocol[_T_ilshift_contra, _T_ilshift_co]):
+    def __ilshift__(self, rhs: _T_ilshift_contra, /) -> _T_ilshift_co: ...
+
+
+_T_irshift_contra = TypeVar('_T_irshift_contra', contravariant=True)
+_T_irshift_co = TypeVar('_T_irshift_co', covariant=True)
 
 
 @runtime_checkable
-class CanIRshift(Protocol[_X_contra, _Y_co]):
-    def __irshift__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanIRshift(Protocol[_T_irshift_contra, _T_irshift_co]):
+    def __irshift__(self, rhs: _T_irshift_contra, /) -> _T_irshift_co: ...
+
+
+_T_iand_contra = TypeVar('_T_iand_contra', contravariant=True)
+_T_iand_co = TypeVar('_T_iand_co', covariant=True)
 
 
 @runtime_checkable
-class CanIAnd(Protocol[_X_contra, _Y_co]):
-    def __iand__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanIAnd(Protocol[_T_iand_contra, _T_iand_co]):
+    def __iand__(self, rhs: _T_iand_contra, /) -> _T_iand_co: ...
+
+
+_T_ixor_contra = TypeVar('_T_ixor_contra', contravariant=True)
+_T_ixor_co = TypeVar('_T_ixor_co', covariant=True)
 
 
 @runtime_checkable
-class CanIXor(Protocol[_X_contra, _Y_co]):
-    def __ixor__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanIXor(Protocol[_T_ixor_contra, _T_ixor_co]):
+    def __ixor__(self, rhs: _T_ixor_contra, /) -> _T_ixor_co: ...
+
+
+_T_ior_contra = TypeVar('_T_ior_contra', contravariant=True)
+_T_ior_co = TypeVar('_T_ior_co', covariant=True)
 
 
 @runtime_checkable
-class CanIOr(Protocol[_X_contra, _Y_co]):
-    def __ior__(self, rhs: _X_contra, /) -> _Y_co: ...
+class CanIOr(Protocol[_T_ior_contra, _T_ior_co]):
+    def __ior__(self, rhs: _T_ior_contra, /) -> _T_ior_co: ...
 
 
 # unary arithmetic
 
-@runtime_checkable
-class CanNeg(Protocol[_Y_co]):
-    def __neg__(self, /) -> _Y_co: ...
+
+_T_neg_co = TypeVar('_T_neg_co', covariant=True)
 
 
 @runtime_checkable
-class CanPos(Protocol[_Y_co]):
-    def __pos__(self, /) -> _Y_co: ...
+class CanNeg(Protocol[_T_neg_co]):
+    def __neg__(self, /) -> _T_neg_co: ...
+
+
+_T_pos_co = TypeVar('_T_pos_co', covariant=True)
 
 
 @runtime_checkable
-class CanAbs(Protocol[_Y_co]):
-    def __abs__(self, /) -> _Y_co: ...
+class CanPos(Protocol[_T_pos_co]):
+    def __pos__(self, /) -> _T_pos_co: ...
+
+
+_T_abs_co = TypeVar('_T_abs_co', covariant=True)
 
 
 @runtime_checkable
-class CanInvert(Protocol[_Y_co]):
-    def __invert__(self, /) -> _Y_co: ...
+class CanAbs(Protocol[_T_abs_co]):
+    def __abs__(self, /) -> _T_abs_co: ...
+
+
+_T_invert_co = TypeVar('_T_invert_co', covariant=True)
+
+
+@runtime_checkable
+class CanInvert(Protocol[_T_invert_co]):
+    def __invert__(self, /) -> _T_invert_co: ...
 
 
 # numeric conversion
@@ -832,71 +1032,105 @@ class CanFloat(Protocol):
     def __float__(self, /) -> float: ...
 
 
-@runtime_checkable
-class CanInt(Protocol):
-    def __int__(self, /) -> int: ...
+_T_int_co = TypeVar('_T_int_co', covariant=True, default=int)
 
 
 @runtime_checkable
-class CanIndex(Protocol):
-    def __index__(self, /) -> int: ...
+class CanInt(Protocol[_T_int_co]):
+    def __int__(self, /) -> _T_int_co: ...
+
+
+_T_index_co = TypeVar('_T_index_co', covariant=True, default=int)
+
+
+@runtime_checkable
+class CanIndex(Protocol[_T_index_co]):
+    def __index__(self, /) -> _T_index_co: ...
+
 
 # rounding
 
-
-@runtime_checkable
-class CanRound1(Protocol[_Y_co]):
-    @overload
-    def __round__(self, /) -> _Y_co: ...
-    @overload
-    def __round__(self, ndigits: None = ...) -> _Y_co: ...
+_T_round1_co = TypeVar('_T_round1_co', covariant=True, default=int)
 
 
 @runtime_checkable
-class CanRound2(Protocol[_V_contra, _VY_co]):
-    def __round__(self, ndigits: _V_contra) -> _VY_co: ...
+class CanRound1(Protocol[_T_round1_co]):
+    @overload
+    def __round__(self, /) -> _T_round1_co: ...
+    @overload
+    def __round__(self, ndigits: None = ...) -> _T_round1_co: ...
+
+
+_T_round2_contra = TypeVar('_T_round2_contra', contravariant=True, default=int)
+_T_round2_co = TypeVar('_T_round2_co', covariant=True, default=float)
+
+
+@runtime_checkable
+class CanRound2(Protocol[_T_round2_contra, _T_round2_co]):
+    def __round__(self, ndigits: _T_round2_contra) -> _T_round2_co: ...
+
+
+_T_round_contra = TypeVar('_T_round_contra', contravariant=True, default=int)
+_T1_round_co = TypeVar('_T1_round_co', covariant=True, default=int)
+_T2_round_co = TypeVar('_T2_round_co', covariant=True, default=float)
 
 
 @runtime_checkable
 class CanRound(
-    CanRound1[_Y_co],
-    CanRound2[_V_contra, _VY_co],
-    Protocol[_V_contra, _Y_co, _VY_co],
+    CanRound1[_T1_round_co],
+    CanRound2[_T_round_contra, _T2_round_co],
+    Protocol[_T_round_contra, _T1_round_co, _T2_round_co],
 ):
     @overload
-    def __round__(self, /) -> _Y_co: ...
+    def __round__(self, /) -> _T1_round_co: ...
     @overload
-    def __round__(self, ndigits: None = ...) -> _Y_co: ...
+    def __round__(self, ndigits: None = ...) -> _T1_round_co: ...
     @overload
-    def __round__(self, ndigits: _V_contra) -> _VY_co: ...
+    def __round__(self, ndigits: _T_round_contra) -> _T2_round_co: ...
+
+
+_T_trunc_co = TypeVar('_T_trunc_co', covariant=True, default=int)
 
 
 @runtime_checkable
-class CanTrunc(Protocol[_Y_co]):
-    def __trunc__(self, /) -> _Y_co: ...
+class CanTrunc(Protocol[_T_trunc_co]):
+    def __trunc__(self, /) -> _T_trunc_co: ...
+
+
+_T_floor_co = TypeVar('_T_floor_co', covariant=True, default=int)
 
 
 @runtime_checkable
-class CanFloor(Protocol[_Y_co]):
-    def __floor__(self, /) -> _Y_co: ...
+class CanFloor(Protocol[_T_floor_co]):
+    def __floor__(self, /) -> _T_floor_co: ...
+
+
+_T_ceil_co = TypeVar('_T_ceil_co', covariant=True, default=int)
 
 
 @runtime_checkable
-class CanCeil(Protocol[_Y_co]):
-    def __ceil__(self, /) -> _Y_co: ...
+class CanCeil(Protocol[_T_ceil_co]):
+    def __ceil__(self, /) -> _T_ceil_co: ...
 
 
 # 3.3.9. With Statement Context Managers
 # https://docs.python.org/3/reference/datamodel.html#with-statement-context-managers
 
 
-@runtime_checkable
-class CanEnter(Protocol[_X_co]):
-    def __enter__(self, /) -> _X_co: ...
+_T_enter_co = TypeVar('_T_enter_co', covariant=True)
 
 
 @runtime_checkable
-class CanExit(Protocol[_Y_co]):
+class CanEnter(Protocol[_T_enter_co]):
+    def __enter__(self, /) -> _T_enter_co: ...
+
+
+_E_exit = TypeVar('_E_exit', bound=BaseException)
+_T_exit_co = TypeVar('_T_exit_co', covariant=True, default=None)
+
+
+@runtime_checkable
+class CanExit(Protocol[_T_exit_co]):
     @overload
     def __exit__(
         self,
@@ -908,24 +1142,36 @@ class CanExit(Protocol[_Y_co]):
     @overload
     def __exit__(
         self,
-        exc_type: type[_V_exc],
-        exc_instance: _V_exc,
+        exc_type: type[_E_exit],
+        exc_instance: _E_exit,
         exc_traceback: TracebackType,
         /,
-    ) -> _Y_co: ...
+    ) -> _T_exit_co: ...
 
 
 @runtime_checkable
-class CanWith(CanEnter[_X_co], CanExit[_Y_co], Protocol[_X_co, _Y_co]): ...
+class CanWith(
+    CanEnter[_T_enter_co],
+    CanExit[_T_exit_co],
+    Protocol[_T_enter_co, _T_exit_co],
+): ...
 
 
 # 3.3.11. Emulating buffer types
 # https://docs.python.org/3/reference/datamodel.html#emulating-buffer-types
 
 
+_T_buffer_contra = TypeVar(
+    '_T_buffer_contra',
+    contravariant=True,
+    bound=int,
+    default=int,
+)
+
+
 @runtime_checkable
-class CanBuffer(Protocol[_V_int_contra]):
-    def __buffer__(self, buffer: _V_int_contra, /) -> memoryview: ...
+class CanBuffer(Protocol[_T_buffer_contra]):
+    def __buffer__(self, buffer: _T_buffer_contra, /) -> memoryview: ...
 
 
 @runtime_checkable
@@ -937,6 +1183,8 @@ class CanReleaseBuffer(Protocol):
 # https://docs.python.org/3/reference/datamodel.html#awaitable-objects
 
 
+_T_await_co = TypeVar('_T_await_co', covariant=True)
+
 # This should be `None | asyncio.Future[Any]`. But that would make this
 # incompatible with `collections.abc.Awaitable`, because it (annoyingly)
 # uses `Any`...
@@ -944,7 +1192,7 @@ _MaybeFuture: TypeAlias = Any
 
 
 @runtime_checkable
-class CanAwait(Protocol[_V_co]):
+class CanAwait(Protocol[_T_await_co]):
     # Technically speaking, this can return any
     # `CanNext[None | asyncio.Future[Any]]`. But in theory, the return value
     # of generators are currently impossible to type, because the return value
@@ -956,28 +1204,35 @@ class CanAwait(Protocol[_V_co]):
     def __await__(self: 'CanAwait[None]') -> CanNext[_MaybeFuture]: ...
     @overload
     def __await__(
-        self: 'CanAwait[_V_co]',
-    ) -> Generator[_MaybeFuture, None, _V_co]: ...
+        self: 'CanAwait[_T_await_co]',
+    ) -> Generator[_MaybeFuture, None, _T_await_co]: ...
 
 
 # 3.4.3. Asynchronous Iterators
 # https://docs.python.org/3/reference/datamodel.html#asynchronous-iterators
 
-@runtime_checkable
-class CanANext(Protocol[_V_co]):
-    def __anext__(self, /) -> _V_co: ...
+
+_T_anext_co = TypeVar('_T_anext_co', covariant=True)
 
 
 @runtime_checkable
-class CanAIter(Protocol[_V_anext_co]):
-    def __aiter__(self, /) -> _V_anext_co: ...
+class CanANext(Protocol[_T_anext_co]):
+    def __anext__(self, /) -> _T_anext_co: ...
+
+
+_T_aiter_co = TypeVar('_T_aiter_co', covariant=True, bound=CanANext[Any])
+
+
+@runtime_checkable
+class CanAIter(Protocol[_T_aiter_co]):
+    def __aiter__(self, /) -> _T_aiter_co: ...
 
 
 @runtime_checkable
 class CanAIterSelf(
-    CanANext[_V_co],
-    CanAIter[CanANext[_V_co]],
-    Protocol[_V_co],
+    CanANext[_T_anext_co],
+    CanAIter[CanANext[_T_anext_co]],
+    Protocol[_T_anext_co],
 ):
     """A less inflexible variant of `collections.abc.AsyncIterator[T]`."""
     @override
@@ -987,13 +1242,21 @@ class CanAIterSelf(
 # 3.4.4. Asynchronous Context Managers
 # https://docs.python.org/3/reference/datamodel.html#asynchronous-context-managers
 
-@runtime_checkable
-class CanAEnter(Protocol[_X_co]):
-    def __aenter__(self, /) -> CanAwait[_X_co]: ...
+
+_T_aenter_co = TypeVar('_T_aenter_co', covariant=True)
 
 
 @runtime_checkable
-class CanAExit(Protocol[_Y_co]):
+class CanAEnter(Protocol[_T_aenter_co]):
+    def __aenter__(self, /) -> CanAwait[_T_aenter_co]: ...
+
+
+_E_aexit = TypeVar('_E_aexit', bound=BaseException)
+_T_aexit_co = TypeVar('_T_aexit_co', covariant=True, default=None)
+
+
+@runtime_checkable
+class CanAExit(Protocol[_T_aexit_co]):
     @overload
     def __aexit__(
         self,
@@ -1005,15 +1268,19 @@ class CanAExit(Protocol[_Y_co]):
     @overload
     def __aexit__(
         self,
-        exc_type: type[_V_exc],
-        exc_instance: _V_exc,
+        exc_type: type[_E_aexit],
+        exc_instance: _E_aexit,
         exc_traceback: TracebackType,
         /,
-    ) -> CanAwait[_Y_co]: ...
+    ) -> CanAwait[_T_aexit_co]: ...
 
 
 @runtime_checkable
-class CanAsyncWith(CanAEnter[_X_co], CanAExit[_Y_co], Protocol[_X_co, _Y_co]):
+class CanAsyncWith(
+    CanAEnter[_T_aenter_co],
+    CanAExit[_T_aexit_co],
+    Protocol[_T_aenter_co, _T_aexit_co],
+):
     ...
 
 
@@ -1021,22 +1288,36 @@ class CanAsyncWith(CanAEnter[_X_co], CanAExit[_Y_co], Protocol[_X_co, _Y_co]):
 # https://docs.python.org/3.13/library/copy.html
 
 
+_T_copy_co = TypeVar('_T_copy_co', covariant=True, bound=object)
+
+
 @runtime_checkable
-class CanCopy(Protocol[_T_co]):
+class CanCopy(Protocol[_T_copy_co]):
     """Support for creating shallow copies through `copy.copy`."""
-    def __copy__(self, /) -> _T_co: ...
+    def __copy__(self, /) -> _T_copy_co: ...
+
+
+_T_deepcopy_co = TypeVar('_T_deepcopy_co', covariant=True, bound=object)
 
 
 @runtime_checkable
-class CanDeepcopy(Protocol[_T_co]):
+class CanDeepcopy(Protocol[_T_deepcopy_co]):
     """Support for creating deep copies through `copy.deepcopy`."""
-    def __deepcopy__(self, memo: dict[int, Any], /) -> _T_co: ...
+    def __deepcopy__(self, memo: dict[int, Any], /) -> _T_deepcopy_co: ...
+
+
+_T_replace_contra = TypeVar('_T_replace_contra', contravariant=True)
+_T_replace_co = TypeVar('_T_replace_co', covariant=True)
 
 
 @runtime_checkable
-class CanReplace(Protocol[_V_contra, _T_co]):
+class CanReplace(Protocol[_T_replace_contra, _T_replace_co]):
     """Support for `copy.replace` in Python 3.13+."""
-    def __replace__(self, /, **changes: _V_contra) -> _T_co: ...
+    def __replace__(
+        self,
+        /,
+        **changes: _T_replace_contra,
+    ) -> _T_replace_co: ...
 
 
 @runtime_checkable
@@ -1053,57 +1334,87 @@ class CanDeepcopySelf(CanDeepcopy['CanDeepcopySelf'], Protocol):
 
 
 @runtime_checkable
-class CanReplaceSelf(CanReplace[_V_contra, 'CanReplaceSelf[Any]'], Protocol):
-    """Variant of `CanReplace` that returns `Self`."""
+class CanReplaceSelf(
+    CanReplace[_T_replace_contra, 'CanReplaceSelf[Any]'],
+    Protocol[_T_replace_contra],
+):
+    """Variant of `CanReplace[T, Self]`."""
     @override
-    def __replace__(self, /, **changes: _V_contra) -> Self: ...
+    def __replace__(self, /, **changes: _T_replace_contra) -> Self: ...
 
 
 # `pickle` stdlib
 # https://docs.python.org/3.13/library/pickle.html
 
 
-_Y_str_tuple_co = TypeVar(
-    '_Y_str_tuple_co',
+_T_reduce_co = TypeVar(
+    '_T_reduce_co',
     covariant=True,
     bound=str | tuple[Any, ...],
+    default=str | tuple[Any, ...],
 )
 
 
 @runtime_checkable
-class CanReduce(Protocol[_Y_str_tuple_co]):
+class CanReduce(Protocol[_T_reduce_co]):
     @override
-    def __reduce__(self, /) -> _Y_str_tuple_co: ...
+    def __reduce__(self, /) -> _T_reduce_co: ...
+
+
+_T_reduce_ex_co = TypeVar(
+    '_T_reduce_ex_co',
+    covariant=True,
+    bound=str | tuple[Any, ...],
+    default=str | tuple[Any, ...],
+)
 
 
 @runtime_checkable
-class CanReduceEx(Protocol[_Y_str_tuple_co]):
+class CanReduceEx(Protocol[_T_reduce_ex_co]):
     @override
-    def __reduce_ex__(self, protocol: CanIndex, /) -> _Y_str_tuple_co: ...
+    def __reduce_ex__(self, protocol: CanIndex, /) -> _T_reduce_ex_co: ...
+
+
+_T_getstate_co = TypeVar('_T_getstate_co', covariant=True)
 
 
 @runtime_checkable
-class CanGetstate(Protocol[_T_co]):
-    def __getstate__(self, /) -> _T_co: ...
+class CanGetstate(Protocol[_T_getstate_co]):
+    def __getstate__(self, /) -> _T_getstate_co: ...
+
+
+_T_setstate_contra = TypeVar('_T_setstate_contra', contravariant=True)
 
 
 @runtime_checkable
-class CanSetstate(Protocol[_T_contra]):
-    def __setstate__(self, state: _T_contra, /) -> None: ...
+class CanSetstate(Protocol[_T_setstate_contra]):
+    def __setstate__(self, state: _T_setstate_contra, /) -> None: ...
+
+
+_Ts_getnewargs = TypeVarTuple('_Ts_getnewargs')
 
 
 @runtime_checkable
-class CanGetnewargs(Protocol[Unpack[_Xs]]):
-    def __new__(cls, *args: Unpack[_Xs]) -> Self: ...
-    def __getnewargs__(self, /) -> tuple[Unpack[_Xs]]: ...
+class CanGetnewargs(Protocol[Unpack[_Ts_getnewargs]]):
+    def __new__(cls, /, *args: Unpack[_Ts_getnewargs]) -> Self: ...
+    def __getnewargs__(self, /) -> tuple[Unpack[_Ts_getnewargs]]: ...
+
+
+_Ts_getnewargs_ex = TypeVarTuple('_Ts_getnewargs_ex')
+_T_getnewargs_ex = TypeVar('_T_getnewargs_ex')
 
 
 @runtime_checkable
-class CanGetnewargsEx(Protocol[Unpack[_Xs], _V]):
-    def __new__(cls, *args: Unpack[_Xs], **kwargs: _V) -> Self: ...
+class CanGetnewargsEx(Protocol[Unpack[_Ts_getnewargs_ex], _T_getnewargs_ex]):
+    def __new__(
+        cls,
+        /,
+        *args: Unpack[_Ts_getnewargs_ex],
+        **kwargs: _T_getnewargs_ex,
+    ) -> Self: ...
     def __getnewargs_ex__(self, /) -> tuple[
-        tuple[Unpack[_Xs]],
-        dict[str, _V],
+        tuple[Unpack[_Ts_getnewargs_ex]],
+        dict[str, _T_getnewargs_ex],
     ]: ...
 
 
