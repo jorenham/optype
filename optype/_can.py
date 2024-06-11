@@ -1,8 +1,8 @@
-# ruff: noqa: PYI034
+from __future__ import annotations
+
 import sys
-from collections.abc import Generator
-from types import TracebackType
 from typing import (
+    TYPE_CHECKING,
     Any,
     Literal,
     Protocol,
@@ -17,12 +17,17 @@ if sys.version_info >= (3, 13):
 else:
     from typing_extensions import (
         ParamSpec,
-        Self,
+        Self,  # noqa: TCH002
         TypeVar,
         TypeVarTuple,
         Unpack,
         override,
     )
+
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+    from types import TracebackType
 
 
 _Ignored: TypeAlias = Any
@@ -1201,10 +1206,10 @@ class CanAwait(Protocol[_T_await_co]):
     # impossible to type. In practice, typecheckers work around that, by
     # accepting the lie called `collections.abc.Generator`...
     @overload
-    def __await__(self: 'CanAwait[None]') -> CanNext[_MaybeFuture]: ...
+    def __await__(self: CanAwait[None]) -> CanNext[_MaybeFuture]: ...
     @overload
     def __await__(
-        self: 'CanAwait[_T_await_co]',
+        self: CanAwait[_T_await_co],
     ) -> Generator[_MaybeFuture, None, _T_await_co]: ...
 
 

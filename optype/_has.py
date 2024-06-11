@@ -1,32 +1,35 @@
-# ruff: noqa: PLW3201
-"""
-Elementary interfaces for special "dunder" attributes.
-"""
+from __future__ import annotations
+
 import sys
-from collections.abc import Callable
-from dataclasses import Field as _Field
-from types import CodeType, ModuleType
+from types import ModuleType
 from typing import (
+    TYPE_CHECKING,
     Any,
     ClassVar,
-    ParamSpec,
     Protocol,
-    TypeVar,
     runtime_checkable,
 )
 
 
-if sys.version_info < (3, 11):
-    from typing_extensions import Self, TypeVarTuple, Unpack
+if sys.version_info >= (3, 13):
+    from typing import ParamSpec, Self, TypeVar, TypeVarTuple, Unpack, override
 else:
-    from typing import Self, TypeVarTuple, Unpack
-
-if sys.version_info < (3, 12):
-    from typing_extensions import override
-else:
-    from typing import override
+    from typing_extensions import (
+        ParamSpec,
+        Self,  # noqa: TCH002
+        TypeVar,
+        TypeVarTuple,
+        Unpack,
+        override,
+    )
 
 from ._can import CanIter as _CanIter
+
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from dataclasses import Field as _Field
+    from types import CodeType
 
 
 _V = TypeVar('_V')

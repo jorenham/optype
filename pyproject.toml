@@ -174,6 +174,7 @@ ignore = [
     "ANN401",   # any-type
 
     # flake8-pyi
+    "PYI034",   # non-self-return-type
     "PYI036",   # bad-exit-annotation
 
     # refurb
@@ -211,7 +212,8 @@ strict = true
 
 [tool.ruff.lint.pylint]
 allow-dunder-method-names = [
-    "__replace__"   # used by `copy.replace` in Python 3.13+
+    "__replace__",  # used by `copy.replace` in Python 3.13+
+    "__self__",     # attribute of a bound method
 ]
 
 [tool.ruff.format]
