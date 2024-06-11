@@ -1037,7 +1037,7 @@ class CanFloat(Protocol):
     def __float__(self, /) -> float: ...
 
 
-_T_int_co = TypeVar('_T_int_co', covariant=True, default=int)
+_T_int_co = TypeVar('_T_int_co', covariant=True, bound=int, default=int)
 
 
 @runtime_checkable
@@ -1285,8 +1285,7 @@ class CanAsyncWith(
     CanAEnter[_T_aenter_co],
     CanAExit[_T_aexit_co],
     Protocol[_T_aenter_co, _T_aexit_co],
-):
-    ...
+): ...
 
 
 # `copy` stdlib
