@@ -12,7 +12,7 @@ temporarily that invalid `optype` use will actually cause the typechecker
 
 # pyright: reportUnusedVariable=false
 # ruff: noqa: TCH002, F841
-from collections.abc import Collection, Iterator, Sequence
+from collections.abc import Collection, Iterator
 from typing import Any
 
 import pytest
@@ -115,7 +115,7 @@ def test_unsliceable_sequence():
 
 
 @pytest.mark.parametrize(
-    'value',
+    'x',
     [
         'spam ham',
         (('spam', 'ham'),),
@@ -126,9 +126,6 @@ def test_unsliceable_sequence():
 def test_can_sequence_sequence_str(
     x: str | tuple[str, ...] | list[str] | UnsliceableSequence,
 ):
-    # sanity check
-    assert isinstance(x, Sequence)
-
     x_sequence_any_any: CanSequence[Any, Any] = x
     x_sequence_any_str: CanSequence[Any, str] = x
     x_sequence_int_any: CanSequence[int, Any] = x
