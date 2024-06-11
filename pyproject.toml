@@ -220,11 +220,10 @@ allow-dunder-method-names = [
 
 [tool.ruff.format]
 # keep in sync with .editorconfig
-line-ending = "lf"
 indent-style = "space"
+line-ending = "lf"
+preview = true
 quote-style = "single"
-docstring-code-format = true
-skip-magic-trailing-comma = true
 
 
 [tool.tox]
