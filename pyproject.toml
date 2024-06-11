@@ -212,8 +212,10 @@ strict = true
 
 [tool.ruff.lint.pylint]
 allow-dunder-method-names = [
-    "__replace__",  # used by `copy.replace` in Python 3.13+
-    "__self__",     # attribute of a bound method
+    "__name__",     # attr of e.g. `type`, `function`, and `property` (py3.13+)
+    "__qualname__", # attr like `__name__`
+    "__replace__",  # method used by `copy.replace` in Python 3.13+
+    "__self__",     # attr of a bound method
 ]
 
 [tool.ruff.format]
