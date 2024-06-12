@@ -27,8 +27,6 @@ repos:
       - id: detect-private-key
       - id: fix-byte-order-marker
       - id: forbid-submodules
-      - id: name-tests-test
-        args: [--pytest-test-first]
       - id: no-commit-to-branch
         args: [--branch, master, --branch, dev]
       - id: trailing-whitespace
