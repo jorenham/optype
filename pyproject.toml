@@ -230,36 +230,28 @@ isolated_build = true
 requires =
     tox>=4
 envlist =
-    py{310,311,312,313}
-    codespell
-    ruff
-    basedpyright
+    py{310,311,312,313b2}
+    pre-commit
+    repo-review
 
 [testenv]
 description = pytest
 skip_install = true
 allowlist_externals = poetry
-commands_pre = poetry install --no-root --sync --only test
+commands_pre = poetry install --sync
 commands = poetry run pytest
 
-[testenv:codespell]
-description = codespell
+[testenv:pre-commit]
+description = pre-commit
 skip_install = true
 allowlist_externals = poetry
-commands_pre = poetry install --no-root --sync --only lint
-commands = poetry run codespell .
+commands_pre = poetry install --sync
+commands = poetry run pre-commit run --all-files
 
-[testenv:ruff]
-description = ruff check
+[testenv:repo-review]
+description = repo-review
 skip_install = true
 allowlist_externals = poetry
-commands_pre = poetry install --no-root --sync --only lint
-commands = poetry run ruff check
-
-[testenv:basedpyright]
-description = basedpyright
-skip_install = true
-allowlist_externals = poetry
-commands_pre = poetry install --no-root --sync
-commands = poetry run basedpyright
+commands_pre = poetry install --sync
+commands = poetry run repo-review .
 """
