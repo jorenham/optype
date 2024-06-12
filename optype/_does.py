@@ -103,7 +103,6 @@ class DoesAIter(Protocol):
 
 # type conversion
 
-
 @final
 class DoesComplex(Protocol):
     def __call__(self, obj: _c.CanComplex, /) -> complex: ...
@@ -123,6 +122,8 @@ class DoesInt(Protocol):
 
 
 # fmt: off
+_IsTrue: TypeAlias = Literal[True]
+_IsFalse: TypeAlias = Literal[False]
 _PosInt: TypeAlias = Literal[
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
     17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
@@ -130,19 +131,21 @@ _PosInt: TypeAlias = Literal[
     49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,
 ]
 # fmt: on
-_R_bool = TypeVar('_R_bool', Literal[True], Literal[False], bool)
+_R_bool = TypeVar('_R_bool', _IsTrue, _IsFalse, bool)
 
 
 @final
 class DoesBool(Protocol):
     @overload
-    def __call__(self, obj: _c.CanBool[_R_bool], /) -> _R_bool: ...
+    def __call__(self, obj: _c.CanBool[_R_bool], /) -> _R_bool: ...  # pyright: ignore[reportOverlappingOverload]
     @overload
-    def __call__(self, obj: _c.CanLen[Literal[0]], /) -> Literal[False]: ...
+    def __call__(self, obj: _c.CanLen[Literal[0]], /) -> _IsFalse: ...
     @overload
-    def __call__(self, obj: _c.CanLen[_PosInt], /) -> Literal[True]: ...
+    def __call__(self, obj: _c.CanLen[_PosInt], /) -> _IsTrue: ...
     @overload
-    def __call__(self, obj: _c.CanLen, /) -> bool: ...
+    def __call__(self, obj: _c.CanLen[int], /) -> bool: ...
+    @overload
+    def __call__(self, obj: object, /) -> _IsTrue: ...
 
 
 _R_str = TypeVar('_R_str', bound=str)
