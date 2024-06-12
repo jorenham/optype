@@ -1045,7 +1045,7 @@ class CanInt(Protocol[_T_int_co]):
     def __int__(self, /) -> _T_int_co: ...
 
 
-_T_index_co = TypeVar('_T_index_co', covariant=True, default=int)
+_T_index_co = TypeVar('_T_index_co', covariant=True, bound=int, default=int)
 
 
 @runtime_checkable
