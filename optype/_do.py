@@ -16,7 +16,7 @@ _Xss = ParamSpec('_Xss')
 
 
 # type conversion
-do_bool: _d.DoesBool = bool
+do_bool: _d.DoesBool = bool  # pyright: ignore[reportAssignmentType]
 do_int: _d.DoesInt = int
 do_float: _d.DoesFloat = float
 do_complex: _d.DoesComplex = complex
