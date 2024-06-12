@@ -2,13 +2,13 @@
 
 [[package]]
 name = "basedpyright"
-version = "1.12.5"
+version = "1.12.6"
 description = "static type checking for Python (but based)"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "basedpyright-1.12.5-py3-none-any.whl", hash = "sha256:ccfb19c35de47028919b46ed35304497e2d85aaa73c298ab1212674fd0d40a6b"},
-    {file = "basedpyright-1.12.5.tar.gz", hash = "sha256:b7e1dcd87b5b6194bb3957cef79471d87c4943db386d7dd3adda02b2508d7052"},
+    {file = "basedpyright-1.12.6-py3-none-any.whl", hash = "sha256:5e8efcd8660db912ca4e0ecbd39f20b9252ddc97d221a969e052ff5fce3e30d3"},
+    {file = "basedpyright-1.12.6.tar.gz", hash = "sha256:f18cd5e76bec382578e0a88478f39c436180827ff7b161502dcf48f50595beea"},
 ]
 
 [package.dependencies]
@@ -219,13 +219,13 @@ files = [
 
 [[package]]
 name = "packaging"
-version = "24.0"
+version = "24.1"
 description = "Core utilities for Python packages"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "packaging-24.0-py3-none-any.whl", hash = "sha256:2ddfb553fdf02fb784c234c7ba6ccc288296ceabec964ad2eae3777778130bc5"},
-    {file = "packaging-24.0.tar.gz", hash = "sha256:eb82c5e3e56209074766e6885bb04b8c38a0c015d0a30036ebe7ece34c9989e9"},
+    {file = "packaging-24.1-py3-none-any.whl", hash = "sha256:5b8f2217dbdbd2f7f384c41c628544e6d52f2d0f53c6d0c3ea61aa5d1d7ff124"},
+    {file = "packaging-24.1.tar.gz", hash = "sha256:026ed72c8ed3fcce5bf8950572258698927fd1dbda10a5e981cdf0ac37f4f002"},
 ]
 
 [[package]]
@@ -451,13 +451,13 @@ jupyter = ["ipywidgets (>=7.5.1,<9)"]
 
 [[package]]
 name = "rich-click"
-version = "1.8.2"
+version = "1.8.3"
 description = "Format click help output nicely with rich"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "rich_click-1.8.2-py3-none-any.whl", hash = "sha256:b57856f304e4fe0394b82d7ce0784450758f8c8b4e201ccc4320501cc201806b"},
-    {file = "rich_click-1.8.2.tar.gz", hash = "sha256:8e29bdede858b59aa2859a1ab1c4ccbd39ed7ed5870262dae756fba6b5dc72e8"},
+    {file = "rich_click-1.8.3-py3-none-any.whl", hash = "sha256:636d9c040d31c5eee242201b5bf4f2d358bfae4db14bb22ec1cafa717cfd02cd"},
+    {file = "rich_click-1.8.3.tar.gz", hash = "sha256:6d75bdfa7aa9ed2c467789a0688bc6da23fbe3a143e19aa6ad3f8bac113d2ab3"},
 ]
 
 [package.dependencies]
@@ -592,4 +592,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "b28531300f9b2d0a98ce5564b60007d88866c4680eb5228781cce937ee974a44"
+content-hash = "9c7a8111040177178bdab4f3d699ee0ff88d21a643bdc9d2970d493cfd114544"
