@@ -43,7 +43,7 @@ jobs:
       - name: markdownlint
         uses: DavidAnson/markdownlint-cli2-action@v16
         with:
-          config: ".markdownlint.jsonc"
+          config: ".markdownlint.yaml"
           globs: "**/*.md"
 
       - uses: scientific-python/repo-review@v0.10.6
