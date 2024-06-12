@@ -33,7 +33,7 @@ else:
         override,
     )
 
-from ._can import CanIter as _CanIter, CanNext as _CanNext
+import optype._can as _c
 
 
 if TYPE_CHECKING:
@@ -61,7 +61,7 @@ class HasMatchArgs(Protocol[_V_match_args]):
 _V_slots = TypeVar(
     '_V_slots',
     infer_variance=True,
-    bound=str | _CanIter[_CanNext[str]],
+    bound=str | _c.CanIter[_c.CanNext[str]],
     default=Any,
 )
 
