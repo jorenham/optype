@@ -54,6 +54,6 @@ repos:
         args: [--fix, --show-fixes]
 
   - repo: https://github.com/DetachHead/basedpyright
-    rev: v1.12.6
+    rev: v1.12.5  # 1.12.6 (pyright 1.1.367) is bugged
     hooks:
       - id: basedpyright

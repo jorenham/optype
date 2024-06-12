@@ -1,22 +1,14 @@
 import math as _math
 import operator as _o
 import sys as _sys
-from typing import TYPE_CHECKING, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, ParamSpec, TypeVar, overload
 
 import optype._can as _c
 import optype._does as _d
 
 
-_K = TypeVar('_K')
-_V = TypeVar('_V')
-_D = TypeVar('_D')
-_X = TypeVar('_X')
-_Y = TypeVar('_Y')
-_Xss = ParamSpec('_Xss')
-
-
 # type conversion
-do_bool: _d.DoesBool = bool
+do_bool: _d.DoesBool = bool  # pyright: ignore[reportAssignmentType]
 do_int: _d.DoesInt = int
 do_float: _d.DoesFloat = float
 do_complex: _d.DoesComplex = complex
@@ -59,12 +51,15 @@ do_dir: _d.DoesDir = dir
 # callables
 
 if _sys.version_info < (3, 11):
+    _Pss_call = ParamSpec('_Pss_call')
+    _R_call = TypeVar('_R_call')
+
     def do_call(
-        f: _c.CanCall[_Xss, _Y],
+        f: _c.CanCall[_Pss_call, _R_call],
         /,
-        *args: _Xss.args,
-        **kwargs: _Xss.kwargs,
-    ) -> _Y:
+        *args: _Pss_call.args,
+        **kwargs: _Pss_call.kwargs,
+    ) -> _R_call:
         return f(*args, **kwargs)
 else:
     do_call: _d.DoesCall = _o.call
@@ -78,33 +73,77 @@ do_length_hint: _d.DoesLengthHint = _o.length_hint
 
 # `operator.getitem` isn't used, because it has an (unreasonably loose, and
 # redundant) overload for `(Sequence[T], slice) -> Sequence[T]`
-# https://github.com/python/typeshed/blob/587ad6bad806a7c2fbc2bb5451007a9782bd665b/stdlib/_operator.pyi#L84-L86
+# https://github.com/python/typeshed/blob/587ad6b/stdlib/_operator.pyi#L84-L86
+
+_K_getitem = TypeVar('_K_getitem')
+_V_getitem = TypeVar('_V_getitem')
+_D_getitem = TypeVar('_D_getitem')
+
+
+@overload
 def do_getitem(
-    obj:  _c.CanGetitem[_K, _V] | _c.CanGetMissing[_K, _V, _D],
-    key: _K,
+    obj:  _c.CanGetMissing[_K_getitem, _V_getitem, _D_getitem],
+    key: _K_getitem,
     /,
-) -> _V | _D:
+) -> _V_getitem | _D_getitem: ...
+@overload
+def do_getitem(
+    obj:  _c.CanGetitem[_K_getitem, _V_getitem],
+    key: _K_getitem,
+    /,
+) -> _V_getitem: ...
+def do_getitem(
+    obj:  (
+        _c.CanGetitem[_K_getitem, _V_getitem]
+        | _c.CanGetMissing[_K_getitem, _V_getitem, _D_getitem]
+    ),
+    key: _K_getitem,
+    /,
+) -> _V_getitem | _D_getitem:
     """Same as `value = obj[key]`."""
     return obj[key]
 
 
-def do_setitem(obj: _c.CanSetitem[_K, _V], key: _K, value: _V, /) -> None:
+_K_setitem = TypeVar('_K_setitem')
+_V_setitem = TypeVar('_V_setitem')
+
+
+def do_setitem(
+    obj: _c.CanSetitem[_K_setitem, _V_setitem],
+    key: _K_setitem,
+    value: _V_setitem,
+    /,
+) -> None:
     """Same as `obj[key] = value`."""
     obj[key] = value
 
 
-def do_delitem(obj: _c.CanDelitem[_K], key: _K, /) -> None:
+_K_delitem = TypeVar('_K_delitem')
+
+
+def do_delitem(obj: _c.CanDelitem[_K_delitem], key: _K_delitem, /) -> None:
     """Same as `del obj[key]`."""
     del obj[key]
 
 
-def do_missing(obj: _c.CanMissing[_K, _V], key: _K, /) -> _V:
+_K_missing = TypeVar('_K_missing')
+_D_missing = TypeVar('_D_missing')
+
+
+def do_missing(
+    obj: _c.CanMissing[_K_missing, _D_missing],
+    key: _K_missing,
+    /,
+) -> _D_missing:
     return obj.__missing__(key)
 
 
 # `operator.contains` cannot be used, as it incorrectly requires `key`
 # to be an **invariant** `object` instance...
-def do_contains(obj: _c.CanContains[_K], key: _K, /) -> bool:
+_K_contains = TypeVar('_K_contains', bound=object)
+
+
+def do_contains(obj: _c.CanContains[_K_contains], key: _K_contains, /) -> bool:
     """Same as `key in obj`."""
     return key in obj
 
@@ -136,72 +175,152 @@ do_or: _d.DoesOr = _o.or_
 # `CanCall` or `Callable`, within the decorator function signature).
 
 
-def do_radd(a: _c.CanRAdd[_X, _Y], b: _X) -> _Y:
+_T_radd = TypeVar('_T_radd')
+_R_radd = TypeVar('_R_radd')
+
+
+def do_radd(a: _c.CanRAdd[_T_radd, _R_radd], b: _T_radd, /) -> _R_radd:
     """Same as `b + a`."""
     return b + a
 
 
-def do_rsub(a: _c.CanRSub[_X, _Y], b: _X) -> _Y:
+_T_rsub = TypeVar('_T_rsub')
+_R_rsub = TypeVar('_R_rsub')
+
+
+def do_rsub(a: _c.CanRSub[_T_rsub, _R_rsub], b: _T_rsub, /) -> _R_rsub:
     """Same as `b - a`."""
     return b - a
 
 
-def do_rmul(a: _c.CanRMul[_X, _Y], b: _X) -> _Y:
+_T_rmul = TypeVar('_T_rmul')
+_R_rmul = TypeVar('_R_rmul')
+
+
+def do_rmul(a: _c.CanRMul[_T_rmul, _R_rmul], b: _T_rmul, /) -> _R_rmul:
     """Same as `b * a`."""
     return b * a
 
 
-def do_rmatmul(a: _c.CanRMatmul[_X, _Y], b: _X) -> _Y:
+_T_rmatmul = TypeVar('_T_rmatmul')
+_R_rmatmul = TypeVar('_R_rmatmul')
+
+
+def do_rmatmul(
+    a: _c.CanRMatmul[_T_rmatmul, _R_rmatmul],
+    b: _T_rmatmul,
+    /,
+) -> _R_rmatmul:
     """Same as `b @ a`."""
     return b @ a
 
 
-def do_rtruediv(a: _c.CanRTruediv[_X, _Y], b: _X) -> _Y:
+_T_rtruediv = TypeVar('_T_rtruediv')
+_R_rtruediv = TypeVar('_R_rtruediv')
+
+
+def do_rtruediv(
+    a: _c.CanRTruediv[_T_rtruediv, _R_rtruediv],
+    b: _T_rtruediv,
+    /,
+) -> _R_rtruediv:
     """Same as `b / a`."""
     return b / a
 
 
-def do_rfloordiv(a: _c.CanRFloordiv[_X, _Y], b: _X) -> _Y:
+_T_rfloordiv = TypeVar('_T_rfloordiv')
+_R_rfloordiv = TypeVar('_R_rfloordiv')
+
+
+def do_rfloordiv(
+    a: _c.CanRFloordiv[_T_rfloordiv, _R_rfloordiv],
+    b: _T_rfloordiv,
+    /,
+) -> _R_rfloordiv:
     """Same as `b // a`."""
     return b // a
 
 
-def do_rmod(a: _c.CanRMod[_X, _Y], b: _X) -> _Y:
+_T_rmod = TypeVar('_T_rmod')
+_R_rmod = TypeVar('_R_rmod')
+
+
+def do_rmod(a: _c.CanRMod[_T_rmod, _R_rmod], b: _T_rmod, /) -> _R_rmod:
     """Same as `b % a`."""
     return b % a
 
 
-def do_rdivmod(a: _c.CanRDivmod[_X, _Y], b: _X) -> _Y:
+_T_rdivmod = TypeVar('_T_rdivmod')
+_R_rdivmod = TypeVar('_R_rdivmod')
+
+
+def do_rdivmod(
+    a: _c.CanRDivmod[_T_rdivmod, _R_rdivmod],
+    b: _T_rdivmod,
+    /,
+) -> _R_rdivmod:
     """Same as `divmod(b, a)`."""
     return divmod(b, a)
 
 
-def do_rpow(a: _c.CanRPow[_X, _Y], b: _X) -> _Y:
+_T_rpow = TypeVar('_T_rpow')
+_R_rpow = TypeVar('_R_rpow')
+
+
+def do_rpow(a: _c.CanRPow[_T_rpow, _R_rpow], b: _T_rpow, /) -> _R_rpow:
     """Same as `b ** a`."""
-    return b ** a
+    return b**a
 
 
-def do_rlshift(a: _c.CanRLshift[_X, _Y], b: _X) -> _Y:
+_T_rlshift = TypeVar('_T_rlshift')
+_R_rlshift = TypeVar('_R_rlshift')
+
+
+def do_rlshift(
+    a: _c.CanRLshift[_T_rlshift, _R_rlshift],
+    b: _T_rlshift,
+    /,
+) -> _R_rlshift:
     """Same as `b << a`."""
     return b << a
 
 
-def do_rrshift(a: _c.CanRRshift[_X, _Y], b: _X) -> _Y:
+_T_rrshift = TypeVar('_T_rrshift')
+_R_rrshift = TypeVar('_R_rrshift')
+
+
+def do_rrshift(
+    a: _c.CanRRshift[_T_rrshift, _R_rrshift],
+    b: _T_rrshift,
+    /,
+) -> _R_rrshift:
     """Same as `b >> a`."""
     return b >> a
 
 
-def do_rand(a: _c.CanRAnd[_X, _Y], b: _X) -> _Y:
+_T_rand = TypeVar('_T_rand')
+_R_rand = TypeVar('_R_rand')
+
+
+def do_rand(a: _c.CanRAnd[_T_rand, _R_rand], b: _T_rand, /) -> _R_rand:
     """Same as `b & a`."""
     return b & a
 
 
-def do_rxor(a: _c.CanRXor[_X, _Y], b: _X) -> _Y:
+_T_rxor = TypeVar('_T_rxor')
+_R_rxor = TypeVar('_R_rxor')
+
+
+def do_rxor(a: _c.CanRXor[_T_rxor, _R_rxor], b: _T_rxor, /) -> _R_rxor:
     """Same as `b ^ a`."""
     return b ^ a
 
 
-def do_ror(a: _c.CanROr[_X, _Y], b: _X) -> _Y:
+_T_ror = TypeVar('_T_ror')
+_R_ror = TypeVar('_R_ror')
+
+
+def do_ror(a: _c.CanROr[_T_ror, _R_ror], b: _T_ror, /) -> _R_ror:
     """Same as `b | a`."""
     return b | a
 

@@ -27,14 +27,15 @@ documentation = "https://github.com/jorenham/optype?tab=readme-ov-file#optype"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-typing-extensions = {version = ">=4.5", python = "<3.12"}
+typing-extensions = {version = ">=4.7", python = "<3.13"}
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = '^3.7.1'
 tox = "^4.15.1"
 
 [tool.poetry.group.lint.dependencies]
-basedpyright = "^1.12.6"
+# pyright 1.1.367 is bugged
+basedpyright = "^1.12.5,!=1.12.6"
 codespell = "^2.3.0"
 ruff = "^0.4.8"
 sp-repo-review = {version = "^2024.4.23", extras = ["cli"]}
@@ -174,6 +175,7 @@ ignore = [
     "ANN401",   # any-type
 
     # flake8-pyi
+    "PYI034",   # non-self-return-type
     "PYI036",   # bad-exit-annotation
 
     # refurb
@@ -211,16 +213,18 @@ strict = true
 
 [tool.ruff.lint.pylint]
 allow-dunder-method-names = [
-    "__replace__"   # used by `copy.replace` in Python 3.13+
+    "__name__",     # attr of e.g. `type`, `function`, and `property` (py3.13+)
+    "__qualname__", # attr like `__name__`
+    "__replace__",  # method used by `copy.replace` in Python 3.13+
+    "__self__",     # attr of a bound method
 ]
 
 [tool.ruff.format]
 # keep in sync with .editorconfig
-line-ending = "lf"
 indent-style = "space"
+line-ending = "lf"
+preview = true
 quote-style = "single"
-docstring-code-format = true
-skip-magic-trailing-comma = true
 
 
 [tool.tox]
