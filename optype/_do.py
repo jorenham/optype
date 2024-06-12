@@ -78,7 +78,7 @@ do_length_hint: _d.DoesLengthHint = _o.length_hint
 
 # `operator.getitem` isn't used, because it has an (unreasonably loose, and
 # redundant) overload for `(Sequence[T], slice) -> Sequence[T]`
-# https://github.com/python/typeshed/blob/main/stdlib/_operator.pyi#L84-L86
+# https://github.com/python/typeshed/blob/587ad6bad806a7c2fbc2bb5451007a9782bd665b/stdlib/_operator.pyi#L84-L86
 def do_getitem(
     obj:  _c.CanGetitem[_K, _V] | _c.CanGetMissing[_K, _V, _D],
     key: _K,
