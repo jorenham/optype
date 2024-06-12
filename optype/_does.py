@@ -4,6 +4,7 @@ from typing import (
     Literal,
     ParamSpec,
     Protocol,
+    TypeAlias,
     TypeVar,
     final,
     overload,
@@ -103,6 +104,47 @@ class DoesAIter(Protocol):
 # type conversion
 
 
+@final
+class DoesComplex(Protocol):
+    def __call__(self, obj: _c.CanComplex, /) -> complex: ...
+
+
+@final
+class DoesFloat(Protocol):
+    def __call__(self, obj: _c.CanFloat, /) -> float: ...
+
+
+_R_int = TypeVar('_R_int', bound=int)
+
+
+@final
+class DoesInt(Protocol):
+    def __call__(self, obj: _c.CanInt[_R_int], /) -> _R_int: ...
+
+
+# fmt: off
+_PosInt: TypeAlias = Literal[
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+    17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
+    33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
+    49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,
+]
+# fmt: on
+_R_bool = TypeVar('_R_bool', Literal[True], Literal[False], bool)
+
+
+@final
+class DoesBool(Protocol):
+    @overload
+    def __call__(self, obj: _c.CanBool[_R_bool], /) -> _R_bool: ...
+    @overload
+    def __call__(self, obj: _c.CanLen[Literal[0]], /) -> Literal[False]: ...
+    @overload
+    def __call__(self, obj: _c.CanLen[_PosInt], /) -> Literal[True]: ...
+    @overload
+    def __call__(self, obj: _c.CanLen, /) -> bool: ...
+
+
 _R_str = TypeVar('_R_str', bound=str)
 
 
@@ -117,32 +159,6 @@ _R_bytes = TypeVar('_R_bytes', bound=bytes)
 @final
 class DoesBytes(Protocol):
     def __call__(self, obj: _c.CanBytes[_R_bytes], /) -> _R_bytes: ...
-
-
-_R_bool = TypeVar('_R_bool', Literal[True], Literal[False], bool)
-
-
-@final
-class DoesBool(Protocol):
-    def __call__(self, obj: _c.CanBool[_R_bool], /) -> _R_bool: ...
-
-
-_R_int = TypeVar('_R_int', bound=int)
-
-
-@final
-class DoesInt(Protocol):
-    def __call__(self, obj: _c.CanInt[_R_int], /) -> _R_int: ...
-
-
-@final
-class DoesFloat(Protocol):
-    def __call__(self, obj: _c.CanFloat, /) -> float: ...
-
-
-@final
-class DoesComplex(Protocol):
-    def __call__(self, obj: _c.CanComplex, /) -> complex: ...
 
 
 # formatting
