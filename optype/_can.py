@@ -33,11 +33,142 @@ if TYPE_CHECKING:
 _Ignored: TypeAlias = Any
 
 
-# Iterator types
-# https://docs.python.org/3/library/stdtypes.html#iterator-types
+#
+# Type conversion
+#
+
+_T_bool_co = TypeVar(
+    '_T_bool_co',
+    Literal[True],
+    Literal[False],
+    bool,
+    covariant=True,
+    default=bool,
+)
+
+
+@runtime_checkable
+class CanBool(Protocol[_T_bool_co]):
+    def __bool__(self, /) -> _T_bool_co: ...
+
+
+_T_int_co = TypeVar('_T_int_co', covariant=True, bound=int, default=int)
+
+
+@runtime_checkable
+class CanInt(Protocol[_T_int_co]):
+    def __int__(self, /) -> _T_int_co: ...
+
 
 _T_next_co = TypeVar('_T_next_co', covariant=True)
 
+
+@runtime_checkable
+class CanFloat(Protocol):
+    def __float__(self, /) -> float: ...
+
+
+@runtime_checkable
+class CanComplex(Protocol):
+    def __complex__(self, /) -> complex: ...
+
+
+_T_bytes_co = TypeVar(
+    '_T_bytes_co',
+    covariant=True,
+    bound=bytes,
+    default=bytes,
+)
+
+
+@runtime_checkable
+class CanBytes(Protocol[_T_bytes_co]):
+    """
+    The `__bytes__: (CanBytes[Y]) -> Y` method is *co*variant on `+Y`.
+    So if `__bytes__` returns an instance of a custom `bytes` subtype
+    `Y <: bytes`, then `bytes()` will also return `Y` (i.e. no upcasting).
+    """
+    def __bytes__(self, /) -> _T_bytes_co: ...
+
+
+_T_str_co = TypeVar('_T_str_co', covariant=True, bound=str, default=str)
+
+
+@runtime_checkable
+class CanStr(Protocol[_T_str_co]):
+    """
+    Each `object` has a *co*variant `__str__: (CanStr[Y=str]) -> Y` method on
+    `+Y`. That means that if `__str__()` returns an instance of a custom `str`
+    subtype `Y <: str`, then `str()` will also return `Y` (i.e. no upcasting).
+    """
+    @override
+    def __str__(self, /) -> _T_str_co: ...
+
+
+#
+# Representation
+#
+
+@runtime_checkable
+class CanHash(Protocol):
+    @override
+    def __hash__(self, /) -> int: ...
+
+
+_T_index_co = TypeVar('_T_index_co', covariant=True, bound=int, default=int)
+
+
+@runtime_checkable
+class CanIndex(Protocol[_T_index_co]):
+    def __index__(self, /) -> _T_index_co: ...
+
+
+_T_repr_co = TypeVar('_T_repr_co', covariant=True, bound=str, default=str)
+
+
+@runtime_checkable
+class CanRepr(Protocol[_T_repr_co]):
+    """
+    Each `object` has a *co*variant `__repr__: (CanRepr[Y=str]) -> Y` method.
+    That means that if `__repr__` returns an instance of a custom `str`
+    subtype `Y <: str`, then `repr()` will also return `Y` (i.e. no upcasting).
+    """
+    @override
+    def __repr__(self, /) -> _T_repr_co: ...
+
+
+_T_format_contra = TypeVar(
+    '_T_format_contra',
+    contravariant=True,
+    bound=str,
+    default=str,
+)
+_T_format_co = TypeVar(
+    '_T_format_co',
+    covariant=True,
+    bound=str,
+    default=str,
+)
+
+
+@runtime_checkable
+class CanFormat(Protocol[_T_format_contra, _T_format_co]):
+    """
+    Each `object` has a `__format__: (CanFormat[X, Y], X) -> Y` method, with
+    `-X` *contra*variant, and `+Y` *co*variant. Both `X` and `Y` can be `str`
+    or `str` subtypes. Note that `format()` *does not* upcast `Y` to `str`.
+    """
+    @override
+    def __format__(  # pyright:ignore[reportIncompatibleMethodOverride]
+        self,
+        format_spec: _T_format_contra,
+        /,
+    ) -> _T_format_co: ...
+
+
+#
+# Iteration
+#
 
 @runtime_checkable
 class CanNext(Protocol[_T_next_co]):
@@ -73,109 +204,40 @@ class CanIterSelf(
     def __iter__(self, /) -> Self: ...
 
 
-# 3.3.1. Basic customization
-# https://docs.python.org/3/reference/datamodel.html#basic-customization
+#
+# Async iteration
+#
 
-
-_T_repr_co = TypeVar('_T_repr_co', covariant=True, bound=str, default=str)
+_T_anext_co = TypeVar('_T_anext_co', covariant=True)
 
 
 @runtime_checkable
-class CanRepr(Protocol[_T_repr_co]):
-    """
-    Each `object` has a *co*variant `__repr__: (CanRepr[Y=str]) -> Y` method.
-    That means that if `__repr__` returns an instance of a custom `str`
-    subtype `Y <: str`, then `repr()` will also return `Y` (i.e. no upcasting).
-    """
+class CanANext(Protocol[_T_anext_co]):
+    def __anext__(self, /) -> _T_anext_co: ...
+
+
+_T_aiter_co = TypeVar('_T_aiter_co', covariant=True, bound=CanANext[Any])
+
+
+@runtime_checkable
+class CanAIter(Protocol[_T_aiter_co]):
+    def __aiter__(self, /) -> _T_aiter_co: ...
+
+
+@runtime_checkable
+class CanAIterSelf(
+    CanANext[_T_anext_co],
+    CanAIter[CanANext[_T_anext_co]],
+    Protocol[_T_anext_co],
+):
+    """A less inflexible variant of `collections.abc.AsyncIterator[T]`."""
     @override
-    def __repr__(self, /) -> _T_repr_co: ...
+    def __aiter__(self, /) -> Self: ...
 
 
-_T_str_co = TypeVar('_T_str_co', covariant=True, bound=str, default=str)
-
-
-@runtime_checkable
-class CanStr(Protocol[_T_str_co]):
-    """
-    Each `object` has a *co*variant `__str__: (CanStr[Y=str]) -> Y` method on
-    `+Y`. That means that if `__str__()` returns an instance of a custom `str`
-    subtype `Y <: str`, then `str()` will also return `Y` (i.e. no upcasting).
-    """
-    @override
-    def __str__(self, /) -> _T_str_co: ...
-
-
-_T_bytes_co = TypeVar(
-    '_T_bytes_co',
-    covariant=True,
-    bound=bytes,
-    default=bytes,
-)
-
-
-@runtime_checkable
-class CanBytes(Protocol[_T_bytes_co]):
-    """
-    The `__bytes__: (CanBytes[Y]) -> Y` method is *co*variant on `+Y`.
-    So if `__bytes__` returns an instance of a custom `bytes` subtype
-    `Y <: bytes`, then `bytes()` will also return `Y` (i.e. no upcasting).
-    """
-    def __bytes__(self, /) -> _T_bytes_co: ...
-
-
-_T_format_contra = TypeVar(
-    '_T_format_contra',
-    contravariant=True,
-    bound=str,
-    default=str,
-)
-_T_format_co = TypeVar(
-    '_T_format_co',
-    covariant=True,
-    bound=str,
-    default=_T_format_contra,
-)
-
-
-@runtime_checkable
-class CanFormat(Protocol[_T_format_contra, _T_format_co]):
-    """
-    Each `object` has a `__format__: (CanFormat[X, Y], X) -> Y` method, with
-    `-X` *contra*variant, and `+Y` *co*variant. Both `X` and `Y` can be `str`
-    or `str` subtypes. Note that `format()` *does not* upcast `Y` to `str`.
-    """
-    @override
-    def __format__(  # pyright:ignore[reportIncompatibleMethodOverride]
-        self,
-        format_spec: _T_format_contra,
-        /,
-    ) -> _T_format_co: ...
-
-
-_T_bool_co = TypeVar(
-    '_T_bool_co',
-    Literal[True],
-    Literal[False],
-    bool,
-    covariant=True,
-    default=bool,
-)
-
-
-@runtime_checkable
-class CanBool(Protocol[_T_bool_co]):
-    def __bool__(self, /) -> _T_bool_co: ...
-
-
-@runtime_checkable
-class CanHash(Protocol):
-    @override
-    def __hash__(self, /) -> int: ...
-
-
-# 3.3.1. Basic customization - Rich comparison method
-# https://docs.python.org/3/reference/datamodel.html#object.__lt__
-
+#
+# "Rich" comparison ops
+#
 
 _T_eq_contra = TypeVar('_T_eq_contra', contravariant=True, default=object)
 _T_eq_co = TypeVar('_T_eq_co', covariant=True, default=bool)
@@ -250,9 +312,31 @@ class CanGe(Protocol[_T_ge_contra, _T_ge_co]):
     def __ge__(self, rhs: _T_ge_contra, /) -> _T_ge_co: ...
 
 
-# 3.3.2. Customizing attribute access
-# https://docs.python.org/3/reference/datamodel.html#customizing-attribute-access
+#
+# Callables
+#
 
+# This should (obviously) be contravariant; but that's not possible, because
+# (apparently) the PEP authors didn't seem to have figured out what
+# co/contravariance means, or the fact that paramspec's are quite literally a
+# fundamentally broken feature without it (according to type theory, that is).
+_Tss_call = ParamSpec('_Tss_call')
+_V_call_co = TypeVar('_V_call_co', covariant=True)
+
+
+@runtime_checkable
+class CanCall(Protocol[_Tss_call, _V_call_co]):
+    def __call__(
+        self,
+        /,
+        *args: _Tss_call.args,
+        **kwargs: _Tss_call.kwargs,
+    ) -> _V_call_co: ...
+
+
+#
+# Dynamic attribute access
+#
 
 _N_getattr_contra = TypeVar(
     '_N_getattr_contra',
@@ -341,9 +425,9 @@ class CanDir(Protocol[_T_dir_co]):
     def __dir__(self, /) -> _T_dir_co: ...
 
 
-# 3.3.2.2. Implementing Descriptors
-# https://docs.python.org/3/reference/datamodel.html#implementing-descriptors
-
+#
+# Descriptors
+#
 
 _T_get_contra = TypeVar('_T_get_contra', contravariant=True, bound=object)
 _V_get_co = TypeVar('_V_get_co', covariant=True)
@@ -394,10 +478,6 @@ class CanDelete(Protocol[_T_delete_contra]):
     def __delete__(self, owner: _T_delete_contra, /) -> _Ignored: ...
 
 
-# 3.3.3. Customizing class creation
-# https://docs.python.org/3/reference/datamodel.html#customizing-class-creation
-
-
 _T_set_name_contra = TypeVar(
     '_T_set_name_contra',
     contravariant=True,
@@ -421,31 +501,9 @@ class CanSetName(Protocol[_T_set_name_contra, _N_set_name_contra]):
     ) -> _Ignored: ...
 
 
-# 3.3.6. Emulating callable objects
-# https://docs.python.org/3/reference/datamodel.html#emulating-callable-objects
-
-
-# This should (obviously) be contravariant; but that's not possible, because
-# (apparently) the PEP authors didn't seem to have figured out what
-# co/contravariance means, or the fact that paramspec's are quite literally a
-# fundamentally broken feature without it (according to type theory, that is).
-_Tss_call = ParamSpec('_Tss_call')
-_V_call_co = TypeVar('_V_call_co', covariant=True)
-
-
-@runtime_checkable
-class CanCall(Protocol[_Tss_call, _V_call_co]):
-    def __call__(
-        self,
-        /,
-        *args: _Tss_call.args,
-        **kwargs: _Tss_call.kwargs,
-    ) -> _V_call_co: ...
-
-
-# 3.3.7. Emulating container types
-# https://docs.python.org/3/reference/datamodel.html#emulating-container-types
-
+#
+# Containers
+#
 
 _V_len_co = TypeVar('_V_len_co', covariant=True, bound=int, default=int)
 
@@ -556,9 +614,32 @@ class CanGetMissing(
 ): ...
 
 
-# 3.3.8. Emulating numeric types
-# https://docs.python.org/3/reference/datamodel.html#emulating-numeric-types
+_K_sequence_contra = TypeVar(
+    '_K_sequence_contra',
+    contravariant=True,
+    bound=CanIndex | slice,
+)
+_V_sequence_co = TypeVar('_V_sequence_co', covariant=True)
 
+
+@runtime_checkable
+class CanSequence(
+    CanLen,
+    CanGetitem[_K_sequence_contra, _V_sequence_co],
+    Protocol[_K_sequence_contra, _V_sequence_co],
+):
+    """
+    A sequence is an object with a __len__ method and a
+    __getitem__ method that takes int(-like) argument as key (the index).
+    Additionally, it is expected to be 0-indexed (the first element is at
+    index 0) and "dense" (i.e. the indices are consecutive integers, and are
+    obtainable with e.g. `range(len(_))`).
+    """
+
+
+#
+# Numeric ops
+#
 
 _T_add_contra = TypeVar('_T_add_contra', contravariant=True)
 _T_add_co = TypeVar('_T_add_co', covariant=True)
@@ -734,7 +815,9 @@ class CanOr(Protocol[_T_or_contra, _T_or_co]):
     def __or__(self, rhs: _T_or_contra, /) -> _T_or_co: ...
 
 
-# reflected
+#
+# Reflected numeric ops
+#
 
 _T_radd_contra = TypeVar('_T_radd_contra', contravariant=True)
 _T_radd_co = TypeVar('_T_radd_co', covariant=True)
@@ -866,7 +949,9 @@ class CanROr(Protocol[_T_ror_contra, _T_ror_co]):
     def __ror__(self, rhs: _T_ror_contra, /) -> _T_ror_co: ...
 
 
-# augmented / in-place
+#
+# Augmented numeric ops
+#
 
 _T_iadd_contra = TypeVar('_T_iadd_contra', contravariant=True)
 _T_iadd_co = TypeVar('_T_iadd_co', covariant=True)
@@ -990,8 +1075,9 @@ class CanIOr(Protocol[_T_ior_contra, _T_ior_co]):
     def __ior__(self, rhs: _T_ior_contra, /) -> _T_ior_co: ...
 
 
-# unary arithmetic
-
+#
+# Unary arithmetic ops
+#
 
 _T_neg_co = TypeVar('_T_neg_co', covariant=True)
 
@@ -1025,35 +1111,9 @@ class CanInvert(Protocol[_T_invert_co]):
     def __invert__(self, /) -> _T_invert_co: ...
 
 
-# numeric conversion
-
-@runtime_checkable
-class CanComplex(Protocol):
-    def __complex__(self, /) -> complex: ...
-
-
-@runtime_checkable
-class CanFloat(Protocol):
-    def __float__(self, /) -> float: ...
-
-
-_T_int_co = TypeVar('_T_int_co', covariant=True, bound=int, default=int)
-
-
-@runtime_checkable
-class CanInt(Protocol[_T_int_co]):
-    def __int__(self, /) -> _T_int_co: ...
-
-
-_T_index_co = TypeVar('_T_index_co', covariant=True, bound=int, default=int)
-
-
-@runtime_checkable
-class CanIndex(Protocol[_T_index_co]):
-    def __index__(self, /) -> _T_index_co: ...
-
-
-# rounding
+#
+# Rounding
+#
 
 _T_round1_co = TypeVar('_T_round1_co', covariant=True, default=int)
 
@@ -1118,9 +1178,9 @@ class CanCeil(Protocol[_T_ceil_co]):
     def __ceil__(self, /) -> _T_ceil_co: ...
 
 
-# 3.3.9. With Statement Context Managers
-# https://docs.python.org/3/reference/datamodel.html#with-statement-context-managers
-
+#
+# Context managers
+#
 
 _T_enter_co = TypeVar('_T_enter_co', covariant=True)
 
@@ -1162,90 +1222,9 @@ class CanWith(
 ): ...
 
 
-# 3.3.11. Emulating buffer types
-# https://docs.python.org/3/reference/datamodel.html#emulating-buffer-types
-
-
-_T_buffer_contra = TypeVar(
-    '_T_buffer_contra',
-    contravariant=True,
-    bound=int,
-    default=int,
-)
-
-
-@runtime_checkable
-class CanBuffer(Protocol[_T_buffer_contra]):
-    def __buffer__(self, buffer: _T_buffer_contra, /) -> memoryview: ...
-
-
-@runtime_checkable
-class CanReleaseBuffer(Protocol):
-    def __release_buffer__(self, buffer: memoryview, /) -> None: ...
-
-
-# 3.4.1. Awaitable Objects
-# https://docs.python.org/3/reference/datamodel.html#awaitable-objects
-
-
-_T_await_co = TypeVar('_T_await_co', covariant=True)
-
-# This should be `None | asyncio.Future[Any]`. But that would make this
-# incompatible with `collections.abc.Awaitable`, because it (annoyingly)
-# uses `Any`...
-_MaybeFuture: TypeAlias = Any
-
-
-@runtime_checkable
-class CanAwait(Protocol[_T_await_co]):
-    # Technically speaking, this can return any
-    # `CanNext[None | asyncio.Future[Any]]`. But in theory, the return value
-    # of generators are currently impossible to type, because the return value
-    # of a `yield from _` is # piggybacked using a `raise StopIteration(value)`
-    # from `__next__`. So that also makes `__await__` theoretically
-    # impossible to type. In practice, typecheckers work around that, by
-    # accepting the lie called `collections.abc.Generator`...
-    @overload
-    def __await__(self: CanAwait[None]) -> CanNext[_MaybeFuture]: ...
-    @overload
-    def __await__(
-        self: CanAwait[_T_await_co],
-    ) -> Generator[_MaybeFuture, None, _T_await_co]: ...
-
-
-# 3.4.3. Asynchronous Iterators
-# https://docs.python.org/3/reference/datamodel.html#asynchronous-iterators
-
-
-_T_anext_co = TypeVar('_T_anext_co', covariant=True)
-
-
-@runtime_checkable
-class CanANext(Protocol[_T_anext_co]):
-    def __anext__(self, /) -> _T_anext_co: ...
-
-
-_T_aiter_co = TypeVar('_T_aiter_co', covariant=True, bound=CanANext[Any])
-
-
-@runtime_checkable
-class CanAIter(Protocol[_T_aiter_co]):
-    def __aiter__(self, /) -> _T_aiter_co: ...
-
-
-@runtime_checkable
-class CanAIterSelf(
-    CanANext[_T_anext_co],
-    CanAIter[CanANext[_T_anext_co]],
-    Protocol[_T_anext_co],
-):
-    """A less inflexible variant of `collections.abc.AsyncIterator[T]`."""
-    @override
-    def __aiter__(self, /) -> Self: ...
-
-
-# 3.4.4. Asynchronous Context Managers
-# https://docs.python.org/3/reference/datamodel.html#asynchronous-context-managers
+#
+# Async context managers
+#
 
 
 _T_aenter_co = TypeVar('_T_aenter_co', covariant=True)
@@ -1288,8 +1267,60 @@ class CanAsyncWith(
 ): ...
 
 
-# `copy` stdlib
-# https://docs.python.org/3.13/library/copy.html
+#
+# Buffer protocol
+#
+
+_T_buffer_contra = TypeVar(
+    '_T_buffer_contra',
+    contravariant=True,
+    bound=int,
+    default=int,
+)
+
+
+@runtime_checkable
+class CanBuffer(Protocol[_T_buffer_contra]):
+    def __buffer__(self, buffer: _T_buffer_contra, /) -> memoryview: ...
+
+
+@runtime_checkable
+class CanReleaseBuffer(Protocol):
+    def __release_buffer__(self, buffer: memoryview, /) -> None: ...
+
+
+#
+# Awaitables
+#
+
+_T_await_co = TypeVar('_T_await_co', covariant=True)
+
+# This should be `None | asyncio.Future[Any]`. But that would make this
+# incompatible with `collections.abc.Awaitable`, because it (annoyingly)
+# uses `Any`...
+_MaybeFuture: TypeAlias = Any
+
+
+@runtime_checkable
+class CanAwait(Protocol[_T_await_co]):
+    # Technically speaking, this can return any
+    # `CanNext[None | asyncio.Future[Any]]`. But in theory, the return value
+    # of generators are currently impossible to type, because the return value
+    # of a `yield from _` is # piggybacked using a `raise StopIteration(value)`
+    # from `__next__`. So that also makes `__await__` theoretically
+    # impossible to type. In practice, typecheckers work around that, by
+    # accepting the lie called `collections.abc.Generator`...
+    @overload
+    def __await__(self: CanAwait[None]) -> CanNext[_MaybeFuture]: ...
+    @overload
+    def __await__(
+        self: CanAwait[_T_await_co],
+    ) -> Generator[_MaybeFuture, None, _T_await_co]: ...
+
+
+#
+# Standard library `copy`
+#
 
 
 _T_copy_co = TypeVar('_T_copy_co', covariant=True, bound=object)
@@ -1347,9 +1378,9 @@ class CanReplaceSelf(
     def __replace__(self, /, **changes: _T_replace_contra) -> Self: ...
 
 
-# `pickle` stdlib
-# https://docs.python.org/3.13/library/pickle.html
-
+#
+# Standard library `pickle`
+#
 
 _T_reduce_co = TypeVar(
     '_T_reduce_co',
@@ -1420,28 +1451,3 @@ class CanGetnewargsEx(Protocol[Unpack[_Ts_getnewargs_ex], _T_getnewargs_ex]):
         tuple[Unpack[_Ts_getnewargs_ex]],
         dict[str, _T_getnewargs_ex],
     ]: ...
-
-
-# ruff: noqa: TD002, TD003, FIX002
-_K_sequence_contra = TypeVar(
-    '_K_sequence_contra',
-    contravariant=True,
-    # TODO: use a protocol to narrow the slice values to ints
-    bound=CanIndex | slice,
-)
-_V_sequence_co = TypeVar('_V_sequence_co', covariant=True)
-
-
-@runtime_checkable
-class CanSequence(
-    CanLen,
-    CanGetitem[_K_sequence_contra, _V_sequence_co],
-    Protocol[_K_sequence_contra, _V_sequence_co],
-):
-    """
-    A sequence is an object with a __len__ method and a
-    __getitem__ method that takes int(-like) argument as key (the index).
-    Additionally, it is expected to be 0-indexed (the first element is at
-    index 0) and "dense" (i.e. the indices are consecutive integers, and are
-    obtainable with e.g. `range(len(_))`).
-    """
