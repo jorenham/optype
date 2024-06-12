@@ -62,9 +62,6 @@ class CanInt(Protocol[_R_int]):
     def __int__(self, /) -> _R_int: ...
 
 
-_R_next = TypeVar('_R_next', infer_variance=True)
-
-
 @runtime_checkable
 class CanFloat(Protocol):
     def __float__(self, /) -> float: ...
@@ -146,24 +143,24 @@ class CanFormat(Protocol[_T_format, _R_format]):
     or `str` subtypes. Note that `format()` *does not* upcast `Y` to `str`.
     """
     @override
-    def __format__(  # pyright:ignore[reportIncompatibleMethodOverride]
-        self,
-        format_spec: _T_format,
-        /,
-    ) -> _R_format: ...
+    def __format__(self, fmt: _T_format, /) -> _R_format: ...  # pyright:ignore[reportIncompatibleMethodOverride]
 
 
 #
 # Iteration
 #
 
+
+_V_next = TypeVar('_V_next', infer_variance=True)
+
+
 @runtime_checkable
-class CanNext(Protocol[_R_next]):
+class CanNext(Protocol[_V_next]):
     """
-    Similar to `collections.abc.Iterator`, but without the (often redundant)
+    Similar to `collections.abc.Iterator[V]`, but without the (often redundant)
     requirement to also have a `__iter__` method.
     """
-    def __next__(self, /) -> _R_next: ...
+    def __next__(self, /) -> _V_next: ...
 
 
 _R_iter = TypeVar('_R_iter', infer_variance=True, bound=CanNext[Any])
@@ -171,21 +168,24 @@ _R_iter = TypeVar('_R_iter', infer_variance=True, bound=CanNext[Any])
 
 @runtime_checkable
 class CanIter(Protocol[_R_iter]):
-    """Similar to `collections.abc.Iterable`, but more flexible."""
+    """
+    Similar to `collections.abc.Iterable[V]`, but more flexible in its
+    return type.
+    """
     def __iter__(self, /) -> _R_iter: ...
 
 
-_R_iter_self = TypeVar('_R_iter_self', infer_variance=True)
+_V_iter_self = TypeVar('_V_iter_self', infer_variance=True)
 
 
 @runtime_checkable
 class CanIterSelf(
-    CanNext[_R_iter_self],
-    CanIter[CanNext[_R_iter_self]],
-    Protocol[_R_iter_self],
+    CanNext[_V_iter_self],
+    CanIter[CanNext[_V_iter_self]],
+    Protocol[_V_iter_self],
 ):
     """
-    Equivalent to `collections.abc.Iterator[T]`, minus the `abc` nonsense.
+    Equivalent to `collections.abc.Iterator[V]`, minus the `abc` nonsense.
     """
     @override
     def __iter__(self, /) -> Self: ...
@@ -195,12 +195,12 @@ class CanIterSelf(
 # Async iteration
 #
 
-_R_anext = TypeVar('_R_anext', infer_variance=True)
+_V_anext = TypeVar('_V_anext', infer_variance=True)
 
 
 @runtime_checkable
-class CanANext(Protocol[_R_anext]):
-    def __anext__(self, /) -> _R_anext: ...
+class CanANext(Protocol[_V_anext]):
+    def __anext__(self, /) -> _V_anext: ...
 
 
 _R_aiter = TypeVar('_R_aiter', infer_variance=True, bound=CanANext[Any])
@@ -211,11 +211,14 @@ class CanAIter(Protocol[_R_aiter]):
     def __aiter__(self, /) -> _R_aiter: ...
 
 
+_V_aiter_self = TypeVar('_V_aiter_self', infer_variance=True)
+
+
 @runtime_checkable
 class CanAIterSelf(
-    CanANext[_R_anext],
-    CanAIter[CanANext[_R_anext]],
-    Protocol[_R_anext],
+    CanANext[_V_aiter_self],
+    CanAIter[CanANext[_V_aiter_self]],
+    Protocol[_V_aiter_self],
 ):
     """A less inflexible variant of `collections.abc.AsyncIterator[T]`."""
     @override
@@ -242,7 +245,7 @@ class CanEq(Protocol[_T_eq, _R_eq]):  # noqa: PLW1641
     There is nothing wrong with this implementation, even though `typeshed`
     (incorrectly) won't allow it (because `numpy.ndarray <: object`).
 
-    So in reality, it should be `__eq__: (Self, X) -> Y`, with `-X` unbounded
+    So in reality, it should be `__eq__: (Self, X, /) -> Y`, with `X` unbounded
     and *contra*variant, and `+Y` unbounded and *co*variant.
     """
     @override
@@ -257,7 +260,7 @@ _R_ne = TypeVar('_R_ne', infer_variance=True, default=bool)
 class CanNe(Protocol[_T_ne, _R_ne]):
     """
     Just like `__eq__`, the `__ne__` method is incorrectly annotated in
-    `typeshed`. See `CanEq` for why this is, and how `optype` fixes this.
+    typeshed. Refer to `CanEq` for why this is.
     """
     @override
     def __ne__(self, rhs: _T_ne, /) -> _R_ne: ...  # pyright:ignore[reportIncompatibleMethodOverride]
@@ -408,12 +411,7 @@ class CanGet(Protocol[_T_get, _V_get, _VT_get]):
         /,
     ) -> _V_get: ...
     @overload
-    def __get__(
-        self,
-        owner: None,
-        owner_type: type[_T_get],
-        /,
-    ) -> _VT_get: ...
+    def __get__(self, owner: None, owner_type: type[_T_get], /) -> _VT_get: ...
 
 
 _T_set = TypeVar('_T_set', infer_variance=True, bound=object)
@@ -833,7 +831,7 @@ _R_rpow = TypeVar('_R_rpow', infer_variance=True)
 
 @runtime_checkable
 class CanRPow(Protocol[_T_rpow, _R_rpow]):
-    def __rpow__(self, x: _T_rpow) -> _R_rpow: ...
+    def __rpow__(self, x: _T_rpow, /) -> _R_rpow: ...
 
 
 _T_rlshift = TypeVar('_T_rlshift', infer_variance=True)
@@ -1055,16 +1053,16 @@ class CanRound1(Protocol[_R_round1]):
     @overload
     def __round__(self, /) -> _R_round1: ...
     @overload
-    def __round__(self, ndigits: None = ...) -> _R_round1: ...
+    def __round__(self, /, ndigits: None = None) -> _R_round1: ...
 
 
 _T_round2 = TypeVar('_T_round2', infer_variance=True, default=int)
-_R_round2 = TypeVar('_R_round2', infer_variance=True, default=float)
+_RT_round2 = TypeVar('_RT_round2', infer_variance=True, default=float)
 
 
 @runtime_checkable
-class CanRound2(Protocol[_T_round2, _R_round2]):
-    def __round__(self, ndigits: _T_round2) -> _R_round2: ...
+class CanRound2(Protocol[_T_round2, _RT_round2]):
+    def __round__(self, /, ndigits: _T_round2) -> _RT_round2: ...
 
 
 _T_round = TypeVar('_T_round', infer_variance=True, default=int)
@@ -1081,9 +1079,9 @@ class CanRound(
     @overload
     def __round__(self, /) -> _R_round: ...
     @overload
-    def __round__(self, ndigits: None = ...) -> _R_round: ...
+    def __round__(self, /, ndigits: None = None) -> _R_round: ...
     @overload
-    def __round__(self, ndigits: _T_round) -> _RT_round: ...
+    def __round__(self, /, ndigits: _T_round) -> _RT_round: ...
 
 
 _R_trunc = TypeVar('_R_trunc', infer_variance=True, default=int)
@@ -1114,12 +1112,12 @@ class CanCeil(Protocol[_R_ceil]):
 # Context managers
 #
 
-_R_enter = TypeVar('_R_enter', infer_variance=True)
+_C_enter = TypeVar('_C_enter', infer_variance=True)
 
 
 @runtime_checkable
-class CanEnter(Protocol[_R_enter]):
-    def __enter__(self, /) -> _R_enter: ...
+class CanEnter(Protocol[_C_enter]):
+    def __enter__(self, /) -> _C_enter: ...
 
 
 _E_exit = TypeVar('_E_exit', bound=BaseException)
@@ -1148,9 +1146,9 @@ class CanExit(Protocol[_R_exit]):
 
 @runtime_checkable
 class CanWith(
-    CanEnter[_R_enter],
+    CanEnter[_C_enter],
     CanExit[_R_exit],
-    Protocol[_R_enter, _R_exit],
+    Protocol[_C_enter, _R_exit],
 ): ...
 
 
@@ -1159,12 +1157,12 @@ class CanWith(
 #
 
 
-_R_aenter = TypeVar('_R_aenter', infer_variance=True)
+_C_aenter = TypeVar('_C_aenter', infer_variance=True)
 
 
 @runtime_checkable
-class CanAEnter(Protocol[_R_aenter]):
-    def __aenter__(self, /) -> CanAwait[_R_aenter]: ...
+class CanAEnter(Protocol[_C_aenter]):
+    def __aenter__(self, /) -> CanAwait[_C_aenter]: ...
 
 
 _E_aexit = TypeVar('_E_aexit', bound=BaseException)
@@ -1193,9 +1191,9 @@ class CanAExit(Protocol[_R_aexit]):
 
 @runtime_checkable
 class CanAsyncWith(
-    CanAEnter[_R_aenter],
+    CanAEnter[_C_aenter],
     CanAExit[_R_aexit],
-    Protocol[_R_aenter, _R_aexit],
+    Protocol[_C_aenter, _R_aexit],
 ): ...
 
 
@@ -1222,10 +1220,11 @@ class CanReleaseBuffer(Protocol):
 
 _R_await = TypeVar('_R_await', infer_variance=True)
 
-# This should be `None | asyncio.Future[Any]`. But that would make this
-# incompatible with `collections.abc.Awaitable`, because it (annoyingly)
-# uses `Any`...
-_MaybeFuture: TypeAlias = Any
+# This should be `asyncio.Future[typing.Any] | None`. But that would make this
+# incompatible with `collections.abc.Awaitable` -- it (annoyingly) uses `Any`:
+# https://github.com/python/typeshed/blob/587ad6/stdlib/asyncio/futures.pyi#L51
+_FutureOrNone: TypeAlias = Any
+_AsyncGen: TypeAlias = 'Generator[_FutureOrNone, None, _R_await]'
 
 
 @runtime_checkable
@@ -1238,17 +1237,14 @@ class CanAwait(Protocol[_R_await]):
     # impossible to type. In practice, typecheckers work around that, by
     # accepting the lie called `collections.abc.Generator`...
     @overload
-    def __await__(self: CanAwait[None]) -> CanNext[_MaybeFuture]: ...
+    def __await__(self: CanAwait[None], /) -> CanNext[_FutureOrNone]: ...
     @overload
-    def __await__(
-        self: CanAwait[_R_await],
-    ) -> Generator[_MaybeFuture, None, _R_await]: ...
+    def __await__(self: CanAwait[_R_await], /) -> _AsyncGen[_R_await]: ...
 
 
 #
 # Standard library `copy`
 #
-
 
 _R_copy = TypeVar('_R_copy', infer_variance=True, bound=object)
 
@@ -1257,6 +1253,13 @@ _R_copy = TypeVar('_R_copy', infer_variance=True, bound=object)
 class CanCopy(Protocol[_R_copy]):
     """Support for creating shallow copies through `copy.copy`."""
     def __copy__(self, /) -> _R_copy: ...
+
+
+@runtime_checkable
+class CanCopySelf(CanCopy['CanCopySelf'], Protocol):
+    """Variant of `CanCopy` that returns `Self` (as it should)."""
+    @override
+    def __copy__(self, /) -> Self: ...
 
 
 _R_deepcopy = TypeVar('_R_deepcopy', infer_variance=True, bound=object)
@@ -1268,48 +1271,47 @@ class CanDeepcopy(Protocol[_R_deepcopy]):
     def __deepcopy__(self, memo: dict[int, Any], /) -> _R_deepcopy: ...
 
 
-_T_replace = TypeVar('_T_replace', infer_variance=True)
-_R_replace = TypeVar('_R_replace', infer_variance=True)
-
-
-@runtime_checkable
-class CanReplace(Protocol[_T_replace, _R_replace]):
-    """Support for `copy.replace` in Python 3.13+."""
-    def __replace__(self, /, **changes: _T_replace) -> _R_replace: ...
-
-
-@runtime_checkable
-class CanCopySelf(CanCopy['CanCopySelf'], Protocol):
-    """Variant of `CanCopy` that returns `Self` (as it should)."""
-    @override
-    def __copy__(self, /) -> Self: ...
-
-
 class CanDeepcopySelf(CanDeepcopy['CanDeepcopySelf'], Protocol):
     """Variant of `CanDeepcopy` that returns `Self` (as it should)."""
     @override
     def __deepcopy__(self, memo: dict[int, Any], /) -> Self: ...
 
 
+_V_replace = TypeVar('_V_replace', infer_variance=True)
+_R_replace = TypeVar('_R_replace', infer_variance=True)
+
+
+@runtime_checkable
+class CanReplace(Protocol[_V_replace, _R_replace]):
+    """Support for `copy.replace` in Python 3.13+."""
+    def __replace__(self, /, **changes: _V_replace) -> _R_replace: ...
+
+
+_V_replace_self = TypeVar('_V_replace_self', infer_variance=True)
+
+
 @runtime_checkable
 class CanReplaceSelf(
-    CanReplace[_T_replace, 'CanReplaceSelf[Any]'],
-    Protocol[_T_replace],
+    CanReplace[_V_replace_self, 'CanReplaceSelf[Any]'],
+    Protocol[_V_replace_self],
 ):
-    """Variant of `CanReplace[T, Self]`."""
+    """Variant of `CanReplace[V, Self]`."""
     @override
-    def __replace__(self, /, **changes: _T_replace) -> Self: ...
+    def __replace__(self, /, **changes: _V_replace_self) -> Self: ...
 
 
 #
 # Standard library `pickle`
 #
 
+_StrOrTuple: TypeAlias = str | tuple[Any, ...]
+
+
 _R_reduce = TypeVar(
     '_R_reduce',
     infer_variance=True,
-    bound=str | tuple[Any, ...],
-    default=str | tuple[Any, ...],
+    bound=_StrOrTuple,
+    default=_StrOrTuple,
 )
 
 
@@ -1322,8 +1324,8 @@ class CanReduce(Protocol[_R_reduce]):
 _R_reduce_ex = TypeVar(
     '_R_reduce_ex',
     infer_variance=True,
-    bound=str | tuple[Any, ...],
-    default=str | tuple[Any, ...],
+    bound=_StrOrTuple,
+    default=_StrOrTuple,
 )
 
 
@@ -1333,44 +1335,44 @@ class CanReduceEx(Protocol[_R_reduce_ex]):
     def __reduce_ex__(self, protocol: CanIndex, /) -> _R_reduce_ex: ...
 
 
-_R_getstate = TypeVar('_R_getstate', infer_variance=True)
+_S_getstate = TypeVar('_S_getstate', infer_variance=True, bound=object)
 
 
 @runtime_checkable
-class CanGetstate(Protocol[_R_getstate]):
-    def __getstate__(self, /) -> _R_getstate: ...
+class CanGetstate(Protocol[_S_getstate]):
+    def __getstate__(self, /) -> _S_getstate: ...
 
 
-_T_setstate = TypeVar('_T_setstate', infer_variance=True)
-
-
-@runtime_checkable
-class CanSetstate(Protocol[_T_setstate]):
-    def __setstate__(self, state: _T_setstate, /) -> None: ...
-
-
-_Ts_getnewargs = TypeVarTuple('_Ts_getnewargs')
+_S_setstate = TypeVar('_S_setstate', infer_variance=True, bound=object)
 
 
 @runtime_checkable
-class CanGetnewargs(Protocol[Unpack[_Ts_getnewargs]]):
-    def __new__(cls, /, *args: Unpack[_Ts_getnewargs]) -> Self: ...
-    def __getnewargs__(self, /) -> tuple[Unpack[_Ts_getnewargs]]: ...
+class CanSetstate(Protocol[_S_setstate]):
+    def __setstate__(self, state: _S_setstate, /) -> None: ...
 
 
-_Ts_getnewargs_ex = TypeVarTuple('_Ts_getnewargs_ex')
-_T_getnewargs_ex = TypeVar('_T_getnewargs_ex')
+_Vs_getnewargs = TypeVarTuple('_Vs_getnewargs')
 
 
 @runtime_checkable
-class CanGetnewargsEx(Protocol[Unpack[_Ts_getnewargs_ex], _T_getnewargs_ex]):
+class CanGetnewargs(Protocol[Unpack[_Vs_getnewargs]]):
+    def __new__(cls, /, *args: Unpack[_Vs_getnewargs]) -> Self: ...
+    def __getnewargs__(self, /) -> tuple[Unpack[_Vs_getnewargs]]: ...
+
+
+_Vs_getnewargs_ex = TypeVarTuple('_Vs_getnewargs_ex')
+_V_getnewargs_ex = TypeVar('_V_getnewargs_ex')
+
+
+@runtime_checkable
+class CanGetnewargsEx(Protocol[Unpack[_Vs_getnewargs_ex], _V_getnewargs_ex]):
     def __new__(
         cls,
         /,
-        *args: Unpack[_Ts_getnewargs_ex],
-        **kwargs: _T_getnewargs_ex,
+        *args: Unpack[_Vs_getnewargs_ex],
+        **kwargs: _V_getnewargs_ex,
     ) -> Self: ...
     def __getnewargs_ex__(self, /) -> tuple[
-        tuple[Unpack[_Ts_getnewargs_ex]],
-        dict[str, _T_getnewargs_ex],
+        tuple[Unpack[_Vs_getnewargs_ex]],
+        dict[str, _V_getnewargs_ex],
     ]: ...
