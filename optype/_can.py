@@ -892,6 +892,12 @@ class CanIAdd(Protocol[_T_iadd, _R_iadd]):
     def __iadd__(self, rhs: _T_iadd, /) -> _R_iadd: ...
 
 
+@runtime_checkable
+class CanIAddSelf(CanIAdd[_T_iadd, 'CanIAddSelf[Any]'], Protocol[_T_iadd]):
+    @override
+    def __iadd__(self, rhs: _T_iadd, /) -> Self: ...
+
+
 _T_isub = TypeVar('_T_isub', infer_variance=True)
 _R_isub = TypeVar('_R_isub', infer_variance=True)
 
@@ -899,6 +905,12 @@ _R_isub = TypeVar('_R_isub', infer_variance=True)
 @runtime_checkable
 class CanISub(Protocol[_T_isub, _R_isub]):
     def __isub__(self, rhs: _T_isub, /) -> _R_isub: ...
+
+
+@runtime_checkable
+class CanISubSelf(CanISub[_T_isub, 'CanISubSelf[Any]'], Protocol[_T_isub]):
+    @override
+    def __isub__(self, rhs: _T_isub, /) -> Self: ...
 
 
 _T_imul = TypeVar('_T_imul', infer_variance=True)
@@ -910,6 +922,12 @@ class CanIMul(Protocol[_T_imul, _R_imul]):
     def __imul__(self, rhs: _T_imul, /) -> _R_imul: ...
 
 
+@runtime_checkable
+class CanIMulSelf(CanIMul[_T_imul, 'CanIMulSelf[Any]'], Protocol[_T_imul]):
+    @override
+    def __imul__(self, rhs: _T_imul, /) -> Self: ...
+
+
 _T_imatmul = TypeVar('_T_imatmul', infer_variance=True)
 _R_imatmul = TypeVar('_R_imatmul', infer_variance=True)
 
@@ -917,6 +935,15 @@ _R_imatmul = TypeVar('_R_imatmul', infer_variance=True)
 @runtime_checkable
 class CanIMatmul(Protocol[_T_imatmul, _R_imatmul]):
     def __imatmul__(self, rhs: _T_imatmul, /) -> _R_imatmul: ...
+
+
+@runtime_checkable
+class CanIMatmulSelf(
+    CanIMatmul[_T_imatmul, 'CanIMatmulSelf[Any]'],
+    Protocol[_T_imatmul],
+):
+    @override
+    def __imatmul__(self, rhs: _T_imatmul, /) -> Self: ...
 
 
 _T_itruediv = TypeVar('_T_itruediv', infer_variance=True)
@@ -928,17 +955,31 @@ class CanITruediv(Protocol[_T_itruediv, _R_itruediv]):
     def __itruediv__(self, rhs: _T_itruediv, /) -> _R_itruediv: ...
 
 
+@runtime_checkable
+class CanITruedivSelf(
+    CanITruediv[_T_itruediv, 'CanITruedivSelf[Any]'],
+    Protocol[_T_itruediv],
+):
+    @override
+    def __itruediv__(self, rhs: _T_itruediv, /) -> Self: ...
+
+
 _T_ifloordiv = TypeVar('_T_ifloordiv', infer_variance=True)
 _R_ifloordiv = TypeVar('_R_ifloordiv', infer_variance=True)
 
 
 @runtime_checkable
 class CanIFloordiv(Protocol[_T_ifloordiv, _R_ifloordiv]):
-    def __ifloordiv__(
-        self,
-        rhs: _T_ifloordiv,
-        /,
-    ) -> _R_ifloordiv: ...
+    def __ifloordiv__(self, rhs: _T_ifloordiv, /) -> _R_ifloordiv: ...
+
+
+@runtime_checkable
+class CanIFloordivSelf(
+    CanIFloordiv[_T_ifloordiv, 'CanIFloordivSelf[Any]'],
+    Protocol[_T_ifloordiv],
+):
+    @override
+    def __ifloordiv__(self, rhs: _T_ifloordiv, /) -> Self: ...
 
 
 _T_imod = TypeVar('_T_imod', infer_variance=True)
@@ -948,6 +989,12 @@ _R_imod = TypeVar('_R_imod', infer_variance=True)
 @runtime_checkable
 class CanIMod(Protocol[_T_imod, _R_imod]):
     def __imod__(self, rhs: _T_imod, /) -> _R_imod: ...
+
+
+@runtime_checkable
+class CanIModSelf(CanIMod[_T_imod, 'CanIModSelf[Any]'], Protocol[_T_imod]):
+    @override
+    def __imod__(self, rhs: _T_imod, /) -> Self: ...
 
 
 _T_ipow = TypeVar('_T_ipow', infer_variance=True)
@@ -960,6 +1007,12 @@ class CanIPow(Protocol[_T_ipow, _R_ipow]):
     def __ipow__(self, rhs: _T_ipow, /) -> _R_ipow: ...
 
 
+@runtime_checkable
+class CanIPowSelf(CanIPow[_T_ipow, 'CanIPowSelf[Any]'], Protocol[_T_ipow]):
+    @override
+    def __ipow__(self, rhs: _T_ipow, /) -> Self: ...
+
+
 _T_ilshift = TypeVar('_T_ilshift', infer_variance=True)
 _R_ilshift = TypeVar('_R_ilshift', infer_variance=True)
 
@@ -967,6 +1020,15 @@ _R_ilshift = TypeVar('_R_ilshift', infer_variance=True)
 @runtime_checkable
 class CanILshift(Protocol[_T_ilshift, _R_ilshift]):
     def __ilshift__(self, rhs: _T_ilshift, /) -> _R_ilshift: ...
+
+
+@runtime_checkable
+class CanILshiftSelf(
+    CanILshift[_T_ilshift, 'CanILshiftSelf[Any]'],
+    Protocol[_T_ilshift],
+):
+    @override
+    def __ilshift__(self, rhs: _T_ilshift, /) -> Self: ...
 
 
 _T_irshift = TypeVar('_T_irshift', infer_variance=True)
@@ -978,6 +1040,15 @@ class CanIRshift(Protocol[_T_irshift, _R_irshift]):
     def __irshift__(self, rhs: _T_irshift, /) -> _R_irshift: ...
 
 
+@runtime_checkable
+class CanIRshiftSelf(
+    CanIRshift[_T_irshift, 'CanIRshiftSelf[Any]'],
+    Protocol[_T_irshift],
+):
+    @override
+    def __irshift__(self, rhs: _T_irshift, /) -> Self: ...
+
+
 _T_iand = TypeVar('_T_iand', infer_variance=True)
 _R_iand = TypeVar('_R_iand', infer_variance=True)
 
@@ -985,6 +1056,12 @@ _R_iand = TypeVar('_R_iand', infer_variance=True)
 @runtime_checkable
 class CanIAnd(Protocol[_T_iand, _R_iand]):
     def __iand__(self, rhs: _T_iand, /) -> _R_iand: ...
+
+
+@runtime_checkable
+class CanIAndSelf(CanIAnd[_T_iand, 'CanIAndSelf[Any]'], Protocol[_T_iand]):
+    @override
+    def __iand__(self, rhs: _T_iand, /) -> Self: ...
 
 
 _T_ixor = TypeVar('_T_ixor', infer_variance=True)
@@ -996,6 +1073,12 @@ class CanIXor(Protocol[_T_ixor, _R_ixor]):
     def __ixor__(self, rhs: _T_ixor, /) -> _R_ixor: ...
 
 
+@runtime_checkable
+class CanIXorSelf(CanIXor[_T_ixor, 'CanIXorSelf[Any]'], Protocol[_T_ixor]):
+    @override
+    def __ixor__(self, rhs: _T_ixor, /) -> Self: ...
+
+
 _T_ior = TypeVar('_T_ior', infer_variance=True)
 _R_ior = TypeVar('_R_ior', infer_variance=True)
 
@@ -1003,6 +1086,12 @@ _R_ior = TypeVar('_R_ior', infer_variance=True)
 @runtime_checkable
 class CanIOr(Protocol[_T_ior, _R_ior]):
     def __ior__(self, rhs: _T_ior, /) -> _R_ior: ...
+
+
+@runtime_checkable
+class CanIOrSelf(CanIOr[_T_ior, 'CanIOrSelf[Any]'], Protocol[_T_ior]):
+    @override
+    def __ior__(self, rhs: _T_ior, /) -> Self: ...
 
 
 #
