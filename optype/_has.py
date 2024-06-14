@@ -1,36 +1,32 @@
 from __future__ import annotations
 
 import sys
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    ClassVar,
-    Final,
-    Protocol,
-    TypeAlias,
-    runtime_checkable,
-)
+from typing import TYPE_CHECKING, Any, ClassVar, Final, TypeAlias
 
 
 if sys.version_info >= (3, 13):
     from typing import (
         Never,
         ParamSpec,
+        Protocol,
         Self,
         TypeVar,
         TypeVarTuple,
         Unpack,
         override,
+        runtime_checkable,
     )
 else:
     from typing_extensions import (
         Never,
         ParamSpec,
+        Protocol,
         Self,  # noqa: TCH002
         TypeVar,
         TypeVarTuple,
         Unpack,
         override,
+        runtime_checkable,
     )
 
 import optype._can as _c

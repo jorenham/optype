@@ -1,16 +1,14 @@
+import sys
 from collections.abc import Callable
-from typing import (
-    Any,
-    Literal,
-    ParamSpec,
-    Protocol,
-    TypeAlias,
-    TypeVar,
-    final,
-    overload,
-)
+from typing import Any, Literal, TypeAlias
 
 import optype._can as _c
+
+
+if sys.version_info >= (3, 13):
+    from typing import ParamSpec, Protocol, TypeVar, final, overload
+else:
+    from typing_extensions import ParamSpec, Protocol, TypeVar, final, overload
 
 
 # iteration

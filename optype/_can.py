@@ -1,27 +1,32 @@
 from __future__ import annotations
 
 import sys
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Literal,
-    Protocol,
-    TypeAlias,
-    overload,
-    runtime_checkable,
-)
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias
 
 
 if sys.version_info >= (3, 13):
-    from typing import ParamSpec, Self, TypeVar, TypeVarTuple, Unpack, override
+    from typing import (
+        ParamSpec,
+        Protocol,
+        Self,
+        TypeVar,
+        TypeVarTuple,
+        Unpack,
+        overload,
+        override,
+        runtime_checkable,
+    )
 else:
     from typing_extensions import (
         ParamSpec,
+        Protocol,
         Self,  # noqa: TCH002
         TypeVar,
         TypeVarTuple,
         Unpack,
+        overload,
         override,
+        runtime_checkable,
     )
 
 
