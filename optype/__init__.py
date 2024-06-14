@@ -1,5 +1,6 @@
 __all__ = (
     'CanAEnter',
+    'CanAEnterSelf',
     'CanAExit',
     'CanAIter',
     'CanAIterSelf',
@@ -9,6 +10,7 @@ __all__ = (
     'CanAdd',
     'CanAnd',
     'CanAsyncWith',
+    'CanAsyncWithSelf',
     'CanAwait',
     'CanBool',
     'CanBuffer',
@@ -321,6 +323,7 @@ from importlib import metadata as _metadata
 
 from ._can import (
     CanAEnter,
+    CanAEnterSelf,
     CanAExit,
     CanAIter,
     CanAIterSelf,
@@ -330,6 +333,7 @@ from ._can import (
     CanAdd,
     CanAnd,
     CanAsyncWith,
+    CanAsyncWithSelf,
     CanAwait,
     CanBool,
     CanBuffer,
