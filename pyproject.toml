@@ -44,6 +44,7 @@ typing-extensions = "*"
 [tool.poetry.group.test.dependencies]
 pytest = "^8.2.2"
 typing-extensions = "*"
+beartype = "^0.18.5"
 
 [tool.poetry.group.test-github]
 optional = true
@@ -69,6 +70,8 @@ reportAny = false
 reportUnusedCallResult = false
 # because of `sys.version_info()` conditionals
 reportUnreachable = false
+# already handled by ruff F401
+reportUnusedImport = false
 
 
 [tool.pytest.ini_options]
