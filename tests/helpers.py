@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import inspect
 import sys
-from typing import TYPE_CHECKING, Protocol as _typing_Protocol, cast
+from typing import TYPE_CHECKING, cast
 
 
 if sys.version_info >= (3, 13):
-    from typing import Protocol
+    from typing import is_protocol
 else:
-    from typing_extensions import Protocol
+    from typing_extensions import is_protocol
 
 
 if TYPE_CHECKING:
@@ -25,17 +25,6 @@ __all__ = (
     'is_protocol',
     'pascamel_to_snake',
 )
-
-
-def is_protocol(cls: type, /) -> bool:
-    """Based on `typing_extensions.is_protocol`."""
-    return (
-        isinstance(cls, type)
-        and cls is not Protocol
-        and cls is not _typing_Protocol
-        and (issubclass(cls, Protocol) or issubclass(cls, _typing_Protocol))
-        and getattr(cls, '_is_protocol', False)
-    )
 
 
 def is_runtime_protocol(cls: type, /) -> bool:
