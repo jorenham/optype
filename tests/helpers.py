@@ -134,7 +134,7 @@ def pascamel_to_snake(
 def is_dunder(name: str, /) -> bool:
     """Whether the name is a valid `__dunder_name__`."""
     return (
-        len(name) > 4  # noqa: PLR2004
+        len(name) > 4
         and name.isidentifier()
         and name.islower()
         and name[:2] == name[-2:] == '__'

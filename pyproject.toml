@@ -196,6 +196,8 @@ ignore = [
     "ANN201",   # missing-return-type
     # flake8-self
     "SLF001",   # private-member-access
+    # pylint
+    "PLR2004",  # magic-value-comparison
 ]
 
 [tool.ruff.lint.isort]

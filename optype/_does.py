@@ -1087,183 +1087,389 @@ class DoesROr(Protocol):
 # augmented / in-place operators
 
 
-_T_iadd = TypeVar('_T_iadd')
+_T_iadd_rhs = TypeVar('_T_iadd_rhs')
+_T_iadd_lhs = TypeVar('_T_iadd_lhs')
 _R_iadd = TypeVar('_R_iadd')
 
 
 @final
 class DoesIAdd(Protocol):
+    @overload
     def __call__(
         self,
-        lhs: _c.CanIAdd[_T_iadd, _R_iadd],
-        rhs: _T_iadd,
+        lhs: _c.CanIAdd[_T_iadd_rhs, _R_iadd],
+        rhs: _T_iadd_rhs,
+        /,
+    ) -> _R_iadd: ...
+    @overload
+    def __call__(
+        self,
+        lhs: _c.CanAdd[_T_iadd_rhs, _R_iadd],
+        rhs: _T_iadd_rhs,
+        /,
+    ) -> _R_iadd: ...
+    @overload
+    def __call__(
+        self,
+        lhs: _T_iadd_lhs,
+        rhs: _c.CanRAdd[_T_iadd_lhs, _R_iadd],
         /,
     ) -> _R_iadd: ...
 
 
-_T_isub = TypeVar('_T_isub')
+_T_isub_lhs = TypeVar('_T_isub_lhs')
+_T_isub_rhs = TypeVar('_T_isub_rhs')
 _R_isub = TypeVar('_R_isub')
 
 
 @final
 class DoesISub(Protocol):
+    @overload
     def __call__(
         self,
-        lhs: _c.CanISub[_T_isub, _R_isub],
-        rhs: _T_isub,
+        lhs: _c.CanISub[_T_isub_rhs, _R_isub],
+        rhs: _T_isub_rhs,
+        /,
+    ) -> _R_isub: ...
+    @overload
+    def __call__(
+        self,
+        lhs: _c.CanSub[_T_isub_rhs, _R_isub],
+        rhs: _T_isub_rhs,
+        /,
+    ) -> _R_isub: ...
+    @overload
+    def __call__(
+        self,
+        lhs: _T_isub_lhs,
+        rhs: _c.CanRSub[_T_isub_lhs, _R_isub],
         /,
     ) -> _R_isub: ...
 
 
-_T_imul = TypeVar('_T_imul')
+_T_imul_lhs = TypeVar('_T_imul_lhs')
+_T_imul_rhs = TypeVar('_T_imul_rhs')
 _R_imul = TypeVar('_R_imul')
 
 
 @final
 class DoesIMul(Protocol):
+    @overload
     def __call__(
         self,
-        lhs: _c.CanIMul[_T_imul, _R_imul],
-        rhs: _T_imul,
+        lhs: _c.CanIMul[_T_imul_rhs, _R_imul],
+        rhs: _T_imul_rhs,
+        /,
+    ) -> _R_imul: ...
+    @overload
+    def __call__(
+        self,
+        lhs: _c.CanMul[_T_imul_rhs, _R_imul],
+        rhs: _T_imul_rhs,
+        /,
+    ) -> _R_imul: ...
+    @overload
+    def __call__(
+        self,
+        lhs: _T_imul_lhs,
+        rhs: _c.CanRMul[_T_imul_lhs, _R_imul],
         /,
     ) -> _R_imul: ...
 
 
-_T_imatmul = TypeVar('_T_imatmul')
+_T_imatmul_lhs = TypeVar('_T_imatmul_lhs')
+_T_imatmul_rhs = TypeVar('_T_imatmul_rhs')
 _R_imatmul = TypeVar('_R_imatmul')
 
 
 @final
 class DoesIMatmul(Protocol):
+    @overload
     def __call__(
         self,
-        lhs: _c.CanIMatmul[_T_imatmul, _R_imatmul],
-        rhs: _T_imatmul,
+        lhs: _c.CanIMatmul[_T_imatmul_rhs, _R_imatmul],
+        rhs: _T_imatmul_rhs,
+        /,
+    ) -> _R_imatmul: ...
+    @overload
+    def __call__(
+        self,
+        lhs: _c.CanMatmul[_T_imatmul_rhs, _R_imatmul],
+        rhs: _T_imatmul_rhs,
+        /,
+    ) -> _R_imatmul: ...
+    @overload
+    def __call__(
+        self,
+        lhs: _T_imatmul_lhs,
+        rhs: _c.CanRMatmul[_T_imatmul_lhs, _R_imatmul],
         /,
     ) -> _R_imatmul: ...
 
 
-_T_itruediv = TypeVar('_T_itruediv')
+_T_itruediv_lhs = TypeVar('_T_itruediv_lhs')
+_T_itruediv_rhs = TypeVar('_T_itruediv_rhs')
 _R_itruediv = TypeVar('_R_itruediv')
 
 
 @final
 class DoesITruediv(Protocol):
+    @overload
     def __call__(
         self,
-        lhs: _c.CanITruediv[_T_itruediv, _R_itruediv],
-        rhs: _T_itruediv,
+        lhs: _c.CanITruediv[_T_itruediv_rhs, _R_itruediv],
+        rhs: _T_itruediv_rhs,
+        /,
+    ) -> _R_itruediv: ...
+    @overload
+    def __call__(
+        self,
+        lhs: _c.CanTruediv[_T_itruediv_rhs, _R_itruediv],
+        rhs: _T_itruediv_rhs,
+        /,
+    ) -> _R_itruediv: ...
+    @overload
+    def __call__(
+        self,
+        lhs: _T_itruediv_lhs,
+        rhs: _c.CanRTruediv[_T_itruediv_lhs, _R_itruediv],
         /,
     ) -> _R_itruediv: ...
 
 
-_T_ifloordiv = TypeVar('_T_ifloordiv')
+_T_ifloordiv_lhs = TypeVar('_T_ifloordiv_lhs')
+_T_ifloordiv_rhs = TypeVar('_T_ifloordiv_rhs')
 _R_ifloordiv = TypeVar('_R_ifloordiv')
 
 
 @final
 class DoesIFloordiv(Protocol):
+    @overload
     def __call__(
         self,
-        lhs: _c.CanIFloordiv[_T_ifloordiv, _R_ifloordiv],
-        rhs: _T_ifloordiv,
+        lhs: _c.CanIFloordiv[_T_ifloordiv_rhs, _R_ifloordiv],
+        rhs: _T_ifloordiv_rhs,
+        /,
+    ) -> _R_ifloordiv: ...
+    @overload
+    def __call__(
+        self,
+        lhs: _c.CanFloordiv[_T_ifloordiv_rhs, _R_ifloordiv],
+        rhs: _T_ifloordiv_rhs,
+        /,
+    ) -> _R_ifloordiv: ...
+    @overload
+    def __call__(
+        self,
+        lhs: _T_ifloordiv_lhs,
+        rhs: _c.CanRFloordiv[_T_ifloordiv_lhs, _R_ifloordiv],
         /,
     ) -> _R_ifloordiv: ...
 
 
-_T_imod = TypeVar('_T_imod')
+_T_imod_lhs = TypeVar('_T_imod_lhs')
+_T_imod_rhs = TypeVar('_T_imod_rhs')
 _R_imod = TypeVar('_R_imod')
 
 
 @final
 class DoesIMod(Protocol):
+    @overload
     def __call__(
         self,
-        lhs: _c.CanIMod[_T_imod, _R_imod],
-        rhs: _T_imod,
+        lhs: _c.CanIMod[_T_imod_rhs, _R_imod],
+        rhs: _T_imod_rhs,
+        /,
+    ) -> _R_imod: ...
+    @overload
+    def __call__(
+        self,
+        lhs: _c.CanMod[_T_imod_rhs, _R_imod],
+        rhs: _T_imod_rhs,
+        /,
+    ) -> _R_imod: ...
+    @overload
+    def __call__(
+        self,
+        lhs: _T_imod_lhs,
+        rhs: _c.CanRMod[_T_imod_lhs, _R_imod],
         /,
     ) -> _R_imod: ...
 
 
-_T_ipow = TypeVar('_T_ipow')
+_T_ipow_lhs = TypeVar('_T_ipow_lhs')
+_T_ipow_rhs = TypeVar('_T_ipow_rhs')
 _R_ipow = TypeVar('_R_ipow')
 
 
 @final
 class DoesIPow(Protocol):
+    @overload
     def __call__(self,
-        lhs: _c.CanIPow[_T_ipow, _R_ipow],
-        rhs: _T_ipow,
+        lhs: _c.CanIPow[_T_ipow_rhs, _R_ipow],
+        rhs: _T_ipow_rhs,
+        /,
+    ) -> _R_ipow: ...
+    @overload
+    def __call__(self,
+        lhs: _c.CanPow2[_T_ipow_rhs, _R_ipow],
+        rhs: _T_ipow_rhs,
+        /,
+    ) -> _R_ipow: ...
+    @overload
+    def __call__(self,
+        lhs: _T_ipow_lhs,
+        rhs: _c.CanRPow[_T_ipow_lhs, _R_ipow],
         /,
     ) -> _R_ipow: ...
 
 
-_T_ilshift = TypeVar('_T_ilshift')
+_T_ilshift_lhs = TypeVar('_T_ilshift_lhs')
+_T_ilshift_rhs = TypeVar('_T_ilshift_rhs')
 _R_ilshift = TypeVar('_R_ilshift')
 
 
 @final
 class DoesILshift(Protocol):
+    @overload
     def __call__(
         self,
-        lhs: _c.CanILshift[_T_ilshift, _R_ilshift],
-        rhs: _T_ilshift,
+        lhs: _c.CanILshift[_T_ilshift_rhs, _R_ilshift],
+        rhs: _T_ilshift_rhs,
+        /,
+    ) -> _R_ilshift: ...
+    @overload
+    def __call__(
+        self,
+        lhs: _c.CanLshift[_T_ilshift_rhs, _R_ilshift],
+        rhs: _T_ilshift_rhs,
+        /,
+    ) -> _R_ilshift: ...
+    @overload
+    def __call__(
+        self,
+        lhs: _T_ilshift_lhs,
+        rhs: _c.CanRLshift[_T_ilshift_lhs, _R_ilshift],
         /,
     ) -> _R_ilshift: ...
 
 
-_T_irshift = TypeVar('_T_irshift')
+_T_irshift_lhs = TypeVar('_T_irshift_lhs')
+_T_irshift_rhs = TypeVar('_T_irshift_rhs')
 _R_irshift = TypeVar('_R_irshift')
 
 
 @final
 class DoesIRshift(Protocol):
+    @overload
     def __call__(
         self,
-        lhs: _c.CanIRshift[_T_irshift, _R_irshift],
-        rhs: _T_irshift,
+        lhs: _c.CanIRshift[_T_irshift_rhs, _R_irshift],
+        rhs: _T_irshift_rhs,
+        /,
+    ) -> _R_irshift: ...
+    @overload
+    def __call__(
+        self,
+        lhs: _c.CanRshift[_T_irshift_rhs, _R_irshift],
+        rhs: _T_irshift_rhs,
+        /,
+    ) -> _R_irshift: ...
+    @overload
+    def __call__(
+        self,
+        lhs: _T_irshift_lhs,
+        rhs: _c.CanRRshift[_T_irshift_lhs, _R_irshift],
         /,
     ) -> _R_irshift: ...
 
 
-_T_iand = TypeVar('_T_iand')
+_T_iand_lhs = TypeVar('_T_iand_lhs')
+_T_iand_rhs = TypeVar('_T_iand_rhs')
 _R_iand = TypeVar('_R_iand')
 
 
 @final
 class DoesIAnd(Protocol):
+    @overload
     def __call__(
         self,
-        lhs: _c.CanIAnd[_T_iand, _R_iand],
-        rhs: _T_iand,
+        lhs: _c.CanIAnd[_T_iand_rhs, _R_iand],
+        rhs: _T_iand_rhs,
+        /,
+    ) -> _R_iand: ...
+    @overload
+    def __call__(
+        self,
+        lhs: _c.CanAnd[_T_iand_rhs, _R_iand],
+        rhs: _T_iand_rhs,
+        /,
+    ) -> _R_iand: ...
+    @overload
+    def __call__(
+        self,
+        lhs: _T_iand_lhs,
+        rhs: _c.CanRAnd[_T_iand_lhs, _R_iand],
         /,
     ) -> _R_iand: ...
 
 
-_T_ixor = TypeVar('_T_ixor')
+_T_ixor_lhs = TypeVar('_T_ixor_lhs')
+_T_ixor_rhs = TypeVar('_T_ixor_rhs')
 _R_ixor = TypeVar('_R_ixor')
 
 
 @final
 class DoesIXor(Protocol):
+    @overload
     def __call__(
         self,
-        lhs: _c.CanIXor[_T_ixor, _R_ixor],
-        rhs: _T_ixor,
+        lhs: _c.CanIXor[_T_ixor_rhs, _R_ixor],
+        rhs: _T_ixor_rhs,
+        /,
+    ) -> _R_ixor: ...
+    @overload
+    def __call__(
+        self,
+        lhs: _c.CanXor[_T_ixor_rhs, _R_ixor],
+        rhs: _T_ixor_rhs,
+        /,
+    ) -> _R_ixor: ...
+    @overload
+    def __call__(
+        self,
+        lhs: _T_ixor_lhs,
+        rhs: _c.CanRXor[_T_ixor_lhs, _R_ixor],
         /,
     ) -> _R_ixor: ...
 
 
-_T_ior = TypeVar('_T_ior')
+_T_ior_lhs = TypeVar('_T_ior_lhs')
+_T_ior_rhs = TypeVar('_T_ior_rhs')
 _R_ior = TypeVar('_R_ior')
 
 
 @final
 class DoesIOr(Protocol):
+    @overload
     def __call__(
         self,
-        lhs: _c.CanIOr[_T_ior, _R_ior],
-        rhs: _T_ior,
+        lhs: _c.CanIOr[_T_ior_rhs, _R_ior],
+        rhs: _T_ior_rhs,
+        /,
+    ) -> _R_ior: ...
+    @overload
+    def __call__(
+        self,
+        lhs: _c.CanOr[_T_ior_rhs, _R_ior],
+        rhs: _T_ior_rhs,
+        /,
+    ) -> _R_ior: ...
+    @overload
+    def __call__(
+        self,
+        lhs: _T_ior_lhs,
+        rhs: _c.CanROr[_T_ior_lhs, _R_ior],
         /,
     ) -> _R_ior: ...
 
