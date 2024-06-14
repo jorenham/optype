@@ -1106,12 +1106,24 @@ class CanNeg(Protocol[_R_neg]):
     def __neg__(self, /) -> _R_neg: ...
 
 
+@runtime_checkable
+class CanNegSelf(CanNeg['CanNegSelf'], Protocol):
+    @override
+    def __neg__(self, /) -> Self: ...
+
+
 _R_pos = TypeVar('_R_pos', infer_variance=True)
 
 
 @runtime_checkable
 class CanPos(Protocol[_R_pos]):
     def __pos__(self, /) -> _R_pos: ...
+
+
+@runtime_checkable
+class CanPosSelf(CanPos['CanPosSelf'], Protocol):
+    @override
+    def __pos__(self, /) -> Self: ...
 
 
 _R_abs = TypeVar('_R_abs', infer_variance=True)
@@ -1122,12 +1134,24 @@ class CanAbs(Protocol[_R_abs]):
     def __abs__(self, /) -> _R_abs: ...
 
 
+@runtime_checkable
+class CanAbsSelf(CanAbs['CanAbsSelf'], Protocol):
+    @override
+    def __abs__(self, /) -> Self: ...
+
+
 _R_invert = TypeVar('_R_invert', infer_variance=True)
 
 
 @runtime_checkable
 class CanInvert(Protocol[_R_invert]):
     def __invert__(self, /) -> _R_invert: ...
+
+
+@runtime_checkable
+class CanInvertSelf(CanInvert['CanInvertSelf'], Protocol):
+    @override
+    def __invert__(self, /) -> Self: ...
 
 
 #
