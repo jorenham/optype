@@ -793,35 +793,47 @@ Additionally, there are the unary arithmetic operators:
         <th>function</th>
         <th>type</th>
         <td>method</td>
-        <th>type</th>
+        <th>types</th>
     </tr>
     <tr>
         <td><code>+_</code></td>
         <td><code>do_pos</code></td>
         <td><code>DoesPos</code></td>
         <td><code>__pos__</code></td>
-        <td><code>CanPos[R]</code></td>
+        <td>
+            <code>CanPos[R]</code><br>
+            <code>CanPosSelf</code>
+        </td>
     </tr>
     <tr>
         <td><code>-_</code></td>
         <td><code>do_neg</code></td>
         <td><code>DoesNeg</code></td>
         <td><code>__neg__</code></td>
-        <td><code>CanNeg[R]</code></td>
+        <td>
+            <code>CanNeg[R]</code><br>
+            <code>CanNegSelf</code>
+        </td>
     </tr>
     <tr>
         <td><code>~_</code></td>
         <td><code>do_invert</code></td>
         <td><code>DoesInvert</code></td>
         <td><code>__invert__</code></td>
-        <td><code>CanInvert[R]</code></td>
+        <td>
+            <code>CanInvert[R]</code><br>
+            <code>CanInvertSelf</code>
+        </td>
     </tr>
     <tr>
         <td><code>abs(_)</code></td>
         <td><code>do_abs</code></td>
         <td><code>DoesAbs</code></td>
         <td><code>__abs__</code></td>
-        <td><code>CanAbs[R]</code></td>
+        <td>
+            <code>CanAbs[R]</code><br>
+            <code>CanAbsSelf</code>
+        </td>
     </tr>
 </table>
 
