@@ -774,6 +774,13 @@ Similarly, the augmented assignment operators are described by the following
     </tr>
 </table>
 
+These augmented operators usually return itself (after some in-place mutation).
+But unfortunately, it currently isn't possible to use `Self` for this (i.e.
+something like `type MyAlias[T] = optype.CanIAdd[T, Self]` isn't allowed).
+So to help ease this unbearable pain, `optype` comes equipped with ready-made
+aliases for you to use. They bear the same name, with an additional `*Self`
+suffix, e.g. `optype.CanIAddSelf[T]`.
+
 Additionally, there are the unary arithmetic operators:
 
 <table>
