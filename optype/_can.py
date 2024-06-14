@@ -1233,6 +1233,12 @@ class CanEnter(Protocol[_C_enter]):
     def __enter__(self, /) -> _C_enter: ...
 
 
+@runtime_checkable
+class CanEnterSelf(CanEnter['CanEnterSelf'], Protocol):
+    @override
+    def __enter__(self, /) -> Self: ...  # pyright: ignore[reportMissingSuperCall]
+
+
 _E_exit = TypeVar('_E_exit', bound=BaseException)
 _R_exit = TypeVar('_R_exit', infer_variance=True, default=None)
 
@@ -1257,18 +1263,32 @@ class CanExit(Protocol[_R_exit]):
     ) -> _R_exit: ...
 
 
+_C_with = TypeVar('_C_with', infer_variance=True)
+_R_with = TypeVar('_R_with', infer_variance=True, default=None)
+
+
 @runtime_checkable
-class CanWith(
-    CanEnter[_C_enter],
-    CanExit[_R_exit],
-    Protocol[_C_enter, _R_exit],
-): ...
+class CanWith(CanEnter[_C_with], CanExit[_R_with], Protocol[_C_with, _R_with]):
+    """
+    The intersection type of `CanEnter` and `CanExit`, i.e.
+    `CanWith[C, R=None] = CanEnter[C] & CanExit[R]`.
+    """
+
+
+_R_with_self = TypeVar('_R_with_self', infer_variance=True, default=None)
+
+
+@runtime_checkable
+class CanWithSelf(CanEnterSelf, CanExit[_R_with_self], Protocol[_R_with_self]):
+    """
+    The intersection type of `CanEnterSelf` and `CanExit`, i.e.
+    `CanWithSelf[R=None] = CanEnterSelf & CanExit[R]`.
+    """
 
 
 #
 # Async context managers
 #
-
 
 _C_aenter = TypeVar('_C_aenter', infer_variance=True)
 
@@ -1276,6 +1296,12 @@ _C_aenter = TypeVar('_C_aenter', infer_variance=True)
 @runtime_checkable
 class CanAEnter(Protocol[_C_aenter]):
     def __aenter__(self, /) -> CanAwait[_C_aenter]: ...
+
+
+@runtime_checkable
+class CanAEnterSelf(CanAEnter['CanAEnterSelf'], Protocol):
+    @override
+    def __aenter__(self, /) -> CanAwait[Self]: ...
 
 
 _E_aexit = TypeVar('_E_aexit', bound=BaseException)
@@ -1302,12 +1328,32 @@ class CanAExit(Protocol[_R_aexit]):
     ) -> CanAwait[_R_aexit]: ...
 
 
+_C_async_with = TypeVar('_C_async_with', infer_variance=True)
+_R_async_with = TypeVar('_R_async_with', infer_variance=True, default=None)
+
+
 @runtime_checkable
 class CanAsyncWith(
-    CanAEnter[_C_aenter],
-    CanAExit[_R_aexit],
-    Protocol[_C_aenter, _R_aexit],
-): ...
+    CanAEnter[_C_async_with],
+    CanAExit[_R_async_with],
+    Protocol[_C_async_with, _R_async_with],
+):
+    """
+    The intersection type of `CanAEnter` and `CanAExit`, i.e.
+    `CanAsyncWith[C, R=None] = CanAEnter[C] & CanAExit[R]`.
+    """
+
+
+@runtime_checkable
+class CanAsyncWithSelf(
+    CanAEnterSelf,
+    CanAExit[_R_async_with],
+    Protocol[_R_async_with],
+):
+    """
+    The intersection type of `CanAEnterSelf` and `CanAExit`, i.e.
+    `CanAsyncWithSelf[R=None] = CanAEnterSelf & CanAExit[R]`.
+    """
 
 
 #

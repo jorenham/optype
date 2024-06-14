@@ -1,5 +1,6 @@
 __all__ = (
     'CanAEnter',
+    'CanAEnterSelf',
     'CanAExit',
     'CanAIter',
     'CanAIterSelf',
@@ -9,6 +10,7 @@ __all__ = (
     'CanAdd',
     'CanAnd',
     'CanAsyncWith',
+    'CanAsyncWithSelf',
     'CanAwait',
     'CanBool',
     'CanBuffer',
@@ -27,6 +29,7 @@ __all__ = (
     'CanDir',
     'CanDivmod',
     'CanEnter',
+    'CanEnterSelf',
     'CanEq',
     'CanExit',
     'CanFloat',
@@ -131,6 +134,7 @@ __all__ = (
     'CanTruediv',
     'CanTrunc',
     'CanWith',
+    'CanWithSelf',
     'CanXor',
     'DoesAIter',
     'DoesANext',
@@ -319,6 +323,7 @@ from importlib import metadata as _metadata
 
 from ._can import (
     CanAEnter,
+    CanAEnterSelf,
     CanAExit,
     CanAIter,
     CanAIterSelf,
@@ -328,6 +333,7 @@ from ._can import (
     CanAdd,
     CanAnd,
     CanAsyncWith,
+    CanAsyncWithSelf,
     CanAwait,
     CanBool,
     CanBuffer,
@@ -346,6 +352,7 @@ from ._can import (
     CanDir,
     CanDivmod,
     CanEnter,
+    CanEnterSelf,
     CanEq,
     CanExit,
     CanFloat,
@@ -450,6 +457,7 @@ from ._can import (
     CanTruediv,
     CanTrunc,
     CanWith,
+    CanWithSelf,
     CanXor,
 )
 from ._do import (
