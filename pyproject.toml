@@ -37,7 +37,7 @@ tox = "^4.15.1"
 # pyright 1.1.367 is bugged
 basedpyright = "^1.12.5,!=1.12.6"
 codespell = "^2.3.0"
-ruff = "^0.4.8"
+ruff = "^0.4.9"
 sp-repo-review = {version = "^2024.4.23", extras = ["cli"]}
 typing-extensions = "*"
 
