@@ -1,30 +1,53 @@
+from __future__ import annotations
+
 import inspect
-from types import ModuleType
-from typing import Protocol, cast
-
-from optype import CanBool, CanLt
+import sys
+from typing import TYPE_CHECKING, Protocol as _typing_Protocol, cast
 
 
-def is_protocol(cls: type) -> bool:
+if sys.version_info >= (3, 13):
+    from typing import Protocol
+else:
+    from typing_extensions import Protocol
+
+
+if TYPE_CHECKING:
+    from types import ModuleType
+
+    from optype import CanBool, CanLt
+
+
+__all__ = (
+    'get_callable_members',
+    'get_protocol_members',
+    'get_protocols',
+    'is_dunder',
+    'is_protocol',
+    'pascamel_to_snake',
+)
+
+
+def is_protocol(cls: type, /) -> bool:
     """Based on `typing_extensions.is_protocol`."""
     return (
         isinstance(cls, type)
         and cls is not Protocol
-        and issubclass(cls, Protocol)
+        and cls is not _typing_Protocol
+        and (issubclass(cls, Protocol) or issubclass(cls, _typing_Protocol))
         and getattr(cls, '_is_protocol', False)
     )
 
 
-def is_runtime_protocol(cls: type) -> bool:
+def is_runtime_protocol(cls: type, /) -> bool:
     """Check if `cls` is a `@runtime_checkable` `typing.Protocol`."""
     return is_protocol(cls) and getattr(cls, '_is_runtime_protocol', False)
 
 
-def get_protocol_members(cls: type) -> frozenset[str]:
+def get_protocol_members(cls: type, /) -> frozenset[str]:
     """
     A variant of `typing_extensions.get_protocol_members()` that doesn't
-    hide e.g. `__dict__` and `__annotations`, or adds `__hash__` if there's an
-    `__eq__` method.
+    hide e.g. `__dict__` and `__annotations__`, or adds `__hash__` if there's
+    an `__eq__` method.
     Does not return method names of base classes defined in another module.
     """
     assert is_protocol(cls)
