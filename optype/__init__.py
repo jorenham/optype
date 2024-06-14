@@ -27,6 +27,7 @@ __all__ = (
     'CanDir',
     'CanDivmod',
     'CanEnter',
+    'CanEnterSelf',
     'CanEq',
     'CanExit',
     'CanFloat',
@@ -131,6 +132,7 @@ __all__ = (
     'CanTruediv',
     'CanTrunc',
     'CanWith',
+    'CanWithSelf',
     'CanXor',
     'DoesAIter',
     'DoesANext',
@@ -346,6 +348,7 @@ from ._can import (
     CanDir,
     CanDivmod,
     CanEnter,
+    CanEnterSelf,
     CanEq,
     CanExit,
     CanFloat,
@@ -450,6 +453,7 @@ from ._can import (
     CanTruediv,
     CanTrunc,
     CanWith,
+    CanWithSelf,
     CanXor,
 )
 from ._do import (

@@ -1294,24 +1294,38 @@ Support for the `with` statement.
     <tr>
         <td>expression</td>
         <td>method(s)</td>
-        <th>type</th>
+        <th>type(s)</th>
     </tr>
     <tr>
         <td></td>
         <td><code>__enter__</code></td>
-        <td><code>CanEnter[C]</code></td>
+        <td>
+            <code>CanEnter[C]</code>, or
+            <code>CanEnterSelf</code>
+        </td>
     </tr>
     <tr>
         <td></td>
         <td><code>__exit__</code></td>
-        <td><code>CanExit[R = None]</code></td>
+        <td>
+            <code>CanExit[R = None]</code>
+        </td>
     </tr>
     <tr>
-        <td><code>with _ as v</code></td>
-        <td><code>__enter__</code>, <code>__exit__</code></td>
-        <td><code>CanWith[C, R = None]</code></td>
+        <td><code>with _ as c:</code></td>
+        <td>
+            <code>__enter__</code>, and <br>
+            <code>__exit__</code>
+        </td>
+        <td>
+            <code>CanWith[C, R = None]</code>, or<br>
+            <code>CanWithSelf[R = None]</code>
+        </td>
     </tr>
 </table>
+
+`CanEnterSelf` and `CanWithSelf` are (runtime-checkable) aliases for
+`CanEnter[Self]` and `CanWith[Self, R]`, respectively.
 
 For the `async with` statement the interfaces look very similar:
 

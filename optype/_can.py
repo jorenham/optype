@@ -1233,6 +1233,12 @@ class CanEnter(Protocol[_C_enter]):
     def __enter__(self, /) -> _C_enter: ...
 
 
+@runtime_checkable
+class CanEnterSelf(CanEnter['CanEnterSelf'], Protocol):
+    @override
+    def __enter__(self, /) -> Self: ...  # pyright: ignore[reportMissingSuperCall]
+
+
 _E_exit = TypeVar('_E_exit', bound=BaseException)
 _R_exit = TypeVar('_R_exit', infer_variance=True, default=None)
 
@@ -1257,18 +1263,32 @@ class CanExit(Protocol[_R_exit]):
     ) -> _R_exit: ...
 
 
+_C_with = TypeVar('_C_with', infer_variance=True)
+_R_with = TypeVar('_R_with', infer_variance=True, default=None)
+
+
 @runtime_checkable
-class CanWith(
-    CanEnter[_C_enter],
-    CanExit[_R_exit],
-    Protocol[_C_enter, _R_exit],
-): ...
+class CanWith(CanEnter[_C_with], CanExit[_R_with], Protocol[_C_with, _R_with]):
+    """
+    The intersection type of `CanEnter` and `CanExit`, i.e.
+    `CanWith[C, R=None] = CanEnter[C] & CanExit[R]`.
+    """
+
+
+_R_with_self = TypeVar('_R_with_self', infer_variance=True, default=None)
+
+
+@runtime_checkable
+class CanWithSelf(CanEnterSelf, CanExit[_R_with_self], Protocol[_R_with_self]):
+    """
+    The intersection type of `CanEnterSelf` and `CanExit`, i.e.
+    `CanWithSelf[R=None] = CanEnterSelf & CanExit[R]`.
+    """
 
 
 #
 # Async context managers
 #
-
 
 _C_aenter = TypeVar('_C_aenter', infer_variance=True)
 
