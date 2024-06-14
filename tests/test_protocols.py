@@ -87,7 +87,11 @@ def test_name_matches_dunder(cls: type):
     assert members
 
     own_members: frozenset[str]
-    parents = list(filter(is_protocol, cls.mro()[1:]))
+    parents = [
+        parent for parent in cls.mro()[1:]
+        if not parent.__name__.endswith('Self')
+        and is_protocol(parent)
+    ]
     if parents:
         overridden = {
             member for member in members
@@ -105,7 +109,7 @@ def test_name_matches_dunder(cls: type):
 
     if member_count > min(1, own_member_count):
         # ensure len(parent protocols) == len(members) (including inherited)
-        assert len(parents) == member_count
+        assert member_count == len(parents), own_members
 
         members_concrete = set(members)
         for parent in parents:
