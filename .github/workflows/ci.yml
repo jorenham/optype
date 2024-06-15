@@ -37,9 +37,6 @@ jobs:
       - name: ruff check
         run: poetry run ruff check --output-format=github
 
-      - name: basedpyright
-        run: poetry run basedpyright
-
       - name: markdownlint
         uses: DavidAnson/markdownlint-cli2-action@v16
         with:
@@ -73,7 +70,10 @@ jobs:
           cache: poetry
 
       - name: poetry install
-        run: poetry install --sync --only test,test-github
+        run: poetry install --sync --only lint,test,test-github
+
+      - name: basedpyright
+        run: poetry run basedpyright
 
       - name: pytest
         run: poetry run pytest
