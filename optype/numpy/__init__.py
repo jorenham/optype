@@ -87,18 +87,19 @@ __all__ = (
     'AnyVoid',
     'AnyVoidType',
     'ArgArray',
+    'ArgDType',
     'Array',
     'CanArray',
     'CanArrayFinalize',
     'CanArrayFunction',
     'CanArrayUfunc',
     'CanArrayWrap',
+    'DType',
     'HasArrayInterface',
     'HasArrayPriority',
     'HasDType',
     'SomeCharacter',
     'SomeComplexFloating',
-    'SomeDType',
     'SomeFlexible',
     'SomeFloating',
     'SomeGeneric',
@@ -109,7 +110,7 @@ __all__ = (
     'SomeUnsignedInteger',
 )
 
-from ._aliases import Array
+from ._aliases import Array, DType
 from ._array import (
     ArgArray,
     CanArray,
@@ -119,7 +120,7 @@ from ._array import (
     HasArrayInterface,
     HasArrayPriority,
 )
-from ._dtype import HasDType, SomeDType
+from ._dtype import ArgDType, HasDType
 from ._scalar import (
     AnyBool,
     AnyBoolType,

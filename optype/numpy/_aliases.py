@@ -14,6 +14,7 @@ else:
 
 __all__ = (
     'Array',
+    'DType',
     'UniTuple0',
     'UniTuple1',
     'UniTuple2',
@@ -40,9 +41,12 @@ UniTuple2: TypeAlias = tuple[
 ]
 """Tuple with at least 2 elements of the same type."""
 
-
 _S_Array = TypeVar('_S_Array', bound=UniTuple0[int], default=UniTuple0[int])
 _T_Array = TypeVar('_T_Array', bound=np.generic, default=Any)
-
 Array: TypeAlias = np.ndarray[_S_Array, np.dtype[_T_Array]]
 """NumPy array with optional type params for shape and generic dtype."""
+
+
+_T_DType = TypeVar('_T_DType', bound=np.generic, default=Any)
+DType: TypeAlias = np.dtype[_T_DType]
+"""Alias for `numpy.dtype[T: numpy.generic = Any]`."""
