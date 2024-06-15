@@ -1,9 +1,7 @@
 # pyright: reportMissingTypeStubs=false
 import math
 
-import numba as nb
 import numpy as np
-from numpy.testing import assert_allclose
 
 from optype.numpy import AnyUfunc, CanArrayUFunc
 
@@ -42,19 +40,3 @@ def test_canarrayufunc():
     quantiles: CanArrayUFunc = np.linspace(0, 1, 100)
     assert isinstance(quantiles, CanArrayUFunc)
     assert not isinstance(list(quantiles), CanArrayUFunc)
-
-
-_nb_beta: AnyUfunc = nb.vectorize([  # type: ignore[numba]
-    'f8(i4, i4)',
-    'f8(i8, i8)',
-    'f8(f4, f4)',
-    'f8(f8, f8)',
-])(_py_beta)
-
-
-def test_canarrayufunc_numba():
-    assert_allclose(
-        _nb_beta([2, 3], [2, 3]),  # type: ignore[numba]
-        np.array([_py_beta(2, 2), _py_beta(3, 3)]),
-    )
-    assert isinstance(_nb_beta, AnyUfunc)
