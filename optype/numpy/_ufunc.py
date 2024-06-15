@@ -1,13 +1,37 @@
-from collections.abc import Callable
+from __future__ import annotations
+
+import sys
 from typing import (
+    TYPE_CHECKING,
     Any,
+    Final,
     Literal,
-    ParamSpec,
     Protocol,
     TypeAlias,
-    TypeVar,
-    runtime_checkable,
 )
+
+import numpy as np
+
+
+if sys.version_info >= (3, 13):
+    from typing import (
+        Protocol,
+        TypeVar,
+        runtime_checkable,
+    )
+else:
+    from typing_extensions import (
+        Protocol,
+        TypeVar,
+        runtime_checkable,
+    )
+
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+
+_NP_V1: Final[bool] = np.__version__.startswith('1.')
 
 
 _N_in_co = TypeVar('_N_in_co', bound=int, covariant=True)
@@ -18,23 +42,9 @@ _T_sig_co = TypeVar('_T_sig_co', bound=str | None, covariant=True)
 _T_id_co = TypeVar('_T_id_co', bound=object | None, covariant=True)
 
 
-AnyUfuncMethod: TypeAlias = Literal[
-    '__call__',
-    'reduce',
-    'reduceat',
-    'accumulate',
-    'outer',
-    'inner',
-]
-AnyCastKind: TypeAlias = Literal['no', 'equiv', 'safe', 'same_kind', 'unsafe']
-AnyOrder: TypeAlias = Literal['K', 'A', 'C', 'F']
-
-
-class HasUfuncAttrs(
+class _HasUfuncAttrs(
     Protocol[_N_in_co, _N_arg_co, _N_out_co, _N_tp_co, _T_sig_co, _T_id_co],
 ):
-    @property
-    def __name__(self) -> str: ...
     @property
     def nin(self) -> _N_in_co: ...
     @property
@@ -52,7 +62,7 @@ class HasUfuncAttrs(
 
 
 @runtime_checkable
-class AnyUfunc(HasUfuncAttrs[Any, Any, Any, Any, Any, Any], Protocol):
+class AnyUfunc(_HasUfuncAttrs[Any, Any, Any, Any, Any, Any], Protocol):
 
     # this horrible mess is required for numpy.typing compat :(
     @property
@@ -69,13 +79,36 @@ class AnyUfunc(HasUfuncAttrs[Any, Any, Any, Any, Any, Any], Protocol):
     def outer(self) -> Callable[..., Any] | None: ...
 
 
-_F_contra = TypeVar('_F_contra', bound=AnyUfunc, contravariant=True)
-_Xss = ParamSpec('_Xss')
-_Y_co = TypeVar('_Y_co', covariant=True)
+if _NP_V1:
+    _UFuncMethod: TypeAlias = Literal[
+        '__call__',
+        'reduce',
+        'reduceat',
+        'accumulate',
+        'outer',
+        'inner',
+    ]
+else:
+    _UFuncMethod: TypeAlias = Literal[
+        '__call__',
+        'reduce',
+        'reduceat',
+        'accumulate',
+        'outer',
+        'at',
+    ]
+
+
+_F_CanArrayUFunc = TypeVar(
+    '_F_CanArrayUFunc',
+    infer_variance=True,
+    bound=AnyUfunc,
+    default=Any,
+)
 
 
 @runtime_checkable
-class CanArrayUfunc(Protocol[_F_contra, _Xss, _Y_co]):
+class CanArrayUFunc(Protocol[_F_CanArrayUFunc]):
     """
     Interface for ufunc operands.
 
@@ -84,8 +117,9 @@ class CanArrayUfunc(Protocol[_F_contra, _Xss, _Y_co]):
     """
     def __array_ufunc__(
         self,
-        ufunc: _F_contra,
-        method: AnyUfuncMethod,
-        *inputs: _Xss.args,
-        **kwargs: _Xss.kwargs,
-    ) -> _Y_co: ...
+        /,
+        ufunc: _F_CanArrayUFunc,
+        method: _UFuncMethod,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any: ...

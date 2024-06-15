@@ -1,12 +1,11 @@
 # pyright: reportMissingTypeStubs=false
 import math
-from typing import Any
 
 import numba as nb
 import numpy as np
 from numpy.testing import assert_allclose
 
-from optype.numpy import AnyUfunc, CanArrayUfunc
+from optype.numpy import AnyUfunc, CanArrayUFunc
 
 
 def _py_beta(x: float, y: float) -> float:
@@ -40,9 +39,9 @@ def test_anyufunc():
 
 
 def test_canarrayufunc():
-    quantiles: CanArrayUfunc[np.ufunc, ..., Any] = np.linspace(0, 1, 100)
-    assert isinstance(quantiles, CanArrayUfunc)
-    assert not isinstance(list(quantiles), CanArrayUfunc)
+    quantiles: CanArrayUFunc = np.linspace(0, 1, 100)
+    assert isinstance(quantiles, CanArrayUFunc)
+    assert not isinstance(list(quantiles), CanArrayUFunc)
 
 
 _nb_beta: AnyUfunc = nb.vectorize([  # type: ignore[numba]

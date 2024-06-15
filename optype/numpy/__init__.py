@@ -92,7 +92,7 @@ __all__ = (
     'CanArray',
     'CanArrayFinalize',
     'CanArrayFunction',
-    'CanArrayUfunc',
+    'CanArrayUFunc',
     'CanArrayWrap',
     'DType',
     'HasArrayInterface',
@@ -219,4 +219,4 @@ from ._scalar import (
     SomeSignedInteger,
     SomeUnsignedInteger,
 )
-from ._ufunc import AnyUfunc, CanArrayUfunc
+from ._ufunc import AnyUfunc, CanArrayUFunc
