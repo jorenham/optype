@@ -20,7 +20,7 @@ if _NP_V1:
     AnyBool: TypeAlias = np.bool_ | ct.c_bool | bool
     AnyBoolName: TypeAlias = Literal['bool', 'bool_', 'bool8']
 else:
-    AnyBool: TypeAlias = np.bool | ct.c_bool | bool  # noqa: NPY001
+    AnyBool: TypeAlias = np.bool | ct.c_bool | bool
     AnyBoolName: TypeAlias = Literal['bool', 'bool_']
 AnyBoolChar: TypeAlias = Literal['?', '=?', '<?', '>?']
 AnyBoolCode: TypeAlias = AnyBoolName | AnyBoolChar
@@ -185,7 +185,7 @@ if _NP_V1:
     AnyLong: TypeAlias = np.int_ | ct.c_long | int
     AnyLongName: TypeAlias = Literal['long', 'int', 'int_']
 else:
-    AnyLong: TypeAlias = np.long | ct.c_long  # noqa: NPY001
+    AnyLong: TypeAlias = np.long | ct.c_long
     AnyLongName: TypeAlias = Literal['long']
 AnyLongChar: TypeAlias = Literal['l', '=l', '<l', '>l']
 AnyLongCode: TypeAlias = AnyLongName | AnyLongChar
