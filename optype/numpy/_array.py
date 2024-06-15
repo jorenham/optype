@@ -1,142 +1,187 @@
-"""Interfaces and type aliases for NumPy arrays, dtypes, and ufuncs."""
+"""
+Interfaces and type aliases for NumPy arrays, dtypes, and ufuncs.
+"""
+from __future__ import annotations
+
 import sys
-from collections.abc import Callable, Mapping
-from types import NotImplementedType
-from typing import (
-    Any,
-    Final,
-    Protocol,
-    TypeAlias,
-    TypeVar,
-    TypedDict,
-    overload,
-    runtime_checkable,
-)
+from typing import TYPE_CHECKING, Any, Final, TypeAlias
 
 import numpy as np
 
-from optype import CanBuffer, CanIter, CanIterSelf
 
-from ._shape import AtLeast0D
-
-
-if sys.version_info < (3, 11):
-    from typing_extensions import Required
+if sys.version_info >= (3, 13):
+    from typing import (
+        Protocol,
+        Required,
+        TypeVar,
+        TypedDict,
+        overload,
+        runtime_checkable,
+    )
 else:
-    from typing import Required
+    from typing_extensions import (
+        Protocol,
+        Required,  # noqa: TCH002
+        TypeVar,
+        TypedDict,
+        overload,
+        runtime_checkable,
+    )
+
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Mapping
+    from types import NotImplementedType
+
+    from optype import CanBuffer, CanIter, CanIterSelf
+
+    from ._aliases import Array
+
+
+__all__ = (
+    'ArgArray',
+    'CanArray',
+    'CanArrayFinalize',
+    'CanArrayFunction',
+    'CanArrayWrap',
+    'HasArrayInterface',
+    'HasArrayPriority',
+)
 
 
 _NP_V1: Final[bool] = np.__version__.startswith('1.')
 
 
-_S = TypeVar('_S', bound=np.generic)
-_S_co = TypeVar('_S_co', bound=np.generic, covariant=True)
-_ND = TypeVar('_ND', bound=AtLeast0D)
+_Shape0: TypeAlias = tuple[int, ...]
 
-Array: TypeAlias = np.ndarray[_ND, np.dtype[_S]]
+_S_CanArray = TypeVar('_S_CanArray', infer_variance=True, bound=_Shape0)
+_T_CanArray = TypeVar('_T_CanArray', infer_variance=True, bound=np.generic)
 
 
 @runtime_checkable
-class CanArray(Protocol[_ND, _S_co]):
+class CanArray(Protocol[_S_CanArray, _T_CanArray]):
     if _NP_V1:
         @overload
-        def __array__(self) -> Array[_ND, _S_co]: ...
+        def __array__(self, /) -> Array[_S_CanArray, _T_CanArray]: ...
         @overload
-        def __array__(self, __dtype: np.dtype[_S]) -> Array[_ND, _S]: ...
+        def __array__(
+            self,
+            dtype: np.dtype[_T_CanArray],
+            /,
+        ) -> Array[_S_CanArray, _T_CanArray]: ...
     else:
         @overload
         def __array__(
             self,
+            /,
             *,
             copy: bool | None = ...,
-        ) -> Array[_ND, _S_co]: ...
+        ) -> Array[_S_CanArray, _T_CanArray]: ...
         @overload
         def __array__(
             self,
-            __dtype: np.dtype[_S],
+            dtype: np.dtype[_T_CanArray],
+            /,
             *,
             copy: bool | None = ...,
-        ) -> Array[_ND, _S]: ...
+        ) -> Array[_S_CanArray, _T_CanArray]: ...
 
 
-_V_co = TypeVar('_V_co', bound=object, covariant=True)
+_V_NestedSequence = TypeVar(
+    '_V_NestedSequence',
+    infer_variance=True,
+    bound=object,
+)
 
 
 @runtime_checkable
-class _NestedSequence(Protocol[_V_co]):
-    def __len__(self) -> int: ...
-    def __getitem__(self, __i: int) -> '_V_co | _NestedSequence[_V_co]': ...
+class _NestedSequence(Protocol[_V_NestedSequence]):
+    def __len__(self, /) -> int: ...
+    def __getitem__(self, i: int, /) -> (
+        _V_NestedSequence
+        | _NestedSequence[_V_NestedSequence]
+    ): ...
 
 
-_PyScalar: TypeAlias = bool | int | float | complex | str | bytes
-_S_py = TypeVar('_S_py', bound=_PyScalar)
-
-# An array-like with at least 0 dimensions, and type params
-# - shape, `: tuple[int, ...]`
-# - scalar type (numpy), `: np.generic`
-# - scalar type (python), `: bool | int | float | complex | str | bytes`
-SomeArray: TypeAlias = (
-    CanArray[_ND, _S]
-    | _NestedSequence[CanArray[AtLeast0D, _S]]
-    | _S_py
-    | _NestedSequence[_S_py]
+_S_ArgArray = TypeVar('_S_ArgArray', bound=_Shape0)
+_T_ArgArray_np = TypeVar('_T_ArgArray_np', bound=np.generic)
+_T_ArgArray_py = TypeVar(
+    '_T_ArgArray_py',
+    bound=bool | int | float | complex | str | bytes,
 )
 
-_F_contra = TypeVar(
-    '_F_contra',
-    bound=Callable[..., object],
-    contravariant=True,
+ArgArray: TypeAlias = (
+    CanArray[_S_ArgArray, _T_ArgArray_np]
+    | _NestedSequence[CanArray[Any, _T_ArgArray_np]]
+    | _T_ArgArray_py
+    | _NestedSequence[_T_ArgArray_py]
 )
-_Y_co = TypeVar('_Y_co', bound=object, covariant=True)
+"""
+Generic array-like that can be passed to e.g. `np.array` or `np.asaray`.
+
+    - `Shape: tuple[int, ...]`
+    - `TypeNP: np.generic`
+    - `TypePY: bool | int | float | complex | str | bytes`
+"""
+
+
+_F_CanArrayFunction = TypeVar(
+    '_F_CanArrayFunction',
+    infer_variance=True,
+    bound='Callable[..., Any]',
+)
+_R_CanArrayFunction = TypeVar(
+    '_R_CanArrayFunction',
+    infer_variance=True,
+    bound=object,
+)
 
 
 @runtime_checkable
-class CanArrayFunction(Protocol[_F_contra, _Y_co]):
+class CanArrayFunction(Protocol[_F_CanArrayFunction, _R_CanArrayFunction]):
     def __array_function__(
         self,
-        func: _F_contra,
+        /,
+        func: _F_CanArrayFunction,
         # although this could be tighter, this ensures numpy.typing compat
-        types: CanIter[CanIterSelf[type['CanArrayFunction[Any, Any]']]],
+        types: CanIter[CanIterSelf[type[CanArrayFunction[Any, Any]]]],
         # ParamSpec can only be used on *args and **kwargs for some reason...
         args: tuple[Any, ...],
         kwargs: Mapping[str, Any],
-    ) -> NotImplementedType | _Y_co: ...
+    ) -> NotImplementedType | _R_CanArrayFunction: ...
 
 
-_A_contra = TypeVar('_A_contra', bound=Array[Any, Any], contravariant=True)
-_A_co = TypeVar('_A_co', bound=Array[Any, Any], covariant=True)
-
-
-@runtime_checkable
-class CanArrayFinalize(Protocol[_A_contra]):
-    def __array_finalize__(self, __arr: _A_contra) -> None: ...
+# this is almost always a `ndarray`, but setting a `bound` might break in some
+# edge cases
+_T_CanArrayFinalize = TypeVar('_T_CanArrayFinalize', infer_variance=True)
 
 
 @runtime_checkable
-class CanArrayWrap(Protocol[_A_contra, _A_co]):
+class CanArrayFinalize(Protocol[_T_CanArrayFinalize]):
+    def __array_finalize__(self, obj: _T_CanArrayFinalize, /) -> None: ...
+
+
+_S_CanArrayWrap = TypeVar('_S_CanArrayWrap')
+_D_CanArrayWrap = TypeVar('_D_CanArrayWrap', bound=np.dtype[Any])
+
+
+@runtime_checkable
+class CanArrayWrap(Protocol):
     if _NP_V1:
         def __array_wrap__(
             self,
-            arr: _A_contra,
-            ctx: tuple[np.ufunc, tuple[Any, ...], int] | None = None,
+            array: np.ndarray[_S_CanArrayWrap, _D_CanArrayWrap],
+            context: tuple[np.ufunc, tuple[Any, ...], int] | None = ...,
             /,
-        ) -> _A_co:
-            ...
+        ) -> np.ndarray[_S_CanArrayWrap, _D_CanArrayWrap]: ...
     else:
         def __array_wrap__(
             self,
-            arr: _A_contra,
-            ctx: tuple[np.ufunc, tuple[Any, ...], int] | None = None,
+            array: np.ndarray[_S_CanArrayWrap, _D_CanArrayWrap],
+            context: tuple[np.ufunc, tuple[Any, ...], int] | None = ...,
             /,
-            return_scalar: bool = False,
-        ) -> _A_co:
-            ...
-
-
-@runtime_checkable
-class HasArrayPriority(Protocol):
-    @property
-    def __array_priority__(self) -> float: ...
+            return_scalar: bool = ...,
+        ) -> np.ndarray[_S_CanArrayWrap, _D_CanArrayWrap]: ...
 
 
 _ArrayInterfaceDescr: TypeAlias = list[
@@ -146,19 +191,41 @@ _ArrayInterfaceDescr: TypeAlias = list[
 ]
 
 
-class ArrayInterface(TypedDict, total=False):
-    data: tuple[int, bool] | CanBuffer[Any] | None
-    mask: 'HasArrayInterface | None'
-    strides: tuple[int, ...] | None
-    offset: int
-    descr: _ArrayInterfaceDescr
-    typestr: Required[str]
-    shape: Required[tuple[int, ...]]
+class _ArrayInterface(TypedDict, total=False):
     version: Required[int]
+    shape: Required[tuple[int, ...]]
+    typestr: Required[str]
+
+    offset: int
+    strides: tuple[int, ...] | None
+    data: tuple[int, bool] | CanBuffer[Any] | None
+    mask: HasArrayInterface | None
+    descr: _ArrayInterfaceDescr
+
+
+_V_HasArrayInterface = TypeVar(
+    '_V_HasArrayInterface',
+    infer_variance=True,
+    bound='Mapping[str, Any]',
+    default=_ArrayInterface,
+)
 
 
 @runtime_checkable
-class HasArrayInterface(Protocol):
-    # the ugly `| dict[str, Any]` is required for numpy.typing compat
+class HasArrayInterface(Protocol[_V_HasArrayInterface]):
     @property
-    def __array_interface__(self) -> ArrayInterface | dict[str, Any]: ...
+    def __array_interface__(self, /) -> _V_HasArrayInterface: ...
+
+
+_V_HasArrayPriority = TypeVar(
+    '_V_HasArrayPriority',
+    infer_variance=True,
+    bound=float,
+    default=float,
+)
+
+
+@runtime_checkable
+class HasArrayPriority(Protocol[_V_HasArrayPriority]):
+    @property
+    def __array_priority__(self, /) -> _V_HasArrayPriority: ...

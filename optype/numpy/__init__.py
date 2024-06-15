@@ -86,12 +86,8 @@ __all__ = (
     'AnyUfunc',
     'AnyVoid',
     'AnyVoidType',
+    'ArgArray',
     'Array',
-    'ArrayInterface',
-    'AtLeast0D',
-    'AtLeast1D',
-    'AtLeast2D',
-    'AtLeast3D',
     'CanArray',
     'CanArrayFinalize',
     'CanArrayFunction',
@@ -100,7 +96,6 @@ __all__ = (
     'HasArrayInterface',
     'HasArrayPriority',
     'HasDType',
-    'SomeArray',
     'SomeCharacter',
     'SomeComplexFloating',
     'SomeDType',
@@ -114,16 +109,15 @@ __all__ = (
     'SomeUnsignedInteger',
 )
 
+from ._aliases import Array
 from ._array import (
-    Array,
-    ArrayInterface,
+    ArgArray,
     CanArray,
     CanArrayFinalize,
     CanArrayFunction,
     CanArrayWrap,
     HasArrayInterface,
     HasArrayPriority,
-    SomeArray,
 )
 from ._dtype import HasDType, SomeDType
 from ._scalar import (
@@ -223,11 +217,5 @@ from ._scalar import (
     SomeNumber,
     SomeSignedInteger,
     SomeUnsignedInteger,
-)
-from ._shape import (
-    AtLeast0D,
-    AtLeast1D,
-    AtLeast2D,
-    AtLeast3D,
 )
 from ._ufunc import AnyUfunc, CanArrayUfunc
