@@ -1,30 +1,15 @@
 from __future__ import annotations
 
 import sys
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Final,
-    Literal,
-    Protocol,
-    TypeAlias,
-)
+from typing import TYPE_CHECKING, Any, Final, Literal, Protocol, TypeAlias
 
 import numpy as np
 
 
 if sys.version_info >= (3, 13):
-    from typing import (
-        Protocol,
-        TypeVar,
-        runtime_checkable,
-    )
+    from typing import Protocol, TypeVar, runtime_checkable
 else:
-    from typing_extensions import (
-        Protocol,
-        TypeVar,
-        runtime_checkable,
-    )
+    from typing_extensions import Protocol, TypeVar, runtime_checkable
 
 
 if TYPE_CHECKING:
