@@ -40,6 +40,9 @@ jobs:
       - name: basedpyright
         run: poetry run basedpyright
 
+      - name: basedpyright --verifytypes
+        run: poetry run basedpyright --ignoreexternal --verifytypes optype
+
       - name: markdownlint
         uses: DavidAnson/markdownlint-cli2-action@v16
         with:
