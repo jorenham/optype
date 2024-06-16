@@ -9,6 +9,23 @@ from optype.numpy import _sctype  # noqa: PLC2701  # pyright: ignore[reportPriva
 from ..helpers import get_args  # noqa: TID252
 
 
+_TEMPORAL = 'Timedelta64', 'Datetime64'
+_FLEXIBLE = 'Str', 'Bytes', 'Void'
+_SIMPLE = 'Bool', 'Object'
+_NUMERIC_N = (
+    'UInt8', 'UInt16', 'UInt32', 'UInt64',
+    'Int8', 'Int16', 'Int32', 'Int64',
+    'Float16', 'Float32', 'Float64',
+    'Complex64', 'Complex128',
+)
+_NUMERIC_C = (
+    'UByte', 'UShort', 'ULong',
+    'Byte', 'Short', 'Long',
+    'Half', 'Single', 'Double',
+    'CSingle', 'CDouble',
+)
+
+
 def _get_attr_args(obj: Any, name: str) -> tuple[Any, ...]:
     tp = getattr(obj, name)
     return get_args(tp) or (tp, )
@@ -27,19 +44,7 @@ def _get_dtype_info(name: str) -> tuple[
 
 @pytest.mark.parametrize(
     'name',
-    [
-        'Bool', 'Object',
-        'UInt8', 'UInt16', 'UInt32', 'UInt64', 'UIntC', 'UIntP',
-        'UByte', 'UShort', 'ULong', 'ULongLong',
-        'Int8', 'Int16', 'Int32', 'Int64', 'IntC', 'IntP',
-        'Byte', 'Short', 'Long', 'LongLong',
-        'Float16', 'Float32', 'Float64',
-        'Half', 'Single', 'Double', 'LongDouble',
-        'Complex64', 'Complex128',
-        'CSingle', 'CDouble', 'CLongDouble',
-        'Timedelta64', 'Datetime64',
-        'Str', 'Bytes', 'Void',
-    ],
+    [*_NUMERIC_N, *_NUMERIC_C, *_SIMPLE, *_TEMPORAL, *_FLEXIBLE],
 )
 def test_sctypes(name: str):
     dtype_expect = np.dtype(name.lower())
@@ -54,15 +59,7 @@ def test_sctypes(name: str):
 
 @pytest.mark.parametrize(
     'name',
-    [
-        'Bool', 'Object',
-        'UInt8', 'UInt16', 'UInt32', 'UInt64',
-        'Int8', 'Int16', 'Int32', 'Int64',
-        'Float16', 'Float32', 'Float64',
-        'Complex64', 'Complex128',
-        'Timedelta64', 'Datetime64',
-        'Str', 'Bytes', 'Void',
-    ],
+    [*_NUMERIC_N, *_SIMPLE, *_TEMPORAL, *_FLEXIBLE],
 )
 def test_sctype_name(name: str):
     dtype_expect = np.dtype(name.lower())
@@ -73,15 +70,7 @@ def test_sctype_name(name: str):
 
 @pytest.mark.parametrize(
     'name',
-    [
-        'Bool', 'Object',
-        'UByte', 'UShort', 'ULong',
-        'Byte', 'Short', 'Long',
-        'Half', 'Single', 'Double',
-        'CSingle', 'CDouble',
-        'Timedelta64', 'Datetime64',
-        'Str', 'Bytes', 'Void',
-    ],
+    [*_NUMERIC_C, *_SIMPLE, * _TEMPORAL, * _FLEXIBLE],
 )
 def test_sctype_char(name: str):
     dtype_expect = np.dtype(name.lower())
