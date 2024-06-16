@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 import optype.numpy as onp
-from optype.numpy import _scalar  # noqa: PLC2701  # pyright: ignore[reportPrivateUsage]
+from optype.numpy import _sctype  # noqa: PLC2701  # pyright: ignore[reportPrivateUsage]
 from ..helpers import get_args  # noqa: TID252
 
 
@@ -20,31 +20,28 @@ def _get_dtype_info(name: str) -> tuple[
     frozenset[str],
 ]:
     types = _get_attr_args(onp, f'Any{name}')
-    names = _get_attr_args(_scalar, f'Any{name}Name')
-    chars = _get_attr_args(_scalar, f'Any{name}Char')
+    names = _get_attr_args(_sctype, f'_Any{name}Name')
+    chars = _get_attr_args(_sctype, f'_Any{name}Char')
     return frozenset(types), frozenset(names), frozenset(chars)
 
 
 @pytest.mark.parametrize(
     'name',
     [
-        'Bool',
-        'UInt8', 'UInt16', 'UInt32', 'UInt64',
-        'UByte', 'UShort', 'UIntC', 'UIntP', 'UInt', 'ULong', 'ULongLong',
-        'Int8', 'Int16', 'Int32', 'Int64',
-        'Byte', 'Short', 'IntC', 'IntP', 'Int', 'Long', 'LongLong',
+        'Bool', 'Object',
+        'UInt8', 'UInt16', 'UInt32', 'UInt64', 'UIntC', 'UIntP',
+        'UByte', 'UShort', 'ULong', 'ULongLong',
+        'Int8', 'Int16', 'Int32', 'Int64', 'IntC', 'IntP',
+        'Byte', 'Short', 'Long', 'LongLong',
         'Float16', 'Float32', 'Float64',
-        'Half', 'Single', 'Float', 'Double', 'LongDouble',
+        'Half', 'Single', 'Double', 'LongDouble',
         'Complex64', 'Complex128',
         'CSingle', 'CDouble', 'CLongDouble',
         'Timedelta64', 'Datetime64',
-        'Str',
-        'Bytes',
-        'Void',
-        'Object',
+        'Str', 'Bytes', 'Void',
     ],
 )
-def test_scalars(name: str):
+def test_sctypes(name: str):
     dtype_expect = np.dtype(name.lower())
     types, names, chars = _get_dtype_info(name)
 
@@ -58,19 +55,16 @@ def test_scalars(name: str):
 @pytest.mark.parametrize(
     'name',
     [
-        'Bool',
+        'Bool', 'Object',
         'UInt8', 'UInt16', 'UInt32', 'UInt64',
         'Int8', 'Int16', 'Int32', 'Int64',
         'Float16', 'Float32', 'Float64',
         'Complex64', 'Complex128',
         'Timedelta64', 'Datetime64',
-        'Str',
-        'Bytes',
-        'Void',
-        'Object',
+        'Str', 'Bytes', 'Void',
     ],
 )
-def test_scalar_name(name: str):
+def test_sctype_name(name: str):
     dtype_expect = np.dtype(name.lower())
     _, names, _ = _get_dtype_info(name)
 
@@ -80,19 +74,16 @@ def test_scalar_name(name: str):
 @pytest.mark.parametrize(
     'name',
     [
-        'Bool',
+        'Bool', 'Object',
         'UByte', 'UShort', 'ULong',
         'Byte', 'Short', 'Long',
         'Half', 'Single', 'Double',
         'CSingle', 'CDouble',
         'Timedelta64', 'Datetime64',
-        'Str',
-        'Bytes',
-        'Void',
-        'Object',
+        'Str', 'Bytes', 'Void',
     ],
 )
-def test_scalar_char(name: str):
+def test_sctype_char(name: str):
     dtype_expect = np.dtype(name.lower())
     _, _, chars = _get_dtype_info(name)
 

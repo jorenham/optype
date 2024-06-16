@@ -13,17 +13,19 @@ else:
 __all__ = 'ArgDType', 'HasDType'
 
 
-_T_HasDType = TypeVar(
-    '_T_HasDType',
+_T_dtype = TypeVar(
+    '_T_dtype',
     infer_variance=True,
-    bound=np.generic,
-    default=Any,
+    bound=np.dtype[Any],
+    default=np.dtype[Any],
 )
 
 
 @runtime_checkable
-class HasDType(Protocol[_T_HasDType]):
+class HasDType(Protocol[_T_dtype]):
     """
+    `HasDType[T: np.dtype[Any] = np.dtype[Any]]`
+
     Interface for objects (or types) with a `dtype` attribute or property,
     e.g. a `numpy.ndarray` instance or an instance of a concrete subtype of
     `numpy.generic`.
@@ -31,11 +33,15 @@ class HasDType(Protocol[_T_HasDType]):
     The generic type parameter is bound to `np.generic`, and is optional.
     """
     @property
-    def dtype(self, /) -> np.dtype[_T_HasDType]: ...
+    def dtype(self, /) -> _T_dtype: ...
 
 
 _T_DType = TypeVar('_T_DType', bound=np.generic, default=Any)
-ArgDType: TypeAlias = np.dtype[_T_DType] | HasDType[_T_DType] | _T_DType
+ArgDType: TypeAlias = (
+    np.dtype[_T_DType]
+    | type[_T_DType]
+    | HasDType[np.dtype[_T_DType]]
+)
 """
 Subset of `npt.DTypeLike`, with optional type parameter, bound to `np.generic`.
 Useful for overloaded methods with a `dtype` parameter.
