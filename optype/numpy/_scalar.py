@@ -27,6 +27,12 @@ _SoloType: TypeAlias = np.dtype[_T_np] | type[_T_np]
 _DualType: TypeAlias = _SoloType[_T_np] | type[_T_py]
 
 
+if TYPE_CHECKING:
+    _CObject: TypeAlias = ct.py_object[Any]
+else:
+    _CObject: TypeAlias = ct.py_object
+
+
 # bool
 if _NP_V2:
     AnyBool: TypeAlias = np.bool | ct.c_bool | bool
@@ -414,7 +420,7 @@ AnyVoidCode: TypeAlias = AnyVoidName | AnyVoidChar
 AnyVoidType: TypeAlias = AnyVoidCode | _SoloType[np.void]
 
 # object
-AnyObject: TypeAlias = np.object_ | ct.py_object  # pyright: ignore[reportMissingTypeArgument]
+AnyObject: TypeAlias = np.object_ | _CObject
 AnyObjectName: TypeAlias = Literal['object', 'object_']
 AnyObjectChar: TypeAlias = Literal['O', '=O', '<O', '>O']
 AnyObjectCode: TypeAlias = AnyObjectName | AnyObjectChar
@@ -469,5 +475,5 @@ ArgFlexible: TypeAlias = np.flexible | _PyCharacter | _CCharacter
 
 # np.generic
 _PyGeneric: TypeAlias = _PyNumber | _PyCharacter
-_CGeneric: TypeAlias = _CNumber | _CCharacter | ct.py_object  # pyright: ignore[reportMissingTypeArgument]
+_CGeneric: TypeAlias = _CNumber | _CCharacter | _CObject
 ArgGeneric: TypeAlias = np.generic | _CGeneric | _PyGeneric
