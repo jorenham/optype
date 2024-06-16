@@ -49,7 +49,9 @@ __all__ = (
 )
 
 
-_NP_V2: Final[bool] = np.__version__.startswith('2.')
+_NP_V2: Final[bool] = (_NP_VERSION := np.__version__).startswith('2.')
+if not _NP_V2:
+    assert _NP_VERSION.startswith('1.'), f'numpy {_NP_VERSION} is unsupported'
 
 
 _Shape0: TypeAlias = tuple[int, ...]
@@ -61,28 +63,18 @@ _DT_CanArray = TypeVar('_DT_CanArray', bound=np.dtype[Any])
 
 @runtime_checkable
 class CanArray(Protocol[_S_CanArray, _T_CanArray]):
-    if _NP_V2:
-        @overload
-        def __array__(
-            self,
-            dtype: None = ...,
-            /,
-        ) -> Array[_S_CanArray, _T_CanArray]: ...
-        @overload
-        def __array__(
-            self,
-            dtype: _DT_CanArray,
-            /,
-        ) -> np.ndarray[_S_CanArray, _DT_CanArray]: ...
-    else:
-        @overload
-        def __array__(self, /) -> Array[_S_CanArray, _T_CanArray]: ...
-        @overload
-        def __array__(
-            self,
-            dtype: _DT_CanArray,
-            /,
-        ) -> np.ndarray[_S_CanArray, _DT_CanArray]: ...
+    @overload
+    def __array__(
+        self,
+        dtype: None = ...,
+        /,
+    ) -> Array[_S_CanArray, _T_CanArray]: ...
+    @overload
+    def __array__(
+        self,
+        dtype: _DT_CanArray,
+        /,
+    ) -> np.ndarray[_S_CanArray, _DT_CanArray]: ...
 
 
 _V__NestedSequence = TypeVar(
