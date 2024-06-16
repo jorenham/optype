@@ -48,13 +48,13 @@ codespell = "^2.3.0"
 ruff = "^0.4.9"
 sp-repo-review = {version = "^2024.4.23", extras = ["cli"]}
 typing-extensions = "*"
-numpy = "*"
+numpy = ">=2,<3"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.2.2"
 beartype = "^0.18.5"
 typing-extensions = "*"
-numpy = "*"
+numpy = ">=2,<3"
 
 
 [tool.poetry.group.test-github]
@@ -78,8 +78,7 @@ venv = ".venv"
 pythonVersion = "3.10"
 pythonPlatform = "All"
 typeCheckingMode = "all"
-# enable `_NP_V2` once linting with numpy 2
-defineConstant = {"_NP_V2" = false}
+defineConstant = {"_NP_V2" = true}
 
 reportAny = false
 reportUnusedCallResult = false
