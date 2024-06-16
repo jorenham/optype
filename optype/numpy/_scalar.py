@@ -1,19 +1,31 @@
+from __future__ import annotations
+
 import ctypes as ct
-from typing import Final, Literal, TypeAlias, TypeVar
+import sys
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
 
 import numpy as np
-import numpy.typing as npt
+
+
+if sys.version_info >= (3, 13):
+    from typing import TypeVar
+else:
+    from typing_extensions import TypeVar
+
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 
 _NP_V2: Final[bool] = np.__version__.startswith('2.')
 
 
-_T = TypeVar('_T', bound=object)
-_S = TypeVar('_S', bound=np.generic)
-_N = TypeVar('_N', bound=npt.NBitBase)
+_T_np = TypeVar('_T_np', bound=np.generic)
+_T_py = TypeVar('_T_py', bound=object)
 
-_SoloType: TypeAlias = np.dtype[_S] | type[_S]
-_DualType: TypeAlias = np.dtype[_S] | type[_T]
+_SoloType: TypeAlias = np.dtype[_T_np] | type[_T_np]
+_DualType: TypeAlias = _SoloType[_T_np] | type[_T_py]
+
 
 # bool
 if _NP_V2:
@@ -410,13 +422,15 @@ AnyObjectType: TypeAlias = AnyObjectCode | _DualType[np.object_, AnyObject]
 
 #########
 
+_N = TypeVar('_N', bound='npt.NBitBase', default=Any)
+
 # np.unsignedinteger
 _CUnsignedInteger: TypeAlias = (
     ct.c_uint8 | ct.c_uint16 | ct.c_uint32 | ct.c_uint64
     | ct.c_ubyte | ct.c_ushort | ct.c_uint | ct.c_ulong | ct.c_ulonglong
     | ct.c_size_t | ct.c_void_p
 )
-SomeUnsignedInteger: TypeAlias = np.unsignedinteger[_N] | _CUnsignedInteger
+ArgUnsignedInteger: TypeAlias = np.unsignedinteger[_N] | _CUnsignedInteger
 
 # np.signedinteger
 _CSignedInteger: TypeAlias = (
@@ -424,36 +438,36 @@ _CSignedInteger: TypeAlias = (
     | ct.c_byte | ct.c_short | ct.c_int | ct.c_long | ct.c_longlong
     | ct.c_ssize_t
 )
-SomeSignedInteger: TypeAlias = np.signedinteger[_N] | int | _CSignedInteger
+ArgSignedInteger: TypeAlias = np.signedinteger[_N] | int | _CSignedInteger
 
 # np.integer
 _CInteger: TypeAlias = _CUnsignedInteger | _CSignedInteger
-SomeInteger: TypeAlias = np.integer[_N] | int | _CInteger
+ArgInteger: TypeAlias = np.integer[_N] | int | _CInteger
 
 # np.floating
 _CFloating: TypeAlias = ct.c_float | ct.c_double | ct.c_longdouble
-SomeFloating: TypeAlias = np.floating[_N] | float | _CFloating
+ArgFloating: TypeAlias = np.floating[_N] | float | _CFloating
 
 # np.complexfloating
-SomeComplexFloating: TypeAlias = np.complexfloating[_N, _N] | complex
+ArgComplexFloating: TypeAlias = np.complexfloating[_N, _N] | complex
 
 # np.inexact
-SomeInexact: TypeAlias = np.inexact[_N] | float | complex | _CFloating
+ArgInexact: TypeAlias = np.inexact[_N] | float | complex | _CFloating
 
 # np.number
 _PyNumber: TypeAlias = int | float | complex
 _CNumber: TypeAlias = _CInteger | _CFloating
-SomeNumber: TypeAlias = np.number[_N] | _PyNumber | _CNumber
+ArgNumber: TypeAlias = np.number[_N] | _PyNumber | _CNumber
 
 # np.character
 _PyCharacter: TypeAlias = str | bytes
 _CCharacter: TypeAlias = ct.c_char
-SomeCharacter: TypeAlias = np.character | _PyCharacter | _CCharacter
+ArgCharacter: TypeAlias = np.character | _PyCharacter | _CCharacter
 
 # np.flexible
-SomeFlexible: TypeAlias = np.flexible | _PyCharacter | _CCharacter
+ArgFlexible: TypeAlias = np.flexible | _PyCharacter | _CCharacter
 
 # np.generic
 _PyGeneric: TypeAlias = _PyNumber | _PyCharacter
 _CGeneric: TypeAlias = _CNumber | _CCharacter | ct.py_object  # pyright: ignore[reportMissingTypeArgument]
-SomeGeneric: TypeAlias = np.generic | _CGeneric | _PyGeneric
+ArgGeneric: TypeAlias = np.generic | _CGeneric | _PyGeneric
