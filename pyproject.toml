@@ -39,7 +39,7 @@ typing-extensions = {version = ">=4.7", python = "<3.13"}
 # https://numpy.org/neps/nep-0029-deprecation_policy.html
 #  bump to >=1.24 after 2024-06-22
 #  bump to >=1.25 after 2024-12-18
-numpy = {version = ">=1.23,<3", python = "<3.13", optional = true}
+numpy = {version = ">=1.23,<3", optional = true}
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.7.1"
