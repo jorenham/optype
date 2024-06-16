@@ -12,25 +12,6 @@ _Shape1D: TypeAlias = tuple[int]
 _Shape2D: TypeAlias = tuple[int, int]
 
 
-def test_some_array():
-    sct: type[np.generic] = np.uint8
-
-    py_sc: onp.ArgArray[_Shape0D, sct, int] = 42
-    np_sc: onp.ArgArray[_Shape0D, sct, int] = sct(py_sc)
-    assert np_sc.shape == ()
-
-    np_0d: onp.ArgArray[_Shape0D, sct, int] = np.array(py_sc, sct)
-    assert np_0d.shape == ()
-
-    py_1d: onp.ArgArray[_Shape1D, sct, int] = [42]
-    np_1d: onp.ArgArray[_Shape1D, sct, int] = np.array(py_1d, sct)
-    assert np_1d.shape == (1,)
-
-    py_2d: onp.ArgArray[_Shape2D, sct, int] = [[42]]
-    np_2d: onp.ArgArray[_Shape2D, sct, int] = np.array(py_2d, sct)
-    assert np_2d.shape == (1, 1)
-
-
 # Don't wake up, Neo...
 @pytest.mark.filterwarnings('ignore:the matrix .*:PendingDeprecationWarning')
 def test_can_array():
@@ -52,6 +33,25 @@ def test_can_array():
 
     mat: onp.CanArray[_Shape2D, sct] = np.asmatrix(42, sct)
     assert isinstance(mat, onp.CanArray)
+
+
+def test_some_array():
+    sct: type[np.generic] = np.uint8
+
+    py_sc: onp.ArgArray[_Shape0D, sct, int] = 42
+    np_sc: onp.ArgArray[_Shape0D, sct, int] = sct(py_sc)
+    assert np_sc.shape == ()
+
+    np_0d: onp.ArgArray[_Shape0D, sct, int] = np.array(py_sc, sct)
+    assert np_0d.shape == ()
+
+    py_1d: onp.ArgArray[_Shape1D, sct, int] = [42]
+    np_1d: onp.ArgArray[_Shape1D, sct, int] = np.array(py_1d, sct)
+    assert np_1d.shape == (1,)
+
+    py_2d: onp.ArgArray[_Shape2D, sct, int] = [[42]]
+    np_2d: onp.ArgArray[_Shape2D, sct, int] = np.array(py_2d, sct)
+    assert np_2d.shape == (1, 1)
 
 
 _T = TypeVar('_T', bound=np.generic)

@@ -56,6 +56,7 @@ _Shape0: TypeAlias = tuple[int, ...]
 
 _S_CanArray = TypeVar('_S_CanArray', infer_variance=True, bound=_Shape0)
 _T_CanArray = TypeVar('_T_CanArray', infer_variance=True, bound=np.generic)
+_DT_CanArray = TypeVar('_DT_CanArray', bound=np.dtype[Any])
 
 
 @runtime_checkable
@@ -66,40 +67,37 @@ class CanArray(Protocol[_S_CanArray, _T_CanArray]):
         @overload
         def __array__(
             self,
-            dtype: np.dtype[_T_CanArray],
+            dtype: _DT_CanArray,
             /,
-        ) -> Array[_S_CanArray, _T_CanArray]: ...
+        ) -> np.ndarray[_S_CanArray, _DT_CanArray]: ...
     else:
         @overload
         def __array__(
             self,
+            dtype: None = ...,
             /,
-            *,
-            copy: bool | None = ...,
         ) -> Array[_S_CanArray, _T_CanArray]: ...
         @overload
         def __array__(
             self,
-            dtype: np.dtype[_T_CanArray],
+            dtype: _DT_CanArray,
             /,
-            *,
-            copy: bool | None = ...,
-        ) -> Array[_S_CanArray, _T_CanArray]: ...
+        ) -> np.ndarray[_S_CanArray, _DT_CanArray]: ...
 
 
-_V_NestedSequence = TypeVar(
-    '_V_NestedSequence',
+_V__NestedSequence = TypeVar(
+    '_V__NestedSequence',
     infer_variance=True,
     bound=object,
 )
 
 
 @runtime_checkable
-class _NestedSequence(Protocol[_V_NestedSequence]):
+class _NestedSequence(Protocol[_V__NestedSequence]):
     def __len__(self, /) -> int: ...
     def __getitem__(self, i: int, /) -> (
-        _V_NestedSequence
-        | _NestedSequence[_V_NestedSequence]
+        _V__NestedSequence
+        | _NestedSequence[_V__NestedSequence]
     ): ...
 
 
@@ -179,8 +177,8 @@ class CanArrayWrap(Protocol):
             self,
             array: np.ndarray[_S_CanArrayWrap, _D_CanArrayWrap],
             context: tuple[np.ufunc, tuple[Any, ...], int] | None = ...,
-            /,
             return_scalar: bool = ...,
+            /,
         ) -> np.ndarray[_S_CanArrayWrap, _D_CanArrayWrap]: ...
 
 
