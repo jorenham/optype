@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 
-_NP_V1: Final[bool] = np.__version__.startswith('1.')
+_NP_V2: Final[bool] = np.__version__.startswith('2.')
 
 
 _N_in_co = TypeVar('_N_in_co', bound=int, covariant=True)
@@ -79,14 +79,14 @@ class AnyUfunc(_HasUfuncAttrs[Any, Any, Any, Any, Any, Any], Protocol):
     def outer(self) -> Callable[..., Any] | None: ...
 
 
-if _NP_V1:
+if _NP_V2:
     _UFuncMethod: TypeAlias = Literal[
         '__call__',
         'reduce',
         'reduceat',
         'accumulate',
         'outer',
-        'inner',
+        'at',
     ]
 else:
     _UFuncMethod: TypeAlias = Literal[
@@ -95,7 +95,7 @@ else:
         'reduceat',
         'accumulate',
         'outer',
-        'at',
+        'inner',
     ]
 
 

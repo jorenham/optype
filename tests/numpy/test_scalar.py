@@ -1,5 +1,5 @@
 # ruff: noqa: I001
-from typing import Any, Final
+from typing import Any
 
 import numpy as np
 import pytest
@@ -7,8 +7,6 @@ import pytest
 import optype.numpy as onp
 from optype.numpy import _scalar  # noqa: PLC2701  # pyright: ignore[reportPrivateUsage]
 from ..helpers import get_args  # noqa: TID252
-
-_NP_V1: Final[bool] = np.__version__.startswith('1.')
 
 
 def _get_attr_args(obj: Any, name: str) -> tuple[Any, ...]:

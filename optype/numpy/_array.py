@@ -49,7 +49,7 @@ __all__ = (
 )
 
 
-_NP_V1: Final[bool] = np.__version__.startswith('1.')
+_NP_V2: Final[bool] = np.__version__.startswith('2.')
 
 
 _Shape0: TypeAlias = tuple[int, ...]
@@ -61,9 +61,13 @@ _DT_CanArray = TypeVar('_DT_CanArray', bound=np.dtype[Any])
 
 @runtime_checkable
 class CanArray(Protocol[_S_CanArray, _T_CanArray]):
-    if _NP_V1:
+    if _NP_V2:
         @overload
-        def __array__(self, /) -> Array[_S_CanArray, _T_CanArray]: ...
+        def __array__(
+            self,
+            dtype: None = ...,
+            /,
+        ) -> Array[_S_CanArray, _T_CanArray]: ...
         @overload
         def __array__(
             self,
@@ -72,11 +76,7 @@ class CanArray(Protocol[_S_CanArray, _T_CanArray]):
         ) -> np.ndarray[_S_CanArray, _DT_CanArray]: ...
     else:
         @overload
-        def __array__(
-            self,
-            dtype: None = ...,
-            /,
-        ) -> Array[_S_CanArray, _T_CanArray]: ...
+        def __array__(self, /) -> Array[_S_CanArray, _T_CanArray]: ...
         @overload
         def __array__(
             self,
@@ -165,11 +165,12 @@ _D_CanArrayWrap = TypeVar('_D_CanArrayWrap', bound=np.dtype[Any])
 
 @runtime_checkable
 class CanArrayWrap(Protocol):
-    if _NP_V1:
+    if _NP_V2:
         def __array_wrap__(
             self,
             array: np.ndarray[_S_CanArrayWrap, _D_CanArrayWrap],
             context: tuple[np.ufunc, tuple[Any, ...], int] | None = ...,
+            return_scalar: bool = ...,
             /,
         ) -> np.ndarray[_S_CanArrayWrap, _D_CanArrayWrap]: ...
     else:
@@ -177,7 +178,6 @@ class CanArrayWrap(Protocol):
             self,
             array: np.ndarray[_S_CanArrayWrap, _D_CanArrayWrap],
             context: tuple[np.ufunc, tuple[Any, ...], int] | None = ...,
-            return_scalar: bool = ...,
             /,
         ) -> np.ndarray[_S_CanArrayWrap, _D_CanArrayWrap]: ...
 

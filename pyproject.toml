@@ -33,13 +33,10 @@ numpy = ["numpy"]
 # bump to ^3.11 after 2025-04-04
 # bump to ^3.12 after 2026-04-24
 python = "^3.10"
-
 typing-extensions = {version = ">=4.7", python = "<3.13"}
 
-# https://numpy.org/neps/nep-0029-deprecation_policy.html
-#  bump to >=1.24 after 2024-06-22
-#  bump to >=1.25 after 2024-12-18
-numpy = {version = ">=1.23,<3", optional = true}
+# https://scientific-python.org/specs/spec-0000/
+numpy = {version = ">=1.24,<3", optional = true}
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.7.1"
@@ -59,6 +56,7 @@ beartype = "^0.18.5"
 typing-extensions = "*"
 numpy = "*"
 
+
 [tool.poetry.group.test-github]
 optional = true
 [tool.poetry.group.test-github.dependencies]
@@ -68,19 +66,20 @@ pytest-github-actions-annotate-failures = ">=0.2.0,<1.0"
 [tool.codespell]
 context = 2
 skip = "poetry.lock,pyproject.toml"
-ignore-words-list = "cange,nin"  # `CanGe` and `numpy.ufunc.nin`
+ignore-words-list = "CanGe,nin"  # `optype.CanGe`, `numpy.ufunc.nin`
 
 
 [tool.basedpyright]
 include = ["optype", "examples", "tests"]
 ignore = ["**/.venv"]
-defineConstant = {"_NP_V1" = true}
 stubPath = "."
 venvPath = "."
 venv = ".venv"
 pythonVersion = "3.10"
 pythonPlatform = "All"
 typeCheckingMode = "all"
+# enable `_NP_V2` once linting with numpy 2
+defineConstant = {"_NP_V2" = false}
 
 reportAny = false
 reportUnusedCallResult = false
