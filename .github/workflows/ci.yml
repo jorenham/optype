@@ -73,7 +73,7 @@ jobs:
           cache: poetry
 
       - name: poetry install
-        run: poetry install --sync --only test,test-github
+        run: poetry install --sync --with test-github
 
       - name: pytest
         run: poetry run pytest
