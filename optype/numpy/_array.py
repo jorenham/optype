@@ -35,11 +35,10 @@ if TYPE_CHECKING:
 
     from optype import CanBuffer, CanIter, CanIterSelf
 
-    from ._aliases import Array
-
 
 __all__ = (
     'ArgArray',
+    'Array',
     'CanArray',
     'CanArrayFinalize',
     'CanArrayFunction',
@@ -54,9 +53,16 @@ if not _NP_V2:
     assert _NP_VERSION.startswith('1.'), f'numpy {_NP_VERSION} is unsupported'
 
 
-_Shape0: TypeAlias = tuple[int, ...]
+_AnyShape: TypeAlias = tuple[int, ...]
 
-_S_CanArray = TypeVar('_S_CanArray', infer_variance=True, bound=_Shape0)
+
+_S_Array = TypeVar('_S_Array', bound=_AnyShape, default=_AnyShape)
+_T_Array = TypeVar('_T_Array', bound=np.generic, default=Any)
+Array: TypeAlias = np.ndarray[_S_Array, np.dtype[_T_Array]]
+"""NumPy array with optional type params for shape and generic dtype."""
+
+
+_S_CanArray = TypeVar('_S_CanArray', infer_variance=True, bound=_AnyShape)
 _T_CanArray = TypeVar('_T_CanArray', infer_variance=True, bound=np.generic)
 _DT_CanArray = TypeVar('_DT_CanArray', bound=np.dtype[Any])
 
@@ -93,7 +99,7 @@ class _NestedSequence(Protocol[_V__NestedSequence]):
     ): ...
 
 
-_S_ArgArray = TypeVar('_S_ArgArray', bound=_Shape0)
+_S_ArgArray = TypeVar('_S_ArgArray', bound=_AnyShape)
 _T_ArgArray_np = TypeVar('_T_ArgArray_np', bound=np.generic)
 _T_ArgArray_py = TypeVar(
     '_T_ArgArray_py',

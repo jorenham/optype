@@ -110,10 +110,9 @@ __all__ = (
     'HasArrayPriority',
     'HasDType',
 )
-
-from ._aliases import Array, DType
 from ._array import (
     ArgArray,
+    Array,
     CanArray,
     CanArrayFinalize,
     CanArrayFunction,
@@ -121,7 +120,11 @@ from ._array import (
     HasArrayInterface,
     HasArrayPriority,
 )
-from ._dtype import ArgDType, HasDType
+from ._dtype import (
+    ArgDType,
+    DType,
+    HasDType,
+)
 from ._sctype import (
     AnyBool,
     AnyBoolType,

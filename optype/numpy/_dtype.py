@@ -10,30 +10,37 @@ else:
     from typing_extensions import Protocol, TypeVar, runtime_checkable
 
 
-__all__ = 'ArgDType', 'HasDType'
+__all__ = 'ArgDType', 'DType', 'HasDType'
 
 
-_T_dtype = TypeVar(
-    '_T_dtype',
+_T_DType = TypeVar('_T_DType', bound=np.generic, default=Any)
+DType: TypeAlias = np.dtype[_T_DType]
+"""Alias for `numpy.dtype[T: numpy.generic = Any]`."""
+
+
+_T_HasDType = TypeVar(
+    '_T_HasDType',
     infer_variance=True,
     bound=np.dtype[Any],
-    default=np.dtype[Any],
+    default=Any,
 )
 
 
 @runtime_checkable
-class HasDType(Protocol[_T_dtype]):
+class HasDType(Protocol[_T_HasDType]):
     """
-    `HasDType[T: np.dtype[Any] = np.dtype[Any]]`
+    `HasDType[DT: np.dtype[Any] = Any]`
 
-    Interface for objects (or types) with a `dtype` attribute or property,
-    e.g. a `numpy.ndarray` instance or an instance of a concrete subtype of
-    `numpy.generic`.
+    Runtime checkable protocol for objects (or types) that have a `dtype`
+    attribute (or property), such as `numpy.ndarray` instances, or
+    `numpy.generic` "scalar" instances.
 
-    The generic type parameter is bound to `np.generic`, and is optional.
+    Anything that implements this interface can be used with the `numpy.dtype`
+    constructor, i.e. its constructor is compatible with a signature that
+    looks something like `(HasDType[DT: numpy.DType], ...) -> DT`.
     """
     @property
-    def dtype(self, /) -> _T_dtype: ...
+    def dtype(self, /) -> _T_HasDType: ...
 
 
 _T_DType = TypeVar('_T_DType', bound=np.generic, default=Any)
@@ -44,5 +51,5 @@ ArgDType: TypeAlias = (
 )
 """
 Subset of `npt.DTypeLike`, with optional type parameter, bound to `np.generic`.
-Useful for overloaded methods with a `dtype` parameter.
+Useful for overloading a `dtype` parameter.
 """
