@@ -85,7 +85,8 @@ reportUnusedCallResult = false
 # because of `sys.version_info()` conditionals
 reportUnreachable = false
 # already handled by ruff F401
-reportUnusedImport = false
+reportUnusedVariable = false
+# already handled by ruff F841
 
 
 [tool.pytest.ini_options]
@@ -170,8 +171,6 @@ select = [
     "TCH",      # flake8-type-checking
     "ARG",      # flake8-unused-arguments
     "PTH",      # flake8-use-pathlib
-    "TD",       # flake8-todos
-    "FIX",      # flake8-fixme
     "ERA",      # eradicate
     "PD",       # pandas-vet
     "PGH",      # pygrep-hooks
@@ -194,6 +193,9 @@ ignore = [
     # flake8-pyi
     "PYI034",   # non-self-return-type
     "PYI036",   # bad-exit-annotation
+
+    # pylint
+    "PLR0904",  # too-many-public-methods
 
     # refurb
     "FURB118",  # reimplemented-operator
