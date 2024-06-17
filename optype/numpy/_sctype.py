@@ -214,7 +214,7 @@ _AnyIntCCode: TypeAlias = _AnyIntCName | _AnyIntCChar
 AnyIntC: TypeAlias = np.intc | ct.c_int
 AnyIntCType: TypeAlias = _AnyIntCCode | _DualType[np.intc, AnyIntC]
 
-# intp
+# intp (or int_ if numpy>=2)
 if _NP_V2:
     _AnyIntPName: TypeAlias = Literal['intp', 'int', 'int_']
     _AnyIntPChar: TypeAlias = Literal['n', '=n', '<n', '>n']
@@ -222,20 +222,25 @@ else:
     _AnyIntPName: TypeAlias = Literal['intp', 'int0']
     _AnyIntPChar: TypeAlias = Literal['p', '=p', '<p', '>p']
 _AnyIntPCode: TypeAlias = _AnyIntPName | _AnyIntPChar
-AnyIntP: TypeAlias = np.intp | ct.c_ssize_t
+if _NP_V2:
+    AnyIntP: TypeAlias = np.intp | ct.c_ssize_t | int
+else:
+    AnyIntP: TypeAlias = np.intp | ct.c_ssize_t
 AnyIntPType: TypeAlias = _AnyIntPCode | _DualType[np.intp, AnyIntP]
 
-# long (int_ on numpy^=1)
+# long (or int_ if numpy<2)
 _AnyLongChar: TypeAlias = Literal['l', '=l', '<l', '>l']
 if _NP_V2:
     _AnyLongNP: TypeAlias = np.long
     _AnyLongName: TypeAlias = Literal['long']
-    AnyLong: TypeAlias = _AnyLongNP | ct.c_long
 else:
     _AnyLongNP: TypeAlias = np.int_
     _AnyLongName: TypeAlias = Literal['long', 'int', 'int_']
-    AnyLong: TypeAlias = _AnyLongNP | ct.c_long | int
 _AnyLongCode: TypeAlias = _AnyLongName | _AnyLongChar
+if _NP_V2:
+    AnyLong: TypeAlias = _AnyLongNP | ct.c_long
+else:
+    AnyLong: TypeAlias = _AnyLongNP | ct.c_long | int
 AnyLongType: TypeAlias = _AnyLongCode | _DualType[_AnyLongNP, AnyLong]
 
 # longlong
