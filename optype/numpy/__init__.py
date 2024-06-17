@@ -109,6 +109,7 @@ __all__ = (
     'HasArrayInterface',
     'HasArrayPriority',
     'HasDType',
+    'Scalar',
 )
 from ._array import (
     ArgArray,
@@ -124,6 +125,9 @@ from ._dtype import (
     ArgDType,
     DType,
     HasDType,
+)
+from ._scalar import (
+    Scalar,
 )
 from ._sctype import (
     AnyBool,
@@ -224,4 +228,7 @@ from ._sctype import (
     AnyVoid,
     AnyVoidType,
 )
-from ._ufunc import AnyUfunc, CanArrayUFunc
+from ._ufunc import (
+    AnyUfunc,
+    CanArrayUFunc,
+)
