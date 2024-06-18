@@ -78,15 +78,16 @@ venv = ".venv"
 pythonVersion = "3.10"
 pythonPlatform = "All"
 typeCheckingMode = "all"
-defineConstant = {"_NP_V2" = true}
+defineConstant = {"_NP_V2" = true, "byteorder" = "little"}
 
 reportAny = false
 reportUnusedCallResult = false
 # because of `sys.version_info()` conditionals
 reportUnreachable = false
 # already handled by ruff F401
-reportUnusedVariable = false
+reportUnusedImport = false
 # already handled by ruff F841
+reportUnusedVariable = false
 
 
 [tool.pytest.ini_options]

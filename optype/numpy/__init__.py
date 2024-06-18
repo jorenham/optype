@@ -126,7 +126,7 @@ from ._dtype import (
     DType,
     HasDType,
 )
-from ._scalar import (
+from ._interfaces import (
     Scalar,
 )
 from ._sctype import (
