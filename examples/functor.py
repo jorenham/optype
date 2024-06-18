@@ -19,7 +19,7 @@ X = TypeVar('X')
 Y = TypeVar('Y')
 
 
-@final  # noqa: PLR0904
+@final
 class Functor(Generic[T_co]):
     __match_args__ = __slots__ = ('value',)
 

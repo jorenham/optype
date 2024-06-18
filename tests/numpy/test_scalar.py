@@ -36,7 +36,7 @@ def test_scalar_from_bool():
     assert isinstance(x_np, Scalar)
 
     assert_type(x_np.item(), bool)
-    assert_type(s_py.item(), bool)
+    assert_type(s_np_n.item(), bool)
 
 
 @pytest.mark.parametrize(
@@ -58,7 +58,7 @@ def test_scalar_from_integer(sctype: type[np.integer[Any]]):
     s_np: Scalar[int] = x_np
     s_np_wrong: Scalar[str] = x_np  # pyright: ignore[reportAssignmentType]
     s_np_wrong_contra: Scalar[bool] = x_np  # pyright: ignore[reportAssignmentType]
-    assert isinstance(x_py, Scalar)
+    assert isinstance(x_np, Scalar)
 
     y_py = s_np.item()
     assert_type(y_py, int)
@@ -76,7 +76,7 @@ def test_scalar_from_floating(sctype: type[np.floating[Any]]):
     s_np: Scalar[float] = x_np
     s_np_wrong: Scalar[str] = x_np  # pyright: ignore[reportAssignmentType]
     s_np_wrong_contra: Scalar[int] = x_np  # pyright: ignore[reportAssignmentType]
-    assert isinstance(x_py, Scalar)
+    assert isinstance(x_np, Scalar)
 
     y_py = s_np.item()
     assert_type(y_py, float)
@@ -94,7 +94,7 @@ def test_scalar_from_complex(sctype: type[np.complexfloating[Any, Any]]):
     s_np: Scalar[complex] = x_np
     s_np_wrong: Scalar[str] = x_np  # pyright: ignore[reportAssignmentType]
     s_np_wrong_contra: Scalar[float] = x_np  # pyright: ignore[reportAssignmentType]
-    assert isinstance(x_py, Scalar)
+    assert isinstance(x_np, Scalar)
 
     y_py = s_np.item()
     assert_type(y_py, complex)
