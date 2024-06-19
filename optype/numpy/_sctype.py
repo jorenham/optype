@@ -22,9 +22,9 @@ if TYPE_CHECKING:
 _NP_V2: Final[bool] = np.__version__.startswith('2.')
 
 
-_T_np = TypeVar('_T_np', bound=np.generic)
-_T_py = TypeVar('_T_py', bound=object)
-_DualType: TypeAlias = _SoloType[_T_np] | type[_T_py]
+_ST__DualType = TypeVar('_ST__DualType', bound=np.generic)
+_PT__DualType = TypeVar('_PT__DualType', bound=object)
+_DualType: TypeAlias = _SoloType[_ST__DualType] | type[_PT__DualType]
 
 
 #
@@ -129,12 +129,12 @@ AnyULongLongType: TypeAlias = (
 )
 
 # unsignedinteger
-_N_unsignedinteger = TypeVar(
-    '_N_unsignedinteger',
+_NB_unsignedinteger = TypeVar(
+    '_NB_unsignedinteger',
     bound='npt.NBitBase',
     default=Any,
 )
-_AnyUnsignedIntegerNP: TypeAlias = np.unsignedinteger[_N_unsignedinteger]
+_AnyUnsignedIntegerNP: TypeAlias = np.unsignedinteger[_NB_unsignedinteger]
 # fmt: off
 _AnyUnsignedIntegerCT: TypeAlias = (
     ct.c_uint8 | ct.c_uint16 | ct.c_uint32 | ct.c_uint64
@@ -149,14 +149,14 @@ _AnyUnsignedIntegerCode: TypeAlias = (
     | _AnyUIntCCode | _AnyUIntPCode
 )
 AnyUnsignedInteger: TypeAlias = (
-    _AnyUnsignedIntegerNP[_N_unsignedinteger]
+    _AnyUnsignedIntegerNP[_NB_unsignedinteger]
     | _AnyUnsignedIntegerCT
 )
 AnyUnsignedIntegerType: TypeAlias = (
     _AnyUnsignedIntegerCode
     | _DualType[
-        _AnyUnsignedIntegerNP[_N_unsignedinteger],
-        AnyUnsignedInteger[_N_unsignedinteger],
+        _AnyUnsignedIntegerNP[_NB_unsignedinteger],
+        AnyUnsignedInteger[_NB_unsignedinteger],
     ]
 )
 
@@ -254,12 +254,12 @@ AnyLongLongType: TypeAlias = (
 )
 
 # signedinteger
-_N_signedinteger = TypeVar(
-    '_N_signedinteger',
+_NB_signedinteger = TypeVar(
+    '_NB_signedinteger',
     bound='npt.NBitBase',
     default=Any,
 )
-_AnySignedIntegerNP = np.signedinteger[_N_signedinteger]
+_AnySignedIntegerNP = np.signedinteger[_NB_signedinteger]
 # fmt: off
 _AnySignedIntegerCT: TypeAlias = (
     ct.c_int8 | ct.c_int16 | ct.c_int32 | ct.c_int64
@@ -276,15 +276,15 @@ _AnySignedIntegerCode: TypeAlias = (
 )
 # fmt: on
 AnySignedInteger: TypeAlias = (
-    _AnySignedIntegerNP[_N_signedinteger]
+    _AnySignedIntegerNP[_NB_signedinteger]
     | _AnySignedIntegerCT
     | _AnySignedIntegerPY
 )
 AnySignedIntegerType: TypeAlias = (
     _AnySignedIntegerCode
     | _DualType[
-        _AnySignedIntegerNP[_N_signedinteger],
-        AnySignedInteger[_N_signedinteger],
+        _AnySignedIntegerNP[_NB_signedinteger],
+        AnySignedInteger[_NB_signedinteger],
     ]
 )
 
@@ -294,19 +294,19 @@ AnySignedIntegerType: TypeAlias = (
 #
 
 # integer
-_N_integer = TypeVar('_N_integer', bound='npt.NBitBase', default=Any)
-_AnyIntegerNP: TypeAlias = np.integer[_N_integer]
+_NB_integer = TypeVar('_NB_integer', bound='npt.NBitBase', default=Any)
+_AnyIntegerNP: TypeAlias = np.integer[_NB_integer]
 _AnyIntegerCT: TypeAlias = _AnyUnsignedIntegerCT | _AnySignedIntegerCT
 _AnyIntegerPY: TypeAlias = _AnySignedIntegerPY
 _AnyIntegerCode: TypeAlias = _AnyUnsignedIntegerCode | _AnySignedIntegerCode
 AnyInteger: TypeAlias = (
-    _AnyIntegerNP[_N_integer]
+    _AnyIntegerNP[_NB_integer]
     | _AnyIntegerCT
     | _AnyIntegerPY
 )
 AnyIntegerType: TypeAlias = (
     _AnyIntegerCode
-    | _DualType[_AnyIntegerNP[_N_integer], AnyInteger[_N_integer]]
+    | _DualType[_AnyIntegerNP[_NB_integer], AnyInteger[_NB_integer]]
 )
 
 
@@ -375,8 +375,8 @@ AnyLongDoubleType: TypeAlias = (
 )
 
 # floating
-_N_floating = TypeVar('_N_floating', bound='npt.NBitBase', default=Any)
-_AnyFloatingNP: TypeAlias = np.floating[_N_floating]
+_NB_floating = TypeVar('_NB_floating', bound='npt.NBitBase', default=Any)
+_AnyFloatingNP: TypeAlias = np.floating[_NB_floating]
 _AnyFloatingCT: TypeAlias = ct.c_float | ct.c_double | ct.c_longdouble
 _AnyFloatingPY: TypeAlias = float
 # fmt: off
@@ -386,13 +386,13 @@ _AnyFloatingCode: TypeAlias = (
 )
 # fmt: on
 AnyFloating: TypeAlias = (
-    _AnyFloatingNP[_N_floating]
+    _AnyFloatingNP[_NB_floating]
     | _AnyFloatingCT
     | _AnyFloatingPY
 )
 AnyFloatingType: TypeAlias = (
     _AnyFloatingCode
-    | _DualType[_AnyFloatingNP[_N_floating], AnyFloating[_N_floating]]
+    | _DualType[_AnyFloatingNP[_NB_floating], AnyFloating[_NB_floating]]
 )
 
 
@@ -459,19 +459,19 @@ AnyCLongDouble: TypeAlias = np.clongdouble
 AnyCLongDoubleType: TypeAlias = _AnyCLongDoubleCode | _SoloType[np.clongdouble]
 
 # complexfloating
-_N_complexfloating_re = TypeVar(
-    '_N_complexfloating_re',
+_NB_complexfloating_re = TypeVar(
+    '_NB_complexfloating_re',
     bound='npt.NBitBase',
     default=Any,
 )
-_N_complexfloating_im = TypeVar(
-    '_N_complexfloating_im',
+_NB_complexfloating_im = TypeVar(
+    '_NB_complexfloating_im',
     bound='npt.NBitBase',
-    default=_N_complexfloating_re,
+    default=_NB_complexfloating_re,
 )
 _AnyComplexFloatingNP: TypeAlias = np.complexfloating[
-    _N_complexfloating_re,
-    _N_complexfloating_im,
+    _NB_complexfloating_re,
+    _NB_complexfloating_im,
 ]
 _AnyComplexFloatingPY: TypeAlias = complex
 # fmt: off
@@ -481,14 +481,14 @@ _AnyComplexFloatingCode: TypeAlias = (
 )
 # fmt: on
 AnyComplexFloating: TypeAlias = (
-    _AnyComplexFloatingNP[_N_complexfloating_re, _N_complexfloating_im]
+    _AnyComplexFloatingNP[_NB_complexfloating_re, _NB_complexfloating_im]
     | _AnyComplexFloatingPY
 )
 AnyComplexFloatingType: TypeAlias = (
     _AnyComplexFloatingCode
     | _DualType[
-        _AnyComplexFloatingNP[_N_complexfloating_re, _N_complexfloating_im],
-        AnyComplexFloating[_N_complexfloating_re, _N_complexfloating_im],
+        _AnyComplexFloatingNP[_NB_complexfloating_re, _NB_complexfloating_im],
+        AnyComplexFloating[_NB_complexfloating_re, _NB_complexfloating_im],
     ]
 )
 
@@ -498,19 +498,19 @@ AnyComplexFloatingType: TypeAlias = (
 #
 
 # inexact
-_N_inexact = TypeVar('_N_inexact', bound='npt.NBitBase', default=Any)
-_AnyInexactNP: TypeAlias = np.inexact[_N_inexact]
+_NB_inexact = TypeVar('_NB_inexact', bound='npt.NBitBase', default=Any)
+_AnyInexactNP: TypeAlias = np.inexact[_NB_inexact]
 _AnyInexactCT: TypeAlias = _AnyFloatingCT
 _AnyInexactPY: TypeAlias = _AnyFloatingPY | _AnyComplexFloatingPY
 _AnyInexactCode: TypeAlias = _AnyFloatingCode | _AnyComplexFloatingCode
 AnyInexact: TypeAlias = (
-    _AnyInexactNP[_N_inexact]
+    _AnyInexactNP[_NB_inexact]
     | _AnyInexactCT
     | _AnyInexactPY
 )
 AnyInexactType: TypeAlias = (
     _AnyInexactCode
-    | _DualType[_AnyInexactNP[_N_inexact], AnyInexact[_N_inexact]]
+    | _DualType[_AnyInexactNP[_NB_inexact], AnyInexact[_NB_inexact]]
 )
 
 
@@ -519,15 +519,15 @@ AnyInexactType: TypeAlias = (
 #
 
 # number
-_N_number = TypeVar('_N_number', bound='npt.NBitBase', default=Any)
-_AnyNumberNP: TypeAlias = np.number[_N_number]
+_NB_number = TypeVar('_NB_number', bound='npt.NBitBase', default=Any)
+_AnyNumberNP: TypeAlias = np.number[_NB_number]
 _AnyNumberCT: TypeAlias = _AnyIntegerCT | _AnyInexactCT
 _AnyNumberPY: TypeAlias = _AnyIntegerPY | _AnyInexactPY
 _AnyNumberCode: TypeAlias = _AnyIntegerCode | _AnyInexactCode
-AnyNumber: TypeAlias = _AnyNumberNP[_N_number] | _AnyNumberCT | _AnyNumberPY
+AnyNumber: TypeAlias = _AnyNumberNP[_NB_number] | _AnyNumberCT | _AnyNumberPY
 AnyNumberType: TypeAlias = (
     _AnyNumberCode
-    | _DualType[_AnyNumberNP[_N_number], AnyNumber[_N_number]]
+    | _DualType[_AnyNumberNP[_NB_number], AnyNumber[_NB_number]]
 )
 
 
@@ -644,11 +644,11 @@ AnyObjectType: TypeAlias = _AnyObjectCode | _DualType[_AnyObjectNP, AnyObject]
 #
 
 # generic
-_N_generic = TypeVar('_N_generic', bound='npt.NBitBase', default=Any)
+_NB_generic = TypeVar('_NB_generic', bound='npt.NBitBase', default=Any)
 _AnyGenericNP: TypeAlias = (
     _AnyBoolNP
     | _AnyObjectNP
-    | _AnyNumberNP[_N_generic]
+    | _AnyNumberNP[_NB_generic]
     | _AnyFlexibleNP
     | np.generic  # catch-all for any other user-defined scalar types
 )
@@ -660,12 +660,12 @@ _AnyGenericCode: TypeAlias = (
 )
 AnyGeneric: TypeAlias = (
     AnyBool
-    | AnyNumber[_N_generic]
+    | AnyNumber[_NB_generic]
     | AnyFlexible
     | AnyObject
     | np.generic  # catch-all for any other user-defined scalar types
 )
 AnyGenericType: TypeAlias = (
     _AnyGenericCode
-    | _DualType[_AnyGenericNP[_N_generic], AnyGeneric[_N_generic]]
+    | _DualType[_AnyGenericNP[_NB_generic], AnyGeneric[_NB_generic]]
 )

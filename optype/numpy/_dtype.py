@@ -13,8 +13,8 @@ else:
 __all__ = 'AnyDType', 'DType', 'HasDType'
 
 
-_T_DType = TypeVar('_T_DType', bound=np.generic, default=np.generic)
-DType: TypeAlias = np.dtype[_T_DType]
+_ST_DType = TypeVar('_ST_DType', bound=np.generic, default=np.generic)
+DType: TypeAlias = np.dtype[_ST_DType]
 """Alias for `numpy.dtype[T: numpy.generic = Any]`."""
 
 
@@ -43,11 +43,11 @@ class HasDType(Protocol[_DT_HasDType]):
     def dtype(self, /) -> _DT_HasDType: ...
 
 
-_T_AnyDType = TypeVar('_T_AnyDType', bound=np.generic, default=np.generic)
+_ST_AnyDType = TypeVar('_ST_AnyDType', bound=np.generic, default=np.generic)
 AnyDType: TypeAlias = (
-    np.dtype[_T_AnyDType]
-    | type[_T_AnyDType]
-    | HasDType[np.dtype[_T_AnyDType]]
+    np.dtype[_ST_AnyDType]
+    | type[_ST_AnyDType]
+    | HasDType[np.dtype[_ST_AnyDType]]
 )
 """
 Subset of `npt.DTypeLike`, with optional type parameter, bound to `np.generic`.
