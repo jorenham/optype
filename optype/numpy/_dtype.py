@@ -10,24 +10,24 @@ else:
     from typing_extensions import Protocol, TypeVar, runtime_checkable
 
 
-__all__ = 'ArgDType', 'DType', 'HasDType'
+__all__ = 'AnyDType', 'DType', 'HasDType'
 
 
-_T_DType = TypeVar('_T_DType', bound=np.generic, default=Any)
+_T_DType = TypeVar('_T_DType', bound=np.generic, default=np.generic)
 DType: TypeAlias = np.dtype[_T_DType]
 """Alias for `numpy.dtype[T: numpy.generic = Any]`."""
 
 
-_T_HasDType = TypeVar(
-    '_T_HasDType',
+_DT_HasDType = TypeVar(
+    '_DT_HasDType',
     infer_variance=True,
     bound=np.dtype[Any],
-    default=Any,
+    default=np.dtype[Any],
 )
 
 
 @runtime_checkable
-class HasDType(Protocol[_T_HasDType]):
+class HasDType(Protocol[_DT_HasDType]):
     """
     `HasDType[DT: np.dtype[Any] = Any]`
 
@@ -40,14 +40,14 @@ class HasDType(Protocol[_T_HasDType]):
     looks something like `(HasDType[DT: numpy.DType], ...) -> DT`.
     """
     @property
-    def dtype(self, /) -> _T_HasDType: ...
+    def dtype(self, /) -> _DT_HasDType: ...
 
 
-_T_DType = TypeVar('_T_DType', bound=np.generic, default=Any)
-ArgDType: TypeAlias = (
-    np.dtype[_T_DType]
-    | type[_T_DType]
-    | HasDType[np.dtype[_T_DType]]
+_T_AnyDType = TypeVar('_T_AnyDType', bound=np.generic, default=np.generic)
+AnyDType: TypeAlias = (
+    np.dtype[_T_AnyDType]
+    | type[_T_AnyDType]
+    | HasDType[np.dtype[_T_AnyDType]]
 )
 """
 Subset of `npt.DTypeLike`, with optional type parameter, bound to `np.generic`.

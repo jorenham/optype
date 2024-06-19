@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
 
 import numpy as np
 
-from ._dtype import ArgDType as _SoloType
+from ._dtype import AnyDType as _SoloType
 
 
 if sys.version_info >= (3, 13):

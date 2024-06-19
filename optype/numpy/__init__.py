@@ -19,6 +19,7 @@ __all__ = (
     'AnyComplex128',
     'AnyComplex128Type',
     'AnyComplexFloating',
+    'AnyDType',
     'AnyDatetime64',
     'AnyDatetime64Type',
     'AnyDouble',
@@ -98,7 +99,6 @@ __all__ = (
     'AnyUnsignedIntegerType',
     'AnyVoid',
     'AnyVoidType',
-    'ArgDType',
     'Array',
     'CanArray',
     'CanArrayFinalize',
@@ -122,7 +122,7 @@ from ._array import (
     HasArrayPriority,
 )
 from ._dtype import (
-    ArgDType,
+    AnyDType,
     DType,
     HasDType,
 )
