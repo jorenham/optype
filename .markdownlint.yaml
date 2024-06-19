@@ -5,6 +5,8 @@ MD007:
   indent: 4
 MD013:
   line_length: 79
+MD031:
+  list_items: false
 MD033:
   allowed_elements:
     - h1

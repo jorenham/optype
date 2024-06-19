@@ -66,7 +66,7 @@ pytest-github-actions-annotate-failures = ">=0.2.0,<1.0"
 [tool.codespell]
 context = 2
 skip = "poetry.lock,pyproject.toml"
-ignore-words-list = "CanGe,nin"  # `optype.CanGe`, `numpy.ufunc.nin`
+ignore-words-list = "CanGe,nin,ND"  # `.CanGe`, `numpy.ufunc.nin`, `.numpy`
 
 
 [tool.basedpyright]
