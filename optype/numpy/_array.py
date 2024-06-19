@@ -15,6 +15,7 @@ if sys.version_info >= (3, 13):
         Required,
         TypeVar,
         TypedDict,
+        final,
         overload,
         runtime_checkable,
     )
@@ -24,6 +25,7 @@ else:
         Required,  # noqa: TCH002
         TypeVar,
         TypedDict,
+        final,
         overload,
         runtime_checkable,
     )
@@ -37,7 +39,7 @@ if TYPE_CHECKING:
 
 
 __all__ = (
-    'ArgArray',
+    'AnyArray',
     'Array',
     'CanArray',
     'CanArrayFinalize',
@@ -56,31 +58,31 @@ if not _NP_V2:
 _AnyShape: TypeAlias = tuple[int, ...]
 
 
-_S_Array = TypeVar('_S_Array', bound=_AnyShape, default=_AnyShape)
-_T_Array = TypeVar('_T_Array', bound=np.generic, default=Any)
-Array: TypeAlias = np.ndarray[_S_Array, np.dtype[_T_Array]]
+_ND_Array = TypeVar('_ND_Array', bound=_AnyShape, default=_AnyShape)
+_ST_Array = TypeVar('_ST_Array', bound=np.generic, default=np.generic)
+Array: TypeAlias = np.ndarray[_ND_Array, np.dtype[_ST_Array]]
 """NumPy array with optional type params for shape and generic dtype."""
 
 
-_S_CanArray = TypeVar('_S_CanArray', infer_variance=True, bound=_AnyShape)
-_T_CanArray = TypeVar('_T_CanArray', infer_variance=True, bound=np.generic)
+_ND_CanArray = TypeVar('_ND_CanArray', infer_variance=True, bound=_AnyShape)
+_ST_CanArray = TypeVar('_ST_CanArray', infer_variance=True, bound=np.generic)
 _DT_CanArray = TypeVar('_DT_CanArray', bound=np.dtype[Any])
 
 
 @runtime_checkable
-class CanArray(Protocol[_S_CanArray, _T_CanArray]):
+class CanArray(Protocol[_ND_CanArray, _ST_CanArray]):
     @overload
     def __array__(
         self,
         dtype: None = ...,
         /,
-    ) -> Array[_S_CanArray, _T_CanArray]: ...
+    ) -> Array[_ND_CanArray, _ST_CanArray]: ...
     @overload
     def __array__(
         self,
         dtype: _DT_CanArray,
         /,
-    ) -> np.ndarray[_S_CanArray, _DT_CanArray]: ...
+    ) -> np.ndarray[_ND_CanArray, _DT_CanArray]: ...
 
 
 _V__NestedSequence = TypeVar(
@@ -99,18 +101,23 @@ class _NestedSequence(Protocol[_V__NestedSequence]):
     ): ...
 
 
-_S_ArgArray = TypeVar('_S_ArgArray', bound=_AnyShape)
-_T_ArgArray_np = TypeVar('_T_ArgArray_np', bound=np.generic)
-_T_ArgArray_py = TypeVar(
-    '_T_ArgArray_py',
-    bound=bool | int | float | complex | str | bytes,
+_ND__AnyArray = TypeVar('_ND__AnyArray', bound=_AnyShape)
+_ST__AnyArray = TypeVar('_ST__AnyArray', bound=np.generic)
+_PT__AnyArray = TypeVar(
+    '_PT__AnyArray',
+    bool,
+    int,
+    float,
+    complex,
+    str,
+    bytes,
 )
 
-ArgArray: TypeAlias = (
-    CanArray[_S_ArgArray, _T_ArgArray_np]
-    | _NestedSequence[CanArray[Any, _T_ArgArray_np]]
-    | _T_ArgArray_py
-    | _NestedSequence[_T_ArgArray_py]
+AnyArray: TypeAlias = (
+    CanArray[_ND__AnyArray, _ST__AnyArray]
+    | _NestedSequence[CanArray[Any, _ST__AnyArray]]
+    | _PT__AnyArray
+    | _NestedSequence[_PT__AnyArray]
 )
 """
 Generic array-like that can be passed to e.g. `np.array` or `np.asaray`.
@@ -157,8 +164,8 @@ class CanArrayFinalize(Protocol[_T_CanArrayFinalize]):
     def __array_finalize__(self, obj: _T_CanArrayFinalize, /) -> None: ...
 
 
-_S_CanArrayWrap = TypeVar('_S_CanArrayWrap')
-_D_CanArrayWrap = TypeVar('_D_CanArrayWrap', bound=np.dtype[Any])
+_ND_CanArrayWrap = TypeVar('_ND_CanArrayWrap')
+_DT_CanArrayWrap = TypeVar('_DT_CanArrayWrap', bound=np.dtype[Any])
 
 
 @runtime_checkable
@@ -166,18 +173,18 @@ class CanArrayWrap(Protocol):
     if _NP_V2:
         def __array_wrap__(
             self,
-            array: np.ndarray[_S_CanArrayWrap, _D_CanArrayWrap],
+            array: np.ndarray[_ND_CanArrayWrap, _DT_CanArrayWrap],
             context: tuple[np.ufunc, tuple[Any, ...], int] | None = ...,
             return_scalar: bool = ...,
             /,
-        ) -> np.ndarray[_S_CanArrayWrap, _D_CanArrayWrap]: ...
+        ) -> np.ndarray[_ND_CanArrayWrap, _DT_CanArrayWrap]: ...
     else:
         def __array_wrap__(
             self,
-            array: np.ndarray[_S_CanArrayWrap, _D_CanArrayWrap],
+            array: np.ndarray[_ND_CanArrayWrap, _DT_CanArrayWrap],
             context: tuple[np.ufunc, tuple[Any, ...], int] | None = ...,
             /,
-        ) -> np.ndarray[_S_CanArrayWrap, _D_CanArrayWrap]: ...
+        ) -> np.ndarray[_ND_CanArrayWrap, _DT_CanArrayWrap]: ...
 
 
 _ArrayInterfaceDescr: TypeAlias = list[
@@ -187,6 +194,7 @@ _ArrayInterfaceDescr: TypeAlias = list[
 ]
 
 
+@final
 class _ArrayInterface(TypedDict, total=False):
     version: Required[int]
     shape: Required[tuple[int, ...]]

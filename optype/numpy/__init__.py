@@ -1,4 +1,5 @@
 __all__ = (
+    'AnyArray',
     'AnyBool',
     'AnyBoolType',
     'AnyByte',
@@ -97,7 +98,6 @@ __all__ = (
     'AnyUnsignedIntegerType',
     'AnyVoid',
     'AnyVoidType',
-    'ArgArray',
     'ArgDType',
     'Array',
     'CanArray',
@@ -112,7 +112,7 @@ __all__ = (
     'Scalar',
 )
 from ._array import (
-    ArgArray,
+    AnyArray,
     Array,
     CanArray,
     CanArrayFinalize,

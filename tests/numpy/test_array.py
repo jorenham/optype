@@ -38,19 +38,19 @@ def test_can_array():
 def test_some_array():
     sct: type[np.generic] = np.uint8
 
-    py_sc: onp.ArgArray[_Shape0D, sct, int] = 42
-    np_sc: onp.ArgArray[_Shape0D, sct, int] = sct(py_sc)
+    py_sc: onp.AnyArray[_Shape0D, sct, int] = 42
+    np_sc: onp.AnyArray[_Shape0D, sct, int] = sct(py_sc)
     assert np_sc.shape == ()
 
-    np_0d: onp.ArgArray[_Shape0D, sct, int] = np.array(py_sc, sct)
+    np_0d: onp.AnyArray[_Shape0D, sct, int] = np.array(py_sc, sct)
     assert np_0d.shape == ()
 
-    py_1d: onp.ArgArray[_Shape1D, sct, int] = [42]
-    np_1d: onp.ArgArray[_Shape1D, sct, int] = np.array(py_1d, sct)
+    py_1d: onp.AnyArray[_Shape1D, sct, int] = [42]
+    np_1d: onp.AnyArray[_Shape1D, sct, int] = np.array(py_1d, sct)
     assert np_1d.shape == (1,)
 
-    py_2d: onp.ArgArray[_Shape2D, sct, int] = [[42]]
-    np_2d: onp.ArgArray[_Shape2D, sct, int] = np.array(py_2d, sct)
+    py_2d: onp.AnyArray[_Shape2D, sct, int] = [[42]]
+    np_2d: onp.AnyArray[_Shape2D, sct, int] = np.array(py_2d, sct)
     assert np_2d.shape == (1, 1)
 
 
