@@ -12,20 +12,14 @@ import numpy as np
 if sys.version_info >= (3, 13):
     from typing import (
         Protocol,
-        Required,
         TypeVar,
-        TypedDict,
-        final,
         overload,
         runtime_checkable,
     )
 else:
     from typing_extensions import (
         Protocol,
-        Required,  # noqa: TCH002
         TypeVar,
-        TypedDict,
-        final,
         overload,
         runtime_checkable,
     )
@@ -35,7 +29,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
     from types import NotImplementedType
 
-    from optype import CanBuffer, CanIter, CanIterSelf
+    from optype import CanIter, CanIterSelf
 
 
 __all__ = (
@@ -60,12 +54,23 @@ _AnyShape: TypeAlias = tuple[int, ...]
 
 _ND_Array = TypeVar('_ND_Array', bound=_AnyShape, default=_AnyShape)
 _ST_Array = TypeVar('_ST_Array', bound=np.generic, default=np.generic)
+
 Array: TypeAlias = np.ndarray[_ND_Array, np.dtype[_ST_Array]]
 """NumPy array with optional type params for shape and generic dtype."""
 
 
-_ND_CanArray = TypeVar('_ND_CanArray', infer_variance=True, bound=_AnyShape)
-_ST_CanArray = TypeVar('_ST_CanArray', infer_variance=True, bound=np.generic)
+_ND_CanArray = TypeVar(
+    '_ND_CanArray',
+    infer_variance=True,
+    bound=_AnyShape,
+    default=_AnyShape,
+)
+_ST_CanArray = TypeVar(
+    '_ST_CanArray',
+    infer_variance=True,
+    bound=np.generic,
+    default=np.generic,
+)
 _DT_CanArray = TypeVar('_DT_CanArray', bound=np.dtype[Any])
 
 
@@ -101,16 +106,20 @@ class _NestedSequence(Protocol[_V__NestedSequence]):
     ): ...
 
 
-_ND__AnyArray = TypeVar('_ND__AnyArray', bound=_AnyShape)
-_ST__AnyArray = TypeVar('_ST__AnyArray', bound=np.generic)
+_ND__AnyArray = TypeVar(
+    '_ND__AnyArray',
+    bound=_AnyShape,
+    default=_AnyShape,
+)
+_ST__AnyArray = TypeVar(
+    '_ST__AnyArray',
+    bound=np.generic,
+    default=np.generic,
+)
 _PT__AnyArray = TypeVar(
     '_PT__AnyArray',
-    bool,
-    int,
-    float,
-    complex,
-    str,
-    bytes,
+    bound=complex | str | bytes,
+    default=complex | str | bytes,
 )
 
 AnyArray: TypeAlias = (
@@ -132,11 +141,13 @@ _F_CanArrayFunction = TypeVar(
     '_F_CanArrayFunction',
     infer_variance=True,
     bound='Callable[..., Any]',
+    default=Any,
 )
 _R_CanArrayFunction = TypeVar(
     '_R_CanArrayFunction',
     infer_variance=True,
     bound=object,
+    default=object,
 )
 
 
@@ -156,7 +167,12 @@ class CanArrayFunction(Protocol[_F_CanArrayFunction, _R_CanArrayFunction]):
 
 # this is almost always a `ndarray`, but setting a `bound` might break in some
 # edge cases
-_T_CanArrayFinalize = TypeVar('_T_CanArrayFinalize', infer_variance=True)
+_T_CanArrayFinalize = TypeVar(
+    '_T_CanArrayFinalize',
+    infer_variance=True,
+    bound=object,
+    default=object,
+)
 
 
 @runtime_checkable
@@ -187,31 +203,11 @@ class CanArrayWrap(Protocol):
         ) -> np.ndarray[_ND_CanArrayWrap, _DT_CanArrayWrap]: ...
 
 
-_ArrayInterfaceDescr: TypeAlias = list[
-    tuple[str, str]
-    | tuple[str, str, tuple[int, ...]]
-    | tuple[str, '_ArrayInterfaceDescr']
-]
-
-
-@final
-class _ArrayInterface(TypedDict, total=False):
-    version: Required[int]
-    shape: Required[tuple[int, ...]]
-    typestr: Required[str]
-
-    offset: int
-    strides: tuple[int, ...] | None
-    data: tuple[int, bool] | CanBuffer[Any] | None
-    mask: HasArrayInterface | None
-    descr: _ArrayInterfaceDescr
-
-
 _V_HasArrayInterface = TypeVar(
     '_V_HasArrayInterface',
     infer_variance=True,
     bound='Mapping[str, Any]',
-    default=_ArrayInterface,
+    default=dict[str, Any],
 )
 
 
@@ -221,15 +217,7 @@ class HasArrayInterface(Protocol[_V_HasArrayInterface]):
     def __array_interface__(self, /) -> _V_HasArrayInterface: ...
 
 
-_V_HasArrayPriority = TypeVar(
-    '_V_HasArrayPriority',
-    infer_variance=True,
-    bound=float,
-    default=float,
-)
-
-
 @runtime_checkable
-class HasArrayPriority(Protocol[_V_HasArrayPriority]):
+class HasArrayPriority(Protocol):
     @property
-    def __array_priority__(self, /) -> _V_HasArrayPriority: ...
+    def __array_priority__(self, /) -> float: ...
