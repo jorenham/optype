@@ -41,6 +41,8 @@ repos:
     rev: 1.8.3
     hooks:
       - id: poetry-check
+      - id: poetry-lock
+        args: [--no-update]
 
   - repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
@@ -53,7 +55,17 @@ repos:
       - id: ruff
         args: [--fix, --show-fixes]
 
-  - repo: https://github.com/DetachHead/basedpyright
-    rev: v1.12.5  # 1.12.6 (pyright 1.1.367) is bugged
+  # See https://github.com/DetachHead/basedpyright/issues/430
+  # - repo: https://github.com/DetachHead/basedpyright
+  #   rev: v1.13.0
+  #   hooks:
+  #     - id: basedpyright
+
+  - repo: local
     hooks:
       - id: basedpyright
+        name: basedpyright
+        entry: poetry run basedpyright
+        language: system
+        always_run: true
+        pass_filenames: false
