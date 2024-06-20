@@ -154,8 +154,8 @@ else:
     ]
 
 
-_F_CanArrayUFunc = TypeVar(
-    '_F_CanArrayUFunc',
+_Fn_CanArrayUFunc = TypeVar(
+    '_Fn_CanArrayUFunc',
     infer_variance=True,
     bound=AnyUFunc,
     default=Any,
@@ -163,7 +163,7 @@ _F_CanArrayUFunc = TypeVar(
 
 
 @runtime_checkable
-class CanArrayUFunc(Protocol[_F_CanArrayUFunc]):
+class CanArrayUFunc(Protocol[_Fn_CanArrayUFunc]):
     """
     Interface for ufunc operands.
 
@@ -173,7 +173,7 @@ class CanArrayUFunc(Protocol[_F_CanArrayUFunc]):
     def __array_ufunc__(
         self,
         /,
-        ufunc: _F_CanArrayUFunc,
+        ufunc: _Fn_CanArrayUFunc,
         method: _UFuncMethod,
         *args: Any,
         **kwargs: Any,
