@@ -205,6 +205,37 @@ There are four flavors of things that live within `optype`,
     have runtime-accessible type annotations, and have names you don't
     need to know by heart.
 
+The reference docs are structured as follows:
+
+- [Core functionality](#core-functionality)
+    - [Builtin type conversion](#builtin-type-conversion)
+    - [Rich relations](#rich-relations)
+    - [Binary operations](#binary-operations)
+    - [Reflected operations](#reflected-operations)
+    - [Inplace operations](#inplace-operations)
+    - [Unary operations](#unary-operations)
+    - [Rounding](#rounding)
+    - [Callables](#callables)
+    - [Iteration](#iteration)
+    - [Awaitables](#awaitables)
+    - [Async Iteration](#async-iteration)
+    - [Containers](#containers)
+    - [Attributes](#attributes)
+    - [Context managers](#context-managers)
+    - [Descriptors](#descriptors)
+    - [Buffer types](#buffer-types)
+- [Standard libs](#standard-libs)
+    - [`copy`](#copy)
+    - [`pickle`](#pickle)
+    - [`dataclasses`](#dataclasses)
+- [NumPy](#numpy)
+    - [Arrays](#arrays)
+        - [`optype.numpy.Array`](#optypenumpyarray)
+        - [`optype.numpy.AnyArray`](#optypenumpyanyarray)
+        - [Emulating arrays](#emulating-arrays)
+    - [DTypes](#dtypes)
+    - [Scalars](#scalars)
+
 ### Core functionality
 
 All [typing protocols][PC] here live in the root `optype` namespace.
@@ -1712,35 +1743,49 @@ graph TD
     generic --> object_
     generic --> number
     generic --> flexible
-    number --> integer
-    number --> inexact
-    integer --> signedinteger
-    integer --> unsignedinteger
-    inexact --> floating
-    inexact --> complexfloating
-    flexible --> character
-    flexible --> void
-    character --> bytes_
-    character --> str_
-    signedinteger --> byte
-    signedinteger --> short
-    signedinteger --> intc
-    signedinteger --> intp
-    signedinteger --> long
-    signedinteger --> longlong
-    unsignedinteger --> ubyte
-    unsignedinteger --> ushort
-    unsignedinteger --> uintc
-    unsignedinteger --> uintp
-    unsignedinteger --> ulong
-    unsignedinteger --> ulonglong
-    floating --> half
-    floating --> single
-    floating --> double
-    floating --> longdouble
-    complexfloating --> csingle
-    complexfloating --> cdouble
-    complexfloating --> clongdouble
+
+    subgraph IntegerTypes
+        number --> integer
+        integer --> signedinteger
+        integer --> unsignedinteger
+
+        signedinteger --> byte
+        signedinteger --> short
+        signedinteger --> intc
+        signedinteger --> int_
+        signedinteger --> long
+        signedinteger --> longlong
+
+        unsignedinteger --> ubyte
+        unsignedinteger --> ushort
+        unsignedinteger --> uintc
+        unsignedinteger --> uint
+        unsignedinteger --> ulong
+        unsignedinteger --> ulonglong
+    end
+
+    subgraph InexactTypes
+        number --> inexact
+        inexact --> floating
+        inexact --> complexfloating
+
+        floating --> half
+        floating --> single
+        floating --> double
+        floating --> longdouble
+
+        complexfloating --> csingle
+        complexfloating --> cdouble
+        complexfloating --> clongdouble
+    end
+
+    subgraph FlexibleTypes
+        flexible --> character
+        flexible --> void
+
+        character --> bytes_
+        character --> str_
+    end
 ```
 
 ```python
