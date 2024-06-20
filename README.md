@@ -63,7 +63,7 @@ This ensures that the installed `numpy` version is compatible with
 `optype`, following [NEP 29][NEP29] and [SPEC 0][SPEC0].
 
 ```shell
-pip install optype[numpy]
+pip install "optype[numpy]"
 ```
 
 See [#reference]
