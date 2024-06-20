@@ -57,17 +57,19 @@ Optype is available as [`optype`][OPTYPE] on PyPI:
 pip install optype
 ```
 
-For optional [NumPy][NUMPY] support, it is recommended to also install the `numpy`
-extra, which ensures that the installed `numpy` version is compatible with
-`optype`, following [NEP 29][NEP29]:
+For optional [NumPy][NUMPY] support, it is recommended to use the
+`numpy` extra.
+This ensures that the installed `numpy` version is compatible with
+`optype`, following [NEP 29][NEP29] and [SPEC 0][SPEC0].
 
 ```shell
 pip install optype[numpy]
 ```
 
+See [#reference]
+
 [OPTYPE]: https://pypi.org/project/optype/
 [NUMPY]: https://github.com/numpy/numpy
-[NEP29]: https://numpy.org/neps/nep-0029-deprecation_policy.html
 
 ## Example
 
@@ -175,39 +177,40 @@ def twice2[R](x: CMul2[R]) -> R:
 
 See [`examples/twice.py`](examples/twice.py) for the full example.
 
-## Overview
+## Reference
 
 The API of `optype` is flat; a single `import optype` is all you need.
+
 There are four flavors of things that live within `optype`,
 
-- `optype.Can{}` types describe *what can be done* with it.
-  For instance, any `CanAbs[T]` type can be used as argument to the `abs()`
-  builtin function with return type `T`. Most `Can{}` implement a single
-  special method, whose name directly matched that of the type. `CanAbs`
-  implements `__abs__`, `CanAdd` implements `__add__`, etc.
-- `optype.Has{}` is the analogue of `Can{}`, but for special *attributes*.
-  `HasName` has the `__name__: str` attribute, `HasDict` has a `__dict__`, etc.
-- `optype.Does{}` describe the *type of operators*. So `DoesAbs` is the type
-  of the `abs({})` builtin function, and `DoesPos` the type of the `+{}` prefix
-  operator.
-- `optype.do_{}` are the correctly-typed implementations of `Does{}`. For
-  each `do_{}` there is a `Does{}`, and vice-versa. So `do_abs: DoesAbs`
-  is the typed alias of `abs({})`, and `do_pos: DoesPos` is a typed version of
-  `operator.pos`. The `optype.do_` operators are more complete than
-  `operators`, has runtime-accessible type annotations, and uses a fully
-  predictable naming scheme.
+-
+    `optype.Can{}` types describe *what can be done* with it.
+    For instance, any `CanAbs[T]` type can be used as argument to the `abs()`
+    builtin function with return type `T`. Most `Can{}` implement a single
+    special method, whose name directly matched that of the type. `CanAbs`
+    implements `__abs__`, `CanAdd` implements `__add__`, etc.
+-
+    `optype.Has{}` is the analogue of `Can{}`, but for special *attributes*.
+    `HasName` has a `__name__` attribute, `HasDict` has a `__dict__`, etc.
+-
+    `optype.Does{}` describe the *type of operators*.
+    So `DoesAbs` is the type of the `abs({})` builtin function,
+    and `DoesPos` the type of the `+{}` prefix operator.
+-
+    `optype.do_{}` are the correctly-typed implementations of `Does{}`. For
+    each `do_{}` there is a `Does{}`, and vice-versa.
+    So `do_abs: DoesAbs` is the typed alias of `abs({})`,
+    and `do_pos: DoesPos` is a typed version of `operator.pos`.
+    The `optype.do_` operators are more complete than `operators`,
+    have runtime-accessible type annotations, and have names you don't
+    need to know by heart.
 
-## Reference
+### Core functionality
 
 All [typing protocols][PC] here live in the root `optype` namespace.
 They are [runtime-checkable][RC] so that you can do e.g.
 `isinstance('snail', optype.CanAdd)`, in case you want to check whether
 `snail` implements `__add__`.
-
-> [!NOTE]
-> It is bad practice to use a [`typing.Protocol`][PC] as base class for your
-> implementation. Because of [`@typing.runtime_checkable`][RC], you can use
-> `isinstance` either way.
 
 Unlike`collections.abc`, `optype`'s protocols aren't abstract base classes,
 i.e. they don't extend `abc.ABC`, only `typing.Protocol`.
@@ -217,7 +220,7 @@ type stubs.
 [PC]: https://typing.readthedocs.io/en/latest/spec/protocol.html
 [RC]: https://typing.readthedocs.io/en/latest/spec/protocol.html#runtime-checkable-decorator-and-narrowing-types-by-isinstance
 
-### Type conversion
+#### Builtin type conversion
 
 The return type of these special methods is *invariant*. Python will raise an
 error if some other (sub)type is returned.
@@ -264,24 +267,25 @@ This is why these `optype` interfaces don't accept generic type arguments.
         <td><code>CanBool[R: bool = bool]</code></td>
     </tr>
     <tr>
-        <td><code>str(_)</code></td>
-        <td><code>do_str</code></td>
-        <td><code>DoesStr</code></td>
-        <td><code>__str__</code></td>
-        <td><code>CanStr[R: str = str]</code></td>
-    </tr>
-    <tr>
         <td><code>bytes(_)</code></td>
         <td><code>do_bytes</code></td>
         <td><code>DoesBytes</code></td>
         <td><code>__bytes__</code></td>
         <td><code>CanBytes[R: bytes = bytes]</code></td>
     </tr>
+    <tr>
+        <td><code>str(_)</code></td>
+        <td><code>do_str</code></td>
+        <td><code>DoesStr</code></td>
+        <td><code>__str__</code></td>
+        <td><code>CanStr[R: str = str]</code></td>
+    </tr>
 </table>
 
 > [!NOTE]
-> The types that can be used within `typing.Literal` accept an optional
-> type parameter `R`. This can be used to indicate a literal return type,
+> The `Can*` interfaces of the types that can used as `typing.Literal`
+> accept an optional type parameter `R`.
+> This can be used to indicate a literal return type,
 > for surgically precise typing, e.g. `None`, `True`, and `42` are
 > instances of `CanBool[Literal[False]]`, `CanInt[Literal[1]]`, and
 > `CanStr[Literal['42']]`, respectively.
@@ -319,10 +323,48 @@ if your type hints are spot-on; `optype` is you friend.
     </tr>
 </table>
 
-### "Rich comparison" operators
+Additionally, `optype` provides protocols for types with (custom) *hash* or
+*index* methods:
 
-These special methods generally a `bool`. However, instances of any type can
-be returned.
+<table>
+    <tr>
+        <th colspan="3" align="center">operator</th>
+        <th colspan="2" align="center">operand</th>
+    </tr>
+    <tr>
+        <td>expression</td>
+        <th>function</th>
+        <th>type</th>
+        <td>method</td>
+        <th>type</th>
+    </tr>
+    <tr>
+        <td><code>hash(_)</code></td>
+        <td><code>do_hash</code></td>
+        <td><code>DoesHash</code></td>
+        <td><code>__hash__</code></td>
+        <td><code>CanHash</code></td>
+    </tr>
+    <tr>
+        <td>
+            <code>_.__index__()</code>
+            (<a href="https://docs.python.org/3/reference/datamodel.html#object.__index__">docs</a>)
+        </td>
+        <td><code>do_index</code></td>
+        <td><code>DoesIndex</code></td>
+        <td><code>__index__</code></td>
+        <td><code>CanIndex[R: int = int]</code></td>
+    </tr>
+</table>
+
+#### Rich relations
+
+The "rich" comparison special methods often return a `bool`.
+However, instances of any type can be returned (e.g. a numpy array).
+This is why the corresponding `optype.Can*` interfaces accept a second type
+argument for the return type, that defaults to `bool` when omitted.
+The first type parameter matches the passed method argument, i.e. the
+right-hand side operand, denoted here as `x`.
 
 <table>
     <tr>
@@ -387,39 +429,13 @@ be returned.
     </tr>
 </table>
 
-### Callable objects
+#### Binary operations
 
-Unlike `operator`, `optype` provides the operator for callable objects:
-`optype.do_call(f, *args. **kwargs)`.
-
-`CanCall` is similar to `collections.abc.Callable`, but is runtime-checkable,
-and doesn't use esoteric hacks.
-
-<table>
-    <tr>
-        <th colspan="3" align="center">operator</th>
-        <th colspan="2" align="center">operand</th>
-    </tr>
-    <tr>
-        <td>expression</td>
-        <th>function</th>
-        <th>type</th>
-        <td>method</td>
-        <th>type</th>
-    </tr>
-    <tr>
-        <td><code>_(*args, **kwargs)</code></td>
-        <td><code>do_call</code></td>
-        <td><code>DoesCall</code></td>
-        <td><code>__call__</code></td>
-        <td><code>CanCall[**Pss, R]</code></td>
-    </tr>
-</table>
-
-### Numeric operations
-
-For describing things that act like numbers. See the [Python docs][NT] for more
-info.
+In the [Python docs][NT], these are referred to as "arithmetic operations".
+But the operands aren't limited to numeric types, and because the
+operations aren't required to be commutative, might be non-deterministic, and
+could have side-effects.
+Classifying them "arithmetic" is, at the very least, a bit of a stretch.
 
 <table>
     <tr>
@@ -549,14 +565,20 @@ info.
     </tr>
 </table>
 
-Note that because `pow()` can take an optional third argument, `optype`
-provides separate interfaces for `pow()` with two and three arguments.
-Additionally, there is the overloaded intersection type
-`CanPow[T, M, R, RM] =: CanPow2[T, R] & CanPow3[T, M, RM]`, as interface
-for types that can take an optional third argument.
+> [!NOTE]
+> Because `pow()` can take an optional third argument, `optype`
+> provides separate interfaces for `pow()` with two and three arguments.
+> Additionally, there is the overloaded intersection type
+> `CanPow[T, M, R, RM] =: CanPow2[T, R] & CanPow3[T, M, RM]`, as interface
+> for types that can take an optional third argument.
+
+#### Reflected operations
 
 For the binary infix operators above, `optype` additionally provides
-interfaces with reflected (swapped) operands:
+interfaces with *reflected* (swapped) operands, e.g. `__radd__` is a reflected
+`__add__`.
+They are named like the original, but prefixed with `CanR` prefix, i.e.
+`__name__.replace('Can', 'CanR')`.
 
 <table>
     <tr>
@@ -673,11 +695,20 @@ interfaces with reflected (swapped) operands:
     </tr>
 </table>
 
-Note that `CanRPow` corresponds to `CanPow2`; the 3-parameter "modulo" `pow`
-does not reflect in Python.
+> [!NOTE]
+> `CanRPow` corresponds to `CanPow2`; the 3-parameter "modulo" `pow` does not
+> reflect in Python.
+>
+> According to the relevant [python docs][RPOW]:
+> > Note that ternary `pow()` will not try calling `__rpow__()` (the coercion
+> > rules would become too complicated).
 
-Similarly, the augmented assignment operators are described by the following
-`optype` interfaces:
+[RPOW]: https://docs.python.org/3/reference/datamodel.html#object.__rpow__
+
+#### Inplace operations
+
+Similar to the reflected ops, the inplace/augmented ops are prefixed with
+`CanI`, namely:
 
 <table>
     <tr>
@@ -689,109 +720,148 @@ Similarly, the augmented assignment operators are described by the following
         <th>function</th>
         <th>type</th>
         <td>method</td>
-        <th>type</th>
+        <th>types</th>
     </tr>
     <tr>
         <td><code>_ += x</code></td>
         <td><code>do_iadd</code></td>
         <td><code>DoesIAdd</code></td>
         <td><code>__iadd__</code></td>
-        <td><code>CanIAdd[T, R]</code></td>
+        <td>
+            <code>CanIAdd[T, R]</code><br>
+            <code>CanIAddSelf[T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>_ -= x</code></td>
         <td><code>do_isub</code></td>
         <td><code>DoesISub</code></td>
         <td><code>__isub__</code></td>
-        <td><code>CanISub[T, R]</code></td>
+        <td>
+            <code>CanISub[T, R]</code><br>
+            <code>CanISubSelf[T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>_ *= x</code></td>
         <td><code>do_imul</code></td>
         <td><code>DoesIMul</code></td>
         <td><code>__imul__</code></td>
-        <td><code>CanIMul[T, R]</code></td>
+        <td>
+            <code>CanIMul[T, R]</code><br>
+            <code>CanIMulSelf[T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>_ @= x</code></td>
         <td><code>do_imatmul</code></td>
         <td><code>DoesIMatmul</code></td>
         <td><code>__imatmul__</code></td>
-        <td><code>CanIMatmul[T, R]</code></td>
+        <td>
+            <code>CanIMatmul[T, R]</code><br>
+            <code>CanIMatmulSelf[T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>_ /= x</code></td>
         <td><code>do_itruediv</code></td>
         <td><code>DoesITruediv</code></td>
         <td><code>__itruediv__</code></td>
-        <td><code>CanITruediv[T, R]</code></td>
+        <td>
+            <code>CanITruediv[T, R]</code><br>
+            <code>CanITruedivSelf[T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>_ //= x</code></td>
         <td><code>do_ifloordiv</code></td>
         <td><code>DoesIFloordiv</code></td>
         <td><code>__ifloordiv__</code></td>
-        <td><code>CanIFloordiv[T, R]</code></td>
+        <td>
+            <code>CanIFloordiv[T, R]</code><br>
+            <code>CanIFloordivSelf[T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>_ %= x</code></td>
         <td><code>do_imod</code></td>
         <td><code>DoesIMod</code></td>
         <td><code>__imod__</code></td>
-        <td><code>CanIMod[T, R]</code></td>
+        <td>
+            <code>CanIMod[T, R]</code><br>
+            <code>CanIModSelf[T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>_ **= x</code></td>
         <td><code>do_ipow</code></td>
         <td><code>DoesIPow</code></td>
         <td><code>__ipow__</code></td>
-        <td><code>CanIPow[T, R]</code></td>
+        <td>
+            <code>CanIPow[T, R]</code><br>
+            <code>CanIPowSelf[T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>_ <<= x</code></td>
         <td><code>do_ilshift</code></td>
         <td><code>DoesILshift</code></td>
         <td><code>__ilshift__</code></td>
-        <td><code>CanILshift[T, R]</code></td>
+        <td>
+            <code>CanILshift[T, R]</code><br>
+            <code>CanILshiftSelf[T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>_ >>= x</code></td>
         <td><code>do_irshift</code></td>
         <td><code>DoesIRshift</code></td>
         <td><code>__irshift__</code></td>
-        <td><code>CanIRshift[T, R]</code></td>
+        <td>
+            <code>CanIRshift[T, R]</code><br>
+            <code>CanIRshiftSelf[T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>_ &= x</code></td>
         <td><code>do_iand</code></td>
         <td><code>DoesIAnd</code></td>
         <td><code>__iand__</code></td>
-        <td><code>CanIAnd[T, R]</code></td>
+        <td>
+            <code>CanIAnd[T, R]</code><br>
+            <code>CanIAndSelf[T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>_ ^= x</code></td>
         <td><code>do_ixor</code></td>
         <td><code>DoesIXor</code></td>
         <td><code>__ixor__</code></td>
-        <td><code>CanIXor[T, R]</code></td>
+        <td>
+            <code>CanIXor[T, R]</code><br>
+            <code>CanIXorSelf[T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>_ |= x</code></td>
         <td><code>do_ior</code></td>
         <td><code>DoesIOr</code></td>
         <td><code>__ior__</code></td>
-        <td><code>CanIOr[T, R]</code></td>
+        <td>
+            <code>CanIOr[T, R]</code><br>
+            <code>CanIOrSelf[T]</code>
+        </td>
     </tr>
 </table>
 
-These augmented operators usually return itself (after some in-place mutation).
+These inplace operators usually return itself (after some in-place mutation).
 But unfortunately, it currently isn't possible to use `Self` for this (i.e.
 something like `type MyAlias[T] = optype.CanIAdd[T, Self]` isn't allowed).
 So to help ease this unbearable pain, `optype` comes equipped with ready-made
 aliases for you to use. They bear the same name, with an additional `*Self`
 suffix, e.g. `optype.CanIAddSelf[T]`.
 
-Additionally, there are the unary arithmetic operators:
+#### Unary operations
 
 <table>
     <tr>
@@ -846,6 +916,8 @@ Additionally, there are the unary arithmetic operators:
         </td>
     </tr>
 </table>
+
+#### Rounding
 
 The `round()` built-in function takes an optional second argument.
 From a typing perspective, `round()` has two overloads, one with 1 parameter,
@@ -945,30 +1017,46 @@ But technially speaking, these methods can be made to return anything.
 [MATH]: https://docs.python.org/3/library/math.html
 [NT]: https://docs.python.org/3/reference/datamodel.html#emulating-numeric-types
 
-### Async objects
+#### Callables
 
-The `optype` variant of `collections.abc.Awaitable[R]`. The only difference
-is that `optype.CanAwait[R]` is a pure interface, whereas `Awaitable` is
-also an abstract base class.
+Unlike `operator`, `optype` provides the operator for callable objects:
+`optype.do_call(f, *args. **kwargs)`.
+
+`CanCall` is similar to `collections.abc.Callable`, but is runtime-checkable,
+and doesn't use esoteric hacks.
 
 <table>
     <tr>
-        <th align="center">operator</th>
+        <th colspan="3" align="center">operator</th>
         <th colspan="2" align="center">operand</th>
     </tr>
     <tr>
         <td>expression</td>
+        <th>function</th>
+        <th>type</th>
         <td>method</td>
         <th>type</th>
     </tr>
     <tr>
-        <td><code>await _</code></td>
-        <td><code>__await__</code></td>
-        <td><code>CanAwait[R]</code></td>
+        <td><code>_(*args, **kwargs)</code></td>
+        <td><code>do_call</code></td>
+        <td><code>DoesCall</code></td>
+        <td><code>__call__</code></td>
+        <td><code>CanCall[**Pss, R]</code></td>
     </tr>
 </table>
 
-### Iteration
+> [!NOTE]
+> Pyright (and probably other typecheckers) tend to accept
+> `collections.abc.Callable` in more places than `optype.CanCall`.
+> This could be related to the lack of co/contra-variance specification for
+> `typing.ParamSpec` (they should almost always be contravariant, but
+> currently they can only be invariant).
+>
+> In case you encounter such a situation, please open an issue about it, so we
+> can investigate further.
+
+#### Iteration
 
 The operand `x` of `iter(_)` is within Python known as an *iterable*, which is
 what `collections.abc.Iterable[V]` is often used for (e.g. as base class, or
@@ -1009,14 +1097,14 @@ from the abracadabra collections. This is how they are defined:
     </tr>
     <tr>
         <td><code>next(_)</code></td>
-        <td><code>do_next/1</code></td>
+        <td><code>do_next</code></td>
         <td><code>DoesNext</code></td>
         <td><code>__next__</code></td>
         <td><code>CanNext[V]</code></td>
     </tr>
     <tr>
         <td><code>iter(_)</code></td>
-        <td><code>do_iter/1</code></td>
+        <td><code>do_iter</code></td>
         <td><code>DoesIter</code></td>
         <td><code>__iter__</code></td>
         <td><code>CanIter[R: CanNext[Any]]</code></td>
@@ -1029,7 +1117,30 @@ For the sake of compatibility with `collections.abc`, there is
 I.e. it is equivalent to `collections.abc.Iterator[V]`, but without the `abc`
 nonsense.
 
-### Async Iteration
+#### Awaitables
+
+The `optype` is almost the same as `collections.abc.Awaitable[R]`, except
+that `optype.CanAwait[R]` is a pure interface, whereas `Awaitable` is
+also an abstract base class (making it absolutely useless when writing stubs).
+
+<table>
+    <tr>
+        <th align="center">operator</th>
+        <th colspan="2" align="center">operand</th>
+    </tr>
+    <tr>
+        <td>expression</td>
+        <td>method</td>
+        <th>type</th>
+    </tr>
+    <tr>
+        <td><code>await _</code></td>
+        <td><code>__await__</code></td>
+        <td><code>CanAwait[R]</code></td>
+    </tr>
+</table>
+
+#### Async Iteration
 
 Yes, you guessed it right; the abracadabra collections made the exact same
 mistakes for the async iterablors (or was it "iteramblers"...?).
@@ -1077,7 +1188,7 @@ Additionally, there is `optype.CanAIterSelf[R]`, with both the
 
 [AN]: https://github.com/python/typeshed/pull/7491
 
-### Containers
+#### Containers
 
 <table>
     <tr>
@@ -1166,41 +1277,7 @@ Similarly, there is `optype.CanSequence[K: CanIndex | slice, V]`, which is the
 combination of both `CanLen` and `CanItem[I, V]`, and serves as a more
 specific and flexible `collections.abc.Sequence[V]`.
 
-Additionally, `optype` provides protocols for types with (custom) *hash* or
-*index* methods:
-
-<table>
-    <tr>
-        <th colspan="3" align="center">operator</th>
-        <th colspan="2" align="center">operand</th>
-    </tr>
-    <tr>
-        <td>expression</td>
-        <th>function</th>
-        <th>type</th>
-        <td>method</td>
-        <th>type</th>
-    </tr>
-    <tr>
-        <td><code>hash(_)</code></td>
-        <td><code>do_hash</code></td>
-        <td><code>DoesHash</code></td>
-        <td><code>__hash__</code></td>
-        <td><code>CanHash</code></td>
-    </tr>
-    <tr>
-        <td>
-            <code>_.__index__()</code>
-            (<a href="https://docs.python.org/3/reference/datamodel.html#object.__index__">docs</a>)
-        </td>
-        <td><code>do_index</code></td>
-        <td><code>DoesIndex</code></td>
-        <td><code>__index__</code></td>
-        <td><code>CanIndex[R: int = int]</code></td>
-    </tr>
-</table>
-
-### Attribute access
+#### Attributes
 
 <table>
     <tr>
@@ -1253,46 +1330,7 @@ Additionally, `optype` provides protocols for types with (custom) *hash* or
     </tr>
 </table>
 
-### Descriptors
-
-Interfaces for [descriptors](https://docs.python.org/3/howto/descriptor.html).
-
-<table>
-    <tr>
-        <th align="center">operator</th>
-        <th colspan="2" align="center">operand</th>
-    </tr>
-    <tr>
-        <td>expression</td>
-        <td>method</td>
-        <th>type</th>
-    </tr>
-    <tr>
-        <td>
-            <code>v: V = T().d</code><br/>
-            <code>vt: VT = T.d</code>
-        </td>
-        <td><code>__get__</code></td>
-        <td><code>CanGet[T: object, V, VT = V]</code></td>
-    </tr>
-    <tr>
-        <td><code>T().k = v</code></td>
-        <td><code>__set__</code></td>
-        <td><code>CanSet[T: object, V]</code></td>
-    </tr>
-    <tr>
-        <td><code>del T().k</code></td>
-        <td><code>__delete__</code></td>
-        <td><code>CanDelete[T: object]</code></td>
-    </tr>
-    <tr>
-        <td><code>class T: d = _</code></td>
-        <td><code>__set_name__</code></td>
-        <td><code>CanSetName[T: object, N: str = str]</code></td>
-    </tr>
-</table>
-
-### Context managers
+#### Context managers
 
 Support for the `with` statement.
 
@@ -1375,7 +1413,46 @@ For the `async with` statement the interfaces look very similar:
     </tr>
 </table>
 
-### Buffer types
+#### Descriptors
+
+Interfaces for [descriptors](https://docs.python.org/3/howto/descriptor.html).
+
+<table>
+    <tr>
+        <th align="center">operator</th>
+        <th colspan="2" align="center">operand</th>
+    </tr>
+    <tr>
+        <td>expression</td>
+        <td>method</td>
+        <th>type</th>
+    </tr>
+    <tr>
+        <td>
+            <code>v: V = T().d</code><br/>
+            <code>vt: VT = T.d</code>
+        </td>
+        <td><code>__get__</code></td>
+        <td><code>CanGet[T: object, V, VT = V]</code></td>
+    </tr>
+    <tr>
+        <td><code>T().k = v</code></td>
+        <td><code>__set__</code></td>
+        <td><code>CanSet[T: object, V]</code></td>
+    </tr>
+    <tr>
+        <td><code>del T().k</code></td>
+        <td><code>__delete__</code></td>
+        <td><code>CanDelete[T: object]</code></td>
+    </tr>
+    <tr>
+        <td><code>class T: d = _</code></td>
+        <td><code>__set_name__</code></td>
+        <td><code>CanSetName[T: object, N: str = str]</code></td>
+    </tr>
+</table>
+
+#### Buffer types
 
 Interfaces for emulating buffer types using the [buffer protocol][BP].
 
@@ -1403,7 +1480,9 @@ Interfaces for emulating buffer types using the [buffer protocol][BP].
 
 [BP]: https://docs.python.org/3/reference/datamodel.html#python-buffer-protocol
 
-### `copy`
+### Standard libs
+
+#### `copy`
 
 For the [`copy`][CP] standard library, `optype` provides the following
 interfaces:
@@ -1447,7 +1526,7 @@ type CanReplaceSelf[V] = CanReplace[V, CanReplaceSelf[V]]
 
 [CP]: https://docs.python.org/3/library/copy.html
 
-### `pickle`
+#### `pickle`
 
 For the [`pickle`][PK] standard library, `optype` provides the following
 interfaces:
@@ -1504,7 +1583,7 @@ interfaces:
     </tr>
 </table>
 
-### `dataclasses`
+#### `dataclasses`
 
 For the [`dataclasses`][DC] standard library, `optype` provides the
 `HasDataclassFields[V: Mapping[str, Field]]` interface.
@@ -1513,10 +1592,163 @@ dataclass, i.e. `isinstance(obj, optype.HasDataclassFields)`.
 
 [DC]: https://docs.python.org/3/library/dataclasses.html
 
-## Future plans
+### NumPy
 
-- [array-api][API-ND] interfaces (no deps) (#25)
-- [dataframe-api][API-DF] interfaces (no deps) (#26)
+Optype supports both NumPy 1 and 2.
+The current minimum supported version is `1.24`,
+following [NEP 29][NEP29] and [SPEC 0][SPEC0].
 
-[API-ND]: https://data-apis.org/array-api/latest/
-[API-DF]: https://data-apis.org/dataframe-api/draft/index.html
+When using `optype.numpy`, it is recommended to install `optype` with the
+`numpy` extra, ensuring version compatibility:
+
+```shell
+pip install "optype[numpy]"
+```
+
+> [!NOTE]
+> For the remainder of the `optype.numpy` docs, assume that the following
+> import aliases are available.
+>
+> ```python
+> from typing import Any, Literal
+> import numpy as np
+> import numpy.typing as npt
+> import optype.numpy as onp
+> ```
+>
+> For the sake of brevity and readability, the [PEP 695][PEP695] and
+> [PEP 696][PEP696] type parameter syntax will be used, which is supported
+> since Python 3.13.
+
+#### Arrays
+
+##### `optype.numpy.Array`
+
+Optype provides the generic `onp.Array` type alias for `np.ndarray`.
+It is similar to `npt.NDArray`, but includes two (optional) type parameters;
+one that matches the *shape type* (`ND: tuple[int, ...]`),
+and one that matches the *scalar type* (`ST: np.generic`).
+It is defined as:
+
+```python
+type Array[
+    ND: tuple[int, ...] = tuple[int, ...],
+    ST: np.generic = Any,
+] = np.ndarray[ND, np.dtype[ST]]
+```
+
+Note that the shape type parameter `ND` matches the type of `np.ndarray.shape`,
+and the scalar type parameter `ST` that of `np.ndarray.dtype.type`.
+
+This way. a vector can be typed as `Array[tuple[int]]`, and a $2 \times 2$
+matrix of integers as `Array[tuple[Literal[2], Literal[2]], np.integer[Any]]`.
+
+##### `optype.numpy.AnyArray`
+
+Something that can be used to construct a numpy array, is often referred to
+as an *array-like*, usually annotated with `npt.ArrayLike`.
+But there are two main problems with `npt.ArrayLike`:
+
+1. It's name strongly suggests that it *only* applies to arrays. However,
+  "0-dimensional" are also included, i.e. "scalars" such as `bool`, and
+  `complex`, but also `str`, since numpy considers unicode- and bytestrings
+  to be  "scalars".
+  So `a: npt.ArrayLike = 'array lie'` is a valid statement.
+2. There is no way to narrow the allowed scalar-types, since it's not generic.
+   So instances of `bytes` and arrays of `np.object_` are always included.
+
+`AnyArray[ND, ST, PY]` doesn't have these problems through it's (optional)
+generic type parameters:
+
+```python
+type AnyArray[
+    # shape type
+    ND: tuple[int, ...] = tuple[int, ...],
+    # numpy scalar type
+    ST: np.generic = np.generic,
+    # python scalar type (note that `complex` includes `bool | int | float`)
+    PT: complex | str | bytes = complex | str | bytes,
+]
+```
+
+> [!NOTE]
+> Unlike `npt.ArrayLike`, `onp.AnyArray` does not include the python scalars
+> (`PT`) directly.
+
+This makes it possible to correctly annotate e.g. a 1-d arrays-like of floats
+as `a: onp.AnyArray[tuple[int], np.floating[Any], float]`.
+
+##### Emulating arrays
+
+```python
+# TODO: `CanArray`
+# TODO: `CanArrayUFunc`
+# TODO: `CanArrayFunction`
+
+# TODO: `CanArrayWrap`
+# TODO: `CanArrayFinalize`
+# TODO: `HasArrayPriority`
+
+# TODO: `HasArrayInterface`
+```
+
+#### DTypes
+
+```python
+# TODO: DType
+# TODO: AnyDType
+# TODO: HasDType
+```
+
+#### Scalars
+
+```python
+# TODO: optype.numpy.Scalar
+```
+
+```mermaid
+graph TD
+    generic --> bool_
+    generic --> object_
+    generic --> number
+    generic --> flexible
+    number --> integer
+    number --> inexact
+    integer --> signedinteger
+    integer --> unsignedinteger
+    inexact --> floating
+    inexact --> complexfloating
+    flexible --> character
+    flexible --> void
+    character --> bytes_
+    character --> str_
+    signedinteger --> byte
+    signedinteger --> short
+    signedinteger --> intc
+    signedinteger --> intp
+    signedinteger --> long
+    signedinteger --> longlong
+    unsignedinteger --> ubyte
+    unsignedinteger --> ushort
+    unsignedinteger --> uintc
+    unsignedinteger --> uintp
+    unsignedinteger --> ulong
+    unsignedinteger --> ulonglong
+    floating --> half
+    floating --> single
+    floating --> double
+    floating --> longdouble
+    complexfloating --> csingle
+    complexfloating --> cdouble
+    complexfloating --> clongdouble
+```
+
+```python
+# TODO: optype.numpy._sctype.Any*
+# TODO: optype.numpy._sctype.Any*Type
+```
+
+[NEP29]: https://numpy.org/neps/nep-0029-deprecation_policy.html
+[SPEC0]: https://scientific-python.org/specs/spec-0000/
+[PEP695]: https://peps.python.org/pep-0695/
+[PEP696]: https://peps.python.org/pep-0696/
