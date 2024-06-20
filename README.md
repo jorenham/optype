@@ -1515,10 +1515,8 @@ dataclass, i.e. `isinstance(obj, optype.HasDataclassFields)`.
 
 ## Future plans
 
-- [numpy][NP] interfaces for arrays-like types (no deps) (#24)
 - [array-api][API-ND] interfaces (no deps) (#25)
 - [dataframe-api][API-DF] interfaces (no deps) (#26)
 
-[NP]: https://github.com/numpy/numpy
 [API-ND]: https://data-apis.org/array-api/latest/
 [API-DF]: https://data-apis.org/dataframe-api/draft/index.html
