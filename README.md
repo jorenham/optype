@@ -66,7 +66,7 @@ This ensures that the installed `numpy` version is compatible with
 pip install "optype[numpy]"
 ```
 
-See [#reference]
+See the [`optype.numpy` docs](#numpy) for more info.
 
 [OPTYPE]: https://pypi.org/project/optype/
 [NUMPY]: https://github.com/numpy/numpy
