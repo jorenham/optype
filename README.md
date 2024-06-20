@@ -211,34 +211,7 @@ There are four flavors of things that live within `optype`,
 
 The reference docs are structured as follows:
 
-- [Core functionality](#core-functionality)
-    - [Builtin type conversion](#builtin-type-conversion)
-    - [Rich relations](#rich-relations)
-    - [Binary operations](#binary-operations)
-    - [Reflected operations](#reflected-operations)
-    - [Inplace operations](#inplace-operations)
-    - [Unary operations](#unary-operations)
-    - [Rounding](#rounding)
-    - [Callables](#callables)
-    - [Iteration](#iteration)
-    - [Awaitables](#awaitables)
-    - [Async Iteration](#async-iteration)
-    - [Containers](#containers)
-    - [Attributes](#attributes)
-    - [Context managers](#context-managers)
-    - [Descriptors](#descriptors)
-    - [Buffer types](#buffer-types)
-- [Standard libs](#standard-libs)
-    - [`copy`](#copy)
-    - [`pickle`](#pickle)
-    - [`dataclasses`](#dataclasses)
-- [NumPy](#numpy)
-    - [Arrays](#arrays)
-        - [`optype.numpy.Array`](#optypenumpyarray)
-        - [`optype.numpy.AnyArray`](#optypenumpyanyarray)
-        - [Emulating arrays](#emulating-arrays)
-    - [DTypes](#dtypes)
-    - [Scalars](#scalars)
+<!-- TODO: insert table of contents -->
 
 ### Core functionality
 
@@ -1716,24 +1689,72 @@ as `a: onp.AnyArray[tuple[int], np.floating[Any], float]`.
 ##### Emulating arrays
 
 ```python
-# TODO: `CanArray`
-# TODO: `CanArrayUFunc`
 # TODO: `CanArrayFunction`
 
 # TODO: `CanArrayWrap`
 # TODO: `CanArrayFinalize`
-# TODO: `HasArrayPriority`
 
+# TODO: `HasArrayPriority`
 # TODO: `HasArrayInterface`
 ```
 
-#### DTypes
+<table>
+    <tr>
+        <th><code>optype.numpy._</code></th>
+        <th>method</th>
+        <th>purpose</th>
+    </tr>
+    <tr>
+<td>
 
 ```python
-# TODO: DType
-# TODO: AnyDType
-# TODO: HasDType
+CanArray[
+    ND: tuple[int, ...] = Any,
+    ST: np.generic = Any,
+]
 ```
+
+</td>
+        <td>
+            <a href="https://numpy.org/doc/stable/user/basics.interoperability.html#the-array-method">
+                <code>__array__()</code>
+            </a>
+        </td>
+        <td>Turning itself into a numpy array.</td>
+    </tr>
+    <tr>
+        <td></td>
+        <td><code>__exit__</code></td>
+        <td>
+            <code>CanExit[R = None]</code>
+        </td>
+    </tr>
+    <tr>
+<td>
+
+```python
+CanArrayUFunc[
+    ND: tuple[int, ...] = Any,
+    ST: np.generic = Any,
+]
+```
+
+</td>
+        <td>
+            <a href="https://numpy.org/doc/stable/user/basics.interoperability.html#the-array-method">
+                <code>__array__()</code>
+            </a>
+        </td>
+        <td>Turning itself into a numpy array.</td>
+    </tr>
+    <tr>
+        <td></td>
+        <td><code>__exit__</code></td>
+        <td>
+            <code>CanExit[R = None]</code>
+        </td>
+    </tr>
+</table>
 
 #### Scalars
 
@@ -1795,6 +1816,62 @@ graph TD
 ```python
 # TODO: optype.numpy._sctype.Any*
 # TODO: optype.numpy._sctype.Any*Type
+```
+
+#### Data type objects
+
+In numpy, a *dtype* (data type) object, is an instance of the
+`numpy.dtype[ST: np.generic]` type.
+It's commonly used to convey metadata of a scalar type, e.g. within arrays.
+
+Because the type parameter of `np.dtype` isn't optional, it could me more
+convenient to use the alias `optype.numpy.DType`, which is defined as:
+
+```python
+type DType[ST: np.generic = Any] = np.dtype[ST]
+```
+
+Apart from the "CamelCase" name, the only difference with `np.dtype` is that
+the the type parameter can be omitted, in which case it's equivalent to
+`np.dtype[np.generic]`, but shorter.
+
+---
+
+Many of numpy's public functions accept an (optional) `dtype` argument.
+But here, the term "dtype" had a broader meaning, as it also accepts
+(a subtype of) `np.generic`.
+Additionally, any instance with a `dtype: DType` attribute is accepted,
+for which the runtime-checkable interface is `optype.numpy.HasDType`, and is
+roughly equivalent to the following definition:
+
+```python
+@runtime_checkable
+class HasDType[DT: DType = DType](Protocol):
+    dtype: Final[DT]
+```
+
+Since `np.ndarray` has a `dtype` attribute, it is a subtype of `HasDType`:
+
+```pycon
+>>> isinstance(np.array([42]), onp.HasDType)
+True
+```
+
+---
+
+All types that can be passed to the `np.dtype` constructor, as well as the type
+of most `dtype` function parameters, are encapsulated within the
+`optype.numpy.AnyDType` alias, i.e.:
+
+```python
+type AnyDType[ST: np.generic = Any] = type[ST] | DType[ST] | HasDType[DType[ST]]
+```
+
+#### Universal functions
+
+```python
+# TODO: `AnyUFunc[Fn: CanCall, Nin: int, Nout: int, Sig: str | None, Id: int]`
+# TODO: `CanArrayUFunc[Fn: AnyUFunc]`
 ```
 
 [NEP29]: https://numpy.org/neps/nep-0029-deprecation_policy.html
