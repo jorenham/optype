@@ -1,10 +1,6 @@
 <h1 align="center">optype</h1>
 
 <p align="center">
-    <i>One protocol, one method.</i>
-</p>
-
-<p align="center">
     Building blocks for precise & flexible type hints.
 </p>
 
