@@ -9,12 +9,6 @@
 </p>
 
 <p align="center">
-    <a href="https://github.com/jorenham/optype/actions?query=workflow%3ACI">
-        <img
-            alt="optype - CI"
-            src="https://github.com/jorenham/optype/workflows/CI/badge.svg"
-        />
-    </a>
     <a href="https://pypi.org/project/optype/">
         <img
             alt="optype - PyPI"
@@ -31,6 +25,20 @@
         <img
             alt="optype - license"
             src="https://img.shields.io/github/license/jorenham/optype?style=flat"
+        />
+    </a>
+</p>
+<p align="center">
+    <a href="https://github.com/jorenham/optype/actions?query=workflow%3ACI">
+        <img
+            alt="optype - CI"
+            src="https://github.com/jorenham/optype/workflows/CI/badge.svg"
+        />
+    </a>
+    <a href="https://github.com/pre-commit/pre-commit">
+        <img
+            alt="optype - pre-commit"
+            src="https://img.shields.io/badge/pre--commit-enabled-orange?logo=pre-commit"
         />
     </a>
     <a href="https://detachhead.github.io/basedpyright">
