@@ -76,6 +76,7 @@ __all__ = (
     'AnyTimedelta64Type',
     'AnyUByte',
     'AnyUByteType',
+    'AnyUFunc',
     'AnyUInt8',
     'AnyUInt8Type',
     'AnyUInt16',
@@ -94,7 +95,6 @@ __all__ = (
     'AnyULongType',
     'AnyUShort',
     'AnyUShortType',
-    'AnyUfunc',
     'AnyUnsignedInteger',
     'AnyUnsignedIntegerType',
     'AnyVoid',
@@ -229,6 +229,6 @@ from ._sctype import (
     AnyVoidType,
 )
 from ._ufunc import (
-    AnyUfunc,
+    AnyUFunc,
     CanArrayUFunc,
 )
