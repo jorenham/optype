@@ -1824,6 +1824,8 @@ In numpy, a *dtype* (data type) object, is an instance of the
 `numpy.dtype[ST: np.generic]` type.
 It's commonly used to convey metadata of a scalar type, e.g. within arrays.
 
+##### `optype.numpy.DType`
+
 Because the type parameter of `np.dtype` isn't optional, it could me more
 convenient to use the alias `optype.numpy.DType`, which is defined as:
 
@@ -1835,7 +1837,7 @@ Apart from the "CamelCase" name, the only difference with `np.dtype` is that
 the the type parameter can be omitted, in which case it's equivalent to
 `np.dtype[np.generic]`, but shorter.
 
----
+##### `optype.numpy.HasDType`
 
 Many of numpy's public functions accept an (optional) `dtype` argument.
 But here, the term "dtype" had a broader meaning, as it also accepts
@@ -1857,7 +1859,7 @@ Since `np.ndarray` has a `dtype` attribute, it is a subtype of `HasDType`:
 True
 ```
 
----
+##### `optype.numpy.AnyDType`
 
 All types that can be passed to the `np.dtype` constructor, as well as the type
 of most `dtype` function parameters, are encapsulated within the
@@ -1866,6 +1868,26 @@ of most `dtype` function parameters, are encapsulated within the
 ```python
 type AnyDType[ST: np.generic = Any] = type[ST] | DType[ST] | HasDType[DType[ST]]
 ```
+
+> [!NOTE]
+> Numpy's own `numpy.typing.DTypeLike` alias serves the same purpose as
+> `AnyDType`.
+> But `npt.DTypeLike` has several issues:
+>
+> - It's not generic (accepts no type parameter(s)), and cannot be narrowed to
+>   allow for specific scalar types. Even though most functions don't accept
+>   *all* possible scalar- and dtypes.
+> - Its definition is maximally broad, e.g. `type[Any]`, and `str` are
+>   included in its union.
+>   So given some arbitrary function parameter `dtype: npt.DTypeLike`, passing
+>   e.g. `dtype="Ceci n'est pas une dtype"` won't look like anything out of the
+>   ordinariy for your type checker.
+>
+> These issues aren't the case for `optype.numpy.AnyDType`, but with it,
+> it (currently) isn't possible to pass scalar char-codes (e.g. `dtype='f8'`),
+> or builtin python types (e.g. `dtype=int`), directly.
+> But if you really want to do so anyway, then just pass it to the
+> `np.dtype()` constructor, e.g. `np.arange(42, dtype=np.dtype('f8'))`.
 
 #### Universal functions
 
