@@ -12,6 +12,7 @@ import numpy as np
 if sys.version_info >= (3, 13):
     from typing import (
         Protocol,
+        Self,
         TypeVar,
         overload,
         runtime_checkable,
@@ -19,6 +20,7 @@ if sys.version_info >= (3, 13):
 else:
     from typing_extensions import (
         Protocol,
+        Self,  # noqa: TCH002
         TypeVar,
         overload,
         runtime_checkable,
@@ -193,14 +195,14 @@ class CanArrayWrap(Protocol):
             context: tuple[np.ufunc, tuple[Any, ...], int] | None = ...,
             return_scalar: bool = ...,
             /,
-        ) -> np.ndarray[_ND_CanArrayWrap, _DT_CanArrayWrap]: ...
+        ) -> np.ndarray[_ND_CanArrayWrap, _DT_CanArrayWrap] | Self: ...
     else:
         def __array_wrap__(
             self,
             array: np.ndarray[_ND_CanArrayWrap, _DT_CanArrayWrap],
             context: tuple[np.ufunc, tuple[Any, ...], int] | None = ...,
             /,
-        ) -> np.ndarray[_ND_CanArrayWrap, _DT_CanArrayWrap]: ...
+        ) -> np.ndarray[_ND_CanArrayWrap, _DT_CanArrayWrap] | Self: ...
 
 
 _V_HasArrayInterface = TypeVar(
