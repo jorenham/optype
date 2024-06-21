@@ -1686,17 +1686,7 @@ type AnyArray[
 This makes it possible to correctly annotate e.g. a 1-d arrays-like of floats
 as `a: onp.AnyArray[tuple[int], np.floating[Any], float]`.
 
-##### Emulating arrays
-
-```python
-# TODO: `CanArrayFunction`
-
-# TODO: `CanArrayWrap`
-# TODO: `CanArrayFinalize`
-
-# TODO: `HasArrayPriority`
-# TODO: `HasArrayInterface`
-```
+##### `optype.numpy.CanArray*`
 
 <table>
     <tr>
@@ -1709,8 +1699,8 @@ as `a: onp.AnyArray[tuple[int], np.floating[Any], float]`.
 
 ```python
 CanArray[
-    ND: tuple[int, ...] = Any,
-    ST: np.generic = Any,
+    ND: tuple[int, ...] = ...,
+    ST: np.generic = ...,
 ]
 ```
 
@@ -1723,35 +1713,112 @@ CanArray[
         <td>Turning itself into a numpy array.</td>
     </tr>
     <tr>
-        <td></td>
-        <td><code>__exit__</code></td>
+<td>
+
+```python
+CanArrayFunction[
+    F: CanCall[..., Any] = ...,
+    R: object = ...,
+]
+```
+
+</td>
         <td>
-            <code>CanExit[R = None]</code>
+            <a href="https://numpy.org/doc/stable/user/basics.interoperability.html#the-array-function-protocol">
+                <code>__array_function__()</code>
+            </a>
+        </td>
+        <td>
+            Similar to how <code>T.__abs__()</code> implements
+            <code>abs(T)</code>, but for arbitrary numpy callables
+            (that aren't a ufunc).
         </td>
     </tr>
     <tr>
 <td>
 
 ```python
-CanArrayUFunc[
-    ND: tuple[int, ...] = Any,
-    ST: np.generic = Any,
+CanArrayFinalize[
+    T: object = ...,
 ]
 ```
 
 </td>
         <td>
-            <a href="https://numpy.org/doc/stable/user/basics.interoperability.html#the-array-method">
-                <code>__array__()</code>
+            <a href="https://numpy.org/doc/stable/user/c-info.beyond-basics.html#the-array-finalize-method">
+                <code>__array_finalize__()</code>
             </a>
         </td>
-        <td>Turning itself into a numpy array.</td>
+        <td>
+            Converting the return value of a numpy function back into an
+            instance of the foreign object.
+        </td>
     </tr>
     <tr>
-        <td></td>
-        <td><code>__exit__</code></td>
+<td>
+
+```python
+CanArrayWrap
+```
+
+</td>
         <td>
-            <code>CanExit[R = None]</code>
+            <a href="https://numpy.org/doc/stable/user/c-info.beyond-basics.html#ndarray.__array_wrap__">
+                <code>__array_wrap__()</code>
+            </a>
+        </td>
+        <td>
+            Takes a `np.ndarray` instance, and "wraps" it into itself, or some
+            `ndarray` subtype.
+        </td>
+    </tr>
+</table>
+
+##### `optype.numpy.HasArray*`
+
+<table>
+    <tr>
+        <th><code>optype.numpy._</code></th>
+        <th>attribute</th>
+        <th>purpose</th>
+    </tr>
+    <tr>
+<td>
+
+```python
+HasArrayInterface[
+    V: Mapping[str, Any] = dict[str, Any],
+]
+```
+
+</td>
+        <td>
+            <a href="https://numpy.org/doc/stable/reference/arrays.interface.html#python-side">
+                <code>__array_interface__</code>
+            </a>
+        </td>
+        <td>
+            The array interface protocol (V3) is used to for efficient
+            data-buffer sharing between array-like objects, and bridges the
+            numpy C-api with the Python side.
+        </td>
+    </tr>
+    <tr>
+<td>
+
+```python
+HasArrayPriority
+```
+
+</td>
+        <td>
+            <a href="https://numpy.org/doc/stable/user/c-info.beyond-basics.html#the-array-priority-attribute">
+                <code>__array_priority__</code>
+            </a>
+        </td>
+        <td>
+            In case an operation involves multiple sub-types, this value
+            determines which one will be used as output type.
         </td>
     </tr>
 </table>
@@ -1760,57 +1827,6 @@ CanArrayUFunc[
 
 ```python
 # TODO: optype.numpy.Scalar
-```
-
-```mermaid
-graph TD
-    generic --> bool_
-    generic --> object_
-    generic --> number
-    generic --> flexible
-
-    subgraph IntegerTypes
-        number --> integer
-        integer --> signedinteger
-        integer --> unsignedinteger
-
-        signedinteger --> byte
-        signedinteger --> short
-        signedinteger --> intc
-        signedinteger --> int_
-        signedinteger --> long
-        signedinteger --> longlong
-
-        unsignedinteger --> ubyte
-        unsignedinteger --> ushort
-        unsignedinteger --> uintc
-        unsignedinteger --> uint
-        unsignedinteger --> ulong
-        unsignedinteger --> ulonglong
-    end
-
-    subgraph InexactTypes
-        number --> inexact
-        inexact --> floating
-        inexact --> complexfloating
-
-        floating --> half
-        floating --> single
-        floating --> double
-        floating --> longdouble
-
-        complexfloating --> csingle
-        complexfloating --> cdouble
-        complexfloating --> clongdouble
-    end
-
-    subgraph FlexibleTypes
-        flexible --> character
-        flexible --> void
-
-        character --> bytes_
-        character --> str_
-    end
 ```
 
 ```python
