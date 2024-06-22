@@ -1630,7 +1630,7 @@ pip install "optype[numpy]"
 
 #### Arrays
 
-##### `optype.numpy.Array`
+##### `Array`
 
 Optype provides the generic `onp.Array` type alias for `np.ndarray`.
 It is similar to `npt.NDArray`, but includes two (optional) type parameters;
@@ -1651,7 +1651,7 @@ and the scalar type parameter `ST` that of `np.ndarray.dtype.type`.
 This way. a vector can be typed as `Array[tuple[int]]`, and a $2 \times 2$
 matrix of integers as `Array[tuple[Literal[2], Literal[2]], np.integer[Any]]`.
 
-##### `optype.numpy.AnyArray`
+##### `AnyArray`
 
 Something that can be used to construct a numpy array, is often referred to
 as an *array-like*, usually annotated with `npt.ArrayLike`.
@@ -1686,7 +1686,7 @@ type AnyArray[
 This makes it possible to correctly annotate e.g. a 1-d arrays-like of floats
 as `a: onp.AnyArray[tuple[int], np.floating[Any], float]`.
 
-##### `optype.numpy.CanArray*`
+##### `CanArray*`
 
 <table>
     <tr>
@@ -1774,7 +1774,7 @@ CanArrayWrap
     </tr>
 </table>
 
-##### `optype.numpy.HasArray*`
+##### `HasArray*`
 
 <table>
     <tr>
@@ -1869,13 +1869,13 @@ Optype considers the following numpy scalar types:
 See the [docs](https://numpy.org/doc/stable/reference/arrays.scalars.html)
 for more info.
 
-##### `optype.numpy.Scalar`
+##### `Scalar`
 
 ```python
 # TODO: optype.numpy.Scalar
 ```
 
-##### `optype.numpy.Any*Value`
+##### `Any*Value`
 
 For every (standard) numpy scalar type (i.e. subtypes of `np.generic`), there
 is the `optype.numpy.Any{}Value` alias (where `{}` should be replaced with the
@@ -1906,7 +1906,7 @@ So for instance `type AnyUInt8 = np.uint8 | ct.c_uint8`, and
 
 [CTYPES]: https://docs.python.org/3/library/ctypes.html
 
-##### `optype.numpy.Any*Type`
+##### `Any*Type`
 
 In the same way as `Any*Value`, there's a `Any*Type` for each of the numpy
 scalar types.
@@ -1930,7 +1930,7 @@ In numpy, a *dtype* (data type) object, is an instance of the
 `numpy.dtype[ST: np.generic]` type.
 It's commonly used to convey metadata of a scalar type, e.g. within arrays.
 
-##### `optype.numpy.DType`
+##### `DType`
 
 Because the type parameter of `np.dtype` isn't optional, it could me more
 convenient to use the alias `optype.numpy.DType`, which is defined as:
@@ -1943,7 +1943,7 @@ Apart from the "CamelCase" name, the only difference with `np.dtype` is that
 the the type parameter can be omitted, in which case it's equivalent to
 `np.dtype[np.generic]`, but shorter.
 
-##### `optype.numpy.HasDType`
+##### `HasDType`
 
 Many of numpy's public functions accept an (optional) `dtype` argument.
 But here, the term "dtype" had a broader meaning, as it also accepts
@@ -1965,7 +1965,7 @@ Since `np.ndarray` has a `dtype` attribute, it is a subtype of `HasDType`:
 True
 ```
 
-##### `optype.numpy.AnyDType`
+##### `AnyDType`
 
 All types that can be passed to the `np.dtype` constructor, as well as the type
 of most `dtype` function parameters, are encapsulated within the
