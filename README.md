@@ -1690,7 +1690,7 @@ as `a: onp.AnyArray[tuple[int], np.floating[Any], float]`.
 
 <table>
     <tr>
-        <th><code>optype.numpy._</code></th>
+<th>type signature</th>
         <th>method</th>
         <th>purpose</th>
     </tr>
@@ -1825,14 +1825,104 @@ HasArrayPriority
 
 #### Scalars
 
+Optype considers the following numpy scalar types:
+
+- *`np.generic`*
+    - `np.bool_` (or `np.bool` with `numpy >= 2`)
+    - `np.object_`
+    - *`np.flexible`*
+        - `np.void`
+        - *`np.character`*
+            - `np.bytes_`
+            - `np.str_`
+    - *`np.number[N: npt.NBitBase]`*
+        - *`np.integer[N: npt.NBitBase]`*
+            - *`np.unsignedinteger[N: npt.NBitBase]`*
+                - `np.ubyte`
+                - `np.ushort`
+                - `np.uintc`
+                - `np.uintp`
+                - `np.ulong`
+                - `np.ulonglong`
+                - `np.uint{8,16,32,64}`
+            - *`np.signedinteger[N: npt.NBitBase]`*
+                - `np.byte`
+                - `np.short`
+                - `np.intc`
+                - `np.intp`
+                - `np.long`
+                - `np.longlong`
+                - `np.int{8,16,32,64}`
+        - *`np.inexact[N: npt.NBitBase]`*
+            - *`np.floating[N: npt.NBitBase]`*
+                - `np.half`
+                - `np.single`
+                - `np.double`
+                - `np.longdouble`
+                - `np.float{16,32,64}`
+            - *`np.complexfloating[N1: npt.NBitBase, N2: npt.NBitBase]`*
+                - `np.csingle`
+                - `np.cdouble`
+                - `np.clongdouble`
+                - `np.complex{64,128}`
+
+See the [docs](https://numpy.org/doc/stable/reference/arrays.scalars.html)
+for more info.
+
+##### `optype.numpy.Scalar`
+
 ```python
 # TODO: optype.numpy.Scalar
 ```
 
-```python
-# TODO: optype.numpy._sctype.Any*
-# TODO: optype.numpy._sctype.Any*Type
-```
+##### `optype.numpy.Any*Value`
+
+For every (standard) numpy scalar type (i.e. subtypes of `np.generic`), there
+is the `optype.numpy.Any{}Value` alias (where `{}` should be replaced with the
+title-cased name of the scalar, without potential trailing underscore).
+
+So for `np.bool_` there's `onp.AnyBoolValue`,
+for `np.uint8` there's `onp.AnyUInt8Value`, and
+for `np.floating[N: npt.NBitBase]` there's `AnyFloating[N: npt.NBitBase]`.
+
+> [!NOTE]
+> The *extended-precision* scalar types (e.g. `np.int128`, `np.float96` and
+> `np.complex512`) are not included, because their availility is
+> platform-dependent.
+
+When a value of type `Any{}Value` is passed to e.g. `np.array`,
+the resulting `np.ndarray` will have a scalar type that matches
+the corresponding `Any{}Value`.
+For instance, passing `x: onp.AnyFloat64Value` as `np.array(x)` returns an
+array of type `onp.Array[tuple[()], np.float64]`
+(the `tuple[()]` implies that its shape is `()`).
+
+Each `Any{}Value` contains at least the relevant `np.generic` subtype,
+zero or more [`ctypes`][CTYPES] types, and
+zero or more of the python `builtins` types.
+
+So for instance `type AnyUInt8 = np.uint8 | ct.c_uint8`, and
+`type AnyCDouble = np.cdouble | complex`.
+
+[CTYPES]: https://docs.python.org/3/library/ctypes.html
+
+##### `optype.numpy.Any*Type`
+
+In the same way as `Any*Value`, there's a `Any*Type` for each of the numpy
+scalar types.
+
+These type aliases describe what's allowed to be passed to e.g. the
+`np.dtype[ST: np.generic]` constructor, so that its scalar type `ST` matches
+the one corresponding to the passed `Any*Type`.
+
+So for example, if some `x: onp.UInt8` is passed to `np.dtype(x)`, then the
+resulting type will be a `np.dtype[np.uint8]`.
+
+This is useful when annotating an (e.g. numpy) function with a `dtype`
+parameter, e.g. `np.arange`.
+Then by using a `@typing.overload` for each of the allowed scalar types,
+it's possible to annotate it in *the most specific way that's possible*,
+whilst keeping the code readable and maintainable.
 
 #### Data type objects
 

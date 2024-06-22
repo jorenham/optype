@@ -20,3 +20,6 @@ MD033:
     - tr
     - th
     - td
+    - dl
+    - dt
+    - dd
