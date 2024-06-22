@@ -624,8 +624,8 @@ else:
     # fmt: on
 _AnyStrChar: TypeAlias = Literal['U', '=U', '<U', '>U']
 _AnyStrCode: TypeAlias = _AnyStrName | _AnyStrChar
-AnyStr: TypeAlias = _AnyStrNP | _AnyStrPY
-AnyStrType: TypeAlias = _AnyStrCode | _DualType[_AnyStrNP, AnyStr]
+AnyStrValue: TypeAlias = _AnyStrNP | _AnyStrPY
+AnyStrType: TypeAlias = _AnyStrCode | _DualType[_AnyStrNP, AnyStrValue]
 
 # bytes
 _AnyBytesNP: TypeAlias = np.bytes_
