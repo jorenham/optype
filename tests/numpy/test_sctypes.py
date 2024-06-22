@@ -36,7 +36,7 @@ def _get_dtype_info(name: str) -> tuple[
     frozenset[str],
     frozenset[str],
 ]:
-    types = _get_attr_args(onp, f'Any{name}')
+    types = _get_attr_args(onp, f'Any{name}Value')
     names = _get_attr_args(_sctype, f'_Any{name}Name')
     chars = _get_attr_args(_sctype, f'_Any{name}Char')
     return frozenset(types), frozenset(names), frozenset(chars)
