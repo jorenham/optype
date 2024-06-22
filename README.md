@@ -211,7 +211,48 @@ There are four flavors of things that live within `optype`,
 
 The reference docs are structured as follows:
 
-<!-- TODO: insert table of contents -->
+<!-- TOC start (generated with https://github.com/derlin/bitdowntoc) -->
+
+- [Core functionality](#core-functionality)
+    - [Builtin type conversion](#builtin-type-conversion)
+    - [Rich relations](#rich-relations)
+    - [Binary operations](#binary-operations)
+    - [Reflected operations](#reflected-operations)
+    - [Inplace operations](#inplace-operations)
+    - [Unary operations](#unary-operations)
+    - [Rounding](#rounding)
+    - [Callables](#callables)
+    - [Iteration](#iteration)
+    - [Awaitables](#awaitables)
+    - [Async Iteration](#async-iteration)
+    - [Containers](#containers)
+    - [Attributes](#attributes)
+    - [Context managers](#context-managers)
+    - [Descriptors](#descriptors)
+    - [Buffer types](#buffer-types)
+- [Standard libs](#standard-libs)
+    - [`copy`](#copy)
+    - [`pickle`](#pickle)
+    - [`dataclasses`](#dataclasses)
+- [NumPy](#numpy)
+    - [Arrays](#arrays)
+        - [`Array`](#array)
+        - [`AnyArray`](#anyarray)
+        - [`CanArray*`](#canarray)
+        - [`HasArray*`](#hasarray)
+    - [Scalars](#scalars)
+        - [`Scalar`](#scalar)
+        - [`Any*Value`](#anyvalue)
+        - [`Any*Type`](#anytype)
+    - [Data type objects](#data-type-objects)
+        - [`DType`](#dtype)
+        - [`HasDType`](#hasdtype)
+        - [`AnyDType`](#anydtype)
+    - [Universal functions](#universal-functions)
+        - [`AnyUFunc`](#anyufunc)
+        - [`CanArrayUFunc`](#canarrayufunc)
+
+<!-- TOC end -->
 
 ### Core functionality
 
@@ -1998,7 +2039,18 @@ type AnyDType[ST: np.generic = Any] = type[ST] | DType[ST] | HasDType[DType[ST]]
 #### Universal functions
 
 ```python
+# TODO
+```
+
+##### `AnyUFunc`
+
+```python
 # TODO: `AnyUFunc[Fn: CanCall, Nin: int, Nout: int, Sig: str | None, Id: int]`
+```
+
+##### `CanArrayUFunc`
+
+```python
 # TODO: `CanArrayUFunc[Fn: AnyUFunc]`
 ```
 
