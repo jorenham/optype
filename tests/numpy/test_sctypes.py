@@ -6,7 +6,7 @@ import pytest
 
 import optype.numpy as onp
 from optype.numpy import _sctype  # noqa: PLC2701  # pyright: ignore[reportPrivateUsage]
-from ..helpers import get_args  # noqa: TID252
+from optype.inspect import get_args
 
 
 _TEMPORAL = 'Timedelta64', 'Datetime64'
