@@ -2094,9 +2094,24 @@ AnyUFunc[
 
 ##### `CanArrayUFunc`
 
+When ufuncs are called on some inputs, the ufunc will call the
+`__array_ufunc__`, which is not unlike how `abs()` calls `__abs__`.
+
+With `optype.numpy.CanArrayUFunc`, it becomes straightworward to annotate
+potential arguments to `np.ufunc`.
+It's a single-method runtime-checkable protocol, whose type signature looks
+roughly like:
+
 ```python
-# TODO: `CanArrayUFunc[Fn: AnyUFunc]`
+CanArrayUFunc[
+    Fn: AnyUFunc = Any,
+]
 ```
+
+> [!NOTE]
+> Due to the previously mentioned typing limitations of`np.ufunc`,
+> the `*args` and `**kwargs` of `CanArrayUFunc.__array_ufunc__` are currently
+> impossible to properly annotate.
 
 [NEP29]: https://numpy.org/neps/nep-0029-deprecation_policy.html
 [SPEC0]: https://scientific-python.org/specs/spec-0000/
