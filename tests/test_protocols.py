@@ -5,14 +5,16 @@ import optype._can
 import optype._do
 import optype._does
 import optype._has
+from optype.inspect import (
+    get_protocol_members,
+    get_protocols,
+    is_runtime_protocol,
+)
 
 from .helpers import (
     get_callable_members,
-    get_protocol_members,
-    get_protocols,
     is_dunder,
     is_protocol,
-    is_runtime_protocol,
     pascamel_to_snake,
 )
 
