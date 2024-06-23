@@ -1,128 +1,232 @@
-# ruff: noqa: PLW3201
-"""
-Elementary interfaces for special "dunder" attributes.
-"""
+from __future__ import annotations
+
 import sys
-from collections.abc import Callable
-from dataclasses import Field as _Field
-from types import CodeType, ModuleType
-from typing import (
-    Any,
-    ClassVar,
-    ParamSpec,
-    Protocol,
-    TypeVar,
-    runtime_checkable,
+from typing import TYPE_CHECKING, Any, ClassVar, Final, TypeAlias
+
+
+if sys.version_info >= (3, 13):
+    from typing import (
+        Never,
+        ParamSpec,
+        Protocol,
+        Self,
+        TypeVar,
+        TypeVarTuple,
+        Unpack,
+        override,
+        runtime_checkable,
+    )
+else:
+    from typing_extensions import (
+        Never,
+        ParamSpec,
+        Protocol,
+        Self,  # noqa: TCH002
+        TypeVar,
+        TypeVarTuple,
+        Unpack,
+        override,
+        runtime_checkable,
+    )
+
+import optype._can as _c
+
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Mapping
+    from dataclasses import Field as _Field
+    from types import CodeType, ModuleType
+
+
+_Ignored: TypeAlias = Any
+
+
+_V_match_args = TypeVar(
+    '_V_match_args',
+    infer_variance=True,
+    bound=tuple[str, ...] | list[str],
+    default=Any,
 )
 
 
-if sys.version_info < (3, 11):
-    from typing_extensions import Self, TypeVarTuple, Unpack
-else:
-    from typing import Self, TypeVarTuple, Unpack
-
-if sys.version_info < (3, 12):
-    from typing_extensions import override
-else:
-    from typing import override
-
-from ._can import CanIter as _CanIter
-
-
-_V = TypeVar('_V')
-_V_match_args = TypeVar('_V_match_args', bound=tuple[str, ...] | list[str])
-_V_slots = TypeVar('_V_slots', bound=str | _CanIter[Any])
-
-_Xs = TypeVarTuple('_Xs')
-_Xss = ParamSpec('_Xss')
-_Y = TypeVar('_Y')
-
-
-# Instances
-
 @runtime_checkable
 class HasMatchArgs(Protocol[_V_match_args]):
-    __match_args__: _V_match_args
+    __match_args__: ClassVar[tuple[str, ...] | list[str]]
+
+
+_V_slots = TypeVar(
+    '_V_slots',
+    infer_variance=True,
+    bound=str | _c.CanIter[_c.CanNext[str]],
+    default=Any,
+)
 
 
 @runtime_checkable
 class HasSlots(Protocol[_V_slots]):
-    __slots__: _V_slots
+    __slots__: Final[_V_slots]
+
+
+_V_dict = TypeVar(
+    '_V_dict',
+    infer_variance=True,
+    bound='Mapping[str, Any]',
+    default=dict[str, Any],
+)
 
 
 @runtime_checkable
-class HasDict(Protocol[_V]):
-    __dict__: dict[str, _V]
+class HasDict(Protocol[_V_dict]):
+    # the typeshed annotations for `builtins.object.__dict__` too narrow
+    __dict__: _V_dict  # pyright: ignore[reportIncompatibleVariableOverride]
+
+
+_V_class_set = TypeVar(
+    '_V_class_set',
+    infer_variance=True,
+    bound=object,
+    default=Never,
+)
 
 
 @runtime_checkable
-class HasClass(Protocol):
+class HasClass(Protocol[_V_class_set]):
     @property
     @override
-    def __class__(self) -> type[Self]: ...
+    def __class__(self) -> type[Self | _V_class_set]: ...
     @__class__.setter
-    def __class__(self, __cls: type[Self]) -> None:
+    def __class__(  # pyright: ignore[reportIncompatibleMethodOverride]
+        self,
+        cls: type[_V_class_set],
+        /,
+    ) -> _Ignored:
         """Don't."""
 
 
-@runtime_checkable
-class HasModule(Protocol):
-    __module__: str
-
-
-# __name__ and __qualname__ generally are a package deal
-
-@runtime_checkable
-class HasName(Protocol):
-    __name__: str
+_V_module = TypeVar('_V_module', infer_variance=True, bound=str, default=str)
 
 
 @runtime_checkable
-class HasQualname(Protocol):
-    __qualname__: str
+class HasModule(Protocol[_V_module]):
+    __module__: _V_module
+
+
+_V_name = TypeVar('_V_name', infer_variance=True, bound=str, default=str)
 
 
 @runtime_checkable
-class HasNames(HasName, HasQualname, Protocol): ...
+class HasName(Protocol[_V_name]):
+    __name__: _V_name
+
+
+_V_qualname = TypeVar(
+    '_V_qualname',
+    infer_variance=True,
+    bound=str,
+    default=str,
+)
+
+
+@runtime_checkable
+class HasQualname(Protocol[_V_qualname]):
+    __qualname__: _V_qualname
+
+
+_V_names_name = TypeVar(
+    '_V_names_name',
+    infer_variance=True,
+    bound=str,
+    default=str,
+)
+_V_names_qualname = TypeVar(
+    '_V_names_qualname',
+    infer_variance=True,
+    bound=str,
+    default=_V_names_name,
+)
+
+
+@runtime_checkable
+class HasNames(
+    HasName[_V_names_name],
+    HasQualname[_V_names_qualname],
+    Protocol[_V_names_name, _V_names_qualname],
+):
+    __name__: _V_names_name
+    __qualname__: _V_names_qualname
 
 
 # docs and type hints
 
-@runtime_checkable
-class HasDoc(Protocol):
-    __doc__: str | None
+_V_doc = TypeVar(
+    '_V_doc',
+    infer_variance=True,
+    bound=str,
+    default=str,
+)
 
 
 @runtime_checkable
-class HasAnnotations(Protocol[_V]):
-    __annotations__: dict[str, _V]
+class HasDoc(Protocol[_V_doc]):
+    # note that docstrings are stripped if ran with e.g. `python -OO`
+    __doc__: _V_doc | None
+
+
+_V_annotations = TypeVar(
+    '_V_annotations',
+    infer_variance=True,
+    bound='Mapping[str, Any]',
+    default=dict[str, Any],
+)
 
 
 @runtime_checkable
-class HasTypeParams(Protocol[Unpack[_Xs]]):
+class HasAnnotations(Protocol[_V_annotations]):
+    __annotations__: _V_annotations  # pyright: ignore[reportIncompatibleVariableOverride]
+
+
+# should be one of `(TypeVar, TypeVarTuple, ParamSpec)`
+_Ps_type_params = TypeVarTuple('_Ps_type_params')
+
+
+@runtime_checkable
+class HasTypeParams(Protocol[Unpack[_Ps_type_params]]):
     # Note that `*Ps: (TypeVar, ParamSpec, TypeVarTuple)` should hold
-    __type_params__: tuple[Unpack[_Xs]]
+    __type_params__: tuple[Unpack[_Ps_type_params]]
 
 
 # functions and methods
 
-@runtime_checkable
-class HasFunc(Protocol[_Xss, _Y]):
-    __func__: Callable[_Xss, _Y]
+_Pss_func = ParamSpec('_Pss_func')
+_V_func = TypeVar('_V_func', infer_variance=True)
 
 
 @runtime_checkable
-class HasWrapped(Protocol[_Xss, _Y]):
-    __wrapped__: Callable[_Xss, _Y]
+class HasFunc(Protocol[_Pss_func, _V_func]):
+    __func__: Callable[_Pss_func, _V_func]
 
 
-_T_self_co = TypeVar('_T_self_co', bound=object | ModuleType, covariant=True)
+_Pss_wrapped = ParamSpec('_Pss_wrapped')
+_V_wrapped = TypeVar('_V_wrapped', infer_variance=True)
 
 
 @runtime_checkable
-class HasSelf(Protocol[_T_self_co]):
+class HasWrapped(Protocol[_Pss_wrapped, _V_wrapped]):
+    __wrapped__: Callable[_Pss_wrapped, _V_wrapped]
+
+
+_V_self = TypeVar(
+    '_V_self',
+    infer_variance=True,
+    bound='ModuleType | object',
+    default=object,
+)
+
+
+@runtime_checkable
+class HasSelf(Protocol[_V_self]):
     @property
-    def __self__(self) -> _T_self_co: ...
+    def __self__(self) -> _V_self: ...
 
 
 @runtime_checkable
@@ -133,7 +237,15 @@ class HasCode(Protocol):
 # Module `dataclasses`
 # https://docs.python.org/3/library/dataclasses.html
 
+_V_dataclass_fields = TypeVar(
+    '_V_dataclass_fields',
+    infer_variance=True,
+    bound='Mapping[str, _Field[Any]]',
+    default=dict[str, '_Field[Any]'],
+)
+
+
 @runtime_checkable
-class HasDataclassFields(Protocol):
+class HasDataclassFields(Protocol[_V_dataclass_fields]):
     """Can be used to check whether a type or instance is a dataclass."""
-    __dataclass_fields__: ClassVar[dict[str, _Field[Any]]]
+    __dataclass_fields__: _V_dataclass_fields

@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "optype"
-version = "0.4.0"
+version = "0.5.0"
 description = "Building blocks for precise & flexible type hints"
 authors = ["Joren Hammudoglu <jhammudoglu@gmail.com>"]
 license = "BSD-3-Clause"
@@ -21,26 +21,41 @@ classifiers = [
 ]
 repository = "https://github.com/jorenham/optype/"
 documentation = "https://github.com/jorenham/optype?tab=readme-ov-file#optype"
+
 [tool.poetry.urls]
 "Bug Tracker" = "https://github.com/jorenham/optype/issues"
 "Changelog" = "https://github.com/jorenham/optype/releases"
 
+[tool.poetry.extras]
+numpy = ["numpy"]
+
 [tool.poetry.dependencies]
+# bump to ^3.11 after 2025-04-04
+# bump to ^3.12 after 2026-04-24
 python = "^3.10"
-typing-extensions = {version = ">=4.5", python = "<3.12"}
+typing-extensions = {version = ">=4.7", python = "<3.13"}
+
+# https://scientific-python.org/specs/spec-0000/
+numpy = {version = ">=1.24,<3", optional = true}
 
 [tool.poetry.group.dev.dependencies]
-pre-commit = '^3.7.0'
+pre-commit = "^3.7.1"
+tox = "^4.15.1"
 
 [tool.poetry.group.lint.dependencies]
-basedpyright = "^1.10.1"
-codespell = "^2.2.6"
-ruff = "^0.3.7"
+basedpyright = "^1.13.0"
+codespell = "^2.3.0"
+ruff = "^0.4.10"
+sp-repo-review = {version = "^2024.4.23", extras = ["cli"]}
 typing-extensions = "*"
+numpy = ">=2,<3"
 
 [tool.poetry.group.test.dependencies]
-pytest = "^8.1.1"
+pytest = "^8.2.2"
+beartype = "^0.18.5"
 typing-extensions = "*"
+numpy = ">=2,<3"
+
 
 [tool.poetry.group.test-github]
 optional = true
@@ -50,43 +65,37 @@ pytest-github-actions-annotate-failures = ">=0.2.0,<1.0"
 
 [tool.codespell]
 context = 2
-ignore-words-list = "cange"  # CanGe
+skip = "poetry.lock,pyproject.toml"
+ignore-words-list = "CanGe,nin,ND"  # `.CanGe`, `numpy.ufunc.nin`, `.numpy`
 
 
 [tool.basedpyright]
-include = [
-    "optype",
-    "examples",
-    "tests"
-]
-exclude = [
-    "**/__pycache__",
-    ".git",
-    ".github",
-    ".pytest_cache",
-    ".ruff_cache",
-    ".venv",
-    ".vscode",
-    "dist"
-]
+include = ["optype", "examples", "tests"]
+ignore = ["**/.venv"]
 stubPath = "."
 venvPath = "."
 venv = ".venv"
 pythonVersion = "3.10"
 pythonPlatform = "All"
 typeCheckingMode = "all"
+defineConstant = {"_NP_V2" = true, "byteorder" = "little"}
+
 reportAny = false
 reportUnusedCallResult = false
 # because of `sys.version_info()` conditionals
 reportUnreachable = false
+# already handled by ruff F401
+reportUnusedImport = false
+# already handled by ruff F841
+reportUnusedVariable = false
 
 
 [tool.pytest.ini_options]
-minversion = "8.0"
-testpaths = ["optype", "examples", "tests"]
 addopts = [
     "-ra",
     "--doctest-modules",
+    "--strict-config",
+    "--strict-markers",
 ]
 doctest_optionflags = [
     "NORMALIZE_WHITESPACE",
@@ -94,7 +103,22 @@ doctest_optionflags = [
     "ELLIPSIS",
 ]
 filterwarnings = ["error"]
+log_cli_level = "INFO"
+minversion = "8.0"
+testpaths = ["optype", "examples", "tests"]
 xfail_strict = true
+
+
+[tool.repo-review]
+ignore = [
+    "PY004",    # README.md >> docs/
+    "PC110",    # optype's style >> (black | ruff-format)
+    "PC140",    # (based)pyright >> mypy (by several orders of magnitude)
+    "PC170",    # no .rst
+    "PC180",    # no .css or .js
+    "MY",       # (based)pyright >> mypy (by several orders of magnitude)
+    "RTD",      # README.md >> rtd
+]
 
 
 [tool.ruff]
@@ -107,7 +131,6 @@ force-exclude = true
 extend-exclude = [".github", ".vscode"]
 
 [tool.ruff.lint]
-ignore-init-module-imports = true
 preview = true
 select = [
     "F",        # pyflakes
@@ -149,8 +172,6 @@ select = [
     "TCH",      # flake8-type-checking
     "ARG",      # flake8-unused-arguments
     "PTH",      # flake8-use-pathlib
-    "TD",       # flake8-todos
-    "FIX",      # flake8-fixme
     "ERA",      # eradicate
     "PD",       # pandas-vet
     "PGH",      # pygrep-hooks
@@ -164,14 +185,18 @@ select = [
     "LOG",      # flake8-logging
     "RUF",      # ruff
 ]
-extend-ignore = [
+ignore = [
     # flake8-annotations
     "ANN001",   # missing-type-function-argument (deprecated)
     "ANN002",   # missing-type-args (deprecated)
     "ANN401",   # any-type
 
     # flake8-pyi
+    "PYI034",   # non-self-return-type
     "PYI036",   # bad-exit-annotation
+
+    # pylint
+    "PLR0904",  # too-many-public-methods
 
     # refurb
     "FURB118",  # reimplemented-operator
@@ -191,14 +216,15 @@ extend-ignore = [
     "ANN201",   # missing-return-type
     # flake8-self
     "SLF001",   # private-member-access
+    # pylint
+    "PLR2004",  # magic-value-comparison
 ]
 
-[tool.ruff.lint.isort]
-case-sensitive = true
-combine-as-imports = true
-known-first-party = ["optype"]
-lines-after-imports = 2
-lines-between-types = 0
+[tool.ruff.lint.flake8-import-conventions.extend-aliases]
+"ctypes" = "ct"
+"numpy.typing" = "npt"
+"optype.numpy" = "onp"
+
 
 [tool.ruff.lint.flake8-quotes]
 inline-quotes = "single"
@@ -206,15 +232,69 @@ inline-quotes = "single"
 [tool.ruff.lint.flake8-type-checking]
 strict = true
 
+[tool.ruff.lint.isort]
+case-sensitive = true
+combine-as-imports = true
+known-first-party = ["optype"]
+known-third-party = ["numpy", "pytest"]
+lines-after-imports = 2
+lines-between-types = 0
+
 [tool.ruff.lint.pylint]
 allow-dunder-method-names = [
-    "__replace__"   # used by `copy.replace` in Python 3.13+
+    "__name__",     # attr of e.g. `type`, `function`, and `property` (py3.13+)
+    "__qualname__", # attr like `__name__`
+    "__replace__",  # method used by `copy.replace` in Python 3.13+
+    "__self__",     # attr of a bound method
+
+    # numpy array special methods
+    "__array__",
+    "__array_finalize__",
+    "__array_function__",
+    "__array_priority__",
+    "__array_ufunc__",
+    "__array_wrap__",
+    # numpy array interface protocol V3
+    "__array_interface__",
+    "__array_struct__",
 ]
 
 [tool.ruff.format]
 # keep in sync with .editorconfig
-line-ending = "lf"
 indent-style = "space"
+line-ending = "lf"
+preview = true
 quote-style = "single"
-docstring-code-format = true
-skip-magic-trailing-comma = true
+
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+isolated_build = true
+requires = tox>=4
+envlist =
+    repo-review
+    pre-commit
+    py{310,311,312,313b2}
+
+[testenv]
+description = pytest
+skip_install = true
+allowlist_externals = poetry
+commands_pre = poetry install --sync
+commands = poetry run pytest
+
+[testenv:pre-commit]
+description = pre-commit
+skip_install = true
+allowlist_externals = poetry
+commands_pre = poetry install --sync
+commands = poetry run pre-commit run --all-files
+
+[testenv:repo-review]
+description = repo-review
+skip_install = true
+allowlist_externals = poetry
+commands_pre = poetry install --sync
+commands = poetry run repo-review .
+"""
