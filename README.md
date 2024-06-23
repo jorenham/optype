@@ -2038,15 +2038,59 @@ type AnyDType[ST: np.generic = Any] = type[ST] | DType[ST] | HasDType[DType[ST]]
 
 #### Universal functions
 
-```python
-# TODO
-```
+A large portion of numpy's public API consists of
+[universal functions][UFUNC-DOC], i.e. (callable) instancess of
+[`np.ufunc`][UFUNC-REF].
+
+> [!TIP]
+> Custom ufuncs can be created using [`np.frompyfunc`][FROMPYFUNC], but also
+> through user-defined class, that implements the required attributes and
+> methods (i.e. duck typing).
 
 ##### `AnyUFunc`
 
+But `np.ufunc` has a big issue; it accepts no type parameters.
+This makes it very difficult to properly annotate its callable signature and
+its literal attributes (e.g. `.nin` and `.identity`).
+
+This is where `optype.numpy.AnyUFunc` comes into play:
+It's a runtime-checkable generic typing protocol, that has been thoroughly
+type- and unit-tested to ensure compatibility with all of numpy's ufunc
+definitions.
+Its generic type signature looks roughly like:
+
 ```python
-# TODO: `AnyUFunc[Fn: CanCall, Nin: int, Nout: int, Sig: str | None, Id: int]`
+AnyUFunc[
+    # The type of the the (bound) `__call__` method.
+    Fn: Callable[..., Any] = Any,
+    # The types of the `nin` and `nout` (readonly) attributes.
+    # Within numpy these match either `Literal[1]` or `Literal[2]`.
+    Nin: int = Any,
+    Nout: int = Any,
+    # The type of the `signature` (readonly) attribute;
+    # Must be `None` unless this is a generalized ufunc (gufunc), e.g.
+    # `np.matmul`.
+    Sig: str | None = Any,
+    # The type of the the `identity` (readonly) attribute (used in `.reduce`).
+    # Unless `Nin: Literal[2]`, `Nout: Literal[1]`, and `Sig: None`,
+    # this should always be `None`.
+    # Note that `complex` also includes `bool | int | float`.
+    Id: complex | str | bytes | None = Any,
+]
 ```
+
+> [!NOTE]
+> Unfortunately, the extra callable methods of `np.ufunc` (`at`, `reduce`,
+> `reduceat`, `accumulate`, and `outer`), are incorrectly annotated (as `None`
+> *attributes*, even though at runtime they're methods that raise a
+> `ValueError` when called).
+> This currently makes it impossible to properly type these in
+> `optype.numpy.AnyUFunc`; doing so would make it incompatible with numpy's
+> ufuncs.
+
+[UFUNC-DOC]: https://numpy.org/doc/stable/reference/ufuncs.html
+[UFUNC-REF]: https://numpy.org/doc/stable/reference/generated/numpy.ufunc.html
+[FROMPYFUNC]: https://numpy.org/doc/stable/reference/generated/numpy.frompyfunc.html
 
 ##### `CanArrayUFunc`
 
