@@ -1674,7 +1674,7 @@ pip install "optype[numpy]"
 ##### `Array`
 
 Optype provides the generic `onp.Array` type alias for `np.ndarray`.
-It is similar to `npt.NDArray`, but includes two (optional) type parameters;
+It is similar to `npt.NDArray`, but includes two (optional) type parameters:
 one that matches the *shape type* (`ND: tuple[int, ...]`),
 and one that matches the *scalar type* (`ST: np.generic`).
 It is defined as:
@@ -1689,16 +1689,16 @@ type Array[
 Note that the shape type parameter `ND` matches the type of `np.ndarray.shape`,
 and the scalar type parameter `ST` that of `np.ndarray.dtype.type`.
 
-This way. a vector can be typed as `Array[tuple[int]]`, and a $2 \times 2$
+This way, a vector can be typed as `Array[tuple[int]]`, and a $2 \times 2$
 matrix of integers as `Array[tuple[Literal[2], Literal[2]], np.integer[Any]]`.
 
 ##### `AnyArray`
 
-Something that can be used to construct a numpy array, is often referred to
-as an *array-like*, usually annotated with `npt.ArrayLike`.
+Something that can be used to construct a numpy array is often referred to
+as an *array-like* object, usually annotated with `npt.ArrayLike`.
 But there are two main problems with `npt.ArrayLike`:
 
-1. It's name strongly suggests that it *only* applies to arrays. However,
+1. Its name strongly suggests that it *only* applies to arrays. However,
   "0-dimensional" are also included, i.e. "scalars" such as `bool`, and
   `complex`, but also `str`, since numpy considers unicode- and bytestrings
   to be  "scalars".
@@ -1706,7 +1706,7 @@ But there are two main problems with `npt.ArrayLike`:
 2. There is no way to narrow the allowed scalar-types, since it's not generic.
    So instances of `bytes` and arrays of `np.object_` are always included.
 
-`AnyArray[ND, ST, PY]` doesn't have these problems through it's (optional)
+`AnyArray[ND, ST, PY]` doesn't have these problems through its (optional)
 generic type parameters:
 
 ```python
@@ -1715,7 +1715,8 @@ type AnyArray[
     ND: tuple[int, ...] = tuple[int, ...],
     # numpy scalar type
     ST: np.generic = np.generic,
-    # python scalar type (note that `complex` includes `bool | int | float`)
+    # Python builtin scalar type
+    # (note that `complex` includes `bool | int | float`)
     PT: complex | str | bytes = complex | str | bytes,
 ]
 ```
@@ -1922,7 +1923,7 @@ Scalar[
     # The "Python type", so that `Scalar.item() -> PT`.
     PT: object,
     # The "N-bits" type (without having to deal with`npt.NBitBase`).
-    # It matches `SCalar.itemsize: NB`
+    # It matches `SCalar.itemsize: NB`.
     NB: int = Any,
 ]
 ```
@@ -1951,7 +1952,7 @@ for `np.floating[N: npt.NBitBase]` there's `AnyFloating[N: npt.NBitBase]`.
 
 > [!NOTE]
 > The *extended-precision* scalar types (e.g. `np.int128`, `np.float96` and
-> `np.complex512`) are not included, because their availility is
+> `np.complex512`) are not included, because their availability is
 > platform-dependent.
 
 When a value of type `Any{}Value` is passed to e.g. `np.array`,
@@ -1959,11 +1960,11 @@ the resulting `np.ndarray` will have a scalar type that matches
 the corresponding `Any{}Value`.
 For instance, passing `x: onp.AnyFloat64Value` as `np.array(x)` returns an
 array of type `onp.Array[tuple[()], np.float64]`
-(the `tuple[()]` implies that its shape is `()`).
+(where `tuple[()]` implies that its shape is `()`).
 
 Each `Any{}Value` contains at least the relevant `np.generic` subtype,
 zero or more [`ctypes`][CTYPES] types, and
-zero or more of the python `builtins` types.
+zero or more of the Python `builtins` types.
 
 So for instance `type AnyUInt8 = np.uint8 | ct.c_uint8`, and
 `type AnyCDouble = np.cdouble | complex`.
@@ -1990,13 +1991,13 @@ whilst keeping the code readable and maintainable.
 
 #### Data type objects
 
-In numpy, a *dtype* (data type) object, is an instance of the
+In NumPy, a *dtype* (data type) object, is an instance of the
 `numpy.dtype[ST: np.generic]` type.
 It's commonly used to convey metadata of a scalar type, e.g. within arrays.
 
 ##### `DType`
 
-Because the type parameter of `np.dtype` isn't optional, it could me more
+Because the type parameter of `np.dtype` isn't optional, it could be more
 convenient to use the alias `optype.numpy.DType`, which is defined as:
 
 ```python
@@ -2004,16 +2005,16 @@ type DType[ST: np.generic = Any] = np.dtype[ST]
 ```
 
 Apart from the "CamelCase" name, the only difference with `np.dtype` is that
-the the type parameter can be omitted, in which case it's equivalent to
+the type parameter can be omitted, in which case it's equivalent to
 `np.dtype[np.generic]`, but shorter.
 
 ##### `HasDType`
 
 Many of numpy's public functions accept an (optional) `dtype` argument.
-But here, the term "dtype" had a broader meaning, as it also accepts
+But here, the term "dtype" has a broader meaning, as it also accepts
 (a subtype of) `np.generic`.
-Additionally, any instance with a `dtype: DType` attribute is accepted,
-for which the runtime-checkable interface is `optype.numpy.HasDType`, and is
+Additionally, any instance with a `dtype: DType` attribute is accepted.
+The runtime-checkable interface for this is `optype.numpy.HasDType`, which is
 roughly equivalent to the following definition:
 
 ```python
@@ -2031,8 +2032,8 @@ True
 
 ##### `AnyDType`
 
-All types that can be passed to the `np.dtype` constructor, as well as the type
-of most `dtype` function parameters, are encapsulated within the
+All types that can be passed to the `np.dtype` constructor, as well as the
+types of most `dtype` function parameters, are encapsulated within the
 `optype.numpy.AnyDType` alias, i.e.:
 
 ```python
@@ -2040,7 +2041,7 @@ type AnyDType[ST: np.generic = Any] = type[ST] | DType[ST] | HasDType[DType[ST]]
 ```
 
 > [!NOTE]
-> Numpy's own `numpy.typing.DTypeLike` alias serves the same purpose as
+> NumPy's own `numpy.typing.DTypeLike` alias serves the same purpose as
 > `AnyDType`.
 > But `npt.DTypeLike` has several issues:
 >
@@ -2051,24 +2052,24 @@ type AnyDType[ST: np.generic = Any] = type[ST] | DType[ST] | HasDType[DType[ST]]
 >   included in its union.
 >   So given some arbitrary function parameter `dtype: npt.DTypeLike`, passing
 >   e.g. `dtype="Ceci n'est pas une dtype"` won't look like anything out of the
->   ordinariy for your type checker.
+>   ordinary for your type checker.
 >
-> These issues aren't the case for `optype.numpy.AnyDType`, but with it,
-> it (currently) isn't possible to pass scalar char-codes (e.g. `dtype='f8'`),
-> or builtin python types (e.g. `dtype=int`), directly.
-> But if you really want to do so anyway, then just pass it to the
+> These issues aren't the case for `optype.numpy.AnyDType`.
+> However, it (currently) isn't possible to pass scalar char-codes
+> (e.g. `dtype='f8'`) or builtin python types (e.g. `dtype=int`) directly.
+> If you really want to do so anyway, then just pass it to the
 > `np.dtype()` constructor, e.g. `np.arange(42, dtype=np.dtype('f8'))`.
 
 #### Universal functions
 
 A large portion of numpy's public API consists of
-[universal functions][UFUNC-DOC], i.e. (callable) instancess of
+[universal functions][UFUNC-DOC], i.e. (callable) instances of
 [`np.ufunc`][UFUNC-REF].
 
 > [!TIP]
 > Custom ufuncs can be created using [`np.frompyfunc`][FROMPYFUNC], but also
-> through user-defined class, that implements the required attributes and
-> methods (i.e. duck typing).
+> through a user-defined class that implements the required attributes and
+> methods (i.e., duck typing).
 
 ##### `AnyUFunc`
 
@@ -2084,7 +2085,7 @@ Its generic type signature looks roughly like:
 
 ```python
 AnyUFunc[
-    # The type of the the (bound) `__call__` method.
+    # The type of the (bound) `__call__` method.
     Fn: Callable[..., Any] = Any,
     # The types of the `nin` and `nout` (readonly) attributes.
     # Within numpy these match either `Literal[1]` or `Literal[2]`.
@@ -2094,7 +2095,7 @@ AnyUFunc[
     # Must be `None` unless this is a generalized ufunc (gufunc), e.g.
     # `np.matmul`.
     Sig: str | None = Any,
-    # The type of the the `identity` (readonly) attribute (used in `.reduce`).
+    # The type of the `identity` (readonly) attribute (used in `.reduce`).
     # Unless `Nin: Literal[2]`, `Nout: Literal[1]`, and `Sig: None`,
     # this should always be `None`.
     # Note that `complex` also includes `bool | int | float`.
@@ -2132,7 +2133,7 @@ CanArrayUFunc[
 ```
 
 > [!NOTE]
-> Due to the previously mentioned typing limitations of`np.ufunc`,
+> Due to the previously mentioned typing limitations of `np.ufunc`,
 > the `*args` and `**kwargs` of `CanArrayUFunc.__array_ufunc__` are currently
 > impossible to properly annotate.
 
