@@ -40,6 +40,9 @@ jobs:
       - name: basedpyright
         run: poetry run basedpyright
 
+      - name: basedpyright --verifytypes
+        run: poetry run basedpyright --ignoreexternal --verifytypes optype
+
       - name: markdownlint
         uses: DavidAnson/markdownlint-cli2-action@v16
         with:
@@ -57,7 +60,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13-dev"]
+        python-version: ["3.10", "3.11", "3.12", "3.13.0-beta.2"]
+        # building numpy2 on windows + py313 results in broken numpy install
+        exclude:
+          - os: windows-latest
+            python-version: "3.13.0-beta.2"
 
     runs-on: ${{ matrix.os }}
 
@@ -73,7 +80,7 @@ jobs:
           cache: poetry
 
       - name: poetry install
-        run: poetry install --sync --only test,test-github
+        run: poetry install --sync --with test-github
 
       - name: pytest
         run: poetry run pytest

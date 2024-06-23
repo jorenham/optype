@@ -21,16 +21,25 @@ classifiers = [
 ]
 repository = "https://github.com/jorenham/optype/"
 documentation = "https://github.com/jorenham/optype?tab=readme-ov-file#optype"
+
 [tool.poetry.urls]
 "Bug Tracker" = "https://github.com/jorenham/optype/issues"
 "Changelog" = "https://github.com/jorenham/optype/releases"
 
+[tool.poetry.extras]
+numpy = ["numpy"]
+
 [tool.poetry.dependencies]
+# bump to ^3.11 after 2025-04-04
+# bump to ^3.12 after 2026-04-24
 python = "^3.10"
 typing-extensions = {version = ">=4.7", python = "<3.13"}
 
+# https://scientific-python.org/specs/spec-0000/
+numpy = {version = ">=1.24,<3", optional = true}
+
 [tool.poetry.group.dev.dependencies]
-pre-commit = '^3.7.1'
+pre-commit = "^3.7.1"
 tox = "^4.15.1"
 
 [tool.poetry.group.lint.dependencies]
@@ -39,11 +48,14 @@ codespell = "^2.3.0"
 ruff = "^0.4.9"
 sp-repo-review = {version = "^2024.4.23", extras = ["cli"]}
 typing-extensions = "*"
+numpy = ">=2,<3"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.2.2"
-typing-extensions = "*"
 beartype = "^0.18.5"
+typing-extensions = "*"
+numpy = ">=2,<3"
+
 
 [tool.poetry.group.test-github]
 optional = true
@@ -53,24 +65,29 @@ pytest-github-actions-annotate-failures = ">=0.2.0,<1.0"
 
 [tool.codespell]
 context = 2
-skip = "poetry.lock"
-ignore-words-list = "cange"  # CanGe
+skip = "poetry.lock,pyproject.toml"
+ignore-words-list = "CanGe,nin,ND"  # `.CanGe`, `numpy.ufunc.nin`, `.numpy`
 
 
 [tool.basedpyright]
 include = ["optype", "examples", "tests"]
+ignore = ["**/.venv"]
 stubPath = "."
 venvPath = "."
 venv = ".venv"
 pythonVersion = "3.10"
 pythonPlatform = "All"
 typeCheckingMode = "all"
+defineConstant = {"_NP_V2" = true, "byteorder" = "little"}
+
 reportAny = false
 reportUnusedCallResult = false
 # because of `sys.version_info()` conditionals
 reportUnreachable = false
 # already handled by ruff F401
 reportUnusedImport = false
+# already handled by ruff F841
+reportUnusedVariable = false
 
 
 [tool.pytest.ini_options]
@@ -155,8 +172,6 @@ select = [
     "TCH",      # flake8-type-checking
     "ARG",      # flake8-unused-arguments
     "PTH",      # flake8-use-pathlib
-    "TD",       # flake8-todos
-    "FIX",      # flake8-fixme
     "ERA",      # eradicate
     "PD",       # pandas-vet
     "PGH",      # pygrep-hooks
@@ -180,6 +195,9 @@ ignore = [
     "PYI034",   # non-self-return-type
     "PYI036",   # bad-exit-annotation
 
+    # pylint
+    "PLR0904",  # too-many-public-methods
+
     # refurb
     "FURB118",  # reimplemented-operator
 ]
@@ -202,12 +220,11 @@ ignore = [
     "PLR2004",  # magic-value-comparison
 ]
 
-[tool.ruff.lint.isort]
-case-sensitive = true
-combine-as-imports = true
-known-first-party = ["optype"]
-lines-after-imports = 2
-lines-between-types = 0
+[tool.ruff.lint.flake8-import-conventions.extend-aliases]
+"ctypes" = "ct"
+"numpy.typing" = "npt"
+"optype.numpy" = "onp"
+
 
 [tool.ruff.lint.flake8-quotes]
 inline-quotes = "single"
@@ -215,12 +232,31 @@ inline-quotes = "single"
 [tool.ruff.lint.flake8-type-checking]
 strict = true
 
+[tool.ruff.lint.isort]
+case-sensitive = true
+combine-as-imports = true
+known-first-party = ["optype"]
+known-third-party = ["numpy", "pytest"]
+lines-after-imports = 2
+lines-between-types = 0
+
 [tool.ruff.lint.pylint]
 allow-dunder-method-names = [
     "__name__",     # attr of e.g. `type`, `function`, and `property` (py3.13+)
     "__qualname__", # attr like `__name__`
     "__replace__",  # method used by `copy.replace` in Python 3.13+
     "__self__",     # attr of a bound method
+
+    # numpy array special methods
+    "__array__",
+    "__array_finalize__",
+    "__array_function__",
+    "__array_priority__",
+    "__array_ufunc__",
+    "__array_wrap__",
+    # numpy array interface protocol V3
+    "__array_interface__",
+    "__array_struct__",
 ]
 
 [tool.ruff.format]
@@ -235,12 +271,11 @@ quote-style = "single"
 legacy_tox_ini = """
 [tox]
 isolated_build = true
-requires =
-    tox>=4
+requires = tox>=4
 envlist =
-    py{310,311,312,313b2}
-    pre-commit
     repo-review
+    pre-commit
+    py{310,311,312,313b2}
 
 [testenv]
 description = pytest
