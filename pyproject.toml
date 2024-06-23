@@ -45,7 +45,7 @@ tox = "^4.15.1"
 [tool.poetry.group.lint.dependencies]
 basedpyright = "^1.13.0"
 codespell = "^2.3.0"
-ruff = "^0.4.9"
+ruff = "^0.4.10"
 sp-repo-review = {version = "^2024.4.23", extras = ["cli"]}
 typing-extensions = "*"
 numpy = ">=2,<3"
