@@ -80,8 +80,7 @@ class AnyUFunc(Protocol[
     # The number of output values, within numpy this is either 1 or 2.
     @property
     def nout(self, /) -> _Nout_AnyUfunc: ...
-    # Within numpy this is always `nin + nout`, since each output value comes
-    # with a corresponding (optional) `out` parameter.
+    # A string i.f.f. this is a gufunc (generalized ufunc).
     @property
     def signature(self, /) -> _Sig_AnyUfunc: ...
 
@@ -94,7 +93,8 @@ class AnyUFunc(Protocol[
     # `bool | int | float` (these are its supertypes).
     @property
     def identity(self, /) -> _Id_AnyUfunc: ...
-
+    # Within numpy this is always `nin + nout`, since each output value comes
+    # with a corresponding (optional) `out` parameter.
     @property
     def nargs(self, /) -> int: ...
     # Equivalent to `len(types)`, within numpy this is at most 24, but for 3rd
@@ -110,7 +110,6 @@ class AnyUFunc(Protocol[
     # available data types are system dependent.
     @property
     def types(self, /) -> list[str]: ...
-    # This is a string i.f.f. this is a gufunc (generalized ufunc).
 
     # The following methods are incorrectly typed (`numpy/_typing/_ufunc.pyi`);
     # they should always be methods that `typing.NoReturn` i.f.f. not available
