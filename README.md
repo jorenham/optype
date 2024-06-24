@@ -230,6 +230,8 @@ The reference docs are structured as follows:
     - [Context managers](#context-managers)
     - [Descriptors](#descriptors)
     - [Buffer types](#buffer-types)
+- [`optype.types`](#optypetypes)
+    - [`Slice`](#slice)
 - [Standard libs](#standard-libs)
     - [`copy`](#copy)
     - [`pickle`](#pickle)
@@ -1528,6 +1530,19 @@ Interfaces for emulating buffer types using the [buffer protocol][BP].
 </table>
 
 [BP]: https://docs.python.org/3/reference/datamodel.html#python-buffer-protocol
+
+### `optype.types`
+
+#### `Slice`
+
+The `optype.types.Slice` type is a generic runtime-protocol that's fully
+compatible with `builtins.slice` (from a typing perspective).
+
+Its type signature looks something like this:
+
+```python
+Slice[A = None, B = Any, S = None]
+```
 
 ### Standard libs
 
