@@ -100,6 +100,14 @@ __all__ = (
     'AnyVoidType',
     'AnyVoidValue',
     'Array',
+    'AtLeast0D',
+    'AtLeast1D',
+    'AtLeast2D',
+    'AtLeast3D',
+    'AtMost0D',
+    'AtMost1D',
+    'AtMost2D',
+    'AtMost3D',
     'CanArray',
     'CanArrayFinalize',
     'CanArrayFunction',
@@ -227,6 +235,16 @@ from ._sctype import (
     AnyUnsignedIntegerValue,
     AnyVoidType,
     AnyVoidValue,
+)
+from ._shape import (
+    AtLeast0D,
+    AtLeast1D,
+    AtLeast2D,
+    AtLeast3D,
+    AtMost0D,
+    AtMost1D,
+    AtMost2D,
+    AtMost3D,
 )
 from ._ufunc import (
     AnyUFunc,

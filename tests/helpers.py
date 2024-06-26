@@ -1,18 +1,13 @@
-from __future__ import annotations
-
 import sys
-from typing import TYPE_CHECKING
+from types import ModuleType
+
+from optype import CanBool, CanLt
 
 
 if sys.version_info >= (3, 13):
     from typing import is_protocol
 else:
     from typing_extensions import is_protocol
-
-if TYPE_CHECKING:
-    from types import ModuleType
-
-    from optype import CanBool, CanLt
 
 
 __all__ = (

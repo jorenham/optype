@@ -1,8 +1,6 @@
 from beartype import BeartypeConf
 from beartype.claw import beartype_package
 
-import optype  # noqa: F401
-
 
 def test_beartype_package() -> None:
     beartype_package(

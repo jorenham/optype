@@ -242,6 +242,7 @@ The reference docs are structured as follows:
         - [`AnyArray`](#anyarray)
         - [`CanArray*`](#canarray)
         - [`HasArray*`](#hasarray)
+    - [Shapes](#shapes)
     - [Scalars](#scalars)
         - [`Scalar`](#scalar)
         - [`Any*Value`](#anyvalue)
@@ -1879,6 +1880,52 @@ HasArrayPriority
         </td>
     </tr>
 </table>
+
+#### Shapes
+
+A *shape* is nothing more than a tuple of (non-negative) integers, i.e.
+an instance of `tuple[int, ...]`.
+The length of a shape is often referred to as the *number of dimensions*
+or the *dimensionality* of the array or scalar.
+
+> [!NOTE]
+> Before NumPy 2, the maximum number of dimensions was 32, but has since
+> been increased to 64.
+
+To make typing the shape of an array easier, optype provides two families of
+shape type aliases: `AtLeast{N}D` and `AtMost{N}D`.
+The `{N}` should be replaced by the number of dimensions, which currently
+is limited to `0`, `1`, `2`, and `3`.
+
+Both of these families are generic, and their (optional) type parameters must
+be either `int` (default), or a literal (non-negative) integer, i.e. like
+`typing.Literal[N: int]`.
+
+Without going into details, the names `AtLeast{N}D` and `AtMost{N}D` should
+are probably self-explanatory:
+They are the types of shapes whose `len(shape) >= N` and `len(shape) <= N`,
+respectively.
+
+Specifically, `AtLeast0D` and `AtMost0D` are defined as something similar to
+
+```python
+type _AnyShape = tuple[int, ...]  # helper alias
+
+type AtLeast0D[*Ns = *_AnyShape] = tuple[*Ns]
+type AtMost0D = tuple[()]
+```
+
+Note that `AtMost0D` only matches the empty tuple: `()`.
+
+For higher dimensions, things get more complicated:
+
+```python
+type AtLeast1D[N0: int = int, *Ns = *_AnyShape] = tuple[N0, *Ns]
+type AtMost1D[N0: int = int] = tuple[N0] | AtMost0D
+```
+
+The recursive nature of these definitions makes it straightforward to
+extend these to higher dimensions (currently `2` and `3`).
 
 #### Scalars
 
