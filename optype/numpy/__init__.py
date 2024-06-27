@@ -119,25 +119,11 @@ __all__ = (
     'HasDType',
     'Scalar',
 )
-from ._array import (
+from ._any_array import (
+    # TODO: import the rest
     AnyArray,
-    Array,
-    CanArray,
-    CanArrayFinalize,
-    CanArrayFunction,
-    CanArrayWrap,
-    HasArrayInterface,
-    HasArrayPriority,
 )
-from ._dtype import (
-    AnyDType,
-    DType,
-    HasDType,
-)
-from ._interfaces import (
-    Scalar,
-)
-from ._sctype import (
+from ._any_scalar import (
     AnyBoolType,
     AnyBoolValue,
     AnyByteType,
@@ -236,6 +222,17 @@ from ._sctype import (
     AnyVoidType,
     AnyVoidValue,
 )
+from ._array import (
+    Array,
+    CanArray,
+    CanArrayFinalize,
+    CanArrayFunction,
+    CanArrayWrap,
+    HasArrayInterface,
+    HasArrayPriority,
+)
+from ._dtype import AnyDType, DType, HasDType
+from ._scalar import Scalar
 from ._shape import (
     AtLeast0D,
     AtLeast1D,
@@ -246,7 +243,4 @@ from ._shape import (
     AtMost2D,
     AtMost3D,
 )
-from ._ufunc import (
-    AnyUFunc,
-    CanArrayUFunc,
-)
+from ._ufunc import AnyUFunc, CanArrayUFunc
