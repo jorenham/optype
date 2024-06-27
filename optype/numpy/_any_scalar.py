@@ -355,7 +355,8 @@ _AnyFloat64Name: TypeAlias = Literal['float64']
 _AnyFloat64Char: TypeAlias = Literal['f8', '=f8', '<f8', '>f8']
 _AnyFloat64Code: TypeAlias = _AnyFloat64Name | _AnyFloat64Char
 AnyFloat64Value: TypeAlias = _AnyFloat64NP | ct.c_double | float
-AnyFloat64Type: TypeAlias = _AnyFloat64Code | _SoloType[_AnyFloat64NP]
+# (np.dtype(None) -> float64)
+AnyFloat64Type: TypeAlias = _AnyFloat64Code | _SoloType[_AnyFloat64NP] | None
 
 # half
 _AnyHalfNP: TypeAlias = np.half
