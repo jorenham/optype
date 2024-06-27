@@ -26,6 +26,7 @@ _ST__DualType = TypeVar('_ST__DualType', bound=np.generic)
 _PT__DualType = TypeVar('_PT__DualType', bound=object)
 _DualType: TypeAlias = _SoloType[_ST__DualType] | type[_PT__DualType]
 
+
 #
 # unsigned integers
 #
@@ -531,7 +532,7 @@ AnyComplexFloatingType: TypeAlias = (
 
 
 #
-# (real | complex) floats
+# integers | floats
 #
 
 # inexact
@@ -549,11 +550,6 @@ AnyInexactType: TypeAlias = (
     _AnyInexactCode
     | _DualType[_AnyInexactNP[_NB_inexact], AnyInexactValue[_NB_inexact]]
 )
-
-
-#
-# integers | floats
-#
 
 # number
 _NB_number = TypeVar('_NB_number', bound='npt.NBitBase', default=Any)
@@ -576,7 +572,23 @@ AnyNumberType: TypeAlias = (
 # temporal
 #
 
+# datetime64
+# TODO: Rename to `DateTime64` (for `np.dtypes.DateTime64DType` consistency).
+_AnyDatetime64NP: TypeAlias = np.datetime64
+_AnyDatetime64Name: TypeAlias = Literal['datetime64']
+# fmt: off
+_AnyDatetime64Char: TypeAlias = Literal[
+    'M', '=M', '<M', '>M',
+    'M8', '=M8', '<M8', '>M8',
+]
+# fmt: on
+_AnyDatetime64Code: TypeAlias = _AnyDatetime64Name | _AnyDatetime64Char
+AnyDatetime64Value: TypeAlias = _AnyDatetime64NP
+AnyDatetime64Type: TypeAlias = _AnyDatetime64Code | _SoloType[_AnyDatetime64NP]
+
+
 # timedelta64
+# TODO: Rename to `TimeDelta64` (for `np.dtypes.TimeDelta64` consistency).
 _AnyTimedelta64NP: TypeAlias = np.timedelta64
 _AnyTimedelta64Name: TypeAlias = Literal['timedelta64']
 # fmt: off
@@ -591,19 +603,6 @@ AnyTimedelta64Type: TypeAlias = (
     _AnyTimedelta64Code
     | _SoloType[_AnyTimedelta64NP]
 )
-
-# datetime64
-_AnyDatetime64NP: TypeAlias = np.datetime64
-_AnyDatetime64Name: TypeAlias = Literal['datetime64']
-# fmt: off
-_AnyDatetime64Char: TypeAlias = Literal[
-    'M', '=M', '<M', '>M',
-    'M8', '=M8', '<M8', '>M8',
-]
-# fmt: on
-_AnyDatetime64Code: TypeAlias = _AnyDatetime64Name | _AnyDatetime64Char
-AnyDatetime64Value: TypeAlias = _AnyDatetime64NP
-AnyDatetime64Type: TypeAlias = _AnyDatetime64Code | _SoloType[_AnyDatetime64NP]
 
 
 #
@@ -629,6 +628,7 @@ AnyStrType: TypeAlias = _AnyStrCode | _DualType[_AnyStrNP, AnyStrValue]
 
 # bytes
 _AnyBytesNP: TypeAlias = np.bytes_
+_AnyBytesCT: TypeAlias = ct.c_char
 _AnyBytesPY: TypeAlias = bytes
 if TYPE_CHECKING or _NP_V2:
     _AnyBytesName: TypeAlias = Literal['bytes', 'bytes_']
@@ -641,7 +641,7 @@ AnyBytesType: TypeAlias = _AnyBytesCode | _DualType[_AnyBytesNP, AnyBytesValue]
 
 # character
 _AnyCharacterNP: TypeAlias = np.character
-_AnyCharacterCT: TypeAlias = ct.c_char
+_AnyCharacterCT: TypeAlias = _AnyBytesCT
 _AnyCharacterPY: TypeAlias = _AnyStrPY | _AnyBytesPY
 _AnyCharacterCode: TypeAlias = _AnyStrCode | _AnyBytesCode
 AnyCharacterValue: TypeAlias = (
@@ -675,6 +675,10 @@ AnyFlexibleType: TypeAlias = (
     _AnyFlexibleCode
     | _DualType[_AnyFlexibleNP, AnyFlexibleValue]
 )
+
+# string
+# TODO(jorenham): Add `AnyString{Value,Type}` for `StringDType` on `numpy>=2`
+# https://github.com/jorenham/optype/issues/99
 
 
 #
@@ -723,6 +727,12 @@ _AnyGenericNP: TypeAlias = (
     | _AnyNumberNP[_NB_generic]
     | _AnyFlexibleNP
     | np.generic  # catch-all for any other user-defined scalar types
+)
+_AnyGenericCT: TypeAlias = (  # noqa: PYI047
+    _AnyBoolCT
+    | _AnyObjectCT
+    | _AnyNumberCT
+    | _AnyFlexibleCT
 )
 _AnyGenericCode: TypeAlias = (
     _AnyBoolCode
