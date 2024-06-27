@@ -108,7 +108,7 @@ else:
     _AnyUIntPName: TypeAlias = Literal['uintp', 'uint0']
     _AnyUIntPChar: TypeAlias = Literal['P', '=P', '<P', '>P']
 _AnyUIntPCode: TypeAlias = _AnyUIntPName | _AnyUIntPChar
-AnyUIntPValue: TypeAlias = _AnyUIntPNP | ct.c_void_p | ct.c_size_t
+AnyUIntPValue: TypeAlias = _AnyUIntPNP | ct.c_size_t  # | ct.c_void_p
 AnyUIntPType: TypeAlias = _AnyUIntPCode | _DualType[_AnyUIntPNP, AnyUIntPValue]
 
 # ulong (uint on numpy^=1)
@@ -145,7 +145,7 @@ _AnyUnsignedIntegerNP: TypeAlias = np.unsignedinteger[_NB_unsignedinteger]
 _AnyUnsignedIntegerCT: TypeAlias = (
     ct.c_uint8 | ct.c_uint16 | ct.c_uint32 | ct.c_uint64
     | ct.c_ubyte | ct.c_ushort | ct.c_uint | ct.c_ulong | ct.c_ulonglong
-    | ct.c_size_t | ct.c_void_p
+    | ct.c_size_t  # | ct.c_void_p
 )
 # fmt: on
 # `builtins.int` is signed
