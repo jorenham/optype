@@ -31,21 +31,21 @@ else:
 
 __all__ = (
     'AnyArray',
-    'AnyArrayBool',
-    'AnyArrayBytes',
-    'AnyArrayCharacter',
-    'AnyArrayComplexFloating',
-    'AnyArrayDateTime',
-    'AnyArrayFlexible',
-    'AnyArrayFloating',
-    'AnyArrayInexact',
-    'AnyArrayInteger',
-    'AnyArrayNumber',
-    'AnyArrayObject',
-    'AnyArraySignedInteger',
-    'AnyArrayStr',
-    'AnyArrayTimeDelta',
-    'AnyArrayUnsignedInteger',
+    'AnyBoolArray',
+    'AnyBytesArray',
+    'AnyCharacterArray',
+    'AnyComplexFloatingArray',
+    'AnyDateTimeArray',
+    'AnyFlexibleArray',
+    'AnyFloatingArray',
+    'AnyInexactArray',
+    'AnyIntegerArray',
+    'AnyNumberArray',
+    'AnyObjectArray',
+    'AnySignedIntegerArray',
+    'AnyStrArray',
+    'AnyTimeDeltaArray',
+    'AnyUnsignedIntegerArray',
 )
 
 
@@ -75,7 +75,7 @@ _CT_AnyArray = TypeVar(
     bound=_AnyGenericCT,
     default=_AnyGenericCT,
 )
-_AnyArrayNP: TypeAlias = (
+_AnyNPArray: TypeAlias = (
     CanArray[_ND_AnyArray, _ST_AnyArray]
     | _PyArray[CanArray[Any, _ST_AnyArray]]
 )
@@ -97,40 +97,40 @@ signature `AnyArray[ND: *int, ST: np.generic, PT: complex | str | bytes]`.
 #
 
 # unsignedinteger
-_ST_AnyArrayUnsignedInteger = TypeVar(
-    '_ST_AnyArrayUnsignedInteger',
+_ST_AnyUnsignedIntegerArray = TypeVar(
+    '_ST_AnyUnsignedIntegerArray',
     bound=np.unsignedinteger[Any],
     default=np.unsignedinteger[Any],
 )
-AnyArrayUnsignedInteger: TypeAlias = AnyArray[
+AnyUnsignedIntegerArray: TypeAlias = AnyArray[
     _ND_AnyArray,
-    _ST_AnyArrayUnsignedInteger,
+    _ST_AnyUnsignedIntegerArray,
     Never,
     _AnyUnsignedIntegerCT,
 ]
 
 # signedinteger
-_ST_AnyArraySignedInteger = TypeVar(
-    '_ST_AnyArraySignedInteger',
+_ST_AnySignedIntegerArray = TypeVar(
+    '_ST_AnySignedIntegerArray',
     bound=np.signedinteger[Any],
     default=np.signedinteger[Any],
 )
-AnyArraySignedInteger: TypeAlias = AnyArray[
+AnySignedIntegerArray: TypeAlias = AnyArray[
     _ND_AnyArray,
-    _ST_AnyArraySignedInteger,
+    _ST_AnySignedIntegerArray,
     int,
     _AnySignedIntegerCT,
 ]
 
 # integer
-_ST_AnyArrayInteger = TypeVar(
-    '_ST_AnyArrayInteger',
+_ST_AnyIntegerArray = TypeVar(
+    '_ST_AnyIntegerArray',
     bound=np.integer[Any],
     default=np.integer[Any],
 )
-AnyArrayInteger: TypeAlias = AnyArray[
+AnyIntegerArray: TypeAlias = AnyArray[
     _ND_AnyArray,
-    _ST_AnyArrayInteger,
+    _ST_AnyIntegerArray,
     int,
     _AnyIntegerCT,
 ]
@@ -141,41 +141,41 @@ AnyArrayInteger: TypeAlias = AnyArray[
 #
 
 # floating
-_ST_AnyArrayFloating = TypeVar(
-    '_ST_AnyArrayFloating',
+_ST_AnyFloatingArray = TypeVar(
+    '_ST_AnyFloatingArray',
     bound=np.floating[Any],
     default=np.floating[Any],
 )
-AnyArrayFloating: TypeAlias = AnyArray[
+AnyFloatingArray: TypeAlias = AnyArray[
     _ND_AnyArray,
-    _ST_AnyArrayFloating,
+    _ST_AnyFloatingArray,
     float,
     _AnyFloatingCT,
 ]
 
 # complexfloating
-_ST_AnyArrayComplexFloating = TypeVar(
-    '_ST_AnyArrayComplexFloating',
+_ST_AnyComplexFloatingArray = TypeVar(
+    '_ST_AnyComplexFloatingArray',
     bound=np.complexfloating[Any, Any],
     default=np.complexfloating[Any, Any],
 )
-AnyArrayComplexFloating: TypeAlias = AnyArray[
+AnyComplexFloatingArray: TypeAlias = AnyArray[
     _ND_AnyArray,
-    _ST_AnyArrayComplexFloating,
+    _ST_AnyComplexFloatingArray,
     complex,
     Never,
 ]
 
 
 # inexact
-_ST_AnyArrayInexact = TypeVar(
-    '_ST_AnyArrayInexact',
+_ST_AnyInexactArray = TypeVar(
+    '_ST_AnyInexactArray',
     bound=np.inexact[Any],
     default=np.inexact[Any],
 )
-AnyArrayInexact: TypeAlias = AnyArray[
+AnyInexactArray: TypeAlias = AnyArray[
     _ND_AnyArray,
-    _ST_AnyArrayInexact,
+    _ST_AnyInexactArray,
     float | complex,
     _AnyInexactCT,
 ]
@@ -186,14 +186,14 @@ AnyArrayInexact: TypeAlias = AnyArray[
 #
 
 # number
-_ST_AnyArrayNumber = TypeVar(
-    '_ST_AnyArrayNumber',
+_ST_AnyNumberArray = TypeVar(
+    '_ST_AnyNumberArray',
     bound=np.number[Any],
     default=np.number[Any],
 )
-AnyArrayNumber: TypeAlias = AnyArray[
+AnyNumberArray: TypeAlias = AnyArray[
     _ND_AnyArray,
-    _ST_AnyArrayNumber,
+    _ST_AnyNumberArray,
     int | float | complex,
     _AnyNumberCT,
 ]
@@ -204,20 +204,20 @@ AnyArrayNumber: TypeAlias = AnyArray[
 #
 
 # datetime64
-_ST_AnyArrayDateTime64 = TypeVar(
-    '_ST_AnyArrayDateTime64',
+_ST_AnyDateTimeArray64 = TypeVar(
+    '_ST_AnyDateTimeArray64',
     bound=np.datetime64,
     default=np.datetime64,
 )
-AnyArrayDateTime: TypeAlias = _AnyArrayNP[_ND_AnyArray, _ST_AnyArrayDateTime64]
+AnyDateTimeArray: TypeAlias = _AnyNPArray[_ND_AnyArray, _ST_AnyDateTimeArray64]
 
 # timedelta64
-_ST_AnyArrayTimeDelta = TypeVar(
-    '_ST_AnyArrayTimeDelta',
+_ST_AnyTimeDeltaArray = TypeVar(
+    '_ST_AnyTimeDeltaArray',
     bound=np.timedelta64,
     default=np.timedelta64,
 )
-AnyArrayTimeDelta: TypeAlias = _AnyArrayNP[_ND_AnyArray, _ST_AnyArrayTimeDelta]
+AnyTimeDeltaArray: TypeAlias = _AnyNPArray[_ND_AnyArray, _ST_AnyTimeDeltaArray]
 
 
 #
@@ -225,54 +225,54 @@ AnyArrayTimeDelta: TypeAlias = _AnyArrayNP[_ND_AnyArray, _ST_AnyArrayTimeDelta]
 #
 
 # str_
-_ST_AnyArrayStr = TypeVar('_ST_AnyArrayStr', bound=np.str_, default=np.str_)
-AnyArrayStr: TypeAlias = AnyArray[_ND_AnyArray, _ST_AnyArrayStr, str]
+_ST_AnyStrArray = TypeVar('_ST_AnyStrArray', bound=np.str_, default=np.str_)
+AnyStrArray: TypeAlias = AnyArray[_ND_AnyArray, _ST_AnyStrArray, str]
 """This is about `numpy.dtypes.StrDType`; not `numpy.dtypes.StringDType`."""
 
 # bytes_
-_ST_AnyArrayBytes = TypeVar(
-    '_ST_AnyArrayBytes',
+_ST_AnyBytesArray = TypeVar(
+    '_ST_AnyBytesArray',
     bound=np.bytes_,
     default=np.bytes_,
 )
-AnyArrayBytes: TypeAlias = AnyArray[
+AnyBytesArray: TypeAlias = AnyArray[
     _ND_AnyArray,
-    _ST_AnyArrayBytes,
+    _ST_AnyBytesArray,
     bytes,
     _AnyBytesCT,
 ]
 
 # string
-# TODO(jorenham): Add `AnyArrayString` with `np.dtypes.StringDType` (np2 only)
+# TODO(jorenham): Add `AnyStringArray` with `np.dtypes.StringDType` (np2 only)
 # https://github.com/jorenham/optype/issues/99
 
 
 # character
-_ST_AnyArrayCharacter = TypeVar(
-    '_ST_AnyArrayCharacter',
+_ST_AnyCharacterArray = TypeVar(
+    '_ST_AnyCharacterArray',
     bound=np.character,
     default=np.character,
 )
-AnyArrayCharacter: TypeAlias = AnyArray[
+AnyCharacterArray: TypeAlias = AnyArray[
     _ND_AnyArray,
-    _ST_AnyArrayCharacter,
+    _ST_AnyCharacterArray,
     str | bytes,
     _AnyCharacterCT,
 ]
 
 # void
-_ST_AnyArrayVoid = TypeVar('_ST_AnyArrayVoid', bound=np.void, default=np.void)
-AnyArrayVoid: TypeAlias = _AnyArrayNP[_ND_AnyArray, _ST_AnyArrayVoid]
+_ST_AnyVoidArray = TypeVar('_ST_AnyVoidArray', bound=np.void, default=np.void)
+AnyVoidArray: TypeAlias = _AnyNPArray[_ND_AnyArray, _ST_AnyVoidArray]
 
 # flexible
-_ST_AnyArrayFlexible = TypeVar(
-    '_ST_AnyArrayFlexible',
+_ST_AnyFlexibleArray = TypeVar(
+    '_ST_AnyFlexibleArray',
     bound=np.flexible,
     default=np.flexible,
 )
-AnyArrayFlexible: TypeAlias = AnyArray[
+AnyFlexibleArray: TypeAlias = AnyArray[
     _ND_AnyArray,
-    _ST_AnyArrayFlexible,
+    _ST_AnyFlexibleArray,
     str | bytes,
     _AnyFlexibleCT,
 ]
@@ -283,27 +283,27 @@ AnyArrayFlexible: TypeAlias = AnyArray[
 #
 
 # bool_
-_ST_AnyArrayBool = TypeVar(
-    '_ST_AnyArrayBool',
+_ST_AnyBoolArray = TypeVar(
+    '_ST_AnyBoolArray',
     bound=np.bool_,
     default=np.bool_,
 )
-AnyArrayBool: TypeAlias = AnyArray[
+AnyBoolArray: TypeAlias = AnyArray[
     _ND_AnyArray,
-    _ST_AnyArrayBool,
+    _ST_AnyBoolArray,
     bool,
     _AnyBoolCT,
 ]
 
 # object_
-_ST_AnyArrayObject = TypeVar(
-    '_ST_AnyArrayObject',
+_ST_AnyObjectArray = TypeVar(
+    '_ST_AnyObjectArray',
     bound=np.object_,
     default=np.object_,
 )
-AnyArrayObject: TypeAlias = AnyArray[
+AnyObjectArray: TypeAlias = AnyArray[
     _ND_AnyArray,
-    _ST_AnyArrayObject,
+    _ST_AnyObjectArray,
     object,
     _AnyObjectCT,
 ]
