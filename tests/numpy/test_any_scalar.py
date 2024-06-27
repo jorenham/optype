@@ -1,11 +1,11 @@
-# ruff: noqa: I001
+# ruff: noqa: I001, PLC2701
 from typing import Any
 
 import numpy as np
 import pytest
 
 import optype.numpy as onp
-from optype.numpy import _sctype  # pyright: ignore[reportPrivateUsage]
+from optype.numpy import _any_scalar  # pyright: ignore[reportPrivateUsage]
 from optype.inspect import get_args
 
 
@@ -37,8 +37,8 @@ def _get_dtype_info(name: str) -> tuple[
     frozenset[str],
 ]:
     types = _get_attr_args(onp, f'Any{name}Value')
-    names = _get_attr_args(_sctype, f'_Any{name}Name')
-    chars = _get_attr_args(_sctype, f'_Any{name}Char')
+    names = _get_attr_args(_any_scalar, f'_Any{name}Name')
+    chars = _get_attr_args(_any_scalar, f'_Any{name}Char')
     return frozenset(types), frozenset(names), frozenset(chars)
 
 
@@ -53,7 +53,7 @@ def test_sctypes(name: str):
     assert dtype_expect.type in types
 
     for arg in types | names | {c for c in chars if c[0] not in '=<>'}:
-        dtype: np.dtype[Any] = np.dtype(arg)
+        dtype = np.dtype(arg)
         assert dtype == dtype_expect
 
 

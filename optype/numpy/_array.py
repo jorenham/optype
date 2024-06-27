@@ -1,6 +1,3 @@
-"""
-Interfaces and type aliases for NumPy arrays, dtypes, and ufuncs.
-"""
 from __future__ import annotations
 
 import sys
@@ -35,7 +32,6 @@ if TYPE_CHECKING:
 
 
 __all__ = (
-    'AnyArray',
     'Array',
     'CanArray',
     'CanArrayFinalize',
@@ -51,10 +47,8 @@ if not _NP_V2:
     assert _NP_VERSION.startswith('1.'), f'numpy {_NP_VERSION} is unsupported'
 
 
-_AnyShape: TypeAlias = tuple[int, ...]
-
-
-_ND_Array = TypeVar('_ND_Array', bound=_AnyShape, default=_AnyShape)
+_AnyND: TypeAlias = tuple[int, ...]
+_ND_Array = TypeVar('_ND_Array', bound=_AnyND, default=_AnyND)
 _ST_Array = TypeVar('_ST_Array', bound=np.generic, default=np.generic)
 
 Array: TypeAlias = np.ndarray[_ND_Array, np.dtype[_ST_Array]]
@@ -64,8 +58,8 @@ Array: TypeAlias = np.ndarray[_ND_Array, np.dtype[_ST_Array]]
 _ND_CanArray = TypeVar(
     '_ND_CanArray',
     infer_variance=True,
-    bound=_AnyShape,
-    default=_AnyShape,
+    bound=_AnyND,
+    default=_AnyND,
 )
 _ST_CanArray = TypeVar(
     '_ST_CanArray',
@@ -92,51 +86,7 @@ class CanArray(Protocol[_ND_CanArray, _ST_CanArray]):
     ) -> np.ndarray[_ND_CanArray, _DT_CanArray]: ...
 
 
-_V__NestedSequence = TypeVar(
-    '_V__NestedSequence',
-    infer_variance=True,
-    bound=object,
-)
-
-
-@runtime_checkable
-class _NestedSequence(Protocol[_V__NestedSequence]):
-    def __len__(self, /) -> int: ...
-    def __getitem__(self, i: int, /) -> (
-        _V__NestedSequence
-        | _NestedSequence[_V__NestedSequence]
-    ): ...
-
-
-_ND__AnyArray = TypeVar(
-    '_ND__AnyArray',
-    bound=_AnyShape,
-    default=_AnyShape,
-)
-_ST__AnyArray = TypeVar(
-    '_ST__AnyArray',
-    bound=np.generic,
-    default=np.generic,
-)
-_PT__AnyArray = TypeVar(
-    '_PT__AnyArray',
-    bound=complex | str | bytes,
-    default=complex | str | bytes,
-)
-
-AnyArray: TypeAlias = (
-    CanArray[_ND__AnyArray, _ST__AnyArray]
-    | _NestedSequence[CanArray[Any, _ST__AnyArray]]
-    | _PT__AnyArray
-    | _NestedSequence[_PT__AnyArray]
-)
-"""
-Generic array-like that can be passed to e.g. `np.array` or `np.asaray`.
-
-    - `Shape: tuple[int, ...]`
-    - `TypeNP: np.generic`
-    - `TypePY: bool | int | float | complex | str | bytes`
-"""
+###########################
 
 
 _F_CanArrayFunction = TypeVar(
