@@ -399,10 +399,13 @@ else:
     _AnyLongDoubleName: TypeAlias = Literal['longdouble', 'longfloat']
 _AnyLongDoubleChar: TypeAlias = Literal['g', '=g', '<g', '>g']
 _AnyLongDoubleCode: TypeAlias = _AnyLongDoubleName | _AnyLongDoubleChar
-AnyLongDoubleValue: TypeAlias = _AnyLongDoubleNP | ct.c_longdouble
+# Note that `np.array(ct.c_longdouble())` will raise a `ValueError`:
+# "Unknown PEP 3118 data type specifier 'g'".
+AnyLongDoubleValue: TypeAlias = _AnyLongDoubleNP
+# On the other hand, `np.dtype(ct.c_longdouble)` is fine.
 AnyLongDoubleType: TypeAlias = (
     _AnyLongDoubleCode
-    | _DualType[_AnyLongDoubleNP, AnyLongDoubleValue]
+    | _DualType[_AnyLongDoubleNP, AnyLongDoubleValue | ct.c_longdouble]
 )
 
 # floating
