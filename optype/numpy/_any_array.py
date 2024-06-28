@@ -35,7 +35,7 @@ __all__ = (
     'AnyBytesArray',
     'AnyCharacterArray',
     'AnyComplexFloatingArray',
-    'AnyDateTimeArray',
+    'AnyDateTime64Array',
     'AnyFlexibleArray',
     'AnyFloatingArray',
     'AnyInexactArray',
@@ -44,7 +44,7 @@ __all__ = (
     'AnyObjectArray',
     'AnySignedIntegerArray',
     'AnyStrArray',
-    'AnyTimeDeltaArray',
+    'AnyTimeDelta64Array',
     'AnyUnsignedIntegerArray',
 )
 
@@ -204,20 +204,26 @@ AnyNumberArray: TypeAlias = AnyArray[
 #
 
 # datetime64
-_ST_AnyDateTimeArray64 = TypeVar(
-    '_ST_AnyDateTimeArray64',
+_ST_AnyDateTime64Array = TypeVar(
+    '_ST_AnyDateTime64Array',
     bound=np.datetime64,
     default=np.datetime64,
 )
-AnyDateTimeArray: TypeAlias = _AnyNPArray[_ND_AnyArray, _ST_AnyDateTimeArray64]
+AnyDateTime64Array: TypeAlias = _AnyNPArray[
+    _ND_AnyArray,
+    _ST_AnyDateTime64Array,
+]
 
 # timedelta64
-_ST_AnyTimeDeltaArray = TypeVar(
-    '_ST_AnyTimeDeltaArray',
+_ST_AnyTimeDelta64Array = TypeVar(
+    '_ST_AnyTimeDelta64Array',
     bound=np.timedelta64,
     default=np.timedelta64,
 )
-AnyTimeDeltaArray: TypeAlias = _AnyNPArray[_ND_AnyArray, _ST_AnyTimeDeltaArray]
+AnyTimeDelta64Array: TypeAlias = _AnyNPArray[
+    _ND_AnyArray,
+    _ST_AnyTimeDelta64Array,
+]
 
 
 #
