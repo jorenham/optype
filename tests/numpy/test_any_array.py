@@ -60,10 +60,9 @@ COMPLEX_FLOATING: tuple[type[onp.AnyComplexFloatingValue], ...] = (
 )
 DATETIME64: tuple[type[onp.AnyDatetime64Value]] = (np.datetime64,)
 TIMEDELTA64: tuple[type[onp.AnyTimedelta64Type]] = (np.timedelta64,)
-CHARACTER: tuple[type[onp.AnyCharacterValue], ...] = (
-    np.str_, str,
-    np.bytes_, ct.c_char, bytes,
-)
+STR: tuple[type[onp.AnyStrValue], ...] = np.str_, str
+BYTES: tuple[type[onp.AnyBytesValue], ...] = np.bytes_, ct.c_char, bytes
+CHARACTER: tuple[type[onp.AnyCharacterValue], ...] = *STR, *BYTES
 VOID: tuple[type[onp.AnyVoidValue]] = (np.void,)
 FLEXIBLE: tuple[type[onp.AnyFlexibleValue], ...] = *VOID, *CHARACTER
 BOOL: tuple[type[onp.AnyBoolValue], ...] = np.bool_, ct.c_bool, bool
@@ -173,6 +172,24 @@ def test_any_timedelta64_array(
     v: onp.AnyTimedelta64Value = sctype()
     x: onp.AnyTimeDelta64Array[_0D] = np.array(v)
     assert np.issubdtype(x.dtype, np.timedelta64)
+
+
+@pytest.mark.parametrize('sctype', STR)
+def test_any_str_array(
+    sctype: type[onp.AnyStrValue],
+) -> None:
+    v: onp.AnyStrValue = sctype()
+    x: onp.AnyStrArray[_0D] = np.array(v)
+    assert np.issubdtype(x.dtype, np.str_)
+
+
+@pytest.mark.parametrize('sctype', BYTES)
+def test_any_bytes_array(
+    sctype: type[onp.AnyBytesValue],
+) -> None:
+    v: onp.AnyBytesValue = sctype()
+    x: onp.AnyBytesArray[_0D] = np.array(v)
+    assert np.issubdtype(x.dtype, np.bytes_)
 
 
 @pytest.mark.parametrize('sctype', CHARACTER)
