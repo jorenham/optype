@@ -638,6 +638,9 @@ AnyStrType: TypeAlias = _AnyStrCode | _DualType[_AnyStrNP, AnyStrValue]
 
 # bytes
 _AnyBytesNP: TypeAlias = np.bytes_
+# TODO: Figure out why `np.dtype(ct.c_char) != np.dtype(np.bytes_)`,
+# whose `.char` attrs are `'c' != 'S'`, `.itemsize` are `1 != 0`,
+# and `.isbuiltin` are `0 != 1`.
 _AnyBytesCT: TypeAlias = ct.c_char
 _AnyBytesPY: TypeAlias = bytes
 if TYPE_CHECKING or _NP_V2:
@@ -646,7 +649,7 @@ else:
     _AnyBytesName: TypeAlias = Literal['bytes', 'bytes_', 'bytes0']
 _AnyBytesChar: TypeAlias = Literal['S', '=S', '<S', '>S']
 _AnyBytesCode: TypeAlias = _AnyBytesName | _AnyBytesChar
-AnyBytesValue: TypeAlias = _AnyBytesNP | _AnyBytesPY
+AnyBytesValue: TypeAlias = _AnyBytesNP | _AnyBytesCT | _AnyBytesPY
 AnyBytesType: TypeAlias = _AnyBytesCode | _DualType[_AnyBytesNP, AnyBytesValue]
 
 # character
