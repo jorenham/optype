@@ -58,8 +58,8 @@ COMPLEX_FLOATING: tuple[type[onp.AnyComplexFloatingValue], ...] = (
     np.complex64, np.complex128,
     np.csingle, np.cdouble, np.clongdouble,
 )
-DATETIME64: tuple[type[onp.AnyDatetime64Value]] = (np.datetime64,)
-TIMEDELTA64: tuple[type[onp.AnyTimedelta64Type]] = (np.timedelta64,)
+DATETIME64: tuple[type[onp.AnyDateTime64Value]] = (np.datetime64,)
+TIMEDELTA64: tuple[type[onp.AnyTimeDelta64Type]] = (np.timedelta64,)
 STR: tuple[type[onp.AnyStrValue], ...] = np.str_, str
 BYTES: tuple[type[onp.AnyBytesValue], ...] = np.bytes_, ct.c_char, bytes
 CHARACTER: tuple[type[onp.AnyCharacterValue], ...] = *STR, *BYTES
@@ -158,18 +158,18 @@ def test_any_complex_floating_array(
 
 @pytest.mark.parametrize('sctype', DATETIME64)
 def test_any_datetime64_array(
-    sctype: type[onp.AnyDatetime64Value],
+    sctype: type[onp.AnyDateTime64Value],
 ) -> None:
-    v: onp.AnyDatetime64Value = sctype()
+    v: onp.AnyDateTime64Value = sctype()
     x: onp.AnyDateTime64Array[_0D] = np.array(v)
     assert np.issubdtype(x.dtype, np.datetime64)
 
 
 @pytest.mark.parametrize('sctype', TIMEDELTA64)
 def test_any_timedelta64_array(
-    sctype: type[onp.AnyTimedelta64Value],
+    sctype: type[onp.AnyTimeDelta64Value],
 ) -> None:
-    v: onp.AnyTimedelta64Value = sctype()
+    v: onp.AnyTimeDelta64Value = sctype()
     x: onp.AnyTimeDelta64Array[_0D] = np.array(v)
     assert np.issubdtype(x.dtype, np.timedelta64)
 
