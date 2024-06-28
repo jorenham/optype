@@ -583,35 +583,34 @@ AnyNumberType: TypeAlias = (
 #
 
 # datetime64
-# TODO: Rename to `DateTime64` (for `np.dtypes.DateTime64DType` consistency).
-_AnyDatetime64NP: TypeAlias = np.datetime64
-_AnyDatetime64Name: TypeAlias = Literal['datetime64']
+_AnyDateTime64NP: TypeAlias = np.datetime64
+_AnyDateTime64Name: TypeAlias = Literal['datetime64']
 # fmt: off
-_AnyDatetime64Char: TypeAlias = Literal[
+_AnyDateTime64Char: TypeAlias = Literal[
     'M', '=M', '<M', '>M',
     'M8', '=M8', '<M8', '>M8',
 ]
 # fmt: on
-_AnyDatetime64Code: TypeAlias = _AnyDatetime64Name | _AnyDatetime64Char
-AnyDatetime64Value: TypeAlias = _AnyDatetime64NP
-AnyDatetime64Type: TypeAlias = _AnyDatetime64Code | _SoloType[_AnyDatetime64NP]
+_AnyDateTime64Code: TypeAlias = _AnyDateTime64Name | _AnyDateTime64Char
+AnyDateTime64Value: TypeAlias = _AnyDateTime64NP
+AnyDateTime64Type: TypeAlias = _AnyDateTime64Code | _SoloType[_AnyDateTime64NP]
 
 
 # timedelta64
 # TODO: Rename to `TimeDelta64` (for `np.dtypes.TimeDelta64` consistency).
-_AnyTimedelta64NP: TypeAlias = np.timedelta64
-_AnyTimedelta64Name: TypeAlias = Literal['timedelta64']
+_AnyTimeDelta64NP: TypeAlias = np.timedelta64
+_AnyTimeDelta64Name: TypeAlias = Literal['timedelta64']
 # fmt: off
-_AnyTimedelta64Char: TypeAlias = Literal[
+_AnyTimeDelta64Char: TypeAlias = Literal[
     'm', '=m', '<m', '>m',
     'm8', '=m8', '<m8', '>m8',
 ]
 # fmt: on
-_AnyTimedelta64Code: TypeAlias = _AnyTimedelta64Name | _AnyTimedelta64Char
-AnyTimedelta64Value: TypeAlias = _AnyTimedelta64NP
-AnyTimedelta64Type: TypeAlias = (
-    _AnyTimedelta64Code
-    | _SoloType[_AnyTimedelta64NP]
+_AnyTimeDelta64Code: TypeAlias = _AnyTimeDelta64Name | _AnyTimeDelta64Char
+AnyTimeDelta64Value: TypeAlias = _AnyTimeDelta64NP
+AnyTimeDelta64Type: TypeAlias = (
+    _AnyTimeDelta64Code
+    | _SoloType[_AnyTimeDelta64NP]
 )
 
 

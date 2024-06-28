@@ -9,7 +9,7 @@ from optype.numpy import _any_scalar  # pyright: ignore[reportPrivateUsage]
 from optype.inspect import get_args
 
 
-_TEMPORAL = 'Timedelta64', 'Datetime64'
+_TEMPORAL = 'TimeDelta64', 'DateTime64'
 _FLEXIBLE = 'Str', 'Bytes', 'Void'
 _SIMPLE = 'Bool', 'Object'
 _NUMERIC_N = (
