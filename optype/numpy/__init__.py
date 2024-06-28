@@ -112,6 +112,7 @@ __all__ = (
     'AnyUnsignedIntegerArray',
     'AnyUnsignedIntegerType',
     'AnyUnsignedIntegerValue',
+    'AnyVoidArray',
     'AnyVoidType',
     'AnyVoidValue',
     'Array',
@@ -152,6 +153,7 @@ from ._any_array import (
     AnyStrArray,
     AnyTimeDelta64Array,
     AnyUnsignedIntegerArray,
+    AnyVoidArray,
 )
 from ._any_scalar import (
     AnyBoolType,
