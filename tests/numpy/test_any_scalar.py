@@ -54,7 +54,11 @@ def test_sctypes(name: str):
 
     for arg in types | names | {c for c in chars if c[0] not in '=<>'}:
         dtype = np.dtype(arg)
-        assert dtype == dtype_expect
+        assert (
+            dtype == dtype_expect
+            # only needed for `np.dtype(ct.c_char)`
+            or dtype.type is dtype_expect.type
+        )
 
 
 @pytest.mark.parametrize(
