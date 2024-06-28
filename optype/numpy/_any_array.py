@@ -60,12 +60,31 @@ class _PyArray(Protocol[_V_PyArray]):
     def __getitem__(self, i: int, /) -> _V_PyArray | _PyArray[_V_PyArray]: ...
 
 
+_ND__AnyNPArray = TypeVar(
+    '_ND__AnyNPArray',
+    bound=tuple[int, ...],
+    default=tuple[int, ...],
+)
+_ST__AnyNPArray = TypeVar(
+    '_ST__AnyNPArray',
+    bound=np.generic,
+    default=np.generic,
+)
+_AnyNPArray: TypeAlias = (
+    CanArray[_ND__AnyNPArray, _ST__AnyNPArray]
+    | _PyArray[CanArray[Any, _ST__AnyNPArray]]
+)
+
 _ND_AnyArray = TypeVar(
     '_ND_AnyArray',
     bound=tuple[int, ...],
     default=tuple[int, ...],
 )
-_ST_AnyArray = TypeVar('_ST_AnyArray', bound=np.generic, default=Any)
+_ST_AnyArray = TypeVar(
+    '_ST_AnyArray',
+    bound=np.generic,
+    default=np.generic,
+)
 _PT_AnyArray = TypeVar(
     '_PT_AnyArray',
     bound=complex | str | bytes | object,
@@ -76,16 +95,12 @@ _CT_AnyArray = TypeVar(
     bound=_AnyGenericCT,
     default=_AnyGenericCT,
 )
-_AnyNPArray: TypeAlias = (
-    CanArray[_ND_AnyArray, _ST_AnyArray]
-    | _PyArray[CanArray[Any, _ST_AnyArray]]
-)
 AnyArray: TypeAlias = (
     CanArray[_ND_AnyArray, _ST_AnyArray]
-    | _PyArray[CanArray[Any, _ST_AnyArray]]
     | _PT_AnyArray
-    | _PyArray[_PT_AnyArray]
     | _CT_AnyArray  # ctypes can only be used to create 0d arrays
+    | _PyArray[CanArray[Any, _ST_AnyArray]]
+    | _PyArray[_PT_AnyArray]
 )
 """
 Generic array-like that can be passed to e.g. `np.array` or `np.asaray`, with
@@ -233,7 +248,7 @@ AnyTimeDelta64Array: TypeAlias = _AnyNPArray[
 
 # str_
 _ST_AnyStrArray = TypeVar('_ST_AnyStrArray', bound=np.str_, default=np.str_)
-AnyStrArray: TypeAlias = AnyArray[_ND_AnyArray, _ST_AnyStrArray, str]
+AnyStrArray: TypeAlias = AnyArray[_ND_AnyArray, _ST_AnyStrArray, str, Never]
 """This is about `numpy.dtypes.StrDType`; not `numpy.dtypes.StringDType`."""
 
 # bytes_
