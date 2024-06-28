@@ -108,8 +108,14 @@ else:
     _AnyUIntPName: TypeAlias = Literal['uintp', 'uint0']
     _AnyUIntPChar: TypeAlias = Literal['P', '=P', '<P', '>P']
 _AnyUIntPCode: TypeAlias = _AnyUIntPName | _AnyUIntPChar
+# Note that `np.array(ct.c_void_p())` will raise a `ValueError`:
+# "Unknown PEP 3118 data type specifier 'P'".
 AnyUIntPValue: TypeAlias = _AnyUIntPNP | ct.c_size_t  # | ct.c_void_p
-AnyUIntPType: TypeAlias = _AnyUIntPCode | _DualType[_AnyUIntPNP, AnyUIntPValue]
+# But on the other hand, `np.dtype(ct.c_void_p)` is fine.
+AnyUIntPType: TypeAlias = (
+    _AnyUIntPCode
+    | _DualType[_AnyUIntPNP, AnyUIntPValue | ct.c_void_p]
+)
 
 # ulong (uint on numpy^=1)
 if TYPE_CHECKING or _NP_V2:
@@ -162,7 +168,7 @@ AnyUnsignedIntegerType: TypeAlias = (
     _AnyUnsignedIntegerCode
     | _DualType[
         _AnyUnsignedIntegerNP[_NB_unsignedinteger],
-        AnyUnsignedIntegerValue[_NB_unsignedinteger],
+        AnyUnsignedIntegerValue[_NB_unsignedinteger] | ct.c_void_p,
     ]
 )
 
@@ -402,7 +408,7 @@ _AnyLongDoubleCode: TypeAlias = _AnyLongDoubleName | _AnyLongDoubleChar
 # Note that `np.array(ct.c_longdouble())` will raise a `ValueError`:
 # "Unknown PEP 3118 data type specifier 'g'".
 AnyLongDoubleValue: TypeAlias = _AnyLongDoubleNP
-# On the other hand, `np.dtype(ct.c_longdouble)` is fine.
+# But on the other hand, `np.dtype(ct.c_longdouble)` is fine.
 AnyLongDoubleType: TypeAlias = (
     _AnyLongDoubleCode
     | _DualType[_AnyLongDoubleNP, AnyLongDoubleValue | ct.c_longdouble]
