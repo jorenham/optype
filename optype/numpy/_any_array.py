@@ -46,6 +46,7 @@ __all__ = (
     'AnyStrArray',
     'AnyTimeDelta64Array',
     'AnyUnsignedIntegerArray',
+    'AnyVoidArray',
 )
 
 
