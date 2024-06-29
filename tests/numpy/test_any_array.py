@@ -27,7 +27,7 @@ _UNSIGNED_INTEGERS_CT = (
     ct.c_uint8, ct.c_uint16, ct.c_uint32, ct.c_uint64, ct.c_size_t,
     ct.c_ubyte, ct.c_ushort, ct.c_uint, ct.c_ulong, ct.c_ulonglong,
 )
-UNSIGNED_INTEGERS: tuple[type[onp.AnyUnsignedIntegerValue], ...] = (
+UNSIGNED_INTEGERS: tuple[type[onp.AnyUnsignedInteger], ...] = (
     *_UNSIGNED_INTEGERS_NP,
     *_UNSIGNED_INTEGERS_CT,
 )
@@ -40,11 +40,11 @@ _SIGNED_INTEGERS_CT = (
     ct.c_int8, ct.c_int16, ct.c_int32, ct.c_int64, ct.c_ssize_t,
     ct.c_byte, ct.c_short, ct.c_int, ct.c_long, ct.c_longlong,
 )
-SIGNED_INTEGERS: tuple[type[onp.AnySignedIntegerValue], ...] = (
+SIGNED_INTEGERS: tuple[type[onp.AnySignedInteger], ...] = (
     *_SIGNED_INTEGERS_NP,
     *_SIGNED_INTEGERS_CT,
 )
-INTEGERS: tuple[type[onp.AnyIntegerValue], ...] = (
+INTEGERS: tuple[type[onp.AnyInteger], ...] = (
     *UNSIGNED_INTEGERS,
     *SIGNED_INTEGERS,
 )
@@ -53,20 +53,20 @@ _FLOATING_NP = (
     np.half, np.single, np.double, np.longdouble,
 )
 _FLOATING_CT = ct.c_float, ct.c_double
-FLOATING: tuple[type[onp.AnyFloatingValue], ...] = *_FLOATING_NP, *_FLOATING_CT
-COMPLEX_FLOATING: tuple[type[onp.AnyComplexFloatingValue], ...] = (
+FLOATING: tuple[type[onp.AnyFloating], ...] = *_FLOATING_NP, *_FLOATING_CT
+COMPLEX_FLOATING: tuple[type[onp.AnyComplexFloating], ...] = (
     np.complex64, np.complex128,
     np.csingle, np.cdouble, np.clongdouble,
 )
-DATETIME64: tuple[type[onp.AnyDateTime64Value]] = (np.datetime64,)
-TIMEDELTA64: tuple[type[onp.AnyTimeDelta64Type]] = (np.timedelta64,)
-STR: tuple[type[onp.AnyStrValue], ...] = np.str_, str
-BYTES: tuple[type[onp.AnyBytesValue], ...] = np.bytes_, ct.c_char, bytes
-CHARACTER: tuple[type[onp.AnyCharacterValue], ...] = *STR, *BYTES
-VOID: tuple[type[onp.AnyVoidValue]] = (np.void,)
-FLEXIBLE: tuple[type[onp.AnyFlexibleValue], ...] = *VOID, *CHARACTER
-BOOL: tuple[type[onp.AnyBoolValue], ...] = np.bool_, ct.c_bool, bool
-OBJECT: tuple[type[onp.AnyObjectValue], ...] = np.object_, ct.py_object, object
+DATETIME64: tuple[type[onp.AnyDateTime64]] = (np.datetime64,)
+TIMEDELTA64: tuple[type[onp.AnyTimeDelta64]] = (np.timedelta64,)
+STR: tuple[type[onp.AnyStr], ...] = np.str_, str
+BYTES: tuple[type[onp.AnyBytes], ...] = np.bytes_, ct.c_char, bytes
+CHARACTER: tuple[type[onp.AnyCharacter], ...] = *STR, *BYTES
+VOID: tuple[type[onp.AnyVoid]] = (np.void,)
+FLEXIBLE: tuple[type[onp.AnyFlexible], ...] = *VOID, *CHARACTER
+BOOL: tuple[type[onp.AnyBool], ...] = np.bool_, ct.c_bool, bool
+OBJECT: tuple[type[onp.AnyObject], ...] = np.object_, ct.py_object, object
 # fmt: on
 
 
@@ -113,125 +113,125 @@ def test_any_array() -> None:
 
 @pytest.mark.parametrize('sctype', UNSIGNED_INTEGERS)
 def test_any_unsigned_integer_array(
-    sctype: type[onp.AnyUnsignedIntegerValue],
+    sctype: type[onp.AnyUnsignedInteger],
 ) -> None:
-    v: onp.AnyUnsignedIntegerValue = sctype(42)
+    v: onp.AnyUnsignedInteger = sctype(42)
     x: onp.AnyUnsignedIntegerArray[_0D] = np.array(v)
     assert np.issubdtype(x.dtype, np.unsignedinteger)
 
 
 @pytest.mark.parametrize('sctype', SIGNED_INTEGERS)
 def test_any_signed_integer_array(
-    sctype: type[onp.AnySignedIntegerValue],
+    sctype: type[onp.AnySignedInteger],
 ) -> None:
-    v: onp.AnySignedIntegerValue = sctype(42)
+    v: onp.AnySignedInteger = sctype(42)
     x: onp.AnySignedIntegerArray[_0D] = np.array(v)
     assert np.issubdtype(x.dtype, np.signedinteger)
 
 
 @pytest.mark.parametrize('sctype', INTEGERS)
 def test_any_integer_array(
-    sctype: type[onp.AnyIntegerValue],
+    sctype: type[onp.AnyInteger],
 ) -> None:
-    v: onp.AnyIntegerValue = sctype(42)
+    v: onp.AnyInteger = sctype(42)
     x: onp.AnyIntegerArray[_0D] = np.array(v)
     assert np.issubdtype(x.dtype, np.integer)
 
 
 @pytest.mark.parametrize('sctype', FLOATING)
 def test_any_floating_array(
-    sctype: type[onp.AnyFloatingValue],
+    sctype: type[onp.AnyFloating],
 ) -> None:
-    v: onp.AnyFloatingValue = sctype(42)
+    v: onp.AnyFloating = sctype(42)
     x: onp.AnyFloatingArray[_0D] = np.array(v)
     assert np.issubdtype(x.dtype, np.floating)
 
 
 @pytest.mark.parametrize('sctype', COMPLEX_FLOATING)
 def test_any_complex_floating_array(
-    sctype: type[onp.AnyComplexFloatingValue],
+    sctype: type[onp.AnyComplexFloating],
 ) -> None:
-    v: onp.AnyComplexFloatingValue = sctype(42 + 42j)
+    v: onp.AnyComplexFloating = sctype(42 + 42j)
     x: onp.AnyComplexFloatingArray[_0D] = np.array(v)
     assert np.issubdtype(x.dtype, np.complexfloating)
 
 
 @pytest.mark.parametrize('sctype', DATETIME64)
 def test_any_datetime64_array(
-    sctype: type[onp.AnyDateTime64Value],
+    sctype: type[onp.AnyDateTime64],
 ) -> None:
-    v: onp.AnyDateTime64Value = sctype()
+    v: onp.AnyDateTime64 = sctype()
     x: onp.AnyDateTime64Array[_0D] = np.array(v)
     assert np.issubdtype(x.dtype, np.datetime64)
 
 
 @pytest.mark.parametrize('sctype', TIMEDELTA64)
 def test_any_timedelta64_array(
-    sctype: type[onp.AnyTimeDelta64Value],
+    sctype: type[onp.AnyTimeDelta64],
 ) -> None:
-    v: onp.AnyTimeDelta64Value = sctype()
+    v: onp.AnyTimeDelta64 = sctype()
     x: onp.AnyTimeDelta64Array[_0D] = np.array(v)
     assert np.issubdtype(x.dtype, np.timedelta64)
 
 
 @pytest.mark.parametrize('sctype', STR)
 def test_any_str_array(
-    sctype: type[onp.AnyStrValue],
+    sctype: type[onp.AnyStr],
 ) -> None:
-    v: onp.AnyStrValue = sctype()
+    v: onp.AnyStr = sctype()
     x: onp.AnyStrArray[_0D] = np.array(v)
     assert np.issubdtype(x.dtype, np.str_)
 
 
 @pytest.mark.parametrize('sctype', BYTES)
 def test_any_bytes_array(
-    sctype: type[onp.AnyBytesValue],
+    sctype: type[onp.AnyBytes],
 ) -> None:
-    v: onp.AnyBytesValue = sctype()
+    v: onp.AnyBytes = sctype()
     x: onp.AnyBytesArray[_0D] = np.array(v)
     assert np.issubdtype(x.dtype, np.bytes_)
 
 
 @pytest.mark.parametrize('sctype', CHARACTER)
 def test_any_character_array(
-    sctype: type[onp.AnyCharacterValue],
+    sctype: type[onp.AnyCharacter],
 ) -> None:
-    v: onp.AnyCharacterValue = sctype()
+    v: onp.AnyCharacter = sctype()
     x: onp.AnyCharacterArray[_0D] = np.array(v)
     assert np.issubdtype(x.dtype, np.character)
 
 
 @pytest.mark.parametrize('sctype', VOID)
 def test_any_void_array(
-    sctype: type[onp.AnyVoidValue],
+    sctype: type[onp.AnyVoid],
 ) -> None:
-    v: onp.AnyVoidValue = sctype(0)
+    v: onp.AnyVoid = sctype(0)
     x: onp.AnyVoidArray[_0D] = np.array(v)
     assert np.issubdtype(x.dtype, np.void)
 
 
 @pytest.mark.parametrize('sctype', FLEXIBLE)
 def test_any_flexible_array(
-    sctype: type[onp.AnyFlexibleValue],
+    sctype: type[onp.AnyFlexible],
 ) -> None:
-    v: onp.AnyFlexibleValue = sctype(0)
+    v: onp.AnyFlexible = sctype(0)
     x: onp.AnyFlexibleArray[_0D] = np.array(v)
     assert np.issubdtype(x.dtype, np.flexible)
 
 
 @pytest.mark.parametrize('sctype', BOOL)
 def test_any_bool_array(
-    sctype: type[onp.AnyBoolValue],
+    sctype: type[onp.AnyBool],
 ) -> None:
-    v: onp.AnyBoolValue = sctype(True)
+    v: onp.AnyBool = sctype(True)
     x: onp.AnyBoolArray[_0D] = np.array(v)
     assert np.issubdtype(x.dtype, np.bool_)
 
 
 @pytest.mark.parametrize('sctype', OBJECT)
 def test_any_object_array(
-    sctype: type[onp.AnyObjectValue],
+    sctype: type[onp.AnyObject],
 ) -> None:
-    v: onp.AnyObjectValue = sctype()
+    v: onp.AnyObject = sctype()
     x: onp.AnyObjectArray[_0D] = np.array(v)
     assert np.issubdtype(x.dtype, np.object_)
