@@ -247,8 +247,8 @@ The reference docs are structured as follows:
     - [Shapes](#shapes)
     - [Scalars](#scalars)
         - [`Scalar`](#scalar)
-        - [`Any*Value`](#anyvalue)
-        - [`Any*Type`](#anytype)
+        - [`Any{Scalar}`](#anyscalar)
+        - [`Any*DType`](#anydtype)
     - [Data type objects](#data-type-objects)
         - [`DType`](#dtype)
         - [`HasDType`](#hasdtype)
@@ -2225,14 +2225,14 @@ fine_structure_constant: Scalar[float, Literal[8]] = np.float64(1) / 137
 > The second type argument for `itemsize` can be omitted, which is equivalent
 > to setting it to `Any`.
 
-##### `Any*Value`
+##### `Any{Scalar}`
 
 For every (standard) numpy scalar type (i.e. subtypes of `np.generic`), there
-is the `optype.numpy.Any{}Value` alias (where `{}` should be replaced with the
-title-cased name of the scalar, without potential trailing underscore).
+is the `optype.numpy.Any{Scalar}` alias (where `{Scalar}` should be replaced
+with the title-cased name of the scalar, without potential trailing underscore).
 
-So for `np.bool_` there's `onp.AnyBoolValue`,
-for `np.uint8` there's `onp.AnyUInt8Value`, and
+So for `np.bool_` there's `onp.AnyBool`,
+for `np.uint8` there's `onp.AnyUInt8`, and
 for `np.floating[N: npt.NBitBase]` there's `AnyFloating[N: npt.NBitBase]`.
 
 > [!NOTE]
@@ -2240,14 +2240,14 @@ for `np.floating[N: npt.NBitBase]` there's `AnyFloating[N: npt.NBitBase]`.
 > `np.complex512`) are not included, because their availability is
 > platform-dependent.
 
-When a value of type `Any{}Value` is passed to e.g. `np.array`,
+When a value of type `Any{Scalar}` is passed to e.g. `np.array`,
 the resulting `np.ndarray` will have a scalar type that matches
-the corresponding `Any{}Value`.
-For instance, passing `x: onp.AnyFloat64Value` as `np.array(x)` returns an
+the corresponding `Any{Scalar}`.
+For instance, passing `x: onp.AnyFloat64` as `np.array(x)` returns an
 array of type `onp.Array[tuple[()], np.float64]`
 (where `tuple[()]` implies that its shape is `()`).
 
-Each `Any{}Value` contains at least the relevant `np.generic` subtype,
+Each `Any{Scalar}` contains at least the relevant `np.generic` subtype,
 zero or more [`ctypes`][CTYPES] types, and
 zero or more of the Python `builtins` types.
 
@@ -2256,14 +2256,14 @@ So for instance `type AnyUInt8 = np.uint8 | ct.c_uint8`, and
 
 [CTYPES]: https://docs.python.org/3/library/ctypes.html
 
-##### `Any*Type`
+##### `Any*DType`
 
-In the same way as `Any*Value`, there's a `Any*Type` for each of the numpy
+In the same way as `Any*`, there's a `Any*DType` for each of the numpy
 scalar types.
 
 These type aliases describe what's allowed to be passed to e.g. the
 `np.dtype[ST: np.generic]` constructor, so that its scalar type `ST` matches
-the one corresponding to the passed `Any*Type`.
+the one corresponding to the passed `Any*DType`.
 
 So for example, if some `x: onp.UInt8` is passed to `np.dtype(x)`, then the
 resulting type will be a `np.dtype[np.uint8]`.
