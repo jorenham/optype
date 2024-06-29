@@ -14,7 +14,7 @@ from typing import Final, Literal as _Lit, TypeAlias as _Type
 import numpy as np
 import numpy.typing as npt
 
-from . import _any_scalar as _s, _compat as _x, _ctypes as _ct
+from . import _any_scalar as _s, _compat as _x, _ctype as _ct
 from ._dtype import AnyDType as _Solo
 
 
