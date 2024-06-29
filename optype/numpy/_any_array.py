@@ -6,21 +6,22 @@ from typing import Any, TypeAlias, final
 
 import numpy as np
 
-from ._any_scalar import (
-    _AnyBoolCT,
-    _AnyBytesCT,
-    _AnyCharacterCT,
-    _AnyFlexibleCT,
-    _AnyFloatingCT,
-    _AnyGenericCT,
-    _AnyInexactCT,
-    _AnyIntegerCT,
-    _AnyNumberCT,
-    _AnyObjectCT,
-    _AnySignedIntegerCT,
-    _AnyUnsignedIntegerCT,
-)
 from ._array import CanArray
+from ._ctypes import (
+    Bool as _BoolCT,
+    Bytes as _BytesCT,
+    Character as _CharacterCT,
+    ComplexFloating as _ComplexFloatingCT,
+    Flexible as _FlexibleCT,
+    Floating as _FloatingCT,
+    Generic as _GenericCT,
+    Inexact as _InexactCT,
+    Integer as _IntegerCT,
+    Number as _NumberCT,
+    Object as _ObjectCT,
+    SignedInteger as _SignedIntegerCT,
+    UnsignedInteger as _UnsignedIntegerCT,
+)
 
 
 if sys.version_info >= (3, 13):
@@ -92,8 +93,8 @@ _PT_AnyArray = TypeVar(
 )
 _CT_AnyArray = TypeVar(
     '_CT_AnyArray',
-    bound=_AnyGenericCT,
-    default=_AnyGenericCT,
+    bound=_GenericCT,
+    default=_GenericCT,
 )
 AnyArray: TypeAlias = (
     CanArray[_ND_AnyArray, _ST_AnyArray]
@@ -122,7 +123,7 @@ AnyUnsignedIntegerArray: TypeAlias = AnyArray[
     _ND_AnyArray,
     _ST_AnyUnsignedIntegerArray,
     Never,
-    _AnyUnsignedIntegerCT,
+    _UnsignedIntegerCT,
 ]
 
 # signedinteger
@@ -135,7 +136,7 @@ AnySignedIntegerArray: TypeAlias = AnyArray[
     _ND_AnyArray,
     _ST_AnySignedIntegerArray,
     int,
-    _AnySignedIntegerCT,
+    _SignedIntegerCT,
 ]
 
 # integer
@@ -148,7 +149,7 @@ AnyIntegerArray: TypeAlias = AnyArray[
     _ND_AnyArray,
     _ST_AnyIntegerArray,
     int,
-    _AnyIntegerCT,
+    _IntegerCT,
 ]
 
 
@@ -166,7 +167,7 @@ AnyFloatingArray: TypeAlias = AnyArray[
     _ND_AnyArray,
     _ST_AnyFloatingArray,
     float,
-    _AnyFloatingCT,
+    _FloatingCT,
 ]
 
 # complexfloating
@@ -179,7 +180,7 @@ AnyComplexFloatingArray: TypeAlias = AnyArray[
     _ND_AnyArray,
     _ST_AnyComplexFloatingArray,
     complex,
-    Never,
+    _ComplexFloatingCT,
 ]
 
 
@@ -193,7 +194,7 @@ AnyInexactArray: TypeAlias = AnyArray[
     _ND_AnyArray,
     _ST_AnyInexactArray,
     float | complex,
-    _AnyInexactCT,
+    _InexactCT,
 ]
 
 
@@ -211,7 +212,7 @@ AnyNumberArray: TypeAlias = AnyArray[
     _ND_AnyArray,
     _ST_AnyNumberArray,
     int | float | complex,
-    _AnyNumberCT,
+    _NumberCT,
 ]
 
 
@@ -261,7 +262,7 @@ AnyBytesArray: TypeAlias = AnyArray[
     _ND_AnyArray,
     _ST_AnyBytesArray,
     bytes,
-    _AnyBytesCT,
+    _BytesCT,
 ]
 
 # string
@@ -279,7 +280,7 @@ AnyCharacterArray: TypeAlias = AnyArray[
     _ND_AnyArray,
     _ST_AnyCharacterArray,
     str | bytes,
-    _AnyCharacterCT,
+    _CharacterCT,
 ]
 
 # void
@@ -296,7 +297,7 @@ AnyFlexibleArray: TypeAlias = AnyArray[
     _ND_AnyArray,
     _ST_AnyFlexibleArray,
     str | bytes,
-    _AnyFlexibleCT,
+    _FlexibleCT,
 ]
 
 
@@ -314,7 +315,7 @@ AnyBoolArray: TypeAlias = AnyArray[
     _ND_AnyArray,
     _ST_AnyBoolArray,
     bool,
-    _AnyBoolCT,
+    _BoolCT,
 ]
 
 # object_
@@ -327,5 +328,5 @@ AnyObjectArray: TypeAlias = AnyArray[
     _ND_AnyArray,
     _ST_AnyObjectArray,
     object,
-    _AnyObjectCT,
+    _ObjectCT,
 ]
