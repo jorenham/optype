@@ -7,7 +7,7 @@ from typing import Any, TypeAlias, final
 import numpy as np
 
 from ._array import CanArray
-from ._ctypes import (
+from ._ctype import (
     Bool as _BoolCT,
     Bytes as _BytesCT,
     Character as _CharacterCT,

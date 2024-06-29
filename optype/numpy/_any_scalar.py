@@ -6,7 +6,7 @@ from typing import Final, TypeAlias as _Type
 import numpy as np
 import numpy.typing as npt
 
-from . import _ctypes as _ct
+from . import _ctype as _ct
 from ._compat import Bool as _BoolNP, Long as _LongNP, ULong as _ULongNP
 
 
