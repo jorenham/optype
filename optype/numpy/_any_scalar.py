@@ -1,25 +1,23 @@
 from __future__ import annotations
 
-import sys
-from typing import Final, TypeAlias as _Type
+from typing import Any, Final, TypeAlias as _Type
 
 import numpy as np
-import numpy.typing as npt
 
-from . import _ctype as _ct
-from ._compat import Bool as _BoolNP, Long as _LongNP, ULong as _ULongNP
+from . import _compat as _x, _ctype as _ct
 
 
-if sys.version_info >= (3, 13):
-    from typing import Any, TypeVar
-else:
-    from typing_extensions import Any, TypeVar
+# Validate the C-type alias assumptions. If any of these fail, then please open
+# an issue at  https://github.com/jorenham/optype/issues/new,
+# and include the output of `import numpy; numpy.show_runtime()`
+assert np.half is np.float16, f'{np.half = }'
+assert np.single is np.float32, f'{np.single = }'
+assert np.double is np.float64, f'{np.double = }'
+assert np.csingle is np.complex64, f'{np.csingle = }'
+assert np.cdouble is np.complex128, f'{np.cdouble = }'
 
 
 _NP_V2: Final[bool] = np.__version__.startswith('2.')
-
-N = TypeVar('N', bound=npt.NBitBase, default=Any)
-N2 = TypeVar('N2', bound=npt.NBitBase, default=N)
 
 
 # integer - unsigned
@@ -31,9 +29,9 @@ AnyUIntP: _Type = np.uintp | _ct.UIntP
 AnyUByte: _Type = np.ubyte | _ct.UByte
 AnyUShort: _Type = np.ushort | _ct.UShort
 AnyUIntC: _Type = np.uintc | _ct.UIntC
-AnyULong: _Type = _ULongNP | _ct.ULong
+AnyULong: _Type = _x.ULong | _ct.ULong
 AnyULongLong: _Type = np.ulonglong | _ct.ULongLong
-AnyUnsignedInteger: _Type = np.unsignedinteger[N] | _ct.UnsignedInteger
+AnyUnsignedInteger: _Type = np.unsignedinteger[Any] | _ct.UnsignedInteger
 
 
 # integer - signed
@@ -49,14 +47,14 @@ AnyByte: _Type = np.byte | _ct.Byte
 AnyShort: _Type = np.short | _ct.Short
 AnyIntC: _Type = np.intc | _ct.IntC
 if _NP_V2:
-    AnyLong: _Type = _LongNP | _ct.Long
+    AnyLong: _Type = _x.Long | _ct.Long
 else:
-    AnyLong: _Type = int | _LongNP | _ct.Long
+    AnyLong: _Type = int | _x.Long | _ct.Long
 AnyLongLong: _Type = np.longlong | _ct.LongLong
-AnySignedInteger: _Type = int | np.signedinteger[N] | _ct.SignedInteger
+AnySignedInteger: _Type = int | np.signedinteger[Any] | _ct.SignedInteger
 
 # integer
-AnyInteger: _Type = int | np.integer[N] | _ct.Integer
+AnyInteger: _Type = int | np.integer[Any] | _ct.Integer
 
 # floating point - real
 AnyFloat16: _Type = np.float16
@@ -66,26 +64,24 @@ AnyHalf: _Type = np.half
 AnySingle: _Type = np.single | _ct.Single
 AnyDouble: _Type = float | np.double | _ct.Double
 AnyLongDouble: _Type = np.longdouble  # | _ct.LongDouble
-AnyFloating: _Type = float | np.floating[N] | _ct.Floating
+AnyFloating: _Type = float | np.floating[Any] | _ct.Floating
 
 # floating point - complex
 AnyComplex64: _Type = np.complex64
 AnyComplex128: _Type = complex | np.complex128
-assert np.csingle is np.complex64
 AnyCSingle: _Type = np.csingle
-assert np.cdouble is np.complex128
 AnyCDouble: _Type = complex | np.cdouble
 # either `np.complex192` or `np.complex256`
 AnyCLongDouble: _Type = np.clongdouble
-AnyComplexFloating: _Type = complex | np.complexfloating[N, N2]
+AnyComplexFloating: _Type = complex | np.complexfloating[Any, Any]
 
 # floating point
-_InexactPY: _Type = float | complex
-AnyInexact: _Type = _InexactPY | np.inexact[N] | _ct.Inexact
+_InexactPY: _Type = complex  # includes `float`, but also `int` and `bool` :/
+AnyInexact: _Type = _InexactPY | np.inexact[Any] | _ct.Inexact
 
 # numeric
-_NumberPY: _Type = int | _InexactPY
-AnyNumber: _Type = _NumberPY | np.number[N] | _ct.Number
+_NumberPY: _Type = complex  # includes `float` and `int`, but also `bool` :/
+AnyNumber: _Type = _NumberPY | np.number[Any] | _ct.Number
 
 # temporal
 AnyDateTime64: _Type = np.datetime64
@@ -103,15 +99,9 @@ _FlexiblePY: _Type = _CharacterPY
 AnyFlexible: _Type = _FlexiblePY | np.flexible | _ct.Flexible
 
 # other types
-AnyBool: _Type = bool | _BoolNP | _ct.Bool
+AnyBool: _Type = bool | _x.Bool | _ct.Bool
 AnyObject: _Type = np.object_ | _ct.Object | object
 
 # generic
-# fmt: off
-AnyGeneric: _Type = (
-    bool | _NumberPY | _FlexiblePY
-    | np.generic
-    | _ct.Generic
-    | object
-)
-# fmt: on
+_GenericPY: _Type = complex | str | bytes  # `complex <: float <: int <: bool`
+AnyGeneric: _Type = np.generic | _GenericPY | _ct.Generic | object

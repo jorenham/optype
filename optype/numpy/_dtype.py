@@ -10,7 +10,7 @@ else:
     from typing_extensions import Protocol, TypeVar, runtime_checkable
 
 
-__all__ = 'AnyDType', 'DType', 'HasDType'
+__all__ = 'DType', 'HasDType'
 
 
 _ST_DType = TypeVar('_ST_DType', bound=np.generic, default=np.generic)
@@ -40,11 +40,3 @@ class HasDType(Protocol[_DT_HasDType]):
     """
     @property
     def dtype(self, /) -> _DT_HasDType: ...
-
-
-_T_AnyDType = TypeVar('_T_AnyDType', bound=np.generic, default=np.generic)
-AnyDType: TypeAlias = (
-    type[_T_AnyDType]
-    | np.dtype[_T_AnyDType]
-    | HasDType[np.dtype[_T_AnyDType]]
-)

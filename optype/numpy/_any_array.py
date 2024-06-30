@@ -2,331 +2,227 @@
 from __future__ import annotations
 
 import sys
-from typing import Any, TypeAlias, final
+from typing import Final, TypeAlias as _Type, final
 
 import numpy as np
 
+from . import _compat as _x, _ctype as _ct
 from ._array import CanArray
-from ._ctype import (
-    Bool as _BoolCT,
-    Bytes as _BytesCT,
-    Character as _CharacterCT,
-    ComplexFloating as _ComplexFloatingCT,
-    Flexible as _FlexibleCT,
-    Floating as _FloatingCT,
-    Generic as _GenericCT,
-    Inexact as _InexactCT,
-    Integer as _IntegerCT,
-    Number as _NumberCT,
-    Object as _ObjectCT,
-    SignedInteger as _SignedIntegerCT,
-    UnsignedInteger as _UnsignedIntegerCT,
-)
 
 
 if sys.version_info >= (3, 13):
-    from typing import Never, Protocol, TypeVar, runtime_checkable
+    from typing import Any, Protocol, TypeVar, runtime_checkable
 else:
-    from typing_extensions import Never, Protocol, TypeVar, runtime_checkable
+    from typing_extensions import Any, Protocol, TypeVar, runtime_checkable
 
 
 __all__ = (
     'AnyArray',
     'AnyBoolArray',
+    'AnyByteArray',
     'AnyBytesArray',
+    'AnyCDoubleArray',
+    'AnyCLongDoubleArray',
+    'AnyCSingleArray',
     'AnyCharacterArray',
+    'AnyComplex64Array',
+    'AnyComplex128Array',
     'AnyComplexFloatingArray',
     'AnyDateTime64Array',
+    'AnyDoubleArray',
     'AnyFlexibleArray',
+    'AnyFloat16Array',
+    'AnyFloat32Array',
+    'AnyFloat64Array',
     'AnyFloatingArray',
+    'AnyGenericArray',
+    'AnyHalfArray',
     'AnyInexactArray',
+    'AnyInt8Array',
+    'AnyInt16Array',
+    'AnyInt32Array',
+    'AnyInt64Array',
+    'AnyIntCArray',
+    'AnyIntPArray',
     'AnyIntegerArray',
+    'AnyLongArray',
+    'AnyLongDoubleArray',
+    'AnyLongLongArray',
     'AnyNumberArray',
     'AnyObjectArray',
+    'AnyShortArray',
     'AnySignedIntegerArray',
+    'AnySingleArray',
     'AnyStrArray',
     'AnyTimeDelta64Array',
+    'AnyUByteArray',
+    'AnyUInt8Array',
+    'AnyUInt16Array',
+    'AnyUInt32Array',
+    'AnyUInt64Array',
+    'AnyUIntCArray',
+    'AnyUIntPArray',
+    'AnyULongArray',
+    'AnyULongLongArray',
+    'AnyUShortArray',
     'AnyUnsignedIntegerArray',
     'AnyVoidArray',
 )
 
 
-_V_PyArray = TypeVar('_V_PyArray', infer_variance=True)
+_NP_V2: Final[bool] = np.__version__.startswith('2.')
+
+
+T_co = TypeVar('T_co', covariant=True, bound=object)
 
 
 @final
 @runtime_checkable
-class _PyArray(Protocol[_V_PyArray]):
+class _PyArray(Protocol[T_co]):
     def __len__(self, /) -> int: ...
-    def __getitem__(self, i: int, /) -> _V_PyArray | _PyArray[_V_PyArray]: ...
+    def __getitem__(self, i: int, /) -> T_co | _PyArray[T_co]: ...
 
 
-_ND__AnyNPArray = TypeVar(
-    '_ND__AnyNPArray',
-    bound=tuple[int, ...],
-    default=tuple[int, ...],
+_ND = TypeVar('_ND', bound=tuple[int, ...])
+_ST = TypeVar('_ST', bound=np.generic)
+_PT = TypeVar('_PT', bool, int, float, complex, str, bytes, object)
+_CT = TypeVar('_CT', bound=_ct.Generic)
+_AnyNP: _Type = CanArray[_ND, _ST] | _PyArray[CanArray[Any, _ST]]
+_AnyPY: _Type = _PyArray[_PT] | _PT
+_Any3: _Type = _AnyNP[_ND, _ST] | _AnyPY[_PT]
+_Any4: _Type = _Any3[_ND, _ST, _PT] | _CT
+
+# generic
+ND = TypeVar('ND', bound=tuple[int, ...], default=Any)
+ST = TypeVar('ST', bound=np.generic, default=Any)
+AnyArray: _Type = (
+    _AnyNP[ND, ST]
+    | _AnyPY[bool]
+    | _AnyPY[int]
+    | _AnyPY[float]
+    | _AnyPY[complex]
+    | _AnyPY[str]
+    | _AnyPY[bytes]
+    | _ct.Generic
+    | _AnyPY[object]
 )
-_ST__AnyNPArray = TypeVar(
-    '_ST__AnyNPArray',
-    bound=np.generic,
-    default=np.generic,
-)
-_AnyNPArray: TypeAlias = (
-    CanArray[_ND__AnyNPArray, _ST__AnyNPArray]
-    | _PyArray[CanArray[Any, _ST__AnyNPArray]]
+AnyGenericArray: _Type = AnyArray[ND, np.generic]
+
+# generic :> number
+ST_iufc = TypeVar('ST_iufc', bound=np.number[Any], default=Any)
+AnyNumberArray: _Type = (
+    _AnyNP[ND, ST_iufc]
+    | _AnyPY[int]
+    | _AnyPY[float]
+    | _AnyPY[complex]
+    | _ct.Number
 )
 
-_ND_AnyArray = TypeVar(
-    '_ND_AnyArray',
-    bound=tuple[int, ...],
-    default=tuple[int, ...],
-)
-_ST_AnyArray = TypeVar(
-    '_ST_AnyArray',
-    bound=np.generic,
-    default=np.generic,
-)
-_PT_AnyArray = TypeVar(
-    '_PT_AnyArray',
-    bound=complex | str | bytes | object,
-    default=complex | str | bytes,
-)
-_CT_AnyArray = TypeVar(
-    '_CT_AnyArray',
-    bound=_GenericCT,
-    default=_GenericCT,
-)
-AnyArray: TypeAlias = (
-    CanArray[_ND_AnyArray, _ST_AnyArray]
-    | _PT_AnyArray
-    | _CT_AnyArray  # ctypes can only be used to create 0d arrays
-    | _PyArray[CanArray[Any, _ST_AnyArray]]
-    | _PyArray[_PT_AnyArray]
-)
-"""
-Generic array-like that can be passed to e.g. `np.array` or `np.asaray`, with
-signature `AnyArray[ND: *int, ST: np.generic, PT: complex | str | bytes]`.
-"""
+# generic :> number :> integer
+AnyIntegerArray: _Type = _Any4[ND, np.integer[Any], int, _ct.Integer]
 
-
-#
-# integers
-#
-
-# unsignedinteger
-_ST_AnyUnsignedIntegerArray = TypeVar(
-    '_ST_AnyUnsignedIntegerArray',
-    bound=np.unsignedinteger[Any],
-    default=np.unsignedinteger[Any],
+# generic :> number :> integer :> unsignedinteger
+AnyUnsignedIntegerArray: _Type = (
+    _AnyNP[ND, np.unsignedinteger[Any]]
+    | _ct.UnsignedInteger
 )
-AnyUnsignedIntegerArray: TypeAlias = AnyArray[
-    _ND_AnyArray,
-    _ST_AnyUnsignedIntegerArray,
-    Never,
-    _UnsignedIntegerCT,
-]
+# generic :> number :> integer :> unsignedinteger :> *
+AnyUInt8Array: _Type = _AnyNP[ND, np.uint8] | _ct.UInt8
+AnyUInt16Array: _Type = _AnyNP[ND, np.uint16] | _ct.UInt16
+AnyUInt32Array: _Type = _AnyNP[ND, np.uint32] | _ct.UInt32
+AnyUInt64Array: _Type = _AnyNP[ND, np.uint64] | _ct.UInt64
+AnyUIntPArray: _Type = _AnyNP[ND, np.uint64] | _ct.UIntP
+AnyUByteArray: _Type = _AnyNP[ND, np.ubyte] | _ct.UByte
+AnyUShortArray: _Type = _AnyNP[ND, np.ushort] | _ct.UShort
+AnyUIntCArray: _Type = _AnyNP[ND, np.uintc] | _ct.UIntC
+AnyULongArray: _Type = _AnyNP[ND, np.ulong] | _ct.ULong
+AnyULongLongArray: _Type = _AnyNP[ND, np.ulonglong] | _ct.ULongLong
 
-# signedinteger
-_ST_AnySignedIntegerArray = TypeVar(
-    '_ST_AnySignedIntegerArray',
-    bound=np.signedinteger[Any],
-    default=np.signedinteger[Any],
-)
-AnySignedIntegerArray: TypeAlias = AnyArray[
-    _ND_AnyArray,
-    _ST_AnySignedIntegerArray,
+# generic :> number :> integer :> signedinteger
+AnySignedIntegerArray: _Type = _Any4[
+    ND,
+    np.signedinteger[Any],
     int,
-    _SignedIntegerCT,
+    _ct.SignedInteger,
 ]
+# generic :> number :> integer :> signedinteger :> *
+AnyInt8Array: _Type = _AnyNP[ND, np.int8] | _ct.Int8
+AnyInt16Array: _Type = _AnyNP[ND, np.int16] | _ct.Int16
+AnyInt32Array: _Type = _AnyNP[ND, np.int32] | _ct.Int32
+AnyInt64Array: _Type = _AnyNP[ND, np.int64] | _ct.Int64
+if _NP_V2:
+    AnyIntPArray: _Type = _Any4[ND, np.int64, int, _ct.IntP]
+else:
+    AnyIntPArray: _Type = _AnyNP[ND, np.int64] | _ct.IntP
+AnyByteArray: _Type = _AnyNP[ND, np.byte] | _ct.Byte
+AnyShortArray: _Type = _AnyNP[ND, np.short] | _ct.Short
+AnyIntCArray: _Type = _AnyNP[ND, np.intc] | _ct.IntC
+if _NP_V2:
+    AnyLongArray: _Type = _AnyNP[ND, _x.Long] | _ct.Long
+else:
+    AnyLongArray: _Type = _Any4[ND, _x.Long, int, _ct.Long]
+AnyLongLongArray: _Type = _AnyNP[ND, np.longlong] | _ct.LongLong
 
-# integer
-_ST_AnyIntegerArray = TypeVar(
-    '_ST_AnyIntegerArray',
-    bound=np.integer[Any],
-    default=np.integer[Any],
+# generic :> number :> inexact
+AnyInexactArray: _Type = (
+    _AnyNP[ND, np.inexact[Any]]
+    | _AnyPY[float]
+    | _AnyPY[complex]
+    | _ct.Inexact
 )
-AnyIntegerArray: TypeAlias = AnyArray[
-    _ND_AnyArray,
-    _ST_AnyIntegerArray,
-    int,
-    _IntegerCT,
-]
 
+# generic :> number :> inexact :> floating
+AnyFloatingArray: _Type = _Any4[ND, np.floating[Any], float, _ct.Floating]
+# generic :> number :> inexact :> floating :> *
+AnyFloat16Array: _Type = _AnyNP[ND, np.float16] | _ct.Float16
+AnyFloat32Array: _Type = _AnyNP[ND, np.float32] | _ct.Float32
+AnyFloat64Array: _Type = _AnyNP[ND, np.float64] | _ct.Float64
+AnyHalfArray: _Type = _AnyNP[ND, np.half] | _ct.Half
+AnySingleArray: _Type = _AnyNP[ND, np.single] | _ct.Single
+AnyDoubleArray: _Type = _AnyNP[ND, np.double] | _ct.Double
+AnyLongDoubleArray: _Type = _AnyNP[ND, np.longdouble] | _ct.LongDouble
 
-#
-# floating point
-#
-
-# floating
-_ST_AnyFloatingArray = TypeVar(
-    '_ST_AnyFloatingArray',
-    bound=np.floating[Any],
-    default=np.floating[Any],
-)
-AnyFloatingArray: TypeAlias = AnyArray[
-    _ND_AnyArray,
-    _ST_AnyFloatingArray,
-    float,
-    _FloatingCT,
-]
-
-# complexfloating
-_ST_AnyComplexFloatingArray = TypeVar(
-    '_ST_AnyComplexFloatingArray',
-    bound=np.complexfloating[Any, Any],
-    default=np.complexfloating[Any, Any],
-)
-AnyComplexFloatingArray: TypeAlias = AnyArray[
-    _ND_AnyArray,
-    _ST_AnyComplexFloatingArray,
+# generic :> number :> inexact :> complexfloating
+AnyComplexFloatingArray: _Type = _Any4[
+    ND,
+    np.complexfloating[Any, Any],
     complex,
-    _ComplexFloatingCT,
+    _ct.ComplexFloating,
 ]
+# generic :> number :> inexact :> complexfloating :> *
+AnyComplex64Array: _Type = _AnyNP[ND, np.complex64]
+AnyComplex128Array: _Type = _Any3[ND, np.complex128, complex]
+AnyCSingleArray: _Type = _AnyNP[ND, np.csingle]
+AnyCDoubleArray: _Type = _Any3[ND, np.cdouble, complex]
+AnyCLongDoubleArray: _Type = _AnyNP[ND, np.clongdouble]
 
+# generic :> datetime64
+AnyDateTime64Array: _Type = _AnyNP[ND, np.datetime64]
+# generic :> timedelta64
+AnyTimeDelta64Array: _Type = _AnyNP[ND, np.timedelta64]
 
-# inexact
-_ST_AnyInexactArray = TypeVar(
-    '_ST_AnyInexactArray',
-    bound=np.inexact[Any],
-    default=np.inexact[Any],
+# generic :> flexible
+AnyFlexibleArray: _Type = (
+    _AnyNP[ND, np.flexible]
+    | _AnyPY[str]
+    | _AnyPY[bytes]
+    | _ct.Flexible
 )
-AnyInexactArray: TypeAlias = AnyArray[
-    _ND_AnyArray,
-    _ST_AnyInexactArray,
-    float | complex,
-    _InexactCT,
-]
-
-
-#
-# integers | floats
-#
-
-# number
-_ST_AnyNumberArray = TypeVar(
-    '_ST_AnyNumberArray',
-    bound=np.number[Any],
-    default=np.number[Any],
+# generic :> flexible :> void
+AnyVoidArray: _Type = _AnyNP[ND, np.void]
+# generic :> flexible :> character
+AnyCharacterArray: _Type = (
+    _AnyNP[ND, np.character]
+    | _AnyPY[str]
+    | _AnyPY[bytes]
+    | _ct.Character
 )
-AnyNumberArray: TypeAlias = AnyArray[
-    _ND_AnyArray,
-    _ST_AnyNumberArray,
-    int | float | complex,
-    _NumberCT,
-]
+# generic :> flexible :> character :> bytes_
+AnyBytesArray: _Type = _Any4[ND, np.bytes_, bytes, _ct.Bytes]
+# generic :> flexible :> character :> str_
+AnyStrArray: _Type = _Any3[ND, np.str_, str]
 
-
-#
-# temporal
-#
-
-# datetime64
-_ST_AnyDateTime64Array = TypeVar(
-    '_ST_AnyDateTime64Array',
-    bound=np.datetime64,
-    default=np.datetime64,
-)
-AnyDateTime64Array: TypeAlias = _AnyNPArray[
-    _ND_AnyArray,
-    _ST_AnyDateTime64Array,
-]
-
-# timedelta64
-_ST_AnyTimeDelta64Array = TypeVar(
-    '_ST_AnyTimeDelta64Array',
-    bound=np.timedelta64,
-    default=np.timedelta64,
-)
-AnyTimeDelta64Array: TypeAlias = _AnyNPArray[
-    _ND_AnyArray,
-    _ST_AnyTimeDelta64Array,
-]
-
-
-#
-# character strings
-#
-
-# str_
-_ST_AnyStrArray = TypeVar('_ST_AnyStrArray', bound=np.str_, default=np.str_)
-AnyStrArray: TypeAlias = AnyArray[_ND_AnyArray, _ST_AnyStrArray, str, Never]
-"""This is about `numpy.dtypes.StrDType`; not `numpy.dtypes.StringDType`."""
-
-# bytes_
-_ST_AnyBytesArray = TypeVar(
-    '_ST_AnyBytesArray',
-    bound=np.bytes_,
-    default=np.bytes_,
-)
-AnyBytesArray: TypeAlias = AnyArray[
-    _ND_AnyArray,
-    _ST_AnyBytesArray,
-    bytes,
-    _BytesCT,
-]
-
-# string
-# TODO(jorenham): Add `AnyStringArray` with `np.dtypes.StringDType` (np2 only)
-# https://github.com/jorenham/optype/issues/99
-
-
-# character
-_ST_AnyCharacterArray = TypeVar(
-    '_ST_AnyCharacterArray',
-    bound=np.character,
-    default=np.character,
-)
-AnyCharacterArray: TypeAlias = AnyArray[
-    _ND_AnyArray,
-    _ST_AnyCharacterArray,
-    str | bytes,
-    _CharacterCT,
-]
-
-# void
-_ST_AnyVoidArray = TypeVar('_ST_AnyVoidArray', bound=np.void, default=np.void)
-AnyVoidArray: TypeAlias = _AnyNPArray[_ND_AnyArray, _ST_AnyVoidArray]
-
-# flexible
-_ST_AnyFlexibleArray = TypeVar(
-    '_ST_AnyFlexibleArray',
-    bound=np.flexible,
-    default=np.flexible,
-)
-AnyFlexibleArray: TypeAlias = AnyArray[
-    _ND_AnyArray,
-    _ST_AnyFlexibleArray,
-    str | bytes,
-    _FlexibleCT,
-]
-
-
-#
-# other types
-#
-
-# bool_
-_ST_AnyBoolArray = TypeVar(
-    '_ST_AnyBoolArray',
-    bound=np.bool_,
-    default=np.bool_,
-)
-AnyBoolArray: TypeAlias = AnyArray[
-    _ND_AnyArray,
-    _ST_AnyBoolArray,
-    bool,
-    _BoolCT,
-]
-
-# object_
-_ST_AnyObjectArray = TypeVar(
-    '_ST_AnyObjectArray',
-    bound=np.object_,
-    default=np.object_,
-)
-AnyObjectArray: TypeAlias = AnyArray[
-    _ND_AnyArray,
-    _ST_AnyObjectArray,
-    object,
-    _ObjectCT,
-]
+# generic :> bool
+AnyBoolArray: _Type = _Any4[ND, _x.Bool, bool, _ct.Bool]
+# generic :> object_
+AnyObjectArray: _Type = _Any4[ND, np.object_, object, _ct.Object]
