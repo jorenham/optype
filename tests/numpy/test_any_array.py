@@ -1,72 +1,72 @@
 # ruff: noqa: F841, PYI042, PLC2701
 
 import ctypes as ct
-from typing import Any, Literal, TypeAlias
+from typing import Any, Literal, TypeAlias, TypeVar
 
 import numpy as np
 import pytest
 
 import optype.numpy as onp
+from optype.numpy import _compat as _x, _ctype as _ct
 
 
 _0D: TypeAlias = tuple[()]
 _1D: TypeAlias = tuple[Literal[1]]
 _2D: TypeAlias = tuple[Literal[1], Literal[1]]
 
+_SC = TypeVar('_SC')
+_Types: TypeAlias = tuple[type[_SC], ...]
+
 
 # All allowed arguments that when passed to `np.array`, will result in an
 # array of the specified scalar type(s).
 
 # fmt: off
-_UNSIGNED_INTEGERS_NP = (
+_UNSIGNED_INTEGER_NP = (
     np.uint8, np.uint16, np.uint32, np.uint64, np.uintp,
-    np.ubyte, np.ushort, np.uintc, np.uint, np.ulonglong,
-    *((np.ulong,) if hasattr(np, 'ulong') else ()),
+    np.ubyte, np.ushort, np.uintc, _x.ULong, np.ulonglong,
 )
-_UNSIGNED_INTEGERS_CT = (
+_UNSIGNED_INTEGER_CT: _Types[_ct.UnsignedInteger] = (
     ct.c_uint8, ct.c_uint16, ct.c_uint32, ct.c_uint64, ct.c_size_t,
     ct.c_ubyte, ct.c_ushort, ct.c_uint, ct.c_ulong, ct.c_ulonglong,
 )
-UNSIGNED_INTEGERS: tuple[type[onp.AnyUnsignedInteger], ...] = (
-    *_UNSIGNED_INTEGERS_NP,
-    *_UNSIGNED_INTEGERS_CT,
+UNSIGNED_INTEGER: _Types[onp.AnyUnsignedInteger] = (
+    *_UNSIGNED_INTEGER_NP,
+    *_UNSIGNED_INTEGER_CT,
 )
-_SIGNED_INTEGERS_NP = (
+_SIGNED_INTEGER_NP = (
     np.int8, np.int16, np.int32, np.int64, np.intp,
-    np.byte, np.short, np.intc, np.int_, np.longlong,
-    *((np.long,) if hasattr(np, 'ulong') else ()),
+    np.byte, np.short, np.intc, _x.Long, np.longlong,
 )
-_SIGNED_INTEGERS_CT = (
+_SIGNED_INTEGER_CT: _Types[_ct.SignedInteger] = (
     ct.c_int8, ct.c_int16, ct.c_int32, ct.c_int64, ct.c_ssize_t,
     ct.c_byte, ct.c_short, ct.c_int, ct.c_long, ct.c_longlong,
 )
-SIGNED_INTEGERS: tuple[type[onp.AnySignedInteger], ...] = (
-    *_SIGNED_INTEGERS_NP,
-    *_SIGNED_INTEGERS_CT,
+SIGNED_INTEGER: _Types[onp.AnySignedInteger] = (
+    *_SIGNED_INTEGER_NP,
+    *_SIGNED_INTEGER_CT,
 )
-INTEGERS: tuple[type[onp.AnyInteger], ...] = (
-    *UNSIGNED_INTEGERS,
-    *SIGNED_INTEGERS,
-)
+INTEGER: _Types[onp.AnyInteger] = *UNSIGNED_INTEGER, *SIGNED_INTEGER
+
 _FLOATING_NP = (
     np.float16, np.float32, np.float64,
     np.half, np.single, np.double, np.longdouble,
 )
-_FLOATING_CT = ct.c_float, ct.c_double
-FLOATING: tuple[type[onp.AnyFloating], ...] = *_FLOATING_NP, *_FLOATING_CT
-COMPLEX_FLOATING: tuple[type[onp.AnyComplexFloating], ...] = (
+_FLOATING_CT: _Types[_ct.Floating] = ct.c_float, ct.c_double
+FLOATING: _Types[onp.AnyFloating] = *_FLOATING_NP, *_FLOATING_CT
+COMPLEX_FLOATING: _Types[onp.AnyComplexFloating] = (
     np.complex64, np.complex128,
     np.csingle, np.cdouble, np.clongdouble,
 )
-DATETIME64: tuple[type[onp.AnyDateTime64]] = (np.datetime64,)
-TIMEDELTA64: tuple[type[onp.AnyTimeDelta64]] = (np.timedelta64,)
-STR: tuple[type[onp.AnyStr], ...] = np.str_, str
-BYTES: tuple[type[onp.AnyBytes], ...] = np.bytes_, ct.c_char, bytes
-CHARACTER: tuple[type[onp.AnyCharacter], ...] = *STR, *BYTES
-VOID: tuple[type[onp.AnyVoid]] = (np.void,)
-FLEXIBLE: tuple[type[onp.AnyFlexible], ...] = *VOID, *CHARACTER
-BOOL: tuple[type[onp.AnyBool], ...] = np.bool_, ct.c_bool, bool
-OBJECT: tuple[type[onp.AnyObject], ...] = np.object_, ct.py_object, object
+DATETIME64: _Types[onp.AnyDateTime64] = (np.datetime64,)
+TIMEDELTA64: _Types[onp.AnyTimeDelta64] = (np.timedelta64,)
+STR: _Types[onp.AnyStr] = np.str_, str
+BYTES: _Types[onp.AnyBytes] = np.bytes_, ct.c_char, bytes
+CHARACTER: _Types[onp.AnyCharacter] = *STR, *BYTES
+VOID: _Types[onp.AnyVoid] = (np.void,)
+FLEXIBLE: _Types[onp.AnyFlexible] = *VOID, *CHARACTER
+BOOL: _Types[onp.AnyBool] = _x.Bool, ct.c_bool, bool
+OBJECT: _Types[onp.AnyObject] = np.object_, ct.py_object, object
 # fmt: on
 
 
@@ -111,7 +111,7 @@ def test_any_array() -> None:
     assert np.shape(x2_np) == (1, 1)
 
 
-@pytest.mark.parametrize('sctype', UNSIGNED_INTEGERS)
+@pytest.mark.parametrize('sctype', UNSIGNED_INTEGER)
 def test_any_unsigned_integer_array(
     sctype: type[onp.AnyUnsignedInteger],
 ) -> None:
@@ -120,7 +120,7 @@ def test_any_unsigned_integer_array(
     assert np.issubdtype(x.dtype, np.unsignedinteger)
 
 
-@pytest.mark.parametrize('sctype', SIGNED_INTEGERS)
+@pytest.mark.parametrize('sctype', SIGNED_INTEGER)
 def test_any_signed_integer_array(
     sctype: type[onp.AnySignedInteger],
 ) -> None:
@@ -129,7 +129,7 @@ def test_any_signed_integer_array(
     assert np.issubdtype(x.dtype, np.signedinteger)
 
 
-@pytest.mark.parametrize('sctype', INTEGERS)
+@pytest.mark.parametrize('sctype', INTEGER)
 def test_any_integer_array(
     sctype: type[onp.AnyInteger],
 ) -> None:
