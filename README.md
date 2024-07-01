@@ -2264,8 +2264,8 @@ class CanArray[
 <td>
 
 ```python
-def __array__[RT: np.generic = ST](
-    self,
+def __array__[RT = ST](
+    _,
     dtype: DType[RT] | None = ...,
 ) -> Array[ND, RT]
 ```
@@ -2292,10 +2292,10 @@ class CanArrayUFunc[
 <td>
 
 ```python
-def array_ufunc(
-    self,
+def __array_ufunc__(
+    _,
     ufunc: U,
-    method: Literal['__call__', ...],
+    method: LiteralString,
     *args: Any,
     **kwargs: Any,
 ) -> R
@@ -2323,8 +2323,8 @@ class CanArrayFunction[
 <td>
 
 ```python
-def array_function(
-    self,
+def __array_function__(
+    _,
     func: F,
     types: CanIterSelf[type],
     args: tuple[Any, ...],
@@ -2353,10 +2353,7 @@ class CanArrayFinalize[
 <td>
 
 ```python
-def __array_finalize__(
-    self,
-    obj: T,
-) -> None
+def __array_finalize__(_, obj: T)
 ```
 
 </td>
@@ -2379,7 +2376,7 @@ class CanArrayWrap
 
 ```python
 def __array_wrap__[ND, ST](
-    self,
+    _,
     array: Array[ND, ST],
     context: (...) | None = ...,
     return_scalar: bool = ...,
@@ -2407,8 +2404,7 @@ class HasArrayInterface[
 <td>
 
 ```python
-@property
-def __array_interface__(self) -> V
+__array_interface__: V
 ```
 
 </td>
@@ -2430,8 +2426,7 @@ class HasArrayPriority
 <td>
 
 ```python
-@property
-def __array_priority__(self) -> float
+__array_priority__: float
 ```
 
 </td>
@@ -2447,7 +2442,7 @@ def __array_priority__(self) -> float
 
 ```python
 class HasDType[
-    DT: DType = DType,
+    DT: DType = ...,
 ]
 ```
 
@@ -2455,8 +2450,7 @@ class HasDType[
 <td>
 
 ```python
-@property
-def dtype(self) -> DT
+dtype: DT
 ```
 
 </td>
