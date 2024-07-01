@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import sys
-from collections.abc import Callable as CanCall
-from typing import Any, Final, Literal, Protocol, TypeAlias
+from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias as _Type
 
 import numpy as np
 
@@ -13,49 +12,37 @@ else:
     from typing_extensions import Protocol, TypeVar, runtime_checkable
 
 
+if TYPE_CHECKING:
+    from collections.abc import Callable as CanCall, Mapping
+    from types import NotImplementedType
+
+    from optype import CanIter, CanIterSelf
+
+
+__all__ = (
+    'AnyUFunc',
+    'CanArrayFunction',
+    'CanArrayUFunc',
+)
+
+
 _NP_V2: Final[bool] = np.__version__.startswith('2.')
 
 
-_Fn_AnyUfunc = TypeVar(
-    '_Fn_AnyUfunc',
+_F = TypeVar('_F', infer_variance=True, bound='CanCall[..., Any]', default=Any)
+_Nin = TypeVar('_Nin', infer_variance=True, bound=int, default=int)
+_Nout = TypeVar('_Nout', infer_variance=True, bound=int, default=int)
+_Sig = TypeVar('_Sig', infer_variance=True, bound=str | None, default=Any)
+_I = TypeVar(
+    '_I',
     infer_variance=True,
-    bound=CanCall[..., Any],
-    default=CanCall[..., Any],
-)
-_Nin_AnyUfunc = TypeVar(
-    '_Nin_AnyUfunc',
-    infer_variance=True,
-    bound=int,
-    default=int,
-)
-_Nout_AnyUfunc = TypeVar(
-    '_Nout_AnyUfunc',
-    infer_variance=True,
-    bound=int,
-    default=int,
-)
-_Sig_AnyUfunc = TypeVar(
-    '_Sig_AnyUfunc',
-    infer_variance=True,
-    bound=str | None,
-    default=str | None,
-)
-_Id_AnyUfunc = TypeVar(
-    '_Id_AnyUfunc',
-    infer_variance=True,
-    bound=complex | str | bytes | None,
-    default=complex | str | bytes | None,
+    bound=complex | str | bytes | None,  # this includes `bool | int | float`
+    default=float | None,
 )
 
 
 @runtime_checkable
-class AnyUFunc(Protocol[
-    _Fn_AnyUfunc,
-    _Nin_AnyUfunc,
-    _Nout_AnyUfunc,
-    _Sig_AnyUfunc,
-    _Id_AnyUfunc,
-]):
+class AnyUFunc(Protocol[_F, _Nin, _Nout, _Sig, _I]):
     """
     A generic interface for `numpy.ufunc` "universal function" instances,
     e.g. `numpy.exp`, `numpy.add`, `numpy.frexp`, `numpy.divmod`.
@@ -71,18 +58,18 @@ class AnyUFunc(Protocol[
         using descriptors.
     """
     @property
-    def __call__(self, /) -> _Fn_AnyUfunc: ...
+    def __call__(self, /) -> _F: ...
 
     # The number of positional-only parameters, within numpy this is either 1
     # or 2, but might be more for 3rd party ufuncs.
     @property
-    def nin(self, /) -> _Nin_AnyUfunc: ...
+    def nin(self, /) -> _Nin: ...
     # The number of output values, within numpy this is either 1 or 2.
     @property
-    def nout(self, /) -> _Nout_AnyUfunc: ...
+    def nout(self, /) -> _Nout: ...
     # A string i.f.f. this is a gufunc (generalized ufunc).
     @property
-    def signature(self, /) -> _Sig_AnyUfunc: ...
+    def signature(self, /) -> _Sig: ...
 
     # If `signature is None and nin == 2 and nout == 1`, this *may* be set to
     # a python scalar s.t. `self(x, identity) == x` for all possible `x`.
@@ -92,7 +79,7 @@ class AnyUFunc(Protocol[
     # Note that the `complex` return annotation implicitly includes
     # `bool | int | float` (these are its supertypes).
     @property
-    def identity(self, /) -> _Id_AnyUfunc: ...
+    def identity(self, /) -> _I: ...
     # Within numpy this is always `nin + nout`, since each output value comes
     # with a corresponding (optional) `out` parameter.
     @property
@@ -133,36 +120,25 @@ class AnyUFunc(Protocol[
     def outer(self, /) -> CanCall[..., Any] | None: ...
 
 
+_UFuncMethodCommon: _Type = Literal[
+    '__call__',
+    'reduce',
+    'reduceat',
+    'accumulate',
+    'outer',
+]
 if _NP_V2:
-    _UFuncMethod: TypeAlias = Literal[
-        '__call__',
-        'reduce',
-        'reduceat',
-        'accumulate',
-        'outer',
-        'at',
-    ]
+    _UFuncMethod: _Type = _UFuncMethodCommon | Literal['at']
 else:
-    _UFuncMethod: TypeAlias = Literal[
-        '__call__',
-        'reduce',
-        'reduceat',
-        'accumulate',
-        'outer',
-        'inner',
-    ]
+    _UFuncMethod: _Type = _UFuncMethodCommon | Literal['inner']
 
 
-_Fn_CanArrayUFunc = TypeVar(
-    '_Fn_CanArrayUFunc',
-    infer_variance=True,
-    bound=AnyUFunc,
-    default=Any,
-)
+_U = TypeVar('_U', infer_variance=True, bound=AnyUFunc, default=Any)
+_R = TypeVar('_R', infer_variance=True, bound=object, default=Any)
 
 
 @runtime_checkable
-class CanArrayUFunc(Protocol[_Fn_CanArrayUFunc]):
+class CanArrayUFunc(Protocol[_U, _R]):
     """
     Interface for ufunc operands.
 
@@ -171,9 +147,23 @@ class CanArrayUFunc(Protocol[_Fn_CanArrayUFunc]):
     """
     def __array_ufunc__(
         self,
-        /,
-        ufunc: _Fn_CanArrayUFunc,
+        ufunc: _U,
         method: _UFuncMethod,
+        /,
         *args: Any,
         **kwargs: Any,
-    ) -> Any: ...
+    ) -> _R: ...
+
+
+@runtime_checkable
+class CanArrayFunction(Protocol[_F, _R]):
+    def __array_function__(
+        self,
+        /,
+        func: _F,
+        # although this could be tighter, this ensures numpy.typing compat
+        types: CanIter[CanIterSelf[type[CanArrayFunction[Any, Any]]]],
+        # ParamSpec can only be used on *args and **kwargs for some reason...
+        args: tuple[Any, ...],
+        kwargs: Mapping[str, Any],
+    ) -> NotImplementedType | _R: ...
