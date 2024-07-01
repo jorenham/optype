@@ -1,6 +1,7 @@
 # ruff: noqa: F841, PYI042, PLC2701
 
 import ctypes as ct
+import datetime as dt
 from typing import Any, Literal, TypeAlias, TypeVar
 
 import numpy as np
@@ -58,8 +59,8 @@ COMPLEX_FLOATING: _Types[onp.AnyComplexFloating] = (
     np.complex64, np.complex128,
     np.csingle, np.cdouble, np.clongdouble,
 )
-DATETIME64: _Types[onp.AnyDateTime64] = (np.datetime64,)
-TIMEDELTA64: _Types[onp.AnyTimeDelta64] = (np.timedelta64,)
+DATETIME64: _Types[onp.AnyDateTime64] = (np.datetime64, dt.datetime)
+TIMEDELTA64: _Types[onp.AnyTimeDelta64] = (np.timedelta64, dt.timedelta)
 STR: _Types[onp.AnyStr] = np.str_, str
 BYTES: _Types[onp.AnyBytes] = np.bytes_, ct.c_char, bytes
 CHARACTER: _Types[onp.AnyCharacter] = *STR, *BYTES
@@ -160,8 +161,9 @@ def test_any_complex_floating_array(
 def test_any_datetime64_array(
     sctype: type[onp.AnyDateTime64],
 ) -> None:
-    v: onp.AnyDateTime64 = sctype()
-    x: onp.AnyDateTime64Array[_0D] = np.array(v)
+    v: onp.AnyDateTime64
+    v = sctype.now() if issubclass(sctype, dt.datetime) else sctype()
+    x: onp.AnyDateTime64Array[_0D] = np.datetime64(v)
     assert np.issubdtype(x.dtype, np.datetime64)
 
 
@@ -170,7 +172,7 @@ def test_any_timedelta64_array(
     sctype: type[onp.AnyTimeDelta64],
 ) -> None:
     v: onp.AnyTimeDelta64 = sctype()
-    x: onp.AnyTimeDelta64Array[_0D] = np.array(v)
+    x: onp.AnyTimeDelta64Array[_0D] = np.timedelta64(v)
     assert np.issubdtype(x.dtype, np.timedelta64)
 
 
