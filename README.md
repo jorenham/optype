@@ -2266,7 +2266,7 @@ class CanArray[
 ```python
 def __array__[RT: np.generic = ST](
     self,
-    dtype: DType[RT] | None = None,
+    dtype: DType[RT] | None = ...,
 ) -> Array[ND, RT]
 ```
 
@@ -2282,7 +2282,7 @@ def __array__[RT: np.generic = ST](
 
 ```python
 class CanArrayUFunc[
-    U: AnyUFunc[..., Any] = ...,
+    U: AnyUFunc = ...,
     R: object = ...,
 ]
 ```
@@ -2312,7 +2312,7 @@ def array_ufunc(
 
 ```python
 class CanArrayFunction[
-    F: Callable[..., Any] = ...,
+    F: CanCall[..., Any] = ...,
     R: object = ...,
 ]
 ```
@@ -2324,7 +2324,7 @@ class CanArrayFunction[
 def array_function(
     self,
     func: F,
-    types: CanIter[CanIterSelf[type]],
+    types: CanIterSelf[type],
     args: tuple[Any, ...],
     kwargs: Mapping[str, ...],
 ) -> R
@@ -2374,14 +2374,11 @@ class CanArrayWrap
 <td>
 
 ```python
-def __array_wrap__[
-    ND: tuple[int, ...],
-    ST: np.generic,
-](
+def __array_wrap__[ND, ST](
     self,
     array: Array[ND, ST],
     context: (...) | None = ...,
-    return_scalar: bool = ...,  # numpy>=2
+    return_scalar: bool = ...,
 ) -> Self | Array[ND, ST]
 ```
 
