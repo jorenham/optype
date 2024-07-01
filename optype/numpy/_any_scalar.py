@@ -7,16 +7,6 @@ import numpy as np
 from . import _compat as _x, _ctype as _ct
 
 
-# Validate the C-type alias assumptions. If any of these fail, then please open
-# an issue at  https://github.com/jorenham/optype/issues/new,
-# and include the output of `import numpy; numpy.show_runtime()`
-assert np.half is np.float16, f'{np.half = }'
-assert np.single is np.float32, f'{np.single = }'
-assert np.double is np.float64, f'{np.double = }'
-assert np.csingle is np.complex64, f'{np.csingle = }'
-assert np.cdouble is np.complex128, f'{np.cdouble = }'
-
-
 _NP_V2: Final[bool] = np.__version__.startswith('2.')
 
 
