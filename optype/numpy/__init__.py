@@ -117,7 +117,6 @@ __all__ = (
     'AnyUByte',
     'AnyUByteArray',
     'AnyUByteDType',
-    'AnyUFunc',
     'AnyUInt8',
     'AnyUInt8Array',
     'AnyUInt8DType',
@@ -170,6 +169,7 @@ __all__ = (
     'HasArrayPriority',
     'HasDType',
     'Scalar',
+    'UFunc',
 )
 from ._any_array import (
     AnyArray,
@@ -347,7 +347,7 @@ from ._shape import (
     AtMost3D,
 )
 from ._ufunc import (
-    AnyUFunc,
     CanArrayFunction,
     CanArrayUFunc,
+    UFunc,
 )

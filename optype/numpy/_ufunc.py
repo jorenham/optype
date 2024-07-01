@@ -20,9 +20,9 @@ if TYPE_CHECKING:
 
 
 __all__ = (
-    'AnyUFunc',
     'CanArrayFunction',
     'CanArrayUFunc',
+    'UFunc',
 )
 
 
@@ -42,7 +42,7 @@ _I = TypeVar(
 
 
 @runtime_checkable
-class AnyUFunc(Protocol[_F, _Nin, _Nout, _Sig, _I]):
+class UFunc(Protocol[_F, _Nin, _Nout, _Sig, _I]):
     """
     A generic interface for `numpy.ufunc` "universal function" instances,
     e.g. `numpy.exp`, `numpy.add`, `numpy.frexp`, `numpy.divmod`.
@@ -133,7 +133,7 @@ else:
     _UFuncMethod: _Type = _UFuncMethodCommon | Literal['inner']
 
 
-_U = TypeVar('_U', infer_variance=True, bound=AnyUFunc, default=Any)
+_U = TypeVar('_U', infer_variance=True, bound=UFunc, default=Any)
 _R = TypeVar('_R', infer_variance=True, bound=object, default=Any)
 
 
