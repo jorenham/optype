@@ -19,8 +19,8 @@ _NUMERIC_N = (
     'Complex64', 'Complex128',
 )
 _NUMERIC_C = (
-    'UByte', 'UShort', 'ULong',
-    'Byte', 'Short', 'Long',
+    'UByte', 'UShort', 'UIntC', 'ULong',
+    'Byte', 'Short', 'IntC', 'Long',
     'Half', 'Single', 'Double',
     'CSingle', 'CDouble',
 )
@@ -37,6 +37,9 @@ def _get_dtype_info(name: str) -> tuple[
     frozenset[str],
 ]:
     types = _get_attr_args(onp, f'Any{name}')
+    # workaround for `np.dtype(datetime.{datetime,timedelta})` bug
+    types = {tp for tp in types if tp.__module__ != 'datetime'}
+
     names = _get_attr_args(_any_dtype, f'_{name}Name')
     chars = _get_attr_args(_any_dtype, f'_{name}Char')
     return frozenset(types), frozenset(names), frozenset(chars)
@@ -48,6 +51,7 @@ def _get_dtype_info(name: str) -> tuple[
 )
 def test_sctypes(name: str):
     dtype_expect = np.dtype(name.lower())
+    sctype_expect = dtype_expect.type
     types, names, chars = _get_dtype_info(name)
 
     assert dtype_expect.type in types
@@ -57,8 +61,8 @@ def test_sctypes(name: str):
         assert (
             dtype == dtype_expect
             # only needed for `np.dtype(ct.c_char)`
-            or dtype.type is dtype_expect.type
-        )
+            or dtype.type is sctype_expect
+        ), f'np.dtype({arg!r}) (= {dtype!r}) != {dtype_expect}'
 
 
 @pytest.mark.parametrize(
