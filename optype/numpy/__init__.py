@@ -330,7 +330,6 @@ from ._array import (
     Array,
     CanArray,
     CanArrayFinalize,
-    CanArrayFunction,
     CanArrayWrap,
     HasArrayInterface,
     HasArrayPriority,
@@ -347,4 +346,8 @@ from ._shape import (
     AtMost2D,
     AtMost3D,
 )
-from ._ufunc import AnyUFunc, CanArrayUFunc
+from ._ufunc import (
+    AnyUFunc,
+    CanArrayFunction,
+    CanArrayUFunc,
+)
