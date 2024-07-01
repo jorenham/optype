@@ -6,16 +6,17 @@ _ALIASES = (
     ('uint8', 'ubyte'),
     ('uint16', 'ushort'),
     ('uint32', 'uintc'),
-    ('uint64', 'ulonglong'),
 
     ('int8', 'byte'),
     ('int16', 'short'),
     ('int32', 'intc'),
-    ('int64', 'longlong'),
 
     ('float16', 'half'),
     ('float32', 'single'),
     ('float64', 'double'),
+
+    ('complex64', 'csingle'),
+    ('complex128', 'cdouble'),
 )
 _ERROR_MSG = (
     'Expected: {0} is {1}. got {2.__name__}'
