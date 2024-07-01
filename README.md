@@ -2054,6 +2054,7 @@ def __array__[RT: np.generic = ST](
 
 </td>
     </tr>
+    <tr><td colspan="3"></td></tr>
     <tr>
 <td>
 
@@ -2084,6 +2085,7 @@ def array_ufunc(
 
 </td>
     </tr>
+    <tr><td colspan="3"></td></tr>
     <tr>
 <td>
 
@@ -2114,6 +2116,7 @@ def array_function(
 
 </td>
     </tr>
+    <tr><td colspan="3"></td></tr>
     <tr>
 <td>
 
@@ -2140,6 +2143,7 @@ def __array_finalize__(
 
 </td>
     </tr>
+    <tr><td colspan="3"></td></tr>
     <tr>
 <td>
 
@@ -2191,6 +2195,7 @@ def __array_interface__(self) -> V
 
 </td>
     </tr>
+    <tr><td colspan="3"></td></tr>
     <tr>
 <td>
 
@@ -2213,6 +2218,7 @@ def __array_priority__(self) -> float
 
 </td>
     </tr>
+    <tr><td colspan="3"></td></tr>
     <tr>
 <td>
 
