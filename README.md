@@ -213,7 +213,7 @@ The reference docs are structured as follows:
 
 <!-- TOC start (generated with https://github.com/derlin/bitdowntoc) -->
 
-- [Core functionality](#core-functionality)
+- [`optype`](#optype)
     - [Builtin type conversion](#builtin-type-conversion)
     - [Rich relations](#rich-relations)
     - [Binary operations](#binary-operations)
@@ -238,12 +238,10 @@ The reference docs are structured as follows:
     - [`Any*` type aliases](#any-type-aliases)
     - [`Empty*` type aliases](#empty-type-aliases)
     - [Literal types](#literal-types)
-- [NumPy](#numpy)
+- [`optype.numpy`](#numpy)
     - [Arrays](#arrays)
         - [`Array`](#array)
         - [`AnyArray`](#anyarray)
-        - [`CanArray*`](#canarray)
-        - [`HasArray*`](#hasarray)
     - [Shapes](#shapes)
     - [Scalars](#scalars)
         - [`Scalar`](#scalar)
@@ -251,15 +249,13 @@ The reference docs are structured as follows:
         - [`Any*DType`](#anydtype)
     - [Data type objects](#data-type-objects)
         - [`DType`](#dtype)
-        - [`HasDType`](#hasdtype)
         - [`AnyDType`](#anydtype)
     - [Universal functions](#universal-functions)
-        - [`AnyUFunc`](#anyufunc)
-        - [`CanArrayUFunc`](#canarrayufunc)
+    - [Low-level interfaces](#low-level-interfaces)
 
 <!-- TOC end -->
 
-### Core functionality
+### `optype`
 
 All [typing protocols][PC] here live in the root `optype` namespace.
 They are [runtime-checkable][RC] so that you can do e.g.
@@ -1967,143 +1963,6 @@ type AnyArray[
 This makes it possible to correctly annotate e.g. a 1-d arrays-like of floats
 as `a: onp.AnyArray[tuple[int], np.floating[Any], float]`.
 
-##### `CanArray*`
-
-<table>
-    <tr>
-<th>type signature</th>
-        <th>method</th>
-        <th>purpose</th>
-    </tr>
-    <tr>
-<td>
-
-```python
-CanArray[
-    ND: tuple[int, ...] = ...,
-    ST: np.generic = ...,
-]
-```
-
-</td>
-        <td>
-            <a href="https://numpy.org/doc/stable/user/basics.interoperability.html#the-array-method">
-                <code>__array__()</code>
-            </a>
-        </td>
-        <td>Turning itself into a numpy array.</td>
-    </tr>
-    <tr>
-<td>
-
-```python
-CanArrayFunction[
-    F: CanCall[..., Any] = ...,
-    R: object = ...,
-]
-```
-
-</td>
-        <td>
-            <a href="https://numpy.org/doc/stable/user/basics.interoperability.html#the-array-function-protocol">
-                <code>__array_function__()</code>
-            </a>
-        </td>
-        <td>
-            Similar to how <code>T.__abs__()</code> implements
-            <code>abs(T)</code>, but for arbitrary numpy callables
-            (that aren't a ufunc).
-        </td>
-    </tr>
-    <tr>
-<td>
-
-```python
-CanArrayFinalize[
-    T: object = ...,
-]
-```
-
-</td>
-        <td>
-            <a href="https://numpy.org/doc/stable/user/c-info.beyond-basics.html#the-array-finalize-method">
-                <code>__array_finalize__()</code>
-            </a>
-        </td>
-        <td>
-            Converting the return value of a numpy function back into an
-            instance of the foreign object.
-        </td>
-    </tr>
-    <tr>
-<td>
-
-```python
-CanArrayWrap
-```
-
-</td>
-        <td>
-            <a href="https://numpy.org/doc/stable/user/c-info.beyond-basics.html#ndarray.__array_wrap__">
-                <code>__array_wrap__()</code>
-            </a>
-        </td>
-        <td>
-            Takes a `np.ndarray` instance, and "wraps" it into itself, or some
-            `ndarray` subtype.
-        </td>
-    </tr>
-</table>
-
-##### `HasArray*`
-
-<table>
-    <tr>
-        <th><code>optype.numpy._</code></th>
-        <th>attribute</th>
-        <th>purpose</th>
-    </tr>
-    <tr>
-<td>
-
-```python
-HasArrayInterface[
-    V: Mapping[str, Any] = dict[str, Any],
-]
-```
-
-</td>
-        <td>
-            <a href="https://numpy.org/doc/stable/reference/arrays.interface.html#python-side">
-                <code>__array_interface__</code>
-            </a>
-        </td>
-        <td>
-            The array interface protocol (V3) is used to for efficient
-            data-buffer sharing between array-like objects, and bridges the
-            numpy C-api with the Python side.
-        </td>
-    </tr>
-    <tr>
-<td>
-
-```python
-HasArrayPriority
-```
-
-</td>
-        <td>
-            <a href="https://numpy.org/doc/stable/user/c-info.beyond-basics.html#the-array-priority-attribute">
-                <code>__array_priority__</code>
-            </a>
-        </td>
-        <td>
-            In case an operation involves multiple sub-types, this value
-            determines which one will be used as output type.
-        </td>
-    </tr>
-</table>
-
 #### Shapes
 
 A *shape* is nothing more than a tuple of (non-negative) integers, i.e.
@@ -2248,13 +2107,11 @@ array of type `onp.Array[tuple[()], np.float64]`
 (where `tuple[()]` implies that its shape is `()`).
 
 Each `Any{Scalar}` contains at least the relevant `np.generic` subtype,
-zero or more [`ctypes`][CTYPES] types, and
+zero or more [`ctypes`][LIB-CTYPES] types, and
 zero or more of the Python `builtins` types.
 
 So for instance `type AnyUInt8 = np.uint8 | ct.c_uint8`, and
 `type AnyCDouble = np.cdouble | complex`.
-
-[CTYPES]: https://docs.python.org/3/library/ctypes.html
 
 ##### `Any*DType`
 
@@ -2293,28 +2150,6 @@ Apart from the "CamelCase" name, the only difference with `np.dtype` is that
 the type parameter can be omitted, in which case it's equivalent to
 `np.dtype[np.generic]`, but shorter.
 
-##### `HasDType`
-
-Many of numpy's public functions accept an (optional) `dtype` argument.
-But here, the term "dtype" has a broader meaning, as it also accepts
-(a subtype of) `np.generic`.
-Additionally, any instance with a `dtype: DType` attribute is accepted.
-The runtime-checkable interface for this is `optype.numpy.HasDType`, which is
-roughly equivalent to the following definition:
-
-```python
-@runtime_checkable
-class HasDType[DT: DType = DType](Protocol):
-    dtype: Final[DT]
-```
-
-Since `np.ndarray` has a `dtype` attribute, it is a subtype of `HasDType`:
-
-```pycon
->>> isinstance(np.array([42]), onp.HasDType)
-True
-```
-
 ##### `AnyDType`
 
 All types that can be passed to the `np.dtype` constructor, as well as the
@@ -2347,12 +2182,12 @@ type AnyDType[ST: np.generic = Any] = type[ST] | DType[ST] | HasDType[DType[ST]]
 
 #### Universal functions
 
-A large portion of numpy's public API consists of
-[universal functions][UFUNC-DOC], i.e. (callable) instances of
-[`np.ufunc`][UFUNC-REF].
+A large portion of numpy's public API consists of *universal functions*, often
+denoted as [ufuncs][DOC-UFUNC], which are (callable) instances of
+[`np.ufunc`][REF_UFUNC].
 
 > [!TIP]
-> Custom ufuncs can be created using [`np.frompyfunc`][FROMPYFUNC], but also
+> Custom ufuncs can be created using [`np.frompyfunc`][REF_FROMPY], but also
 > through a user-defined class that implements the required attributes and
 > methods (i.e., duck typing).
 
@@ -2371,7 +2206,7 @@ Its generic type signature looks roughly like:
 ```python
 AnyUFunc[
     # The type of the (bound) `__call__` method.
-    Fn: Callable[..., Any] = Any,
+    Fn: CanCall[..., Any] = Any,
     # The types of the `nin` and `nout` (readonly) attributes.
     # Within numpy these match either `Literal[1]` or `Literal[2]`.
     Nin: int = Any,
@@ -2397,32 +2232,259 @@ AnyUFunc[
 > `optype.numpy.AnyUFunc`; doing so would make it incompatible with numpy's
 > ufuncs.
 
-[UFUNC-DOC]: https://numpy.org/doc/stable/reference/ufuncs.html
-[UFUNC-REF]: https://numpy.org/doc/stable/reference/generated/numpy.ufunc.html
-[FROMPYFUNC]: https://numpy.org/doc/stable/reference/generated/numpy.frompyfunc.html
+#### Low-level interfaces
 
-##### `CanArrayUFunc`
+Within `optype.numpy` there are several `Can*` (single-method) and `Has*`
+(single-attribute) protocols, related to the `__array_*__` dunders of the
+NumPy Python API.
+These typing protocols are, just like the `optype.Can*` and `optype.Has*` ones,
+runtime-checkable and extensible (i.e. not `@final`).
 
-When ufuncs are called on some inputs, the ufunc will call the
-`__array_ufunc__`, which is not unlike how `abs()` calls `__abs__`.
+> [!TIP]
+> All type parameters of these protocols can be omitted, which is equivalent
+> to passing `typing.Any` (or its upper type bound).
 
-With `optype.numpy.CanArrayUFunc`, it becomes straightworward to annotate
-potential arguments to `np.ufunc`.
-It's a single-method runtime-checkable protocol, whose type signature looks
-roughly like:
+<table>
+    <tr>
+        <th>Protocol type signature</th>
+        <th>Implements</th>
+        <th>NumPy docs</th>
+    </tr>
+    <tr>
+<td>
 
 ```python
-CanArrayUFunc[
-    Fn: AnyUFunc = Any,
+class CanArray[
+    ND: tuple[int, ...] = ...,
+    ST: np.generic = ...,
 ]
 ```
 
-> [!NOTE]
-> Due to the previously mentioned typing limitations of `np.ufunc`,
-> the `*args` and `**kwargs` of `CanArrayUFunc.__array_ufunc__` are currently
-> impossible to properly annotate.
+</td>
+<td>
 
+```python
+def __array__[RT: np.generic = ST](
+    self,
+    dtype: DType[RT] | None = None,
+) -> Array[ND, RT]
+```
+
+</td>
+<td>
+
+[User Guide: Interoperability with NumPy][DOC-ARRAY]
+
+</td>
+    </tr>
+    <tr>
+<td>
+
+```python
+class CanArrayUFunc[
+    U: AnyUFunc[..., Any] = ...,
+    R: object = ...,
+]
+```
+
+</td>
+<td>
+
+```python
+def array_ufunc(
+    self,
+    ufunc: U,
+    method: Literal['__call__', ...],
+    *args: Any,
+    **kwargs: Any,
+) -> R
+```
+
+</td>
+<td>
+
+[NEP 13][NEP13]
+
+</td>
+    </tr>
+    <tr>
+<td>
+
+```python
+class CanArrayFunction[
+    F: Callable[..., Any] = ...,
+    R: object = ...,
+]
+```
+
+</td>
+<td>
+
+```python
+def array_function(
+    self,
+    func: F,
+    types: CanIter[CanIterSelf[type]],
+    args: tuple[Any, ...],
+    kwargs: Mapping[str, ...],
+) -> R
+```
+
+</td>
+<td>
+
+[NEP 18][NEP18]
+
+</td>
+    </tr>
+    <tr>
+<td>
+
+```python
+class CanArrayFinalize[
+    T: object = ...,
+]
+```
+
+</td>
+<td>
+
+```python
+def __array_finalize__(
+    self,
+    obj: T,
+) -> None
+```
+
+</td>
+<td>
+
+[User Guide: Subclassing ndarray][DOC-AFIN]
+
+</td>
+    </tr>
+    <tr>
+<td>
+
+```python
+class CanArrayWrap
+```
+
+</td>
+<td>
+
+```python
+def __array_wrap__[
+    ND: tuple[int, ...],
+    ST: np.generic,
+](
+    self,
+    array: Array[ND, ST],
+    context: (...) | None = ...,
+    return_scalar: bool = ...,  # numpy>=2
+) -> Self | Array[ND, ST]
+```
+
+</td>
+<td>
+
+[API: Standard array subclasses][REF_ARRAY-WRAP]
+
+</td>
+    </tr>
+    <tr><td colspan="3"></td></tr>
+    <tr>
+<td>
+
+```python
+class HasArrayInterface[
+    V: Mapping[str, Any] = ...,
+]
+```
+
+</td>
+<td>
+
+```python
+@property
+def __array_interface__(self) -> V
+```
+
+</td>
+<td>
+
+[API: The array interface protocol][REF_ARRAY-INTER]
+
+</td>
+    </tr>
+    <tr>
+<td>
+
+```python
+class HasArrayPriority
+```
+
+</td>
+<td>
+
+```python
+@property
+def __array_priority__(self) -> float
+```
+
+</td>
+<td>
+
+[API: Standard array subclasses][REF_ARRAY-PRIO]
+
+</td>
+    </tr>
+    <tr>
+<td>
+
+```python
+class HasDType[
+    DT: DType = DType,
+]
+```
+
+</td>
+<td>
+
+```python
+@property
+def dtype(self) -> DT
+```
+
+</td>
+<td>
+
+[API: Specifying and constructing data types][REF_DTYPE]
+
+</td>
+    </tr>
+</table>
+
+<!-- references -->
+
+[LIB-CTYPES]: https://docs.python.org/3/library/ctypes.html
+
+[DOC-UFUNC]: https://numpy.org/doc/stable/reference/ufuncs.html
+[DOC-ARRAY]: https://numpy.org/doc/stable/user/basics.interoperability.html#the-array-method
+[DOC-AFIN]: https://numpy.org/doc/stable/user/basics.subclassing.html#the-role-of-array-finalize
+
+[REF_UFUNC]: https://numpy.org/doc/stable/reference/generated/numpy.ufunc.html
+[REF_FROMPY]: https://numpy.org/doc/stable/reference/generated/numpy.frompyfunc.html
+[REF_ARRAY-WRAP]: https://numpy.org/doc/stable/reference/arrays.classes.html#numpy.class.__array_wrap__
+[REF_ARRAY-INTER]: https://numpy.org/doc/stable/reference/arrays.interface.html#python-side
+[REF_ARRAY-PRIO]: https://numpy.org/doc/stable/reference/arrays.classes.html#numpy.class.__array_priority__
+[REF_DTYPE]: https://numpy.org/doc/stable/reference/arrays.dtypes.html#specifying-and-constructing-data-types
+
+[NEP13]: https://numpy.org/neps/nep-0013-ufunc-overrides.html
+[NEP18]: https://numpy.org/neps/nep-0018-array-function-protocol.html
 [NEP29]: https://numpy.org/neps/nep-0029-deprecation_policy.html
+
 [SPEC0]: https://scientific-python.org/specs/spec-0000/
+
 [PEP695]: https://peps.python.org/pep-0695/
 [PEP696]: https://peps.python.org/pep-0696/
