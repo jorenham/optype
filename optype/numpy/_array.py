@@ -25,17 +25,13 @@ else:
 
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping
-    from types import NotImplementedType
-
-    from optype import CanIter, CanIterSelf
+    from collections.abc import Mapping
 
 
 __all__ = (
     'Array',
     'CanArray',
     'CanArrayFinalize',
-    'CanArrayFunction',
     'CanArrayWrap',
     'HasArrayInterface',
     'HasArrayPriority',
@@ -87,34 +83,6 @@ class CanArray(Protocol[_ND_CanArray, _ST_CanArray]):
 
 
 ###########################
-
-
-_F_CanArrayFunction = TypeVar(
-    '_F_CanArrayFunction',
-    infer_variance=True,
-    bound='Callable[..., Any]',
-    default=Any,
-)
-_R_CanArrayFunction = TypeVar(
-    '_R_CanArrayFunction',
-    infer_variance=True,
-    bound=object,
-    default=object,
-)
-
-
-@runtime_checkable
-class CanArrayFunction(Protocol[_F_CanArrayFunction, _R_CanArrayFunction]):
-    def __array_function__(
-        self,
-        /,
-        func: _F_CanArrayFunction,
-        # although this could be tighter, this ensures numpy.typing compat
-        types: CanIter[CanIterSelf[type[CanArrayFunction[Any, Any]]]],
-        # ParamSpec can only be used on *args and **kwargs for some reason...
-        args: tuple[Any, ...],
-        kwargs: Mapping[str, Any],
-    ) -> NotImplementedType | _R_CanArrayFunction: ...
 
 
 # this is almost always a `ndarray`, but setting a `bound` might break in some
