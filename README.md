@@ -1966,9 +1966,11 @@ UFunc[
 #### Shape type aliases
 
 A *shape* is nothing more than a tuple of (non-negative) integers, i.e.
-an instance of `tuple[int, ...]`.
+an instance of `tuple[int, ...]` such as `(42,)`, `(6, 6, 6)` or `()`.
 The length of a shape is often referred to as the *number of dimensions*
 or the *dimensionality* of the array or scalar.
+For arrays this is accessible through the `np.ndarray.ndim`, which is
+an alias for `len(np.ndarray.shape)`.
 
 > [!NOTE]
 > Before NumPy 2, the maximum number of dimensions was 32, but has since
@@ -1983,38 +1985,188 @@ Both of these families are generic, and their (optional) type parameters must
 be either `int` (default), or a literal (non-negative) integer, i.e. like
 `typing.Literal[N: int]`.
 
-Without going into details, the names `AtLeast{N}D` and `AtMost{N}D` should
-are probably self-explanatory:
-They are the types of shapes whose `len(shape) >= N` and `len(shape) <= N`,
-respectively.
+> [!NOTE]
+> NumPy's functions with a `shape` parameter usually also accept a "base"
+> `int`, which is shorthand for `tuple[int]`.
+> But for the sake of consistency, `AtLeast{N}D` and `AtMost{N}D` are
+> limited to integer *tuples*.
 
-Specifically, `AtLeast0D` and `AtMost0D` are defined as something similar to
+The names `AtLeast{N}D` and `AtMost{N}D` are pretty much as self-explanatory:
 
-```python
-type _AnyShape = tuple[int, ...]  # helper alias
+- `AtLeast{N}D` is a `tuple[int, ...]` with `ndim >= N`
+- `AtMost{N}D` is a `tuple[int, ...]` with `ndim <= N`
 
-type AtLeast0D[*Ns = *_AnyShape] = tuple[*Ns]
-type AtMost0D = tuple[()]
-```
-
-Note that `AtMost0D` only matches the empty tuple: `()`.
-
-For higher dimensions, things get more complicated:
-
-```python
-type AtLeast1D[N0: int = int, *Ns = *_AnyShape] = tuple[N0, *Ns]
-type AtMost1D[N0: int = int] = tuple[N0] | AtMost0D
-```
-
-The recursive nature of these definitions makes it straightforward to
-extend these to higher dimensions (currently `2` and `3`).
+The shape aliases are roughly defined as:
 
 <table>
 <tr>
+<th align="center" colspan="2"><code>AtLeast{N}D</code></th>
+<th align="center" colspan="2"><code>AtMost{N}D</code></th>
+</tr>
+<tr>
+<th>type signature</th>
+<th>alias type</th>
+<th>type signature</th>
+<th>type alias</th>
+</tr>
+<tr>
+<td colspan="4"></td>
+</tr>
+<tr>
+<td>
+
+```python
+type AtLeast0D[
+    *N: int = ...,
+]
+```
+
+</td>
+<td>
+
+```python
+tuple[*N]
+```
+
+</td>
+<td>
+
+```python
+type AtMost0D
+```
+
+</td>
+<td>
+
+```python
+tuple[()]
+```
+
+</td>
+</tr>
+<tr><td colspan="4"></td></tr>
+<tr>
+<td>
+
+```python
+type AtLeast1D[
+    N0: int = int,
+    *N: int = ...,
+]
+```
+
+</td>
+<td>
+
+```python
+tuple[N0, *N]
+```
+
+</td>
+<td>
+
+```python
+type AtMost1D[
+    N0: int = int,
+]
+```
+
+</td>
+<td>
+
+```python
+tuple[N0] | AtMost0D
+```
+
+</td>
+</tr>
+<tr><td colspan="4"></td></tr>
+<tr>
+<td>
+
+```python
+type AtLeast2D[
+    N0: int = int,
+    N1: int = int,
+    *N: int = ...,
+]
+```
+
+</td>
+<td>
+
+```python
+tuple[N0, N1, *N]
+```
+
+</td>
+<td>
+
+```python
+type AtMost2D[
+    N0: int = int,
+    N1: int = int,
+]
+```
+
+</td>
+<td>
+
+```python
+(
+    tuple[N0, N1]
+    | AtMost1D[N0]
+)
+```
+
+</td>
+</tr>
+<tr><td colspan="4"></td></tr>
+<tr>
+<td>
+
+```python
+type AtLeast3D[
+    N0: int = int,
+    N1: int = int,
+    N2: int = int,
+    *N: int = ...,
+]
+```
+
+</td>
+<td>
+
+```python
+tuple[N0, N1, N2, *N]
+```
+
+</td>
+<td>
+
+```python
+type AtMost3D[
+    N0: int = int,
+    N1: int = int,
+    N2: int = int,
+]
+```
+
+</td>
+<td>
+
+```python
+(
+    tuple[N0, N1, N2]
+    | AtMost2D[N0, N1]
+)
+```
+
+</td>
 </tr>
 </table>
 
-##### `Scalar`
+#### `Scalar`
 
 ```python
 # TODO: Briefly (!) explain why `npt.NBitBase` is an insult to humanity, and
