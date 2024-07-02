@@ -4,8 +4,7 @@ from typing import Any
 import numpy as np
 import pytest
 
-import optype.numpy as onp
-from optype.numpy import _any_dtype  # pyright: ignore[reportPrivateUsage]
+from optype.numpy import _any_scalar, _any_dtype  # pyright: ignore[reportPrivateUsage]
 from optype.inspect import get_args
 
 
@@ -36,7 +35,7 @@ def _get_dtype_info(name: str) -> tuple[
     frozenset[str],
     frozenset[str],
 ]:
-    types = _get_attr_args(onp, f'Any{name}')
+    types = _get_attr_args(_any_scalar, f'Any{name}')
     # workaround for `np.dtype(datetime.{datetime,timedelta})` bug
     types = {tp for tp in types if tp.__module__ != 'datetime'}
 
