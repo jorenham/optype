@@ -2077,46 +2077,7 @@ Apart from the "CamelCase" name, the only difference with `np.dtype` is that
 the type parameter can be omitted, in which case it's equivalent to
 `np.dtype[np.generic]`, but shorter.
 
-#### Scalar type aliases
-
-Optype considers the following numpy scalar types:
-
-- *`np.generic`*
-    - `np.bool_` (or `np.bool` with `numpy >= 2`)
-    - `np.object_`
-    - *`np.flexible`*
-        - `np.void`
-        - *`np.character`*
-            - `np.bytes_`
-            - `np.str_`
-    - *`np.number[N: npt.NBitBase]`*
-        - *`np.integer[N: npt.NBitBase]`*
-            - *`np.unsignedinteger[N: npt.NBitBase]`*
-                - `np.ubyte`
-                - `np.ushort`
-                - `np.uintc`
-                - `np.uintp`
-                - `np.ulong`
-                - `np.ulonglong`
-                - `np.uint{8,16,32,64}`
-            - *`np.signedinteger[N: npt.NBitBase]`*
-                - `np.byte`
-                - `np.short`
-                - `np.intc`
-                - `np.intp`
-                - `np.long`
-                - `np.longlong`
-                - `np.int{8,16,32,64}`
-        - *`np.inexact[N: npt.NBitBase]`*
-            - *`np.floating[N: npt.NBitBase]`*
-                - `np.float16` / `np.half`
-                - `np.float32` / `np.single`
-                - `np.float64` / `np.double`
-                - `np.longdouble`
-            - *`np.complexfloating[N1: npt.NBitBase, N2: npt.NBitBase]`*
-                - `np.complex64` / `np.csingle`
-                - `np.complex128` / `np.cdouble`
-                - `np.clongdouble`
+#### Type aliases
 
 See the [docs](https://numpy.org/doc/stable/reference/arrays.scalars.html)
 for more info.
@@ -2134,9 +2095,8 @@ for more info.
     <tr>
         <th>scalar type</th>
         <th>base type</th>
-        <th>allowed scalar types</th>
-        <th>array-like types</th>
-        <th>dtype-like types</th>
+        <th>array-like type</th>
+        <th>dtype-like type</th>
     </tr>
     <tr>
         <th align="center" colspan="2"><code>numpy._</code></th>
@@ -2145,56 +2105,48 @@ for more info.
     <tr>
         <td><code>generic</code></td>
         <td><i><code>Any</code></i></td>
-        <td><code>AnyGeneric</code></td>
         <td><code>AnyGenericArray</code></td>
         <td><code>AnyGenericDType</code></td>
     </tr>
     <tr>
         <td><code>number</code></td>
         <td><code>generic</code></td>
-        <td><code>AnyNumber</code></td>
         <td><code>AnyNumberArray</code></td>
         <td><code>AnyNumberDType</code></td>
     </tr>
     <tr>
         <td><code>integer</code></td>
         <td><code>number</code></td>
-        <td><code>AnyInteger</code></td>
         <td><code>AnyIntegerArray</code></td>
         <td><code>AnyIntegerDType</code></td>
     </tr>
     <tr>
         <td><code>unsignedinteger</code></td>
         <td><code>integer</code></td>
-        <td><code>AnyInteger</code></td>
         <td><code>AnyIntegerArray</code></td>
         <td><code>AnyIntegerDType</code></td>
     </tr>
     <tr>
         <td><code>signedinteger</code></td>
         <td><code>integer</code></td>
-        <td><code>AnySignedInteger</code></td>
         <td><code>AnySignedIntegerArray</code></td>
         <td><code>AnySignedIntegerDType</code></td>
     </tr>
     <tr>
         <td><code>inexact</code></td>
         <td><code>number</code></td>
-        <td><code>AnyInexact</code></td>
         <td><code>AnyInexactArray</code></td>
         <td><code>AnyInexactDType</code></td>
     </tr>
     <tr>
         <td><code>floating</code></td>
         <td><code>inexact</code></td>
-        <td><code>AnyFloating</code></td>
         <td><code>AnyFloatingArray</code></td>
         <td><code>AnyFloatingDType</code></td>
     </tr>
     <tr>
         <td><code>complexfloating</code></td>
         <td><code>inexact</code></td>
-        <td><code>AnyComplexFloating</code></td>
         <td><code>AnyComplexFloatingArray</code></td>
         <td><code>AnyComplexFloatingDType</code></td>
     </tr>
@@ -2207,9 +2159,8 @@ These are all subtypes of `np.unsignedinteger[N: npt.NBitBase]`.
 <table>
     <tr>
         <th>scalar type</th>
-        <th>allowed scalar types</th>
-        <th>array-like types</th>
-        <th>dtype-like types</th>
+        <th>array-like type</th>
+        <th>dtype-like type</th>
     </tr>
     <tr>
         <th align="center"><code>numpy._</code></th>
@@ -2217,61 +2168,51 @@ These are all subtypes of `np.unsignedinteger[N: npt.NBitBase]`.
     </tr>
     <tr>
         <th><code>uint8</code></th>
-        <td><code>AnyUInt8</code></td>
         <td><code>AnyUInt8Array</code></td>
         <td><code>AnyUInt8DType</code></td>
     </tr>
     <tr>
         <th><code>uint16</code></th>
-        <td><code>AnyUInt16</code></td>
         <td><code>AnyUInt16Array</code></td>
         <td><code>AnyUInt16DType</code></td>
     </tr>
     <tr>
         <th><code>uint32</code></th>
-        <td><code>AnyUInt32</code></td>
         <td><code>AnyUInt32Array</code></td>
         <td><code>AnyUInt32DType</code></td>
     </tr>
     <tr>
         <th><code>uint64</code></th>
-        <td><code>AnyUInt64</code></td>
         <td><code>AnyUInt64Array</code></td>
         <td><code>AnyUInt64DType</code></td>
     </tr>
     <tr>
         <th><code>uintp</code></th>
-        <td><code>AnyUIntP</code></td>
         <td><code>AnyUIntPArray</code></td>
         <td><code>AnyUIntPDType</code></td>
     </tr>
     <tr>
         <th><code>ubyte</code></th>
-        <td><code>AnyUByte</code></td>
         <td><code>AnyUByteArray</code></td>
         <td><code>AnyUByteDType</code></td>
     </tr>
     <tr>
         <th><code>ushort</code></th>
-        <td><code>AnyUShort</code></td>
         <td><code>AnyUShortArray</code></td>
         <td><code>AnyUShortDType</code></td>
     </tr>
     <tr>
         <th><code>uintc</code></th>
-        <td><code>AnyUIntC</code></td>
         <td><code>AnyUIntCArray</code></td>
         <td><code>AnyUIntCDType</code></td>
     </tr>
     <tr>
         <th><code>ulong</code></th>
-        <td><code>AnyULong</code></td>
         <td><code>AnyULongArray</code></td>
         <td><code>AnyULongDType</code></td>
     </tr>
     <tr>
         <th><code>ulonglong</code></th>
-        <td><code>AnyULongLong</code></td>
         <td><code>AnyULongLongArray</code></td>
         <td><code>AnyULongLongDType</code></td>
     </tr>
@@ -2284,9 +2225,8 @@ These are all subtypes of `np.signedinteger[N: npt.NBitBase]`.
 <table>
     <tr>
         <th>scalar type</th>
-        <th>allowed scalar types</th>
-        <th>array-like types</th>
-        <th>dtype-like types</th>
+        <th>array-like type</th>
+        <th>dtype-like type</th>
     </tr>
     <tr>
         <th align="center"><code>numpy._</code></th>
@@ -2294,61 +2234,51 @@ These are all subtypes of `np.signedinteger[N: npt.NBitBase]`.
     </tr>
     <tr>
         <th><code>int8</code></th>
-        <td><code>AnyInt8</code></td>
         <td><code>AnyInt8Array</code></td>
         <td><code>AnyInt8DType</code></td>
     </tr>
     <tr>
         <th><code>int16</code></th>
-        <td><code>AnyInt16</code></td>
         <td><code>AnyInt16Array</code></td>
         <td><code>AnyInt16DType</code></td>
     </tr>
     <tr>
         <th><code>int32</code></th>
-        <td><code>AnyInt32</code></td>
         <td><code>AnyInt32Array</code></td>
         <td><code>AnyInt32DType</code></td>
     </tr>
     <tr>
         <th><code>int64</code></th>
-        <td><code>AnyInt64</code></td>
         <td><code>AnyInt64Array</code></td>
         <td><code>AnyInt64DType</code></td>
     </tr>
     <tr>
         <th><code>intp</code></th>
-        <td><code>AnyIntP</code></td>
         <td><code>AnyIntPArray</code></td>
         <td><code>AnyIntPDType</code></td>
     </tr>
     <tr>
         <th><code>byte</code></th>
-        <td><code>AnyByte</code></td>
         <td><code>AnyByteArray</code></td>
         <td><code>AnyByteDType</code></td>
     </tr>
     <tr>
         <th><code>short</code></th>
-        <td><code>AnyShort</code></td>
         <td><code>AnyShortArray</code></td>
         <td><code>AnyShortDType</code></td>
     </tr>
     <tr>
         <th><code>intc</code></th>
-        <td><code>AnyIntC</code></td>
         <td><code>AnyIntCArray</code></td>
         <td><code>AnyIntCDType</code></td>
     </tr>
     <tr>
         <th><code>long</code></th>
-        <td><code>AnyLong</code></td>
         <td><code>AnyLongArray</code></td>
         <td><code>AnyLongDType</code></td>
     </tr>
     <tr>
         <th><code>longlong</code></th>
-        <td><code>AnyLongLong</code></td>
         <td><code>AnyLongLongArray</code></td>
         <td><code>AnyLongLongDType</code></td>
     </tr>
@@ -2361,9 +2291,8 @@ These are all subtypes of `np.floating[N: npt.NBitBase]`.
 <table>
     <tr>
         <th>scalar type</th>
-        <th>allowed scalar types</th>
-        <th>array-like types</th>
-        <th>dtype-like types</th>
+        <th>array-like type</th>
+        <th>dtype-like type</th>
     </tr>
     <tr>
         <th align="center"><code>numpy._</code></th>
@@ -2371,7 +2300,6 @@ These are all subtypes of `np.floating[N: npt.NBitBase]`.
     </tr>
     <tr>
         <td><code>floating</code></td>
-        <td><code>AnyFloating</code></td>
         <td><code>AnyFloatingArray</code></td>
         <td><code>AnyFloatingDType</code></td>
     </tr>
@@ -2380,10 +2308,6 @@ These are all subtypes of `np.floating[N: npt.NBitBase]`.
             <code>float16</code><br>
             <code>half</code>
         </th>
-        <td>
-            <code>AnyFloat16</code><br>
-            <code>AnyHalf</code>
-        </td>
         <td>
             <code>AnyFloat16Array</code><br>
             <code>AnyHalfArray</code>
@@ -2399,10 +2323,6 @@ These are all subtypes of `np.floating[N: npt.NBitBase]`.
             <code>single</code>
         </th>
         <td>
-            <code>AnyFloat32</code><br>
-            <code>AnySingle</code>
-        </td>
-        <td>
             <code>AnyFloat32Array</code><br>
             <code>AnySingleArray</code>
         </td>
@@ -2417,10 +2337,6 @@ These are all subtypes of `np.floating[N: npt.NBitBase]`.
             <code>double</code>
         </th>
         <td>
-            <code>AnyFloat64</code><br>
-            <code>AnyDouble</code>
-        </td>
-        <td>
             <code>AnyFloat64Array</code><br>
             <code>AnyDoubleArray</code>
         </td>
@@ -2431,7 +2347,6 @@ These are all subtypes of `np.floating[N: npt.NBitBase]`.
     </tr>
     <tr>
         <th><code>longdouble</code></th>
-        <td><code>AnyLongDouble</code></td>
         <td><code>AnyLongDoubleArray</code></td>
         <td><code>AnyLongDoubleDType</code></td>
     </tr>
@@ -2444,7 +2359,6 @@ These are all subtypes of `np.complexfloating[N, N]`.
 <table>
     <tr>
         <th>scalar type</th>
-        <th>allowed scalar types</th>
         <th>array-like types</th>
         <th>dtype-like types</th>
     </tr>
@@ -2454,7 +2368,6 @@ These are all subtypes of `np.complexfloating[N, N]`.
     </tr>
     <tr>
         <td><code>complexfloating</code></td>
-        <td><code>AnyComplexFloating</code></td>
         <td><code>AnyComplexFloatingArray</code></td>
         <td><code>AnyComplexFloatingDType</code></td>
     </tr>
@@ -2463,10 +2376,6 @@ These are all subtypes of `np.complexfloating[N, N]`.
             <code>complex64</code><br>
             <code>csingle</code>
         </th>
-        <td>
-            <code>AnyComplex64</code><br>
-            <code>AnyCSingle</code>
-        </td>
         <td>
             <code>AnyComplex64Array</code><br>
             <code>AnyCSingleArray</code>
@@ -2482,10 +2391,6 @@ These are all subtypes of `np.complexfloating[N, N]`.
             <code>cdouble</code>
         </th>
         <td>
-            <code>AnyComplex128</code><br>
-            <code>AnyCDouble</code>
-        </td>
-        <td>
             <code>AnyComplex128Array</code><br>
             <code>AnyCDoubleArray</code>
         </td>
@@ -2496,7 +2401,6 @@ These are all subtypes of `np.complexfloating[N, N]`.
     </tr>
     <tr>
         <th><code>clongdouble</code></th>
-        <td><code>AnyCLongDouble</code></td>
         <td><code>AnyCLongDoubleArray</code></td>
         <td><code>AnyCLongDoubleDType</code></td>
     </tr>
@@ -2512,9 +2416,8 @@ The scalar types are subtypes of either `np.character` or `np.flexible`.
     <tr>
         <th>scalar type</th>
         <th>base type</th>
-        <th>allowed scalar types</th>
-        <th>array-like types</th>
-        <th>dtype-like types</th>
+        <th>array-like type</th>
+        <th>dtype-like type</th>
     </tr>
     <tr>
         <th align="center" colspan="2"><code>numpy._</code></th>
@@ -2523,21 +2426,18 @@ The scalar types are subtypes of either `np.character` or `np.flexible`.
     <tr>
         <td><code>str_</code></td>
         <td><code>character</code></td>
-        <td><code>AnyStr</code></td>
         <td><code>AnyStrArray</code></td>
         <td><code>AnyStrDType</code></td>
     </tr>
     <tr>
         <td><code>bytes_</code></td>
         <td><code>character</code></td>
-        <td><code>AnyBytes</code></td>
         <td><code>AnyBytesArray</code></td>
         <td><code>AnyBytesDType</code></td>
     </tr>
     <tr>
         <td><code>void</code></td>
         <td><code>flexible</code></td>
-        <td><code>AnyVoid</code></td>
         <td><code>AnyVoidArray</code></td>
         <td><code>AnyVoidDType</code></td>
     </tr>
@@ -2550,9 +2450,8 @@ The remaining direct subtypes of `np.generic`.
 <table>
     <tr>
         <th>scalar type</th>
-        <th>allowed scalar types</th>
-        <th>allowed array-like types</th>
-        <th>allowed dtypes</th>
+        <th>array-like type</th>
+        <th>dtype-like type</th>
     </tr>
     <tr>
         <th align="center"><code>numpy._</code></th>
@@ -2560,25 +2459,21 @@ The remaining direct subtypes of `np.generic`.
     </tr>
     <tr>
         <td><code>bool_</code></td>
-        <td><code>AnyBool</code></td>
         <td><code>AnyBoolArray</code></td>
         <td><code>AnyBoolDType</code></td>
     </tr>
     <tr>
         <td><code>datetime64</code></td>
-        <td><code>AnyDateTime64</code></td>
         <td><code>AnyDateTime64Array</code></td>
         <td><code>AnyDateTime64DType</code></td>
     </tr>
     <tr>
         <td><code>timedelta64</code></td>
-        <td><code>AnyTimeDelta64</code></td>
         <td><code>AnyTimeDelta64Array</code></td>
         <td><code>AnyTimeDelta64DType</code></td>
     </tr>
     <tr>
         <td><code>object_</code></td>
-        <td><code>AnyObject</code></td>
         <td><code>AnyObjectArray</code></td>
         <td><code>AnyObjectDType</code></td>
     </tr>
