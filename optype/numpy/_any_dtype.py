@@ -345,22 +345,74 @@ AnyComplexFloatingDType: _Type = (
 # datetime64
 _DateTime64Name: _Type = _Lit[
     'datetime64',
+    'datetime64[as]',
+    'datetime64[fs]',
+    'datetime64[ps]',
+    'datetime64[ns]',
+    'datetime64[us]',
+    'datetime64[ms]',
+    'datetime64[s]',
+    'datetime64[m]',
+    'datetime64[h]',
+    'datetime64[D]',
+    'datetime64[W]',
+    'datetime64[M]',
+    'datetime64[Y]',
 ]
 # fmt: off
 _DateTime64Char: _Type = _Lit[
     'M', '|M', '=M', '<M', '>M',
     'M8', '|M8', '=M8', '<M8', '>M8',
+    'M8[as]', '|M8[as]', '=M8[as]', '<M8[as]', '>M8[as]',
+    'M8[fs]', '|M8[fs]', '=M8[fs]', '<M8[fs]', '>M8[fs]',
+    'M8[ps]', '|M8[ps]', '=M8[ps]', '<M8[ps]', '>M8[ps]',
+    'M8[ns]', '|M8[ns]', '=M8[ns]', '<M8[ns]', '>M8[ns]',
+    'M8[us]', '|M8[us]', '=M8[us]', '<M8[us]', '>M8[us]',
+    'M8[s]', '|M8[s]', '=M8[s]', '<M8[s]', '>M8[s]',
+    'M8[m]', '|M8[m]', '=M8[m]', '<M8[m]', '>M8[m]',
+    'M8[h]', '|M8[h]', '=M8[h]', '<M8[h]', '>M8[h]',
+    'M8[D]', '|M8[D]', '=M8[D]', '<M8[D]', '>M8[D]',
+    'M8[W]', '|M8[W]', '=M8[W]', '<M8[W]', '>M8[W]',
+    'M8[M]', '|M8[M]', '=M8[M]', '<M8[M]', '>M8[M]',
+    'M8[Y]', '|M8[Y]', '=M8[Y]', '<M8[Y]', '>M8[Y]',
 ]
 # fmt: on
 _DateTime64Code: _Type = _DateTime64Name | _DateTime64Char
 AnyDateTime64DType: _Type = _Any1[np.datetime64] | _DateTime64Code
 
 # timedelta64
-_TimeDelta64Name: _Type = _Lit['timedelta64']
+_TimeDelta64Name: _Type = _Lit[
+    'timedelta64',
+    'timedelta64[as]',
+    'timedelta64[fs]',
+    'timedelta64[ps]',
+    'timedelta64[ns]',
+    'timedelta64[us]',
+    'timedelta64[ms]',
+    'timedelta64[s]',
+    'timedelta64[m]',
+    'timedelta64[h]',
+    'timedelta64[D]',
+    'timedelta64[W]',
+    'timedelta64[M]',
+    'timedelta64[Y]',
+]
 # fmt: off
 _TimeDelta64Char: _Type = _Lit[
     'm', '|m', '=m', '<m', '>m',
     'm8', '|m8', '=m8', '<m8', '>m8',
+    'm8[as]', '|m8[as]', '=m8[as]', '<m8[as]', '>m8[as]',
+    'm8[fs]', '|m8[fs]', '=m8[fs]', '<m8[fs]', '>m8[fs]',
+    'm8[ps]', '|m8[ps]', '=m8[ps]', '<m8[ps]', '>m8[ps]',
+    'm8[ns]', '|m8[ns]', '=m8[ns]', '<m8[ns]', '>m8[ns]',
+    'm8[us]', '|m8[us]', '=m8[us]', '<m8[us]', '>m8[us]',
+    'm8[s]', '|m8[s]', '=m8[s]', '<m8[s]', '>m8[s]',
+    'm8[m]', '|m8[m]', '=m8[m]', '<m8[m]', '>m8[m]',
+    'm8[h]', '|m8[h]', '=m8[h]', '<m8[h]', '>m8[h]',
+    'm8[D]', '|m8[D]', '=m8[D]', '<m8[D]', '>m8[D]',
+    'm8[W]', '|m8[W]', '=m8[W]', '<m8[W]', '>m8[W]',
+    'm8[M]', '|m8[M]', '=m8[M]', '<m8[M]', '>m8[M]',
+    'm8[Y]', '|m8[Y]', '=m8[Y]', '<m8[Y]', '>m8[Y]',
 ]
 # fmt: on
 _TimeDelta64Code: _Type = _TimeDelta64Name | _TimeDelta64Char
