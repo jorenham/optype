@@ -1,44 +1,61 @@
 """Panic in case of unexpected `numpy` sized C-type aliases."""
+from __future__ import annotations
+
+import ctypes as ct
+from typing import TYPE_CHECKING
+
 import numpy as np
 
 
-_ALIASES = (
+if TYPE_CHECKING:
+    from types import ModuleType
+
+
+_ALIASES_CT = (
+    ('c_uint8', 'c_ubyte'),
+    ('c_uint16', 'c_ushort'),
+    ('c_uint32', 'c_uint'),
+    ('c_uint64', 'c_ulonglong'),
+
+    ('c_int8', 'c_byte'),
+    ('c_int16', 'c_short'),
+    ('c_int32', 'c_int'),
+    ('c_int64', 'c_longlong'),
+)
+_ALIASES_NP = (
     ('uint8', 'ubyte'),
     ('uint16', 'ushort'),
-    ('uint32', 'uintc'),
 
     ('int8', 'byte'),
     ('int16', 'short'),
-    ('int32', 'intc'),
 
     ('float16', 'half'),
     ('float32', 'single'),
-    ('float64', 'double'),
 
     ('complex64', 'csingle'),
     ('complex128', 'cdouble'),
-)
-_ERROR_MSG = (
-    'Expected: {0} is {1}. got {2.__name__}'
-    'Please submit an issue at https://github.com/jorenham/optype/issues.'
 )
 
 
 class UnexpectedAliasError(OSError): ...
 
 
-def check_aliases() -> None:
-    for name_sized, name_c in _ALIASES:
-        t_sized = getattr(np, name_sized)
-        t_c = getattr(np, name_c)
-        if t_sized is t_c:
+def check_aliases(
+    module: ModuleType,
+    aliases: tuple[tuple[str, str], ...],
+    /,
+) -> None:
+    for name_a, name_b in aliases:
+        t_a, t_b = getattr(module, name_a), getattr(module, name_b)
+        if t_a is t_b:
             continue
 
-        if t_sized.__name__ == name_sized:
-            t_alias, name_alias, name_orig = t_c, name_c, name_sized
+        # assumes that either `t_a` or `t_b` isn't an alias
+        if t_a.__name__ == name_a:
+            t_alias, name_alias, name_orig = t_b, name_b, name_a
         else:
-            assert t_c.__name__ == name_c
-            t_alias, name_alias, name_orig = t_sized, name_sized, name_c
+            assert t_b.__name__ == name_b
+            t_alias, name_alias, name_orig = t_a, name_a, name_b
 
         msg = (
             f'Expected `numpy.{name_alias}` to be an alias for '
@@ -47,4 +64,5 @@ def check_aliases() -> None:
         raise UnexpectedAliasError(msg)
 
 
-check_aliases()
+check_aliases(ct, _ALIASES_CT)
+check_aliases(np, _ALIASES_NP)
