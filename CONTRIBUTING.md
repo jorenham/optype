@@ -200,25 +200,9 @@ formatted and typed correctly when committing the changes.
 poetry run pre-commit install
 ```
 
-It can also be manually run:
-
-```bash
-poetry run pre-commit run --all-files
-```
-
-This is roughly the same as manually running
-
-```bash
-poetry check
-poetry run codespell
-poetry run ruff --fix
-poetry run basedpyright
-poetry run markdownlint
-```
-
 > [!NOTE]
-> Pre-commit doesn't run the tests. This will be run by github actions when
-> submitting a pull request. See the next section for more details.
+> Pre-commit doesn't run the (unit-) tests. This will be run by github actions
+> when submitting a pull request. See the next section for more details.
 
 ### Testing
 
@@ -228,6 +212,17 @@ These tests can be run with
 ```bash
 poetry run pytest
 ```
+
+### Tox
+
+The pre-commit hooks and the tests can easily be run with
+[tox](https://github.com/tox-dev/tox):
+
+```bash
+poetry run tox -p all
+```
+
+This will run the tests in parallel on all supported Python versions.
 
 ### Improving The Documentation
 

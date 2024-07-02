@@ -1,15 +1,15 @@
-# ruff: noqa: I001
+# ruff: noqa: I001, PLC2701
 from typing import Any
 
 import numpy as np
 import pytest
 
 import optype.numpy as onp
-from optype.numpy import _sctype  # noqa: PLC2701  # pyright: ignore[reportPrivateUsage]
+from optype.numpy import _any_dtype  # pyright: ignore[reportPrivateUsage]
 from optype.inspect import get_args
 
 
-_TEMPORAL = 'Timedelta64', 'Datetime64'
+_TEMPORAL = 'TimeDelta64', 'DateTime64'
 _FLEXIBLE = 'Str', 'Bytes', 'Void'
 _SIMPLE = 'Bool', 'Object'
 _NUMERIC_N = (
@@ -19,8 +19,8 @@ _NUMERIC_N = (
     'Complex64', 'Complex128',
 )
 _NUMERIC_C = (
-    'UByte', 'UShort', 'ULong',
-    'Byte', 'Short', 'Long',
+    'UByte', 'UShort', 'UIntC', 'ULong',
+    'Byte', 'Short', 'IntC', 'Long',
     'Half', 'Single', 'Double',
     'CSingle', 'CDouble',
 )
@@ -36,9 +36,12 @@ def _get_dtype_info(name: str) -> tuple[
     frozenset[str],
     frozenset[str],
 ]:
-    types = _get_attr_args(onp, f'Any{name}Value')
-    names = _get_attr_args(_sctype, f'_Any{name}Name')
-    chars = _get_attr_args(_sctype, f'_Any{name}Char')
+    types = _get_attr_args(onp, f'Any{name}')
+    # workaround for `np.dtype(datetime.{datetime,timedelta})` bug
+    types = {tp for tp in types if tp.__module__ != 'datetime'}
+
+    names = _get_attr_args(_any_dtype, f'_{name}Name')
+    chars = _get_attr_args(_any_dtype, f'_{name}Char')
     return frozenset(types), frozenset(names), frozenset(chars)
 
 
@@ -48,13 +51,18 @@ def _get_dtype_info(name: str) -> tuple[
 )
 def test_sctypes(name: str):
     dtype_expect = np.dtype(name.lower())
+    sctype_expect = dtype_expect.type
     types, names, chars = _get_dtype_info(name)
 
     assert dtype_expect.type in types
 
     for arg in types | names | {c for c in chars if c[0] not in '=<>'}:
         dtype = np.dtype(arg)
-        assert dtype == dtype_expect
+        assert (
+            dtype == dtype_expect
+            # only needed for `np.dtype(ct.c_char)`
+            or dtype.type is sctype_expect
+        ), f'np.dtype({arg!r}) (= {dtype!r}) != {dtype_expect}'
 
 
 @pytest.mark.parametrize(
