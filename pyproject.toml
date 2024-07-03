@@ -40,12 +40,12 @@ numpy = {version = ">=1.24,<3", optional = true}
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.7.1"
-tox = "^4.15.1"
+tox = "^4.16.0"
 
 [tool.poetry.group.lint.dependencies]
-basedpyright = "^1.13.1"
+basedpyright = "^1.13.2"
 codespell = "^2.3.0"
-ruff = "^0.4.10"
+ruff = "^0.5.0"
 sp-repo-review = {version = "^2024.4.23", extras = ["cli"]}
 typing-extensions = "*"
 numpy = ">=2,<3"
