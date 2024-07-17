@@ -1898,7 +1898,31 @@ Optype provides the generic `onp.Array` type alias for `np.ndarray`.
 It is similar to `npt.NDArray`, but includes two (optional) type parameters:
 one that matches the *shape type* (`ND: tuple[int, ...]`),
 and one that matches the *scalar type* (`ST: np.generic`).
-It is defined as:
+
+When put the definitions of `npt.NDArray` and `onp.Array` side-by-side,
+their differences become clear:
+
+<table>
+<tr>
+<th width="415px">
+    <code>numpy.typing.NDArray</code>
+</th>
+<th width="415px">
+    <code>optype.numpy.Array</code>
+</th>
+</tr>
+<tr>
+<td>
+
+```python
+type NDArray[
+    # no shape type
+    ST: np.generic,  # no default
+] = np.ndarray[Any, np.dtype[ST]]
+```
+
+</td>
+<td>
 
 ```python
 type Array[
@@ -1907,11 +1931,46 @@ type Array[
 ] = np.ndarray[ND, np.dtype[ST]]
 ```
 
-Note that the shape type parameter `ND` matches the type of `np.ndarray.shape`,
-and the scalar type parameter `ST` that of `np.ndarray.dtype.type`.
+</td>
+</tr>
+</table>
 
-This way, a vector can be typed as `Array[tuple[int]]`, and a $2 \times 2$
-matrix of integers as `Array[tuple[Literal[2], Literal[2]], np.integer[Any]]`.
+> [!IMPORTANT]
+> The shape type parameter (`ND`) of `np.ndarray` is currently defined as
+> invariant.
+> This is incorrect: it should be covariant.
+>
+> This means that `ND: tuple[int, ...]` is also invariant in `onp.Array`.
+>
+> The consequence is that e.g. `def span(a: onp.Array[tuple[int], ST])`,
+> won't accept `onp.Array[tuple[Literal[42]]]` as argument, even though
+> `Literal[42]` is a subtype of `int`.
+>
+> See [numpy/numpy#25729](https://github.com/numpy/numpy/issues/25729) and
+> [numpy/numpy#26081](https://github.com/numpy/numpy/pull/26081) for details.
+
+<details>
+<summary>
+In fact, `onp.Array` is *almost* a  generalization of `npt.NDArray`.
+</summary>
+
+This is because `npt.NDArray` can be defined purely in terms of `onp.Array`
+(but not vice-versa).
+
+```python
+type NDArray[ST: np.generic] = onp.Array[Any, ST]
+```
+
+The only difference between this `NDArray` and the original `npt.NDArray`, is
+that the former is equivalent to `np.ndarray[tuple[int, ...], np.dtype[ST]]`,
+but the latter to `np.ndarray[Any, np.dtype[np.generic]]`.
+</details>
+
+With `onp.Array`, it becomes possible to type the shape of arrays,
+
+> [!NOTE]
+> A little bird told me that `onp.Array` might be backported to NumPy in the
+> near future.
 
 #### `UFunc`
 
