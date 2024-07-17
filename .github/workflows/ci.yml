@@ -60,11 +60,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13.0-beta.2"]
+        python-version: ["3.10", "3.11", "3.12", "3.13.0-beta.3"]
         # building numpy2 on windows + py313 results in broken numpy install
         exclude:
           - os: windows-latest
-            python-version: "3.13.0-beta.2"
+            python-version: "3.13.0-beta.3"
 
     runs-on: ${{ matrix.os }}
 
