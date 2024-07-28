@@ -57,15 +57,10 @@ repos:
           - tomli
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.2
+    rev: v0.5.5
     hooks:
       - id: ruff
         args: [--fix, --show-fixes]
-
-  # - repo: https://github.com/DetachHead/basedpyright-pre-commit-mirror
-  #   rev: v1.13.2
-  #   hooks:
-  #     - id: basedpyright
 
   - repo: local
     hooks:
