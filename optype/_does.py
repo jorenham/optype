@@ -251,7 +251,7 @@ class DoesEq(Protocol):
         /,
     ) -> _R_eq: ...
     @overload
-    def __call__(
+    def __call__(  # pyright: ignore[reportOverlappingOverload]
         self,
         lhs: _T_eq_lhs,
         rhs: _c.CanEq[_T_eq_lhs, _R_eq],
@@ -274,7 +274,7 @@ class DoesNe(Protocol):
         /,
     ) -> _R_ne: ...
     @overload
-    def __call__(
+    def __call__(  # pyright: ignore[reportOverlappingOverload]
         self,
         lhs: _T_ne_lhs,
         rhs: _c.CanNe[_T_ne_lhs, _R_ne],
