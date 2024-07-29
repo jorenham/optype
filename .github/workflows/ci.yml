@@ -64,7 +64,7 @@ jobs:
         # building numpy2 on windows + py313 results in broken numpy install
         exclude:
           - os: windows-latest
-            python-version: "3.13.0-beta.3"
+            python-version: "3.13.0-beta.4"
 
     runs-on: ${{ matrix.os }}
 
