@@ -39,19 +39,19 @@ typing-extensions = {version = ">=4.7", python = "<3.13"}
 numpy = {version = ">=1.24,<3", optional = true}
 
 [tool.poetry.group.dev.dependencies]
-pre-commit = "^3.7.1"
+pre-commit = "^3.8.0"
 tox = "^4.16.0"
 
 [tool.poetry.group.lint.dependencies]
-basedpyright = "^1.14.0"
+basedpyright = "^1.15.0"
 codespell = "^2.3.0"
-ruff = "^0.5.2"
+ruff = "^0.5.5"
 sp-repo-review = {version = "^2024.4.23", extras = ["cli"]}
 typing-extensions = "*"
 numpy = ">=2,<3"
 
 [tool.poetry.group.test.dependencies]
-pytest = "^8.2.2"
+pytest = "^8.3.2"
 beartype = "^0.18.5"
 typing-extensions = "*"
 numpy = ">=2,<3"
@@ -275,7 +275,7 @@ requires = tox>=4
 envlist =
     repo-review
     pre-commit
-    py{310,311,312,313b3}
+    py{310,311,312,313b4}
 
 [testenv]
 description = pytest

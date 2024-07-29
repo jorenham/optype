@@ -54,17 +54,17 @@ jobs:
           plugins: sp-repo-review
 
   test:
-    timeout-minutes: 5
+    timeout-minutes: 15
 
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13.0-beta.3"]
+        python-version: ["3.10", "3.11", "3.12", "3.13.0-beta.4"]
         # building numpy2 on windows + py313 results in broken numpy install
         exclude:
           - os: windows-latest
-            python-version: "3.13.0-beta.3"
+            python-version: "3.13.0-beta.4"
 
     runs-on: ${{ matrix.os }}
 
