@@ -232,6 +232,7 @@ The reference docs are structured as follows:
     - [Buffer types](#buffer-types)
 - [`optype.types`](#optypetypes)
     - [`Slice`](#slice)
+    - [`AnyIterable` and `is_iterable`](#anyiterable-and-is_iterable)
 - [Standard libs](#standard-libs)
     - [`copy`](#copy)
     - [`pickle`](#pickle)
@@ -1544,6 +1545,15 @@ Its type signature looks something like this:
 ```python
 Slice[A = None, B = Any, S = None]
 ```
+
+#### `AnyIterable` and `is_iterable`
+
+The `optype.types.AnyIterable[V = Any]` type is a type alias for anything that
+can be used in a for-loop and `builtins.iter`.
+
+But type aliases are not runtime-checkable.
+So if you want to check whether something can be iterated over, without
+actually trying to do so, you can use `optype.types.is_iterable`.
 
 ### Standard libs
 
