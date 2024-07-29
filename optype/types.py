@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypeAlias, final
 
 
 if TYPE_CHECKING:
-    from ._can import CanIndex as _Ix
+    from ._can import CanIndex
 
 
 if sys.version_info >= (3, 13):
@@ -31,30 +31,30 @@ else:
 __all__ = ('Slice',)
 
 
-_Zero: TypeAlias = Literal[0]
-_One: TypeAlias = Literal[1]
+_Just0: TypeAlias = Literal[0]
+_Just1: TypeAlias = Literal[1]
 
-_A_Slice = TypeVar('_A_Slice', infer_variance=True, default=None)
-_B_Slice = TypeVar('_B_Slice', infer_variance=True, default=Any)
-_S_Slice = TypeVar('_S_Slice', infer_variance=True, default=None)
+_StartT = TypeVar('_StartT', infer_variance=True, default=None)
+_StopT = TypeVar('_StopT', infer_variance=True, default=Any)
+_StepT = TypeVar('_StepT', infer_variance=True, default=None)
 
 
 @final
 @runtime_checkable
-class Slice(Protocol[_A_Slice, _B_Slice, _S_Slice]):
+class Slice(Protocol[_StartT, _StopT, _StepT]):
     @property
-    def start(self, /) -> _A_Slice: ...
+    def start(self, /) -> _StartT: ...
     @property
-    def stop(self, /) -> _B_Slice: ...
+    def stop(self, /) -> _StopT: ...
     @property
-    def step(self, /) -> _S_Slice: ...
+    def step(self, /) -> _StepT: ...
 
     @overload
-    def __new__(cls, b: _B_Slice, /) -> Self: ...
+    def __new__(cls, b: _StopT, /) -> Self: ...
     @overload
-    def __new__(cls, a: _A_Slice, b: _B_Slice, /) -> Self: ...
+    def __new__(cls, a: _StartT, b: _StopT, /) -> Self: ...
     @overload
-    def __new__(cls, a: _A_Slice, b: _B_Slice, s: _S_Slice, /) -> Self: ...
+    def __new__(cls, a: _StartT, b: _StopT, s: _StepT, /) -> Self: ...
 
     if sys.version_info >= (3, 12):
         def __hash__(self, /) -> int: ...
@@ -65,25 +65,25 @@ class Slice(Protocol[_A_Slice, _B_Slice, _S_Slice]):
 
     @overload
     def indices(
-        self: Slice[None, _Ix | None, None],
-        n: _Ix,
+        self: Slice[None, CanIndex | None, None],
+        n: CanIndex,
         /,
-    ) -> tuple[_Zero, int, _One]: ...
+    ) -> tuple[_Just0, int, _Just1]: ...
     @overload
     def indices(
-        self: Slice[None, _Ix | None, _Ix],
-        n: _Ix,
+        self: Slice[None, CanIndex | None, CanIndex],
+        n: CanIndex,
         /,
-    ) -> tuple[_Zero, int, int]: ...
+    ) -> tuple[_Just0, int, int]: ...
     @overload
     def indices(
-        self: Slice[_Ix, _Ix | None, None],
-        n: _Ix,
+        self: Slice[CanIndex, CanIndex | None, None],
+        n: CanIndex,
         /,
-    ) -> tuple[int, int, _One]: ...
+    ) -> tuple[int, int, _Just1]: ...
     @overload
     def indices(
-        self: Slice[_Ix, _Ix | None, _Ix],
-        n: _Ix,
+        self: Slice[CanIndex, CanIndex | None, CanIndex],
+        n: CanIndex,
         /,
     ) -> tuple[int, int, int]: ...
