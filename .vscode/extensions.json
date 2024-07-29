@@ -10,5 +10,5 @@
     "serhioromano.vscode-gitflow",
     "zeshuaro.vscode-python-poetry"
   ],
-  "unwantedRecommendations": ["ms-python.vscode-pylance"]
+  "unwantedRecommendations": ["ms-pyright.pyright", "ms-python.vscode-pylance"]
 }
