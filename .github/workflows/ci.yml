@@ -54,7 +54,7 @@ jobs:
           plugins: sp-repo-review
 
   test:
-    timeout-minutes: 5
+    timeout-minutes: 15
 
     strategy:
       fail-fast: false
