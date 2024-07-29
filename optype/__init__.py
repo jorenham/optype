@@ -317,10 +317,12 @@ __all__ = (
     'do_truediv',
     'do_trunc',
     'do_xor',
+    'types',
 )
 
 from importlib import metadata as _metadata
 
+from . import types
 from ._can import (
     CanAEnter,
     CanAEnterSelf,
