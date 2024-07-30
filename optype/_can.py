@@ -10,8 +10,6 @@ if sys.version_info >= (3, 13):
         Protocol,
         Self,
         TypeVar,
-        TypeVarTuple,
-        Unpack,
         overload,
         override,
         runtime_checkable,
@@ -22,8 +20,6 @@ else:
         Protocol,
         Self,  # noqa: TCH002
         TypeVar,
-        TypeVarTuple,
-        Unpack,
         overload,
         override,
         runtime_checkable,
@@ -1404,81 +1400,3 @@ class CanAwait(Protocol[_R_await]):
     def __await__(self: CanAwait[None], /) -> CanNext[_FutureOrNone]: ...
     @overload
     def __await__(self: CanAwait[_R_await], /) -> _AsyncGen[_R_await]: ...
-
-
-#
-# Standard library `pickle`
-#
-
-_StrOrTuple: TypeAlias = str | tuple[Any, ...]
-
-
-_R_reduce = TypeVar(
-    '_R_reduce',
-    infer_variance=True,
-    bound=_StrOrTuple,
-    default=_StrOrTuple,
-)
-
-
-@runtime_checkable
-class CanReduce(Protocol[_R_reduce]):
-    @override
-    def __reduce__(self, /) -> _R_reduce: ...
-
-
-_R_reduce_ex = TypeVar(
-    '_R_reduce_ex',
-    infer_variance=True,
-    bound=_StrOrTuple,
-    default=_StrOrTuple,
-)
-
-
-@runtime_checkable
-class CanReduceEx(Protocol[_R_reduce_ex]):
-    @override
-    def __reduce_ex__(self, protocol: CanIndex, /) -> _R_reduce_ex: ...
-
-
-_S_getstate = TypeVar('_S_getstate', infer_variance=True, bound=object)
-
-
-@runtime_checkable
-class CanGetstate(Protocol[_S_getstate]):
-    def __getstate__(self, /) -> _S_getstate: ...
-
-
-_S_setstate = TypeVar('_S_setstate', infer_variance=True, bound=object)
-
-
-@runtime_checkable
-class CanSetstate(Protocol[_S_setstate]):
-    def __setstate__(self, state: _S_setstate, /) -> None: ...
-
-
-_Vs_getnewargs = TypeVarTuple('_Vs_getnewargs')
-
-
-@runtime_checkable
-class CanGetnewargs(Protocol[Unpack[_Vs_getnewargs]]):
-    def __new__(cls, /, *args: Unpack[_Vs_getnewargs]) -> Self: ...
-    def __getnewargs__(self, /) -> tuple[Unpack[_Vs_getnewargs]]: ...
-
-
-_Vs_getnewargs_ex = TypeVarTuple('_Vs_getnewargs_ex')
-_V_getnewargs_ex = TypeVar('_V_getnewargs_ex')
-
-
-@runtime_checkable
-class CanGetnewargsEx(Protocol[Unpack[_Vs_getnewargs_ex], _V_getnewargs_ex]):
-    def __new__(
-        cls,
-        /,
-        *args: Unpack[_Vs_getnewargs_ex],
-        **kwargs: _V_getnewargs_ex,
-    ) -> Self: ...
-    def __getnewargs_ex__(self, /) -> tuple[
-        tuple[Unpack[_Vs_getnewargs_ex]],
-        dict[str, _V_getnewargs_ex],
-    ]: ...

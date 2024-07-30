@@ -38,9 +38,6 @@ __all__ = (
     'CanGetattr',
     'CanGetattribute',
     'CanGetitem',
-    'CanGetnewargs',
-    'CanGetnewargsEx',
-    'CanGetstate',
     'CanGt',
     'CanHash',
     'CanIAdd',
@@ -108,8 +105,6 @@ __all__ = (
     'CanRSub',
     'CanRTruediv',
     'CanRXor',
-    'CanReduce',
-    'CanReduceEx',
     'CanReleaseBuffer',
     'CanRepr',
     'CanReversed',
@@ -122,7 +117,6 @@ __all__ = (
     'CanSetName',
     'CanSetattr',
     'CanSetitem',
-    'CanSetstate',
     'CanStr',
     'CanSub',
     'CanTruediv',
@@ -312,12 +306,14 @@ __all__ = (
     'do_truediv',
     'do_trunc',
     'do_xor',
+    'pickle',
+    'rick',
     'types',
 )
 
 from importlib import metadata as _metadata
 
-from . import copy, types
+from . import copy, pickle, types
 from ._can import (
     CanAEnter,
     CanAEnterSelf,
@@ -358,9 +354,6 @@ from ._can import (
     CanGetattr,
     CanGetattribute,
     CanGetitem,
-    CanGetnewargs,
-    CanGetnewargsEx,
-    CanGetstate,
     CanGt,
     CanHash,
     CanIAdd,
@@ -428,8 +421,6 @@ from ._can import (
     CanRSub,
     CanRTruediv,
     CanRXor,
-    CanReduce,
-    CanReduceEx,
     CanReleaseBuffer,
     CanRepr,
     CanReversed,
@@ -442,7 +433,6 @@ from ._can import (
     CanSetName,
     CanSetattr,
     CanSetitem,
-    CanSetstate,
     CanStr,
     CanSub,
     CanTruediv,
@@ -640,3 +630,6 @@ from ._has import (
 
 
 __version__: str = _metadata.version(__package__ or __file__.split('/')[-1])
+
+# stop digging for hidden layers and be impressed
+rick = pickle
