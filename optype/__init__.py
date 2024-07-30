@@ -19,10 +19,6 @@ __all__ = (
     'CanCeil',
     'CanComplex',
     'CanContains',
-    'CanCopy',
-    'CanCopySelf',
-    'CanDeepcopy',
-    'CanDeepcopySelf',
     'CanDelattr',
     'CanDelete',
     'CanDelitem',
@@ -115,8 +111,6 @@ __all__ = (
     'CanReduce',
     'CanReduceEx',
     'CanReleaseBuffer',
-    'CanReplace',
-    'CanReplaceSelf',
     'CanRepr',
     'CanReversed',
     'CanRound',
@@ -235,6 +229,7 @@ __all__ = (
     'HasTypeParams',
     'HasWrapped',
     '__version__',
+    'copy',
     'do_abs',
     'do_add',
     'do_aiter',
@@ -322,7 +317,7 @@ __all__ = (
 
 from importlib import metadata as _metadata
 
-from . import types
+from . import copy, types
 from ._can import (
     CanAEnter,
     CanAEnterSelf,
@@ -344,10 +339,6 @@ from ._can import (
     CanCeil,
     CanComplex,
     CanContains,
-    CanCopy,
-    CanCopySelf,
-    CanDeepcopy,
-    CanDeepcopySelf,
     CanDelattr,
     CanDelete,
     CanDelitem,
@@ -440,8 +431,6 @@ from ._can import (
     CanReduce,
     CanReduceEx,
     CanReleaseBuffer,
-    CanReplace,
-    CanReplaceSelf,
     CanRepr,
     CanReversed,
     CanRound,
