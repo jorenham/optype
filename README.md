@@ -231,6 +231,7 @@ The reference docs are structured as follows:
     - [Descriptors](#descriptors)
     - [Buffer types](#buffer-types)
 - [`optype.copy`](#optypecopy)
+- [`optype.dataclasses`](#optypedataclasses)
 - [`optype.pickle`](#optypepickle)
 - [`optype.types`](#optypetypes)
     - [`Slice`](#slice)
@@ -238,8 +239,6 @@ The reference docs are structured as follows:
     - [`AnyInt` / `AnyFloat` / `AnyComplex`](#anyint--anyfloat--anycomplex)
     - [`LiteralBool`](#literalbool)
     - [`LiteralByte`](#literalbyte)
-- [Standard libs](#standard-libs)
-    - [`dataclasses`](#dataclasses)
 - [NumPy](#numpy)
     - [Arrays](#arrays)
         - [`Array`](#array)
@@ -1589,6 +1588,15 @@ type CanReplaceSelf[V] = CanReplace[V, CanReplaceSelf[V]]
 
 [CP]: https://docs.python.org/3/library/copy.html
 
+### `optype.dataclasses`
+
+For the [`dataclasses`][DC] standard library, `optype.dataclasses` provides the
+`HasDataclassFields[V: Mapping[str, Field]]` interface.
+It can conveniently be used to check whether a type or instance is a
+dataclass, i.e. `isinstance(obj, HasDataclassFields)`.
+
+[DC]: https://docs.python.org/3/library/dataclasses.html
+
 ### `optype.pickle`
 
 For the [`pickle`][PK] standard library, `optype.pickle` provides the following
@@ -1689,17 +1697,6 @@ The analogue of `typing.LiteralString`, but for `int` values that make up
 a `bytes` or `bytearray` instance, i.e. `x: int` s.t. `0 <= x < 256`.
 `LiteralByte` is defined as the `typing.Literal` of the the integers in
 `range(256)`.
-
-### Standard libs
-
-#### `dataclasses`
-
-For the [`dataclasses`][DC] standard library, `optype` provides the
-`HasDataclassFields[V: Mapping[str, Field]]` interface.
-It can conveniently be used to check whether a type or instance is a
-dataclass, i.e. `isinstance(obj, optype.HasDataclassFields)`.
-
-[DC]: https://docs.python.org/3/library/dataclasses.html
 
 ### NumPy
 

@@ -209,7 +209,6 @@ __all__ = (
     'HasAnnotations',
     'HasClass',
     'HasCode',
-    'HasDataclassFields',
     'HasDict',
     'HasDoc',
     'HasFunc',
@@ -224,6 +223,7 @@ __all__ = (
     'HasWrapped',
     '__version__',
     'copy',
+    'dataclasses',
     'do_abs',
     'do_add',
     'do_aiter',
@@ -313,7 +313,7 @@ __all__ = (
 
 from importlib import metadata as _metadata
 
-from . import copy, pickle, types
+from . import copy, dataclasses, pickle, types
 from ._can import (
     CanAEnter,
     CanAEnterSelf,
@@ -613,7 +613,6 @@ from ._has import (
     HasAnnotations,
     HasClass,
     HasCode,
-    HasDataclassFields,
     HasDict,
     HasDoc,
     HasFunc,
