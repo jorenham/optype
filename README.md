@@ -231,6 +231,7 @@ The reference docs are structured as follows:
     - [Descriptors](#descriptors)
     - [Buffer types](#buffer-types)
 - [`optype.copy`](#optypecopy)
+- [`optype.pickle`](#optypepickle)
 - [`optype.types`](#optypetypes)
     - [`Slice`](#slice)
     - [`AnyIterable` and `is_iterable`](#anyiterable-and-is_iterable)
@@ -238,7 +239,6 @@ The reference docs are structured as follows:
     - [`LiteralBool`](#literalbool)
     - [`LiteralByte`](#literalbyte)
 - [Standard libs](#standard-libs)
-    - [`pickle`](#pickle)
     - [`dataclasses`](#dataclasses)
 - [NumPy](#numpy)
     - [Arrays](#arrays)
@@ -1589,53 +1589,7 @@ type CanReplaceSelf[V] = CanReplace[V, CanReplaceSelf[V]]
 
 [CP]: https://docs.python.org/3/library/copy.html
 
-### `optype.types`
-
-#### `Slice`
-
-The `optype.types.Slice` type is a generic runtime-protocol that's fully
-compatible with `builtins.slice` (from a typing perspective).
-
-Its type signature looks something like this:
-
-```python
-Slice[A = None, B = Any, S = None]
-```
-
-#### `AnyIterable` and `is_iterable`
-
-The `optype.types.AnyIterable[V = Any]` type is a type alias for anything that
-can be used in a for-loop and `builtins.iter`.
-
-But type aliases are not runtime-checkable.
-So if you want to check whether something can be iterated over, without
-actually trying to do so, you can use `optype.types.is_iterable`.
-
-### `AnyInt` / `AnyFloat` / `AnyComplex`
-
-Anything that can *always* be converted to `int` / `float` /`complex`,
-and that doesn't cause a deprecation warning (e.g. `__trunc__` delegation for
-`int`).
-
-Even though *some* `str` and `bytes` can be converted to `int` / `float` /
-`complex`, most of them can't, and are therefore not included in these
-type aliases.
-
-### `LiteralBool`
-
-The analogue of `typing.LiteralString`, but for booleans.
-`LiteralBool` is a type alias for `typing.Literal[False, True]`.
-
-### `LiteralByte`
-
-The analogue of `typing.LiteralString`, but for `int` values that make up
-a `bytes` or `bytearray` instance, i.e. `x: int` s.t. `0 <= x < 256`.
-`LiteralByte` is defined as the `typing.Literal` of the the integers in
-`range(256)`.
-
-### Standard libs
-
-#### `pickle`
+### `optype.pickle`
 
 For the [`pickle`][PK] standard library, `optype` provides the following
 interfaces:
@@ -1691,6 +1645,52 @@ interfaces:
         <td><code>CanGetnewargsEx[*Vs, V]</code></td>
     </tr>
 </table>
+
+### `optype.types`
+
+#### `Slice`
+
+The `optype.types.Slice` type is a generic runtime-protocol that's fully
+compatible with `builtins.slice` (from a typing perspective).
+
+Its type signature looks something like this:
+
+```python
+Slice[A = None, B = Any, S = None]
+```
+
+#### `AnyIterable` and `is_iterable`
+
+The `optype.types.AnyIterable[V = Any]` type is a type alias for anything that
+can be used in a for-loop and `builtins.iter`.
+
+But type aliases are not runtime-checkable.
+So if you want to check whether something can be iterated over, without
+actually trying to do so, you can use `optype.types.is_iterable`.
+
+### `AnyInt` / `AnyFloat` / `AnyComplex`
+
+Anything that can *always* be converted to `int` / `float` /`complex`,
+and that doesn't cause a deprecation warning (e.g. `__trunc__` delegation for
+`int`).
+
+Even though *some* `str` and `bytes` can be converted to `int` / `float` /
+`complex`, most of them can't, and are therefore not included in these
+type aliases.
+
+### `LiteralBool`
+
+The analogue of `typing.LiteralString`, but for booleans.
+`LiteralBool` is a type alias for `typing.Literal[False, True]`.
+
+### `LiteralByte`
+
+The analogue of `typing.LiteralString`, but for `int` values that make up
+a `bytes` or `bytearray` instance, i.e. `x: int` s.t. `0 <= x < 256`.
+`LiteralByte` is defined as the `typing.Literal` of the the integers in
+`range(256)`.
+
+### Standard libs
 
 #### `dataclasses`
 
