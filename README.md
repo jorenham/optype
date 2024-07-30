@@ -230,6 +230,7 @@ The reference docs are structured as follows:
     - [Context managers](#context-managers)
     - [Descriptors](#descriptors)
     - [Buffer types](#buffer-types)
+- [`optype.copy`](#optypecopy)
 - [`optype.types`](#optypetypes)
     - [`Slice`](#slice)
     - [`AnyIterable` and `is_iterable`](#anyiterable-and-is_iterable)
@@ -237,7 +238,6 @@ The reference docs are structured as follows:
     - [`LiteralBool`](#literalbool)
     - [`LiteralByte`](#literalbyte)
 - [Standard libs](#standard-libs)
-    - [`copy`](#copy)
     - [`pickle`](#pickle)
     - [`dataclasses`](#dataclasses)
 - [NumPy](#numpy)
@@ -1536,6 +1536,56 @@ Interfaces for emulating buffer types using the [buffer protocol][BP].
 
 [BP]: https://docs.python.org/3/reference/datamodel.html#python-buffer-protocol
 
+### `optype.copy`
+
+For the [`copy`][CP] standard library, `optype.copy` provides the following
+runtime-checkable interfaces:
+
+<table>
+    <tr>
+        <th align="center"><code>copy</code> standard library</th>
+        <th colspan="2" align="center"><code>optype.copy</code></th>
+    </tr>
+    <tr>
+        <td>function</td>
+        <th>type</th>
+        <th>method</th>
+    </tr>
+    <tr>
+        <td><code>copy.copy(_) -> R</code></td>
+        <td><code>__copy__() -> R</code></td>
+        <td><code>_: CanCopy[R]</code></td>
+    </tr>
+    <tr>
+        <td><code>copy.deepcopy(_, memo={})</code></td>
+        <td><code>__deepcopy__(memo, /) -> R</code></td>
+        <td><code>CanDeepcopy[R]</code></td>
+    </tr>
+    <tr>
+        <td><code>copy.replace(_, /, **changes: V)</code><sup>[1]</sup></td>
+        <td><code>__replace__(**changes: V) -> R</code></td>
+        <td><code>CanReplace[V, R]</code></td>
+    </tr>
+</table>
+
+<sup>[1]</sup> *`copy.replace` requires `python>=3.13`
+(but `optype.copy.CanReplace` doesn't)*
+
+In practice, it makes sense that a copy of an instance is the same type as the
+original.
+But because `typing.Self` cannot be used as a type argument, this difficult
+to properly type.
+Instead, you can use the `optype.copy.Can{}Self` types, which are the
+runtime-checkable equivalents of the following (recursive) type aliases:
+
+```python
+type CanCopySelf = CanCopy[CanCopySelf]
+type CanDeepcopySelf = CanDeepcopy[CanDeepcopySelf]
+type CanReplaceSelf[V] = CanReplace[V, CanReplaceSelf[V]]
+```
+
+[CP]: https://docs.python.org/3/library/copy.html
+
 ### `optype.types`
 
 #### `Slice`
@@ -1581,50 +1631,6 @@ a `bytes` or `bytearray` instance, i.e. `x: int` s.t. `0 <= x < 256`.
 `range(256)`.
 
 ### Standard libs
-
-#### `copy`
-
-For the [`copy`][CP] standard library, `optype` provides the following
-interfaces:
-
-<table>
-    <tr>
-        <th align="center">operator</th>
-        <th colspan="2" align="center">operand</th>
-    </tr>
-    <tr>
-        <td>expression</td>
-        <td>method</td>
-        <th>type</th>
-    </tr>
-    <tr>
-        <td><code>copy.copy(_)</code></td>
-        <td><code>__copy__</code></td>
-        <td><code>CanCopy[R: object]</code></td>
-    </tr>
-    <tr>
-        <td><code>copy.deepcopy(_, memo={})</code></td>
-        <td><code>__deepcopy__</code></td>
-        <td><code>CanDeepcopy[R: object]</code></td>
-    </tr>
-    <tr>
-        <td><code>copy.replace(_, **changes: V)</code> (Python 3.13+)</td>
-        <td><code>__replace__</code></td>
-        <td><code>CanReplace[V, R]</code></td>
-    </tr>
-</table>
-
-And for convenience, there are the runtime-checkable aliases for all three
-interfaces, with `R` bound to `Self`.
-These are roughly equivalent to:
-
-```python
-type CanCopySelf = CanCopy[CanCopySelf]
-type CanDeepcopySelf = CanDeepcopy[CanDeepcopySelf]
-type CanReplaceSelf[V] = CanReplace[V, CanReplaceSelf[V]]
-```
-
-[CP]: https://docs.python.org/3/library/copy.html
 
 #### `pickle`
 
