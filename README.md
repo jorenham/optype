@@ -231,6 +231,7 @@ The reference docs are structured as follows:
     - [Descriptors](#descriptors)
     - [Buffer types](#buffer-types)
 - [`optype.copy`](#optypecopy)
+- [`optype.pickle`](#optypepickle)
 - [`optype.types`](#optypetypes)
     - [`Slice`](#slice)
     - [`AnyIterable` and `is_iterable`](#anyiterable-and-is_iterable)
@@ -238,7 +239,6 @@ The reference docs are structured as follows:
     - [`LiteralBool`](#literalbool)
     - [`LiteralByte`](#literalbyte)
 - [Standard libs](#standard-libs)
-    - [`pickle`](#pickle)
     - [`dataclasses`](#dataclasses)
 - [NumPy](#numpy)
     - [Arrays](#arrays)
@@ -1589,6 +1589,63 @@ type CanReplaceSelf[V] = CanReplace[V, CanReplaceSelf[V]]
 
 [CP]: https://docs.python.org/3/library/copy.html
 
+### `optype.pickle`
+
+For the [`pickle`][PK] standard library, `optype.pickle` provides the following
+interfaces:
+
+[PK]: https://docs.python.org/3/library/pickle.html
+
+<table>
+    <tr>
+        <th>method(s)</th>
+        <th>signature (bound)</th>
+        <th>type</th>
+    </tr>
+    <tr>
+        <td><code>__reduce__</code></td>
+        <td><code>() -> R</code></td>
+        <td><code>CanReduce[R: str | tuple = ...]</code></td>
+    </tr>
+    <tr>
+        <td><code>__reduce_ex__</code></td>
+        <td><code>(CanIndex) -> R</code></td>
+        <td><code>CanReduceEx[R: str | tuple = ...]</code></td>
+    </tr>
+    <tr>
+        <td><code>__getstate__</code></td>
+        <td><code>() -> S</code></td>
+        <td><code>CanGetstate[S]</code></td>
+    </tr>
+    <tr>
+        <td><code>__setstate__</code></td>
+        <td><code>(S) -> None</code></td>
+        <td><code>CanSetstate[S]</code></td>
+    </tr>
+    <tr>
+        <td>
+            <code>__getnewargs__</code><br>
+            <code>__new__</code>
+        </td>
+        <td>
+            <code>() -> tuple[V, ...]</code><br>
+            <code>(V) -> Self</code><br>
+        </td>
+        <td><code>CanGetnewargs[V]</code></td>
+    </tr>
+    <tr>
+        <td>
+            <code>__getnewargs_ex__</code><br>
+            <code>__new__</code>
+        </td>
+        <td>
+            <code>() -> tuple[tuple[V, ...], dict[str, KV]]</code><br>
+            <code>(*tuple[V, ...], **dict[str, KV]) -> Self</code><br>
+        </td>
+        <td><code>CanGetnewargsEx[V, KV]</code></td>
+    </tr>
+</table>
+
 ### `optype.types`
 
 #### `Slice`
@@ -1634,63 +1691,6 @@ a `bytes` or `bytearray` instance, i.e. `x: int` s.t. `0 <= x < 256`.
 `range(256)`.
 
 ### Standard libs
-
-#### `pickle`
-
-For the [`pickle`][PK] standard library, `optype` provides the following
-interfaces:
-
-[PK]: https://docs.python.org/3/library/pickle.html
-
-<table>
-    <tr>
-        <th>method(s)</th>
-        <th>signature (bound)</th>
-        <th>type</th>
-    </tr>
-    <tr>
-        <td><code>__reduce__</code></td>
-        <td><code>() -> R</code></td>
-        <td><code>CanReduce[R: str | tuple = str | tuple]</code></td>
-    </tr>
-    <tr>
-        <td><code>__reduce_ex__</code></td>
-        <td><code>(CanIndex) -> R</code></td>
-        <td><code>CanReduceEx[R: str | tuple = str | tuple]</code></td>
-    </tr>
-    <tr>
-        <td><code>__getstate__</code></td>
-        <td><code>() -> S</code></td>
-        <td><code>CanGetstate[S: object]</code></td>
-    </tr>
-    <tr>
-        <td><code>__setstate__</code></td>
-        <td><code>(S) -> None</code></td>
-        <td><code>CanSetstate[S: object]</code></td>
-    </tr>
-    <tr>
-        <td>
-            <code>__getnewargs__</code><br>
-            <code>__new__</code>
-        </td>
-        <td>
-            <code>() -> tuple[*Vs]</code><br>
-            <code>(*Vs) -> Self</code><br>
-        </td>
-        <td><code>CanGetnewargs[*Vs]</code></td>
-    </tr>
-    <tr>
-        <td>
-            <code>__getnewargs_ex__</code><br>
-            <code>__new__</code>
-        </td>
-        <td>
-            <code>() -> tuple[tuple[*Vs], dict[str, V]]</code><br>
-            <code>(*Vs, **dict[str, V]) -> Self</code><br>
-        </td>
-        <td><code>CanGetnewargsEx[*Vs, V]</code></td>
-    </tr>
-</table>
 
 #### `dataclasses`
 
