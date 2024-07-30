@@ -34,7 +34,6 @@ import optype._can as _c
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
-    from dataclasses import Field as _Field
     from types import CodeType, ModuleType
 
 
@@ -232,20 +231,3 @@ class HasSelf(Protocol[_V_self]):
 @runtime_checkable
 class HasCode(Protocol):
     __code__: CodeType
-
-
-# Module `dataclasses`
-# https://docs.python.org/3/library/dataclasses.html
-
-_V_dataclass_fields = TypeVar(
-    '_V_dataclass_fields',
-    infer_variance=True,
-    bound='Mapping[str, _Field[Any]]',
-    default=dict[str, '_Field[Any]'],
-)
-
-
-@runtime_checkable
-class HasDataclassFields(Protocol[_V_dataclass_fields]):
-    """Can be used to check whether a type or instance is a dataclass."""
-    __dataclass_fields__: _V_dataclass_fields
