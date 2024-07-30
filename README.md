@@ -1591,7 +1591,7 @@ type CanReplaceSelf[V] = CanReplace[V, CanReplaceSelf[V]]
 
 ### `optype.pickle`
 
-For the [`pickle`][PK] standard library, `optype` provides the following
+For the [`pickle`][PK] standard library, `optype.pickle` provides the following
 interfaces:
 
 [PK]: https://docs.python.org/3/library/pickle.html
@@ -1605,22 +1605,22 @@ interfaces:
     <tr>
         <td><code>__reduce__</code></td>
         <td><code>() -> R</code></td>
-        <td><code>CanReduce[R: str | tuple = str | tuple]</code></td>
+        <td><code>CanReduce[R: str | tuple = ...]</code></td>
     </tr>
     <tr>
         <td><code>__reduce_ex__</code></td>
         <td><code>(CanIndex) -> R</code></td>
-        <td><code>CanReduceEx[R: str | tuple = str | tuple]</code></td>
+        <td><code>CanReduceEx[R: str | tuple = ...]</code></td>
     </tr>
     <tr>
         <td><code>__getstate__</code></td>
         <td><code>() -> S</code></td>
-        <td><code>CanGetstate[S: object]</code></td>
+        <td><code>CanGetstate[S]</code></td>
     </tr>
     <tr>
         <td><code>__setstate__</code></td>
         <td><code>(S) -> None</code></td>
-        <td><code>CanSetstate[S: object]</code></td>
+        <td><code>CanSetstate[S]</code></td>
     </tr>
     <tr>
         <td>
@@ -1628,10 +1628,10 @@ interfaces:
             <code>__new__</code>
         </td>
         <td>
-            <code>() -> tuple[*Vs]</code><br>
-            <code>(*Vs) -> Self</code><br>
+            <code>() -> tuple[V, ...]</code><br>
+            <code>(V) -> Self</code><br>
         </td>
-        <td><code>CanGetnewargs[*Vs]</code></td>
+        <td><code>CanGetnewargs[V]</code></td>
     </tr>
     <tr>
         <td>
@@ -1639,10 +1639,10 @@ interfaces:
             <code>__new__</code>
         </td>
         <td>
-            <code>() -> tuple[tuple[*Vs], dict[str, V]]</code><br>
-            <code>(*Vs, **dict[str, V]) -> Self</code><br>
+            <code>() -> tuple[tuple[V, ...], dict[str, KV]]</code><br>
+            <code>(*tuple[V, ...], **dict[str, KV]) -> Self</code><br>
         </td>
-        <td><code>CanGetnewargsEx[*Vs, V]</code></td>
+        <td><code>CanGetnewargsEx[V, KV]</code></td>
     </tr>
 </table>
 
