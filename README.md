@@ -1554,15 +1554,18 @@ runtime-checkable interfaces:
     <tr>
         <td><code>copy.copy(_) -> R</code></td>
         <td><code>__copy__() -> R</code></td>
-        <td><code>_: CanCopy[R]</code></td>
+        <td><code>CanCopy[R]</code></td>
     </tr>
     <tr>
-        <td><code>copy.deepcopy(_, memo={})</code></td>
+        <td><code>copy.deepcopy(_, memo={}) -> R</code></td>
         <td><code>__deepcopy__(memo, /) -> R</code></td>
         <td><code>CanDeepcopy[R]</code></td>
     </tr>
     <tr>
-        <td><code>copy.replace(_, /, **changes: V)</code><sup>[1]</sup></td>
+        <td>
+            <code>copy.replace(_, /, **changes: V) -> R</code>
+            <sup>[1]</sup>
+        </td>
         <td><code>__replace__(**changes: V) -> R</code></td>
         <td><code>CanReplace[V, R]</code></td>
     </tr>
