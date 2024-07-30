@@ -36,8 +36,8 @@ if TYPE_CHECKING:
 
 
 _Ignored: TypeAlias = Any
-_IsFalse: TypeAlias = Literal[False]
-_IsTrue: TypeAlias = Literal[True]
+_JustFalse: TypeAlias = Literal[False]
+_JustTrue: TypeAlias = Literal[True]
 
 
 #
@@ -46,8 +46,8 @@ _IsTrue: TypeAlias = Literal[True]
 
 _R_bool = TypeVar(
     '_R_bool',
-    _IsFalse,
-    _IsTrue,
+    _JustFalse,
+    _JustTrue,
     bool,
     infer_variance=True,
     default=bool,
@@ -529,8 +529,8 @@ _K_contains = TypeVar(
 # could be set to e.g. _IsFalse empty (user-defined) container types
 _R_contains = TypeVar(
     '_R_contains',
-    _IsFalse,
-    _IsTrue,
+    _JustFalse,
+    _JustTrue,
     bool,
     infer_variance=True,
     default=bool,
@@ -1404,64 +1404,6 @@ class CanAwait(Protocol[_R_await]):
     def __await__(self: CanAwait[None], /) -> CanNext[_FutureOrNone]: ...
     @overload
     def __await__(self: CanAwait[_R_await], /) -> _AsyncGen[_R_await]: ...
-
-
-#
-# Standard library `copy`
-#
-
-_R_copy = TypeVar('_R_copy', infer_variance=True, bound=object)
-
-
-@runtime_checkable
-class CanCopy(Protocol[_R_copy]):
-    """Support for creating shallow copies through `copy.copy`."""
-    def __copy__(self, /) -> _R_copy: ...
-
-
-@runtime_checkable
-class CanCopySelf(CanCopy['CanCopySelf'], Protocol):
-    """Variant of `CanCopy` that returns `Self` (as it should)."""
-    @override
-    def __copy__(self, /) -> Self: ...
-
-
-_R_deepcopy = TypeVar('_R_deepcopy', infer_variance=True, bound=object)
-
-
-@runtime_checkable
-class CanDeepcopy(Protocol[_R_deepcopy]):
-    """Support for creating deep copies through `copy.deepcopy`."""
-    def __deepcopy__(self, memo: dict[int, Any], /) -> _R_deepcopy: ...
-
-
-class CanDeepcopySelf(CanDeepcopy['CanDeepcopySelf'], Protocol):
-    """Variant of `CanDeepcopy` that returns `Self` (as it should)."""
-    @override
-    def __deepcopy__(self, memo: dict[int, Any], /) -> Self: ...
-
-
-_V_replace = TypeVar('_V_replace', infer_variance=True)
-_R_replace = TypeVar('_R_replace', infer_variance=True)
-
-
-@runtime_checkable
-class CanReplace(Protocol[_V_replace, _R_replace]):
-    """Support for `copy.replace` in Python 3.13+."""
-    def __replace__(self, /, **changes: _V_replace) -> _R_replace: ...
-
-
-_V_replace_self = TypeVar('_V_replace_self', infer_variance=True)
-
-
-@runtime_checkable
-class CanReplaceSelf(
-    CanReplace[_V_replace_self, 'CanReplaceSelf[Any]'],
-    Protocol[_V_replace_self],
-):
-    """Variant of `CanReplace[V, Self]`."""
-    @override
-    def __replace__(self, /, **changes: _V_replace_self) -> Self: ...
 
 
 #
