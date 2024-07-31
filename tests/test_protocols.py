@@ -79,7 +79,9 @@ def test_name_matches_dunder(cls: type):
     than it has super optypes. I.e. require at most 1 member (attr, prop or
     method) for each **concrete** Protocol.
     """
-    prefix = cls.__module__.rsplit('.', 1)[1].removeprefix('_').title()
+    assert cls.__module__ == 'optype'
+
+    prefix = cls.__qualname__[:3]
     assert prefix in {'Can', 'Has'}
 
     name = cls.__name__
