@@ -22,7 +22,7 @@ def get_callable_members(module: ModuleType, /) -> frozenset[str]:
     """
     Return the public callables of a module, that aren't protocols, and
     """
-    module_blacklist = {'typing', 'typing_extensions'}
+    module_blacklist = {'typing', 'typing_extensions', 'optype._utils'}
     return frozenset({
         name for name in dir(module)
         if not name.startswith('_')

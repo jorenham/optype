@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, ParamSpec, TypeVar, overload
 import optype._can as _c
 import optype._does as _d
 
+from ._utils import set_module
+
 
 # type conversion
 do_bool: _d.DoesBool = bool  # pyright: ignore[reportAssignmentType]
@@ -50,10 +52,13 @@ do_dir: _d.DoesDir = dir
 
 # callables
 
-if _sys.version_info < (3, 11):
+if _sys.version_info >= (3, 11):
+    do_call: _d.DoesCall = _o.call
+else:
     _Pss_call = ParamSpec('_Pss_call')
     _R_call = TypeVar('_R_call')
 
+    @set_module('optype')
     def do_call(
         f: _c.CanCall[_Pss_call, _R_call],
         /,
@@ -61,8 +66,6 @@ if _sys.version_info < (3, 11):
         **kwargs: _Pss_call.kwargs,
     ) -> _R_call:
         return f(*args, **kwargs)
-else:
-    do_call: _d.DoesCall = _o.call
 
 
 # containers and sequences
@@ -81,19 +84,22 @@ _D_getitem = TypeVar('_D_getitem')
 
 
 @overload
+@set_module('optype')
 def do_getitem(
-    obj:  _c.CanGetMissing[_K_getitem, _V_getitem, _D_getitem],
+    obj: _c.CanGetMissing[_K_getitem, _V_getitem, _D_getitem],
     key: _K_getitem,
     /,
 ) -> _V_getitem | _D_getitem: ...
 @overload
+@set_module('optype')
 def do_getitem(
-    obj:  _c.CanGetitem[_K_getitem, _V_getitem],
+    obj: _c.CanGetitem[_K_getitem, _V_getitem],
     key: _K_getitem,
     /,
 ) -> _V_getitem: ...
+@set_module('optype')
 def do_getitem(
-    obj:  (
+    obj: (
         _c.CanGetitem[_K_getitem, _V_getitem]
         | _c.CanGetMissing[_K_getitem, _V_getitem, _D_getitem]
     ),
@@ -108,6 +114,7 @@ _K_setitem = TypeVar('_K_setitem')
 _V_setitem = TypeVar('_V_setitem')
 
 
+@set_module('optype')
 def do_setitem(
     obj: _c.CanSetitem[_K_setitem, _V_setitem],
     key: _K_setitem,
@@ -121,6 +128,7 @@ def do_setitem(
 _K_delitem = TypeVar('_K_delitem')
 
 
+@set_module('optype')
 def do_delitem(obj: _c.CanDelitem[_K_delitem], key: _K_delitem, /) -> None:
     """Same as `del obj[key]`."""
     del obj[key]
@@ -130,6 +138,7 @@ _K_missing = TypeVar('_K_missing')
 _D_missing = TypeVar('_D_missing')
 
 
+@set_module('optype')
 def do_missing(
     obj: _c.CanMissing[_K_missing, _D_missing],
     key: _K_missing,
@@ -143,6 +152,7 @@ def do_missing(
 _K_contains = TypeVar('_K_contains', bound=object)
 
 
+@set_module('optype')
 def do_contains(obj: _c.CanContains[_K_contains], key: _K_contains, /) -> bool:
     """Same as `key in obj`."""
     return key in obj
@@ -179,6 +189,7 @@ _T_radd = TypeVar('_T_radd')
 _R_radd = TypeVar('_R_radd')
 
 
+@set_module('optype')
 def do_radd(a: _c.CanRAdd[_T_radd, _R_radd], b: _T_radd, /) -> _R_radd:
     """Same as `b + a`."""
     return b + a
@@ -188,6 +199,7 @@ _T_rsub = TypeVar('_T_rsub')
 _R_rsub = TypeVar('_R_rsub')
 
 
+@set_module('optype')
 def do_rsub(a: _c.CanRSub[_T_rsub, _R_rsub], b: _T_rsub, /) -> _R_rsub:
     """Same as `b - a`."""
     return b - a
@@ -197,6 +209,7 @@ _T_rmul = TypeVar('_T_rmul')
 _R_rmul = TypeVar('_R_rmul')
 
 
+@set_module('optype')
 def do_rmul(a: _c.CanRMul[_T_rmul, _R_rmul], b: _T_rmul, /) -> _R_rmul:
     """Same as `b * a`."""
     return b * a
@@ -206,6 +219,7 @@ _T_rmatmul = TypeVar('_T_rmatmul')
 _R_rmatmul = TypeVar('_R_rmatmul')
 
 
+@set_module('optype')
 def do_rmatmul(
     a: _c.CanRMatmul[_T_rmatmul, _R_rmatmul],
     b: _T_rmatmul,
@@ -219,6 +233,7 @@ _T_rtruediv = TypeVar('_T_rtruediv')
 _R_rtruediv = TypeVar('_R_rtruediv')
 
 
+@set_module('optype')
 def do_rtruediv(
     a: _c.CanRTruediv[_T_rtruediv, _R_rtruediv],
     b: _T_rtruediv,
@@ -232,6 +247,7 @@ _T_rfloordiv = TypeVar('_T_rfloordiv')
 _R_rfloordiv = TypeVar('_R_rfloordiv')
 
 
+@set_module('optype')
 def do_rfloordiv(
     a: _c.CanRFloordiv[_T_rfloordiv, _R_rfloordiv],
     b: _T_rfloordiv,
@@ -245,6 +261,7 @@ _T_rmod = TypeVar('_T_rmod')
 _R_rmod = TypeVar('_R_rmod')
 
 
+@set_module('optype')
 def do_rmod(a: _c.CanRMod[_T_rmod, _R_rmod], b: _T_rmod, /) -> _R_rmod:
     """Same as `b % a`."""
     return b % a
@@ -254,6 +271,7 @@ _T_rdivmod = TypeVar('_T_rdivmod')
 _R_rdivmod = TypeVar('_R_rdivmod')
 
 
+@set_module('optype')
 def do_rdivmod(
     a: _c.CanRDivmod[_T_rdivmod, _R_rdivmod],
     b: _T_rdivmod,
@@ -267,6 +285,7 @@ _T_rpow = TypeVar('_T_rpow')
 _R_rpow = TypeVar('_R_rpow')
 
 
+@set_module('optype')
 def do_rpow(a: _c.CanRPow[_T_rpow, _R_rpow], b: _T_rpow, /) -> _R_rpow:
     """Same as `b ** a`."""
     return b**a
@@ -276,6 +295,7 @@ _T_rlshift = TypeVar('_T_rlshift')
 _R_rlshift = TypeVar('_R_rlshift')
 
 
+@set_module('optype')
 def do_rlshift(
     a: _c.CanRLshift[_T_rlshift, _R_rlshift],
     b: _T_rlshift,
@@ -289,6 +309,7 @@ _T_rrshift = TypeVar('_T_rrshift')
 _R_rrshift = TypeVar('_R_rrshift')
 
 
+@set_module('optype')
 def do_rrshift(
     a: _c.CanRRshift[_T_rrshift, _R_rrshift],
     b: _T_rrshift,
@@ -302,6 +323,7 @@ _T_rand = TypeVar('_T_rand')
 _R_rand = TypeVar('_R_rand')
 
 
+@set_module('optype')
 def do_rand(a: _c.CanRAnd[_T_rand, _R_rand], b: _T_rand, /) -> _R_rand:
     """Same as `b & a`."""
     return b & a
@@ -311,6 +333,7 @@ _T_rxor = TypeVar('_T_rxor')
 _R_rxor = TypeVar('_R_rxor')
 
 
+@set_module('optype')
 def do_rxor(a: _c.CanRXor[_T_rxor, _R_rxor], b: _T_rxor, /) -> _R_rxor:
     """Same as `b ^ a`."""
     return b ^ a
@@ -320,6 +343,7 @@ _T_ror = TypeVar('_T_ror')
 _R_ror = TypeVar('_R_ror')
 
 
+@set_module('optype')
 def do_ror(a: _c.CanROr[_T_ror, _R_ror], b: _T_ror, /) -> _R_ror:
     """Same as `b | a`."""
     return b | a
@@ -362,6 +386,7 @@ do_ceil: _d.DoesCeil = _math.ceil
 
 
 # type-check the custom ops
+# TODO: move these to `tests/do.py`
 if TYPE_CHECKING:
     _do_call: _d.DoesCall = do_call
 

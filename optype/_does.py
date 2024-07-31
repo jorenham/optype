@@ -2,13 +2,15 @@ import sys
 from collections.abc import Callable
 from typing import Any, Literal, TypeAlias
 
-import optype._can as _c
-
 
 if sys.version_info >= (3, 13):
     from typing import ParamSpec, Protocol, TypeVar, final, overload
 else:
     from typing_extensions import ParamSpec, Protocol, TypeVar, final, overload
+
+import optype._can as _c
+
+from ._utils import set_module
 
 
 # iteration
@@ -18,6 +20,7 @@ _R_next = TypeVar('_R_next')
 _D_next = TypeVar('_D_next')
 
 
+@set_module('optype')
 @final
 class DoesNext(Protocol):
     @overload
@@ -39,6 +42,7 @@ _R_anext = TypeVar('_R_anext')
 _D_anext = TypeVar('_D_anext')
 
 
+@set_module('optype')
 @final
 class DoesANext(Protocol):
     @overload
@@ -61,6 +65,7 @@ _Z_iter = TypeVar('_Z_iter', bound=object)
 _R_iter = TypeVar('_R_iter', bound=_c.CanNext[Any])
 
 
+@set_module('optype')
 @final
 class DoesIter(Protocol):
     @overload
@@ -94,6 +99,7 @@ class DoesIter(Protocol):
 _R_aiter = TypeVar('_R_aiter', bound=_c.CanANext[Any])
 
 
+@set_module('optype')
 @final
 class DoesAIter(Protocol):
     def __call__(self, iterable: _c.CanAIter[_R_aiter], /) -> _R_aiter: ...
@@ -101,11 +107,13 @@ class DoesAIter(Protocol):
 
 # type conversion
 
+@set_module('optype')
 @final
 class DoesComplex(Protocol):
     def __call__(self, obj: _c.CanComplex, /) -> complex: ...
 
 
+@set_module('optype')
 @final
 class DoesFloat(Protocol):
     def __call__(self, obj: _c.CanFloat, /) -> float: ...
@@ -114,6 +122,7 @@ class DoesFloat(Protocol):
 _R_int = TypeVar('_R_int', bound=int)
 
 
+@set_module('optype')
 @final
 class DoesInt(Protocol):
     def __call__(self, obj: _c.CanInt[_R_int], /) -> _R_int: ...
@@ -132,6 +141,7 @@ _PosInt: TypeAlias = Literal[
 _R_bool = TypeVar('_R_bool', _IsTrue, _IsFalse, bool)
 
 
+@set_module('optype')
 @final
 class DoesBool(Protocol):
     @overload
@@ -149,6 +159,7 @@ class DoesBool(Protocol):
 _R_str = TypeVar('_R_str', bound=str)
 
 
+@set_module('optype')
 @final
 class DoesStr(Protocol):
     def __call__(self, obj: _c.CanStr[_R_str], /) -> _R_str: ...
@@ -157,6 +168,7 @@ class DoesStr(Protocol):
 _R_bytes = TypeVar('_R_bytes', bound=bytes)
 
 
+@set_module('optype')
 @final
 class DoesBytes(Protocol):
     def __call__(self, obj: _c.CanBytes[_R_bytes], /) -> _R_bytes: ...
@@ -168,6 +180,7 @@ class DoesBytes(Protocol):
 _R_repr = TypeVar('_R_repr', bound=str)
 
 
+@set_module('optype')
 @final
 class DoesRepr(Protocol):
     def __call__(self, obj: _c.CanRepr[_R_repr], /) -> _R_repr: ...
@@ -177,6 +190,7 @@ _T_format = TypeVar('_T_format', bound=str)
 _R_format = TypeVar('_R_format', bound=str)
 
 
+@set_module('optype')
 @final
 class DoesFormat(Protocol):
     def __call__(
@@ -195,6 +209,7 @@ _T_lt_rhs = TypeVar('_T_lt_rhs')
 _R_lt = TypeVar('_R_lt')
 
 
+@set_module('optype')
 @final
 class DoesLt(Protocol):
     @overload
@@ -218,6 +233,7 @@ _T_le_rhs = TypeVar('_T_le_rhs')
 _R_le = TypeVar('_R_le')
 
 
+@set_module('optype')
 @final
 class DoesLe(Protocol):
     @overload
@@ -241,6 +257,7 @@ _T_eq_rhs = TypeVar('_T_eq_rhs')
 _R_eq = TypeVar('_R_eq')
 
 
+@set_module('optype')
 @final
 class DoesEq(Protocol):
     @overload
@@ -264,6 +281,7 @@ _T_ne_rhs = TypeVar('_T_ne_rhs')
 _R_ne = TypeVar('_R_ne')
 
 
+@set_module('optype')
 @final
 class DoesNe(Protocol):
     @overload
@@ -287,6 +305,7 @@ _T_gt_rhs = TypeVar('_T_gt_rhs')
 _R_gt = TypeVar('_R_gt')
 
 
+@set_module('optype')
 @final
 class DoesGt(Protocol):
     @overload
@@ -310,6 +329,7 @@ _T_ge_rhs = TypeVar('_T_ge_rhs')
 _R_ge = TypeVar('_R_ge')
 
 
+@set_module('optype')
 @final
 class DoesGe(Protocol):
     @overload
@@ -336,6 +356,7 @@ _V_getattr = TypeVar('_V_getattr')
 _D_getattr = TypeVar('_D_getattr')
 
 
+@set_module('optype')
 @final
 class DoesGetattr(Protocol):
     @overload
@@ -374,6 +395,7 @@ _N_setattr = TypeVar('_N_setattr', bound=str)
 _V_setattr = TypeVar('_V_setattr')
 
 
+@set_module('optype')
 @final
 class DoesSetattr(Protocol):
     def __call__(
@@ -388,6 +410,7 @@ class DoesSetattr(Protocol):
 _N_delattr = TypeVar('_N_delattr', bound=str)
 
 
+@set_module('optype')
 @final
 class DoesDelattr(Protocol):
     def __call__(
@@ -401,6 +424,7 @@ class DoesDelattr(Protocol):
 _R_dir = TypeVar('_R_dir', bound=_c.CanIter[Any])
 
 
+@set_module('optype')
 @final
 class DoesDir(Protocol):
     @overload
@@ -415,6 +439,7 @@ _Pss_call = ParamSpec('_Pss_call')
 _R_call = TypeVar('_R_call')
 
 
+@set_module('optype')
 @final
 class DoesCall(Protocol):
     def __call__(
@@ -433,6 +458,7 @@ class DoesCall(Protocol):
 _R_len = TypeVar('_R_len', bound=int)
 
 
+@set_module('optype')
 @final
 class DoesLen(Protocol):
     def __call__(self, obj: _c.CanLen[_R_len], /) -> _R_len: ...
@@ -441,6 +467,7 @@ class DoesLen(Protocol):
 _R_length_hint = TypeVar('_R_length_hint', bound=int)
 
 
+@set_module('optype')
 @final
 class DoesLengthHint(Protocol):
     def __call__(
@@ -455,6 +482,7 @@ _V_getitem = TypeVar('_V_getitem')
 _D_getitem = TypeVar('_D_getitem')
 
 
+@set_module('optype')
 @final
 class DoesGetitem(Protocol):
     def __call__(
@@ -472,6 +500,7 @@ _K_setitem = TypeVar('_K_setitem')
 _V_setitem = TypeVar('_V_setitem')
 
 
+@set_module('optype')
 @final
 class DoesSetitem(Protocol):
     def __call__(
@@ -486,6 +515,7 @@ class DoesSetitem(Protocol):
 _K_delitem = TypeVar('_K_delitem')
 
 
+@set_module('optype')
 @final
 class DoesDelitem(Protocol):
     def __call__(
@@ -500,6 +530,7 @@ _K_missing = TypeVar('_K_missing')
 _D_missing = TypeVar('_D_missing')
 
 
+@set_module('optype')
 @final
 class DoesMissing(Protocol):
     def __call__(
@@ -514,6 +545,7 @@ _K_contains = TypeVar('_K_contains', bound=object)
 _R_contains = TypeVar('_R_contains', Literal[True], Literal[False], bool)
 
 
+@set_module('optype')
 @final
 class DoesContains(Protocol):
     def __call__(
@@ -528,6 +560,7 @@ _V_reversed = TypeVar('_V_reversed')
 _R_reversed = TypeVar('_R_reversed')
 
 
+@set_module('optype')
 @final
 class DoesReversed(Protocol):
     """
@@ -558,6 +591,7 @@ _T_add_rhs = TypeVar('_T_add_rhs')
 _R_add = TypeVar('_R_add')
 
 
+@set_module('optype')
 @final
 class DoesAdd(Protocol):
     @overload
@@ -581,6 +615,7 @@ _T_sub_rhs = TypeVar('_T_sub_rhs')
 _R_sub = TypeVar('_R_sub')
 
 
+@set_module('optype')
 @final
 class DoesSub(Protocol):
     @overload
@@ -604,6 +639,7 @@ _T_mul_rhs = TypeVar('_T_mul_rhs')
 _R_mul = TypeVar('_R_mul')
 
 
+@set_module('optype')
 @final
 class DoesMul(Protocol):
     @overload
@@ -627,6 +663,7 @@ _T_matmul_rhs = TypeVar('_T_matmul_rhs')
 _R_matmul = TypeVar('_R_matmul')
 
 
+@set_module('optype')
 @final
 class DoesMatmul(Protocol):
     @overload
@@ -650,6 +687,7 @@ _T_truediv_rhs = TypeVar('_T_truediv_rhs')
 _R_truediv = TypeVar('_R_truediv')
 
 
+@set_module('optype')
 @final
 class DoesTruediv(Protocol):
     @overload
@@ -673,6 +711,7 @@ _T_floordiv_rhs = TypeVar('_T_floordiv_rhs')
 _R_floordiv = TypeVar('_R_floordiv')
 
 
+@set_module('optype')
 @final
 class DoesFloordiv(Protocol):
     @overload
@@ -696,6 +735,7 @@ _T_mod_rhs = TypeVar('_T_mod_rhs')
 _R_mod = TypeVar('_R_mod')
 
 
+@set_module('optype')
 @final
 class DoesMod(Protocol):
     @overload
@@ -719,6 +759,7 @@ _T_divmod_rhs = TypeVar('_T_divmod_rhs')
 _R_divmod = TypeVar('_R_divmod')
 
 
+@set_module('optype')
 @final
 class DoesDivmod(Protocol):
     @overload
@@ -743,6 +784,7 @@ _T_pow_mod = TypeVar('_T_pow_mod')
 _R_pow = TypeVar('_R_pow')
 
 
+@set_module('optype')
 @final
 class DoesPow(Protocol):
     @overload
@@ -774,6 +816,7 @@ _T_lshift_rhs = TypeVar('_T_lshift_rhs')
 _R_lshift = TypeVar('_R_lshift')
 
 
+@set_module('optype')
 @final
 class DoesLshift(Protocol):
     @overload
@@ -797,6 +840,7 @@ _T_rshift_rhs = TypeVar('_T_rshift_rhs')
 _R_rshift = TypeVar('_R_rshift')
 
 
+@set_module('optype')
 @final
 class DoesRshift(Protocol):
     @overload
@@ -820,6 +864,7 @@ _T_and_rhs = TypeVar('_T_and_rhs')
 _R_and = TypeVar('_R_and')
 
 
+@set_module('optype')
 @final
 class DoesAnd(Protocol):
     @overload
@@ -843,6 +888,7 @@ _T_xor_rhs = TypeVar('_T_xor_rhs')
 _R_xor = TypeVar('_R_xor')
 
 
+@set_module('optype')
 @final
 class DoesXor(Protocol):
     @overload
@@ -866,6 +912,7 @@ _T_or_rhs = TypeVar('_T_or_rhs')
 _R_or = TypeVar('_R_or')
 
 
+@set_module('optype')
 @final
 class DoesOr(Protocol):
     @overload
@@ -891,6 +938,7 @@ _T_radd = TypeVar('_T_radd')
 _R_radd = TypeVar('_R_radd')
 
 
+@set_module('optype')
 @final
 class DoesRAdd(Protocol):
     def __call__(
@@ -905,6 +953,7 @@ _T_rsub = TypeVar('_T_rsub')
 _R_rsub = TypeVar('_R_rsub')
 
 
+@set_module('optype')
 @final
 class DoesRSub(Protocol):
     def __call__(
@@ -919,6 +968,7 @@ _T_rmul = TypeVar('_T_rmul')
 _R_rmul = TypeVar('_R_rmul')
 
 
+@set_module('optype')
 @final
 class DoesRMul(Protocol):
     def __call__(
@@ -933,6 +983,7 @@ _T_rmatmul = TypeVar('_T_rmatmul')
 _R_rmatmul = TypeVar('_R_rmatmul')
 
 
+@set_module('optype')
 @final
 class DoesRMatmul(Protocol):
     def __call__(
@@ -947,6 +998,7 @@ _T_rtruediv = TypeVar('_T_rtruediv')
 _R_rtruediv = TypeVar('_R_rtruediv')
 
 
+@set_module('optype')
 @final
 class DoesRTruediv(Protocol):
     def __call__(
@@ -961,6 +1013,7 @@ _T_rfloordiv = TypeVar('_T_rfloordiv')
 _R_rfloordiv = TypeVar('_R_rfloordiv')
 
 
+@set_module('optype')
 @final
 class DoesRFloordiv(Protocol):
     def __call__(
@@ -975,6 +1028,7 @@ _T_rmod = TypeVar('_T_rmod')
 _R_rmod = TypeVar('_R_rmod')
 
 
+@set_module('optype')
 @final
 class DoesRMod(Protocol):
     def __call__(
@@ -1002,6 +1056,7 @@ _T_rpow = TypeVar('_T_rpow')
 _R_rpow = TypeVar('_R_rpow')
 
 
+@set_module('optype')
 @final
 class DoesRPow(Protocol):
     def __call__(
@@ -1016,6 +1071,7 @@ _T_rlshift = TypeVar('_T_rlshift')
 _R_rlshift = TypeVar('_R_rlshift')
 
 
+@set_module('optype')
 @final
 class DoesRLshift(Protocol):
     def __call__(
@@ -1030,6 +1086,7 @@ _T_rrshift = TypeVar('_T_rrshift')
 _R_rrshift = TypeVar('_R_rrshift')
 
 
+@set_module('optype')
 @final
 class DoesRRshift(Protocol):
     def __call__(
@@ -1044,6 +1101,7 @@ _T_rand = TypeVar('_T_rand')
 _R_rand = TypeVar('_R_rand')
 
 
+@set_module('optype')
 @final
 class DoesRAnd(Protocol):
     def __call__(
@@ -1058,6 +1116,7 @@ _T_rxor = TypeVar('_T_rxor')
 _R_rxor = TypeVar('_R_rxor')
 
 
+@set_module('optype')
 @final
 class DoesRXor(Protocol):
     def __call__(
@@ -1072,6 +1131,7 @@ _T_ror = TypeVar('_T_ror')
 _R_ror = TypeVar('_R_ror')
 
 
+@set_module('optype')
 @final
 class DoesROr(Protocol):
     def __call__(
@@ -1090,6 +1150,7 @@ _T_iadd_lhs = TypeVar('_T_iadd_lhs')
 _R_iadd = TypeVar('_R_iadd')
 
 
+@set_module('optype')
 @final
 class DoesIAdd(Protocol):
     @overload
@@ -1120,6 +1181,7 @@ _T_isub_rhs = TypeVar('_T_isub_rhs')
 _R_isub = TypeVar('_R_isub')
 
 
+@set_module('optype')
 @final
 class DoesISub(Protocol):
     @overload
@@ -1150,6 +1212,7 @@ _T_imul_rhs = TypeVar('_T_imul_rhs')
 _R_imul = TypeVar('_R_imul')
 
 
+@set_module('optype')
 @final
 class DoesIMul(Protocol):
     @overload
@@ -1180,6 +1243,7 @@ _T_imatmul_rhs = TypeVar('_T_imatmul_rhs')
 _R_imatmul = TypeVar('_R_imatmul')
 
 
+@set_module('optype')
 @final
 class DoesIMatmul(Protocol):
     @overload
@@ -1210,6 +1274,7 @@ _T_itruediv_rhs = TypeVar('_T_itruediv_rhs')
 _R_itruediv = TypeVar('_R_itruediv')
 
 
+@set_module('optype')
 @final
 class DoesITruediv(Protocol):
     @overload
@@ -1240,6 +1305,7 @@ _T_ifloordiv_rhs = TypeVar('_T_ifloordiv_rhs')
 _R_ifloordiv = TypeVar('_R_ifloordiv')
 
 
+@set_module('optype')
 @final
 class DoesIFloordiv(Protocol):
     @overload
@@ -1270,6 +1336,7 @@ _T_imod_rhs = TypeVar('_T_imod_rhs')
 _R_imod = TypeVar('_R_imod')
 
 
+@set_module('optype')
 @final
 class DoesIMod(Protocol):
     @overload
@@ -1300,6 +1367,7 @@ _T_ipow_rhs = TypeVar('_T_ipow_rhs')
 _R_ipow = TypeVar('_R_ipow')
 
 
+@set_module('optype')
 @final
 class DoesIPow(Protocol):
     @overload
@@ -1327,6 +1395,7 @@ _T_ilshift_rhs = TypeVar('_T_ilshift_rhs')
 _R_ilshift = TypeVar('_R_ilshift')
 
 
+@set_module('optype')
 @final
 class DoesILshift(Protocol):
     @overload
@@ -1357,6 +1426,7 @@ _T_irshift_rhs = TypeVar('_T_irshift_rhs')
 _R_irshift = TypeVar('_R_irshift')
 
 
+@set_module('optype')
 @final
 class DoesIRshift(Protocol):
     @overload
@@ -1387,6 +1457,7 @@ _T_iand_rhs = TypeVar('_T_iand_rhs')
 _R_iand = TypeVar('_R_iand')
 
 
+@set_module('optype')
 @final
 class DoesIAnd(Protocol):
     @overload
@@ -1417,6 +1488,7 @@ _T_ixor_rhs = TypeVar('_T_ixor_rhs')
 _R_ixor = TypeVar('_R_ixor')
 
 
+@set_module('optype')
 @final
 class DoesIXor(Protocol):
     @overload
@@ -1447,6 +1519,7 @@ _T_ior_rhs = TypeVar('_T_ior_rhs')
 _R_ior = TypeVar('_R_ior')
 
 
+@set_module('optype')
 @final
 class DoesIOr(Protocol):
     @overload
@@ -1477,6 +1550,7 @@ class DoesIOr(Protocol):
 _R_neg = TypeVar('_R_neg')
 
 
+@set_module('optype')
 @final
 class DoesNeg(Protocol):
     def __call__(self, val: _c.CanNeg[_R_neg], /) -> _R_neg: ...
@@ -1485,6 +1559,7 @@ class DoesNeg(Protocol):
 _R_pos = TypeVar('_R_pos')
 
 
+@set_module('optype')
 @final
 class DoesPos(Protocol):
     def __call__(self, val: _c.CanPos[_R_pos], /) -> _R_pos: ...
@@ -1493,6 +1568,7 @@ class DoesPos(Protocol):
 _R_abs = TypeVar('_R_abs')
 
 
+@set_module('optype')
 @final
 class DoesAbs(Protocol):
     def __call__(self, val: _c.CanAbs[_R_abs], /) -> _R_abs: ...
@@ -1501,6 +1577,7 @@ class DoesAbs(Protocol):
 _R_invert = TypeVar('_R_invert')
 
 
+@set_module('optype')
 @final
 class DoesInvert(Protocol):
     def __call__(self, val: _c.CanInvert[_R_invert], /) -> _R_invert: ...
@@ -1512,11 +1589,13 @@ class DoesInvert(Protocol):
 _R_index = TypeVar('_R_index', bound=int)
 
 
+@set_module('optype')
 @final
 class DoesIndex(Protocol):
     def __call__(self, obj: _c.CanIndex[_R_index], /) -> _R_index: ...
 
 
+@set_module('optype')
 @final
 class DoesHash(Protocol):
     def __call__(self, obj: _c.CanHash, /) -> int: ...
@@ -1528,6 +1607,7 @@ _N_round = TypeVar('_N_round')
 _R_round = TypeVar('_R_round')
 
 
+@set_module('optype')
 @final
 class DoesRound(Protocol):
     @overload
@@ -1555,6 +1635,7 @@ class DoesRound(Protocol):
 _R_trunc = TypeVar('_R_trunc')
 
 
+@set_module('optype')
 @final
 class DoesTrunc(Protocol):
     def __call__(self, obj: _c.CanTrunc[_R_trunc], /) -> _R_trunc: ...
@@ -1563,6 +1644,7 @@ class DoesTrunc(Protocol):
 _R_floor = TypeVar('_R_floor')
 
 
+@set_module('optype')
 @final
 class DoesFloor(Protocol):
     def __call__(self, obj: _c.CanFloor[_R_floor], /) -> _R_floor: ...
@@ -1571,6 +1653,7 @@ class DoesFloor(Protocol):
 _R_ceil = TypeVar('_R_ceil')
 
 
+@set_module('optype')
 @final
 class DoesCeil(Protocol):
     def __call__(self, obj: _c.CanCeil[_R_ceil], /) -> _R_ceil: ...
