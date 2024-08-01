@@ -43,7 +43,7 @@ pre-commit = "^3.8.0"
 tox = "^4.16.0"
 
 [tool.poetry.group.lint.dependencies]
-basedpyright = "^1.15.0"
+basedpyright = "^1.15.1"
 codespell = "^2.3.0"
 ruff = "^0.5.5"
 sp-repo-review = {version = "^2024.4.23", extras = ["cli"]}

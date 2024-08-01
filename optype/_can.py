@@ -155,7 +155,7 @@ class CanFormat(Protocol[_T_format, _R_format]):
     or `str` subtypes. Note that `format()` *does not* upcast `Y` to `str`.
     """
     @override
-    def __format__(self, fmt: _T_format, /) -> _R_format: ...  # pyright:ignore[reportIncompatibleMethodOverride]
+    def __format__(self, fmt: _T_format, /) -> _R_format: ...
 
 
 #
@@ -373,7 +373,7 @@ _V_getattribute = TypeVar('_V_getattribute', infer_variance=True, default=Any)
 class CanGetattribute(Protocol[_N_getattribute, _V_getattribute]):
     """Note that `isinstance(x, CanGetattribute)` is always true."""
     @override
-    def __getattribute__(  # pyright:ignore[reportIncompatibleMethodOverride]
+    def __getattribute__(
         self,
         name: _N_getattribute,
         /,
@@ -389,7 +389,7 @@ _V_setattr = TypeVar('_V_setattr', infer_variance=True, default=Any)
 class CanSetattr(Protocol[_N_setattr, _V_setattr]):
     """Note that `isinstance(x, CanSetattr)` is always true."""
     @override
-    def __setattr__(  # pyright:ignore[reportIncompatibleMethodOverride]
+    def __setattr__(
         self,
         name: _N_setattr,
         value: _V_setattr,
@@ -404,7 +404,7 @@ _N_delattr = TypeVar('_N_delattr', infer_variance=True, bound=str, default=str)
 @runtime_checkable
 class CanDelattr(Protocol[_N_delattr]):
     @override
-    def __delattr__(self, name: _N_delattr, /) -> Any: ...  # pyright:ignore[reportIncompatibleMethodOverride]
+    def __delattr__(self, name: _N_delattr, /) -> Any: ...
 
 
 _R_dir = TypeVar(

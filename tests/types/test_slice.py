@@ -26,8 +26,11 @@ def test_slice_obj():
     assert isinstance(s, opt.types.Slice)
 
 
+# suppress false positives in `basedpyright==1.15.1`
+# pyright: reportInvalidCast=false
+
 def test_slice_indices():
-    s0 = cast(opt.types.Slice[None, None, None], slice(None))
+    s0 = cast(opt.types.Slice[None, None], slice(None))
     i0 = s0.indices(32)
     assert_type(i0, tuple[Literal[0], int, Literal[1]])
 

@@ -100,11 +100,7 @@ class HasClass(Protocol[_V_class_set]):
     @override
     def __class__(self) -> type[Self | _V_class_set]: ...
     @__class__.setter
-    def __class__(  # pyright: ignore[reportIncompatibleMethodOverride]
-        self,
-        cls: type[_V_class_set],
-        /,
-    ) -> _Ignored:
+    def __class__(self, cls: type[_V_class_set], /) -> _Ignored:
         """Don't."""
 
 
