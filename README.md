@@ -233,12 +233,10 @@ The reference docs are structured as follows:
 - [`optype.copy`](#optypecopy)
 - [`optype.dataclasses`](#optypedataclasses)
 - [`optype.pickle`](#optypepickle)
-- [`optype.types`](#optypetypes)
-    - [`Slice`](#slice)
-    - [`AnyIterable` and `is_iterable`](#anyiterable-and-is_iterable)
-    - [`AnyInt` / `AnyFloat` / `AnyComplex`](#anyint--anyfloat--anycomplex)
-    - [`LiteralBool`](#literalbool)
-    - [`LiteralByte`](#literalbyte)
+- [`optype.typing`](#optypetyping)
+    - [`Any*` type aliases](#any-type-aliases)
+    - [`Empty*` type aliases](#empty-type-aliases)
+    - [Literal types](#literal-types)
 - [NumPy](#numpy)
     - [Arrays](#arrays)
         - [`Array`](#array)
@@ -1654,49 +1652,110 @@ interfaces:
     </tr>
 </table>
 
-### `optype.types`
+### `optype.typing`
 
-#### `Slice`
+### `Any*` type aliases
 
-The `optype.types.Slice` type is a generic runtime-protocol that's fully
-compatible with `builtins.slice` (from a typing perspective).
+Type aliases for anything that can *always* be passed to
+`int`, `float`, `complex`, `iter`, or `typing.Literal`
 
-Its type signature looks something like this:
+<table>
+    <tr>
+        <th>Python constructor</th>
+        <th><code>optype.typing</code> alias</th>
+    </tr>
+    <tr>
+        <td><code>int(_)</code></td>
+        <td><code>AnyInt</code></td>
+    </tr>
+    <tr>
+        <td><code>float(_)</code></td>
+        <td><code>AnyFloat</code></td>
+    </tr>
+    <tr>
+        <td><code>complex(_)</code></td>
+        <td><code>AnyComplex</code></td>
+    </tr>
+    <tr>
+        <td><code>iter(_)</code></td>
+        <td><code>AnyIterable</code></td>
+    </tr>
+    <tr>
+        <td><code>typing.Literal[_]</code></td>
+        <td><code>AnyLiteral</code></td>
+    </tr>
+</table>
 
-```python
-Slice[A = None, B = Any, S = None]
-```
+> [!NOTE]
+> Even though *some* `str` and `bytes` can be converted to `int`, `float`,
+> `complex`, most of them can't, and are therefore not included in these
+> type aliases.
 
-#### `AnyIterable` and `is_iterable`
+### `Empty*` type aliases
 
-The `optype.types.AnyIterable[V = Any]` type is a type alias for anything that
-can be used in a for-loop and `builtins.iter`.
+These are builtin types or collections that are empty, i.e. have length 0 or
+yield no elements.
 
-But type aliases are not runtime-checkable.
-So if you want to check whether something can be iterated over, without
-actually trying to do so, you can use `optype.types.is_iterable`.
+<table>
+    <tr>
+        <th>instance</th>
+        <th><code>optype.typing</code> type</th>
+    </tr>
+    <tr>
+        <td><code>''</code></td>
+        <td><code>EmptyString</code></td>
+    </tr>
+    <tr>
+        <td><code>b''</code></td>
+        <td><code>EmptyBytes</code></td>
+    </tr>
+    <tr>
+        <td><code>()</code></td>
+        <td><code>EmptyTuple</code></td>
+    </tr>
+    <tr>
+        <td><code>[]</code></td>
+        <td><code>EmptyList</code></td>
+    </tr>
+    <tr>
+        <td><code>{}</code></td>
+        <td><code>EmptyDict</code></td>
+    </tr>
+    <tr>
+        <td><code>set()</code></td>
+        <td><code>EmptySet</code></td>
+    </tr>
+    <tr>
+        <td><code>(i for i in range(0))</code></td>
+        <td><code>EmptyIterable</code></td>
+    </tr>
+</table>
 
-### `AnyInt` / `AnyFloat` / `AnyComplex`
+### Literal types
 
-Anything that can *always* be converted to `int` / `float` /`complex`,
-and that doesn't cause a deprecation warning (e.g. `__trunc__` delegation for
-`int`).
-
-Even though *some* `str` and `bytes` can be converted to `int` / `float` /
-`complex`, most of them can't, and are therefore not included in these
-type aliases.
-
-### `LiteralBool`
-
-The analogue of `typing.LiteralString`, but for booleans.
-`LiteralBool` is a type alias for `typing.Literal[False, True]`.
-
-### `LiteralByte`
-
-The analogue of `typing.LiteralString`, but for `int` values that make up
-a `bytes` or `bytearray` instance, i.e. `x: int` s.t. `0 <= x < 256`.
-`LiteralByte` is defined as the `typing.Literal` of the the integers in
-`range(256)`.
+<table>
+    <tr>
+        <th>Literal values</th>
+        <th><code>optype.typing</code> type</th>
+        <th>Notes</th>
+    </tr>
+    <tr>
+        <td><code>{False, True}</code></td>
+        <td><code>LiteralFalse</code></td>
+        <td>
+            Similar to <code>typing.LiteralString</code>, but for
+            <code>bool</code>.
+        </td>
+    </tr>
+    <tr>
+        <td><code>{0, 1, ..., 255}</code></td>
+        <td><code>LiteralByte</code></td>
+        <td>
+            Integers in the range 0-255, that make up a <code>bytes</code>
+            or <code>bytearray</code> objects.
+        </td>
+    </tr>
+</table>
 
 ### NumPy
 
