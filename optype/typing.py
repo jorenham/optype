@@ -29,10 +29,12 @@ __all__ = (
     'AnyInt',
     'AnyIterable',
     'AnyLiteral',
+    'EmptyBytes',
     'EmptyDict',
     'EmptyIterable',
     'EmptyList',
     'EmptySet',
+    'EmptyString',
     'EmptyTuple',
     'LiteralBool',
     'LiteralByte',
@@ -67,6 +69,8 @@ class _EmptyTypedDict(TypedDict):
     pass
 
 
+EmptyString: TypeAlias = Literal['']
+EmptyBytes: TypeAlias = Literal[b'']
 EmptyTuple: TypeAlias = tuple[()]
 EmptyList: TypeAlias = list[Never]
 EmptySet: TypeAlias = set[Never]
