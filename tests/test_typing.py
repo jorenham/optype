@@ -121,6 +121,16 @@ def test_any_literal():
 # `Empty*` type aliases
 
 
+def test_empty_string():
+    empty: opt.typing.EmptyString = ''
+    not_empty: opt.typing.EmptyString = '0'  # pyright: ignore[reportAssignmentType]
+
+
+def test_empty_bytes():
+    empty: opt.typing.EmptyBytes = b''
+    not_empty: opt.typing.EmptyBytes = b'0'  # pyright: ignore[reportAssignmentType]
+
+
 def test_empty_tuple():
     empty: opt.typing.EmptyTuple = ()
     not_empty: opt.typing.EmptyTuple = (0,)  # pyright: ignore[reportAssignmentType]
