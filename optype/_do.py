@@ -379,7 +379,7 @@ do_index: _d.DoesIndex = _o.index
 
 # rounding
 # (the typeshed stubs for `round` are unnecessarily strict)
-do_round: _d.DoesRound = round  # pyright: ignore[reportAssignmentType]
+do_round: _d.DoesRound = round
 do_trunc: _d.DoesTrunc = _math.trunc
 do_floor: _d.DoesFloor = _math.floor
 do_ceil: _d.DoesCeil = _math.ceil
