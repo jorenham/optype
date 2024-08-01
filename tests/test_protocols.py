@@ -1,22 +1,56 @@
+import sys
+
 import pytest
 
-import optype
+import optype as opt
 import optype._can
 import optype._do
 import optype._does
 import optype._has
+from optype._utils import get_callables
 from optype.inspect import (
     get_protocol_members,
     get_protocols,
+    is_protocol,
     is_runtime_protocol,
 )
 
-from .helpers import (
-    get_callable_members,
-    is_dunder,
-    is_protocol,
-    pascamel_to_snake,
-)
+
+if sys.version_info >= (3, 13):
+    from typing import is_protocol
+else:
+    from typing_extensions import is_protocol
+
+
+def _is_dunder(name: str, /) -> bool:
+    """Whether the name is a valid `__dunder_name__`."""
+    return (
+        len(name) > 4
+        and name[:2] == name[-2:] == '__'
+        and name[2] != '_'
+        and name[-3] != '_'
+        and name[2:-2].isidentifier()
+        and (name.islower() or name.isupper())
+    )
+
+
+def _pascamel_to_snake(
+    pascamel: str,
+    start: opt.CanLt[int, opt.CanBool] = 0,
+    /,
+) -> str:
+    """Converts 'CamelCase' or 'pascalCase' to 'snake_case'."""
+    assert pascamel.isidentifier()
+
+    snake = ''.join(
+        f'_{char}' if i > start and char.isupper() else char
+        for i, char in enumerate(pascamel)
+    ).lower()
+    assert snake.isidentifier()
+    assert snake[0] != '_'
+    assert snake[-1] != '_'
+
+    return snake
 
 
 def test_all_public():
@@ -24,7 +58,7 @@ def test_all_public():
     Ensure all of protocols from `optype._can`, `optype._has`, and
     `optype._does` are in `optype.__all__`.
     """
-    protocols_all = get_protocols(optype)
+    protocols_all = get_protocols(opt)
     protocols_can = get_protocols(optype._can)
     protocols_has = get_protocols(optype._has)
     protocols_does = get_protocols(optype._does)
@@ -52,7 +86,7 @@ def test_does_not_runtime_checkable(cls: type):
 
 def test_num_does_eq_num_do():
     num_does = len(get_protocols(optype._does))
-    num_do = len(get_callable_members(optype._do))
+    num_do = len(get_callables(optype._do))
     assert num_does == num_do
 
 
@@ -62,7 +96,7 @@ def test_does_has_do(cls: type):
     name = cls.__name__.removeprefix('Does')
     assert name != cls.__name__
 
-    do_name = f'do_{pascamel_to_snake(name, 1)}'
+    do_name = f'do_{_pascamel_to_snake(name, 1)}'
     do_op = getattr(optype._do, do_name, None)
     assert do_op is not None, do_name
     assert callable(do_op), do_name
@@ -130,11 +164,11 @@ def test_name_matches_dunder(cls: type):
 
         # the `1` arg ensures that any potential leading `A`, `I` or `R` chars
         # won't have a `_` directly after (i.e. considers `stem[:2].lower()`).
-        member_predict = pascamel_to_snake(stem, 1)
+        member_predict = _pascamel_to_snake(stem, 1)
         member_expect = next(iter(members))
 
         # prevent comparing apples with oranges: paint the apples orange!
-        if is_dunder(member_expect):
+        if _is_dunder(member_expect):
             member_predict = f'__{member_predict}__'
 
         assert member_predict == member_expect
