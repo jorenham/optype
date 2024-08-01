@@ -190,14 +190,11 @@ ignore = [
     "ANN001",   # missing-type-function-argument (deprecated)
     "ANN002",   # missing-type-args (deprecated)
     "ANN401",   # any-type
-
     # flake8-pyi
     "PYI034",   # non-self-return-type
     "PYI036",   # bad-exit-annotation
-
     # pylint
     "PLR0904",  # too-many-public-methods
-
     # refurb
     "FURB118",  # reimplemented-operator
 ]
@@ -217,6 +214,7 @@ ignore = [
     # flake8-self
     "SLF001",   # private-member-access
     # pylint
+    "PLC2701",  # import-private-name
     "PLR2004",  # magic-value-comparison
 ]
 

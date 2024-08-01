@@ -1,20 +1,47 @@
 from __future__ import annotations
 
 import sys
+from typing import TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    from types import ModuleType
 
 
 if sys.version_info >= (3, 13):
-    from typing import LiteralString, Protocol, TypeVar, final
+    from typing import LiteralString, Protocol, TypeVar, final, is_protocol
 else:
-    from typing_extensions import (  # noqa: TCH002
-        LiteralString,
+    from typing_extensions import (
+        LiteralString,  # noqa: TCH002
         Protocol,
         TypeVar,
         final,
+        is_protocol,
     )
 
 
-__all__ = ('set_module',)
+__all__ = 'get_callables', 'set_module'
+
+
+def get_callables(
+    module: ModuleType,
+    /,
+    *,
+    protocols: bool = False,
+    private: bool = False,
+) -> frozenset[str]:
+    """
+    Return the public callables (types are callables too) in the given module,
+    except for `typing.Protocol`.
+    """
+    exclude = frozenset({'typing', 'typing_extensions', 'optype._utils'})
+    return frozenset({
+        name for name in dir(module)
+        if callable(cls := getattr(module, name))
+        and (private or not name.startswith('_'))
+        and (protocols or not is_protocol(cls))
+        and getattr(module, name).__module__ not in exclude
+    })
 
 
 # cannot reuse `optype._has._HasModule` due to circular imports

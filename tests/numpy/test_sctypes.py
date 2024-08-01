@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 import optype.numpy as onp
-from optype.numpy import _sctype  # noqa: PLC2701  # pyright: ignore[reportPrivateUsage]
+from optype.numpy import _sctype  # pyright: ignore[reportPrivateUsage]
 from optype.inspect import get_args
 
 
