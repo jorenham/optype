@@ -7,21 +7,74 @@ from typing import TYPE_CHECKING, Any, cast, get_args as _get_args
 
 
 if sys.version_info >= (3, 13):
-    from typing import TypeAliasType, is_protocol
+    from typing import TypeAliasType, TypeIs, is_protocol
 else:
-    from typing_extensions import TypeAliasType, is_protocol
+    from typing_extensions import (
+        TypeAliasType,
+        TypeIs,  # noqa: TCH002
+        is_protocol,
+    )
 
 
 if TYPE_CHECKING:
     from types import ModuleType
+
+    from .typing import AnyIterable
+
+from ._can import CanGetitem, CanIter, CanLen
 
 
 __all__ = (
     'get_args',
     'get_protocol_members',
     'get_protocols',
+    'is_iterable',
+    'is_protocol',
     'is_runtime_protocol',
 )
+
+
+def is_iterable(obj: object, /) -> TypeIs[AnyIterable]:
+    """
+    Check whether the object can be iterated over, i.e. if it can be used in
+    a `for` loop, or if it can be passed to `builtins.iter`.
+
+    Note:
+        Contrary to popular *belief*, this isn't limited to objects that
+        implement `__iter___`, as suggested by the name of
+        `collections.abc.Iterable`.
+
+        Sequence-like objects that implement `__getitem__` for consecutive
+        `int` keys that start at `0` (or raise `IndexEeror` if out of bounds),
+        can also be used in a `for` loop.
+        In fact, all builtins that accept "iterables" also accept these
+        sequence-likes at runtime.
+
+    See also:
+        - [`optype.types.Iterable`][optype.types.Iterable]
+    """
+    if isinstance(obj, type):
+        # workaround the false-positive bug in `@runtime_checkable` for types
+        return False
+
+    if isinstance(obj, CanIter):
+        return True
+    if isinstance(obj, CanGetitem):
+        # check if obj is a sequence-like
+        if isinstance(obj, CanLen):
+            return True
+
+        # not all sequence-likes implement __len__, e.g. `ctypes.pointer`
+        try:
+            obj[0]
+        except (IndexError, StopIteration):
+            pass
+        except (KeyError, ValueError, TypeError):
+            return False
+
+        return True
+
+    return False
 
 
 def is_runtime_protocol(cls: type, /) -> bool:
@@ -123,8 +176,14 @@ def get_protocols(
     private: bool = False,
 ) -> frozenset[type]:
     """Return the protocol types within the given module."""
+    if private:
+        members = dir(module)
+    elif hasattr(module, '__all__'):
+        members = module.__all__
+    else:
+        members = (k for k in dir(module) if not k.startswith('_'))
+
     return frozenset({
-        cls for name in dir(module)
-        if (private or not name.startswith('_'))
-        and is_protocol(cls := getattr(module, name))
+        cls for name in members
+        if is_protocol(cls := getattr(module, name))
     })

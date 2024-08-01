@@ -306,14 +306,15 @@ __all__ = (
     'do_truediv',
     'do_trunc',
     'do_xor',
+    'inspect',
     'pickle',
     'rick',
-    'types',
+    'typing',
 )
 
 from importlib import metadata as _metadata
 
-from . import copy, dataclasses, pickle, types
+from . import copy, dataclasses, inspect, pickle, typing
 from ._can import (
     CanAEnter,
     CanAEnterSelf,
