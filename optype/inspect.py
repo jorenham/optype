@@ -20,6 +20,7 @@ __all__ = (
     'get_args',
     'get_protocol_members',
     'get_protocols',
+    'is_protocol',
     'is_runtime_protocol',
 )
 
@@ -123,8 +124,14 @@ def get_protocols(
     private: bool = False,
 ) -> frozenset[type]:
     """Return the protocol types within the given module."""
+    if private:
+        members = dir(module)
+    elif hasattr(module, '__all__'):
+        members = module.__all__
+    else:
+        members = (k for k in dir(module) if not k.startswith('_'))
+
     return frozenset({
-        cls for name in dir(module)
-        if (private or not name.startswith('_'))
-        and is_protocol(cls := getattr(module, name))
+        cls for name in members
+        if is_protocol(cls := getattr(module, name))
     })
