@@ -93,7 +93,9 @@ def get_args(tp: TypeAliasType | type | str | Any, /) -> tuple[Any, ...]:
     - recursively flattens nested of union'ed type aliases.
     """
     args = _get_args(tp.__value__ if isinstance(tp, TypeAliasType) else tp)
-    return tuple(itertools.chain(*(get_args(arg) or [arg] for arg in args)))
+    return tuple(
+        itertools.chain.from_iterable(get_args(arg) or [arg] for arg in args),
+    )
 
 
 def get_protocol_members(cls: type, /) -> frozenset[str]:
