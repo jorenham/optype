@@ -309,12 +309,13 @@ __all__ = (
     'inspect',
     'pickle',
     'rick',
+    'string',
     'typing',
 )
 
 from importlib import metadata as _metadata
 
-from . import copy, dataclasses, inspect, pickle, typing
+from . import copy, dataclasses, inspect, pickle, string, typing
 from ._can import (
     CanAEnter,
     CanAEnterSelf,
