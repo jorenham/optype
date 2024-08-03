@@ -24,7 +24,7 @@ else:
     from typing_extensions import TypeVar
 
 
-_NP_V2: Final[bool] = np.__version__.startswith('2.')
+_NP_V2: Final = np.__version__.startswith('2.')
 
 
 # helper aliases
@@ -70,11 +70,19 @@ AnyUInt64DType: _Type = _Any2[np.uint64, _s.AnyUInt64] | _UInt64Code
 if _NP_V2:
     _UIntPName: _Type = _Lit['uintp', 'uint']
     _UIntPChar: _Type = _Lit['N', '|N', '=N', '<N', '>N']
+    _UIntPCode: _Type = _UIntPName | _UIntPChar
+    AnyUIntPDType: _Type = (
+        _Any2[np.uintp, _s.AnyUIntP | _ct.UInt0]
+        | _UIntPCode
+    )
 else:
-    _UIntPName: _Type = _Lit['uintp', 'uint0']
+    _UIntPName: _Type = _Lit['uintp']  # 'uint0' is removed in NumPy 2.0
     _UIntPChar: _Type = _Lit['P', '|P', '=P', '<P', '>P']
-_UIntPCode: _Type = _UIntPName | _UIntPChar
-AnyUIntPDType: _Type = _Any2[np.uintp, _s.AnyUIntP | _ct.UInt0] | _UIntPCode
+    _UIntPCode: _Type = _UIntPName | _UIntPChar
+    AnyUIntPDType: _Type = (
+        _Any2[np.uintp, _s.AnyUIntP | _ct.UInt0]
+        | _UIntPCode
+    )
 
 # ubyte
 _UByteName: _Type = _Lit['ubyte']
@@ -95,13 +103,15 @@ _UIntCCode: _Type = _UIntCName | _UIntCChar
 AnyUIntCDType: _Type = _Any2[np.uintc, _s.AnyUIntC] | _UIntCCode
 
 # ulong (uint if numpy<2)
+_ULongChar: _Type = _Lit['L', '|L', '=L', '<L', '>L']
 if _NP_V2:
     _ULongName: _Type = _Lit['ulong']
+    _ULongCode: _Type = _ULongName | _ULongChar
+    AnyULongDType: _Type = _Any2[_x.ULong, _s.AnyULong] | _ULongCode
 else:
     _ULongName: _Type = _Lit['ulong', 'uint']
-_ULongChar: _Type = _Lit['L', '|L', '=L', '<L', '>L']
-_ULongCode: _Type = _ULongName | _ULongChar
-AnyULongDType: _Type = _Any2[_x.ULong, _s.AnyULong] | _ULongCode
+    _ULongCode: _Type = _ULongName | _ULongChar
+    AnyULongDType: _Type = _Any2[_x.ULong, _s.AnyULong] | _ULongCode
 
 # ulonglong
 _ULongLongName: _Type = _Lit['ulonglong']
@@ -110,18 +120,6 @@ _ULongLongCode: _Type = _ULongLongName | _ULongLongChar
 AnyULongLongDType: _Type = (
     _Any2[np.ulonglong, _s.AnyULongLong]
     | _ULongLongCode
-)
-
-# unsignedinteger
-# fmt: off
-_UnsignedIntegerCode: _Type = (
-    _UInt8Code | _UInt16Code | _UInt32Code | _UInt64Code | _UIntPCode
-    | _UByteCode | _UShortCode | _UIntCCode | _ULongCode | _ULongLongCode
-)
-# fmt: on
-AnyUnsignedIntegerDType: _Type = (
-    _Any2[np.unsignedinteger[Any], _s.AnyUnsignedInteger | _ct.UInt0]
-    | _UnsignedIntegerCode
 )
 
 
@@ -154,14 +152,17 @@ _Int64Code: _Type = _Int64Name | _Int64Char
 AnyInt64DType: _Type = _Any2[np.int64, _s.AnyInt64] | _Int64Code
 
 # intp
+# (`AnyIntPDType` must be inside each block, for valid typing)
 if _NP_V2:
     _IntPName: _Type = _Lit['intp', 'int', 'int_']
     _IntPChar: _Type = _Lit['n', '|n', '=n', '<n', '>n']
+    _IntPCode: _Type = _IntPName | _IntPChar
+    AnyIntPDType: _Type = _Any2[np.intp, _s.AnyIntP] | _IntPCode
 else:
-    _IntPName: _Type = _Lit['intp', 'int0']
+    _IntPName: _Type = _Lit['intp']  # 'int0' is removed in NumPy 2.0
     _IntPChar: _Type = _Lit['p', '|p', '=p', '<p', '>p']
-_IntPCode: _Type = _IntPName | _IntPChar
-AnyIntPDType: _Type = _Any2[np.intp, _s.AnyIntP] | _IntPCode
+    _IntPCode: _Type = _IntPName | _IntPChar
+    AnyIntPDType: _Type = _Any2[np.intp, _s.AnyIntP] | _IntPCode
 
 # byte
 _ByteName: _Type = _Lit['byte']
@@ -182,31 +183,21 @@ _IntCCode: _Type = _IntCName | _IntCChar
 AnyIntCDType: _Type = _Any2[np.intc, _s.AnyIntC] | _IntCCode
 
 # long (or int_ if numpy<2)
+_LongChar: _Type = _Lit['l', '|l', '=l', '<l', '>l']
 if _NP_V2:
     _LongName: _Type = _Lit['long']
+    _LongCode: _Type = _LongName | _LongChar
+    AnyLongDType: _Type = _Any2[_x.Long, _s.AnyLong] | _LongCode
 else:
     _LongName: _Type = _Lit['long', 'int', 'int_']
-_LongChar: _Type = _Lit['l', '|l', '=l', '<l', '>l']
-_LongCode: _Type = _LongName | _LongChar
-AnyLongDType: _Type = _Any2[_x.Long, _s.AnyLong] | _LongCode
+    _LongCode: _Type = _LongName | _LongChar
+    AnyLongDType: _Type = _Any2[_x.Long, _s.AnyLong] | _LongCode
 
 # longlong
 _LongLongName: _Type = _Lit['longlong']
 _LongLongChar: _Type = _Lit['q', '|q', '=q', '<q', '>q']
 _LongLongCode: _Type = _LongLongName | _LongLongChar
 AnyLongLongDType: _Type = _Any2[np.longlong, _s.AnyLongLong] | _LongLongCode
-
-# signedinteger
-# fmt: off
-_SignedIntegerCode: _Type = (
-    _Int8Code | _Int16Code | _Int32Code | _Int64Code | _IntPCode
-    | _ByteCode | _ShortCode | _IntCCode | _LongCode | _LongLongCode
-)
-# fmt: on
-AnySignedIntegerDType: _Type = (
-    _Any2[np.signedinteger[Any], _s.AnySignedInteger]
-    | _SignedIntegerCode
-)
 
 
 #
@@ -246,19 +237,15 @@ _SingleCode: _Type = _SingleName | _SingleChar
 AnySingleDType: _Type = _Any2[np.single, _s.AnySingle] | _SingleCode
 
 # double
-if _NP_V2:
-    _DoubleName: _Type = _Lit['double', 'float']
-else:
-    _DoubleName: _Type = _Lit['double', 'float', 'float_']
+# ('float_' was removed in NumPy 2.0)
+_DoubleName: _Type = _Lit['double', 'float']
 _DoubleChar: _Type = _Lit['d', '|d', '=d', '<d', '>d']
 _DoubleCode: _Type = _DoubleName | _DoubleChar
 AnyDoubleDType: _Type = _Any2[np.double, _s.AnyDouble] | _DoubleCode
 
 # longdouble
-if _NP_V2:
-    _LongDoubleName: _Type = _Lit['longdouble']
-else:
-    _LongDoubleName: _Type = _Lit['longdouble', 'longfloat']
+# ('longfloat' was removed in NumPy 2.0)
+_LongDoubleName: _Type = _Lit['longdouble']
 _LongDoubleChar: _Type = _Lit['g', '|g', '=g', '<g', '>g']
 _LongDoubleCode: _Type = _LongDoubleName | _LongDoubleChar
 AnyLongDoubleDType: _Type = (
@@ -267,12 +254,10 @@ AnyLongDoubleDType: _Type = (
 )
 
 # floating
-# fmt: off
 _FloatingCode: _Type = (
     _Float16Code | _Float32Code | _Float64Code
     | _HalfCode | _SingleCode | _DoubleCode | _LongDoubleCode
-)
-# fmt: on
+)  # fmt: skip
 AnyFloatingDType: _Type = (
     _Any2[np.floating[Any], _s.AnyFloating]
     | _FloatingCode
@@ -299,39 +284,31 @@ AnyComplex128DType: _Type = (
 )
 
 # csingle
-if _NP_V2:
-    _CSingleName: _Type = _Lit['csingle']
-else:
-    _CSingleName: _Type = _Lit['csingle', 'singlecomplex']
+# ('singlecomplex' was removed in NumPy 2.0)
+_CSingleName: _Type = _Lit['csingle']
 _CSingleChar: _Type = _Lit['F', '|F', '=F', '<F', '>F']
 _CSingleCode: _Type = _CSingleName | _CSingleChar
 AnyCSingleDType: _Type = _Any1[np.csingle] | _CSingleCode
 
 # cdouble
-if _NP_V2:
-    _CDoubleName: _Type = _Lit['cdouble', 'complex']
-else:
-    _CDoubleName: _Type = _Lit['cdouble', 'cfloat', 'complex', 'complex_']
+# ('complex_' and 'cfloat' were removed in NumPy 2.0)
+_CDoubleName: _Type = _Lit['cdouble', 'complex']
 _CDoubleChar: _Type = _Lit['D', '|D', '=D', '<D', '>D']
 _CDoubleCode: _Type = _CDoubleName | _CDoubleChar
 AnyCDoubleDType: _Type = _Any2[np.cdouble, _s.AnyCDouble] | _CDoubleCode
 
 # clongdouble
-if _NP_V2:
-    _CLongDoubleName: _Type = _Lit['clongdouble']
-else:
-    _CLongDoubleName: _Type = _Lit['clongdouble', 'clongfloat', 'longcomplex']
+# ('clongfloat' and 'longcomplex' were removed in NumPy 2.0)
+_CLongDoubleName: _Type = _Lit['clongdouble']
 _CLongDoubleChar: _Type = _Lit['G', '|G', '=G', '<G', '>G']
 _CLongDoubleCode: _Type = _CLongDoubleName | _CLongDoubleChar
 AnyCLongDoubleDType: _Type = _Any1[np.clongdouble] | _CLongDoubleCode
 
 # complexfloating
-# fmt: off
 _ComplexFloatingCode: _Type = (
     _Complex64Code | _Complex128Code
     | _CSingleCode | _CDoubleCode | _CLongDoubleCode
-)
-# fmt: on
+)  # fmt: skip
 AnyComplexFloatingDType: _Type = (
     _Any2[np.complexfloating[Any, Any], _s.AnyComplexFloating]
     | _ComplexFloatingCode
@@ -359,7 +336,6 @@ _DateTime64Name: _Type = _Lit[
     'datetime64[M]',
     'datetime64[Y]',
 ]
-# fmt: off
 _DateTime64Char: _Type = _Lit[
     'M', '|M', '=M', '<M', '>M',
     'M8', '|M8', '=M8', '<M8', '>M8',
@@ -375,8 +351,7 @@ _DateTime64Char: _Type = _Lit[
     'M8[W]', '|M8[W]', '=M8[W]', '<M8[W]', '>M8[W]',
     'M8[M]', '|M8[M]', '=M8[M]', '<M8[M]', '>M8[M]',
     'M8[Y]', '|M8[Y]', '=M8[Y]', '<M8[Y]', '>M8[Y]',
-]
-# fmt: on
+]  # fmt: skip
 _DateTime64Code: _Type = _DateTime64Name | _DateTime64Char
 AnyDateTime64DType: _Type = _Any1[np.datetime64] | _DateTime64Code
 
@@ -397,7 +372,6 @@ _TimeDelta64Name: _Type = _Lit[
     'timedelta64[M]',
     'timedelta64[Y]',
 ]
-# fmt: off
 _TimeDelta64Char: _Type = _Lit[
     'm', '|m', '=m', '<m', '>m',
     'm8', '|m8', '=m8', '<m8', '>m8',
@@ -413,8 +387,7 @@ _TimeDelta64Char: _Type = _Lit[
     'm8[W]', '|m8[W]', '=m8[W]', '<m8[W]', '>m8[W]',
     'm8[M]', '|m8[M]', '=m8[M]', '<m8[M]', '>m8[M]',
     'm8[Y]', '|m8[Y]', '=m8[Y]', '<m8[Y]', '>m8[Y]',
-]
-# fmt: on
+]  # fmt: skip
 _TimeDelta64Code: _Type = _TimeDelta64Name | _TimeDelta64Char
 AnyTimeDelta64DType: _Type = _Any1[np.timedelta64] | _TimeDelta64Code
 
@@ -424,26 +397,19 @@ AnyTimeDelta64DType: _Type = _Any1[np.timedelta64] | _TimeDelta64Code
 #
 
 # str
-if _NP_V2:
-    _StrName: _Type = _Lit['str', 'str_', 'unicode']
-else:
-    _StrName: _Type = _Lit['str', 'str_', 'str0', 'unicode', 'unicode_']
+# ('str0' and `unicode_` were removed in NumPy 2.0)
+_StrName: _Type = _Lit['str', 'str_', 'unicode']
 _StrChar: _Type = _Lit['U', '|U', '=U', '<U', '>U']
 _StrCode: _Type = _StrName | _StrChar
 AnyStrDType: _Type = _Any2[np.str_, _s.AnyStr] | _StrCode
 
 # bytes
-if _NP_V2:
-    _BytesName: _Type = _Lit['bytes', 'bytes_']
-else:
-    _BytesName: _Type = _Lit['bytes', 'bytes_', 'bytes0']
-# TODO: Figure out why `np.dtype(ct.c_xhar) != np.dtype(np.bytes_)`,
-# whose `.char` attrs are `'c' != 'S'`, `.itemsize` are `1 != 0`, `.isbuiltin`
-# are `0 != 1`, and `.name` are `'bytes8' != 'bytes'`
+# ('bytes0' was removed in NumPy 2.0)
+_BytesName: _Type = _Lit['bytes', 'bytes_']
 _BytesChar: _Type = _Lit[
     'S', '|S', '=S', '<S', '>S',
     'S0', '|S0', '=S0', '<S0', '>S0',
-]
+]  # fmt: skip
 _BytesCode: _Type = _BytesName | _BytesChar
 AnyBytesDType: _Type = _Any2[np.bytes_, _s.AnyBytes] | _BytesCode
 
@@ -460,10 +426,7 @@ AnyCharacterDType: _Type = (
 #
 
 # void
-if _NP_V2:
-    _VoidName: _Type = _Lit['void']
-else:
-    _VoidName: _Type = _Lit['void', 'void0']
+_VoidName: _Type = _Lit['void']  # 'void0' was removed in NumPy 2.0
 _VoidChar: _Type = _Lit['V', '|V', '=V', '<V', '>V']
 _VoidCode: _Type = _VoidName | _VoidChar
 AnyVoidDType: _Type = _Any1[np.void] | _VoidCode
@@ -478,10 +441,7 @@ AnyFlexibleDType: _Type = _Any2[np.flexible, _s.AnyFlexible] | _FlexibleCode
 #
 
 # bool_
-if _NP_V2:
-    _BoolName: _Type = _Lit['bool', 'bool_']
-else:
-    _BoolName: _Type = _Lit['bool', 'bool_', 'bool8']
+_BoolName: _Type = _Lit['bool', 'bool_']  # 'bool0' was removed in NumPy 2.0
 _BoolChar: _Type = _Lit['?', '|?', '=?', '<?', '>?']
 _BoolCode: _Type = _BoolName | _BoolChar
 AnyBoolDType: _Type = _Any2[_x.Bool, _s.AnyBool] | _BoolCode
@@ -497,28 +457,106 @@ AnyObjectDType: _Type = _Any2[np.object_, _s.AnyObject] | _ObjectCode
 # abstract
 #
 
-# integer
-_IntegerCode: _Type = _UnsignedIntegerCode | _SignedIntegerCode
-AnyIntegerDType: _Type = _Any2[np.integer[Any], _s.AnyInteger] | _IntegerCode
+_SCT = TypeVar('_SCT', bound=np.generic, default=Any)
 
-# inexact
 _InexactCode: _Type = _FloatingCode | _ComplexFloatingCode
 AnyInexactDType: _Type = _Any2[np.inexact[Any], _s.AnyInexact] | _InexactCode
 
-# number
-_NumberCode: _Type = _IntegerCode | _InexactCode
-AnyNumberDType: _Type = _Any2[np.number[Any], _s.AnyNumber] | _NumberCode
+_UnsignedIntegerName: _Type = _Lit[
+    'uint8', 'uint16', 'uint32', 'uint64', 'uintp', 'uint',
+    'ubyte', 'ushort', 'uintc', 'ulong', 'ulonglong',
+]  # fmt: skip
+_UnsignedIntegerCharCommon: _Type = (
+    _UInt8Char | _UInt16Char | _UInt32Char | _UInt64Char
+    | _UByteChar | _UShortChar | _UIntCChar | _ULongChar | _ULongLongChar
+    # not associated to any particular scalar type in numpy>=2.0
+    | _Lit['P', '|P', '=P', '<P', '>P']
+)  # fmt: skip
 
-# generic
-_GenericCode: _Type = (
-    _BoolCode
-    | _NumberCode
-    | _DateTime64Code
-    | _TimeDelta64Code
-    | _FlexibleCode
-    | _ObjectCode
-)
-AnyGenericDType: _Type = _Any2[np.generic, _s.AnyGeneric] | _GenericCode
+_SignedIntegerName: _Type = _Lit[
+    'int8', 'int16', 'int32', 'int64', 'intp', 'int', 'int_',
+    'byte', 'short', 'intc', 'long', 'longlong',
+]  # fmt: skip
+_SignedIntegerCharCommon: _Type = (
+    _Int8Char | _Int16Char | _Int32Char | _Int64Char
+    | _ByteChar | _ShortChar | _IntCChar | _LongChar | _LongLongChar
+    # not associated to any particular scalar type in numpy>=2.0
+    | _Lit['p', '|p', '=p', '<p', '>p']
+)  # fmt: skip
 
-ST = TypeVar('ST', bound=np.generic, default=Any)
-AnyDType: _Type = _Any2[ST, complex | str | bytes] | _GenericCode | type
+# this duplicated mess is needed for valid types and numpy 1/2 compat
+if _NP_V2:
+    _UnsignedIntegerChar: _Type = (
+        _UnsignedIntegerCharCommon
+        | _Lit['N', '|N', '=N', '<N', '>N']  # numpy>=2 only
+    )
+    _UnsignedIntegerCode: _Type = _UnsignedIntegerName | _UnsignedIntegerChar
+    AnyUnsignedIntegerDType: _Type = (
+        _Any2[np.unsignedinteger[Any], _s.AnyUnsignedInteger]
+        | _UnsignedIntegerCode
+    )
+
+    _SignedIntegerChar: _Type = (
+        _SignedIntegerCharCommon
+        | _Lit['n', '|n', '=n', '<n', '>n']  # numpy>=2 only
+    )
+    _SignedIntegerCode: _Type = _SignedIntegerName | _SignedIntegerChar
+    AnySignedIntegerDType: _Type = (
+        _Any2[np.signedinteger[Any], _s.AnySignedInteger]
+        | _SignedIntegerCode
+    )
+
+    _IntegerCode: _Type = _UnsignedIntegerCode | _SignedIntegerCode
+    AnyIntegerDType: _Type = (
+        _Any2[np.integer[Any], _s.AnyInteger]
+        | _IntegerCode
+    )
+
+    _NumberCode: _Type = _IntegerCode | _InexactCode
+    AnyNumberDType: _Type = _Any2[np.number[Any], _s.AnyNumber] | _NumberCode
+
+    _GenericCode: _Type = (
+        _BoolCode
+        | _NumberCode
+        | _DateTime64Code
+        | _TimeDelta64Code
+        | _FlexibleCode
+        | _ObjectCode
+    )
+    AnyGenericDType: _Type = _Any2[np.generic, _s.AnyGeneric] | _GenericCode
+    AnyDType: _Type = _Any2[_SCT, complex | str | bytes] | _GenericCode | type
+
+else:
+    _UnsignedIntegerChar: _Type = _UnsignedIntegerCharCommon
+    _UnsignedIntegerCode: _Type = _UnsignedIntegerName | _UnsignedIntegerChar
+    AnyUnsignedIntegerDType: _Type = (
+        _Any2[np.unsignedinteger[Any], _s.AnyUnsignedInteger]
+        | _UnsignedIntegerCode
+    )
+
+    _SignedIntegerChar: _Type = _SignedIntegerCharCommon
+    _SignedIntegerCode: _Type = _SignedIntegerName | _SignedIntegerChar
+    AnySignedIntegerDType: _Type = (
+        _Any2[np.signedinteger[Any], _s.AnySignedInteger]
+        | _SignedIntegerCode
+    )
+
+    _IntegerCode: _Type = _UnsignedIntegerCode | _SignedIntegerCode
+    AnyIntegerDType: _Type = (
+        _Any2[np.integer[Any], _s.AnyInteger]
+        | _IntegerCode
+    )
+
+    _NumberCode: _Type = _IntegerCode | _InexactCode
+    AnyNumberDType: _Type = _Any2[np.number[Any], _s.AnyNumber] | _NumberCode
+
+    _GenericCode: _Type = (
+        _BoolCode
+        | _NumberCode
+        | _DateTime64Code
+        | _TimeDelta64Code
+        | _FlexibleCode
+        | _ObjectCode
+    )
+    AnyGenericDType: _Type = _Any2[np.generic, _s.AnyGeneric] | _GenericCode
+    AnyDType: _Type = _Any2[_SCT, complex | str | bytes] | _GenericCode | type

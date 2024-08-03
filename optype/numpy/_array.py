@@ -37,8 +37,9 @@ __all__ = (
     'HasArrayPriority',
 )
 
+_NP_VERSION: Final = np.__version__
+_NP_V2: Final = _NP_VERSION.startswith('2.')
 
-_NP_V2: Final[bool] = (_NP_VERSION := np.__version__).startswith('2.')
 if not _NP_V2:
     assert _NP_VERSION.startswith('1.'), f'numpy {_NP_VERSION} is unsupported'
 

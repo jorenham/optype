@@ -83,6 +83,7 @@ __all__ = (
     'String',
     'TimeDelta64',
     'UByte',
+    'UInt0',
     'UInt8',
     'UInt16',
     'UInt32',
