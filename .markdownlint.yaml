@@ -25,3 +25,5 @@ MD033:
     - dl
     - dt
     - dd
+    - details
+    - summary

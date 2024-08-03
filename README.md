@@ -70,7 +70,7 @@ This ensures that the installed `numpy` version is compatible with
 pip install "optype[numpy]"
 ```
 
-See the [`optype.numpy` docs](#numpy) for more info.
+See the [`optype.numpy` docs](#optypenumpy) for more info.
 
 [OPTYPE]: https://pypi.org/project/optype/
 [NUMPY]: https://github.com/numpy/numpy
@@ -183,7 +183,48 @@ See [`examples/twice.py`](examples/twice.py) for the full example.
 
 ## Reference
 
-The API of `optype` is flat; a single `import optype` is all you need.
+The API of `optype` is flat; a single `import optype as opt` is all you need
+(except for `optype.numpy`).
+
+<!-- TOC start (generated with https://github.com/derlin/bitdowntoc) -->
+
+- [`optype`](#optype)
+    - [Builtin type conversion](#builtin-type-conversion)
+    - [Rich relations](#rich-relations)
+    - [Binary operations](#binary-operations)
+    - [Reflected operations](#reflected-operations)
+    - [Inplace operations](#inplace-operations)
+    - [Unary operations](#unary-operations)
+    - [Rounding](#rounding)
+    - [Callables](#callables)
+    - [Iteration](#iteration)
+    - [Awaitables](#awaitables)
+    - [Async Iteration](#async-iteration)
+    - [Containers](#containers)
+    - [Attributes](#attributes)
+    - [Context managers](#context-managers)
+    - [Descriptors](#descriptors)
+    - [Buffer types](#buffer-types)
+- [`optype.copy`](#optypecopy)
+- [`optype.dataclasses`](#optypedataclasses)
+- [`optype.pickle`](#optypepickle)
+- [`optype.string`](#optypestring)
+- [`optype.typing`](#optypetyping)
+    - [`Any*` type aliases](#any-type-aliases)
+    - [`Empty*` type aliases](#empty-type-aliases)
+    - [Literal types](#literal-types)
+- [`optype.numpy`](#optypenumpy)
+    - [`Array`](#array)
+    - [`UFunc`](#ufunc)
+    - [`Shape type aliases`](#shape-type-aliases)
+    - [`Scalar`](#scalar)
+    - [`DType`](#dtype)
+    - [`Any*Array` and `Any*DType`](#anyarray-and-anydtype)
+    - [Low-level interfaces](#low-level-interfaces)
+
+<!-- TOC end -->
+
+### `optype`
 
 There are four flavors of things that live within `optype`,
 
@@ -210,56 +251,6 @@ There are four flavors of things that live within `optype`,
     need to know by heart.
 
 The reference docs are structured as follows:
-
-<!-- TOC start (generated with https://github.com/derlin/bitdowntoc) -->
-
-- [Core functionality](#core-functionality)
-    - [Builtin type conversion](#builtin-type-conversion)
-    - [Rich relations](#rich-relations)
-    - [Binary operations](#binary-operations)
-    - [Reflected operations](#reflected-operations)
-    - [Inplace operations](#inplace-operations)
-    - [Unary operations](#unary-operations)
-    - [Rounding](#rounding)
-    - [Callables](#callables)
-    - [Iteration](#iteration)
-    - [Awaitables](#awaitables)
-    - [Async Iteration](#async-iteration)
-    - [Containers](#containers)
-    - [Attributes](#attributes)
-    - [Context managers](#context-managers)
-    - [Descriptors](#descriptors)
-    - [Buffer types](#buffer-types)
-- [`optype.copy`](#optypecopy)
-- [`optype.dataclasses`](#optypedataclasses)
-- [`optype.pickle`](#optypepickle)
-- [`optype.string`](#optypestring)
-- [`optype.typing`](#optypetyping)
-    - [`Any*` type aliases](#any-type-aliases)
-    - [`Empty*` type aliases](#empty-type-aliases)
-    - [Literal types](#literal-types)
-- [NumPy](#numpy)
-    - [Arrays](#arrays)
-        - [`Array`](#array)
-        - [`AnyArray`](#anyarray)
-        - [`CanArray*`](#canarray)
-        - [`HasArray*`](#hasarray)
-    - [Shapes](#shapes)
-    - [Scalars](#scalars)
-        - [`Scalar`](#scalar)
-        - [`Any*Value`](#anyvalue)
-        - [`Any*Type`](#anytype)
-    - [Data type objects](#data-type-objects)
-        - [`DType`](#dtype)
-        - [`HasDType`](#hasdtype)
-        - [`AnyDType`](#anydtype)
-    - [Universal functions](#universal-functions)
-        - [`AnyUFunc`](#anyufunc)
-        - [`CanArrayUFunc`](#canarrayufunc)
-
-<!-- TOC end -->
-
-### Core functionality
 
 All [typing protocols][PC] here live in the root `optype` namespace.
 They are [runtime-checkable][RC] so that you can do e.g.
@@ -1880,7 +1871,7 @@ yield no elements.
     </tr>
 </table>
 
-### NumPy
+### `optype.numpy`
 
 Optype supports both NumPy 1 and 2.
 The current minimum supported version is `1.24`,
@@ -1908,15 +1899,37 @@ pip install "optype[numpy]"
 > [PEP 696][PEP696] type parameter syntax will be used, which is supported
 > since Python 3.13.
 
-#### Arrays
-
-##### `Array`
+#### `Array`
 
 Optype provides the generic `onp.Array` type alias for `np.ndarray`.
 It is similar to `npt.NDArray`, but includes two (optional) type parameters:
 one that matches the *shape type* (`ND: tuple[int, ...]`),
 and one that matches the *scalar type* (`ST: np.generic`).
-It is defined as:
+
+When put the definitions of `npt.NDArray` and `onp.Array` side-by-side,
+their differences become clear:
+
+<table>
+<tr>
+<th width="415px">
+    <code>numpy.typing.NDArray</code>
+</th>
+<th width="415px">
+    <code>optype.numpy.Array</code>
+</th>
+</tr>
+<tr>
+<td>
+
+```python
+type NDArray[
+    # no shape type
+    ST: np.generic,  # no default
+] = np.ndarray[Any, np.dtype[ST]]
+```
+
+</td>
+<td>
 
 ```python
 type Array[
@@ -1925,453 +1938,72 @@ type Array[
 ] = np.ndarray[ND, np.dtype[ST]]
 ```
 
-Note that the shape type parameter `ND` matches the type of `np.ndarray.shape`,
-and the scalar type parameter `ST` that of `np.ndarray.dtype.type`.
-
-This way, a vector can be typed as `Array[tuple[int]]`, and a $2 \times 2$
-matrix of integers as `Array[tuple[Literal[2], Literal[2]], np.integer[Any]]`.
-
-##### `AnyArray`
-
-Something that can be used to construct a numpy array is often referred to
-as an *array-like* object, usually annotated with `npt.ArrayLike`.
-But there are two main problems with `npt.ArrayLike`:
-
-1. Its name strongly suggests that it *only* applies to arrays. However,
-  "0-dimensional" are also included, i.e. "scalars" such as `bool`, and
-  `complex`, but also `str`, since numpy considers unicode- and bytestrings
-  to be  "scalars".
-  So `a: npt.ArrayLike = 'array lie'` is a valid statement.
-2. There is no way to narrow the allowed scalar-types, since it's not generic.
-   So instances of `bytes` and arrays of `np.object_` are always included.
-
-`AnyArray[ND, ST, PY]` doesn't have these problems through its (optional)
-generic type parameters:
-
-```python
-type AnyArray[
-    # shape type
-    ND: tuple[int, ...] = tuple[int, ...],
-    # numpy scalar type
-    ST: np.generic = np.generic,
-    # Python builtin scalar type
-    # (note that `complex` includes `bool | int | float`)
-    PT: complex | str | bytes = complex | str | bytes,
-]
-```
-
-> [!NOTE]
-> Unlike `npt.ArrayLike`, `onp.AnyArray` does not include the python scalars
-> (`PT`) directly.
-
-This makes it possible to correctly annotate e.g. a 1-d arrays-like of floats
-as `a: onp.AnyArray[tuple[int], np.floating[Any], float]`.
-
-##### `CanArray*`
-
-<table>
-    <tr>
-<th>type signature</th>
-        <th>method</th>
-        <th>purpose</th>
-    </tr>
-    <tr>
-<td>
-
-```python
-CanArray[
-    ND: tuple[int, ...] = ...,
-    ST: np.generic = ...,
-]
-```
-
 </td>
-        <td>
-            <a href="https://numpy.org/doc/stable/user/basics.interoperability.html#the-array-method">
-                <code>__array__()</code>
-            </a>
-        </td>
-        <td>Turning itself into a numpy array.</td>
-    </tr>
-    <tr>
-<td>
-
-```python
-CanArrayFunction[
-    F: CanCall[..., Any] = ...,
-    R: object = ...,
-]
-```
-
-</td>
-        <td>
-            <a href="https://numpy.org/doc/stable/user/basics.interoperability.html#the-array-function-protocol">
-                <code>__array_function__()</code>
-            </a>
-        </td>
-        <td>
-            Similar to how <code>T.__abs__()</code> implements
-            <code>abs(T)</code>, but for arbitrary numpy callables
-            (that aren't a ufunc).
-        </td>
-    </tr>
-    <tr>
-<td>
-
-```python
-CanArrayFinalize[
-    T: object = ...,
-]
-```
-
-</td>
-        <td>
-            <a href="https://numpy.org/doc/stable/user/c-info.beyond-basics.html#the-array-finalize-method">
-                <code>__array_finalize__()</code>
-            </a>
-        </td>
-        <td>
-            Converting the return value of a numpy function back into an
-            instance of the foreign object.
-        </td>
-    </tr>
-    <tr>
-<td>
-
-```python
-CanArrayWrap
-```
-
-</td>
-        <td>
-            <a href="https://numpy.org/doc/stable/user/c-info.beyond-basics.html#ndarray.__array_wrap__">
-                <code>__array_wrap__()</code>
-            </a>
-        </td>
-        <td>
-            Takes a `np.ndarray` instance, and "wraps" it into itself, or some
-            `ndarray` subtype.
-        </td>
-    </tr>
+</tr>
 </table>
 
-##### `HasArray*`
-
-<table>
-    <tr>
-        <th><code>optype.numpy._</code></th>
-        <th>attribute</th>
-        <th>purpose</th>
-    </tr>
-    <tr>
-<td>
-
-```python
-HasArrayInterface[
-    V: Mapping[str, Any] = dict[str, Any],
-]
-```
-
-</td>
-        <td>
-            <a href="https://numpy.org/doc/stable/reference/arrays.interface.html#python-side">
-                <code>__array_interface__</code>
-            </a>
-        </td>
-        <td>
-            The array interface protocol (V3) is used to for efficient
-            data-buffer sharing between array-like objects, and bridges the
-            numpy C-api with the Python side.
-        </td>
-    </tr>
-    <tr>
-<td>
-
-```python
-HasArrayPriority
-```
-
-</td>
-        <td>
-            <a href="https://numpy.org/doc/stable/user/c-info.beyond-basics.html#the-array-priority-attribute">
-                <code>__array_priority__</code>
-            </a>
-        </td>
-        <td>
-            In case an operation involves multiple sub-types, this value
-            determines which one will be used as output type.
-        </td>
-    </tr>
-</table>
-
-#### Shapes
-
-A *shape* is nothing more than a tuple of (non-negative) integers, i.e.
-an instance of `tuple[int, ...]`.
-The length of a shape is often referred to as the *number of dimensions*
-or the *dimensionality* of the array or scalar.
-
-> [!NOTE]
-> Before NumPy 2, the maximum number of dimensions was 32, but has since
-> been increased to 64.
-
-To make typing the shape of an array easier, optype provides two families of
-shape type aliases: `AtLeast{N}D` and `AtMost{N}D`.
-The `{N}` should be replaced by the number of dimensions, which currently
-is limited to `0`, `1`, `2`, and `3`.
-
-Both of these families are generic, and their (optional) type parameters must
-be either `int` (default), or a literal (non-negative) integer, i.e. like
-`typing.Literal[N: int]`.
-
-Without going into details, the names `AtLeast{N}D` and `AtMost{N}D` should
-are probably self-explanatory:
-They are the types of shapes whose `len(shape) >= N` and `len(shape) <= N`,
-respectively.
-
-Specifically, `AtLeast0D` and `AtMost0D` are defined as something similar to
-
-```python
-type _AnyShape = tuple[int, ...]  # helper alias
-
-type AtLeast0D[*Ns = *_AnyShape] = tuple[*Ns]
-type AtMost0D = tuple[()]
-```
-
-Note that `AtMost0D` only matches the empty tuple: `()`.
-
-For higher dimensions, things get more complicated:
-
-```python
-type AtLeast1D[N0: int = int, *Ns = *_AnyShape] = tuple[N0, *Ns]
-type AtMost1D[N0: int = int] = tuple[N0] | AtMost0D
-```
-
-The recursive nature of these definitions makes it straightforward to
-extend these to higher dimensions (currently `2` and `3`).
-
-#### Scalars
-
-Optype considers the following numpy scalar types:
-
-- *`np.generic`*
-    - `np.bool_` (or `np.bool` with `numpy >= 2`)
-    - `np.object_`
-    - *`np.flexible`*
-        - `np.void`
-        - *`np.character`*
-            - `np.bytes_`
-            - `np.str_`
-    - *`np.number[N: npt.NBitBase]`*
-        - *`np.integer[N: npt.NBitBase]`*
-            - *`np.unsignedinteger[N: npt.NBitBase]`*
-                - `np.ubyte`
-                - `np.ushort`
-                - `np.uintc`
-                - `np.uintp`
-                - `np.ulong`
-                - `np.ulonglong`
-                - `np.uint{8,16,32,64}`
-            - *`np.signedinteger[N: npt.NBitBase]`*
-                - `np.byte`
-                - `np.short`
-                - `np.intc`
-                - `np.intp`
-                - `np.long`
-                - `np.longlong`
-                - `np.int{8,16,32,64}`
-        - *`np.inexact[N: npt.NBitBase]`*
-            - *`np.floating[N: npt.NBitBase]`*
-                - `np.half`
-                - `np.single`
-                - `np.double`
-                - `np.longdouble`
-                - `np.float{16,32,64}`
-            - *`np.complexfloating[N1: npt.NBitBase, N2: npt.NBitBase]`*
-                - `np.csingle`
-                - `np.cdouble`
-                - `np.clongdouble`
-                - `np.complex{64,128}`
-
-See the [docs](https://numpy.org/doc/stable/reference/arrays.scalars.html)
-for more info.
-
-##### `Scalar`
-
-The `optype.numpy.Scalar` interface is a generic runtime-checkable protocol,
-that can be seen as a "more specific" `np.generic`, both in name, and from
-a typing perspective.
-Its signature looks like
-
-```python
-Scalar[
-    # The "Python type", so that `Scalar.item() -> PT`.
-    PT: object,
-    # The "N-bits" type (without having to deal with`npt.NBitBase`).
-    # It matches `SCalar.itemsize: NB`.
-    NB: int = Any,
-]
-```
-
-It can be used as e.g.
-
-```python
-are_birds_real: Scalar[bool, Literal[1]] = np.bool_(True)
-the_answer: Scalar[int, Literal[2]] = np.uint16(42)
-fine_structure_constant: Scalar[float, Literal[8]] = np.float64(1) / 137
-```
-
-> [!NOTE]
-> The second type argument for `itemsize` can be omitted, which is equivalent
-> to setting it to `Any`.
-
-##### `Any*Value`
-
-For every (standard) numpy scalar type (i.e. subtypes of `np.generic`), there
-is the `optype.numpy.Any{}Value` alias (where `{}` should be replaced with the
-title-cased name of the scalar, without potential trailing underscore).
-
-So for `np.bool_` there's `onp.AnyBoolValue`,
-for `np.uint8` there's `onp.AnyUInt8Value`, and
-for `np.floating[N: npt.NBitBase]` there's `AnyFloating[N: npt.NBitBase]`.
-
-> [!NOTE]
-> The *extended-precision* scalar types (e.g. `np.int128`, `np.float96` and
-> `np.complex512`) are not included, because their availability is
-> platform-dependent.
-
-When a value of type `Any{}Value` is passed to e.g. `np.array`,
-the resulting `np.ndarray` will have a scalar type that matches
-the corresponding `Any{}Value`.
-For instance, passing `x: onp.AnyFloat64Value` as `np.array(x)` returns an
-array of type `onp.Array[tuple[()], np.float64]`
-(where `tuple[()]` implies that its shape is `()`).
-
-Each `Any{}Value` contains at least the relevant `np.generic` subtype,
-zero or more [`ctypes`][CTYPES] types, and
-zero or more of the Python `builtins` types.
-
-So for instance `type AnyUInt8 = np.uint8 | ct.c_uint8`, and
-`type AnyCDouble = np.cdouble | complex`.
-
-[CTYPES]: https://docs.python.org/3/library/ctypes.html
-
-##### `Any*Type`
-
-In the same way as `Any*Value`, there's a `Any*Type` for each of the numpy
-scalar types.
-
-These type aliases describe what's allowed to be passed to e.g. the
-`np.dtype[ST: np.generic]` constructor, so that its scalar type `ST` matches
-the one corresponding to the passed `Any*Type`.
-
-So for example, if some `x: onp.UInt8` is passed to `np.dtype(x)`, then the
-resulting type will be a `np.dtype[np.uint8]`.
-
-This is useful when annotating an (e.g. numpy) function with a `dtype`
-parameter, e.g. `np.arange`.
-Then by using a `@typing.overload` for each of the allowed scalar types,
-it's possible to annotate it in *the most specific way that's possible*,
-whilst keeping the code readable and maintainable.
-
-#### Data type objects
-
-In NumPy, a *dtype* (data type) object, is an instance of the
-`numpy.dtype[ST: np.generic]` type.
-It's commonly used to convey metadata of a scalar type, e.g. within arrays.
-
-##### `DType`
-
-Because the type parameter of `np.dtype` isn't optional, it could be more
-convenient to use the alias `optype.numpy.DType`, which is defined as:
-
-```python
-type DType[ST: np.generic = Any] = np.dtype[ST]
-```
-
-Apart from the "CamelCase" name, the only difference with `np.dtype` is that
-the type parameter can be omitted, in which case it's equivalent to
-`np.dtype[np.generic]`, but shorter.
-
-##### `HasDType`
-
-Many of numpy's public functions accept an (optional) `dtype` argument.
-But here, the term "dtype" has a broader meaning, as it also accepts
-(a subtype of) `np.generic`.
-Additionally, any instance with a `dtype: DType` attribute is accepted.
-The runtime-checkable interface for this is `optype.numpy.HasDType`, which is
-roughly equivalent to the following definition:
-
-```python
-@runtime_checkable
-class HasDType[DT: DType = DType](Protocol):
-    dtype: Final[DT]
-```
-
-Since `np.ndarray` has a `dtype` attribute, it is a subtype of `HasDType`:
-
-```pycon
->>> isinstance(np.array([42]), onp.HasDType)
-True
-```
-
-##### `AnyDType`
-
-All types that can be passed to the `np.dtype` constructor, as well as the
-types of most `dtype` function parameters, are encapsulated within the
-`optype.numpy.AnyDType` alias, i.e.:
-
-```python
-type AnyDType[ST: np.generic = Any] = type[ST] | DType[ST] | HasDType[DType[ST]]
-```
-
-> [!NOTE]
-> NumPy's own `numpy.typing.DTypeLike` alias serves the same purpose as
-> `AnyDType`.
-> But `npt.DTypeLike` has several issues:
+> [!IMPORTANT]
+> The shape type parameter (`ND`) of `np.ndarray` is currently defined as
+> invariant.
+> This is incorrect: it should be covariant.
 >
-> - It's not generic (accepts no type parameter(s)), and cannot be narrowed to
->   allow for specific scalar types. Even though most functions don't accept
->   *all* possible scalar- and dtypes.
-> - Its definition is maximally broad, e.g. `type[Any]`, and `str` are
->   included in its union.
->   So given some arbitrary function parameter `dtype: npt.DTypeLike`, passing
->   e.g. `dtype="Ceci n'est pas une dtype"` won't look like anything out of the
->   ordinary for your type checker.
+> This means that `ND: tuple[int, ...]` is also invariant in `onp.Array`.
 >
-> These issues aren't the case for `optype.numpy.AnyDType`.
-> However, it (currently) isn't possible to pass scalar char-codes
-> (e.g. `dtype='f8'`) or builtin python types (e.g. `dtype=int`) directly.
-> If you really want to do so anyway, then just pass it to the
-> `np.dtype()` constructor, e.g. `np.arange(42, dtype=np.dtype('f8'))`.
+> The consequence is that e.g. `def span(a: onp.Array[tuple[int], ST])`,
+> won't accept `onp.Array[tuple[Literal[42]]]` as argument, even though
+> `Literal[42]` is a subtype of `int`.
+>
+> See [numpy/numpy#25729](https://github.com/numpy/numpy/issues/25729) and
+> [numpy/numpy#26081](https://github.com/numpy/numpy/pull/26081) for details.
 
-#### Universal functions
+<details>
+<summary>
+In fact, `onp.Array` is *almost* a  generalization of `npt.NDArray`.
+</summary>
 
-A large portion of numpy's public API consists of
-[universal functions][UFUNC-DOC], i.e. (callable) instances of
-[`np.ufunc`][UFUNC-REF].
+This is because `npt.NDArray` can be defined purely in terms of `onp.Array`
+(but not vice-versa).
+
+```python
+type NDArray[ST: np.generic] = onp.Array[Any, ST]
+```
+
+The only difference between this `NDArray` and the original `npt.NDArray`, is
+that the former is equivalent to `np.ndarray[tuple[int, ...], np.dtype[ST]]`,
+but the latter to `np.ndarray[Any, np.dtype[np.generic]]`.
+</details>
+
+With `onp.Array`, it becomes possible to type the shape of arrays,
+
+> [!NOTE]
+> A little bird told me that `onp.Array` might be backported to NumPy in the
+> near future.
+
+#### `UFunc`
+
+A large portion of numpy's public API consists of *universal functions*, often
+denoted as [ufuncs][DOC-UFUNC], which are (callable) instances of
+[`np.ufunc`][REF_UFUNC].
 
 > [!TIP]
-> Custom ufuncs can be created using [`np.frompyfunc`][FROMPYFUNC], but also
+> Custom ufuncs can be created using [`np.frompyfunc`][REF_FROMPY], but also
 > through a user-defined class that implements the required attributes and
 > methods (i.e., duck typing).
-
-##### `AnyUFunc`
-
+>
 But `np.ufunc` has a big issue; it accepts no type parameters.
 This makes it very difficult to properly annotate its callable signature and
 its literal attributes (e.g. `.nin` and `.identity`).
 
-This is where `optype.numpy.AnyUFunc` comes into play:
+This is where `optype.numpy.UFunc` comes into play:
 It's a runtime-checkable generic typing protocol, that has been thoroughly
 type- and unit-tested to ensure compatibility with all of numpy's ufunc
 definitions.
 Its generic type signature looks roughly like:
 
 ```python
-AnyUFunc[
+UFunc[
     # The type of the (bound) `__call__` method.
-    Fn: Callable[..., Any] = Any,
+    Fn: CanCall[..., Any] = Any,
     # The types of the `nin` and `nout` (readonly) attributes.
     # Within numpy these match either `Literal[1]` or `Literal[2]`.
     Nin: int = Any,
@@ -2394,35 +2026,891 @@ AnyUFunc[
 > *attributes*, even though at runtime they're methods that raise a
 > `ValueError` when called).
 > This currently makes it impossible to properly type these in
-> `optype.numpy.AnyUFunc`; doing so would make it incompatible with numpy's
+> `optype.numpy.UFunc`; doing so would make it incompatible with numpy's
 > ufuncs.
 
-[UFUNC-DOC]: https://numpy.org/doc/stable/reference/ufuncs.html
-[UFUNC-REF]: https://numpy.org/doc/stable/reference/generated/numpy.ufunc.html
-[FROMPYFUNC]: https://numpy.org/doc/stable/reference/generated/numpy.frompyfunc.html
+#### Shape type aliases
 
-##### `CanArrayUFunc`
+A *shape* is nothing more than a tuple of (non-negative) integers, i.e.
+an instance of `tuple[int, ...]` such as `(42,)`, `(6, 6, 6)` or `()`.
+The length of a shape is often referred to as the *number of dimensions*
+or the *dimensionality* of the array or scalar.
+For arrays this is accessible through the `np.ndarray.ndim`, which is
+an alias for `len(np.ndarray.shape)`.
 
-When ufuncs are called on some inputs, the ufunc will call the
-`__array_ufunc__`, which is not unlike how `abs()` calls `__abs__`.
+> [!NOTE]
+> Before NumPy 2, the maximum number of dimensions was 32, but has since
+> been increased to 64.
 
-With `optype.numpy.CanArrayUFunc`, it becomes straightworward to annotate
-potential arguments to `np.ufunc`.
-It's a single-method runtime-checkable protocol, whose type signature looks
-roughly like:
+To make typing the shape of an array easier, optype provides two families of
+shape type aliases: `AtLeast{N}D` and `AtMost{N}D`.
+The `{N}` should be replaced by the number of dimensions, which currently
+is limited to `0`, `1`, `2`, and `3`.
+
+Both of these families are generic, and their (optional) type parameters must
+be either `int` (default), or a literal (non-negative) integer, i.e. like
+`typing.Literal[N: int]`.
+
+> [!NOTE]
+> NumPy's functions with a `shape` parameter usually also accept a "base"
+> `int`, which is shorthand for `tuple[int]`.
+> But for the sake of consistency, `AtLeast{N}D` and `AtMost{N}D` are
+> limited to integer *tuples*.
+
+The names `AtLeast{N}D` and `AtMost{N}D` are pretty much as self-explanatory:
+
+- `AtLeast{N}D` is a `tuple[int, ...]` with `ndim >= N`
+- `AtMost{N}D` is a `tuple[int, ...]` with `ndim <= N`
+
+The shape aliases are roughly defined as:
+
+<table>
+<tr>
+<th align="center" colspan="2"><code>AtLeast{N}D</code></th>
+<th align="center" colspan="2"><code>AtMost{N}D</code></th>
+</tr>
+<tr>
+<th>type signature</th>
+<th>alias type</th>
+<th>type signature</th>
+<th>type alias</th>
+</tr>
+<tr>
+<td colspan="4"></td>
+</tr>
+<tr>
+<td>
 
 ```python
-CanArrayUFunc[
-    Fn: AnyUFunc = Any,
+type AtLeast0D[
+    *N: int = ...,
 ]
 ```
 
-> [!NOTE]
-> Due to the previously mentioned typing limitations of `np.ufunc`,
-> the `*args` and `**kwargs` of `CanArrayUFunc.__array_ufunc__` are currently
-> impossible to properly annotate.
+</td>
+<td>
 
+```python
+tuple[*N]
+```
+
+</td>
+<td>
+
+```python
+type AtMost0D
+```
+
+</td>
+<td>
+
+```python
+tuple[()]
+```
+
+</td>
+</tr>
+<tr><td colspan="4"></td></tr>
+<tr>
+<td>
+
+```python
+type AtLeast1D[
+    N0: int = int,
+    *N: int = ...,
+]
+```
+
+</td>
+<td>
+
+```python
+tuple[N0, *N]
+```
+
+</td>
+<td>
+
+```python
+type AtMost1D[
+    N0: int = int,
+]
+```
+
+</td>
+<td>
+
+```python
+tuple[N0] | AtMost0D
+```
+
+</td>
+</tr>
+<tr><td colspan="4"></td></tr>
+<tr>
+<td>
+
+```python
+type AtLeast2D[
+    N0: int = int,
+    N1: int = int,
+    *N: int = ...,
+]
+```
+
+</td>
+<td>
+
+```python
+tuple[N0, N1, *N]
+```
+
+</td>
+<td>
+
+```python
+type AtMost2D[
+    N0: int = int,
+    N1: int = int,
+]
+```
+
+</td>
+<td>
+
+```python
+(
+    tuple[N0, N1]
+    | AtMost1D[N0]
+)
+```
+
+</td>
+</tr>
+<tr><td colspan="4"></td></tr>
+<tr>
+<td>
+
+```python
+type AtLeast3D[
+    N0: int = int,
+    N1: int = int,
+    N2: int = int,
+    *N: int = ...,
+]
+```
+
+</td>
+<td>
+
+```python
+tuple[N0, N1, N2, *N]
+```
+
+</td>
+<td>
+
+```python
+type AtMost3D[
+    N0: int = int,
+    N1: int = int,
+    N2: int = int,
+]
+```
+
+</td>
+<td>
+
+```python
+(
+    tuple[N0, N1, N2]
+    | AtMost2D[N0, N1]
+)
+```
+
+</td>
+</tr>
+</table>
+
+#### `Scalar`
+
+The `optype.numpy.Scalar` interface is a generic runtime-checkable protocol,
+that can be seen as a "more specific" `np.generic`, both in name, and from
+a typing perspective.
+
+Its type signature looks roughly like this:
+
+```python
+Scalar[
+    # The "Python type", so that `Scalar.item() -> PT`.
+    PT: object,
+    # The "N-bits" type (without having to deal with `npt.NBitBase`).
+    # It matches the `itemsize: NB` property.
+    NB: int = int,
+]
+```
+
+It can be used as e.g.
+
+```python
+are_birds_real: Scalar[bool, Literal[1]] = np.bool_(True)
+the_answer: Scalar[int, Literal[2]] = np.uint16(42)
+alpha: Scalar[float, Literal[8]] = np.float64(1 / 137)
+```
+
+> [!NOTE]
+> The second type argument for `itemsize` can be omitted, which is equivalent
+> to setting it to `int`, so `Scalar[PT]` and `Scalar[PT, int]` are equivalent.
+
+#### `DType`
+
+In NumPy, a *dtype* (data type) object, is an instance of the
+`numpy.dtype[ST: np.generic]` type.
+It's commonly used to convey metadata of a scalar type, e.g. within arrays.
+
+Because the type parameter of `np.dtype` isn't optional, it could be more
+convenient to use the alias `optype.numpy.DType`, which is defined as:
+
+```python
+type DType[ST: np.generic = Any] = np.dtype[ST]
+```
+
+Apart from the "CamelCase" name, the only difference with `np.dtype` is that
+the type parameter can be omitted, in which case it's equivalent to
+`np.dtype[np.generic]`, but shorter.
+
+#### `Any*Array` and `Any*DType`
+
+See the [docs](https://numpy.org/doc/stable/reference/arrays.scalars.html)
+for more info.
+
+##### Abstract types
+
+<table>
+    <tr>
+        <th>scalar type</th>
+        <th>base type</th>
+        <th>array-like type</th>
+        <th>dtype-like type</th>
+    </tr>
+    <tr>
+        <th align="center" colspan="2"><code>numpy._</code></th>
+        <th align="center" colspan="2"><code>optype.numpy._</code></th>
+    </tr>
+    <tr>
+        <td><code>generic</code></td>
+        <td><i><code>Any</code></i></td>
+        <td><code>AnyGenericArray</code></td>
+        <td><code>AnyGenericDType</code></td>
+    </tr>
+    <tr>
+        <td><code>number</code></td>
+        <td><code>generic</code></td>
+        <td><code>AnyNumberArray</code></td>
+        <td><code>AnyNumberDType</code></td>
+    </tr>
+    <tr>
+        <td><code>integer</code></td>
+        <td rowspan="2"><code>number</code></td>
+        <td><code>AnyIntegerArray</code></td>
+        <td><code>AnyIntegerDType</code></td>
+    </tr>
+    <tr>
+        <td><code>inexact</code></td>
+        <td><code>AnyInexactArray</code></td>
+        <td><code>AnyInexactDType</code></td>
+    </tr>
+    <tr>
+        <td><code>unsignedinteger</code></td>
+        <td rowspan="2"><code>integer</code></td>
+        <td><code>AnyUnsignedIntegerArray</code></td>
+        <td><code>AnyUnsignedIntegerDType</code></td>
+    </tr>
+    <tr>
+        <td><code>signedinteger</code></td>
+        <td><code>AnySignedIntegerArray</code></td>
+        <td><code>AnySignedIntegerDType</code></td>
+    </tr>
+    <tr>
+        <td><code>floating</code></td>
+        <td rowspan="2"><code>inexact</code></td>
+        <td><code>AnyFloatingArray</code></td>
+        <td><code>AnyFloatingDType</code></td>
+    </tr>
+    <tr>
+        <td><code>complexfloating</code></td>
+        <td><code>AnyComplexFloatingArray</code></td>
+        <td><code>AnyComplexFloatingDType</code></td>
+    </tr>
+</table>
+
+##### Unsigned integers
+
+<table>
+    <tr>
+        <th>scalar type</th>
+        <th>base type</th>
+        <th>array-like type</th>
+        <th>dtype-like type</th>
+    </tr>
+    <tr>
+        <th align="center" colspan="2">
+            <code>numpy._</code>
+        </th>
+        <th align="center" colspan="2">
+            <code>optype.numpy._</code>
+        </th>
+    </tr>
+    <tr>
+        <th><code>uint8</code></th>
+        <td rowspan="10"><code>unsignedinteger</code></td>
+        <td><code>AnyUInt8Array</code></td>
+        <td><code>AnyUInt8DType</code></td>
+    </tr>
+    <tr>
+        <th><code>uint16</code></th>
+        <td><code>AnyUInt16Array</code></td>
+        <td><code>AnyUInt16DType</code></td>
+    </tr>
+    <tr>
+        <th><code>uint32</code></th>
+        <td><code>AnyUInt32Array</code></td>
+        <td><code>AnyUInt32DType</code></td>
+    </tr>
+    <tr>
+        <th><code>uint64</code></th>
+        <td><code>AnyUInt64Array</code></td>
+        <td><code>AnyUInt64DType</code></td>
+    </tr>
+    <tr>
+        <th><code>uintp</code></th>
+        <td><code>AnyUIntPArray</code></td>
+        <td><code>AnyUIntPDType</code></td>
+    </tr>
+    <tr>
+        <th><code>ubyte</code></th>
+        <td><code>AnyUByteArray</code></td>
+        <td><code>AnyUByteDType</code></td>
+    </tr>
+    <tr>
+        <th><code>ushort</code></th>
+        <td><code>AnyUShortArray</code></td>
+        <td><code>AnyUShortDType</code></td>
+    </tr>
+    <tr>
+        <th><code>uintc</code></th>
+        <td><code>AnyUIntCArray</code></td>
+        <td><code>AnyUIntCDType</code></td>
+    </tr>
+    <tr>
+        <th><code>ulong</code></th>
+        <td><code>AnyULongArray</code></td>
+        <td><code>AnyULongDType</code></td>
+    </tr>
+    <tr>
+        <th><code>ulonglong</code></th>
+        <td><code>AnyULongLongArray</code></td>
+        <td><code>AnyULongLongDType</code></td>
+    </tr>
+</table>
+
+##### Signed integers
+
+<table>
+    <tr>
+        <th>scalar type</th>
+        <th>base type</th>
+        <th>array-like type</th>
+        <th>dtype-like type</th>
+    </tr>
+    <tr>
+        <th align="center" colspan="2">
+            <code>numpy._</code>
+        </th>
+        <th align="center" colspan="2">
+            <code>optype.numpy._</code>
+        </th>
+    </tr>
+    <tr>
+        <th><code>int8</code></th>
+        <td rowspan="10"><code>signedinteger</code></td>
+        <td><code>AnyInt8Array</code></td>
+        <td><code>AnyInt8DType</code></td>
+    </tr>
+    <tr>
+        <th><code>int16</code></th>
+        <td><code>AnyInt16Array</code></td>
+        <td><code>AnyInt16DType</code></td>
+    </tr>
+    <tr>
+        <th><code>int32</code></th>
+        <td><code>AnyInt32Array</code></td>
+        <td><code>AnyInt32DType</code></td>
+    </tr>
+    <tr>
+        <th><code>int64</code></th>
+        <td><code>AnyInt64Array</code></td>
+        <td><code>AnyInt64DType</code></td>
+    </tr>
+    <tr>
+        <th><code>intp</code></th>
+        <td><code>AnyIntPArray</code></td>
+        <td><code>AnyIntPDType</code></td>
+    </tr>
+    <tr>
+        <th><code>byte</code></th>
+        <td><code>AnyByteArray</code></td>
+        <td><code>AnyByteDType</code></td>
+    </tr>
+    <tr>
+        <th><code>short</code></th>
+        <td><code>AnyShortArray</code></td>
+        <td><code>AnyShortDType</code></td>
+    </tr>
+    <tr>
+        <th><code>intc</code></th>
+        <td><code>AnyIntCArray</code></td>
+        <td><code>AnyIntCDType</code></td>
+    </tr>
+    <tr>
+        <th><code>long</code></th>
+        <td><code>AnyLongArray</code></td>
+        <td><code>AnyLongDType</code></td>
+    </tr>
+    <tr>
+        <th><code>longlong</code></th>
+        <td><code>AnyLongLongArray</code></td>
+        <td><code>AnyLongLongDType</code></td>
+    </tr>
+</table>
+
+##### Floats
+
+<table>
+    <tr>
+        <th>scalar type</th>
+        <th>base type</th>
+        <th>array-like type</th>
+        <th>dtype-like type</th>
+    </tr>
+    <tr>
+        <th align="center" colspan="2">
+            <code>numpy._</code>
+        </th>
+        <th align="center" colspan="2">
+            <code>optype.numpy._</code>
+        </th>
+    </tr>
+    <tr>
+        <th><code>float16</code></th>
+        <td rowspan="7"><code>floating</code></td>
+        <td><code>AnyFloat16Array</code></td>
+        <td><code>AnyFloat16DType</code></td>
+    </tr>
+    <tr>
+        <th><code>float32</code></th>
+        <td><code>AnyFloat32Array</code></td>
+        <td><code>AnyFloat32DType</code></td>
+    </tr>
+    <tr>
+        <th><code>float64</code></th>
+        <td><code>AnyFloat64Array</code></td>
+        <td><code>AnyFloat64DType</code></td>
+    </tr>
+    <tr>
+        <th><code>half</code></th>
+        <td><code>AnyHalfArray</code></td>
+        <td><code>AnyHalfDType</code></td>
+    </tr>
+    <tr>
+        <th><code>single</code></th>
+        <td><code>AnySingleArray</code></td>
+        <td><code>AnySingleDType</code></td>
+    </tr>
+    <tr>
+        <th><code>double</code></th>
+        <td><code>AnyDoubleArray</code></td>
+        <td><code>AnyDoubleDType</code></td>
+    </tr>
+    <tr>
+        <th><code>longdouble</code></th>
+        <td><code>AnyLongDoubleArray</code></td>
+        <td><code>AnyLongDoubleDType</code></td>
+    </tr>
+</table>
+
+##### Complex numbers
+
+<table>
+    <tr>
+        <th>scalar type</th>
+        <th>base type</th>
+        <th>array-like type</th>
+        <th>dtype-like type</th>
+    </tr>
+    <tr>
+        <th align="center" colspan="2">
+            <code>numpy._</code>
+        </th>
+        <th align="center" colspan="2">
+            <code>optype.numpy._</code>
+        </th>
+    </tr>
+    <tr>
+        <th><code>complex64</code></th>
+        <td rowspan="7"><code>complexfloating</code></td>
+        <td><code>AnyComplex64Array</code></td>
+        <td><code>AnyComplex64DType</code></td>
+    </tr>
+    <tr>
+        <th><code>complex128</code></th>
+        <td><code>AnyComplex128Array</code></td>
+        <td><code>AnyComplex128DType</code></td>
+    </tr>
+    <tr>
+        <th><code>csingle</code></th>
+        <td><code>AnyCSingleArray</code></td>
+        <td><code>AnyCSingleDType</code></td>
+    </tr>
+    <tr>
+        <th><code>cdouble</code></th>
+        <td><code>AnyCDoubleArray</code></td>
+        <td><code>AnyCDoubleDType</code></td>
+    </tr>
+    <tr>
+        <th><code>clongdouble</code></th>
+        <td><code>AnyCLongDoubleArray</code></td>
+        <td><code>AnyCLongDoubleDType</code></td>
+    </tr>
+</table>
+
+##### "Flexible"
+
+Scalar types with "flexible" length, whose values have a (constant) length
+that depends on the specific `np.dtype` instantiation.
+
+<table>
+    <tr>
+        <th>scalar type</th>
+        <th>base type</th>
+        <th>array-like type</th>
+        <th>dtype-like type</th>
+    </tr>
+    <tr>
+        <th align="center" colspan="2">
+            <code>numpy._</code>
+        </th>
+        <th align="center" colspan="2">
+            <code>optype.numpy._</code>
+        </th>
+    </tr>
+    <tr>
+        <th><code>str_</code></th>
+        <td rowspan="2"><code>character</code></td>
+        <td><code>AnyStrArray</code></td>
+        <td><code>AnyStrDType</code></td>
+    </tr>
+    <tr>
+        <th><code>bytes_</code></th>
+        <td><code>AnyBytesArray</code></td>
+        <td><code>AnyBytesDType</code></td>
+    </tr>
+    <tr>
+        <th><code>void</code></th>
+        <td><code>flexible</code></td>
+        <td><code>AnyVoidArray</code></td>
+        <td><code>AnyVoidDType</code></td>
+    </tr>
+</table>
+
+##### Other types
+
+<table>
+    <tr>
+        <th>scalar type</th>
+        <th>base type</th>
+        <th>array-like type</th>
+        <th>dtype-like type</th>
+    </tr>
+    <tr>
+        <th align="center" colspan="2">
+            <code>numpy._</code>
+        </th>
+        <th align="center" colspan="2">
+            <code>optype.numpy._</code>
+        </th>
+    </tr>
+    <tr>
+        <th><code>bool_</code></th>
+        <td rowspan="4"><code>generic</code></td>
+        <td><code>AnyBoolArray</code></td>
+        <td><code>AnyBoolDType</code></td>
+    </tr>
+    <tr>
+        <th><code>datetime64</code></th>
+        <td><code>AnyDateTime64Array</code></td>
+        <td><code>AnyDateTime64DType</code></td>
+    </tr>
+    <tr>
+        <th><code>timedelta64</code></th>
+        <td><code>AnyTimeDelta64Array</code></td>
+        <td><code>AnyTimeDelta64DType</code></td>
+    </tr>
+    <tr>
+        <th><code>object_</code></th>
+        <td><code>AnyObjectArray</code></td>
+        <td><code>AnyObjectDType</code></td>
+    </tr>
+</table>
+
+#### Low-level interfaces
+
+Within `optype.numpy` there are several `Can*` (single-method) and `Has*`
+(single-attribute) protocols, related to the `__array_*__` dunders of the
+NumPy Python API.
+These typing protocols are, just like the `optype.Can*` and `optype.Has*` ones,
+runtime-checkable and extensible (i.e. not `@final`).
+
+> [!TIP]
+> All type parameters of these protocols can be omitted, which is equivalent
+> to passing `typing.Any` (or its upper type bound).
+
+<table>
+    <tr>
+        <th>Protocol type signature</th>
+        <th>Implements</th>
+        <th>NumPy docs</th>
+    </tr>
+    <tr>
+<td>
+
+```python
+class CanArray[
+    ND: tuple[int, ...] = ...,
+    ST: np.generic = ...,
+]
+```
+
+</td>
+<td>
+
+```python
+def __array__[RT = ST](
+    _,
+    dtype: DType[RT] | None = ...,
+) -> Array[ND, RT]
+```
+
+</td>
+<td>
+
+[User Guide: Interoperability with NumPy][DOC-ARRAY]
+
+</td>
+    </tr>
+    <tr><td colspan="3"></td></tr>
+    <tr>
+<td>
+
+```python
+class CanArrayUFunc[
+    U: UFunc = ...,
+    R: object = ...,
+]
+```
+
+</td>
+<td>
+
+```python
+def __array_ufunc__(
+    _,
+    ufunc: U,
+    method: LiteralString,
+    *args: Any,
+    **kwargs: Any,
+) -> R
+```
+
+</td>
+<td>
+
+[NEP 13][NEP13]
+
+</td>
+    </tr>
+    <tr><td colspan="3"></td></tr>
+    <tr>
+<td>
+
+```python
+class CanArrayFunction[
+    F: CanCall[..., Any] = ...,
+    R: object = ...,
+]
+```
+
+</td>
+<td>
+
+```python
+def __array_function__(
+    _,
+    func: F,
+    types: CanIterSelf[type],
+    args: tuple[Any, ...],
+    kwargs: Mapping[str, ...],
+) -> R
+```
+
+</td>
+<td>
+
+[NEP 18][NEP18]
+
+</td>
+    </tr>
+    <tr><td colspan="3"></td></tr>
+    <tr>
+<td>
+
+```python
+class CanArrayFinalize[
+    T: object = ...,
+]
+```
+
+</td>
+<td>
+
+```python
+def __array_finalize__(_, obj: T)
+```
+
+</td>
+<td>
+
+[User Guide: Subclassing ndarray][DOC-AFIN]
+
+</td>
+    </tr>
+    <tr><td colspan="3"></td></tr>
+    <tr>
+<td>
+
+```python
+class CanArrayWrap
+```
+
+</td>
+<td>
+
+```python
+def __array_wrap__[ND, ST](
+    _,
+    array: Array[ND, ST],
+    context: (...) | None = ...,
+    return_scalar: bool = ...,
+) -> Self | Array[ND, ST]
+```
+
+</td>
+<td>
+
+[API: Standard array subclasses][REF_ARRAY-WRAP]
+
+</td>
+    </tr>
+    <tr><td colspan="3"></td></tr>
+    <tr>
+<td>
+
+```python
+class HasArrayInterface[
+    V: Mapping[str, Any] = ...,
+]
+```
+
+</td>
+<td>
+
+```python
+__array_interface__: V
+```
+
+</td>
+<td>
+
+[API: The array interface protocol][REF_ARRAY-INTER]
+
+</td>
+    </tr>
+    <tr><td colspan="3"></td></tr>
+    <tr>
+<td>
+
+```python
+class HasArrayPriority
+```
+
+</td>
+<td>
+
+```python
+__array_priority__: float
+```
+
+</td>
+<td>
+
+[API: Standard array subclasses][REF_ARRAY-PRIO]
+
+</td>
+    </tr>
+    <tr><td colspan="3"></td></tr>
+    <tr>
+<td>
+
+```python
+class HasDType[
+    DT: DType = ...,
+]
+```
+
+</td>
+<td>
+
+```python
+dtype: DT
+```
+
+</td>
+<td>
+
+[API: Specifying and constructing data types][REF_DTYPE]
+
+</td>
+    </tr>
+</table>
+
+<!-- references -->
+
+[DOC-UFUNC]: https://numpy.org/doc/stable/reference/ufuncs.html
+[DOC-ARRAY]: https://numpy.org/doc/stable/user/basics.interoperability.html#the-array-method
+[DOC-AFIN]: https://numpy.org/doc/stable/user/basics.subclassing.html#the-role-of-array-finalize
+
+[REF_UFUNC]: https://numpy.org/doc/stable/reference/generated/numpy.ufunc.html
+[REF_FROMPY]: https://numpy.org/doc/stable/reference/generated/numpy.frompyfunc.html
+[REF_ARRAY-WRAP]: https://numpy.org/doc/stable/reference/arrays.classes.html#numpy.class.__array_wrap__
+[REF_ARRAY-INTER]: https://numpy.org/doc/stable/reference/arrays.interface.html#python-side
+[REF_ARRAY-PRIO]: https://numpy.org/doc/stable/reference/arrays.classes.html#numpy.class.__array_priority__
+[REF_DTYPE]: https://numpy.org/doc/stable/reference/arrays.dtypes.html#specifying-and-constructing-data-types
+
+[NEP13]: https://numpy.org/neps/nep-0013-ufunc-overrides.html
+[NEP18]: https://numpy.org/neps/nep-0018-array-function-protocol.html
 [NEP29]: https://numpy.org/neps/nep-0029-deprecation_policy.html
+
 [SPEC0]: https://scientific-python.org/specs/spec-0000/
+
 [PEP695]: https://peps.python.org/pep-0695/
 [PEP696]: https://peps.python.org/pep-0696/
