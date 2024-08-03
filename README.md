@@ -183,33 +183,8 @@ See [`examples/twice.py`](examples/twice.py) for the full example.
 
 ## Reference
 
-The API of `optype` is flat; a single `import optype` is all you need.
-
-There are four flavors of things that live within `optype`,
-
--
-    `optype.Can{}` types describe *what can be done* with it.
-    For instance, any `CanAbs[T]` type can be used as argument to the `abs()`
-    builtin function with return type `T`. Most `Can{}` implement a single
-    special method, whose name directly matched that of the type. `CanAbs`
-    implements `__abs__`, `CanAdd` implements `__add__`, etc.
--
-    `optype.Has{}` is the analogue of `Can{}`, but for special *attributes*.
-    `HasName` has a `__name__` attribute, `HasDict` has a `__dict__`, etc.
--
-    `optype.Does{}` describe the *type of operators*.
-    So `DoesAbs` is the type of the `abs({})` builtin function,
-    and `DoesPos` the type of the `+{}` prefix operator.
--
-    `optype.do_{}` are the correctly-typed implementations of `Does{}`. For
-    each `do_{}` there is a `Does{}`, and vice-versa.
-    So `do_abs: DoesAbs` is the typed alias of `abs({})`,
-    and `do_pos: DoesPos` is a typed version of `operator.pos`.
-    The `optype.do_` operators are more complete than `operators`,
-    have runtime-accessible type annotations, and have names you don't
-    need to know by heart.
-
-The reference docs are structured as follows:
+The API of `optype` is flat; a single `import optype as opt` is all you need
+(except for `optype.numpy`).
 
 <!-- TOC start (generated with https://github.com/derlin/bitdowntoc) -->
 
@@ -250,6 +225,32 @@ The reference docs are structured as follows:
 <!-- TOC end -->
 
 ### `optype`
+
+There are four flavors of things that live within `optype`,
+
+-
+    `optype.Can{}` types describe *what can be done* with it.
+    For instance, any `CanAbs[T]` type can be used as argument to the `abs()`
+    builtin function with return type `T`. Most `Can{}` implement a single
+    special method, whose name directly matched that of the type. `CanAbs`
+    implements `__abs__`, `CanAdd` implements `__add__`, etc.
+-
+    `optype.Has{}` is the analogue of `Can{}`, but for special *attributes*.
+    `HasName` has a `__name__` attribute, `HasDict` has a `__dict__`, etc.
+-
+    `optype.Does{}` describe the *type of operators*.
+    So `DoesAbs` is the type of the `abs({})` builtin function,
+    and `DoesPos` the type of the `+{}` prefix operator.
+-
+    `optype.do_{}` are the correctly-typed implementations of `Does{}`. For
+    each `do_{}` there is a `Does{}`, and vice-versa.
+    So `do_abs: DoesAbs` is the typed alias of `abs({})`,
+    and `do_pos: DoesPos` is a typed version of `operator.pos`.
+    The `optype.do_` operators are more complete than `operators`,
+    have runtime-accessible type annotations, and have names you don't
+    need to know by heart.
+
+The reference docs are structured as follows:
 
 All [typing protocols][PC] here live in the root `optype` namespace.
 They are [runtime-checkable][RC] so that you can do e.g.
