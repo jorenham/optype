@@ -239,7 +239,13 @@ The reference docs are structured as follows:
     - [`Empty*` type aliases](#empty-type-aliases)
     - [Literal types](#literal-types)
 - [`optype.numpy`](#optypenumpy)
-    - TODO: regenerate this
+    - [`Array`](#array)
+    - [`UFunc`](#ufunc)
+    - [`Shape type aliases`](#shape-type-aliases)
+    - [`Scalar`](#scalar)
+    - [`DType`](#dtype)
+    - [`Any*Array` and `Any*DType`](#anyarray-and-anydtype)
+    - [Low-level interfaces](#low-level-interfaces)
 
 <!-- TOC end -->
 
@@ -2272,7 +2278,7 @@ Apart from the "CamelCase" name, the only difference with `np.dtype` is that
 the type parameter can be omitted, in which case it's equivalent to
 `np.dtype[np.generic]`, but shorter.
 
-#### Type aliases
+#### `Any*Array` and `Any*DType`
 
 See the [docs](https://numpy.org/doc/stable/reference/arrays.scalars.html)
 for more info.
