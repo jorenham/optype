@@ -4,22 +4,25 @@ from __future__ import annotations
 import inspect
 import itertools
 import sys
-from typing import TYPE_CHECKING, Any, cast, get_args as _get_args
+from typing import TYPE_CHECKING, Any, Literal, cast, get_args as _get_args
 
 
 if sys.version_info >= (3, 13):
-    from typing import TypeAliasType, TypeIs, is_protocol
+    from typing import TypeAliasType, TypeIs, is_protocol, overload
 else:
     from typing_extensions import (
         TypeAliasType,
         TypeIs,  # noqa: TCH002
         is_protocol,
+        overload,
     )
 
 
 if TYPE_CHECKING:
+    from collections.abc import Callable as CanCall
     from types import ModuleType
 
+    from .types import FinalType
     from .typing import AnyIterable
 
 from ._can import CanGetitem, CanIter, CanLen
@@ -29,6 +32,7 @@ __all__ = (
     'get_args',
     'get_protocol_members',
     'get_protocols',
+    'is_final',
     'is_iterable',
     'is_protocol',
     'is_runtime_protocol',
@@ -74,6 +78,75 @@ def is_iterable(obj: object, /) -> TypeIs[AnyIterable]:
             return False
 
         return True
+
+    return False
+
+
+@overload
+def is_final(final_cls_or_method: FinalType, /) -> Literal[True]: ...
+@overload
+def is_final(cls: type, /) -> bool: ...
+@overload
+def is_final(method: CanCall[..., Any], /) -> bool: ...
+@overload
+def is_final(prop: property, /) -> bool: ...
+@overload
+def is_final(
+    clsmethod: classmethod[Any, ..., Any] | staticmethod[..., Any],
+    /,
+) -> bool: ...
+def is_final(
+    arg: (
+        FinalType
+        | type
+        | CanCall[..., Any]
+        | property
+        | classmethod[Any, ..., Any]
+        | staticmethod[..., Any]
+    ),
+    /,
+) -> bool:
+    """
+    Check if the type, method, classmethod, staticmethod, or property, is
+    decorated with `@typing.final` or `@typing_extensions.final`.
+
+    IMPORTANT: A final `@property` won't be recognized unless `@final` is
+    applied before the `@property` decorator, i.e. directly on the method.
+
+    Do this:
+
+    ```python
+    class Europe:
+        @property
+        @final
+        def countdown(self): ...
+    ```
+
+    Don't do this:
+
+    ```python
+    class Europe:
+        @final
+        @property
+        def countdown(self): ...
+    ```
+
+    The reason for this is that `builtins.property.__final__` cannot be
+    written to, so `@final` won't be able to set `__final__ = True` on it.
+    Only the getter method of a `@property` is checked.
+
+    NOTE: Accessing a `classmethod` or `staticmethod` of a class can't be done
+    through regular attribute access, but should be done with
+    `inspect.getattr_static`.
+    But unlike `@property`, it doesn't matter in which order you use the
+    `@classmethod` and `@staticmethod` decorators and `@final`.
+    """
+    if callable(arg):  # classes are also callable
+        return getattr(arg, '__final__', False)
+    if isinstance(arg, property) and arg.fget is not None:
+        return is_final(arg.fget)
+    if isinstance(arg, staticmethod | classmethod):
+        return getattr(arg, '__final__', False) or is_final(arg.__wrapped__)
 
     return False
 
