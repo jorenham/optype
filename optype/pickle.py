@@ -1,3 +1,4 @@
+# ruff: noqa: A005
 """
 Runtime-protocols for the `pickle` standard library.
 https://docs.python.org/3/library/pickle.html
