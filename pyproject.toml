@@ -32,7 +32,7 @@ numpy = ["numpy"]
 [tool.poetry.dependencies]
 # bump to ^3.11 after 2025-04-04
 # bump to ^3.12 after 2026-04-24
-python = "^3.10"
+python = "^3.10.1"
 typing-extensions = {version = ">=4.7", python = "<3.13"}
 
 # https://scientific-python.org/specs/spec-0000/
