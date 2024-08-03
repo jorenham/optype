@@ -56,7 +56,7 @@ def test_sctypes(name: str):
     assert dtype_expect.type in types
 
     for arg in types | names | {c for c in chars if c[0] not in '=<>'}:
-        dtype = np.dtype(arg)
+        dtype: np.dtype[Any] = np.dtype(arg)
         assert (
             dtype == dtype_expect
             # only needed for `np.dtype(ct.c_char)`
