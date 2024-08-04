@@ -18,7 +18,7 @@ def test_protocols(cls: type):
     assert cls.__name__ in opt.pickle.__all__
 
     # ensure single-method protocols
-    assert len(get_protocol_members(cls)) == 1
+    assert len(get_protocol_members(cls) - {'__new__'}) == 1
 
     # ensure @runtime_checkable
     assert is_runtime_protocol(cls)

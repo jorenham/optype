@@ -27,12 +27,24 @@ Falsy = TypeAliasType('Falsy', tp.Literal[None, FalsyIntCo] | FalsyStr)
 
 _T_tp = tp.TypeVar('_T_tp')
 _T_tpx = tp.TypeVar('_T_tpx')
+_Pss = tpx.ParamSpec('_Pss')
+_T_co = tpx.TypeVar('_T_co', covariant=True)
 
 
 class GenericTP(tp.Generic[_T_tp]): ...
 
 
 class GenericTPX(tp.Generic[_T_tpx]): ...
+
+
+@tpx.runtime_checkable
+class CanInit(tp.Protocol[_Pss]):
+    def __init__(self, *args: _Pss.args, **kwargs: _Pss.kwargs) -> None: ...
+
+
+@tpx.runtime_checkable
+class CanNew(tp.Protocol[_Pss, _T_co]):
+    def __new__(cls, *args: _Pss.args, **kwargs: _Pss.kwargs) -> _T_co: ...
 
 
 class PTyp(tp.Protocol): ...
@@ -119,7 +131,37 @@ def test_get_args_generic(origin: tp.Any):
     assert opt.inspect.get_args(origin[FalsyStr]) == (FalsyStr,)
     assert opt.inspect.get_args(origin[Falsy]) == (Falsy,)
 
-# TODO: test `get_protocol_members`
+
+def test_get_protocol_members():
+    assert opt.inspect.get_protocol_members(opt.CanAdd) == {'__add__'}
+    assert opt.inspect.get_protocol_members(opt.CanPow) == {'__pow__'}
+    assert opt.inspect.get_protocol_members(opt.CanHash) == {'__hash__'}
+    assert opt.inspect.get_protocol_members(opt.CanEq) == {'__eq__'}
+    assert opt.inspect.get_protocol_members(opt.CanGetMissing) == {
+        '__getitem__',
+        '__missing__',
+    }
+    assert opt.inspect.get_protocol_members(opt.CanWith) == {
+        '__enter__',
+        '__exit__',
+    }
+
+    assert opt.inspect.get_protocol_members(opt.HasName) == {'__name__'}
+    assert opt.inspect.get_protocol_members(opt.HasNames) == {
+        '__name__',
+        '__qualname__',
+    }
+    assert opt.inspect.get_protocol_members(opt.HasClass) == {'__class__'}
+    assert opt.inspect.get_protocol_members(opt.HasDict) == {'__dict__'}
+    assert opt.inspect.get_protocol_members(opt.HasSlots) == {'__slots__'}
+    assert opt.inspect.get_protocol_members(opt.HasAnnotations) == {
+        '__annotations__',
+    }
+
+    assert opt.inspect.get_protocol_members(CanInit) == {'__init__'}
+    assert opt.inspect.get_protocol_members(CanNew) == {'__new__'}
+
+
 # TODO: test `get_protocols`
 
 
