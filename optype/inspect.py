@@ -241,7 +241,7 @@ def get_protocol_members(cls: type, /) -> frozenset[str]:
     """
     A variant of `typing[_extensions].get_protocol_members()` that
 
-    - doesn't hide `__dict__` or `__annotations__`,
+    - doesn't hide `__annotations__`, `__dict__`, `__init__` or `__new__`,
     - doesn't add a `__hash__` if there's an `__eq__` method, and
     - doesn't include methods of base types from different module.
     """
@@ -254,10 +254,10 @@ def get_protocol_members(cls: type, /) -> frozenset[str]:
     members = annotations.keys() | {
         name for name, v in vars(cls).items()
         if (
-            name != '__new__'
-            and callable(v)
+            # unwrap if `staticmethod` or `classmethod`
+            callable(f := getattr(v, '__func__', v))
             and (
-                v.__module__ == module
+                f.__module__ == module
                 or (
                     # Fun fact: Each `@overload` returns the same dummy
                     # function; so there's no reference your wrapped method :).
@@ -274,13 +274,13 @@ def get_protocol_members(cls: type, /) -> frozenset[str]:
                     # ...anyway, the only thing we know here, is the name of
                     # an overloaded method. But we have no idea how many of
                     # them there *were*, let alone their signatures.
-                    v.__module__ in module_blacklist
-                    and v.__name__ == '_overload_dummy'
+                    f.__module__ in module_blacklist
+                    and f.__name__ == '_overload_dummy'
                 )
             )
         ) or (
             isinstance(v, property)
-            and v.fget
+            and v.fget is not None
             and v.fget.__module__ == module
         )
     }
