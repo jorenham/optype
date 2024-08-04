@@ -207,6 +207,7 @@ The API of `optype` is flat; a single `import optype as opt` is all you need
     - [Buffer types](#buffer-types)
 - [`optype.copy`](#optypecopy)
 - [`optype.dataclasses`](#optypedataclasses)
+- [`optype.inspect`](#optypeinspect)
 - [`optype.pickle`](#optypepickle)
 - [`optype.string`](#optypestring)
 - [`optype.typing`](#optypetyping)
@@ -1586,6 +1587,190 @@ It can conveniently be used to check whether a type or instance is a
 dataclass, i.e. `isinstance(obj, HasDataclassFields)`.
 
 [DC]: https://docs.python.org/3/library/dataclasses.html
+
+### `optype.inspect`
+
+A collection of functions for runtime inspection of types, modules, and other
+objects.
+
+<table width="415px">
+    <tr>
+        <th>Function</th>
+        <th>Description</th>
+    </tr>
+        <tr>
+        <td><code>get_args(_)</code></td>
+<td>
+
+A better alternative to [`typing.get_args()`][GET_ARGS], that
+
+- unpacks `typing.Annotated` and Python 3.12 `type _` alias types
+  (i.e. `typing.TypeAliasType`),
+- recursively flattens unions and nested `typing.Literal` types, and
+- raises `TypeError` if not a type expression.
+
+Return a `tuple[Any, ...]` of type arguments or parameters.
+
+To illustrate one of the (many) issues with `typing.get_args`:
+
+```pycon
+>>> from typing import Literal, TypeAlias, get_args
+>>> Falsy: TypeAlias = Literal[None] | Literal[False, 0] | Literal['', b'']
+>>> get_args(Falsy)
+(typing.Literal[None], typing.Literal[False, 0], typing.Literal['', b''])
+```
+
+But this is in direct contradiction with the
+[official typing documentation][LITERAL-DOCS]:
+
+> When a Literal is parameterized with more than one value, it’s treated as
+> exactly equivalent to the union of those types.
+> That is, `Literal[v1, v2, v3]` is equivalent to
+> `Literal[v1] | Literal[v2] | Literal[v3]`.
+
+So this is why `optype.inspect.get_args` should be used
+
+```pycon
+>>> import optype as opt
+>>> opt.inspect.get_args(Falsy)
+(None, False, 0, '', b'')
+```
+
+Another issue of `typing.get_args` is with Python 3.12 `type _ = ...` aliases,
+which are meant as a replacement for `_: typing.TypeAlias = ...`, and should
+therefore be treated equally:
+
+```pycon
+>>> import typing
+>>> import optype as opt
+>>> type StringLike = str | bytes
+>>> typing.get_args(StringLike)
+()
+>>> opt.inspect.get_args(StringLike)
+(<class 'str'>, <class 'bytes'>)
+```
+
+Clearly, `typing.get_args` fails misarably here; it would have been better
+if it would have raised an error, but it instead returns an empty tuple,
+hiding the fact that it doesn't support the new `type _ = ...` aliases.
+But luckily, `optype.inspect.get_args` doesn't have this problem, and treats
+it just like it treats `typing.Alias` (and so do the other `optype.inspect`
+functions).
+
+</td>
+    </tr>
+    <tr>
+        <td><code>get_protocol_members(_)</code></td>
+<td>
+
+A better alternative to [`typing.get_protocol_members()`][PROTO_MEM], that
+
+- doesn't require Python 3.13 or above,
+- supports [PEP 695][PEP695] `type _` alias types on Python 3.12 and above,
+- unpacks unions of `typing.Literal` ...
+- ... and flattens them if nested within another `typing.Literal`,
+- treats `typing.Annotated[T]` as `T`, and
+- raises a `TypeError` if the passed value isn't a type expression.
+
+Returns a `frozenset[str]` with member names.
+
+</td>
+    </tr>
+    <tr>
+        <td><code>get_protocols(_)</code></td>
+<td>
+
+Returns a `frozenset[type]` of the public protocols within the passed module.
+Pass `private=True` to also return the private protocols.
+
+</td>
+    </tr>
+    <tr>
+        <td><code>is_iterable(_)</code></td>
+<td>
+
+Check whether the object can be iterated over, i.e. if it can be used in a
+`for` loop, without attempting to do so.
+If `True` is returned, then the object is a `optype.typing.AnyIterable`
+instance.
+
+</td>
+    </tr>
+    <tr>
+        <td><code>is_final(_)</code></td>
+<td>
+
+Check if the type, method / classmethod / staticmethod / property, is
+decorated with [`@typing.final`][@FINAL].
+
+Note that a `@property` won't be recognized unless the `@final` decorator is
+placed *below* the `@property` decorator.
+See the function docstring for more information.
+
+</td>
+    </tr>
+    <tr>
+        <td><code>is_protocol(_)</code></td>
+<td>
+
+A backport of [`typing.is_protocol`][IS_PROTO] that was added in Python 3.13,
+a re-export of [`typing_extensions.is_protocol`][IS_PROTO_EXT].
+
+</td>
+    </tr>
+    <tr>
+        <td><code>is_runtime_protocol(_)</code></td>
+<td>
+
+Check if the type expression is a *runtime-protocol*, i.e. a
+`typing.Protocol` *type*, decorated with `@typing.runtime_checkable` (also
+supports `typing_extensions`).
+
+</td>
+    </tr>
+    <tr>
+        <td><code>is_union_type(_)</code></td>
+<td>
+
+Check if the type is a [`typing.Union`][UNION] type, e.g. `str | int`.
+
+Unlike `isinstance(_, types.Union)`, this function also returns `True` for
+unions of user-defined `Generic` or `Protocol` types (because those are
+different union types for some reason).
+
+</td>
+    </tr>
+    <tr>
+        <td><code>is_generic_alias(_)</code></td>
+<td>
+
+Check if the type is a *subscripted* type, e.g. `list[str]` or
+`optype.CanNext[int]`, but not `list`, `CanNext`.
+
+Unlike `isinstance(_, typing.GenericAlias)`, this function also returns `True`
+for user-defined `Generic` or `Protocol` types (because those are
+use a different generic alias for some reason).
+
+Even though technically `T1 | T2` is represented as `typing.Union[T1, T2]`
+(which is a (special) generic alias), `is_generic_alias` will returns `False`
+for such union types, because calling `T1 | T2` a subscripted type just
+doesn't make much sense.
+
+</td>
+    </tr>
+</table>
+
+> [!NOTE]
+> All functions in `optype.inspect` also work for Python 3.12 `type _` aliases
+> (i.e. `types.TypeAliasType`) and with `typing.Annotated`.
+
+[UNION]: https://docs.python.org/3/library/typing.html#typing.Union
+[LITERAL-DOCS]: https://typing.readthedocs.io/en/latest/spec/literal.html#shortening-unions-of-literals
+[@FINAL]: https://docs.python.org/3/library/typing.html#typing.Literal
+[GET_ARGS]: https://docs.python.org/3/library/typing.html#typing.get_args
+[IS_PROTO]: https://docs.python.org/3.13/library/typing.html#typing.is_protocol
+[IS_PROTO_EXT]: https://typing-extensions.readthedocs.io/en/latest/#typing_extensions.is_protocol
+[PROTO_MEM]: https://docs.python.org/3.13/library/typing.html#typing.get_protocol_members
 
 ### `optype.pickle`
 
