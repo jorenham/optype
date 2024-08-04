@@ -162,7 +162,23 @@ def test_get_protocol_members():
     assert opt.inspect.get_protocol_members(CanNew) == {'__new__'}
 
 
-# TODO: test `get_protocols`
+def test_get_protocols():
+    import collections.abc  # noqa: PLC0415
+    import types  # noqa: PLC0415
+
+    assert not opt.inspect.get_protocols(collections.abc)
+    assert not opt.inspect.get_protocols(types)
+    # ... hence optype
+
+    protocols_tp = opt.inspect.get_protocols(tp)
+    assert protocols_tp
+    assert opt.inspect.get_protocols(tp, private=True) >= protocols_tp
+
+    protocols_tpx = opt.inspect.get_protocols(tpx)
+    assert protocols_tpx
+    assert opt.inspect.get_protocols(tpx, private=True) >= protocols_tpx
+
+    assert protocols_tp <= protocols_tpx
 
 
 def test_type_is_final():
