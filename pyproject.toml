@@ -96,6 +96,7 @@ addopts = [
     "--doctest-modules",
     "--strict-config",
     "--strict-markers",
+    "--showlocals",
 ]
 doctest_optionflags = [
     "NORMALIZE_WHITESPACE",
@@ -143,7 +144,6 @@ select = [
     "YTT",      # flake8-2020
     "ANN",      # flake8-annotations
     "ASYNC",    # flake8-async
-    "ASYNC1",     # flake8-trio
     "BLE",      # flake8-blind-except
     "B",        # flake8-bugbear
     "A",        # flake8-builtins
@@ -151,11 +151,11 @@ select = [
     "C4",       # flake8-comprehensions
     "DTZ",      # flake8-datetimez
     "T10",      # flake8-debugger
-    "EM",       # flake8-errmsg
     "EXE",      # flake8-executable
     "FA",       # flake8-future-annotations
     "ISC",      # flake8-implicit-str-concat
     "ICN",      # flake8-import-conventions
+    "LOG",      # flake8-logging
     "G",        # flake8-logging-format
     "INP",      # flake8-no-pep420
     "PIE",      # flake8-pie
@@ -178,11 +178,11 @@ select = [
     "PL",       # pylint
     "TRY",      # tryceratops
     "FLY",      # flynt
-    "NPY",      # numpy
+    "NPY",      # NumPy
+    "FAST",     # FastAPI
     "AIR",      # airflow
     "PERF",     # perflint,
     "FURB",     # refurb
-    "LOG",      # flake8-logging
     "RUF",      # ruff
 ]
 ignore = [
@@ -197,6 +197,8 @@ ignore = [
     "PLR0904",  # too-many-public-methods
     # refurb
     "FURB118",  # reimplemented-operator
+    # tryceratops
+    "TRY003",   # raise-vanilla-args
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -244,6 +246,13 @@ allow-dunder-method-names = [
     "__qualname__", # attr like `__name__`
     "__replace__",  # method used by `copy.replace` in Python 3.13+
     "__self__",     # attr of a bound method
+
+    "__value__",
+    "__origin__",
+    "__args__",
+    "__parameters__",
+    "__typing_unpacked_tuple_args__",
+    "__typing_is_unpacked_typevartuple__",
 
     # numpy array special methods
     "__array__",
