@@ -3,6 +3,10 @@ from __future__ import annotations
 
 import sys
 import typing as tp
+from inspect import getattr_static
+
+import pytest
+import typing_extensions as tpx
 
 
 if sys.version_info >= (3, 12):
@@ -10,9 +14,6 @@ if sys.version_info >= (3, 12):
 else:
     from typing_extensions import TypeAliasType
 
-from inspect import getattr_static
-
-import typing_extensions as tpx
 
 import optype as opt
 
@@ -23,6 +24,15 @@ FalsyIntCo: tp.TypeAlias = FalsyBool | FalsyInt
 # this is equivalent to `type FalsyStr = ...` on `python>=3.12`
 FalsyStr = TypeAliasType('FalsyStr', tp.Literal['', b''])
 Falsy = TypeAliasType('Falsy', tp.Literal[None, FalsyIntCo] | FalsyStr)
+
+_T_tp = tp.TypeVar('_T_tp')
+_T_tpx = tp.TypeVar('_T_tpx')
+
+
+class GenericTP(tp.Generic[_T_tp]): ...
+
+
+class GenericTPX(tp.Generic[_T_tpx]): ...
 
 
 class PTyp(tp.Protocol): ...
@@ -93,13 +103,21 @@ class FinalMembers:
     def sf_final2_ext(): pass
 
 
-def test_get_args():
+def test_get_args_literals():
     assert opt.inspect.get_args(FalsyBool) == (False,)
     assert opt.inspect.get_args(FalsyInt) == (0,)
     assert opt.inspect.get_args(FalsyIntCo) == (False, 0)
     assert opt.inspect.get_args(FalsyStr) == ('', b'')
     assert opt.inspect.get_args(Falsy) == (None, False, 0, '', b'')
 
+
+@pytest.mark.parametrize('origin', [tuple, GenericTP, GenericTPX])
+def test_get_args_generic(origin: tp.Any):
+    assert opt.inspect.get_args(origin[FalsyBool]) == (FalsyBool,)
+    assert opt.inspect.get_args(origin[FalsyInt]) == (FalsyInt,)
+    assert opt.inspect.get_args(origin[FalsyIntCo]) == (FalsyIntCo,)
+    assert opt.inspect.get_args(origin[FalsyStr]) == (FalsyStr,)
+    assert opt.inspect.get_args(origin[Falsy]) == (Falsy,)
 
 # TODO: test `get_protocol_members`
 # TODO: test `get_protocols`
