@@ -123,7 +123,7 @@ def test_get_args_literals():
     assert opt.inspect.get_args(Falsy) == (None, False, 0, '', b'')
 
 
-@pytest.mark.parametrize('origin', [tuple, GenericTP, GenericTPX])
+@pytest.mark.parametrize('origin', [type, list, tuple, GenericTP, GenericTPX])
 def test_get_args_generic(origin: tp.Any):
     assert opt.inspect.get_args(origin[FalsyBool]) == (FalsyBool,)
     assert opt.inspect.get_args(origin[FalsyInt]) == (FalsyInt,)
@@ -220,7 +220,16 @@ def test_staticmethod_is_final():
     assert opt.inspect.is_final(getattr_static(FinalMembers, 'sf_final2_ext'))
 
 
-# TODO: test `is_generic_alias`
+@pytest.mark.parametrize('origin', [type, list, tuple, GenericTP, GenericTPX])
+def test_is_generic_alias(origin: tp.Any):
+    assert not opt.inspect.is_generic_alias(origin)
+
+    assert opt.inspect.is_generic_alias(origin[None])
+    Alias = TypeAliasType('Alias', origin[None])  # noqa: N806
+    assert opt.inspect.is_generic_alias(Alias)
+    assert opt.inspect.is_generic_alias(tp.Annotated[origin[None], None])
+
+    assert not opt.inspect.is_generic_alias(origin[None] | None)
 
 
 def test_is_iterable():

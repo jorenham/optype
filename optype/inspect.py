@@ -167,22 +167,6 @@ def is_final(
     return False
 
 
-def is_runtime_protocol(cls: type, /) -> bool:
-    """
-    Check if `cls` is a `typing[_extensions].Protocol` that's decorated with
-    `typing[_extensions].runtime_checkable`.
-    """
-    return is_protocol(cls) and getattr(cls, '_is_runtime_protocol', False)
-
-
-def is_union_type(tp: Any, /) -> TypeIs[UnionType | UnionAlias]:
-    return isinstance(tp, UnionType | UnionAlias)
-
-
-def is_generic_alias(tp: Any, /) -> TypeIs[GenericType | GenericAlias]:
-    return isinstance(tp, GenericType | GenericAlias)
-
-
 def _get_alias(tp: Any, /) -> Any:
     seen: set[TypeAliasType] = set()
     for _ in range(sys.getrecursionlimit()):
@@ -199,6 +183,34 @@ def _get_alias(tp: Any, /) -> Any:
         return tp
 
     raise RecursionError
+
+
+def is_runtime_protocol(type_expr: Any, /) -> bool:
+    """
+    Check if `type_expr` is a `typing[_extensions].Protocol` that's decorated
+    with `typing[_extensions].runtime_checkable`.
+    """
+    if isinstance(type_expr, AnnotatedAlias | TypeAliasType):
+        type_expr = _get_alias(type_expr)
+    return (
+        getattr(type_expr, '_is_runtime_protocol', False)
+        and is_protocol(type_expr)
+    )
+
+
+def is_union_type(type_expr: Any, /) -> TypeIs[UnionType | UnionAlias]:
+    if isinstance(type_expr, AnnotatedAlias | TypeAliasType):
+        type_expr = _get_alias(type_expr)
+    return isinstance(type_expr, UnionType | UnionAlias)
+
+
+def is_generic_alias(type_expr: Any, /) -> TypeIs[GenericType | GenericAlias]:
+    if isinstance(type_expr, AnnotatedAlias | TypeAliasType):
+        type_expr = _get_alias(type_expr)
+    return (
+        isinstance(type_expr, GenericType | GenericAlias)
+        and not isinstance(type_expr, UnionType | UnionAlias)
+    )
 
 
 def get_args(tp: Any, /) -> tuple[Any, ...]:
