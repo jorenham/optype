@@ -14,13 +14,16 @@ else:
         runtime_checkable,
     )
 
-from ._types_impl import LiteralType
+from ._types_impl import AnnotatedAlias, GenericType, LiteralAlias, UnionAlias
 
 
 __all__ = (
-    'LiteralType',
+    'AnnotatedAlias',
+    'GenericType',
+    'LiteralAlias',
     'ProtocolType',
     'RuntimeProtocolType',
+    'UnionAlias',
     'WrappedFinalType',
 )
 
