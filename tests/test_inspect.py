@@ -253,4 +253,13 @@ def test_is_runtime_protocol():
     assert not opt.inspect.is_runtime_protocol(FinalPTyp)
 
 
-# TODO: test `is_union_type`
+@pytest.mark.parametrize('origin', [int, tp.Literal[True], PTyp, PExt])
+def test_is_union_type(origin: tp.Any):
+    assert opt.inspect.is_union_type(origin | None)
+    Alias = TypeAliasType('Alias', origin | None)  # noqa: N806
+    assert opt.inspect.is_union_type(Alias)
+    assert opt.inspect.is_union_type(tp.Annotated[origin | None, None])
+    assert opt.inspect.is_union_type(tp.Annotated[origin, None] | None)
+
+    assert not opt.inspect.is_union_type(origin)
+    assert not opt.inspect.is_union_type(origin | origin)
