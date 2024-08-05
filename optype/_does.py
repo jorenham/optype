@@ -1,12 +1,17 @@
+from __future__ import annotations
+
 import sys
-from collections.abc import Callable
-from typing import Any, Literal, TypeAlias
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias
 
 
 if sys.version_info >= (3, 13):
     from typing import ParamSpec, Protocol, TypeVar, final, overload
 else:
     from typing_extensions import ParamSpec, Protocol, TypeVar, final, overload
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 
 import optype._can as _c
 
@@ -580,7 +585,7 @@ class DoesReversed(Protocol):
         self,
         sequence: _c.CanSequence[_c.CanIndex, _V_reversed],
         /,
-    ) -> 'reversed[_V_reversed]': ...
+    ) -> reversed[_V_reversed]: ...
 
 
 # binary infix operators

@@ -1,12 +1,16 @@
+from __future__ import annotations
+
 import math as _math
 import operator as _o
 import sys as _sys
 from typing import TYPE_CHECKING, ParamSpec, TypeVar, overload
 
-import optype._can as _c
-import optype._does as _d
-
 from ._utils import set_module
+
+
+if TYPE_CHECKING:
+    import optype._can as _c
+    import optype._does as _d
 
 
 # type conversion

@@ -12,7 +12,7 @@ if sys.version_info >= (3, 13):
     from typing import LiteralString, Protocol, TypeVar, final, is_protocol
 else:
     from typing_extensions import (
-        LiteralString,  # noqa: TCH002
+        LiteralString,
         Protocol,
         TypeVar,
         final,

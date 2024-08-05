@@ -2,31 +2,31 @@ from __future__ import annotations
 
 import sys
 from typing import TYPE_CHECKING, Any, Generic, TypeVar, final
-import optype
+import optype as opt
 
-if sys.version_info < (3, 12):
-    from typing_extensions import override
-else:
+if sys.version_info >= (3, 12):
     from typing import override
+else:
+    from typing_extensions import override
 
 if TYPE_CHECKING:
     from collections.abc import Callable
     from types import NotImplementedType
 
 
-T_co = TypeVar('T_co', covariant=True)
-X = TypeVar('X')
-Y = TypeVar('Y')
+_T_co = TypeVar('_T_co', covariant=True)
+_X = TypeVar('_X')
+_Y = TypeVar('_Y')
 
 
 @final
-class Functor(Generic[T_co]):
+class Functor(Generic[_T_co]):
     __match_args__ = __slots__ = ('value',)
 
-    def __init__(self, value: T_co, /) -> None:
+    def __init__(self, value: _T_co, /) -> None:
         self.value = value
 
-    def map1(self, f: Callable[[T_co], Y]) -> Functor[Y]:
+    def map1(self, f: Callable[[_T_co], _Y], /) -> Functor[_Y]:
         """
         Applies a unary operator `f` over the value of `self`,
         and return a new `Functor`.
@@ -35,9 +35,10 @@ class Functor(Generic[T_co]):
 
     def map2(
         self,
-        f: Callable[[T_co, X], Y],
-        other: Functor[X] | Any,
-    ) -> Functor[Y] | NotImplementedType:
+        f: Callable[[_T_co, _X], _Y],
+        other: Functor[_X] | Any,
+        /,
+    ) -> Functor[_Y] | NotImplementedType:
         """
         Maps the binary operator `f: (T, X) -> Y` over `self: Functor[T]` and
         `other: Functor[X]`, and returns `Functor[Y]`. A `NotImplemented`
@@ -52,67 +53,70 @@ class Functor(Generic[T_co]):
         return NotImplemented
 
     @override
-    def __repr__(self) -> str:
+    def __repr__(self, /) -> str:
         return f'{type(self).__name__}({self.value!r})'
 
     @override
-    def __hash__(self: Functor[optype.CanHash]) -> int:
-        return optype.do_hash(self.value)
+    def __hash__(self: Functor[opt.CanHash], /) -> int:
+        return opt.do_hash(self.value)
 
     # unary prefix ops
 
-    def __neg__(self: Functor[optype.CanNeg[Y]]) -> Functor[Y]:
+    def __neg__(self: Functor[opt.CanNeg[_Y]], /) -> Functor[_Y]:
         """
         >>> -Functor(3.14)
         Functor(-3.14)
         """
-        return self.map1(optype.do_neg)
+        return self.map1(opt.do_neg)
 
-    def __pos__(self: Functor[optype.CanPos[Y]]) -> Functor[Y]:
+    def __pos__(self: Functor[opt.CanPos[_Y]], /) -> Functor[_Y]:
         """
         >>> +Functor(True)
         Functor(1)
         """
-        return self.map1(optype.do_pos)
+        return self.map1(opt.do_pos)
 
-    def __invert__(self: Functor[optype.CanInvert[Y]]) -> Functor[Y]:
+    def __invert__(self: Functor[opt.CanInvert[_Y]], /) -> Functor[_Y]:
         """
         >>> ~Functor(0)
         Functor(-1)
         """
-        return self.map1(optype.do_invert)
+        return self.map1(opt.do_invert)
 
     # rich comparison ops
 
     def __lt__(
-        self: Functor[optype.CanLt[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
+        self: Functor[opt.CanLt[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
         """
         >>> Functor({0}) < Functor({0, 1})
         Functor(True)
         >>> Functor((0, 1)) < Functor((1, -1))
         Functor(True)
         """
-        return self.map2(optype.do_lt, x)
+        return self.map2(opt.do_lt, x)
 
     def __le__(
-        self: Functor[optype.CanLe[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
+        self: Functor[opt.CanLe[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
         """
         >>> Functor({0}) <= Functor({0, 1})
         Functor(True)
         >>> Functor((0, 1)) <= Functor((1, -1))
         Functor(True)
         """
-        return self.map2(optype.do_le, x)
+        return self.map2(opt.do_le, x)
 
     @override
     def __eq__(  # pyright: ignore[reportIncompatibleMethodOverride]
-        self: Functor[optype.CanEq[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
+        self: Functor[opt.CanEq[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
         """
         >>> Functor(object()) == Functor(object())
         Functor(False)
@@ -121,13 +125,14 @@ class Functor(Generic[T_co]):
         >>> Functor(0) == 0
         False
         """
-        return self.map2(optype.do_eq, x)
+        return self.map2(opt.do_eq, x)
 
     @override
     def __ne__(  # pyright: ignore[reportIncompatibleMethodOverride]
-        self: Functor[optype.CanNe[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
+        self: Functor[opt.CanNe[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
         """
         >>> Functor(object()) != Functor(object())
         Functor(True)
@@ -136,244 +141,272 @@ class Functor(Generic[T_co]):
         >>> Functor(0) != 0
         True
         """
-        return self.map2(optype.do_ne, x)
+        return self.map2(opt.do_ne, x)
 
     def __gt__(
-        self: Functor[optype.CanGt[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
+        self: Functor[opt.CanGt[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
         """
         >>> Functor({0, 1}) > Functor({0})
         Functor(True)
         >>> Functor((0, 1)) > Functor((1, -1))
         Functor(False)
         """
-        return self.map2(optype.do_gt, x)
+        return self.map2(opt.do_gt, x)
 
     def __ge__(
-        self: Functor[optype.CanGe[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
+        self: Functor[opt.CanGe[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
         """
         >>> Functor({0, 1}) >= Functor({0})
         Functor(True)
         >>> Functor((0, 1)) >= Functor((1, -1))
         Functor(False)
         """
-        return self.map2(optype.do_ge, x)
+        return self.map2(opt.do_ge, x)
 
     # binary infix ops
 
     def __add__(
-        self: Functor[optype.CanAdd[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
+        self: Functor[opt.CanAdd[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
         """
         >>> Functor(0) + Functor(1)
         Functor(1)
         >>> Functor(('spam',)) + Functor(('ham',)) + Functor(('eggs',))
         Functor(('spam', 'ham', 'eggs'))
         """
-        return self.map2(optype.do_add, x)
+        return self.map2(opt.do_add, x)
 
     def __sub__(
-        self: Functor[optype.CanSub[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
+        self: Functor[opt.CanSub[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
         """
         >>> Functor(0) - Functor(1)
         Functor(-1)
         """
-        return self.map2(optype.do_sub, x)
+        return self.map2(opt.do_sub, x)
 
     def __mul__(
-        self: Functor[optype.CanMul[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
+        self: Functor[opt.CanMul[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
         """
         >>> Functor(('Developers!',)) * Functor(4)
         Functor(('Developers!', 'Developers!', 'Developers!', 'Developers!'))
         """
-        return self.map2(optype.do_mul, x)
+        return self.map2(opt.do_mul, x)
 
     def __matmul__(
-        self: Functor[optype.CanMatmul[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
-        return self.map2(optype.do_matmul, x)
+        self: Functor[opt.CanMatmul[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
+        return self.map2(opt.do_matmul, x)
 
     def __truediv__(
-        self: Functor[optype.CanTruediv[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
+        self: Functor[opt.CanTruediv[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
         """
         >>> Functor(1) / Functor(2)
         Functor(0.5)
         """
-        return self.map2(optype.do_truediv, x)
+        return self.map2(opt.do_truediv, x)
 
     def __floordiv__(
-        self: Functor[optype.CanFloordiv[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
+        self: Functor[opt.CanFloordiv[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
         """
         >>> Functor(1) // Functor(2)
         Functor(0)
         """
-        return self.map2(optype.do_floordiv, x)
+        return self.map2(opt.do_floordiv, x)
 
     def __mod__(
-        self: Functor[optype.CanMod[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
+        self: Functor[opt.CanMod[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
         """
         >>> Functor(10) % Functor(7)
         Functor(3)
         """
-        return self.map2(optype.do_mod, x)
+        return self.map2(opt.do_mod, x)
 
     def __pow__(
-        self: Functor[optype.CanPow2[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
+        self: Functor[opt.CanPow2[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
         """
         >>> Functor(2) ** Functor(3)
         Functor(8)
         """
-        return self.map2(optype.do_pow, x)
+        return self.map2(opt.do_pow, x)
 
     def __lshift__(
-        self: Functor[optype.CanLshift[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
+        self: Functor[opt.CanLshift[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
         """
         >>> Functor(1) << Functor(10)
         Functor(1024)
         """
-        return self.map2(optype.do_lshift, x)
+        return self.map2(opt.do_lshift, x)
 
     def __rshift__(
-        self: Functor[optype.CanRshift[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
+        self: Functor[opt.CanRshift[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
         """
         >>> Functor(1024) >> Functor(4)
         Functor(64)
         """
-        return self.map2(optype.do_rshift, x)
+        return self.map2(opt.do_rshift, x)
 
     def __and__(
-        self: Functor[optype.CanAnd[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
+        self: Functor[opt.CanAnd[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
         """
         >>> Functor(True) & Functor(False)
         Functor(False)
         >>> Functor(3) & Functor(7)
         Functor(3)
         """
-        return self.map2(optype.do_and, x)
+        return self.map2(opt.do_and, x)
 
     def __xor__(
-        self: Functor[optype.CanXor[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
+        self: Functor[opt.CanXor[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
         """
         >>> Functor(True) ^ Functor(False)
         Functor(True)
         >>> Functor(3) ^ Functor(7)
         Functor(4)
         """
-        return self.map2(optype.do_xor, x)
+        return self.map2(opt.do_xor, x)
 
     def __or__(
-        self: Functor[optype.CanOr[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
+        self: Functor[opt.CanOr[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
         """
         >>> Functor(True) | Functor(False)
         Functor(True)
         >>> Functor(3) | Functor(7)
         Functor(7)
         """
-        return self.map2(optype.do_or, x)
+        return self.map2(opt.do_or, x)
 
     # binary reflected infix ops
 
     def __radd__(
-        self: Functor[optype.CanRAdd[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
-        return self.map2(optype.do_radd, x)
+        self: Functor[opt.CanRAdd[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
+        return self.map2(opt.do_radd, x)
 
     def __rsub__(
-        self: Functor[optype.CanRSub[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
-        return self.map2(optype.do_rsub, x)
+        self: Functor[opt.CanRSub[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
+        return self.map2(opt.do_rsub, x)
 
     def __rmul__(
-        self: Functor[optype.CanRMul[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
-        return self.map2(optype.do_rmul, x)
+        self: Functor[opt.CanRMul[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
+        return self.map2(opt.do_rmul, x)
 
     def __rmatmul__(
-        self: Functor[optype.CanRMatmul[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
-        return self.map2(optype.do_rmatmul, x)
+        self: Functor[opt.CanRMatmul[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
+        return self.map2(opt.do_rmatmul, x)
 
     def __rtruediv__(
-        self: Functor[optype.CanRTruediv[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
-        return self.map2(optype.do_rtruediv, x)
+        self: Functor[opt.CanRTruediv[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
+        return self.map2(opt.do_rtruediv, x)
 
     def __rfloordiv__(
-        self: Functor[optype.CanRFloordiv[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
-        return self.map2(optype.do_rfloordiv, x)
+        self: Functor[opt.CanRFloordiv[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
+        return self.map2(opt.do_rfloordiv, x)
 
     def __rmod__(
-        self: Functor[optype.CanRMod[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
-        return self.map2(optype.do_rmod, x)
+        self: Functor[opt.CanRMod[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
+        return self.map2(opt.do_rmod, x)
 
     def __rpow__(
-        self: Functor[optype.CanRPow[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
-        return self.map2(optype.do_rpow, x)
+        self: Functor[opt.CanRPow[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
+        return self.map2(opt.do_rpow, x)
 
     def __rlshift__(
-        self: Functor[optype.CanRLshift[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
-        return self.map2(optype.do_rlshift, x)
+        self: Functor[opt.CanRLshift[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
+        return self.map2(opt.do_rlshift, x)
 
     def __rrshift__(
-        self: Functor[optype.CanRRshift[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
-        return self.map2(optype.do_rrshift, x)
+        self: Functor[opt.CanRRshift[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
+        return self.map2(opt.do_rrshift, x)
 
     def __rand__(
-        self: Functor[optype.CanRAnd[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
-        return self.map2(optype.do_rand, x)
+        self: Functor[opt.CanRAnd[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
+        return self.map2(opt.do_rand, x)
 
     def __rxor__(
-        self: Functor[optype.CanRXor[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
-        return self.map2(optype.do_rxor, x)
+        self: Functor[opt.CanRXor[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
+        return self.map2(opt.do_rxor, x)
 
     def __ror__(
-        self: Functor[optype.CanROr[X, Y]],
-        x: Functor[X],
-    ) -> Functor[Y]:
-        return self.map2(optype.do_ror, x)
+        self: Functor[opt.CanROr[_X, _Y]],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]:
+        return self.map2(opt.do_ror, x)

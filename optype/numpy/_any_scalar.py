@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import datetime as _dt
+import datetime as dt
 from typing import Any, Final, TypeAlias as _Type
 
 import numpy as np
@@ -78,8 +78,8 @@ AnyNumber: _Type = _NumberPY | np.number[Any] | _ct.Number
 # (The `datetime.{datetime,timedelta}` values can only be passed to
 # `np.{datetime64,timedelta64}` directly; the sctypes won't be correctly
 # inferred if passed as `np.array(...[, dtype=None])`.)
-AnyDateTime64: _Type = np.datetime64 | _dt.datetime
-AnyTimeDelta64: _Type = np.timedelta64 | _dt.timedelta
+AnyDateTime64: _Type = np.datetime64 | dt.datetime
+AnyTimeDelta64: _Type = np.timedelta64 | dt.timedelta
 
 # variable-width - character
 AnyStr: _Type = str | np.str_

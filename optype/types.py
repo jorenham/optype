@@ -1,4 +1,3 @@
-# noqa: A005
 from __future__ import annotations
 
 import sys
@@ -9,7 +8,7 @@ if sys.version_info >= (3, 13):
     from typing import LiteralString, Protocol, runtime_checkable
 else:
     from typing_extensions import (
-        LiteralString,  # noqa: TCH002
+        LiteralString,
         Protocol,
         runtime_checkable,
     )

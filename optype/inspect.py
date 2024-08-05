@@ -1,4 +1,3 @@
-# ruff: noqa: A005
 from __future__ import annotations
 
 import inspect
@@ -23,11 +22,10 @@ if sys.version_info >= (3, 13):
 else:
     from typing_extensions import (
         TypeAliasType,
-        TypeIs,  # noqa: TCH002
+        TypeIs,
         is_protocol,
         overload,
     )
-
 
 if TYPE_CHECKING:
     from collections.abc import Callable as CanCall

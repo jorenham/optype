@@ -18,7 +18,7 @@ else:
     from typing_extensions import (
         ParamSpec,
         Protocol,
-        Self,  # noqa: TCH002
+        Self,
         TypeVar,
         overload,
         override,

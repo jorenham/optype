@@ -17,7 +17,7 @@ if sys.version_info >= (3, 13):
 else:
     from typing_extensions import (
         Protocol,
-        Self,  # noqa: TCH002
+        Self,
         TypeVar,
         overload,
         runtime_checkable,

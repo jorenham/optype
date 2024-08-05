@@ -1,4 +1,4 @@
-# ruff: noqa: F841, PYI042, ERA001
+# ruff: noqa: PYI042, ERA001
 from typing import TYPE_CHECKING, Literal, TypeAlias
 
 import optype.numpy as onp  # noqa: TCH001
