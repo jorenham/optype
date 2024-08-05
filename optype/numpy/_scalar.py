@@ -44,22 +44,22 @@ _Array0D: TypeAlias = np.ndarray[tuple[()], _DT_Array0D]
 
 # Scalar
 
-_PT_Scalar = TypeVar('_PT_Scalar', infer_variance=True, bound=object)
-_NB_Scalar = TypeVar('_NB_Scalar', infer_variance=True, bound=int, default=Any)
-_DT_Scalar = TypeVar('_DT_Scalar', bound=np.dtype[Any])
+_PT_co = TypeVar('_PT_co', covariant=True)
+_NB_co = TypeVar('_NB_co', bound=int, covariant=True, default=int)
+_DT = TypeVar('_DT', bound=np.dtype[Any])
 
 
 @runtime_checkable
-class Scalar(Protocol[_PT_Scalar, _NB_Scalar]):
+class Scalar(Protocol[_PT_co, _NB_co]):
     """
     A lightweight `numpy.generic` interface that's actually generic, and
     doesn't require all that nasty `numpy.typing.NBitBase` stuff.
     """
 
-    def item(self, k: _L0 | tuple[()] | tuple[_L0] = ..., /) -> _PT_Scalar: ...
+    def item(self, k: _L0 | tuple[()] | tuple[_L0] = ..., /) -> _PT_co: ...
     # unfortunately `| int` is required for compat with `numpy.__init__.pyi`
     @property
-    def itemsize(self, /) -> _NB_Scalar | int: ...
+    def itemsize(self, /) -> _NB_co | int: ...
 
     @property
     def base(self, /) -> None: ...
@@ -107,4 +107,4 @@ class Scalar(Protocol[_PT_Scalar, _NB_Scalar]):
     @overload
     def __array__(self, /) -> _Array0D[np.dtype[Self]]: ...  # pyright: ignore[reportInvalidTypeArguments]
     @overload
-    def __array__(self, dtype: _DT_Scalar, /) -> _Array0D[_DT_Scalar]: ...
+    def __array__(self, dtype: _DT, /) -> _Array0D[_DT]: ...
