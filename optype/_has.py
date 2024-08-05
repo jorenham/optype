@@ -134,10 +134,8 @@ _AnnotationsT_co = TypeVar(
 
 @set_module('optype')
 @runtime_checkable
-class HasAnnotations(Protocol[_AnnotationsT_co]):
-    @property
-    @override
-    def __annotations__(self) -> _AnnotationsT_co: ...  # type: ignore[override]  # pyright: ignore[reportIncompatibleVariableOverride]
+class HasAnnotations(Protocol[_AnnotationsT_co]):  # pyright: ignore[reportInvalidTypeVarUse]
+    __annotations__: _AnnotationsT_co  # type: ignore[override]  # pyright: ignore[reportIncompatibleVariableOverride]
 
 
 # should be one of `(TypeVar, TypeVarTuple, ParamSpec)`
