@@ -278,7 +278,7 @@ requires = tox>=4
 envlist =
     repo-review
     pre-commit
-    py{310,311,312,313b4}
+    py{310,311,312,313rc1}
 
 [testenv]
 description = pytest
