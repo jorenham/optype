@@ -1,4 +1,3 @@
-# ruff: noqa: F841
 import sys
 from typing import Any, Literal
 

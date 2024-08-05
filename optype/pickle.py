@@ -1,4 +1,3 @@
-# ruff: noqa: A005
 """
 Runtime-protocols for the `pickle` standard library.
 https://docs.python.org/3/library/pickle.html
@@ -27,7 +26,7 @@ if sys.version_info >= (3, 13):
 else:
     from typing_extensions import (
         Protocol,
-        Self,  # noqa: TCH002
+        Self,
         TypeVar,
         override,
         runtime_checkable,

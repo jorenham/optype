@@ -148,6 +148,7 @@ select = [
     "DTZ",      # flake8-datetimez
     "T10",      # flake8-debugger
     "EXE",      # flake8-executable
+    "EM",      # flake8-errmsg
     "FA",       # flake8-future-annotations
     "ISC",      # flake8-implicit-str-concat
     "ICN",      # flake8-import-conventions
@@ -191,10 +192,10 @@ ignore = [
     "PYI036",   # bad-exit-annotation
     # pylint
     "PLR0904",  # too-many-public-methods
-    # refurb
-    "FURB118",  # reimplemented-operator
     # tryceratops
     "TRY003",   # raise-vanilla-args
+    # refurb
+    "FURB118",  # reimplemented-operator
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -207,6 +208,8 @@ ignore = [
     "PLR2004",  # magic-value-comparison
 ]
 "tests/*" = [
+    #  pyflakes
+    "F841",     # unused-variable
     # flake8-annotations
     "ANN201",   # missing-return-type
     # flake8-self
@@ -214,18 +217,37 @@ ignore = [
     # pylint
     "PLC2701",  # import-private-name
     "PLR2004",  # magic-value-comparison
+    "PLR0914",  # too-many-locals
+]
+
+[tool.ruff.lint.flake8-builtins]
+builtins-allowed-modules = [
+    "copy",
+    "dataclasses",
+    "inspect",
+    "json",
+    "pickle",
+    "string",
+    "types",
+    "typing",
 ]
 
 [tool.ruff.lint.flake8-import-conventions.extend-aliases]
 "ctypes" = "ct"
+"datetime" = "dt"
 "numpy.typing" = "npt"
+"optype" = "opt"
 "optype.numpy" = "onp"
 
+[tool.ruff.lint.flake8-errmsg]
+max-string-length = 42  # this took a while to figure out
 
 [tool.ruff.lint.flake8-quotes]
 inline-quotes = "single"
 
 [tool.ruff.lint.flake8-type-checking]
+exempt-modules = ["typing", "typing_extensions"]
+quote-annotations = true
 strict = true
 
 [tool.ruff.lint.isort]
@@ -238,11 +260,12 @@ lines-between-types = 0
 
 [tool.ruff.lint.pylint]
 allow-dunder-method-names = [
-    "__name__",     # attr of e.g. `type`, `function`, and `property` (py3.13+)
+    "__name__",     # attr of e.g. `type` and `function`
     "__qualname__", # attr like `__name__`
-    "__replace__",  # method used by `copy.replace` in Python 3.13+
+    "__replace__",  # method used by `copy.replace` (py313+)
     "__self__",     # attr of a bound method
 
+    # used within the `typing` standard library
     "__value__",
     "__origin__",
     "__args__",
@@ -250,14 +273,13 @@ allow-dunder-method-names = [
     "__typing_unpacked_tuple_args__",
     "__typing_is_unpacked_typevartuple__",
 
-    # numpy array special methods
+    # `numpy` special methods
     "__array__",
     "__array_finalize__",
     "__array_function__",
     "__array_priority__",
     "__array_ufunc__",
     "__array_wrap__",
-    # numpy array interface protocol V3
     "__array_interface__",
     "__array_struct__",
 ]

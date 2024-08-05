@@ -1,4 +1,3 @@
-# ruff: noqa: A005
 """
 Runtime-protocols for the `copy` standard library.
 https://docs.python.org/3/library/copy.html
@@ -19,20 +18,18 @@ if sys.version_info >= (3, 13):
 else:
     from typing_extensions import (
         Protocol,
-        Self,  # noqa: TCH002
+        Self,
         TypeVar,
         override,
         runtime_checkable,
     )
 
 
-# fmt: off
 __all__ = (
     'CanCopy', 'CanCopySelf',
     'CanDeepcopy', 'CanDeepcopySelf',
     'CanReplace', 'CanReplaceSelf',
-)
-# fmt: on
+)  # fmt: skip
 
 _CopyT = TypeVar('_CopyT', infer_variance=True)
 _ValueT = TypeVar('_ValueT', infer_variance=True)

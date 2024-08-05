@@ -9,10 +9,6 @@ This is a simple and effective way to test for false positive, by
 temporarily that invalid `optype` use will actually cause the typechecker
 (we only consider (based)pyright at the moment) to complain.
 """
-
-# pyright: reportUnusedVariable=false
-# ruff: noqa: F841, TCH002, PLR0914
-
 from collections.abc import Collection, Iterator
 from typing import Any, TypeAlias, TypeVar
 

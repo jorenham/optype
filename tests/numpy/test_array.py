@@ -1,4 +1,3 @@
-# ruff: noqa: PYI042
 from typing import Any, TypeAlias, TypeVar
 
 import numpy as np

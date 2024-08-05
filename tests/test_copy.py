@@ -1,4 +1,3 @@
-# ruff: noqa: F841
 import sys
 from datetime import date
 from fractions import Fraction

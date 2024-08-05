@@ -18,9 +18,9 @@ if sys.version_info >= (3, 13):
     )
 else:
     from typing_extensions import (
-        CapsuleType,  # noqa: TCH002
+        CapsuleType,
         Protocol,
-        Self,  # noqa: TCH002
+        Self,
         TypeVar,
         overload,
         override,

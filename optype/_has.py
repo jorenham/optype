@@ -21,7 +21,7 @@ else:
         Never,
         ParamSpec,
         Protocol,
-        Self,  # noqa: TCH002
+        Self,
         TypeVar,
         TypeVarTuple,
         Unpack,

@@ -1,4 +1,4 @@
-# ruff: noqa: I001, PLC2701
+# ruff: noqa: I001
 from typing import Any
 
 import numpy as np

@@ -1,4 +1,3 @@
-# ruff: noqa: F841, TCH002, TCH003, ERA001
 import math
 import sys
 from collections.abc import Callable as Fn
@@ -277,15 +276,15 @@ def test_anyufunc_custom_np():
     fn_1: UFunc[Fn[[float, float], float]] = fn
     # unfortunately, `frompyfunc` ignores the passed `nin` and `nout` types
     # within the returned ufunc type (within numpy's own annotations)
-    # fn_3: AnyUFunc[Any, _N2, _N1] = beta_np
+    # fn_3:: AnyUFunc[Any, _N2, _N1] = beta_np
     fn_3: UFunc[Any, int, int] = fn
 
     # similarly, the fact that `signature = None` isn't annotated correctly
-    # fn_4: AnyUFunc[Any, Any, Any, None] = beta_np
+    # fn_4:: AnyUFunc[Any, Any, Any, None] = beta_np
     fn_4: UFunc[Any, Any, Any, str | None] = fn
 
     # the `identity` kwarg from `frompyfunc` is also ignored :(
-    # fn_4: AnyUFunc[Any, Any, Any, Any, None] = beta_np
+    # fn_4:: AnyUFunc[Any, Any, Any, Any, None] = beta_np
     fn_5: UFunc[Any, Any, Any, Any, None] = fn
 
     assert isinstance(fn, UFunc)
