@@ -3,9 +3,6 @@
 The allowed `np.dtype` arguments for specific scalar types.
 The names are analogous to those in `numpy.dtypes`.
 """
-
-# pyright: reportPrivateUsage=false
-
 from __future__ import annotations
 
 import sys
@@ -14,8 +11,10 @@ from typing import Any, Final, Literal as _Lit, TypeAlias as _Type
 import numpy as np
 import numpy.typing as npt
 
-from . import _any_scalar as _s, _compat as _x, _ctype as _ct
-from ._dtype import HasDType
+import optype.numpy._any_scalar as _s
+import optype.numpy._compat as _x
+import optype.numpy._ctype as _ct
+import optype.numpy._dtype as _dt
 
 
 if sys.version_info >= (3, 13):
@@ -30,8 +29,8 @@ _NP_V2: Final = np.__version__.startswith('2.')
 # helper aliases
 _ST = TypeVar('_ST', bound=np.generic)
 _VT = TypeVar('_VT', bound=object)
-_Any1: _Type = np.dtype[_ST] | type[_ST] | HasDType[np.dtype[_ST]]
-_Any2: _Type = np.dtype[_ST] | type[_ST | _VT] | HasDType[np.dtype[_ST]]
+_Any1: _Type = np.dtype[_ST] | type[_ST] | _dt.HasDType[np.dtype[_ST]]
+_Any2: _Type = np.dtype[_ST] | type[_ST | _VT] | _dt.HasDType[np.dtype[_ST]]
 
 
 N = TypeVar('N', bound=npt.NBitBase, default=Any)

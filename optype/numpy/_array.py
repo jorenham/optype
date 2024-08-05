@@ -23,7 +23,6 @@ else:
         runtime_checkable,
     )
 
-
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
@@ -36,6 +35,7 @@ __all__ = (
     'HasArrayInterface',
     'HasArrayPriority',
 )
+
 
 _NP_VERSION: Final = np.__version__
 _NP_V2: Final = _NP_VERSION.startswith('2.')
