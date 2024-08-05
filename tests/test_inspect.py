@@ -49,6 +49,13 @@ class CanNew(tpx.Protocol[_Pss, _T_co]):
     def __new__(cls, *args: _Pss.args, **kwargs: _Pss.kwargs) -> _T_co: ...
 
 
+class ProtoOverload(tpx.Protocol):
+    @tpx.overload
+    def method(self) -> int: ...
+    @tpx.overload
+    def method(self, x: tp.Any, /) -> str: ...
+
+
 class Proto(tp.Protocol): ...
 
 
@@ -162,6 +169,8 @@ def test_get_protocol_members():
 
     assert opt.inspect.get_protocol_members(CanInit) == {'__init__'}
     assert opt.inspect.get_protocol_members(CanNew) == {'__new__'}
+
+    assert opt.inspect.get_protocol_members(ProtoOverload) == {'method'}
 
 
 def test_get_protocols():
