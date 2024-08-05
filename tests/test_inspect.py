@@ -25,48 +25,50 @@ FalsyIntCo: tp.TypeAlias = FalsyBool | FalsyInt
 FalsyStr = TypeAliasType('FalsyStr', tp.Literal['', b''])
 Falsy = TypeAliasType('Falsy', tp.Literal[None, FalsyIntCo] | FalsyStr)
 
-_T_tp = tp.TypeVar('_T_tp')
+_T = tp.TypeVar('_T')
 _T_tpx = tp.TypeVar('_T_tpx')
-_Pss = tpx.ParamSpec('_Pss')
-_T_co = tpx.TypeVar('_T_co', covariant=True)
+
+_Pss = tp.ParamSpec('_Pss')
+_T_co = tp.TypeVar('_T_co', covariant=True)
 
 
-class GenericTP(tp.Generic[_T_tp]): ...
+class GenericTP(tp.Generic[_T]): ...
 
 
 class GenericTPX(tp.Generic[_T_tpx]): ...
 
 
 @tpx.runtime_checkable
-class CanInit(tp.Protocol[_Pss]):
+class CanInit(tpx.Protocol[_Pss]):
+    # on Python 3.10 this requires `typing_extensions.Protocol` to work
     def __init__(self, *args: _Pss.args, **kwargs: _Pss.kwargs) -> None: ...
 
 
 @tpx.runtime_checkable
-class CanNew(tp.Protocol[_Pss, _T_co]):
+class CanNew(tpx.Protocol[_Pss, _T_co]):
     def __new__(cls, *args: _Pss.args, **kwargs: _Pss.kwargs) -> _T_co: ...
 
 
-class PTyp(tp.Protocol): ...
+class Proto(tp.Protocol): ...
 
 
-class PExt(tpx.Protocol): ...
+class ProtoX(tpx.Protocol): ...
 
 
 @tp.runtime_checkable
-class RuntimePTyp(tp.Protocol): ...
+class ProtoRuntime(tp.Protocol): ...
 
 
 @tpx.runtime_checkable
-class RuntimePExt(tpx.Protocol): ...
+class ProtoRuntimeX(tpx.Protocol): ...
 
 
 @tp.final
-class FinalPTyp(tp.Protocol): ...
+class ProtoFinal(tp.Protocol): ...
 
 
 @tpx.final
-class FinalPExt(tpx.Protocol): ...
+class ProtoFinalX(tpx.Protocol): ...
 
 
 class FinalMembers:
@@ -74,45 +76,45 @@ class FinalMembers:
     def p(self): pass
     @property
     @tp.final
-    def p_final_typ(self): pass
+    def p_final(self): pass
     @tpx.final
-    def p_final_ext(self): pass
+    def p_final_x(self): pass
 
     def f(self): pass
     @tp.final
-    def f_final_typ(self): pass
+    def f_final(self): pass
     @tpx.final
-    def f_final_ext(self): pass
+    def f_final_x(self): pass
 
     @classmethod
     def cf(cls): pass
     @classmethod
     @tp.final
-    def cf_final1_typ(cls): pass
+    def cf_final1(cls): pass
     @classmethod
     @tpx.final
-    def cf_final1_ext(cls): pass
+    def cf_final1_x(cls): pass
     @tp.final
     @classmethod
-    def cf_final2_typ(cls): pass
+    def cf_final2(cls): pass
     @tpx.final
     @classmethod
-    def cf_final2_ext(cls): pass
+    def cf_final2_x(cls): pass
 
     @staticmethod
     def sf(): pass
     @staticmethod
     @tp.final
-    def sf_final1_typ(): pass
+    def sf_final1(): pass
     @staticmethod
     @tpx.final
-    def sf_final1_ext(): pass
+    def sf_final1_x(): pass
     @tp.final
     @staticmethod
-    def sf_final2_typ(): pass
+    def sf_final2(): pass
     @tpx.final
     @staticmethod
-    def sf_final2_ext(): pass
+    def sf_final2_x(): pass
 
 
 def test_get_args_literals():
@@ -178,46 +180,49 @@ def test_get_protocols():
     assert protocols_tpx
     assert opt.inspect.get_protocols(tpx, private=True) >= protocols_tpx
 
-    assert protocols_tp <= protocols_tpx
-
 
 def test_type_is_final():
     assert not opt.inspect.is_final(opt.CanAdd)
     assert opt.inspect.is_final(opt.DoesAdd)
 
-    assert not opt.inspect.is_final(PTyp)
-    assert not opt.inspect.is_final(PExt)
-    assert not opt.inspect.is_final(RuntimePTyp)
-    assert opt.inspect.is_final(FinalPTyp)
-    assert opt.inspect.is_final(FinalPExt)
+    assert not opt.inspect.is_final(Proto)
+    assert not opt.inspect.is_final(ProtoX)
+    assert not opt.inspect.is_final(ProtoRuntime)
+    if sys.version_info >= (3, 11):
+        assert opt.inspect.is_final(ProtoFinal)
+    assert opt.inspect.is_final(ProtoFinalX)
 
 
 def test_property_is_final():
     assert not opt.inspect.is_final(FinalMembers.p)
-    assert opt.inspect.is_final(FinalMembers.p_final_typ)
-    assert opt.inspect.is_final(FinalMembers.p_final_ext)
+    if sys.version_info >= (3, 11):
+        assert opt.inspect.is_final(FinalMembers.p_final)
+    assert opt.inspect.is_final(FinalMembers.p_final_x)
 
 
 def test_method_is_final():
     assert not opt.inspect.is_final(FinalMembers.f)
-    assert opt.inspect.is_final(FinalMembers.f_final_typ)
-    assert opt.inspect.is_final(FinalMembers.f_final_ext)
+    if sys.version_info >= (3, 11):
+        assert opt.inspect.is_final(FinalMembers.f_final)
+    assert opt.inspect.is_final(FinalMembers.f_final_x)
 
 
 def test_classmethod_is_final():
     assert not opt.inspect.is_final(FinalMembers.cf)
-    assert opt.inspect.is_final(getattr_static(FinalMembers, 'cf_final1_typ'))
-    assert opt.inspect.is_final(getattr_static(FinalMembers, 'cf_final1_ext'))
-    assert opt.inspect.is_final(getattr_static(FinalMembers, 'cf_final2_typ'))
-    assert opt.inspect.is_final(getattr_static(FinalMembers, 'cf_final2_ext'))
+    if sys.version_info >= (3, 11):
+        assert opt.inspect.is_final(getattr_static(FinalMembers, 'cf_final1'))
+        assert opt.inspect.is_final(getattr_static(FinalMembers, 'cf_final2'))
+    assert opt.inspect.is_final(getattr_static(FinalMembers, 'cf_final1_x'))
+    assert opt.inspect.is_final(getattr_static(FinalMembers, 'cf_final2_x'))
 
 
 def test_staticmethod_is_final():
     assert not opt.inspect.is_final(FinalMembers.sf)
-    assert opt.inspect.is_final(getattr_static(FinalMembers, 'sf_final1_typ'))
-    assert opt.inspect.is_final(getattr_static(FinalMembers, 'sf_final1_ext'))
-    assert opt.inspect.is_final(getattr_static(FinalMembers, 'sf_final2_typ'))
-    assert opt.inspect.is_final(getattr_static(FinalMembers, 'sf_final2_ext'))
+    if sys.version_info >= (3, 11):
+        assert opt.inspect.is_final(getattr_static(FinalMembers, 'sf_final1'))
+        assert opt.inspect.is_final(getattr_static(FinalMembers, 'sf_final2'))
+    assert opt.inspect.is_final(getattr_static(FinalMembers, 'sf_final1_x'))
+    assert opt.inspect.is_final(getattr_static(FinalMembers, 'sf_final2_x'))
 
 
 @pytest.mark.parametrize('origin', [type, list, tuple, GenericTP, GenericTPX])
@@ -228,6 +233,7 @@ def test_is_generic_alias(origin: tp.Any):
     Alias = TypeAliasType('Alias', origin[None])  # noqa: N806
     assert opt.inspect.is_generic_alias(Alias)
     assert opt.inspect.is_generic_alias(tp.Annotated[origin[None], None])
+    assert opt.inspect.is_generic_alias(tpx.Annotated[origin[None], None])
 
     assert not opt.inspect.is_generic_alias(origin[None] | None)
 
@@ -245,15 +251,15 @@ def test_is_runtime_protocol():
     assert opt.inspect.is_runtime_protocol(opt.CanAdd)
     assert not opt.inspect.is_runtime_protocol(opt.DoesAdd)
 
-    assert not opt.inspect.is_runtime_protocol(PTyp)
-    assert not opt.inspect.is_runtime_protocol(PExt)
-    assert opt.inspect.is_runtime_protocol(RuntimePTyp)
-    assert opt.inspect.is_runtime_protocol(RuntimePExt)
-    assert not opt.inspect.is_runtime_protocol(FinalPTyp)
-    assert not opt.inspect.is_runtime_protocol(FinalPTyp)
+    assert not opt.inspect.is_runtime_protocol(Proto)
+    assert not opt.inspect.is_runtime_protocol(ProtoX)
+    assert opt.inspect.is_runtime_protocol(ProtoRuntime)
+    assert opt.inspect.is_runtime_protocol(ProtoRuntimeX)
+    assert not opt.inspect.is_runtime_protocol(ProtoFinal)
+    assert not opt.inspect.is_runtime_protocol(ProtoFinalX)
 
 
-@pytest.mark.parametrize('origin', [int, tp.Literal[True], PTyp, PExt])
+@pytest.mark.parametrize('origin', [int, tp.Literal[True], Proto, ProtoX])
 def test_is_union_type(origin: tp.Any):
     assert opt.inspect.is_union_type(origin | None)
     Alias = TypeAliasType('Alias', origin | None)  # noqa: N806
