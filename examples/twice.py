@@ -7,18 +7,18 @@ from typing import (
     TypeVar,
     final,
 )
-if sys.version_info < (3, 12):
-    from typing_extensions import TypeVarTuple, Unpack, assert_type
-else:
+if sys.version_info >= (3, 12):
     from typing import TypeVarTuple, Unpack, assert_type
+else:
+    from typing_extensions import TypeVarTuple, Unpack, assert_type
 
-from optype import CanMul, CanRMul
+import optype as opt
 
 Y = TypeVar('Y')
 Two: TypeAlias = Literal[2]
 
 
-def twice(x: CanRMul[Two, Y], /) -> Y:
+def twice(x: opt.CanRMul[Two, Y], /) -> Y:
     return 2 * x
 
 
@@ -48,8 +48,8 @@ assert_type(twice(RMulArgs(42, True)), RMulArgs[int, bool, int, bool])
 
 
 # %%
-def twice2(x: CanRMul[Two, Y] | CanMul[Two, Y], /) -> Y:
-    return 2 * x if isinstance(x, CanRMul) else x * 2
+def twice2(x: opt.CanRMul[Two, Y] | opt.CanMul[Two, Y], /) -> Y:
+    return 2 * x if isinstance(x, opt.CanRMul) else x * 2
 
 
 # %%

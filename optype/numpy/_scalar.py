@@ -18,15 +18,18 @@ if sys.version_info >= (3, 13):
     )
 else:
     from typing_extensions import (
-        CapsuleType,  # noqa: TCH002
         Protocol,
-        Self,  # noqa: TCH002
+        Self,
         TypeVar,
         overload,
         override,
         runtime_checkable,
     )
-
+    # `CapsuleType` requires `typing_extensions>=4.12`
+    try:
+        from typing_extensions import CapsuleType
+    except ImportError:
+        from typing import Any as CapsuleType
 
 if TYPE_CHECKING:
     from numpy._core.multiarray import flagsobj

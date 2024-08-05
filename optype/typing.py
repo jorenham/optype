@@ -1,4 +1,3 @@
-# ruff: noqa: A005
 from __future__ import annotations
 
 import enum
@@ -13,15 +12,7 @@ if sys.version_info >= (3, 13):
 else:
     from typing_extensions import Never, TypeVar, TypedDict, final
 
-from ._can import (
-    CanComplex,
-    CanFloat,
-    CanGetitem,
-    CanIndex,
-    CanInt,
-    CanIter,
-    CanNext,
-)
+import optype._can as _c
 
 
 __all__ = (
@@ -44,19 +35,22 @@ __all__ = (
 
 # Anything that can *always* be converted to an `int` / `float` / `complex`
 _IntT = TypeVar('_IntT', bound=int, default=int)
-AnyInt: TypeAlias = _IntT | CanInt[_IntT] | CanIndex[_IntT]
+AnyInt: TypeAlias = _IntT | _c.CanInt[_IntT] | _c.CanIndex[_IntT]
 
-AnyFloat: TypeAlias = CanFloat | CanIndex
+AnyFloat: TypeAlias = _c.CanFloat | _c.CanIndex
 if sys.version_info >= (3, 11):
-    AnyComplex: TypeAlias = CanComplex | CanFloat | CanIndex
+    AnyComplex: TypeAlias = _c.CanComplex | _c.CanFloat | _c.CanIndex
 else:
     # `complex.__complex__` didn't exists before Python 3.11
-    AnyComplex: TypeAlias = complex | CanComplex | CanFloat | CanIndex
+    AnyComplex: TypeAlias = complex | _c.CanComplex | _c.CanFloat | _c.CanIndex
 
 # Anything that can be iterated over, e.g. in a `for` loop,`builtins.iter`,
 # `builtins.enumerate`, or `numpy.array`.
 _ValueT = TypeVar('_ValueT', default=Any)
-AnyIterable: TypeAlias = CanIter[CanNext[_ValueT]] | CanGetitem[int, _ValueT]
+AnyIterable: TypeAlias = (
+    _c.CanIter[_c.CanNext[_ValueT]]
+    | _c.CanGetitem[int, _ValueT]
+)
 
 # The closest supertype of a `Literal`, i.e. the allowed types that can be
 # passed to `typing.Literal`.

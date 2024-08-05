@@ -1,4 +1,3 @@
-# ruff: noqa: A005
 """
 Type aliases for the `strings` standard library.
 

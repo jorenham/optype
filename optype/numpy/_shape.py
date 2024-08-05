@@ -8,12 +8,10 @@ else:
     from typing_extensions import TypeVar, TypeVarTuple, Unpack
 
 
-# fmt: off
 __all__ = (
     'AtLeast0D', 'AtLeast1D', 'AtLeast2D', 'AtLeast3D',
     'AtMost0D', 'AtMost1D', 'AtMost2D', 'AtMost3D',
-)
-# fmt: on
+)  # fmt: skip
 
 
 # 0D (scalar)

@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 import sys
-from collections.abc import Callable
-from typing import Any, Literal, TypeAlias
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias
 
 
 if sys.version_info >= (3, 13):
@@ -8,7 +9,11 @@ if sys.version_info >= (3, 13):
 else:
     from typing_extensions import ParamSpec, Protocol, TypeVar, final, overload
 
-import optype._can as _c
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    import optype._can as _c
+
 
 from ._utils import set_module
 
@@ -62,7 +67,7 @@ class DoesANext(Protocol):
 
 _V_iter = TypeVar('_V_iter')
 _Z_iter = TypeVar('_Z_iter', bound=object)
-_R_iter = TypeVar('_R_iter', bound=_c.CanNext[Any])
+_R_iter = TypeVar('_R_iter', bound='_c.CanNext[Any]')
 
 
 @set_module('optype')
@@ -96,7 +101,7 @@ class DoesIter(Protocol):
     ) -> _c.CanIterSelf[_V_iter]: ...
 
 
-_R_aiter = TypeVar('_R_aiter', bound=_c.CanANext[Any])
+_R_aiter = TypeVar('_R_aiter', bound='_c.CanANext[Any]')
 
 
 @set_module('optype')
@@ -128,17 +133,17 @@ class DoesInt(Protocol):
     def __call__(self, obj: _c.CanInt[_R_int], /) -> _R_int: ...
 
 
-# fmt: off
-_IsTrue: TypeAlias = Literal[True]
-_IsFalse: TypeAlias = Literal[False]
+_JustFalse: TypeAlias = Literal[False]
+_JustTrue: TypeAlias = Literal[True]
+_Just0: TypeAlias = Literal[0]
+# cannot use `optype.typing.LiteralByte` here, as it starts at 0
 _PosInt: TypeAlias = Literal[
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
     17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
     33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
     49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,
-]
-# fmt: on
-_R_bool = TypeVar('_R_bool', _IsTrue, _IsFalse, bool)
+]  # fmt: skip
+_R_bool = TypeVar('_R_bool', _JustTrue, _JustFalse, bool)
 
 
 @set_module('optype')
@@ -147,13 +152,13 @@ class DoesBool(Protocol):
     @overload
     def __call__(self, obj: _c.CanBool[_R_bool], /) -> _R_bool: ...  # pyright: ignore[reportOverlappingOverload]
     @overload
-    def __call__(self, obj: _c.CanLen[Literal[0]], /) -> _IsFalse: ...
+    def __call__(self, obj: _c.CanLen[_Just0], /) -> _JustFalse: ...
     @overload
-    def __call__(self, obj: _c.CanLen[_PosInt], /) -> _IsTrue: ...
+    def __call__(self, obj: _c.CanLen[_PosInt], /) -> _JustTrue: ...
     @overload
     def __call__(self, obj: _c.CanLen[int], /) -> bool: ...
     @overload
-    def __call__(self, obj: object, /) -> _IsTrue: ...
+    def __call__(self, obj: object, /) -> _JustTrue: ...
 
 
 _R_str = TypeVar('_R_str', bound=str)
@@ -421,7 +426,7 @@ class DoesDelattr(Protocol):
     ) -> None: ...
 
 
-_R_dir = TypeVar('_R_dir', bound=_c.CanIter[Any])
+_R_dir = TypeVar('_R_dir', bound='_c.CanIter[Any]')
 
 
 @set_module('optype')
@@ -580,7 +585,7 @@ class DoesReversed(Protocol):
         self,
         sequence: _c.CanSequence[_c.CanIndex, _V_reversed],
         /,
-    ) -> 'reversed[_V_reversed]': ...
+    ) -> reversed[_V_reversed]: ...
 
 
 # binary infix operators

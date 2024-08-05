@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable as CanCall, Mapping
     from types import NotImplementedType
 
-    from optype import CanIter, CanIterSelf
+    import optype as opt
 
 
 __all__ = (
@@ -162,7 +162,7 @@ class CanArrayFunction(Protocol[_F, _R]):
         /,
         func: _F,
         # although this could be tighter, this ensures numpy.typing compat
-        types: CanIter[CanIterSelf[type[CanArrayFunction[Any, Any]]]],
+        types: opt.CanIter[opt.CanIterSelf[type[CanArrayFunction[Any, Any]]]],
         # ParamSpec can only be used on *args and **kwargs for some reason...
         args: tuple[Any, ...],
         kwargs: Mapping[str, Any],

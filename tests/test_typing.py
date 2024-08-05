@@ -1,4 +1,3 @@
-# ruff: noqa: F841
 import enum
 from typing import Generic, Literal
 
