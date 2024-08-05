@@ -32,7 +32,6 @@ __all__ = ('HasDataclassFields',)
 
 _FieldsT = TypeVar(
     '_FieldsT',
-    infer_variance=True,
     bound='Mapping[str, dataclasses.Field[Any]]',
     default=dict[str, 'dataclasses.Field[Any]'],
 )

@@ -68,25 +68,25 @@ _AnyReduceValue: TypeAlias = (
         Callable[[Any, Any], Any] | None,
     ]
 )
-_ReduceValueT = TypeVar(
-    '_ReduceValueT',
-    infer_variance=True,
+_ReduceT_co = TypeVar(
+    '_ReduceT_co',
     bound=_AnyReduceValue,
+    covariant=True,
     default=_AnyReduceValue,
 )
 
 
 @runtime_checkable
-class CanReduce(Protocol[_ReduceValueT]):
+class CanReduce(Protocol[_ReduceT_co]):
     """
     https://docs.python.org/3/library/pickle.html#object.__reduce__
     """
     @override
-    def __reduce__(self, /) -> _ReduceValueT: ...
+    def __reduce__(self, /) -> _ReduceT_co: ...
 
 
 @runtime_checkable
-class CanReduceEx(Protocol[_ReduceValueT]):
+class CanReduceEx(Protocol[_ReduceT_co]):
     """
     https://docs.python.org/3/library/pickle.html#object.__reduce_ex__
     """
@@ -95,47 +95,48 @@ class CanReduceEx(Protocol[_ReduceValueT]):
         self,
         protocol: CanIndex[_ProtocolVersion],
         /,
-    ) -> _ReduceValueT: ...
+    ) -> _ReduceT_co: ...
 
 
-_StateT = TypeVar('_StateT', infer_variance=True)
+_StateT_co = TypeVar('_StateT_co', covariant=True)
+_StateT_contra = TypeVar('_StateT_contra', contravariant=True)
 
 
 @runtime_checkable
-class CanGetstate(Protocol[_StateT]):
+class CanGetstate(Protocol[_StateT_co]):
     """
     https://docs.python.org/3/library/pickle.html#object.__getstate__
     """
-    def __getstate__(self, /) -> _StateT: ...
+    def __getstate__(self, /) -> _StateT_co: ...
 
 
 @runtime_checkable
-class CanSetstate(Protocol[_StateT]):
+class CanSetstate(Protocol[_StateT_contra]):
     """
     https://docs.python.org/3/library/pickle.html#object.__setstate__
     """
-    def __setstate__(self, state: _StateT, /) -> None: ...
+    def __setstate__(self, state: _StateT_contra, /) -> None: ...
 
 
-_ArgT = TypeVar('_ArgT', infer_variance=True, default=Any)
-_KwargT = TypeVar('_KwargT', infer_variance=True, default=Any)
+_ArgT_co = TypeVar('_ArgT_co', covariant=True, default=Any)
+_KwargT = TypeVar('_KwargT', default=Any)
 
 
 @runtime_checkable
-class CanGetnewargs(Protocol[_ArgT]):
+class CanGetnewargs(Protocol[_ArgT_co]):
     """
     https://docs.python.org/3/library/pickle.html#object.__getnewargs__
     """
-    def __new__(cls, /, *args: _ArgT) -> Self: ...
-    def __getnewargs__(self, /) -> tuple[_ArgT, ...]: ...
+    def __new__(cls, /, *args: _ArgT_co) -> Self: ...
+    def __getnewargs__(self, /) -> tuple[_ArgT_co, ...]: ...
 
 
 @runtime_checkable
-class CanGetnewargsEx(Protocol[_ArgT, _KwargT]):
+class CanGetnewargsEx(Protocol[_ArgT_co, _KwargT]):
     """
     https://docs.python.org/3/library/pickle.html#object.__getnewargs_ex__
     """
-    def __new__(cls, /, *args: _ArgT, **kwargs: _KwargT) -> Self: ...
+    def __new__(cls, /, *args: _ArgT_co, **kwargs: _KwargT) -> Self: ...
     def __getnewargs_ex__(
         self, /,
-    ) -> tuple[tuple[_ArgT, ...], dict[str, _KwargT]]: ...
+    ) -> tuple[tuple[_ArgT_co, ...], dict[str, _KwargT]]: ...
