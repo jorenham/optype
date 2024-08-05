@@ -18,13 +18,13 @@ _NUMERIC_N = (
     'Int8', 'Int16', 'Int32', 'Int64',
     'Float16', 'Float32', 'Float64',
     'Complex64', 'Complex128',
-)
+)  # fmt: skip
 _NUMERIC_C = (
     'UByte', 'UShort', 'UIntC', 'ULong',
     'Byte', 'Short', 'IntC', 'Long',
     'Half', 'Single', 'Double',
     'CSingle', 'CDouble',
-)
+)  # fmt: skip
 
 
 def _get_attr_args(obj: Any, name: str) -> tuple[Any, ...]:

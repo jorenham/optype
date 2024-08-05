@@ -34,7 +34,9 @@ if TYPE_CHECKING:
     from .types import WrappedFinalType
     from .typing import AnyIterable
 
-from ._can import CanGetitem, CanIter, CanLen
+
+import optype._can as _c
+
 from .types import AnnotatedAlias, GenericType, LiteralAlias, UnionAlias
 
 
@@ -74,11 +76,11 @@ def is_iterable(obj: object, /) -> TypeIs[AnyIterable]:
         # workaround the false-positive bug in `@runtime_checkable` for types
         return False
 
-    if isinstance(obj, CanIter):
+    if isinstance(obj, _c.CanIter):
         return True
-    if isinstance(obj, CanGetitem):
+    if isinstance(obj, _c.CanGetitem):
         # check if obj is a sequence-like
-        if isinstance(obj, CanLen):
+        if isinstance(obj, _c.CanLen):
             return True
 
         # not all sequence-likes implement __len__, e.g. `ctypes.pointer`
