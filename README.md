@@ -1310,7 +1310,7 @@ Additionally, there is `optype.CanAIterSelf[R]`, with both the
         <td><code>__reversed__</code></td>
         <td>
             <code>CanReversed[R]</code>, or<br>
-            <code>CanSequence[K: CanIndex, V]</code>
+            <code>CanSequence[I, V, N = int]</code>
         </td>
     </tr>
 </table>
