@@ -264,6 +264,8 @@ allow-dunder-method-names = [
     "__qualname__", # attr like `__name__`
     "__replace__",  # method used by `copy.replace` (py313+)
     "__self__",     # attr of a bound method
+    "__func__",     # attr of e.g. `classmethod`
+    "__wrapped__",     # attr of e.g. `classmethod`
 
     # used within the `typing` standard library
     "__value__",
