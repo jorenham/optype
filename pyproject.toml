@@ -44,6 +44,7 @@ tox = "^4.16.0"
 [tool.poetry.group.lint.dependencies]
 basedpyright = "^1.15.1"
 codespell = "^2.3.0"
+mypy = "^1.11.1"
 ruff = "^0.5.6"
 sp-repo-review = {version = "^2024.4.23", extras = ["cli"]}
 typing-extensions = "*"
@@ -84,6 +85,14 @@ reportUnusedCallResult = false  # https://github.com/microsoft/pyright/issues/86
 reportUnreachable = false  # nothing wrong with `if sys.version_info() >= ...`
 reportUnusedImport = false  # dupe of F401
 reportUnusedVariable = false  # dupe of F841
+
+
+[tool.mypy]
+python_version = "3.10"
+always_true = "_NP_V2"
+modules = ["optype"]
+exclude = ["^.venv/.*", "^examples/.*", "^tests/.*"]
+allow_redefinition = true
 
 
 [tool.pytest.ini_options]

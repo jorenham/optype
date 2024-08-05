@@ -27,9 +27,9 @@ else:
     )
     # `CapsuleType` requires `typing_extensions>=4.12`
     try:
-        from typing_extensions import CapsuleType
+        from typing_extensions import CapsuleType  # type: ignore[attr-defined]
     except ImportError:
-        from typing import Any as CapsuleType
+        from typing import Any as CapsuleType  # type: ignore[assignment]
 
 if TYPE_CHECKING:
     from numpy._core.multiarray import flagsobj
@@ -66,7 +66,7 @@ class Scalar(Protocol[_PT_co, _NB_co]):
     @property
     def data(self, /) -> memoryview: ...
     @property
-    def dtype(self, /) -> np.dtype[Self]: ...  # pyright: ignore[reportInvalidTypeArguments]
+    def dtype(self, /) -> np.dtype[Self]: ...  # type: ignore[type-var]  # pyright: ignore[reportInvalidTypeArguments]
     @property
     def flags(self, /) -> flagsobj: ...
     @property
@@ -90,9 +90,9 @@ class Scalar(Protocol[_PT_co, _NB_co]):
     @override
     def __hash__(self, /) -> int: ...
     @override
-    def __eq__(self, other: object, /) -> np.bool_: ...  # pyright: ignore[reportIncompatibleMethodOverride]
+    def __eq__(self, other: object, /) -> np.bool_: ...  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
     @override
-    def __ne__(self, other: object, /) -> np.bool_: ...  # pyright: ignore[reportIncompatibleMethodOverride]
+    def __ne__(self, other: object, /) -> np.bool_: ...  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
 
     def __bool__(self, /) -> bool: ...
     # Unlike `numpy/__init__.pyi` suggests, there exists no `__bytes__` method
@@ -105,6 +105,6 @@ class Scalar(Protocol[_PT_co, _NB_co]):
     def __deepcopy__(self, memo: dict[int, Any] | None, /) -> Self: ...
 
     @overload
-    def __array__(self, /) -> _Array0D[np.dtype[Self]]: ...  # pyright: ignore[reportInvalidTypeArguments]
+    def __array__(self, /) -> _Array0D[np.dtype[Self]]: ...  # type: ignore[type-var]  # pyright: ignore[reportInvalidTypeArguments]
     @overload
     def __array__(self, dtype: _DT, /) -> _Array0D[_DT]: ...

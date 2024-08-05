@@ -22,10 +22,10 @@ if sys.version_info >= (3, 13):
 else:
     from typing_extensions import TypeAliasType, is_protocol, overload
     try:
-        from typing_extensions import TypeIs
+        from typing_extensions import TypeIs  # type: ignore[attr-defined]
     except ImportError:
         # fallback for `typing_extensions<4.10`
-        from typing import TypeGuard as TypeIs
+        from typing import TypeGuard as TypeIs  # type: ignore[assignment]
 
 if TYPE_CHECKING:
     from collections.abc import Callable as CanCall
@@ -307,7 +307,7 @@ def get_protocols(
     elif hasattr(module, '__all__'):
         members = module.__all__
     else:
-        members = (k for k in dir(module) if not k.startswith('_'))
+        members = [k for k in dir(module) if not k.startswith('_')]
 
     return frozenset({
         cls for name in members

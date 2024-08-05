@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Any, ClassVar, Final, TypeAlias
+from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias
 
 
 if sys.version_info >= (3, 13):
@@ -52,7 +52,7 @@ class HasMatchArgs(Protocol):
 @set_module('optype')
 @runtime_checkable
 class HasSlots(Protocol):
-    __slots__: ClassVar[LiteralString | CanIter[CanNext[LiteralString]]]
+    __slots__: ClassVar[LiteralString | CanIter[CanNext[LiteralString]]]  # type: ignore[assignment]
 
 
 _DictT = TypeVar('_DictT', bound='Mapping[str, Any]', default=dict[str, Any])
@@ -60,9 +60,9 @@ _DictT = TypeVar('_DictT', bound='Mapping[str, Any]', default=dict[str, Any])
 
 @set_module('optype')
 @runtime_checkable
-class HasDict(Protocol[_DictT]):
+class HasDict(Protocol[_DictT]):  # type: ignore[misc]
     # the typeshed annotations for `builtins.object.__dict__` too narrow
-    __dict__: _DictT  # pyright: ignore[reportIncompatibleVariableOverride]
+    __dict__: _DictT  # type: ignore[assignment]  # pyright: ignore[reportIncompatibleVariableOverride]
 
 
 @set_module('optype')
@@ -85,35 +85,30 @@ class HasModule(Protocol[_ModuleT_co]):
     __module__: _ModuleT_co
 
 
-_NameT_co = TypeVar('_NameT_co', covariant=True, bound=str, default=str)
+_NameT = TypeVar('_NameT', bound=str, default=str)
 
 
 @set_module('optype')
 @runtime_checkable
-class HasName(Protocol[_NameT_co]):
-    __name__: Final[_NameT_co]
+class HasName(Protocol[_NameT]):
+    __name__: _NameT
 
 
-_QualnameT_co = TypeVar(
-    '_QualnameT_co',
-    covariant=True,
-    bound=str,
-    default=str,
-)
+_QualnameT = TypeVar('_QualnameT', bound=str, default=str)
 
 
 @set_module('optype')
 @runtime_checkable
-class HasQualname(Protocol[_QualnameT_co]):
-    __qualname__: _QualnameT_co
+class HasQualname(Protocol[_QualnameT]):  # pyright: ignore[reportInvalidTypeVarUse]
+    __qualname__: _QualnameT
 
 
 @set_module('optype')
 @runtime_checkable
-class HasNames(
-    HasName[_NameT_co],
-    HasQualname[_QualnameT_co],
-    Protocol[_NameT_co, _QualnameT_co],
+class HasNames(  # pyright: ignore[reportInvalidTypeVarUse]
+    HasName[_NameT],
+    HasQualname[_QualnameT],
+    Protocol[_NameT, _QualnameT],
 ): ...
 
 
@@ -132,7 +127,7 @@ class HasDoc(Protocol[_DocT_co]):
 _AnnotationsT_co = TypeVar(
     '_AnnotationsT_co',
     covariant=True,
-    bound='Mapping[str, Any]',
+    bound=dict[str, Any],
     default=dict[str, Any],
 )
 
@@ -140,7 +135,9 @@ _AnnotationsT_co = TypeVar(
 @set_module('optype')
 @runtime_checkable
 class HasAnnotations(Protocol[_AnnotationsT_co]):
-    __annotations__: Final[_AnnotationsT_co]  # pyright: ignore[reportIncompatibleVariableOverride]
+    @property
+    @override
+    def __annotations__(self) -> _AnnotationsT_co: ...  # type: ignore[override]  # pyright: ignore[reportIncompatibleVariableOverride]
 
 
 # should be one of `(TypeVar, TypeVarTuple, ParamSpec)`

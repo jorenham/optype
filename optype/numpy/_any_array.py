@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-from typing import Final, TypeAlias as _Type, final
+from typing import Final, TypeAlias as _Type
 
 import numpy as np
 
@@ -76,7 +76,6 @@ _NP_V2: Final[bool] = np.__version__.startswith('2.')
 T_co = TypeVar('T_co', covariant=True, bound=object)
 
 
-@final
 @runtime_checkable
 class _PyArray(Protocol[T_co]):
     def __len__(self, /) -> int: ...

@@ -1,3 +1,5 @@
+# mypy: disable-error-code="override"
+
 from __future__ import annotations
 
 import sys
@@ -168,7 +170,7 @@ class CanFormat(Protocol[_StrT_contra, _StrT_co]):
     or `str` subtypes. Note that `format()` *does not* upcast `Y` to `str`.
     """
     @override
-    def __format__(self, fmt: _StrT_contra, /) -> _StrT_co: ...
+    def __format__(self, fmt: _StrT_contra, /) -> _StrT_co: ...  # type: ignore[override]
 
 
 # Iteration
@@ -310,7 +312,7 @@ class CanCall(Protocol[_P, _AnyT_co]):
 @set_module('optype')
 @runtime_checkable
 class CanGetattr(Protocol[_StrT_contra, _AnyT_co]):
-    def __getattr__(self, name: _StrT_contra, /) -> _AnyT_co: ...
+    def __getattr__(self, name: _StrT_contra, /) -> _AnyT_co: ...  # type: ignore[misc]
 
 
 @set_module('optype')
@@ -318,7 +320,7 @@ class CanGetattr(Protocol[_StrT_contra, _AnyT_co]):
 class CanGetattribute(Protocol[_StrT_contra, _AnyT_co]):
     """Note that `isinstance(x, CanGetattribute)` is always `True`."""
     @override
-    def __getattribute__(self, name: _StrT_contra, /) -> _AnyT_co: ...
+    def __getattribute__(self, name: _StrT_contra, /) -> _AnyT_co: ...  # type: ignore[misc]
 
 
 @set_module('optype')
@@ -326,7 +328,7 @@ class CanGetattribute(Protocol[_StrT_contra, _AnyT_co]):
 class CanSetattr(Protocol[_StrT_contra, _AnyT_contra]):
     """Note that `isinstance(x, CanSetattr)` is always true."""
     @override
-    def __setattr__(
+    def __setattr__(  # type: ignore[misc]
         self,
         name: _StrT_contra,
         value: _AnyT_contra,
@@ -539,12 +541,7 @@ class CanPow2(Protocol[_T_contra, _T_co]):
 @set_module('optype')
 @runtime_checkable
 class CanPow3(Protocol[_T_contra, _V_contra, _AnyIntT_co]):
-    def __pow__(
-        self,
-        exp: _T_contra,
-        mod: _V_contra,
-        /,
-    ) -> _AnyIntT_co: ...
+    def __pow__(self, exp: _T_contra, mod: _V_contra, /) -> _AnyIntT_co: ...
 
 
 @set_module('optype')
@@ -559,12 +556,7 @@ class CanPow(
     @overload
     def __pow__(self, exp: _T_contra, mod: None = ..., /) -> _T_co: ...
     @overload
-    def __pow__(
-        self,
-        exp: _T_contra,
-        mod: _AnyIntT_contra,
-        /,
-    ) -> _AnyIntT_co: ...
+    def __pow__(self, exp: _T_contra, mod: _V_contra, /) -> _AnyIntT_co: ...
 
 
 @set_module('optype')
@@ -1143,6 +1135,6 @@ class CanAwait(Protocol[_T_co]):
     # impossible to type. In practice, typecheckers work around that, by
     # accepting the lie called `collections.abc.Generator`...
     @overload
-    def __await__(self: CanAwait[None], /) -> CanNext[_FutureOrNone]: ...
-    @overload
     def __await__(self: CanAwait[_T_co], /) -> _AsyncGen[_T_co]: ...
+    @overload
+    def __await__(self: CanAwait[None], /) -> CanNext[_FutureOrNone]: ...
