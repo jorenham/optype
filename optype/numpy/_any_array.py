@@ -1,4 +1,3 @@
-# pyright: reportPrivateUsage=false
 from __future__ import annotations
 
 import sys
@@ -6,8 +5,9 @@ from typing import Final, TypeAlias as _Type, final
 
 import numpy as np
 
-from . import _compat as _x, _ctype as _ct
-from ._array import CanArray
+import optype.numpy._array as _a
+import optype.numpy._compat as _x
+import optype.numpy._ctype as _ct
 
 
 if sys.version_info >= (3, 13):
@@ -87,7 +87,7 @@ _ND = TypeVar('_ND', bound=tuple[int, ...])
 _ST = TypeVar('_ST', bound=np.generic)
 _PT = TypeVar('_PT', bool, int, float, complex, str, bytes, object)
 _CT = TypeVar('_CT', bound=_ct.Generic)
-_AnyNP: _Type = CanArray[_ND, _ST] | _PyArray[CanArray[Any, _ST]]
+_AnyNP: _Type = _a.CanArray[_ND, _ST] | _PyArray[_a.CanArray[Any, _ST]]
 _AnyPY: _Type = _PyArray[_PT] | _PT
 _Any3: _Type = _AnyNP[_ND, _ST] | _AnyPY[_PT]
 _Any4: _Type = _Any3[_ND, _ST, _PT] | _CT

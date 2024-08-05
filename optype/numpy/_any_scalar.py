@@ -5,7 +5,8 @@ from typing import Any, Final, TypeAlias as _Type
 
 import numpy as np
 
-from . import _compat as _x, _ctype as _ct
+import optype.numpy._compat as _x
+import optype.numpy._ctype as _ct
 
 
 _NP_V2: Final[bool] = np.__version__.startswith('2.')
