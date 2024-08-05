@@ -124,6 +124,9 @@ def is_final(
     Check if the type, method, classmethod, staticmethod, or property, is
     decorated with `@typing.final` or `@typing_extensions.final`.
 
+    IMPORTANT: On Python 3.10, `@typing_extensions.final` should be used
+    instead of `@typing.final`.
+
     IMPORTANT: A final `@property` won't be recognized unless `@final` is
     applied before the `@property` decorator, i.e. directly on the method.
 
@@ -261,50 +264,21 @@ def get_protocol_members(cls: type, /) -> frozenset[str]:
         msg = f'{cls!r} is not a protocol'
         raise TypeError(msg)
 
-    module_blacklist = {'typing', 'typing_extensions'}
     annotations, module = cls.__annotations__, cls.__module__
     members = annotations.keys() | {
         name for name, v in vars(cls).items()
         if (
-            # unwrap if `staticmethod` or `classmethod`
             callable(f := getattr(v, '__func__', v))
-            and (
-                f.__module__ == module
-                or (
-                    # Fun fact: Each `@overload` returns the same dummy
-                    # function; so there's no reference your wrapped method :).
-                    # Oh and BTW; `typing.get_overloads` only works on the
-                    # non-overloaded method...
-                    # Oh, you mean the one that # you shouldn't define within
-                    # a `typing.Protocol`?
-                    # Yes exactly! Anyway, good luck searching for the
-                    # undocumented and ever-changing dark corner of the
-                    # `typing` internals. I'm sure it must be there somewhere!
-                    # Oh yea if you can't find it, try `typing_extensions`.
-                    # Oh, still can't find it? Did you try ALL THE VERSIONS?
-                    #
-                    # ...anyway, the only thing we know here, is the name of
-                    # an overloaded method. But we have no idea how many of
-                    # them there *were*, let alone their signatures.
-                    f.__module__ in module_blacklist
-                    and f.__name__ == '_overload_dummy'
-                )
-            )
-        ) or (
-            isinstance(v, property)
-            and v.fget is not None
-            and v.fget.__module__ == module
-        )
+            or (isinstance(v, property) and (f := v.fget) is not None)
+        ) and f.__module__ == module
     }
 
     # this hack here is plagiarized from the (often incorrect)
     # `typing_extensions.get_protocol_members`.
     # Maybe the `typing.get_protocol_member`s` that's coming in 3.13 will
     # won't be as broken. I have little hope though...
-    members |= cast(
-        set[str],
-        getattr(cls, '__protocol_attrs__', None) or set(),
-    )
+    if hasattr(cls, '__protocol_attrs__'):
+        members |= cast(set[str], cls.__protocol_attrs__)
 
     # sometimes __protocol_attrs__ hallicunates some non-existing dunders.
     # the `getattr_static` avoids potential descriptor magic
@@ -312,7 +286,6 @@ def get_protocol_members(cls: type, /) -> frozenset[str]:
         member for member in members
         if member in annotations
         or inspect.getattr_static(cls, member) is not None
-        # or getattr(cls, member) is not None
     }
 
     # also include any of the parents
