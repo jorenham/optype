@@ -28,12 +28,12 @@ def test_optype_eq_stdlib(
     assert opt_str == tuple(std_str)
 
 
-_ArgT = TypeVar('_ArgT', bound=opt.typing.AnyLiteral, infer_variance=True)
+_ArgT_co = TypeVar('_ArgT_co', bound=opt.typing.AnyLiteral, covariant=True)
 
 
 # a `typing.Literal` stores it's values in `__args__`
-class _HasArgs(Protocol[_ArgT]):
-    __args__: Final[tuple[_ArgT, ...]]
+class _HasArgs(Protocol[_ArgT_co]):
+    __args__: Final[tuple[_ArgT_co, ...]]
 
 
 @pytest.mark.parametrize(

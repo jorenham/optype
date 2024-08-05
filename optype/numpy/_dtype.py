@@ -18,16 +18,16 @@ DType: TypeAlias = np.dtype[_ST]
 """Alias for `numpy.dtype[T: numpy.generic = Any]`."""
 
 
-_DT = TypeVar(
-    '_DT',
-    infer_variance=True,
+_DT_co = TypeVar(
+    '_DT_co',
     bound=np.dtype[Any],
+    covariant=True,
     default=np.dtype[Any],
 )
 
 
 @runtime_checkable
-class HasDType(Protocol[_DT]):
+class HasDType(Protocol[_DT_co]):
     """HasDType[DT: np.dtype[Any] = Any]
 
     Runtime checkable protocol for objects (or types) that have a `dtype`
@@ -39,4 +39,4 @@ class HasDType(Protocol[_DT]):
     looks something like `(HasDType[DT: numpy.DType], ...) -> DT`.
     """
     @property
-    def dtype(self, /) -> _DT: ...
+    def dtype(self, /) -> _DT_co: ...

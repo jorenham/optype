@@ -44,43 +44,39 @@ if not _NP_V2:
     assert _NP_VERSION.startswith('1.'), f'numpy {_NP_VERSION} is unsupported'
 
 
-_AnyND: TypeAlias = tuple[int, ...]
-_ND_Array = TypeVar('_ND_Array', bound=_AnyND, default=_AnyND)
-_ST_Array = TypeVar('_ST_Array', bound=np.generic, default=np.generic)
+_AnyShape: TypeAlias = tuple[int, ...]
 
-Array: TypeAlias = np.ndarray[_ND_Array, np.dtype[_ST_Array]]
-"""NumPy array with optional type params for shape and generic dtype."""
-
-
-_ND_CanArray = TypeVar(
-    '_ND_CanArray',
-    infer_variance=True,
-    bound=_AnyND,
-    default=_AnyND,
+_ShapeT = TypeVar('_ShapeT', bound=_AnyShape, default=_AnyShape)
+_ShapeT_co = TypeVar(
+    '_ShapeT_co',
+    bound=_AnyShape,
+    covariant=True,
+    default=_AnyShape,
 )
-_ST_CanArray = TypeVar(
-    '_ST_CanArray',
-    infer_variance=True,
+
+_SCT = TypeVar('_SCT', bound=np.generic, default=np.generic)
+_SCT_co = TypeVar(
+    '_SCT_co',
     bound=np.generic,
+    covariant=True,
     default=np.generic,
 )
-_DT_CanArray = TypeVar('_DT_CanArray', bound=np.dtype[Any])
+
+_DT = TypeVar('_DT', bound=np.dtype[Any], default=np.dtype[Any])
 
 
+# NumPy array with optional type params for shape and generic dtype.
+Array: TypeAlias = np.ndarray[_ShapeT, np.dtype[_SCT]]
+
+
+# TODO: Make `_ShapeT` covariant after:
+# https://github.com/numpy/numpy/pull/26081
 @runtime_checkable
-class CanArray(Protocol[_ND_CanArray, _ST_CanArray]):
+class CanArray(Protocol[_ShapeT, _SCT_co]):
     @overload
-    def __array__(
-        self,
-        dtype: None = ...,
-        /,
-    ) -> Array[_ND_CanArray, _ST_CanArray]: ...
+    def __array__(self, dtype: None = ..., /) -> Array[_ShapeT, _SCT_co]: ...
     @overload
-    def __array__(
-        self,
-        dtype: _DT_CanArray,
-        /,
-    ) -> np.ndarray[_ND_CanArray, _DT_CanArray]: ...
+    def __array__(self, dtype: _DT, /) -> np.ndarray[_ShapeT_co, _DT]: ...
 
 
 ###########################
@@ -88,21 +84,12 @@ class CanArray(Protocol[_ND_CanArray, _ST_CanArray]):
 
 # this is almost always a `ndarray`, but setting a `bound` might break in some
 # edge cases
-_T_CanArrayFinalize = TypeVar(
-    '_T_CanArrayFinalize',
-    infer_variance=True,
-    bound=object,
-    default=object,
-)
+_T_contra = TypeVar('_T_contra', contravariant=True, default=object)
 
 
 @runtime_checkable
-class CanArrayFinalize(Protocol[_T_CanArrayFinalize]):
-    def __array_finalize__(self, obj: _T_CanArrayFinalize, /) -> None: ...
-
-
-_ND_CanArrayWrap = TypeVar('_ND_CanArrayWrap')
-_DT_CanArrayWrap = TypeVar('_DT_CanArrayWrap', bound=np.dtype[Any])
+class CanArrayFinalize(Protocol[_T_contra]):
+    def __array_finalize__(self, obj: _T_contra, /) -> None: ...
 
 
 @runtime_checkable
@@ -110,32 +97,32 @@ class CanArrayWrap(Protocol):
     if _NP_V2:
         def __array_wrap__(
             self,
-            array: np.ndarray[_ND_CanArrayWrap, _DT_CanArrayWrap],
+            array: np.ndarray[_ShapeT, _DT],
             context: tuple[np.ufunc, tuple[Any, ...], int] | None = ...,
             return_scalar: bool = ...,
             /,
-        ) -> np.ndarray[_ND_CanArrayWrap, _DT_CanArrayWrap] | Self: ...
+        ) -> np.ndarray[_ShapeT, _DT] | Self: ...
     else:
         def __array_wrap__(
             self,
-            array: np.ndarray[_ND_CanArrayWrap, _DT_CanArrayWrap],
+            array: np.ndarray[_ShapeT, _DT],
             context: tuple[np.ufunc, tuple[Any, ...], int] | None = ...,
             /,
-        ) -> np.ndarray[_ND_CanArrayWrap, _DT_CanArrayWrap] | Self: ...
+        ) -> np.ndarray[_ShapeT, _DT] | Self: ...
 
 
-_V_HasArrayInterface = TypeVar(
-    '_V_HasArrayInterface',
-    infer_variance=True,
+_ArrayInterfaceT_co = TypeVar(
+    '_ArrayInterfaceT_co',
     bound='Mapping[str, Any]',
+    covariant=True,
     default=dict[str, Any],
 )
 
 
 @runtime_checkable
-class HasArrayInterface(Protocol[_V_HasArrayInterface]):
+class HasArrayInterface(Protocol[_ArrayInterfaceT_co]):
     @property
-    def __array_interface__(self, /) -> _V_HasArrayInterface: ...
+    def __array_interface__(self, /) -> _ArrayInterfaceT_co: ...
 
 
 @runtime_checkable

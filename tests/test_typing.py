@@ -6,25 +6,25 @@ from typing_extensions import TypeVar
 import optype as opt
 
 
-_IntT = TypeVar('_IntT', bound=int, infer_variance=True)
+_IntT_co = TypeVar('_IntT_co', bound=int, covariant=True)
 
 
 # `Any*` type aliases
 
 
-class Index(Generic[_IntT]):
-    def __init__(self, x: _IntT, /) -> None:
+class Index(Generic[_IntT_co]):
+    def __init__(self, x: _IntT_co, /) -> None:
         self._x = x
 
-    def __index__(self) -> _IntT:
+    def __index__(self, /) -> _IntT_co:
         return self._x
 
 
-class IntLike(Generic[_IntT]):
-    def __init__(self, x: _IntT, /) -> None:
+class IntLike(Generic[_IntT_co]):
+    def __init__(self, x: _IntT_co, /) -> None:
         self._x = x
 
-    def __int__(self) -> _IntT:
+    def __int__(self, /) -> _IntT_co:
         return self._x
 
 
@@ -32,7 +32,7 @@ class FloatLike:
     def __init__(self, x: float, /) -> None:
         self._x = x
 
-    def __float__(self) -> float:
+    def __float__(self, /) -> float:
         return self._x
 
 
@@ -40,18 +40,18 @@ class ComplexLike:
     def __init__(self, x: complex, /) -> None:
         self._x = x
 
-    def __complex__(self) -> complex:
+    def __complex__(self, /) -> complex:
         return self._x
 
 
-_ValueT = TypeVar('_ValueT', infer_variance=True)
+_V_co = TypeVar('_V_co', covariant=True)
 
 
-class SequenceLike(Generic[_ValueT]):
-    def __init__(self, /, *values: _ValueT) -> None:
+class SequenceLike(Generic[_V_co]):
+    def __init__(self, /, *values: _V_co) -> None:
         self._xs = values
 
-    def __getitem__(self, index: int) -> _ValueT:
+    def __getitem__(self, index: int, /) -> _V_co:
         return self._xs[index]
 
 

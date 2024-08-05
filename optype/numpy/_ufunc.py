@@ -29,20 +29,36 @@ __all__ = (
 _NP_V2: Final[bool] = np.__version__.startswith('2.')
 
 
-_F = TypeVar('_F', infer_variance=True, bound='CanCall[..., Any]', default=Any)
-_Nin = TypeVar('_Nin', infer_variance=True, bound=int, default=int)
-_Nout = TypeVar('_Nout', infer_variance=True, bound=int, default=int)
-_Sig = TypeVar('_Sig', infer_variance=True, bound=str | None, default=Any)
-_I = TypeVar(
-    '_I',
-    infer_variance=True,
-    bound=complex | str | bytes | None,  # this includes `bool | int | float`
+_FT_co = TypeVar(
+    '_FT_co',
+    bound='CanCall[..., Any]',
+    covariant=True,
+    default=Any,
+)
+_FT_contra = TypeVar(
+    '_FT_contra',
+    bound='CanCall[..., Any]',
+    contravariant=True,
+    default=Any,
+)
+_NInT_co = TypeVar('_NInT_co', bound=int, covariant=True, default=int)
+_NoutT_co = TypeVar('_NoutT_co', bound=int, covariant=True, default=int)
+_SigT_co = TypeVar(
+    '_SigT_co',
+    bound=str | None,
+    covariant=True,
+    default=str | None,
+)
+_IdT_co = TypeVar(
+    '_IdT_co',
+    bound=int | float | complex | str | bytes | None,
+    covariant=True,
     default=float | None,
 )
 
 
 @runtime_checkable
-class UFunc(Protocol[_F, _Nin, _Nout, _Sig, _I]):
+class UFunc(Protocol[_FT_co, _NInT_co, _NoutT_co, _SigT_co, _IdT_co]):
     """
     A generic interface for `numpy.ufunc` "universal function" instances,
     e.g. `numpy.exp`, `numpy.add`, `numpy.frexp`, `numpy.divmod`.
@@ -58,18 +74,18 @@ class UFunc(Protocol[_F, _Nin, _Nout, _Sig, _I]):
         using descriptors.
     """
     @property
-    def __call__(self, /) -> _F: ...
+    def __call__(self, /) -> _FT_co: ...
 
     # The number of positional-only parameters, within numpy this is either 1
     # or 2, but might be more for 3rd party ufuncs.
     @property
-    def nin(self, /) -> _Nin: ...
+    def nin(self, /) -> _NInT_co: ...
     # The number of output values, within numpy this is either 1 or 2.
     @property
-    def nout(self, /) -> _Nout: ...
+    def nout(self, /) -> _NoutT_co: ...
     # A string i.f.f. this is a gufunc (generalized ufunc).
     @property
-    def signature(self, /) -> _Sig: ...
+    def signature(self, /) -> _SigT_co: ...
 
     # If `signature is None and nin == 2 and nout == 1`, this *may* be set to
     # a python scalar s.t. `self(x, identity) == x` for all possible `x`.
@@ -79,7 +95,7 @@ class UFunc(Protocol[_F, _Nin, _Nout, _Sig, _I]):
     # Note that the `complex` return annotation implicitly includes
     # `bool | int | float` (these are its supertypes).
     @property
-    def identity(self, /) -> _I: ...
+    def identity(self, /) -> _IdT_co: ...
     # Within numpy this is always `nin + nout`, since each output value comes
     # with a corresponding (optional) `out` parameter.
     @property
@@ -133,12 +149,17 @@ else:
     _UFuncMethod: _Type = _UFuncMethodCommon | Literal['inner']
 
 
-_U = TypeVar('_U', infer_variance=True, bound=UFunc, default=Any)
-_R = TypeVar('_R', infer_variance=True, bound=object, default=Any)
+_UFT_contra = TypeVar(
+    '_UFT_contra',
+    bound=UFunc,
+    contravariant=True,
+    default=Any,
+)
+_T_co = TypeVar('_T_co', covariant=True, default=np.ufunc)
 
 
 @runtime_checkable
-class CanArrayUFunc(Protocol[_U, _R]):
+class CanArrayUFunc(Protocol[_UFT_contra, _T_co]):
     """
     Interface for ufunc operands.
 
@@ -147,23 +168,23 @@ class CanArrayUFunc(Protocol[_U, _R]):
     """
     def __array_ufunc__(
         self,
-        ufunc: _U,
+        ufunc: _UFT_contra,
         method: _UFuncMethod,
         /,
         *args: Any,
         **kwargs: Any,
-    ) -> _R: ...
+    ) -> _T_co: ...
 
 
 @runtime_checkable
-class CanArrayFunction(Protocol[_F, _R]):
+class CanArrayFunction(Protocol[_FT_contra, _T_co]):
     def __array_function__(
         self,
         /,
-        func: _F,
+        func: _FT_contra,
         # although this could be tighter, this ensures numpy.typing compat
         types: opt.CanIter[opt.CanIterSelf[type[CanArrayFunction[Any, Any]]]],
         # ParamSpec can only be used on *args and **kwargs for some reason...
         args: tuple[Any, ...],
         kwargs: Mapping[str, Any],
-    ) -> NotImplementedType | _R: ...
+    ) -> NotImplementedType | _T_co: ...
