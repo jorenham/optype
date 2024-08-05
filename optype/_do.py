@@ -1,3 +1,5 @@
+# mypy: disable-error-code="assignment"
+
 from __future__ import annotations
 
 import math as _math
@@ -57,7 +59,7 @@ do_dir: _d.DoesDir = dir
 # callables
 
 if _sys.version_info >= (3, 11):
-    do_call: _d.DoesCall = _o.call
+    do_call: _d.DoesCall = _o.call  # type: ignore[attr-defined]
 else:
     _Pss_call = ParamSpec('_Pss_call')
     _R_call = TypeVar('_R_call')

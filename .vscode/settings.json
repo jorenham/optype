@@ -1,4 +1,7 @@
 {
   "git.branchProtection": ["master"],
-  "githubPullRequests.overrideDefaultBranch": "dev"
+  "githubPullRequests.overrideDefaultBranch": "dev",
+  "mypy-type-checker.args": [
+    "--config-file=pyproject.toml"
+  ]
 }

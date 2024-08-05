@@ -93,7 +93,7 @@ class CanReduceEx(Protocol[_ReduceT_co]):
     @override
     def __reduce_ex__(  # pyright: ignore[reportIncompatibleMethodOverride]
         self,
-        protocol: CanIndex[_ProtocolVersion],
+        protocol: CanIndex[_ProtocolVersion],  # type: ignore[override]
         /,
     ) -> _ReduceT_co: ...
 
