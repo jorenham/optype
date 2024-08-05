@@ -20,12 +20,12 @@ if sys.version_info >= (3, 13):
         overload,
     )
 else:
-    from typing_extensions import (
-        TypeAliasType,
-        TypeIs,
-        is_protocol,
-        overload,
-    )
+    from typing_extensions import TypeAliasType, is_protocol, overload
+    try:
+        from typing_extensions import TypeIs
+    except ImportError:
+        # fallback for `typing_extensions<4.10`
+        from typing import TypeGuard as TypeIs
 
 if TYPE_CHECKING:
     from collections.abc import Callable as CanCall
