@@ -2,36 +2,54 @@
 from __future__ import annotations
 
 import inspect
-import itertools
 import sys
-from typing import TYPE_CHECKING, Any, cast, get_args as _get_args
+from types import GenericAlias, UnionType
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    cast,
+    get_args as _get_args,
+)
 
 
 if sys.version_info >= (3, 13):
-    from typing import TypeAliasType, TypeIs, is_protocol
+    from typing import (
+        TypeAliasType,
+        TypeIs,
+        is_protocol,
+        overload,
+    )
 else:
     from typing_extensions import (
         TypeAliasType,
         TypeIs,  # noqa: TCH002
         is_protocol,
+        overload,
     )
 
 
 if TYPE_CHECKING:
+    from collections.abc import Callable as CanCall
     from types import ModuleType
 
+    from .types import WrappedFinalType
     from .typing import AnyIterable
 
 from ._can import CanGetitem, CanIter, CanLen
+from .types import AnnotatedAlias, GenericType, LiteralAlias, UnionAlias
 
 
 __all__ = (
     'get_args',
     'get_protocol_members',
     'get_protocols',
+    'is_final',
+    'is_generic_alias',
     'is_iterable',
     'is_protocol',
     'is_runtime_protocol',
+    'is_union_type',
 )
 
 
@@ -78,32 +96,167 @@ def is_iterable(obj: object, /) -> TypeIs[AnyIterable]:
     return False
 
 
-def is_runtime_protocol(cls: type, /) -> bool:
+@overload
+def is_final(final_cls_or_method: WrappedFinalType, /) -> Literal[True]: ...
+@overload
+def is_final(cls: type, /) -> bool: ...
+@overload
+def is_final(method: CanCall[..., Any], /) -> bool: ...
+@overload
+def is_final(prop: property, /) -> bool: ...
+@overload
+def is_final(
+    clsmethod: classmethod[Any, ..., Any] | staticmethod[..., Any],
+    /,
+) -> bool: ...
+def is_final(
+    arg: (
+        WrappedFinalType
+        | type
+        | CanCall[..., Any]
+        | property
+        | classmethod[Any, ..., Any]
+        | staticmethod[..., Any]
+    ),
+    /,
+) -> bool:
     """
-    Check if `cls` is a `typing[_extensions].Protocol` that's decorated with
-    `typing[_extensions].runtime_checkable`.
+    Check if the type, method, classmethod, staticmethod, or property, is
+    decorated with `@typing.final` or `@typing_extensions.final`.
+
+    IMPORTANT: On Python 3.10, `@typing_extensions.final` should be used
+    instead of `@typing.final`.
+
+    IMPORTANT: A final `@property` won't be recognized unless `@final` is
+    applied before the `@property` decorator, i.e. directly on the method.
+
+    Do this:
+
+    ```python
+    class Europe:
+        @property
+        @final
+        def countdown(self): ...
+    ```
+
+    Don't do this:
+
+    ```python
+    class Europe:
+        @final
+        @property
+        def countdown(self): ...
+    ```
+
+    The reason for this is that `builtins.property.__final__` cannot be
+    written to, so `@final` won't be able to set `__final__ = True` on it.
+    Only the getter method of a `@property` is checked.
+
+    NOTE: Accessing a `classmethod` or `staticmethod` of a class can't be done
+    through regular attribute access, but should be done with
+    `inspect.getattr_static`.
+    But unlike `@property`, it doesn't matter in which order you use the
+    `@classmethod` and `@staticmethod` decorators and `@final`.
     """
-    return is_protocol(cls) and getattr(cls, '_is_runtime_protocol', False)
+    if callable(arg):  # classes are also callable
+        if getattr(arg, '__final__', False):
+            return True
+        return isinstance(arg, staticmethod) and is_final(arg.__wrapped__)
+    if isinstance(arg, property) and arg.fget is not None:
+        return is_final(arg.fget)
+    if isinstance(arg, classmethod):
+        return getattr(arg, '__final__', False) or is_final(arg.__wrapped__)
+
+    return False
 
 
-def get_args(tp: TypeAliasType | type | str | Any, /) -> tuple[Any, ...]:
+def _get_alias(tp: Any, /) -> Any:
+    seen: set[TypeAliasType] = set()
+    for _ in range(sys.getrecursionlimit()):
+        if isinstance(tp, TypeAliasType):
+            seen.add(tp)
+            tp = tp.__value__
+            if tp in seen:
+                raise RecursionError('type alias of itself')
+            continue
+        if isinstance(tp, AnnotatedAlias):
+            assert len(tp.__args__) == 1
+            tp = tp.__args__[0]
+            continue
+        return tp
+
+    raise RecursionError
+
+
+def is_runtime_protocol(type_expr: Any, /) -> bool:
+    """
+    Check if `type_expr` is a `typing[_extensions].Protocol` that's decorated
+    with `typing[_extensions].runtime_checkable`.
+    """
+    if isinstance(type_expr, AnnotatedAlias | TypeAliasType):
+        type_expr = _get_alias(type_expr)
+    return (
+        getattr(type_expr, '_is_runtime_protocol', False)
+        and is_protocol(type_expr)
+    )
+
+
+def is_union_type(type_expr: Any, /) -> TypeIs[UnionType | UnionAlias]:
+    if isinstance(type_expr, AnnotatedAlias | TypeAliasType):
+        type_expr = _get_alias(type_expr)
+    return isinstance(type_expr, UnionType | UnionAlias)
+
+
+def is_generic_alias(type_expr: Any, /) -> TypeIs[GenericType | GenericAlias]:
+    if isinstance(type_expr, AnnotatedAlias | TypeAliasType):
+        type_expr = _get_alias(type_expr)
+    return (
+        isinstance(type_expr, GenericType | GenericAlias)
+        and not isinstance(type_expr, UnionType | UnionAlias)
+    )
+
+
+def get_args(tp: Any, /) -> tuple[Any, ...]:
     """
     A less broken implementation of `typing[_extensions].get_args()` that
 
-    - also works for type aliases defined with the PEP 695 `type` keyword, and
-    - recursively flattens nested of union'ed type aliases.
+    - unpacks `Annotated` and `TypeAliasType`,
+    - recursively flattens unions / nested `Literal`s, and
+    - raises `TypeError` if `tp` if isn't a generic type (alias).
     """
-    args = _get_args(tp.__value__ if isinstance(tp, TypeAliasType) else tp)
-    return tuple(
-        itertools.chain.from_iterable(get_args(arg) or [arg] for arg in args),
-    )
+    if isinstance(tp, str):
+        raise NotImplementedError('str')
+
+    _raise = True
+    if isinstance(tp, AnnotatedAlias | TypeAliasType):
+        tp = _get_alias(tp)
+        _raise = False
+
+    if isinstance(tp, UnionType | UnionAlias | LiteralAlias):
+        args: list[Any] = []
+        for arg in tp.__args__:
+            if isinstance(arg, TypeAliasType | AnnotatedAlias):
+                arg = _get_alias(arg)  # noqa: PLW2901
+            if isinstance(arg, UnionType | UnionAlias | LiteralAlias):
+                args.extend(get_args(arg))
+            else:
+                args.append(arg)
+        return tuple(args)
+
+    if hasattr(tp, '__origin__') and hasattr(tp, '__args__'):
+        return _get_args(tp)
+
+    if _raise and not isinstance(tp, type):
+        raise TypeError(repr(tp))
+
+    return ()
 
 
 def get_protocol_members(cls: type, /) -> frozenset[str]:
     """
     A variant of `typing[_extensions].get_protocol_members()` that
 
-    - doesn't hide `__dict__` or `__annotations__`,
+    - doesn't hide `__annotations__`, `__dict__`, `__init__` or `__new__`,
     - doesn't add a `__hash__` if there's an `__eq__` method, and
     - doesn't include methods of base types from different module.
     """
@@ -111,50 +264,21 @@ def get_protocol_members(cls: type, /) -> frozenset[str]:
         msg = f'{cls!r} is not a protocol'
         raise TypeError(msg)
 
-    module_blacklist = {'typing', 'typing_extensions'}
     annotations, module = cls.__annotations__, cls.__module__
     members = annotations.keys() | {
         name for name, v in vars(cls).items()
         if (
-            name != '__new__'
-            and callable(v)
-            and (
-                v.__module__ == module
-                or (
-                    # Fun fact: Each `@overload` returns the same dummy
-                    # function; so there's no reference your wrapped method :).
-                    # Oh and BTW; `typing.get_overloads` only works on the
-                    # non-overloaded method...
-                    # Oh, you mean the one that # you shouldn't define within
-                    # a `typing.Protocol`?
-                    # Yes exactly! Anyway, good luck searching for the
-                    # undocumented and ever-changing dark corner of the
-                    # `typing` internals. I'm sure it must be there somewhere!
-                    # Oh yea if you can't find it, try `typing_extensions`.
-                    # Oh, still can't find it? Did you try ALL THE VERSIONS?
-                    #
-                    # ...anyway, the only thing we know here, is the name of
-                    # an overloaded method. But we have no idea how many of
-                    # them there *were*, let alone their signatures.
-                    v.__module__ in module_blacklist
-                    and v.__name__ == '_overload_dummy'
-                )
-            )
-        ) or (
-            isinstance(v, property)
-            and v.fget
-            and v.fget.__module__ == module
-        )
+            callable(f := getattr(v, '__func__', v))
+            or (isinstance(v, property) and (f := v.fget) is not None)
+        ) and f.__module__ == module
     }
 
     # this hack here is plagiarized from the (often incorrect)
     # `typing_extensions.get_protocol_members`.
     # Maybe the `typing.get_protocol_member`s` that's coming in 3.13 will
     # won't be as broken. I have little hope though...
-    members |= cast(
-        set[str],
-        getattr(cls, '__protocol_attrs__', None) or set(),
-    )
+    if hasattr(cls, '__protocol_attrs__'):
+        members |= cast(set[str], cls.__protocol_attrs__)
 
     # sometimes __protocol_attrs__ hallicunates some non-existing dunders.
     # the `getattr_static` avoids potential descriptor magic
@@ -162,7 +286,6 @@ def get_protocol_members(cls: type, /) -> frozenset[str]:
         member for member in members
         if member in annotations
         or inspect.getattr_static(cls, member) is not None
-        # or getattr(cls, member) is not None
     }
 
     # also include any of the parents

@@ -30,9 +30,8 @@ documentation = "https://github.com/jorenham/optype?tab=readme-ov-file#optype"
 numpy = ["numpy"]
 
 [tool.poetry.dependencies]
-# bump to ^3.11 after 2025-04-04
-# bump to ^3.12 after 2026-04-24
-python = "^3.10"
+# bump to `^3.11` after 2025-04-04, and to `^3.12` after 2026-04-24
+python = "^3.10.1"
 typing-extensions = {version = ">=4.7", python = "<3.13"}
 
 # https://scientific-python.org/specs/spec-0000/
@@ -80,14 +79,11 @@ pythonPlatform = "All"
 typeCheckingMode = "all"
 defineConstant = {"_NP_V2" = true, "byteorder" = "little"}
 
-reportAny = false
-reportUnusedCallResult = false
-# because of `sys.version_info()` conditionals
-reportUnreachable = false
-# already handled by ruff F401
-reportUnusedImport = false
-# already handled by ruff F841
-reportUnusedVariable = false
+reportAny = false  # blame typeshed
+reportUnusedCallResult = false  # https://github.com/microsoft/pyright/issues/8650
+reportUnreachable = false  # nothing wrong with `if sys.version_info() >= ...`
+reportUnusedImport = false  # dupe of F401
+reportUnusedVariable = false  # dupe of F841
 
 
 [tool.pytest.ini_options]
@@ -96,6 +92,7 @@ addopts = [
     "--doctest-modules",
     "--strict-config",
     "--strict-markers",
+    "--showlocals",
 ]
 doctest_optionflags = [
     "NORMALIZE_WHITESPACE",
@@ -111,13 +108,13 @@ xfail_strict = true
 
 [tool.repo-review]
 ignore = [
-    "PY004",    # README.md >> docs/
-    "PC110",    # optype's style >> (black | ruff-format)
-    "PC140",    # (based)pyright >> mypy (by several orders of magnitude)
-    "PC170",    # no .rst
-    "PC180",    # no .css or .js
-    "MY",       # (based)pyright >> mypy (by several orders of magnitude)
-    "RTD",      # README.md >> rtd
+    "PY004",    # no `docs/` (maybe later)
+    "PC110",    # no auto-format (all formatters are bad for readability atm)
+    "PC140",    # no mypy
+    "PC170",    # no sphinx
+    "PC180",    # no css or js
+    "MY",       # no mypy
+    "RTD",      # no readthedocs
 ]
 
 
@@ -143,7 +140,6 @@ select = [
     "YTT",      # flake8-2020
     "ANN",      # flake8-annotations
     "ASYNC",    # flake8-async
-    "ASYNC1",     # flake8-trio
     "BLE",      # flake8-blind-except
     "B",        # flake8-bugbear
     "A",        # flake8-builtins
@@ -151,11 +147,11 @@ select = [
     "C4",       # flake8-comprehensions
     "DTZ",      # flake8-datetimez
     "T10",      # flake8-debugger
-    "EM",       # flake8-errmsg
     "EXE",      # flake8-executable
     "FA",       # flake8-future-annotations
     "ISC",      # flake8-implicit-str-concat
     "ICN",      # flake8-import-conventions
+    "LOG",      # flake8-logging
     "G",        # flake8-logging-format
     "INP",      # flake8-no-pep420
     "PIE",      # flake8-pie
@@ -178,11 +174,11 @@ select = [
     "PL",       # pylint
     "TRY",      # tryceratops
     "FLY",      # flynt
-    "NPY",      # numpy
+    "NPY",      # NumPy
+    "FAST",     # FastAPI
     "AIR",      # airflow
     "PERF",     # perflint,
     "FURB",     # refurb
-    "LOG",      # flake8-logging
     "RUF",      # ruff
 ]
 ignore = [
@@ -197,6 +193,8 @@ ignore = [
     "PLR0904",  # too-many-public-methods
     # refurb
     "FURB118",  # reimplemented-operator
+    # tryceratops
+    "TRY003",   # raise-vanilla-args
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -244,6 +242,13 @@ allow-dunder-method-names = [
     "__qualname__", # attr like `__name__`
     "__replace__",  # method used by `copy.replace` in Python 3.13+
     "__self__",     # attr of a bound method
+
+    "__value__",
+    "__origin__",
+    "__args__",
+    "__parameters__",
+    "__typing_unpacked_tuple_args__",
+    "__typing_is_unpacked_typevartuple__",
 
     # numpy array special methods
     "__array__",
