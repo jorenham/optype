@@ -1,4 +1,3 @@
-
 """
 The allowed `np.dtype` arguments for specific scalar types.
 The names are analogous to those in `numpy.dtypes`.

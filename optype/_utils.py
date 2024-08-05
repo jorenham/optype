@@ -9,13 +9,12 @@ if TYPE_CHECKING:
 
 
 if sys.version_info >= (3, 13):
-    from typing import LiteralString, Protocol, TypeVar, final, is_protocol
+    from typing import LiteralString, Protocol, TypeVar, is_protocol
 else:
     from typing_extensions import (
         LiteralString,
         Protocol,
         TypeVar,
-        final,
         is_protocol,
     )
 
@@ -52,7 +51,6 @@ class _HasModule(Protocol):
 _HasModuleT = TypeVar('_HasModuleT', bound=_HasModule)
 
 
-@final
 class _DoesSetModule(Protocol):
     def __call__(self, obj: _HasModuleT, /) -> _HasModuleT: ...
 
