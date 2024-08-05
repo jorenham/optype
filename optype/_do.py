@@ -82,82 +82,68 @@ do_length_hint: _d.DoesLengthHint = _o.length_hint
 # redundant) overload for `(Sequence[T], slice) -> Sequence[T]`
 # https://github.com/python/typeshed/blob/587ad6b/stdlib/_operator.pyi#L84-L86
 
-_K_getitem = TypeVar('_K_getitem')
-_V_getitem = TypeVar('_V_getitem')
-_D_getitem = TypeVar('_D_getitem')
+_KeyT = TypeVar('_KeyT')
+_ValueT = TypeVar('_ValueT')
+_DefaultT = TypeVar('_DefaultT')
 
 
 @overload
 @set_module('optype')
 def do_getitem(
-    obj: _c.CanGetMissing[_K_getitem, _V_getitem, _D_getitem],
-    key: _K_getitem,
+    obj: _c.CanGetMissing[_KeyT, _ValueT, _DefaultT],
+    key: _KeyT,
     /,
-) -> _V_getitem | _D_getitem: ...
+) -> _ValueT | _DefaultT: ...
 @overload
 @set_module('optype')
 def do_getitem(
-    obj: _c.CanGetitem[_K_getitem, _V_getitem],
-    key: _K_getitem,
+    obj: _c.CanGetitem[_KeyT, _ValueT],
+    key: _KeyT,
     /,
-) -> _V_getitem: ...
+) -> _ValueT: ...
 @set_module('optype')
 def do_getitem(
     obj: (
-        _c.CanGetitem[_K_getitem, _V_getitem]
-        | _c.CanGetMissing[_K_getitem, _V_getitem, _D_getitem]
+        _c.CanGetitem[_KeyT, _ValueT]
+        | _c.CanGetMissing[_KeyT, _ValueT, _DefaultT]
     ),
-    key: _K_getitem,
+    key: _KeyT,
     /,
-) -> _V_getitem | _D_getitem:
+) -> _ValueT | _DefaultT:
     """Same as `value = obj[key]`."""
     return obj[key]
 
 
-_K_setitem = TypeVar('_K_setitem')
-_V_setitem = TypeVar('_V_setitem')
-
-
 @set_module('optype')
 def do_setitem(
-    obj: _c.CanSetitem[_K_setitem, _V_setitem],
-    key: _K_setitem,
-    value: _V_setitem,
+    obj: _c.CanSetitem[_KeyT, _ValueT],
+    key: _KeyT,
+    value: _ValueT,
     /,
 ) -> None:
     """Same as `obj[key] = value`."""
     obj[key] = value
 
 
-_K_delitem = TypeVar('_K_delitem')
-
-
 @set_module('optype')
-def do_delitem(obj: _c.CanDelitem[_K_delitem], key: _K_delitem, /) -> None:
+def do_delitem(obj: _c.CanDelitem[_KeyT], key: _KeyT, /) -> None:
     """Same as `del obj[key]`."""
     del obj[key]
 
 
-_K_missing = TypeVar('_K_missing')
-_D_missing = TypeVar('_D_missing')
-
-
 @set_module('optype')
 def do_missing(
-    obj: _c.CanMissing[_K_missing, _D_missing],
-    key: _K_missing,
+    obj: _c.CanMissing[_KeyT, _DefaultT],
+    key: _KeyT,
     /,
-) -> _D_missing:
+) -> _DefaultT:
     return obj.__missing__(key)
 
 
 # `operator.contains` cannot be used, as it incorrectly requires `key`
-# to be an **invariant** `object` instance...
-_K_contains = TypeVar('_K_contains', bound=object)
-
-
+# to be exactly of type `object`, so that it only accepts `object()`...
 @set_module('optype')
-def do_contains(obj: _c.CanContains[_K_contains], key: _K_contains, /) -> bool:
+def do_contains(obj: _c.CanContains[_KeyT], key: _KeyT, /) -> bool:
     """Same as `key in obj`."""
     return key in obj
 
@@ -189,166 +175,90 @@ do_or: _d.DoesOr = _o.or_
 # `CanCall` or `Callable`, within the decorator function signature).
 
 
-_T_radd = TypeVar('_T_radd')
-_R_radd = TypeVar('_R_radd')
+_LeftT = TypeVar('_LeftT')
+_OutT = TypeVar('_OutT')
 
 
 @set_module('optype')
-def do_radd(a: _c.CanRAdd[_T_radd, _R_radd], b: _T_radd, /) -> _R_radd:
+def do_radd(a: _c.CanRAdd[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `b + a`."""
     return b + a
 
 
-_T_rsub = TypeVar('_T_rsub')
-_R_rsub = TypeVar('_R_rsub')
-
-
 @set_module('optype')
-def do_rsub(a: _c.CanRSub[_T_rsub, _R_rsub], b: _T_rsub, /) -> _R_rsub:
+def do_rsub(a: _c.CanRSub[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `b - a`."""
     return b - a
 
 
-_T_rmul = TypeVar('_T_rmul')
-_R_rmul = TypeVar('_R_rmul')
-
-
 @set_module('optype')
-def do_rmul(a: _c.CanRMul[_T_rmul, _R_rmul], b: _T_rmul, /) -> _R_rmul:
+def do_rmul(a: _c.CanRMul[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `b * a`."""
     return b * a
 
 
-_T_rmatmul = TypeVar('_T_rmatmul')
-_R_rmatmul = TypeVar('_R_rmatmul')
-
-
 @set_module('optype')
-def do_rmatmul(
-    a: _c.CanRMatmul[_T_rmatmul, _R_rmatmul],
-    b: _T_rmatmul,
-    /,
-) -> _R_rmatmul:
+def do_rmatmul(a: _c.CanRMatmul[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `b @ a`."""
     return b @ a
 
 
-_T_rtruediv = TypeVar('_T_rtruediv')
-_R_rtruediv = TypeVar('_R_rtruediv')
-
-
 @set_module('optype')
-def do_rtruediv(
-    a: _c.CanRTruediv[_T_rtruediv, _R_rtruediv],
-    b: _T_rtruediv,
-    /,
-) -> _R_rtruediv:
+def do_rtruediv(a: _c.CanRTruediv[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `b / a`."""
     return b / a
 
 
-_T_rfloordiv = TypeVar('_T_rfloordiv')
-_R_rfloordiv = TypeVar('_R_rfloordiv')
-
-
 @set_module('optype')
-def do_rfloordiv(
-    a: _c.CanRFloordiv[_T_rfloordiv, _R_rfloordiv],
-    b: _T_rfloordiv,
-    /,
-) -> _R_rfloordiv:
+def do_rfloordiv(a: _c.CanRFloordiv[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `b // a`."""
     return b // a
 
 
-_T_rmod = TypeVar('_T_rmod')
-_R_rmod = TypeVar('_R_rmod')
-
-
 @set_module('optype')
-def do_rmod(a: _c.CanRMod[_T_rmod, _R_rmod], b: _T_rmod, /) -> _R_rmod:
+def do_rmod(a: _c.CanRMod[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `b % a`."""
     return b % a
 
 
-_T_rdivmod = TypeVar('_T_rdivmod')
-_R_rdivmod = TypeVar('_R_rdivmod')
-
-
 @set_module('optype')
-def do_rdivmod(
-    a: _c.CanRDivmod[_T_rdivmod, _R_rdivmod],
-    b: _T_rdivmod,
-    /,
-) -> _R_rdivmod:
+def do_rdivmod(a: _c.CanRDivmod[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `divmod(b, a)`."""
     return divmod(b, a)
 
 
-_T_rpow = TypeVar('_T_rpow')
-_R_rpow = TypeVar('_R_rpow')
-
-
 @set_module('optype')
-def do_rpow(a: _c.CanRPow[_T_rpow, _R_rpow], b: _T_rpow, /) -> _R_rpow:
+def do_rpow(a: _c.CanRPow[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `b ** a`."""
     return b**a
 
 
-_T_rlshift = TypeVar('_T_rlshift')
-_R_rlshift = TypeVar('_R_rlshift')
-
-
 @set_module('optype')
-def do_rlshift(
-    a: _c.CanRLshift[_T_rlshift, _R_rlshift],
-    b: _T_rlshift,
-    /,
-) -> _R_rlshift:
+def do_rlshift(a: _c.CanRLshift[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `b << a`."""
     return b << a
 
 
-_T_rrshift = TypeVar('_T_rrshift')
-_R_rrshift = TypeVar('_R_rrshift')
-
-
 @set_module('optype')
-def do_rrshift(
-    a: _c.CanRRshift[_T_rrshift, _R_rrshift],
-    b: _T_rrshift,
-    /,
-) -> _R_rrshift:
+def do_rrshift(a: _c.CanRRshift[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `b >> a`."""
     return b >> a
 
 
-_T_rand = TypeVar('_T_rand')
-_R_rand = TypeVar('_R_rand')
-
-
 @set_module('optype')
-def do_rand(a: _c.CanRAnd[_T_rand, _R_rand], b: _T_rand, /) -> _R_rand:
+def do_rand(a: _c.CanRAnd[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `b & a`."""
     return b & a
 
 
-_T_rxor = TypeVar('_T_rxor')
-_R_rxor = TypeVar('_R_rxor')
-
-
 @set_module('optype')
-def do_rxor(a: _c.CanRXor[_T_rxor, _R_rxor], b: _T_rxor, /) -> _R_rxor:
+def do_rxor(a: _c.CanRXor[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `b ^ a`."""
     return b ^ a
 
 
-_T_ror = TypeVar('_T_ror')
-_R_ror = TypeVar('_R_ror')
-
-
 @set_module('optype')
-def do_ror(a: _c.CanROr[_T_ror, _R_ror], b: _T_ror, /) -> _R_ror:
+def do_ror(a: _c.CanROr[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `b | a`."""
     return b | a
 
