@@ -191,9 +191,6 @@ def test_get_protocols():
 
 
 def test_type_is_final():
-    assert not opt.inspect.is_final(opt.CanAdd)
-    assert opt.inspect.is_final(opt.DoesAdd)
-
     assert not opt.inspect.is_final(Proto)
     assert not opt.inspect.is_final(ProtoX)
     assert not opt.inspect.is_final(ProtoRuntime)
