@@ -1,11 +1,13 @@
-# ruff: noqa: I001
 from typing import Any
 
 import numpy as np
 import pytest
 
-from optype.numpy import _any_scalar, _any_dtype  # pyright: ignore[reportPrivateUsage]
 from optype.inspect import get_args
+from optype.numpy import (
+    _any_dtype,  # pyright: ignore[reportPrivateUsage]
+    _any_scalar,
+)
 
 
 _TEMPORAL = 'TimeDelta64', 'DateTime64'
