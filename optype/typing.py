@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import enum
 import sys
-from typing import Any, Literal, TypeAlias
+from typing import Any, Literal, NoReturn, TypeAlias
 
 from typing_extensions import LiteralString
 
 
 if sys.version_info >= (3, 13):
-    from typing import Never, TypeVar, TypedDict, final
+    from typing import Never, TypeVar, TypedDict, Unpack, final
 else:
-    from typing_extensions import Never, TypeVar, TypedDict, final
+    from typing_extensions import Never, TypeVar, TypedDict, Unpack, final
 
 import optype._can as _c
 
@@ -66,7 +66,19 @@ class _EmptyTypedDict(TypedDict):
 
 EmptyString: TypeAlias = Literal['']
 EmptyBytes: TypeAlias = Literal[b'']
-EmptyTuple: TypeAlias = tuple[()]
+EmptyTuple: TypeAlias = (
+    # this should be the only that's needed here, but in practice we need 3
+    # other variants, that are equivalent, but are somehow treated as
+    # different types by pyright or mypy or both
+    tuple[()]
+    # both mypy and pyright don't simplify this to `tuple[()]`, even though
+    # it's equivalent, and `tuple[()]` is much easier to read
+    | tuple[Never, ...]
+    # in pyright `NoReturn` and `Never` aren't identical, only equivalent
+    | tuple[NoReturn, ...]
+    # this is what infers the result of `tuple[Never, ...] + tuple[()]` as...
+    | tuple[Unpack[tuple[Never, ...]]]
+)
 EmptyList: TypeAlias = list[Never]
 EmptySet: TypeAlias = set[Never]
 EmptyDict: TypeAlias = dict[Any, Never] | _EmptyTypedDict
