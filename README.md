@@ -39,6 +39,12 @@
     </a>
     <a href="https://detachhead.github.io/basedpyright">
         <img
+            alt="optype - mypy"
+            src="https://www.mypy-lang.org/static/mypy_badge.svg"
+        />
+    </a>
+    <a href="https://detachhead.github.io/basedpyright">
+        <img
             alt="optype - basedpyright"
             src="https://img.shields.io/badge/basedpyright-checked-42b983"
         />
