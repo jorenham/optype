@@ -94,10 +94,7 @@ always_true = "NP2,NP20"
 # always_true = "NP2"
 # always_false = "NP20"
 modules = ["optype", "tests"]
-exclude = [
-    "^.venv/.*",
-    "^examples/.*",  # TODO
-]
+exclude = ["^.venv/.*"]
 strict = true
 allow_redefinition = true  # needed for python/numpy compat code
 disallow_untyped_defs = true
