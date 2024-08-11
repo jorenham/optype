@@ -64,13 +64,28 @@ _DT = TypeVar('_DT', bound=np.dtype[Any], default=np.dtype[Any])
 Array: TypeAlias = np.ndarray[_ShapeT, np.dtype[_SCT]]
 
 
-# TODO: Make `_ShapeT` covariant on `numpy>=2.1`
-@runtime_checkable
-class CanArray(Protocol[_ShapeT, _SCT_co]):
-    @overload
-    def __array__(self, dtype: None = ..., /) -> Array[_ShapeT, _SCT_co]: ...
-    @overload
-    def __array__(self, dtype: _DT, /) -> np.ndarray[_ShapeT_co, _DT]: ...
+if _x.NP2 and not _x.NP20:
+    @runtime_checkable
+    class CanArray(Protocol[_ShapeT_co, _SCT_co]):
+        @overload
+        def __array__(
+            self,
+            dtype: None = ...,
+            /,
+        ) -> Array[_ShapeT_co, _SCT_co]: ...
+        @overload
+        def __array__(self, dtype: _DT, /) -> np.ndarray[_ShapeT_co, _DT]: ...
+else:
+    @runtime_checkable
+    class CanArray(Protocol[_ShapeT, _SCT_co]):
+        @overload
+        def __array__(
+            self,
+            dtype: None = ...,
+            /,
+        ) -> Array[_ShapeT, _SCT_co]: ...
+        @overload
+        def __array__(self, dtype: _DT, /) -> np.ndarray[_ShapeT_co, _DT]: ...
 
 
 ###########################
