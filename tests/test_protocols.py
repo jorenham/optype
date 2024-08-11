@@ -53,7 +53,7 @@ def _pascamel_to_snake(
     return snake
 
 
-def test_all_public():
+def test_all_public() -> None:
     """
     Ensure all of protocols from `optype._can`, `optype._has`, and
     `optype._does` are in `optype.__all__`.
@@ -67,31 +67,31 @@ def test_all_public():
 
 
 @pytest.mark.parametrize('cls', get_protocols(optype._can))
-def test_can_runtime_checkable(cls: type):
+def test_can_runtime_checkable(cls: type) -> None:
     """Ensure that all `Can*` protocols are `@runtime_checkable`."""
     assert is_runtime_protocol(cls)
 
 
 @pytest.mark.parametrize('cls', get_protocols(optype._has))
-def test_has_runtime_checkable(cls: type):
+def test_has_runtime_checkable(cls: type) -> None:
     """Ensure that all `Has*` protocols are `@runtime_checkable`."""
     assert is_runtime_protocol(cls)
 
 
 @pytest.mark.parametrize('cls', get_protocols(optype._does))
-def test_does_not_runtime_checkable(cls: type):
+def test_does_not_runtime_checkable(cls: type) -> None:
     """Ensure that all `Does*` protocols are **not** `@runtime_checkable`."""
     assert not is_runtime_protocol(cls)
 
 
-def test_num_does_eq_num_do():
+def test_num_does_eq_num_do() -> None:
     num_does = len(get_protocols(optype._does))
     num_do = len(get_callables(optype._do))
     assert num_does == num_do
 
 
 @pytest.mark.parametrize('cls', get_protocols(optype._does))
-def test_does_has_do(cls: type):
+def test_does_has_do(cls: type) -> None:
     """Ensure that all `Does*` protocols have a corresponding `do_` op."""
     name = cls.__name__.removeprefix('Does')
     assert name != cls.__name__
@@ -106,7 +106,7 @@ def test_does_has_do(cls: type):
     'cls',
     get_protocols(optype._can) | get_protocols(optype._has),
 )
-def test_name_matches_dunder(cls: type):
+def test_name_matches_dunder(cls: type) -> None:
     """
     Ensure that each single-member `Can*` and `Has*` name matches the name of
     its member, and that each multi-member optype does not have more members

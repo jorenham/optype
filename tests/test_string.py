@@ -24,7 +24,7 @@ import optype as opt
 def test_optype_eq_stdlib(
     opt_str: tuple[LiteralString, ...],
     std_str: LiteralString,
-):
+) -> None:
     assert opt_str == tuple(std_str)
 
 
@@ -33,7 +33,7 @@ _ArgT_co = TypeVar('_ArgT_co', bound=opt.typing.AnyLiteral, covariant=True)
 
 # a `typing.Literal` stores it's values in `__args__`
 class _HasArgs(Protocol[_ArgT_co]):
-    __args__: Final[tuple[_ArgT_co, ...]]
+    __args__: Final[tuple[_ArgT_co, ...]]  # type: ignore[misc]
 
 
 @pytest.mark.parametrize(
@@ -54,5 +54,5 @@ class _HasArgs(Protocol[_ArgT_co]):
 def test_literal_args_eq_constant(
     const: tuple[LiteralString, ...],
     lit: _HasArgs[LiteralString],
-):
+) -> None:
     assert opt.inspect.get_args(lit) == const

@@ -46,7 +46,7 @@ class CanInit(tpx.Protocol[_Pss]):
 
 @tpx.runtime_checkable
 class CanNew(tpx.Protocol[_Pss, _T_co]):
-    def __new__(cls, *args: _Pss.args, **kwargs: _Pss.kwargs) -> _T_co: ...
+    def __new__(cls, *args: _Pss.args, **kwargs: _Pss.kwargs) -> _T_co: ...  # type: ignore[misc]
 
 
 class ProtoOverload(tpx.Protocol):
@@ -124,7 +124,7 @@ class FinalMembers:
     def sf_final2_x(): pass
 
 
-def test_get_args_literals():
+def test_get_args_literals() -> None:
     assert opt.inspect.get_args(FalsyBool) == (False,)
     assert opt.inspect.get_args(FalsyInt) == (0,)
     assert opt.inspect.get_args(FalsyIntCo) == (False, 0)
@@ -133,7 +133,7 @@ def test_get_args_literals():
 
 
 @pytest.mark.parametrize('origin', [type, list, tuple, GenericTP, GenericTPX])
-def test_get_args_generic(origin: tp.Any):
+def test_get_args_generic(origin: tp.Any) -> None:
     assert opt.inspect.get_args(origin[FalsyBool]) == (FalsyBool,)
     assert opt.inspect.get_args(origin[FalsyInt]) == (FalsyInt,)
     assert opt.inspect.get_args(origin[FalsyIntCo]) == (FalsyIntCo,)
@@ -141,7 +141,7 @@ def test_get_args_generic(origin: tp.Any):
     assert opt.inspect.get_args(origin[Falsy]) == (Falsy,)
 
 
-def test_get_protocol_members():
+def test_get_protocol_members() -> None:
     assert opt.inspect.get_protocol_members(opt.CanAdd) == {'__add__'}
     assert opt.inspect.get_protocol_members(opt.CanPow) == {'__pow__'}
     assert opt.inspect.get_protocol_members(opt.CanHash) == {'__hash__'}
@@ -173,7 +173,7 @@ def test_get_protocol_members():
     assert opt.inspect.get_protocol_members(ProtoOverload) == {'method'}
 
 
-def test_get_protocols():
+def test_get_protocols() -> None:
     import collections.abc  # noqa: PLC0415
     import types  # noqa: PLC0415
 
@@ -190,7 +190,7 @@ def test_get_protocols():
     assert opt.inspect.get_protocols(tpx, private=True) >= protocols_tpx
 
 
-def test_type_is_final():
+def test_type_is_final() -> None:
     assert not opt.inspect.is_final(Proto)
     assert not opt.inspect.is_final(ProtoX)
     assert not opt.inspect.is_final(ProtoRuntime)
@@ -199,21 +199,21 @@ def test_type_is_final():
     assert opt.inspect.is_final(ProtoFinalX)
 
 
-def test_property_is_final():
+def test_property_is_final() -> None:
     assert not opt.inspect.is_final(FinalMembers.p)
     if sys.version_info >= (3, 11):
         assert opt.inspect.is_final(FinalMembers.p_final)
     assert opt.inspect.is_final(FinalMembers.p_final_x)
 
 
-def test_method_is_final():
+def test_method_is_final() -> None:
     assert not opt.inspect.is_final(FinalMembers.f)
     if sys.version_info >= (3, 11):
         assert opt.inspect.is_final(FinalMembers.f_final)
     assert opt.inspect.is_final(FinalMembers.f_final_x)
 
 
-def test_classmethod_is_final():
+def test_classmethod_is_final() -> None:
     assert not opt.inspect.is_final(FinalMembers.cf)
     if sys.version_info >= (3, 11):
         assert opt.inspect.is_final(getattr_static(FinalMembers, 'cf_final1'))
@@ -222,7 +222,7 @@ def test_classmethod_is_final():
     assert opt.inspect.is_final(getattr_static(FinalMembers, 'cf_final2_x'))
 
 
-def test_staticmethod_is_final():
+def test_staticmethod_is_final() -> None:
     assert not opt.inspect.is_final(FinalMembers.sf)
     if sys.version_info >= (3, 11):
         assert opt.inspect.is_final(getattr_static(FinalMembers, 'sf_final1'))
@@ -232,7 +232,7 @@ def test_staticmethod_is_final():
 
 
 @pytest.mark.parametrize('origin', [type, list, tuple, GenericTP, GenericTPX])
-def test_is_generic_alias(origin: tp.Any):
+def test_is_generic_alias(origin: tp.Any) -> None:
     assert not opt.inspect.is_generic_alias(origin)
 
     assert opt.inspect.is_generic_alias(origin[None])
@@ -244,7 +244,7 @@ def test_is_generic_alias(origin: tp.Any):
     assert not opt.inspect.is_generic_alias(origin[None] | None)
 
 
-def test_is_iterable():
+def test_is_iterable() -> None:
     assert opt.inspect.is_iterable([])
     assert opt.inspect.is_iterable(())
     assert opt.inspect.is_iterable('')
@@ -253,7 +253,7 @@ def test_is_iterable():
     assert opt.inspect.is_iterable(i for i in range(2))
 
 
-def test_is_runtime_protocol():
+def test_is_runtime_protocol() -> None:
     assert opt.inspect.is_runtime_protocol(opt.CanAdd)
     assert not opt.inspect.is_runtime_protocol(opt.DoesAdd)
 
@@ -266,7 +266,7 @@ def test_is_runtime_protocol():
 
 
 @pytest.mark.parametrize('origin', [int, tp.Literal[True], Proto, ProtoX])
-def test_is_union_type(origin: tp.Any):
+def test_is_union_type(origin: tp.Any) -> None:
     assert opt.inspect.is_union_type(origin | None)
     Alias = TypeAliasType('Alias', origin | None)  # noqa: N806
     assert opt.inspect.is_union_type(Alias)
