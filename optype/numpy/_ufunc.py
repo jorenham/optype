@@ -19,11 +19,7 @@ if TYPE_CHECKING:
     import optype as opt
 
 
-__all__ = (
-    'CanArrayFunction',
-    'CanArrayUFunc',
-    'UFunc',
-)
+__all__ = ['CanArrayFunction', 'CanArrayUFunc', 'UFunc']
 
 
 _NP_V2: Final[bool] = np.__version__.startswith('2.')

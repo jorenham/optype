@@ -16,58 +16,74 @@ else:
     from typing_extensions import Any, Protocol, TypeVar, runtime_checkable
 
 
-__all__ = (
-    'AnyArray',
-    'AnyBoolArray',
-    'AnyByteArray',
-    'AnyBytesArray',
-    'AnyCDoubleArray',
-    'AnyCLongDoubleArray',
-    'AnyCSingleArray',
-    'AnyCharacterArray',
-    'AnyComplex64Array',
-    'AnyComplex128Array',
-    'AnyComplexFloatingArray',
-    'AnyDateTime64Array',
-    'AnyDoubleArray',
-    'AnyFlexibleArray',
-    'AnyFloat16Array',
-    'AnyFloat32Array',
-    'AnyFloat64Array',
-    'AnyFloatingArray',
+# ruff: noqa: RUF022
+__all__: list[str] = []
+__all__ += [
     'AnyGenericArray',
-    'AnyHalfArray',
-    'AnyInexactArray',
-    'AnyInt8Array',
-    'AnyInt16Array',
-    'AnyInt32Array',
-    'AnyInt64Array',
-    'AnyIntCArray',
-    'AnyIntPArray',
-    'AnyIntegerArray',
-    'AnyLongArray',
-    'AnyLongDoubleArray',
-    'AnyLongLongArray',
     'AnyNumberArray',
-    'AnyObjectArray',
-    'AnyShortArray',
+    'AnyIntegerArray',
+    'AnyUnsignedIntegerArray',
     'AnySignedIntegerArray',
-    'AnySingleArray',
-    'AnyStrArray',
-    'AnyTimeDelta64Array',
-    'AnyUByteArray',
+    'AnyInexactArray',
+    'AnyFloatingArray',
+    'AnyComplexFloatingArray',
+    'AnyFlexibleArray',
+    'AnyCharacterArray',
+]
+__all__ += [
+    'AnyUInt8Array',
     'AnyUInt8Array',
     'AnyUInt16Array',
     'AnyUInt32Array',
     'AnyUInt64Array',
-    'AnyUIntCArray',
     'AnyUIntPArray',
+    'AnyUByteArray',
+    'AnyUShortArray',
+    'AnyUIntCArray',
     'AnyULongArray',
     'AnyULongLongArray',
-    'AnyUShortArray',
-    'AnyUnsignedIntegerArray',
+]
+__all__ += [
+    'AnyIntegerArray',
+    'AnyInt8Array',
+    'AnyInt8Array',
+    'AnyInt16Array',
+    'AnyInt32Array',
+    'AnyInt64Array',
+    'AnyIntPArray',
+    'AnyByteArray',
+    'AnyShortArray',
+    'AnyIntCArray',
+    'AnyLongArray',
+    'AnyLongLongArray',
+]
+__all__ += [
+    'AnyFloatingArray',
+    'AnyFloat16Array',
+    'AnyFloat32Array',
+    'AnyFloat64Array',
+    'AnyHalfArray',
+    'AnySingleArray',
+    'AnyLongDoubleArray',
+]
+__all__ += [
+    'AnyComplex64Array',
+    'AnyComplex128Array',
+    'AnyCSingleArray',
+    'AnyCDoubleArray',
+    'AnyCLongDoubleArray',
+]
+__all__ += [
+    'AnyBytesArray',
+    'AnyStrArray',
     'AnyVoidArray',
-)
+]
+__all__ += [
+    'AnyBoolArray',
+    'AnyDateTime64Array',
+    'AnyTimeDelta64Array',
+    'AnyObjectArray',
+]
 
 
 _NP_V2: Final[bool] = np.__version__.startswith('2.')
@@ -106,6 +122,7 @@ AnyArray: _Type = (
     | _AnyPY[object]
 )
 AnyGenericArray: _Type = AnyArray[ND, np.generic]
+__all__ += ['AnyArray', 'AnyGenericArray']
 
 # generic :> number
 ST_iufc = TypeVar('ST_iufc', bound=np.number[Any], default=Any)
@@ -195,20 +212,6 @@ AnyCSingleArray: _Type = _AnyNP[ND, np.csingle]
 AnyCDoubleArray: _Type = _Any3[ND, np.cdouble, complex]
 AnyCLongDoubleArray: _Type = _AnyNP[ND, np.clongdouble]
 
-# generic :> datetime64
-AnyDateTime64Array: _Type = _AnyNP[ND, np.datetime64]
-# generic :> timedelta64
-AnyTimeDelta64Array: _Type = _AnyNP[ND, np.timedelta64]
-
-# generic :> flexible
-AnyFlexibleArray: _Type = (
-    _AnyNP[ND, np.flexible]
-    | _AnyPY[str]
-    | _AnyPY[bytes]
-    | _ct.Flexible
-)
-# generic :> flexible :> void
-AnyVoidArray: _Type = _AnyNP[ND, np.void]
 # generic :> flexible :> character
 AnyCharacterArray: _Type = (
     _AnyNP[ND, np.character]
@@ -221,7 +224,24 @@ AnyBytesArray: _Type = _Any4[ND, np.bytes_, bytes, _ct.Bytes]
 # generic :> flexible :> character :> str_
 AnyStrArray: _Type = _Any3[ND, np.str_, str]
 
+# generic :> flexible
+AnyFlexibleArray: _Type = (
+    _AnyNP[ND, np.flexible]
+    | _AnyPY[str]
+    | _AnyPY[bytes]
+    | _ct.Flexible
+)
+# generic :> flexible :> void
+AnyVoidArray: _Type = _AnyNP[ND, np.void]
+
 # generic :> bool
 AnyBoolArray: _Type = _Any4[ND, _x.Bool, bool, _ct.Bool]
+# generic :> datetime64
+AnyDateTime64Array: _Type = _AnyNP[ND, np.datetime64]
+# generic :> timedelta64
+AnyTimeDelta64Array: _Type = _AnyNP[ND, np.timedelta64]
 # generic :> object_
 AnyObjectArray: _Type = _Any4[ND, np.object_, object, _ct.Object]
+
+# generic :> {StringDType.type}
+# TODO

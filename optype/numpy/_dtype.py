@@ -10,7 +10,7 @@ else:
     from typing_extensions import Protocol, TypeVar, runtime_checkable
 
 
-__all__ = 'DType', 'HasDType'
+__all__ = ['DType', 'HasDType']
 
 
 _ST = TypeVar('_ST', bound=np.generic, default=Any)
