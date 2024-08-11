@@ -20,6 +20,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: markdownlint
+        uses: DavidAnson/markdownlint-cli2-action@v16
+        with:
+          config: ".markdownlint.yaml"
+          globs: "**/*.md"
+
       - name: install poetry
         run: pipx install poetry
 
@@ -42,13 +48,9 @@ jobs:
 
       - name: basedpyright --verifytypes
         run: poetry run basedpyright --ignoreexternal --verifytypes optype
-        # continue-on-error: true
 
-      - name: markdownlint
-        uses: DavidAnson/markdownlint-cli2-action@v16
-        with:
-          config: ".markdownlint.yaml"
-          globs: "**/*.md"
+      - name: mypy
+        run: poetry run mypy .
 
       - uses: scientific-python/repo-review@v0.11.0
         with:

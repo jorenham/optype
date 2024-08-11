@@ -23,7 +23,7 @@ def get_type_params(cls: type) -> tuple[Any, ...]:
     'cls',
     [getattr(opt.copy, k) for k in opt.copy.__all__ if not k.endswith('Self')],
 )
-def test_protocols(cls: type):
+def test_protocols(cls: type) -> None:
     # ensure correct name
     assert cls.__module__ == 'optype.copy'
     assert cls.__name__ == cls.__qualname__
@@ -48,7 +48,7 @@ def test_protocols(cls: type):
     assert is_runtime_protocol(cls_self)
 
 
-def test_can_copy():
+def test_can_copy() -> None:
     a = Fraction(1, 137)
 
     a_copy: opt.copy.CanCopy[Fraction] = a
@@ -58,7 +58,7 @@ def test_can_copy():
     assert isinstance(a, opt.copy.CanCopySelf)
 
 
-def test_can_deepcopy():
+def test_can_deepcopy() -> None:
     a = Fraction(1, 137)
 
     a_copy: opt.copy.CanDeepcopy[Fraction] = a
@@ -69,7 +69,7 @@ def test_can_deepcopy():
 
 
 @require_py313
-def test_can_replace():
+def test_can_replace() -> None:
     d = date(2024, 10, 1)
 
     # this seemingly redundant `if` statement prevents pyright errors
