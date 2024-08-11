@@ -307,6 +307,7 @@ __all__ = (
     'do_trunc',
     'do_xor',
     'inspect',
+    'json',
     'pickle',
     'rick',
     'string',
@@ -316,7 +317,7 @@ __all__ = (
 
 from importlib import metadata as _metadata
 
-from . import copy, dataclasses, inspect, pickle, string, types, typing
+from . import copy, dataclasses, inspect, json, pickle, string, types, typing
 from ._can import (
     CanAEnter,
     CanAEnterSelf,
