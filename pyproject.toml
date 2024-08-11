@@ -32,20 +32,20 @@ numpy = ["numpy"]
 [tool.poetry.dependencies]
 # bump to `^3.11` after 2025-04-04, and to `^3.12` after 2026-04-24
 python = "^3.10.1"
-typing-extensions = {version = ">=4.7", python = "<3.13"}
+typing-extensions = {version = ">=4.8", python = "<3.13"}
 
 # https://scientific-python.org/specs/spec-0000/
 numpy = {version = ">=1.24,<3", optional = true}
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.8.0"
-tox = "^4.16.0"
+tox = "^4.17.1"
 
 [tool.poetry.group.lint.dependencies]
-basedpyright = "^1.15.1"
+basedpyright = "^1.15.2"
 codespell = "^2.3.0"
 mypy = "^1.11.1"
-ruff = "^0.5.6"
+ruff = "^0.5.7"
 sp-repo-review = {version = "^2024.4.23", extras = ["cli"]}
 typing-extensions = "*"
 numpy = ">=2,<3"
