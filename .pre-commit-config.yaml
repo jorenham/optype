@@ -9,6 +9,7 @@ ci:
     - ruff
     - basedpyright
     - basedpyright-verifytypes
+    - mypy
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
