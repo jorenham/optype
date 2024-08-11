@@ -35,6 +35,8 @@ if TYPE_CHECKING:
     from numpy._core.multiarray import flagsobj
 
 
+__all__ = ['Scalar']
+
 _L0: TypeAlias = Literal[0]
 _L1: TypeAlias = Literal[1]
 
