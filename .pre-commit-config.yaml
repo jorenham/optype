@@ -69,8 +69,7 @@ repos:
         name: basedpyright
         entry: poetry run basedpyright
         language: system
-        types: [file]
-        files: '\.py(i?)$'
+        types_or: [python, pyi]
 
       - id: basedpyright-verifytypes
         name: basedpyright --verifytypes
@@ -78,3 +77,9 @@ repos:
         language: system
         always_run: true
         pass_filenames: false
+
+      - id: mypy
+        name: mypy
+        entry: poetry run mypy
+        language: system
+        types_or: [python, pyi]
