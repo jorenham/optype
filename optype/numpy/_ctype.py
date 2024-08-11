@@ -43,59 +43,34 @@ else:
         Never as Void,
     )
 
-__all__ = (
-    'Bool',
-    'Byte',
-    'Bytes',
-    'CDouble',
-    'CLongDouble',
-    'CSingle',
-    'Character',
-    'Complex64',
-    'Complex128',
-    'ComplexFloating',
-    'DateTime64',
-    'Double',
-    'Flexible',
-    'Float16',
-    'Float32',
-    'Float64',
-    'Floating',
-    'Generic',
-    'Half',
-    'Inexact',
-    'Int8',
-    'Int16',
-    'Int32',
-    'Int64',
-    'IntC',
-    'IntP',
-    'Integer',
-    'Long',
-    'LongDouble',
-    'LongDouble0',
-    'LongLong',
-    'Number',
-    'Short',
-    'SignedInteger',
-    'Single',
-    'Str',
-    'String',
-    'TimeDelta64',
-    'UByte',
-    'UInt0',
-    'UInt8',
-    'UInt16',
-    'UInt32',
-    'UInt64',
-    'UIntC',
-    'UIntP',
-    'ULong',
-    'ULongLong',
-    'UShort',
+
+# ruff: noqa: RUF022
+__all__: list[str] = []
+__all__ += ['Generic', 'Number', 'Integer', 'Inexact']
+__all__ += [
     'UnsignedInteger',
-    'Void',
-)
+    'UInt8', 'UInt16', 'UInt32', 'UInt64', 'UIntP', 'UInt0',
+    'UByte', 'UShort', 'UIntC', 'ULong', 'ULongLong',
+]  # fmt: skip
+__all__ += [
+    'SignedInteger',
+    'Int8', 'Int16', 'Int32', 'Int64', 'IntP',
+    'Byte', 'Short', 'IntC', 'Long', 'LongLong',
+]  # fmt: skip
+__all__ += [
+    'Floating',
+    'Float16', 'Float32', 'Float64',
+    'Half', 'Single', 'Double', 'LongDouble', 'LongDouble0',
+]  # fmt: skip
+__all__ += [
+    'ComplexFloating',
+    'Complex64', 'Complex128',
+    'CSingle', 'CDouble', 'CLongDouble',
+]  # fmt: skip
+__all__ += ['Character', 'Bytes', 'Str']
+__all__ += ['Flexible', 'Void']
+__all__ += ['Bool', 'DateTime64', 'TimeDelta64', 'Object']
+__all__ += ['String']
 
 
 UByte: TypeAlias = ct.c_ubyte

@@ -27,14 +27,14 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
 
-__all__ = (
+__all__ = [
     'Array',
     'CanArray',
     'CanArrayFinalize',
     'CanArrayWrap',
     'HasArrayInterface',
     'HasArrayPriority',
-)
+]
 
 
 _NP_VERSION: Final = np.__version__
@@ -69,8 +69,7 @@ _DT = TypeVar('_DT', bound=np.dtype[Any], default=np.dtype[Any])
 Array: TypeAlias = np.ndarray[_ShapeT, np.dtype[_SCT]]
 
 
-# TODO: Make `_ShapeT` covariant after:
-# https://github.com/numpy/numpy/pull/26081
+# TODO: Make `_ShapeT` covariant on `numpy>=2.1`
 @runtime_checkable
 class CanArray(Protocol[_ShapeT, _SCT_co]):
     @overload

@@ -5,7 +5,7 @@ from typing import Final, TypeAlias
 import numpy as np
 
 
-__all__ = 'Bool', 'Long', 'ULong'
+__all__ = ['Bool', 'Long', 'ULong']
 
 
 _NP_V2: Final[bool] = np.__version__.startswith('2.')
