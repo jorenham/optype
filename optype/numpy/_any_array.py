@@ -11,9 +11,15 @@ import optype.numpy._ctype as _ct
 
 
 if sys.version_info >= (3, 13):
-    from typing import Any, Protocol, TypeVar, runtime_checkable
+    from typing import Any, Never, Protocol, TypeVar, runtime_checkable
 else:
-    from typing_extensions import Any, Protocol, TypeVar, runtime_checkable
+    from typing_extensions import (
+        Any,
+        Never,
+        Protocol,
+        TypeVar,
+        runtime_checkable,
+    )
 
 
 # ruff: noqa: RUF022
@@ -242,4 +248,12 @@ AnyTimeDelta64Array: _Type = _AnyNP[ND, np.timedelta64]
 AnyObjectArray: _Type = _Any4[ND, np.object_, object, _ct.Object]
 
 # generic :> {StringDType.type}
-AnyStringArray: _Type = np.ndarray[ND, _x.StringDType]  # type: ignore[type-var]
+if _x.NP2 and not _x.NP20:
+    # `numpy>=2.1`
+    AnyStringArray: _Type = np.ndarray[ND, np.dtypes.StringDType]
+elif _x.NP2:
+    # `numpy>=2.0,<2.1`
+    AnyStringArray: _Type = np.ndarray[ND, np.dtype[Never]]
+else:
+    # `numpy<2.0`
+    AnyStringArray: _Type = Never
