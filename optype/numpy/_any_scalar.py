@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime as dt
-from typing import Any, Final, TypeAlias as _Type
+from typing import Any, TypeAlias as _Type
 
 import numpy as np
 
@@ -62,9 +62,6 @@ __all__ = (
 )
 
 
-_NP_V2: Final[bool] = np.__version__.startswith('2.')
-
-
 # integer - unsigned
 AnyUInt8: _Type = np.uint8 | _ct.UInt8
 AnyUInt16: _Type = np.uint16 | _ct.UInt16
@@ -84,14 +81,14 @@ AnyInt8: _Type = np.int8 | _ct.Int8
 AnyInt16: _Type = np.int16 | _ct.Int16
 AnyInt32: _Type = np.int32 | _ct.Int32
 AnyInt64: _Type = np.int64 | _ct.Int64
-if _NP_V2:
+if _x.NP2:
     AnyIntP: _Type = int | np.intp | _ct.IntP
 else:
     AnyIntP: _Type = np.intp | _ct.IntP
 AnyByte: _Type = np.byte | _ct.Byte
 AnyShort: _Type = np.short | _ct.Short
 AnyIntC: _Type = np.intc | _ct.IntC
-if _NP_V2:
+if _x.NP2:
     AnyLong: _Type = _x.Long | _ct.Long
 else:
     AnyLong: _Type = int | _x.Long | _ct.Long
