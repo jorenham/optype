@@ -2297,7 +2297,7 @@ The shape aliases are roughly defined as:
 
 ```python
 type AtLeast0D[
-    *N: int = ...,
+    Ds: int = int,
 ]
 ```
 
@@ -2305,7 +2305,7 @@ type AtLeast0D[
 <td>
 
 ```python
-tuple[*N]
+tuple[Ds, ...]
 ```
 
 </td>
@@ -2330,8 +2330,8 @@ tuple[()]
 
 ```python
 type AtLeast1D[
-    N0: int = int,
-    *N: int = ...,
+    D0: int = int,
+    Ds: int = int,
 ]
 ```
 
@@ -2339,7 +2339,10 @@ type AtLeast1D[
 <td>
 
 ```python
-tuple[N0, *N]
+tuple[
+    D0,
+    *tuple[Ds, ...],
+]
 ```
 
 </td>
@@ -2347,7 +2350,7 @@ tuple[N0, *N]
 
 ```python
 type AtMost1D[
-    N0: int = int,
+    D0: int = int,
 ]
 ```
 
@@ -2355,7 +2358,7 @@ type AtMost1D[
 <td>
 
 ```python
-tuple[N0] | AtMost0D
+tuple[D0] | AtMost0D
 ```
 
 </td>
@@ -2366,9 +2369,9 @@ tuple[N0] | AtMost0D
 
 ```python
 type AtLeast2D[
-    N0: int = int,
-    N1: int = int,
-    *N: int = ...,
+    D0: int = int,
+    D1: int = int,
+    Ds: int = int,
 ]
 ```
 
@@ -2376,7 +2379,11 @@ type AtLeast2D[
 <td>
 
 ```python
-tuple[N0, N1, *N]
+tuple[
+    D0,
+    D1,
+    *tuple[Ds, ...],
+]
 ```
 
 </td>
@@ -2384,8 +2391,8 @@ tuple[N0, N1, *N]
 
 ```python
 type AtMost2D[
-    N0: int = int,
-    N1: int = int,
+    D0: int = int,
+    D1: int = int,
 ]
 ```
 
@@ -2394,8 +2401,8 @@ type AtMost2D[
 
 ```python
 (
-    tuple[N0, N1]
-    | AtMost1D[N0]
+    tuple[D0, D1]
+    | AtMost1D[D0]
 )
 ```
 
@@ -2407,10 +2414,10 @@ type AtMost2D[
 
 ```python
 type AtLeast3D[
-    N0: int = int,
-    N1: int = int,
-    N2: int = int,
-    *N: int = ...,
+    D0: int = int,
+    D1: int = int,
+    D2: int = int,
+    Ds: int = int,
 ]
 ```
 
@@ -2418,7 +2425,12 @@ type AtLeast3D[
 <td>
 
 ```python
-tuple[N0, N1, N2, *N]
+tuple[
+    D0,
+    D1,
+    D2,
+    *tuple[Ds, ...],
+]
 ```
 
 </td>
@@ -2426,9 +2438,9 @@ tuple[N0, N1, N2, *N]
 
 ```python
 type AtMost3D[
-    N0: int = int,
-    N1: int = int,
-    N2: int = int,
+    D0: int = int,
+    D1: int = int,
+    D2: int = int,
 ]
 ```
 
@@ -2437,8 +2449,8 @@ type AtMost3D[
 
 ```python
 (
-    tuple[N0, N1, N2]
-    | AtMost2D[N0, N1]
+    tuple[D0, D1, D2]
+    | AtMost2D[D0, D1]
 )
 ```
 
