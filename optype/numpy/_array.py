@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Any, Final, TypeAlias
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 import numpy as np
+
+import optype.numpy._compat as _x
 
 
 if sys.version_info >= (3, 13):
@@ -35,13 +37,6 @@ __all__ = [
     'HasArrayInterface',
     'HasArrayPriority',
 ]
-
-
-_NP_VERSION: Final = np.__version__
-_NP_V2: Final = _NP_VERSION.startswith('2.')
-
-if not _NP_V2:
-    assert _NP_VERSION.startswith('1.'), f'numpy {_NP_VERSION} is unsupported'
 
 
 _AnyShape: TypeAlias = tuple[int, ...]
@@ -93,7 +88,7 @@ class CanArrayFinalize(Protocol[_T_contra]):
 
 @runtime_checkable
 class CanArrayWrap(Protocol):
-    if _NP_V2:
+    if _x.NP2:
         def __array_wrap__(
             self,
             array: np.ndarray[_ShapeT, _DT],

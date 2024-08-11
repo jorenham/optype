@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias as _Type
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias as _Type
 
 import numpy as np
+
+import optype.numpy._compat as _x
 
 
 if sys.version_info >= (3, 13):
@@ -20,9 +22,6 @@ if TYPE_CHECKING:
 
 
 __all__ = ['CanArrayFunction', 'CanArrayUFunc', 'UFunc']
-
-
-_NP_V2: Final[bool] = np.__version__.startswith('2.')
 
 
 _FT_co = TypeVar(
@@ -139,7 +138,7 @@ _UFuncMethodCommon: _Type = Literal[
     'accumulate',
     'outer',
 ]
-if _NP_V2:
+if _x.NP2:
     _UFuncMethod: _Type = _UFuncMethodCommon | Literal['at']
 else:
     _UFuncMethod: _Type = _UFuncMethodCommon | Literal['inner']

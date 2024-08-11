@@ -78,7 +78,7 @@ venv = ".venv"
 pythonVersion = "3.10"
 pythonPlatform = "All"
 typeCheckingMode = "all"
-defineConstant = {"_NP_V2" = true, "byteorder" = "little"}
+defineConstant = {NP2 = true, NP20 = true, NP21 = false}
 
 reportAny = false  # blame typeshed
 reportUnusedCallResult = false  # https://github.com/microsoft/pyright/issues/8650
@@ -89,7 +89,8 @@ reportUnusedVariable = false  # dupe of F841
 
 [tool.mypy]
 python_version = "3.10"
-always_true = "_NP_V2"
+always_true = "NP2,NP20"
+always_false = "NP21"
 modules = ["optype"]
 exclude = ["^.venv/.*", "^examples/.*", "^tests/.*"]
 allow_redefinition = true
