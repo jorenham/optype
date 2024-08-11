@@ -48,13 +48,13 @@ mypy = "^1.11.1"
 ruff = "^0.5.7"
 sp-repo-review = {version = "^2024.4.23", extras = ["cli"]}
 typing-extensions = "*"
-numpy = ">=2,<3"
+numpy = "^2.1.0rc1"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.3.2"
 beartype = "^0.18.5"
 typing-extensions = "*"
-numpy = ">=2,<3"
+numpy = "^2.1.0rc1"
 
 
 [tool.poetry.group.test-github]
@@ -78,7 +78,7 @@ venv = ".venv"
 pythonVersion = "3.10"
 pythonPlatform = "All"
 typeCheckingMode = "all"
-defineConstant = {NP2 = true, NP20 = true, NP21 = false}
+defineConstant = {NP2 = true, NP20 = false}
 
 reportAny = false  # blame typeshed
 reportUnusedCallResult = false  # https://github.com/microsoft/pyright/issues/8650
@@ -89,8 +89,8 @@ reportUnusedVariable = false  # dupe of F841
 
 [tool.mypy]
 python_version = "3.10"
-always_true = "NP2,NP20"
-always_false = "NP21"
+always_true = "NP2"
+always_false = "NP20"
 modules = ["optype"]
 exclude = ["^.venv/.*", "^examples/.*", "^tests/.*"]
 allow_redefinition = true

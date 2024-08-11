@@ -15,13 +15,11 @@ import optype.numpy._compat as _x
 import optype.numpy._ctype as _ct
 import optype.numpy._dtype as _dt
 
-from ._compat import StringDType as AnyStringDType
-
 
 if sys.version_info >= (3, 13):
-    from typing import TypeVar
+    from typing import Never, TypeVar
 else:
-    from typing_extensions import TypeVar
+    from typing_extensions import Never, TypeVar
 
 
 # ruff: noqa: RUF022
@@ -628,3 +626,19 @@ else:
     )
     AnyGenericDType: _Type = _Any2[np.generic, _s.AnyGeneric] | _GenericCode
     AnyDType: _Type = _Any2[_SCT, complex | str | bytes] | _GenericCode | type
+
+
+# NOTE: At the moment, `np.dtypes.StringDType.type: type[str]`, which is
+# impossible (`dtype[str]` isn't valid: `str` isn't a `np.generic`)
+_StringName = Never
+_StringChar: _Type = _Lit['T', '|T', '=T', '<T', '>T']
+_StringCode: _Type = _StringChar
+if _x.NP2 and not _x.NP20:  # `numpy>=2.1`
+    AnyStringDType: _Type = np.dtypes.StringDType | _StringCode
+elif _x.NP2:  # `numpy>=2.0,<2.1`
+    # NOTE: `np.dtypes.StringDType` had no annotations prior to 2.1, so:
+    # I (@jorenham) added them :), see:
+    # https://github.com/numpy/numpy/pull/27008
+    AnyStringDType: _Type = np.dtype[Never] | _StringCode
+else:  # `numpy<=2.0`
+    AnyStringDType: _Type = Never
