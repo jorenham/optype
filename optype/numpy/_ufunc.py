@@ -43,6 +43,19 @@ _FT_contra = TypeVar(
 )
 _NInT_co = TypeVar('_NInT_co', bound=int, covariant=True, default=int)
 _NoutT_co = TypeVar('_NoutT_co', bound=int, covariant=True, default=int)
+_SigT_co = TypeVar(
+    '_SigT_co',
+    bound=LiteralString | None,
+    covariant=True,
+    default=LiteralString | None,
+)
+# numpy < 2.1
+_SigT_str_co = TypeVar(
+    '_SigT_str_co',
+    bound=str | None,
+    covariant=True,
+    default=str | None,
+)
 _IdT_co = TypeVar(
     '_IdT_co',
     bound=int | float | complex | str | bytes | memoryview | None,
@@ -54,13 +67,6 @@ _AnyArray: _Type = np.ndarray[Any, Any]
 
 if _x.NP2 and not _x.NP20:
     # `numpy>=2.1`
-
-    _SigT_co = TypeVar(
-        '_SigT_co',
-        bound=LiteralString | None,
-        covariant=True,
-        default=LiteralString | None,
-    )
 
     @runtime_checkable
     class UFunc(Protocol[_FT_co, _NInT_co, _NoutT_co, _SigT_co, _IdT_co]):
@@ -131,15 +137,8 @@ if _x.NP2 and not _x.NP20:
 else:
     # `numpy<2.1`
 
-    _SigT_co = TypeVar(
-        '_SigT_co',
-        bound=str | None,
-        covariant=True,
-        default=str | None,
-    )
-
     @runtime_checkable
-    class UFunc(Protocol[_FT_co, _NInT_co, _NoutT_co, _SigT_co, _IdT_co]):
+    class UFunc(Protocol[_FT_co, _NInT_co, _NoutT_co, _SigT_str_co, _IdT_co]):
         """
         A generic interface for `numpy.ufunc` "universal function" instances,
         e.g. `numpy.exp`, `numpy.add`, `numpy.frexp`, `numpy.divmod`.
@@ -158,7 +157,7 @@ else:
         @property
         def nout(self, /) -> _NoutT_co: ...
         @property
-        def signature(self, /) -> _SigT_co: ...
+        def signature(self, /) -> _SigT_str_co: ...
         @property
         def identity(self, /) -> _IdT_co: ...
         @property
