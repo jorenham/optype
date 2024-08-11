@@ -41,7 +41,7 @@ def test_anyufunc_ufunc_type() -> None:
     tp_3_one: type[UFunc[Any, Any, _N1]] = np.ufunc  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
     tp_4_any: type[UFunc[Any, Any, Any, Any]] = np.ufunc
-    tp_4_bound: type[UFunc[Any, Any, Any, LiteralString | None]] = np.ufunc
+    tp_4_bound: type[UFunc[Any, Any, Any, Any]] = np.ufunc
     # purposefully wrong
     tp_4_none: type[UFunc[Any, Any, Any, None]] = np.ufunc  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     # purposefully wrong
@@ -281,7 +281,7 @@ def test_anyufunc_custom_np() -> None:
 
     # similarly, the fact that `signature = None` isn't annotated correctly
     # fn_4:: AnyUFunc[Any, Any, Any, None] = beta_np
-    fn_4: UFunc[Any, Any, Any, LiteralString | None] = fn
+    fn_4: UFunc[Any, Any, Any, Any] = fn
 
     # the `identity` kwarg from `frompyfunc` is also ignored :(
     # fn_4:: AnyUFunc[Any, Any, Any, Any, None] = beta_np
