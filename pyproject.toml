@@ -93,9 +93,18 @@ python_version = "3.10"
 always_true = "NP2,NP20"
 # always_true = "NP2"
 # always_false = "NP20"
-modules = ["optype"]
-exclude = ["^.venv/.*", "^examples/.*", "^tests/.*"]
-allow_redefinition = true
+modules = ["optype", "tests"]
+exclude = [
+    "^.venv/.*",
+    "^examples/.*",  # TODO
+]
+strict = true
+allow_redefinition = true  # needed for python/numpy compat code
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+show_error_code_links = true
 
 
 [tool.pytest.ini_options]
