@@ -9,7 +9,7 @@ else:
     from typing_extensions import assert_type
 
 
-def test_iadd_iadd():
+def test_iadd_iadd() -> None:
     class IntIAdd:
         def __init__(self, x: int, /) -> None:
             self.x = x
@@ -25,7 +25,7 @@ def test_iadd_iadd():
     assert out == 3
 
 
-def test_iadd_add():
+def test_iadd_add() -> None:
     class IntAdd:
         def __init__(self, x: int, /) -> None:
             self.x = x
@@ -40,7 +40,7 @@ def test_iadd_add():
     assert out == 3
 
 
-def test_iadd_radd():
+def test_iadd_radd() -> None:
     class IntRAdd:
         def __init__(self, x: int, /) -> None:
             self.x = x
