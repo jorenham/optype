@@ -13,24 +13,24 @@ _Shape2D: TypeAlias = tuple[int, int]
 
 # Don't wake up, Neo...
 @pytest.mark.filterwarnings('ignore:the matrix .*:PendingDeprecationWarning')
-def test_can_array():
+def test_can_array() -> None:
     sct: type[np.generic] = np.uint8
 
-    scalar: onp.CanArray[_Shape0D, sct] = sct(42)
+    scalar: onp.CanArray[_Shape0D, Any] = sct(42)
     assert isinstance(scalar, onp.CanArray)
     assert not isinstance(42, onp.CanArray)
 
-    arr_0d: onp.CanArray[_Shape0D, sct] = np.array(42, sct)
+    arr_0d: onp.CanArray[_Shape0D, np.uint8] = np.array(42, sct)
     assert isinstance(arr_0d, onp.CanArray)
 
-    arr_1d: onp.CanArray[_Shape1D, sct] = np.array([42], sct)
+    arr_1d: onp.CanArray[_Shape1D, np.uint8] = np.array([42], sct)
     assert isinstance(arr_1d, onp.CanArray)
     assert not isinstance([42], onp.CanArray)
 
-    arr_2d: onp.CanArray[_Shape2D, sct] = np.array([[42]], sct)
+    arr_2d: onp.CanArray[_Shape2D, np.uint8] = np.array([[42]], sct)
     assert isinstance(arr_2d, onp.CanArray)
 
-    mat: onp.CanArray[_Shape2D, sct] = np.asmatrix(42, sct)
+    mat: onp.CanArray[_Shape2D, np.uint8] = np.asmatrix(42, sct)
     assert isinstance(mat, onp.CanArray)
 
 
@@ -40,37 +40,37 @@ _Arr1D: TypeAlias = onp.Array[tuple[int], _T]
 _Arr2D: TypeAlias = onp.Array[tuple[int, int], _T]
 
 
-def test_can_array_function():
+def test_can_array_function() -> None:
     sct: type[np.generic] = np.uint8
 
     assert not isinstance(sct(42), onp.CanArrayFunction)
 
-    arr_0d: onp.CanArrayFunction[Any, _Arr0D[sct]] = np.array(42, sct)
+    arr_0d: onp.CanArrayFunction[Any, _Arr0D[np.uint8]] = np.array(42, sct)
     assert isinstance(arr_0d, onp.CanArrayFunction)
 
-    arr_1d: onp.CanArrayFunction[Any, _Arr1D[sct]] = np.array([42], sct)
+    arr_1d: onp.CanArrayFunction[Any, _Arr1D[np.uint8]] = np.array([42], sct)
     assert isinstance(arr_1d, onp.CanArrayFunction)
 
-    arr_2d: onp.CanArrayFunction[Any, _Arr2D[sct]] = np.array([[42]], sct)
+    arr_2d: onp.CanArrayFunction[Any, _Arr2D[np.uint8]] = np.array([[42]], sct)
     assert isinstance(arr_2d, onp.CanArrayFunction)
 
 
-def test_can_array_finalize():
+def test_can_array_finalize() -> None:
     sct: type[np.generic] = np.uint8
 
-    arr_0d: onp.CanArrayFinalize[_Arr0D[sct]] = np.array(42, sct)
+    arr_0d: onp.CanArrayFinalize[_Arr0D[np.uint8]] = np.array(42, sct)
     assert isinstance(arr_0d, onp.CanArrayFinalize)
     assert not isinstance(42, onp.CanArrayFinalize)
 
-    arr_1d: onp.CanArrayFinalize[_Arr1D[sct]] = np.array([42], sct)
+    arr_1d: onp.CanArrayFinalize[_Arr1D[np.uint8]] = np.array([42], sct)
     assert isinstance(arr_1d, onp.CanArrayFinalize)
     assert not isinstance([42], onp.CanArrayFinalize)
 
-    arr_2d: onp.CanArrayFinalize[_Arr2D[sct]] = np.array([[42]], sct)
+    arr_2d: onp.CanArrayFinalize[_Arr2D[np.uint8]] = np.array([[42]], sct)
     assert isinstance(arr_2d, onp.CanArrayFinalize)
 
 
-def test_can_array_wrap():
+def test_can_array_wrap() -> None:
     sct: type[np.generic] = np.uint8
 
     arr_0d: onp.CanArrayWrap = np.array(42, sct)
@@ -85,7 +85,7 @@ def test_can_array_wrap():
     assert isinstance(arr_2d, onp.CanArrayWrap)
 
 
-def test_has_array_priority():
+def test_has_array_priority() -> None:
     sct: type[np.generic] = np.uint8
 
     scalar: onp.HasArrayPriority = sct(42)
@@ -103,7 +103,7 @@ def test_has_array_priority():
     assert isinstance(arr_2d, onp.HasArrayPriority)
 
 
-def test_has_array_interface():
+def test_has_array_interface() -> None:
     sct: type[np.generic] = np.uint8
 
     scalar: onp.HasArrayInterface[Any] = sct(42)

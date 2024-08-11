@@ -50,7 +50,7 @@ def _get_dtype_info(name: str) -> tuple[
     'name',
     [*_NUMERIC_N, *_NUMERIC_C, *_SIMPLE, *_TEMPORAL, *_FLEXIBLE],
 )
-def test_sctypes(name: str):
+def test_sctypes(name: str) -> None:
     dtype_expect = np.dtype(name.lower())
     sctype_expect = dtype_expect.type
     types, names, chars = _get_dtype_info(name)
@@ -70,7 +70,7 @@ def test_sctypes(name: str):
     'name',
     [*_NUMERIC_N, *_SIMPLE, *_TEMPORAL, *_FLEXIBLE],
 )
-def test_sctype_name(name: str):
+def test_sctype_name(name: str) -> None:
     dtype_expect = np.dtype(name.lower())
     _, names, _ = _get_dtype_info(name)
 
@@ -81,7 +81,7 @@ def test_sctype_name(name: str):
     'name',
     [*_NUMERIC_C, *_SIMPLE, * _TEMPORAL, * _FLEXIBLE],
 )
-def test_sctype_char(name: str):
+def test_sctype_char(name: str) -> None:
     dtype_expect = np.dtype(name.lower())
     _, _, chars = _get_dtype_info(name)
 
