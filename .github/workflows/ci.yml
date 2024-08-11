@@ -42,6 +42,7 @@ jobs:
 
       - name: basedpyright --verifytypes
         run: poetry run basedpyright --ignoreexternal --verifytypes optype
+        continue-on-error: true  # TODO: remove after NumPy 2.1 is released
 
       - name: markdownlint
         uses: DavidAnson/markdownlint-cli2-action@v16
