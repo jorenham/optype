@@ -22,7 +22,7 @@ if sys.version_info >= (3, 13):
 else:
     from typing_extensions import TypeAliasType, is_protocol, overload
     try:
-        from typing_extensions import TypeIs  # type: ignore[attr-defined]
+        from typing_extensions import TypeIs
     except ImportError:
         # fallback for `typing_extensions<4.10`
         from typing import TypeGuard as TypeIs  # type: ignore[assignment]
