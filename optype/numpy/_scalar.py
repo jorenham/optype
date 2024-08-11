@@ -27,7 +27,7 @@ else:
     )
     # `CapsuleType` requires `typing_extensions>=4.12`
     try:
-        from typing_extensions import CapsuleType  # type: ignore[attr-defined]
+        from typing_extensions import CapsuleType
     except ImportError:
         from typing import Any as CapsuleType  # type: ignore[assignment]
 
