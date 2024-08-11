@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import sys
 from types import MappingProxyType
-from typing import TypeAlias
+from typing import Any, TypeAlias
 
 
 if sys.version_info >= (3, 13):
@@ -21,28 +21,31 @@ __all__ = (
     'AnyValue',
     'Array',
     'Object',
-    'Value',
+    '_Value',
 )
 
 _Primitive: TypeAlias = None | bool | int | float | str
 
 # Return types of `json.load[s]`
-Value: TypeAlias = _Primitive | dict[str, 'Value'] | list['Value']
-_VT = TypeVar('_VT', bound=Value, default=Value)
+_Value: TypeAlias = _Primitive | dict[str, '_Value'] | list['_Value']
+_VT = TypeVar('_VT', bound=_Value, default=Any)
 Array: TypeAlias = list[_VT]
 Object: TypeAlias = dict[str, _VT]
+# ensure that `Value | Array | Object` is equivalent to `Value`
+Value: TypeAlias = _Value | Array | Object
 
 # Input types of `json.dumps`
-AnyValue: TypeAlias = (
-    _Primitive
+_AnyValue: TypeAlias = (
+    _Value
     # NOTE: `TypedDict` can't be included here, since it's not a sub*type* of
     # `dict[str, Any]` according to the typing docs and typeshed, even though
     # it **literally** is a subclass of `dict`...
-    | dict[str, 'AnyValue']
-    | MappingProxyType[str, 'AnyValue']
-    | list['AnyValue']
-    | tuple['AnyValue', ...]
+    | dict[str, '_AnyValue']
+    | MappingProxyType[str, '_AnyValue']
+    | list['_AnyValue']
+    | tuple['_AnyValue', ...]
 )
-_AVT = TypeVar('_AVT', bound=AnyValue, default=AnyValue)
+_AVT = TypeVar('_AVT', bound=_AnyValue, default=Any)
 AnyArray: TypeAlias = list[_AVT] | tuple[_AVT, ...]
 AnyObject: TypeAlias = dict[str, _AVT]
+AnyValue: TypeAlias = _AnyValue | AnyArray | AnyObject
