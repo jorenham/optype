@@ -1,16 +1,14 @@
 # %%
 import sys
 from typing import (
-    Generic,
     Literal,
     TypeAlias,
     TypeVar,
-    final,
 )
 if sys.version_info >= (3, 12):
-    from typing import TypeVarTuple, Unpack, assert_type
+    from typing import assert_type
 else:
-    from typing_extensions import TypeVarTuple, Unpack, assert_type
+    from typing_extensions import assert_type
 
 import optype as opt
 
@@ -27,24 +25,6 @@ assert_type(twice(True), int)
 assert_type(twice(1 / 137), float)
 assert_type(twice(str(-1 / 12)), str)
 assert_type(twice([object()]), list[object])
-
-
-# %%
-Ts = TypeVarTuple('Ts')
-
-
-@final
-class RMulArgs(Generic[Unpack[Ts]]):
-    def __init__(self, *args: Unpack[Ts]) -> None:
-        self.args = args
-
-    def __rmul__(self, y: Two, /) -> 'RMulArgs[Unpack[Ts], Unpack[Ts]]':
-        if y != 2:
-            return NotImplemented
-        return RMulArgs(*self.args, *self.args)
-
-
-assert_type(twice(RMulArgs(42, True)), RMulArgs[int, bool, int, bool])
 
 
 # %%
