@@ -2856,7 +2856,7 @@ that depends on the specific `np.dtype` instantiation.
     </tr>
     <tr>
         <th><code>bool_</code></th>
-        <td rowspan="4"><code>generic</code></td>
+        <td rowspan="5"><code>generic</code></td>
         <td><code>AnyBoolArray</code></td>
         <td><code>AnyBoolDType</code></td>
     </tr>
@@ -2874,6 +2874,11 @@ that depends on the specific `np.dtype` instantiation.
         <th><code>object_</code></th>
         <td><code>AnyObjectArray</code></td>
         <td><code>AnyObjectDType</code></td>
+    </tr>
+    <tr>
+        <td>missing</td>
+        <td><code>AnyStringArray</code></td>
+        <td><code>AnyStringDType</code></td>
     </tr>
 </table>
 

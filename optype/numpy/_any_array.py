@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-from typing import Final, TypeAlias as _Type
+from typing import TypeAlias as _Type
 
 import numpy as np
 
@@ -84,9 +84,7 @@ __all__ += [
     'AnyTimeDelta64Array',
     'AnyObjectArray',
 ]
-
-
-_NP_V2: Final[bool] = np.__version__.startswith('2.')
+__all__ += ['AnyStringArray']
 
 
 T_co = TypeVar('T_co', covariant=True, bound=object)
@@ -166,14 +164,14 @@ AnyInt8Array: _Type = _AnyNP[ND, np.int8] | _ct.Int8
 AnyInt16Array: _Type = _AnyNP[ND, np.int16] | _ct.Int16
 AnyInt32Array: _Type = _AnyNP[ND, np.int32] | _ct.Int32
 AnyInt64Array: _Type = _AnyNP[ND, np.int64] | _ct.Int64
-if _NP_V2:
+if _x.NP2:
     AnyIntPArray: _Type = _Any4[ND, np.int64, int, _ct.IntP]
 else:
     AnyIntPArray: _Type = _AnyNP[ND, np.int64] | _ct.IntP
 AnyByteArray: _Type = _AnyNP[ND, np.byte] | _ct.Byte
 AnyShortArray: _Type = _AnyNP[ND, np.short] | _ct.Short
 AnyIntCArray: _Type = _AnyNP[ND, np.intc] | _ct.IntC
-if _NP_V2:
+if _x.NP2:
     AnyLongArray: _Type = _AnyNP[ND, _x.Long] | _ct.Long
 else:
     AnyLongArray: _Type = _Any4[ND, _x.Long, int, _ct.Long]
@@ -244,4 +242,4 @@ AnyTimeDelta64Array: _Type = _AnyNP[ND, np.timedelta64]
 AnyObjectArray: _Type = _Any4[ND, np.object_, object, _ct.Object]
 
 # generic :> {StringDType.type}
-# TODO
+AnyStringArray: _Type = np.ndarray[ND, _x.StringDType]  # type: ignore[type-var]

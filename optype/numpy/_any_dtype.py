@@ -5,7 +5,7 @@ The names are analogous to those in `numpy.dtypes`.
 from __future__ import annotations
 
 import sys
-from typing import Any, Final, Literal as _Lit, TypeAlias as _Type
+from typing import Any, Literal as _Lit, TypeAlias as _Type
 
 import numpy as np
 import numpy.typing as npt
@@ -14,6 +14,8 @@ import optype.numpy._any_scalar as _s
 import optype.numpy._compat as _x
 import optype.numpy._ctype as _ct
 import optype.numpy._dtype as _dt
+
+from ._compat import StringDType as AnyStringDType
 
 
 if sys.version_info >= (3, 13):
@@ -90,8 +92,7 @@ __all__ += [
     'AnyTimeDelta64DType',
     'AnyObjectDType',
 ]
-
-_NP_V2: Final = np.__version__.startswith('2.')
+__all__ += ['AnyStringDType']
 
 
 # helper aliases
@@ -134,7 +135,7 @@ _UInt64Code: _Type = _UInt64Name | _UInt64Char
 AnyUInt64DType: _Type = _Any2[np.uint64, _s.AnyUInt64] | _UInt64Code
 
 # uintp (assuming that `uint_ptr_t == size_t`, as done in `numpy.typing`)
-if _NP_V2:
+if _x.NP2:
     _UIntPName: _Type = _Lit['uintp', 'uint']
     _UIntPChar: _Type = _Lit['N', '|N', '=N', '<N', '>N']
     _UIntPCode: _Type = _UIntPName | _UIntPChar
@@ -171,7 +172,7 @@ AnyUIntCDType: _Type = _Any2[np.uintc, _s.AnyUIntC] | _UIntCCode
 
 # ulong (uint if numpy<2)
 _ULongChar: _Type = _Lit['L', '|L', '=L', '<L', '>L']
-if _NP_V2:
+if _x.NP2:
     _ULongName: _Type = _Lit['ulong']
     _ULongCode: _Type = _ULongName | _ULongChar
     AnyULongDType: _Type = _Any2[_x.ULong, _s.AnyULong] | _ULongCode
@@ -220,7 +221,7 @@ AnyInt64DType: _Type = _Any2[np.int64, _s.AnyInt64] | _Int64Code
 
 # intp
 # (`AnyIntPDType` must be inside each block, for valid typing)
-if _NP_V2:
+if _x.NP2:
     _IntPName: _Type = _Lit['intp', 'int', 'int_']
     _IntPChar: _Type = _Lit['n', '|n', '=n', '<n', '>n']
     _IntPCode: _Type = _IntPName | _IntPChar
@@ -251,7 +252,7 @@ AnyIntCDType: _Type = _Any2[np.intc, _s.AnyIntC] | _IntCCode
 
 # long (or int_ if numpy<2)
 _LongChar: _Type = _Lit['l', '|l', '=l', '<l', '>l']
-if _NP_V2:
+if _x.NP2:
     _LongName: _Type = _Lit['long']
     _LongCode: _Type = _LongName | _LongChar
     AnyLongDType: _Type = _Any2[_x.Long, _s.AnyLong] | _LongCode
@@ -552,7 +553,7 @@ _SignedIntegerCharCommon: _Type = (
 )  # fmt: skip
 
 # this duplicated mess is needed for valid types and numpy 1/2 compat
-if _NP_V2:
+if _x.NP2:
     _UnsignedIntegerChar: _Type = (
         _UnsignedIntegerCharCommon
         | _Lit['N', '|N', '=N', '<N', '>N']  # numpy>=2 only
