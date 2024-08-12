@@ -303,6 +303,7 @@ allow-dunder-method-names = [
     "__array_interface__",
     "__array_struct__",
 ]
+allow-magic-value-types = ["int"]
 
 [tool.ruff.format]
 # keep in sync with .editorconfig
