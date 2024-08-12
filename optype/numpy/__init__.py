@@ -1,6 +1,5 @@
 # ruff: noqa: F403
 from . import (
-    __check_sized_aliases,  # noqa: F401
     _any_array,
     _any_dtype,
     _array,
