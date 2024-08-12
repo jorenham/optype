@@ -95,7 +95,7 @@ __all__ += ['AnyStringDType']
 
 # helper aliases
 _ST = TypeVar('_ST', bound=np.generic)
-_VT = TypeVar('_VT', bound=object)
+_VT = TypeVar('_VT')
 _Any1: _Type = np.dtype[_ST] | type[_ST] | _dt.HasDType[np.dtype[_ST]]
 _Any2: _Type = np.dtype[_ST] | type[_ST | _VT] | _dt.HasDType[np.dtype[_ST]]
 

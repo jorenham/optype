@@ -93,7 +93,7 @@ __all__ += [
 __all__ += ['AnyStringArray']
 
 
-T_co = TypeVar('T_co', covariant=True, bound=object)
+T_co = TypeVar('T_co', covariant=True)
 
 
 @runtime_checkable
