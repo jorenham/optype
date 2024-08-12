@@ -69,7 +69,6 @@ _StrT_contra = TypeVar(
 )
 _StrT_co = TypeVar('_StrT_co', bound=str, covariant=True, default=str)
 
-# there's no need for `bound=object` or `bound=Any`; typecheckers ignore it
 _AnyT_contra = TypeVar('_AnyT_contra', contravariant=True, default=Any)
 _AnyT_co = TypeVar('_AnyT_co', covariant=True, default=Any)
 _ObjectT_contra = TypeVar(
