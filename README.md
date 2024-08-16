@@ -2154,7 +2154,7 @@ type NDArray[
 ```python
 type Array[
     ND: tuple[int, ...] = tuple[int, ...],
-    ST: np.generic = Any,
+    ST: np.generic = np.generic,
 ] = np.ndarray[ND, np.dtype[ST]]
 ```
 
@@ -2223,20 +2223,20 @@ Its generic type signature looks roughly like:
 ```python
 UFunc[
     # The type of the (bound) `__call__` method.
-    Fn: CanCall[..., Any] = Any,
+    Fn: CanCall = CanCall,
     # The types of the `nin` and `nout` (readonly) attributes.
     # Within numpy these match either `Literal[1]` or `Literal[2]`.
-    Nin: int = Any,
-    Nout: int = Any,
+    Nin: int = int,
+    Nout: int = int,
     # The type of the `signature` (readonly) attribute;
     # Must be `None` unless this is a generalized ufunc (gufunc), e.g.
     # `np.matmul`.
-    Sig: str | None = Any,
+    Sig: str | None = str | None,
     # The type of the `identity` (readonly) attribute (used in `.reduce`).
     # Unless `Nin: Literal[2]`, `Nout: Literal[1]`, and `Sig: None`,
     # this should always be `None`.
     # Note that `complex` also includes `bool | int | float`.
-    Id: complex | str | bytes | None = Any,
+    Id: complex | bytes | str | None = float | None,
 ]
 ```
 
@@ -2504,7 +2504,7 @@ Because the type parameter of `np.dtype` isn't optional, it could be more
 convenient to use the alias `optype.numpy.DType`, which is defined as:
 
 ```python
-type DType[ST: np.generic = Any] = np.dtype[ST]
+type DType[ST: np.generic = np.generic] = np.dtype[ST]
 ```
 
 Apart from the "CamelCase" name, the only difference with `np.dtype` is that
@@ -2513,12 +2513,29 @@ the type parameter can be omitted, in which case it's equivalent to
 
 #### `Any*Array` and `Any*DType`
 
-See the [docs](https://numpy.org/doc/stable/reference/arrays.scalars.html)
-for more info.
+The `Any{Scalar}Array` type aliases describe *everything* that, when passed to
+`numpy.asarray` (or any other `numpy.ndarray` constructor), results in a
+`numpy.ndarray` with specific [dtype][REF-DTYPE], i.e.
+`numpy.dtypes.{Scalar}DType`.
+
+> [!NOTE]
+> The [`numpy.dtypes` docs][REF-DTYPES] exists since NumPy 1.25, but its
+> type annotations were incorrect before NumPy 2.1 (see
+> [numpy/numpy#27008](https://github.com/numpy/numpy/pull/27008))
+
+See the [docs][REF-SCT] for more info on the NumPy scalar type hierarchy.
+
+[REF-SCT]: https://numpy.org/doc/stable/reference/arrays.scalars.html
+[REF-DTYPE]: https://numpy.org/doc/stable/reference/arrays.dtypes.html
+[REF-DTYPES]: https://numpy.org/doc/stable/reference/arrays.dtypes.html
 
 ##### Abstract types
 
 <table>
+    <tr>
+        <th align="center" colspan="2"><code>numpy._</code></th>
+        <th align="center" colspan="2"><code>optype.numpy._</code></th>
+    </tr>
     <tr>
         <th>scalar type</th>
         <th>base type</th>
@@ -2526,14 +2543,10 @@ for more info.
         <th>dtype-like type</th>
     </tr>
     <tr>
-        <th align="center" colspan="2"><code>numpy._</code></th>
-        <th align="center" colspan="2"><code>optype.numpy._</code></th>
-    </tr>
-    <tr>
         <td><code>generic</code></td>
-        <td><i><code>Any</code></i></td>
-        <td><code>AnyGenericArray</code></td>
-        <td><code>AnyGenericDType</code></td>
+        <td></td>
+        <td><code>AnyArray</code></td>
+        <td><code>AnyDType</code></td>
     </tr>
     <tr>
         <td><code>number</code></td>
@@ -2580,18 +2593,18 @@ for more info.
 
 <table>
     <tr>
-        <th>scalar type</th>
-        <th>base type</th>
-        <th>array-like type</th>
-        <th>dtype-like type</th>
-    </tr>
-    <tr>
         <th align="center" colspan="2">
             <code>numpy._</code>
         </th>
         <th align="center" colspan="2">
             <code>optype.numpy._</code>
         </th>
+    </tr>
+    <tr>
+        <th>scalar type</th>
+        <th>base type</th>
+        <th>array-like type</th>
+        <th>dtype-like type</th>
     </tr>
     <tr>
         <th><code>uint8</code></th>
@@ -2650,18 +2663,18 @@ for more info.
 
 <table>
     <tr>
-        <th>scalar type</th>
-        <th>base type</th>
-        <th>array-like type</th>
-        <th>dtype-like type</th>
-    </tr>
-    <tr>
         <th align="center" colspan="2">
             <code>numpy._</code>
         </th>
         <th align="center" colspan="2">
             <code>optype.numpy._</code>
         </th>
+    </tr>
+    <tr>
+        <th>scalar type</th>
+        <th>base type</th>
+        <th>array-like type</th>
+        <th>dtype-like type</th>
     </tr>
     <tr>
         <th><code>int8</code></th>
@@ -2720,12 +2733,6 @@ for more info.
 
 <table>
     <tr>
-        <th>scalar type</th>
-        <th>base type</th>
-        <th>array-like type</th>
-        <th>dtype-like type</th>
-    </tr>
-    <tr>
         <th align="center" colspan="2">
             <code>numpy._</code>
         </th>
@@ -2734,35 +2741,35 @@ for more info.
         </th>
     </tr>
     <tr>
+        <th>scalar type</th>
+        <th>base type</th>
+        <th>array-like type</th>
+        <th>dtype-like type</th>
+    </tr>
+    <tr>
         <th><code>float16</code></th>
         <td rowspan="7"><code>floating</code></td>
-        <td><code>AnyFloat16Array</code></td>
-        <td><code>AnyFloat16DType</code></td>
-    </tr>
-    <tr>
-        <th><code>float32</code></th>
-        <td><code>AnyFloat32Array</code></td>
-        <td><code>AnyFloat32DType</code></td>
-    </tr>
-    <tr>
-        <th><code>float64</code></th>
-        <td><code>AnyFloat64Array</code></td>
-        <td><code>AnyFloat64DType</code></td>
+        <td rowspan="2"><code>AnyFloat16Array</code></td>
+        <td rowspan="2"><code>AnyFloat16DType</code></td>
     </tr>
     <tr>
         <th><code>half</code></th>
-        <td><code>AnyHalfArray</code></td>
-        <td><code>AnyHalfDType</code></td>
+    </tr>
+    <tr>
+        <th><code>float32</code></th>
+        <td rowspan="2"><code>AnyFloat32Array</code></td>
+        <td rowspan="2"><code>AnyFloat32DType</code></td>
     </tr>
     <tr>
         <th><code>single</code></th>
-        <td><code>AnySingleArray</code></td>
-        <td><code>AnySingleDType</code></td>
+    </tr>
+    <tr>
+        <th><code>float64</code></th>
+        <td rowspan="2"><code>AnyFloat64Array</code></td>
+        <td rowspan="2"><code>AnyFloat64DType</code></td>
     </tr>
     <tr>
         <th><code>double</code></th>
-        <td><code>AnyDoubleArray</code></td>
-        <td><code>AnyDoubleDType</code></td>
     </tr>
     <tr>
         <th><code>longdouble</code></th>
@@ -2775,12 +2782,6 @@ for more info.
 
 <table>
     <tr>
-        <th>scalar type</th>
-        <th>base type</th>
-        <th>array-like type</th>
-        <th>dtype-like type</th>
-    </tr>
-    <tr>
         <th align="center" colspan="2">
             <code>numpy._</code>
         </th>
@@ -2789,25 +2790,27 @@ for more info.
         </th>
     </tr>
     <tr>
-        <th><code>complex64</code></th>
-        <td rowspan="7"><code>complexfloating</code></td>
-        <td><code>AnyComplex64Array</code></td>
-        <td><code>AnyComplex64DType</code></td>
+        <th>scalar type</th>
+        <th>base type</th>
+        <th>array-like type</th>
+        <th>dtype-like type</th>
     </tr>
     <tr>
-        <th><code>complex128</code></th>
-        <td><code>AnyComplex128Array</code></td>
-        <td><code>AnyComplex128DType</code></td>
+        <th><code>complex64</code></th>
+        <td rowspan="7"><code>complexfloating</code></td>
+        <td rowspan="2"><code>AnyComplex64Array</code></td>
+        <td rowspan="2"><code>AnyComplex64DType</code></td>
     </tr>
     <tr>
         <th><code>csingle</code></th>
-        <td><code>AnyCSingleArray</code></td>
-        <td><code>AnyCSingleDType</code></td>
+    </tr>
+    <tr>
+        <th><code>complex128</code></th>
+        <td rowspan="2"><code>AnyComplex128Array</code></td>
+        <td rowspan="2"><code>AnyComplex128DType</code></td>
     </tr>
     <tr>
         <th><code>cdouble</code></th>
-        <td><code>AnyCDoubleArray</code></td>
-        <td><code>AnyCDoubleDType</code></td>
     </tr>
     <tr>
         <th><code>clongdouble</code></th>
@@ -2823,18 +2826,18 @@ that depends on the specific `np.dtype` instantiation.
 
 <table>
     <tr>
-        <th>scalar type</th>
-        <th>base type</th>
-        <th>array-like type</th>
-        <th>dtype-like type</th>
-    </tr>
-    <tr>
         <th align="center" colspan="2">
             <code>numpy._</code>
         </th>
         <th align="center" colspan="2">
             <code>optype.numpy._</code>
         </th>
+    </tr>
+    <tr>
+        <th>scalar type</th>
+        <th>base type</th>
+        <th>array-like type</th>
+        <th>dtype-like type</th>
     </tr>
     <tr>
         <th><code>str_</code></th>
@@ -2859,18 +2862,18 @@ that depends on the specific `np.dtype` instantiation.
 
 <table>
     <tr>
-        <th>scalar type</th>
-        <th>base type</th>
-        <th>array-like type</th>
-        <th>dtype-like type</th>
-    </tr>
-    <tr>
         <th align="center" colspan="2">
             <code>numpy._</code>
         </th>
         <th align="center" colspan="2">
             <code>optype.numpy._</code>
         </th>
+    </tr>
+    <tr>
+        <th>scalar type</th>
+        <th>base type</th>
+        <th>array-like type</th>
+        <th>dtype-like type</th>
     </tr>
     <tr>
         <th><code>bool_</code></th>
@@ -2964,8 +2967,8 @@ def __array_ufunc__(
     _,
     ufunc: U,
     method: LiteralString,
-    *args: Any,
-    **kwargs: Any,
+    *args: object,
+    **kwargs: object,
 ) -> R
 ```
 
@@ -2982,8 +2985,8 @@ def __array_ufunc__(
 
 ```python
 class CanArrayFunction[
-    F: CanCall[..., Any] = ...,
-    R: object = ...,
+    F: CanCall[..., object] = ...,
+    R = object,
 ]
 ```
 
@@ -2994,9 +2997,9 @@ class CanArrayFunction[
 def __array_function__(
     _,
     func: F,
-    types: CanIterSelf[type],
-    args: tuple[Any, ...],
-    kwargs: Mapping[str, ...],
+    types: CanIterSelf[type[CanArrayFunction]],
+    args: tuple[object, ...],
+    kwargs: Mapping[str, object],
 ) -> R
 ```
 
@@ -3064,7 +3067,7 @@ def __array_wrap__[ND, ST](
 
 ```python
 class HasArrayInterface[
-    V: Mapping[str, Any] = ...,
+    V: Mapping[str, object] = ...,
 ]
 ```
 
