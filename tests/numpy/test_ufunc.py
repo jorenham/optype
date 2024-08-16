@@ -1,7 +1,7 @@
 import math
 import sys
 from collections.abc import Callable as Fn
-from typing import Any, Literal, TypeAlias, TypeVar
+from typing import Any, Literal, TypeAlias, TypeVar, cast
 
 import numpy as np
 
@@ -269,7 +269,7 @@ def test_anyufunc_custom_np() -> None:
     assert fn.nout == 1
     assert fn.nargs == 3
     assert fn.signature is None
-    assert fn.identity is None
+    assert cast(None, fn.identity) is None
 
     fn_any: UFunc = fn
 
