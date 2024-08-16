@@ -156,7 +156,7 @@ class CanFormat(Protocol[_StrT_contra, _StrT_co]):
     or `str` subtypes. Note that `format()` *does not* upcast `Y` to `str`.
     """
     @override
-    def __format__(self, fmt: _StrT_contra, /) -> _StrT_co: ...  # type: ignore[override]
+    def __format__(self, fmt: _StrT_contra, /) -> _StrT_co: ...  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
 
 
 # Iteration
@@ -300,7 +300,7 @@ class CanGetattr(Protocol[_StrT_contra, _AnyT_co]):
 class CanGetattribute(Protocol[_StrT_contra, _AnyT_co]):
     """Note that `isinstance(x, CanGetattribute)` is always `True`."""
     @override
-    def __getattribute__(self, name: _StrT_contra, /) -> _AnyT_co: ...  # type: ignore[misc]
+    def __getattribute__(self, name: _StrT_contra, /) -> _AnyT_co: ...  # type: ignore[misc]  # pyright: ignore[reportIncompatibleMethodOverride]
 
 
 @set_module('optype')
@@ -308,14 +308,14 @@ class CanGetattribute(Protocol[_StrT_contra, _AnyT_co]):
 class CanSetattr(Protocol[_StrT_contra, _AnyT_contra]):
     """Note that `isinstance(x, CanSetattr)` is always true."""
     @override
-    def __setattr__(self, name: _StrT_contra, value: _AnyT_contra, /) -> _Ignored: ...  # type: ignore[misc]
+    def __setattr__(self, name: _StrT_contra, value: _AnyT_contra, /) -> _Ignored: ...  # type: ignore[misc]  # pyright: ignore[reportIncompatibleMethodOverride]
 
 
 @set_module('optype')
 @runtime_checkable
 class CanDelattr(Protocol[_StrT_contra]):
     @override
-    def __delattr__(self, name: _StrT_contra, /) -> _Ignored: ...
+    def __delattr__(self, name: _StrT_contra, /) -> _Ignored: ...  # pyright: ignore[reportIncompatibleMethodOverride]
 
 
 _AnyStrIterT_co = TypeVar(
