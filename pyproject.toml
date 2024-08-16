@@ -39,7 +39,7 @@ numpy = {version = ">=1.24,<3", optional = true}
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.8.0"
-tox = "^4.17.1"
+tox = "^4.18.0"
 
 [tool.poetry.group.lint.dependencies]
 basedpyright = "^1.15.2"
