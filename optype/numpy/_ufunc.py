@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias as _Type
+from collections.abc import Callable as CanCall
+from typing import (
+    TYPE_CHECKING,
+    Literal as L,  # noqa: N817
+    TypeAlias as Alias,
+)
 
 import numpy as np
 
@@ -20,7 +25,7 @@ else:
 
 
 if TYPE_CHECKING:
-    from collections.abc import Callable as CanCall, Mapping
+    from collections.abc import Mapping
     from types import NotImplementedType
 
     import optype as opt
@@ -31,15 +36,9 @@ __all__ = ['CanArrayFunction', 'CanArrayUFunc', 'UFunc']
 
 _FT_co = TypeVar(
     '_FT_co',
-    bound='CanCall[..., Any]',
+    bound=CanCall[..., object],
     covariant=True,
-    default=Any,
-)
-_FT_contra = TypeVar(
-    '_FT_contra',
-    bound='CanCall[..., Any]',
-    contravariant=True,
-    default=Any,
+    default=CanCall[..., object],
 )
 _NInT_co = TypeVar('_NInT_co', bound=int, covariant=True, default=int)
 _NoutT_co = TypeVar('_NoutT_co', bound=int, covariant=True, default=int)
@@ -58,12 +57,12 @@ _SigT_str_co = TypeVar(
 )
 _IdT_co = TypeVar(
     '_IdT_co',
-    bound=int | float | complex | str | bytes | memoryview | None,
+    bound=int | float | complex | bytes | str | None,
     covariant=True,
     default=float | None,
 )
 
-_AnyArray: _Type = np.ndarray[Any, Any]
+_AnyArray: Alias = np.ndarray[tuple[int, ...], np.dtype[np.generic]]
 
 if _x.NP2 and not _x.NP20:
     # `numpy>=2.1`
@@ -124,15 +123,15 @@ if _x.NP2 and not _x.NP20:
         def types(self, /) -> list[LiteralString]: ...
 
         # raises `ValueError` i.f.f. `nout != 1 or bool(signature)`
-        def at(self, /, *args: Any, **kwargs: Any) -> None: ...
+        def at(self, /, *args: object, **kw: object) -> None: ...
         # raises `ValueError` i.f.f. `nin != 2 or nout != 1 or bool(signature)`
-        def reduce(self, /, *args: Any, **kwargs: Any) -> Any: ...
+        def reduce(self, /, *args: object, **kw: object) -> object: ...
         # raises `ValueError` i.f.f. `nin != 2 or nout != 1 or bool(signature)`
-        def reduceat(self, /, *args: Any, **kwargs: Any) -> _AnyArray: ...
+        def reduceat(self, /, *args: object, **kw: object) -> _AnyArray: ...
         # raises `ValueError` i.f.f. `nin != 2 or nout != 1 or bool(signature)`
-        def accumulate(self, /, *args: Any, **kwargs: Any) -> _AnyArray: ...
+        def accumulate(self, /, *args: object, **kw: object) -> _AnyArray: ...
         # raises `ValueError` i.f.f. `nin != 2 or nout != 1 or bool(signature)`
-        def outer(self, /, *args: Any, **kwargs: Any) -> Any: ...
+        def outer(self, /, *args: object, **kw: object) -> object: ...
 
 else:
     # `numpy<2.1`
@@ -172,35 +171,29 @@ else:
         @property
         def at(self, /) -> CanCall[..., None] | None: ...
         @property
-        def reduce(self, /) -> CanCall[..., Any] | None: ...
+        def reduce(self, /) -> CanCall[..., object] | None: ...
         @property
         def reduceat(self, /) -> CanCall[..., _AnyArray] | None: ...
         @property
         def accumulate(self, /) -> CanCall[..., _AnyArray] | None: ...
         @property
-        def outer(self, /) -> CanCall[..., Any] | None: ...
+        def outer(self, /) -> CanCall[..., object] | None: ...
 
 
-_UFuncMethodCommon: _Type = Literal[
-    '__call__',
-    'reduce',
-    'reduceat',
-    'accumulate',
-    'outer',
-]
+_Method0: Alias = L['__call__', 'reduce', 'reduceat', 'accumulate', 'outer']
 if _x.NP2:
-    _UFuncMethod: _Type = _UFuncMethodCommon | Literal['at']
+    _Method: Alias = L[_Method0, 'at']
 else:
-    _UFuncMethod: _Type = _UFuncMethodCommon | Literal['inner']
+    _Method: Alias = L[_Method0, 'inner']
 
 
 _UFT_contra = TypeVar(
     '_UFT_contra',
     bound=UFunc,
     contravariant=True,
-    default=Any,
+    default=np.ufunc,
 )
-_T_co = TypeVar('_T_co', covariant=True, default=np.ufunc)
+_T_co = TypeVar('_T_co', covariant=True, default=object)
 
 
 @runtime_checkable
@@ -219,11 +212,18 @@ class CanArrayUFunc(Protocol[_UFT_contra, _T_co]):
         self,
         /,
         ufunc: _UFT_contra,
-        method: _UFuncMethod,
-        # /,
-        *args: Any,
-        **kwargs: Any,
+        method: _Method,
+        *args: object,
+        **kwargs: object,
     ) -> _T_co: ...
+
+
+_FT_contra = TypeVar(
+    '_FT_contra',
+    bound=CanCall[..., object],
+    contravariant=True,
+    default=CanCall[..., object],
+)
 
 
 @runtime_checkable
@@ -233,8 +233,8 @@ class CanArrayFunction(Protocol[_FT_contra, _T_co]):
         /,
         func: _FT_contra,
         # although this could be tighter, this ensures numpy.typing compat
-        types: opt.CanIter[opt.CanIterSelf[type[CanArrayFunction[Any, Any]]]],
+        types: opt.CanIter[opt.CanIterSelf[type[CanArrayFunction]]],
         # ParamSpec can only be used on *args and **kwargs for some reason...
-        args: tuple[Any, ...],
-        kwargs: Mapping[str, Any],
+        args: tuple[object, ...],
+        kwargs: Mapping[str, object],
     ) -> NotImplementedType | _T_co: ...
