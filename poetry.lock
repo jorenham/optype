@@ -2,13 +2,13 @@
 
 [[package]]
 name = "basedpyright"
-version = "1.15.2"
+version = "1.16.0"
 description = "static type checking for Python (but based)"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "basedpyright-1.15.2-py3-none-any.whl", hash = "sha256:78879dee4fb334da0f78e13de93761ee654ff6b7fe32df454f179772bc37d59f"},
-    {file = "basedpyright-1.15.2.tar.gz", hash = "sha256:c07f4ad7d5b2a2d3194ecdfa311b7a58da8670144873ff54f0d2d40a5d1b5944"},
+    {file = "basedpyright-1.16.0-py3-none-any.whl", hash = "sha256:5eda1be337ca926f6d869f02cfd4cfd124d946d58d58d73c5c9e7c5b2d2d5b1e"},
+    {file = "basedpyright-1.16.0.tar.gz", hash = "sha256:023a19d8f1b2a466e05a9dbbd6c6ecb5abfc1518e6daa9317ec978a38a6c8ff5"},
 ]
 
 [package.dependencies]
@@ -729,4 +729,4 @@ numpy = ["numpy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10.1"
-content-hash = "2079050cfda63827406829a081774f1f26789f3c7101466395e4945bb5ea0c83"
+content-hash = "3b5b81502b822070a61631b9ff3ede9754c4328238ea13d1027f12aa5523cca7"
