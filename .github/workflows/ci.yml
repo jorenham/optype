@@ -27,7 +27,10 @@ jobs:
           globs: "**/*.md"
 
       - name: install poetry
-        run: pipx install poetry
+        run: |
+          pipx install poetry
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
 
       - uses: actions/setup-python@v5
         with:
@@ -35,7 +38,7 @@ jobs:
           cache: poetry
 
       - name: poetry install
-        run: poetry install --sync
+        run: poetry install
 
       - name: codespell
         run: poetry run codespell .
