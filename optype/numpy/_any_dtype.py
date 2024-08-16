@@ -5,12 +5,13 @@ The names are analogous to those in `numpy.dtypes`.
 from __future__ import annotations
 
 import sys
-from typing import Any, Literal as L, TypeAlias as Alias  # noqa: N817
+from typing import Literal as L, TypeAlias as Alias  # noqa: N817
 
 import numpy as np
 
 import optype.numpy._compat as _x
 import optype.numpy._dtype as _dt
+import optype.numpy._scalar as _sc
 import optype.numpy.ctypeslib as _ct
 
 
@@ -221,10 +222,7 @@ _FloatingCode: Alias = L[
     _Float64Code,
     _LongDoubleCode,
 ]
-AnyFloatingDType: Alias = (
-    _Any2[np.floating[Any], _ct.Floating]
-    | _FloatingCode
-)
+AnyFloatingDType: Alias = _Any2[_sc.Floating, _ct.Floating] | _FloatingCode
 
 # complex floating
 
@@ -255,8 +253,7 @@ _ComplexFloatingCode: Alias = L[
     _CLongDoubleCode,
 ]
 AnyComplexFloatingDType: Alias = (
-    _Any1[np.complexfloating[Any, Any]]
-    | _ComplexFloatingCode
+    _Any1[_sc.ComplexFloating] | _ComplexFloatingCode
 )
 
 # temporal
@@ -391,7 +388,7 @@ AnyObjectDType: Alias = _Any2[np.object_, _ct.Object] | _ObjectCode
 
 
 _InexactCode: Alias = L[_FloatingCode, _ComplexFloatingCode]
-AnyInexactDType: Alias = _Any2[np.inexact[Any], _ct.Floating] | _InexactCode
+AnyInexactDType: Alias = _Any2[_sc.Inexact, _ct.Floating] | _InexactCode
 
 _SignedIntegerName: Alias = L[
     'byte', 'int8', 'short', 'int16', 'intc', 'int32', 'int64',
@@ -461,7 +458,7 @@ if _x.NP2:
     ]
     _UnsignedIntegerCode: Alias = L[_UnsignedIntegerName, _UnsignedIntegerChar]
     AnyUnsignedIntegerDType: Alias = (
-        _Any2[np.unsignedinteger[Any], _ct.UnsignedInteger]
+        _Any2[_sc.UnsignedInteger, _ct.UnsignedInteger]
         | _UnsignedIntegerCode
     )
 
@@ -472,20 +469,17 @@ if _x.NP2:
     ]
     _SignedIntegerCode: Alias = L[_SignedIntegerName, _SignedIntegerChar]
     AnySignedIntegerDType: Alias = (
-        _Any2[np.signedinteger[Any], _ct.SignedInteger]
+        _Any2[_sc.SignedInteger, _ct.SignedInteger]
         | _SignedIntegerCode
     )
 
     _IntegerCode: Alias = L[_UnsignedIntegerCode, _SignedIntegerCode]
-    AnyIntegerDType: Alias = (
-        _Any2[np.integer[Any], _ct.Integer]
-        | _IntegerCode
-    )
+    AnyIntegerDType: Alias = _Any2[_sc.Integer, _ct.Integer] | _IntegerCode
 
     _NumberCode: Alias = L[_IntegerCode, _InexactCode]
     # NOTE: this doesn't include `int` or `float` or `complex`, since that
     # would autoamtically include `bool`.
-    AnyNumberDType: Alias = _Any2[np.number[Any], _ct.Number] | _NumberCode
+    AnyNumberDType: Alias = _Any2[_sc.Number, _ct.Number] | _NumberCode
 
     # NOTE: `np.dtypes.StringDType` didn't exist in the stubs prior to 2.1 (so
     # I (@jorenham) added them, see https://github.com/numpy/numpy/pull/27008).
@@ -528,26 +522,23 @@ else:
     _UnsignedIntegerChar: Alias = L[_UIntCharCommon, _UIntPChar]
     _UnsignedIntegerCode: Alias = L[_UnsignedIntegerName, _UnsignedIntegerChar]
     AnyUnsignedIntegerDType: Alias = (
-        _Any2[np.unsignedinteger[Any], _ct.UnsignedInteger]
+        _Any2[_sc.UnsignedInteger, _ct.UnsignedInteger]
         | _UnsignedIntegerCode
     )
 
     _SignedIntegerChar: Alias = L[_SIntCharCommon, _IntPChar]
     _SignedIntegerCode: Alias = L[_SignedIntegerName, _SignedIntegerChar]
     AnySignedIntegerDType: Alias = (
-        _Any2[np.signedinteger[Any], _ct.SignedInteger]
+        _Any2[_sc.SignedInteger, _ct.SignedInteger]
         | _SignedIntegerCode
     )
 
     _IntegerCode: Alias = L[_UnsignedIntegerCode, _SignedIntegerCode]
-    AnyIntegerDType: Alias = (
-        _Any2[np.integer[Any], _ct.Integer]
-        | _IntegerCode
-    )
+    AnyIntegerDType: Alias = _Any2[_sc.Integer, _ct.Integer] | _IntegerCode
 
     _NumberCode: Alias = L[_IntegerCode, _InexactCode]
-    AnyNumberDType: Alias = _Any2[np.number[Any], _ct.Number] | _NumberCode
+    AnyNumberDType: Alias = _Any2[_sc.Number, _ct.Number] | _NumberCode
 
     AnyStringDType: Alias = Never
 
-    AnyDType: Alias = _Any2[np.generic, object | _ct.Generic] | LiteralString
+    AnyDType: Alias = _Any2[np.generic, object] | LiteralString
