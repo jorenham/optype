@@ -52,30 +52,17 @@ _JustBoolT_co = TypeVar(
     Literal[False], Literal[True], Literal[False, True], bool,
     covariant=True,
     default=bool,
-)
-_IntT_contra = TypeVar(
-    '_IntT_contra',
-    bound=int,
-    contravariant=True,
-    default=int,
-)
+)  # fmt: skip
+
+_IntT_contra = TypeVar('_IntT_contra', bound=int, contravariant=True, default=int)
 _IntT_co = TypeVar('_IntT_co', bound=int, covariant=True, default=int)
 _BytesT_co = TypeVar('_BytesT_co', bound=bytes, covariant=True, default=bytes)
-_StrT_contra = TypeVar(
-    '_StrT_contra',
-    bound=str,
-    contravariant=True,
-    default=str,
-)
+_StrT_contra = TypeVar('_StrT_contra', bound=str, contravariant=True, default=str)
 _StrT_co = TypeVar('_StrT_co', bound=str, covariant=True, default=str)
 
 _AnyT_contra = TypeVar('_AnyT_contra', contravariant=True, default=Any)
 _AnyT_co = TypeVar('_AnyT_co', covariant=True, default=Any)
-_ObjectT_contra = TypeVar(
-    '_ObjectT_contra',
-    contravariant=True,
-    default=object,
-)
+_ObjectT_contra = TypeVar('_ObjectT_contra', contravariant=True, default=object)
 # can be anything, but defaults to `bool`
 _AnyBoolT_co = TypeVar('_AnyBoolT_co', covariant=True, default=bool)
 _AnyIntT_contra = TypeVar('_AnyIntT_contra', contravariant=True, default=int)
@@ -224,14 +211,8 @@ class CanAIter(Protocol[_CanANextT_co]):
 
 @set_module('optype')
 @runtime_checkable
-class CanAIterSelf(
-    CanAIter['CanAIterSelf[_V_co]'],
-    CanANext[_V_co],
-    Protocol[_V_co],
-):
-    """
-    Like `collections.abc.AsyncIterator[T]`, but without the `abc` nonsense.
-    """
+class CanAIterSelf(CanAIter['CanAIterSelf[_V_co]'], CanANext[_V_co], Protocol[_V_co]):
+    """Like `collections.abc.AsyncIterator[T]`, but without the `abc` nonsense."""
     @override
     def __aiter__(self, /) -> Self: ...
 
@@ -327,12 +308,7 @@ class CanGetattribute(Protocol[_StrT_contra, _AnyT_co]):
 class CanSetattr(Protocol[_StrT_contra, _AnyT_contra]):
     """Note that `isinstance(x, CanSetattr)` is always true."""
     @override
-    def __setattr__(  # type: ignore[misc]
-        self,
-        name: _StrT_contra,
-        value: _AnyT_contra,
-        /,
-    ) -> _Ignored: ...
+    def __setattr__(self, name: _StrT_contra, value: _AnyT_contra, /) -> _Ignored: ...  # type: ignore[misc]
 
 
 @set_module('optype')
@@ -384,12 +360,7 @@ class CanDelete(Protocol[_T_contra]):
 @set_module('optype')
 @runtime_checkable
 class CanSetName(Protocol[_T_contra, _StrT_contra]):
-    def __set_name__(
-        self,
-        cls: type[_T_contra],
-        name: _StrT_contra,
-        /,
-    ) -> _Ignored: ...
+    def __set_name__(self, cls: type[_T_contra], name: _StrT_contra, /) -> _Ignored: ...
 
 
 # Collection type operands.
@@ -455,11 +426,7 @@ class CanGetMissing(
 ): ...
 
 
-_IndexT_contra = TypeVar(
-    '_IndexT_contra',
-    bound=CanIndex | slice,
-    contravariant=True,
-)
+_IndexT_contra = TypeVar('_IndexT_contra', bound=CanIndex | slice, contravariant=True)
 
 
 @set_module('optype')
@@ -686,10 +653,7 @@ class CanIAdd(Protocol[_T_contra, _T_co]):
 
 @set_module('optype')
 @runtime_checkable
-class CanIAddSelf(
-    CanIAdd[_T_contra, 'CanIAddSelf[_T_contra]'],
-    Protocol[_T_contra],
-):
+class CanIAddSelf(CanIAdd[_T_contra, 'CanIAddSelf[_T_contra]'], Protocol[_T_contra]):
     @override
     def __iadd__(self, rhs: _T_contra, /) -> Self: ...
 
@@ -702,10 +666,7 @@ class CanISub(Protocol[_T_contra, _T_co]):
 
 @set_module('optype')
 @runtime_checkable
-class CanISubSelf(
-    CanISub[_T_contra, 'CanISubSelf[_T_contra]'],
-    Protocol[_T_contra],
-):
+class CanISubSelf(CanISub[_T_contra, 'CanISubSelf[_T_contra]'], Protocol[_T_contra]):
     @override
     def __isub__(self, rhs: _T_contra, /) -> Self: ...
 
@@ -718,10 +679,7 @@ class CanIMul(Protocol[_T_contra, _T_co]):
 
 @set_module('optype')
 @runtime_checkable
-class CanIMulSelf(
-    CanIMul[_T_contra, 'CanIMulSelf[_T_contra]'],
-    Protocol[_T_contra],
-):
+class CanIMulSelf(CanIMul[_T_contra, 'CanIMulSelf[_T_contra]'], Protocol[_T_contra]):
     @override
     def __imul__(self, rhs: _T_contra, /) -> Self: ...
 
@@ -782,10 +740,7 @@ class CanIMod(Protocol[_T_contra, _T_co]):
 
 @set_module('optype')
 @runtime_checkable
-class CanIModSelf(
-    CanIMod[_T_contra, 'CanIModSelf[_T_contra]'],
-    Protocol[_T_contra],
-):
+class CanIModSelf(CanIMod[_T_contra, 'CanIModSelf[_T_contra]'], Protocol[_T_contra]):
     @override
     def __imod__(self, rhs: _T_contra, /) -> Self: ...
 
@@ -799,10 +754,7 @@ class CanIPow(Protocol[_T_contra, _T_co]):
 
 @set_module('optype')
 @runtime_checkable
-class CanIPowSelf(
-    CanIPow[_T_contra, 'CanIPowSelf[_T_contra]'],
-    Protocol[_T_contra],
-):
+class CanIPowSelf(CanIPow[_T_contra, 'CanIPowSelf[_T_contra]'], Protocol[_T_contra]):
     @override
     def __ipow__(self, rhs: _T_contra, /) -> Self: ...
 
@@ -847,10 +799,7 @@ class CanIAnd(Protocol[_T_contra, _T_co]):
 
 @set_module('optype')
 @runtime_checkable
-class CanIAndSelf(
-    CanIAnd[_T_contra, 'CanIAndSelf[_T_contra]'],
-    Protocol[_T_contra],
-):
+class CanIAndSelf(CanIAnd[_T_contra, 'CanIAndSelf[_T_contra]'], Protocol[_T_contra]):
     @override
     def __iand__(self, rhs: _T_contra, /) -> Self: ...
 
@@ -863,10 +812,7 @@ class CanIXor(Protocol[_T_contra, _T_co]):
 
 @set_module('optype')
 @runtime_checkable
-class CanIXorSelf(
-    CanIXor[_T_contra, 'CanIXorSelf[_T_contra]'],
-    Protocol[_T_contra],
-):
+class CanIXorSelf(CanIXor[_T_contra, 'CanIXorSelf[_T_contra]'], Protocol[_T_contra]):
     @override
     def __ixor__(self, rhs: _T_contra, /) -> Self: ...
 
@@ -879,10 +825,7 @@ class CanIOr(Protocol[_T_contra, _T_co]):
 
 @set_module('optype')
 @runtime_checkable
-class CanIOrSelf(
-    CanIOr[_T_contra, 'CanIOrSelf[_T_contra]'],
-    Protocol[_T_contra],
-):
+class CanIOrSelf(CanIOr[_T_contra, 'CanIOrSelf[_T_contra]'], Protocol[_T_contra]):
     @override
     def __ior__(self, rhs: _T_contra, /) -> Self: ...
 
@@ -1037,11 +980,7 @@ class CanWith(
 
 @set_module('optype')
 @runtime_checkable
-class CanWithSelf(
-    CanEnterSelf,
-    CanExit[_AnyNoneT_co],
-    Protocol[_AnyNoneT_co],
-): ...
+class CanWithSelf(CanEnterSelf, CanExit[_AnyNoneT_co], Protocol[_AnyNoneT_co]): ...
 
 
 # Async context managers
@@ -1064,13 +1003,7 @@ class CanAEnterSelf(CanAEnter['CanAEnterSelf'], Protocol):
 @runtime_checkable
 class CanAExit(Protocol[_AnyNoneT_co]):
     @overload
-    def __aexit__(
-        self,
-        exc_type: None,
-        exc: None,
-        tb: None,
-        /,
-    ) -> CanAwait[None]: ...
+    def __aexit__(self, exc_type: None, exc: None, tb: None, /) -> CanAwait[None]: ...
     @overload
     def __aexit__(
         self,

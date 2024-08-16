@@ -14,17 +14,9 @@ if TYPE_CHECKING:
 
 
 if sys.version_info >= (3, 13):
-    from typing import (
-        Protocol,
-        TypeVar,
-        runtime_checkable,
-    )
+    from typing import Protocol, TypeVar, runtime_checkable
 else:
-    from typing_extensions import (
-        Protocol,
-        TypeVar,
-        runtime_checkable,
-    )
+    from typing_extensions import Protocol, TypeVar, runtime_checkable
 
 
 __all__ = ('HasDataclassFields',)

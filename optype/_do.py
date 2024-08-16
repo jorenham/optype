@@ -98,17 +98,10 @@ def do_getitem(
 ) -> _ValueT | _DefaultT: ...
 @overload
 @set_module('optype')
-def do_getitem(
-    obj: _c.CanGetitem[_KeyT, _ValueT],
-    key: _KeyT,
-    /,
-) -> _ValueT: ...
+def do_getitem(obj: _c.CanGetitem[_KeyT, _ValueT], key: _KeyT, /) -> _ValueT: ...
 @set_module('optype')
 def do_getitem(
-    obj: (
-        _c.CanGetitem[_KeyT, _ValueT]
-        | _c.CanGetMissing[_KeyT, _ValueT, _DefaultT]
-    ),
+    obj: _c.CanGetitem[_KeyT, _ValueT] | _c.CanGetMissing[_KeyT, _ValueT, _DefaultT],
     key: _KeyT,
     /,
 ) -> _ValueT | _DefaultT:
@@ -134,11 +127,7 @@ def do_delitem(obj: _c.CanDelitem[_KeyT], key: _KeyT, /) -> None:
 
 
 @set_module('optype')
-def do_missing(
-    obj: _c.CanMissing[_KeyT, _DefaultT],
-    key: _KeyT,
-    /,
-) -> _DefaultT:
+def do_missing(obj: _c.CanMissing[_KeyT, _DefaultT], key: _KeyT, /) -> _DefaultT:
     return obj.__missing__(key)
 
 

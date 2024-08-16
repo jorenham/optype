@@ -15,14 +15,7 @@ if sys.version_info >= (3, 13):
 else:
     from typing_extensions import TypeVar
 
-__all__ = (
-    'AnyArray',
-    'AnyObject',
-    'AnyValue',
-    'Array',
-    'Object',
-    '_Value',
-)
+__all__ = 'AnyArray', 'AnyObject', 'AnyValue', 'Array', 'Object', '_Value'
 
 _Primitive: TypeAlias = None | bool | int | float | str
 

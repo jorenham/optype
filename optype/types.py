@@ -7,11 +7,7 @@ from typing import Literal
 if sys.version_info >= (3, 13):
     from typing import LiteralString, Protocol, runtime_checkable
 else:
-    from typing_extensions import (
-        LiteralString,
-        Protocol,
-        runtime_checkable,
-    )
+    from typing_extensions import LiteralString, Protocol, runtime_checkable
 
 from ._types_impl import AnnotatedAlias, GenericType, LiteralAlias, UnionAlias
 

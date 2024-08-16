@@ -9,21 +9,9 @@ import optype.numpy._compat as _x
 
 
 if sys.version_info >= (3, 13):
-    from typing import (
-        Protocol,
-        Self,
-        TypeVar,
-        overload,
-        runtime_checkable,
-    )
+    from typing import Protocol, Self, TypeVar, overload, runtime_checkable
 else:
-    from typing_extensions import (
-        Protocol,
-        Self,
-        TypeVar,
-        overload,
-        runtime_checkable,
-    )
+    from typing_extensions import Protocol, Self, TypeVar, overload, runtime_checkable
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -42,12 +30,7 @@ __all__ = [
 _AnyShape: TypeAlias = tuple[int, ...]
 
 _ShapeT = TypeVar('_ShapeT', bound=_AnyShape, default=_AnyShape)
-_ShapeT_co = TypeVar(
-    '_ShapeT_co',
-    bound=_AnyShape,
-    covariant=True,
-    default=_AnyShape,
-)
+_ShapeT_co = TypeVar('_ShapeT_co', bound=_AnyShape, covariant=True, default=_AnyShape)
 
 _SCT = TypeVar('_SCT', bound=np.generic, default=np.generic)
 _DT = TypeVar('_DT', bound=np.dtype[Any], default=np.dtype[Any])
@@ -67,22 +50,14 @@ if _x.NP2 and not _x.NP20:
     @runtime_checkable
     class CanArray(Protocol[_ShapeT_co, _DT_co]):
         @overload
-        def __array__(
-            self,
-            dtype: None = ...,
-            /,
-        ) -> Array[_ShapeT_co, _DT_co]: ...
+        def __array__(self, dtype: None = ..., /) -> Array[_ShapeT_co, _DT_co]: ...
         @overload
         def __array__(self, dtype: _DT, /) -> np.ndarray[_ShapeT_co, _DT]: ...
 else:
     @runtime_checkable
     class CanArray(Protocol[_ShapeT, _DT_co]):
         @overload
-        def __array__(
-            self,
-            dtype: None = ...,
-            /,
-        ) -> np.ndarray[_ShapeT, _DT_co]: ...
+        def __array__(self, dtype: None = ..., /) -> np.ndarray[_ShapeT, _DT_co]: ...
         @overload
         def __array__(self, dtype: _DT, /) -> np.ndarray[_ShapeT_co, _DT]: ...
 
