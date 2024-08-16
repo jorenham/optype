@@ -1,4 +1,5 @@
 {
+  "editor.rulers": [88],
   "git.branchProtection": ["master"],
   "githubPullRequests.overrideDefaultBranch": "dev",
   "mypy-type-checker.args": [
