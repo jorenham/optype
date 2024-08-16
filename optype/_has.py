@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias
+from typing import TYPE_CHECKING, ClassVar
 
 
 if sys.version_info >= (3, 13):
@@ -40,9 +40,6 @@ if TYPE_CHECKING:
     from ._can import CanIter, CanNext
 
 
-_Ignored: TypeAlias = Any
-
-
 @set_module('optype')
 @runtime_checkable
 class HasMatchArgs(Protocol):
@@ -55,7 +52,7 @@ class HasSlots(Protocol):
     __slots__: ClassVar[LiteralString | CanIter[CanNext[LiteralString]]]  # type: ignore[assignment]
 
 
-_DictT = TypeVar('_DictT', bound='Mapping[str, Any]', default=dict[str, Any])
+_DictT = TypeVar('_DictT', bound='Mapping[str, object]', default=dict[str, object])
 
 
 @set_module('optype')
@@ -72,7 +69,7 @@ class HasClass(Protocol):
     @override
     def __class__(self) -> type[Self]: ...
     @__class__.setter
-    def __class__(self, cls: type[Self], /) -> _Ignored:
+    def __class__(self, cls: type[Self], /) -> None:
         """Don't."""
 
 
@@ -127,8 +124,8 @@ class HasDoc(Protocol[_DocT_co]):
 _AnnotationsT_co = TypeVar(
     '_AnnotationsT_co',
     covariant=True,
-    bound=dict[str, Any],
-    default=dict[str, Any],
+    bound=dict[str, object],
+    default=dict[str, object],
 )
 
 

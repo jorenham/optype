@@ -18,7 +18,7 @@ else:
 
 if TYPE_CHECKING:
     from collections.abc import Callable as CanCall
-    from types import ModuleType
+    from types import MappingProxyType, ModuleType
 
     from .types import WrappedFinalType
     from .typing import AnyIterable
@@ -90,19 +90,22 @@ def is_final(final_cls_or_method: WrappedFinalType, /) -> Literal[True]: ...
 @overload
 def is_final(cls: type, /) -> bool: ...
 @overload
-def is_final(fn: CanCall[..., Any], /) -> bool: ...
+def is_final(fn: CanCall[..., object], /) -> bool: ...
 @overload
 def is_final(prop: property, /) -> bool: ...
 @overload
-def is_final(clsfn: classmethod[Any, ..., Any] | staticmethod[..., Any], /) -> bool: ...
+def is_final(
+    clsmethod: classmethod[Any, ..., object] | staticmethod[..., object],
+    /,
+) -> bool: ...
 def is_final(
     arg: (
         WrappedFinalType
         | type
-        | CanCall[..., Any]
+        | CanCall[..., object]
         | property
-        | classmethod[Any, ..., Any]
-        | staticmethod[..., Any]
+        | classmethod[Any, ..., object]
+        | staticmethod[..., object]
     ),
     /,
 ) -> bool:
@@ -156,12 +159,12 @@ def is_final(
     return False
 
 
-def _get_alias(tp: Any, /) -> Any:
+def _get_alias(tp: type | object, /) -> type | object:
     seen: set[TypeAliasType] = set()
     for _ in range(sys.getrecursionlimit()):
         if isinstance(tp, TypeAliasType):
             seen.add(tp)
-            tp = tp.__value__
+            tp = cast(type | object, tp.__value__)
             if tp in seen:
                 raise RecursionError('type alias of itself')
             continue
@@ -174,7 +177,7 @@ def _get_alias(tp: Any, /) -> Any:
     raise RecursionError
 
 
-def is_runtime_protocol(type_expr: Any, /) -> bool:
+def is_runtime_protocol(type_expr: type | object, /) -> bool:
     """
     Check if `type_expr` is a `typing[_extensions].Protocol` that's decorated
     with `typing[_extensions].runtime_checkable`.
@@ -183,17 +186,18 @@ def is_runtime_protocol(type_expr: Any, /) -> bool:
         type_expr = _get_alias(type_expr)
     return (
         getattr(type_expr, '_is_runtime_protocol', False)
+        and isinstance(type_expr, type)
         and is_protocol(type_expr)
     )
 
 
-def is_union_type(type_expr: Any, /) -> TypeIs[UnionType | UnionAlias]:
+def is_union_type(type_expr: type | object, /) -> TypeIs[UnionType | UnionAlias]:
     if isinstance(type_expr, AnnotatedAlias | TypeAliasType):
         type_expr = _get_alias(type_expr)
     return isinstance(type_expr, UnionType | UnionAlias)
 
 
-def is_generic_alias(type_expr: Any, /) -> TypeIs[GenericType | GenericAlias]:
+def is_generic_alias(type_expr: type | object, /) -> TypeIs[GenericType | GenericAlias]:
     if isinstance(type_expr, AnnotatedAlias | TypeAliasType):
         type_expr = _get_alias(type_expr)
     return (
@@ -202,7 +206,7 @@ def is_generic_alias(type_expr: Any, /) -> TypeIs[GenericType | GenericAlias]:
     )
 
 
-def get_args(tp: Any, /) -> tuple[Any, ...]:
+def get_args(tp: type | object, /) -> tuple[type | object, ...]:
     """
     A less broken implementation of `typing[_extensions].get_args()` that
 
@@ -219,7 +223,8 @@ def get_args(tp: Any, /) -> tuple[Any, ...]:
         _raise = False
 
     if isinstance(tp, UnionType | UnionAlias | LiteralAlias):
-        args: list[Any] = []
+        arg: object
+        args: list[object] = []
         for arg in tp.__args__:
             if isinstance(arg, TypeAliasType | AnnotatedAlias):
                 arg = _get_alias(arg)  # noqa: PLW2901
@@ -251,8 +256,11 @@ def get_protocol_members(cls: type, /) -> frozenset[str]:
         raise TypeError(msg)
 
     annotations, module = cls.__annotations__, cls.__module__
+
+    member_dict: MappingProxyType[str, object] = vars(cls)
     members = annotations.keys() | {
-        name for name, v in vars(cls).items()
+        name
+        for name, v in member_dict.items()
         if (
             callable(f := getattr(v, '__func__', v))
             or (isinstance(v, property) and (f := v.fget) is not None)
@@ -284,14 +292,15 @@ def get_protocol_members(cls: type, /) -> frozenset[str]:
 
 def get_protocols(module: ModuleType, /, private: bool = False) -> frozenset[type]:
     """Return the protocol types within the given module."""
+    members: list[str] | tuple[str, ...]
     if private:
         members = dir(module)
     elif hasattr(module, '__all__'):
-        members = module.__all__
+        members = cast(list[str] | tuple[str, ...], module.__all__)
     else:
         members = [k for k in dir(module) if not k.startswith('_')]
 
     return frozenset({
         cls for name in members
-        if is_protocol(cls := getattr(module, name))
+        if is_protocol(cls := cast(type, getattr(module, name)))
     })

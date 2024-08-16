@@ -1160,7 +1160,7 @@ from the abracadabra collections. This is how they are defined:
         <td><code>do_iter</code></td>
         <td><code>DoesIter</code></td>
         <td><code>__iter__</code></td>
-        <td><code>CanIter[R: CanNext[Any]]</code></td>
+        <td><code>CanIter[R: CanNext[object]]</code></td>
     </tr>
 </table>
 
@@ -1224,7 +1224,7 @@ But fret not; the `optype` alternatives are right here:
         <td><code>do_aiter</code></td>
         <td><code>DoesAIter</code></td>
         <td><code>__aiter__</code></td>
-        <td><code>CanAIter[R: CanAnext[Any]]</code></td>
+        <td><code>CanAIter[R: CanAnext[object]]</code></td>
     </tr>
 </table>
 
@@ -1352,7 +1352,7 @@ specific and flexible `collections.abc.Sequence[V]`.
         <td><code>do_getattr</code></td>
         <td><code>DoesGetattr</code></td>
         <td><code>__getattr__</code></td>
-        <td><code>CanGetattr[K: str = str, V = Any]</code></td>
+        <td><code>CanGetattr[K: str = str, V = object]</code></td>
     </tr>
     <tr>
         <td>
@@ -1362,7 +1362,7 @@ specific and flexible `collections.abc.Sequence[V]`.
         <td><code>do_setattr</code></td>
         <td><code>DoesSetattr</code></td>
         <td><code>__setattr__</code></td>
-        <td><code>CanSetattr[K: str = str, V = Any]</code></td>
+        <td><code>CanSetattr[K: str = str, V = object]</code></td>
     </tr>
     <tr>
         <td>
@@ -1616,7 +1616,7 @@ A better alternative to [`typing.get_args()`][GET_ARGS], that
 - recursively flattens unions and nested `typing.Literal` types, and
 - raises `TypeError` if not a type expression.
 
-Return a `tuple[Any, ...]` of type arguments or parameters.
+Return a `tuple[type | object, ...]` of type arguments or parameters.
 
 To illustrate one of the (many) issues with `typing.get_args`:
 
@@ -2188,9 +2188,6 @@ This is because `npt.NDArray` can be defined purely in terms of `onp.Array`
 type NDArray[ST: np.generic] = onp.Array[Any, ST]
 ```
 
-The only difference between this `NDArray` and the original `npt.NDArray`, is
-that the former is equivalent to `np.ndarray[tuple[int, ...], np.dtype[ST]]`,
-but the latter to `np.ndarray[Any, np.dtype[np.generic]]`.
 </details>
 
 With `onp.Array`, it becomes possible to type the shape of arrays,
@@ -2913,7 +2910,7 @@ runtime-checkable and extensible (i.e. not `@final`).
 
 > [!TIP]
 > All type parameters of these protocols can be omitted, which is equivalent
-> to passing `typing.Any` (or its upper type bound).
+> to passing its upper type bound.
 
 <table>
     <tr>
