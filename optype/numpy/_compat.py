@@ -1,15 +1,8 @@
 from __future__ import annotations
 
-import sys
 from typing import Final, TypeAlias
 
 import numpy as np
-
-
-if sys.version_info >= (3, 13):
-    pass
-else:
-    pass
 
 
 __all__ = ['NP2', 'NP20', 'Bool', 'Long', 'ULong']

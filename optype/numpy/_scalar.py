@@ -8,14 +8,7 @@ import numpy.typing as npt
 
 
 if sys.version_info >= (3, 13):
-    from typing import (
-        Protocol,
-        Self,
-        TypeVar,
-        overload,
-        override,
-        runtime_checkable,
-    )
+    from typing import Protocol, Self, TypeVar, overload, override, runtime_checkable
 else:
     from typing_extensions import (
         Protocol,

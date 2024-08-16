@@ -16,12 +16,7 @@ import optype.numpy._compat as _x
 if sys.version_info >= (3, 13):
     from typing import LiteralString, Protocol, TypeVar, runtime_checkable
 else:
-    from typing_extensions import (
-        LiteralString,
-        Protocol,
-        TypeVar,
-        runtime_checkable,
-    )
+    from typing_extensions import LiteralString, Protocol, TypeVar, runtime_checkable
 
 
 if TYPE_CHECKING:
@@ -180,19 +175,14 @@ else:
         def outer(self, /) -> CanCall[..., object] | None: ...
 
 
-_Method0: Alias = L['__call__', 'reduce', 'reduceat', 'accumulate', 'outer']
+_MethodCommon: Alias = L['__call__', 'reduce', 'reduceat', 'accumulate', 'outer']
 if _x.NP2:
-    _Method: Alias = L[_Method0, 'at']
+    _Method: Alias = L[_MethodCommon, 'at']
 else:
-    _Method: Alias = L[_Method0, 'inner']
+    _Method: Alias = L[_MethodCommon, 'inner']
 
 
-_UFT_contra = TypeVar(
-    '_UFT_contra',
-    bound=UFunc,
-    contravariant=True,
-    default=np.ufunc,
-)
+_UFT_contra = TypeVar('_UFT_contra', bound=UFunc, contravariant=True, default=np.ufunc)
 _T_co = TypeVar('_T_co', covariant=True, default=object)
 
 

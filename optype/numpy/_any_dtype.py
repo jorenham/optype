@@ -185,52 +185,32 @@ AnyLongLongDType: Alias = _Any2[np.longlong, _ct.LongLong] | _LongLongCode
 # real floating
 
 _Float16Name: Alias = L['float16', 'half']
-_Float16Char: Alias = L[
-    'f2', '|f2', '=f2', '<f2', '>f2',
-    'e', '|e', '=e', '<e', '>e',
-]  # fmt: skip
+_Float16Char: Alias = L['f2', '|f2', '=f2', '<f2', '>f2', 'e', '|e', '=e', '<e', '>e']
 _Float16Code: Alias = L[_Float16Name, _Float16Char]
 AnyFloat16DType: Alias = _Any1[np.float16] | _Float16Code
 
 _Float32Name: Alias = L['float32', 'single']
-_Float32Char: Alias = L[
-    'f4', '|f4', '=f4', '<f4', '>f4',
-    'f', '|f', '=f', '<f', '>f',
-]  # fmt: skip
+_Float32Char: Alias = L['f4', '|f4', '=f4', '<f4', '>f4', 'f', '|f', '=f', '<f', '>f']
 _Float32Code: Alias = L[_Float32Name, _Float32Char]
 AnyFloat32DType: Alias = _Any2[np.float32, _ct.Float32] | _Float32Code
 
 _Float64Name: Alias = L['float64', 'float', 'double']
-_Float64Char: Alias = L[
-    'f8', '|f8', '=f8', '<f8', '>f8',
-    'd', '|d', '=d', '<d', '>d',
-]
+_Float64Char: Alias = L['f8', '|f8', '=f8', '<f8', '>f8', 'd', '|d', '=d', '<d', '>d']
 _Float64Code: Alias = L[_Float64Name, _Float64Char]
 AnyFloat64DType: Alias = _Any2[np.float64, _ct.Float64] | _Float64Code | None
 
 _LongDoubleName: Alias = L['longdouble']
 _LongDoubleChar: Alias = L['g', '|g', '=g', '<g', '>g']
 _LongDoubleCode: Alias = L[_LongDoubleName, _LongDoubleChar]
-AnyLongDoubleDType: Alias = (
-    _Any2[np.longdouble, _ct.LongDouble]
-    | _LongDoubleCode
-)
+AnyLongDoubleDType: Alias = _Any2[np.longdouble, _ct.LongDouble] | _LongDoubleCode
 
-_FloatingCode: Alias = L[
-    _Float16Code,
-    _Float32Code,
-    _Float64Code,
-    _LongDoubleCode,
-]
+_FloatingCode: Alias = L[_Float16Code, _Float32Code, _Float64Code, _LongDoubleCode]
 AnyFloatingDType: Alias = _Any2[_sc.Floating, _ct.Floating] | _FloatingCode
 
 # complex floating
 
 _Complex64Name: Alias = L['complex64', 'csingle']
-_Complex64Char: Alias = L[
-    'c8', '|c8', '=c8', '<c8', '>c8',
-    'F', '|F', '=F', '<F', '>F',
-]
+_Complex64Char: Alias = L['c8', '|c8', '=c8', '<c8', '>c8', 'F', '|F', '=F', '<F', '>F']
 _Complex64Code: Alias = L[_Complex64Name, _Complex64Char]
 AnyComplex64DType: Alias = _Any1[np.complex64] | _Complex64Code
 
@@ -247,14 +227,8 @@ _CLongDoubleChar: Alias = L['G', '|G', '=G', '<G', '>G']
 _CLongDoubleCode: Alias = L[_CLongDoubleName, _CLongDoubleChar]
 AnyCLongDoubleDType: Alias = _Any1[np.clongdouble] | _CLongDoubleCode
 
-_ComplexFloatingCode: Alias = L[
-    _Complex64Code,
-    _Complex128Code,
-    _CLongDoubleCode,
-]
-AnyComplexFloatingDType: Alias = (
-    _Any1[_sc.ComplexFloating] | _ComplexFloatingCode
-)
+_ComplexFloatingCode: Alias = L[_Complex64Code, _Complex128Code, _CLongDoubleCode]
+AnyComplexFloatingDType: Alias = _Any1[_sc.ComplexFloating] | _ComplexFloatingCode
 
 # temporal
 
@@ -349,10 +323,7 @@ _BytesCode: Alias = L[_BytesName, _BytesChar]
 AnyBytesDType: Alias = _Any2[np.bytes_, bytes | _ct.Bytes] | _BytesCode
 
 _CharacterCode: Alias = L[_StrCode, _BytesCode]
-AnyCharacterDType: Alias = (
-    _Any2[np.character, bytes | str | _ct.Bytes]
-    | _CharacterCode
-)
+AnyCharacterDType: Alias = _Any2[np.character, bytes | str | _ct.Bytes] | _CharacterCode
 
 # TODO: Include structured DType values, e.g. `dtype(('u8', 4))`
 _VoidName: Alias = L['void']  # 'void0' was removed in NumPy 2.0
@@ -485,10 +456,7 @@ if _x.NP2:
     # I (@jorenham) added them, see https://github.com/numpy/numpy/pull/27008).
     if not _x.NP20:
         # `numpy>=2.1`
-        AnyStringDType: Alias = (
-            _dt.HasDType[np.dtypes.StringDType]
-            | _StringCode
-        )
+        AnyStringDType: Alias = _dt.HasDType[np.dtypes.StringDType] | _StringCode
 
         AnyDType: Alias = (
             _Any2[np.generic, object]

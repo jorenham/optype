@@ -3,22 +3,11 @@ from __future__ import annotations
 import inspect
 import sys
 from types import GenericAlias, UnionType
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Literal,
-    cast,
-    get_args as _get_args,
-)
+from typing import TYPE_CHECKING, Any, Literal, cast, get_args as _get_args
 
 
 if sys.version_info >= (3, 13):
-    from typing import (
-        TypeAliasType,
-        TypeIs,
-        is_protocol,
-        overload,
-    )
+    from typing import TypeAliasType, TypeIs, is_protocol, overload
 else:
     from typing_extensions import TypeAliasType, is_protocol, overload
     try:
@@ -101,14 +90,11 @@ def is_final(final_cls_or_method: WrappedFinalType, /) -> Literal[True]: ...
 @overload
 def is_final(cls: type, /) -> bool: ...
 @overload
-def is_final(method: CanCall[..., Any], /) -> bool: ...
+def is_final(fn: CanCall[..., Any], /) -> bool: ...
 @overload
 def is_final(prop: property, /) -> bool: ...
 @overload
-def is_final(
-    clsmethod: classmethod[Any, ..., Any] | staticmethod[..., Any],
-    /,
-) -> bool: ...
+def is_final(clsfn: classmethod[Any, ..., Any] | staticmethod[..., Any], /) -> bool: ...
 def is_final(
     arg: (
         WrappedFinalType
@@ -296,11 +282,7 @@ def get_protocol_members(cls: type, /) -> frozenset[str]:
     return frozenset(members)
 
 
-def get_protocols(
-    module: ModuleType,
-    /,
-    private: bool = False,
-) -> frozenset[type]:
+def get_protocols(module: ModuleType, /, private: bool = False) -> frozenset[type]:
     """Return the protocol types within the given module."""
     if private:
         members = dir(module)

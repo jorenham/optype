@@ -139,7 +139,6 @@ ignore = [
 [tool.ruff]
 src = ["optype", "examples", "tests"]
 target-version = "py310"
-line-length = 79
 indent-width = 4
 show-fixes = true
 force-exclude = true
