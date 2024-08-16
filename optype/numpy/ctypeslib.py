@@ -19,10 +19,8 @@ from ctypes import (
     c_bool as Bool,
     c_byte as Byte,
     c_char as Bytes,
-    c_double as Double,
     c_double as Float64,
     c_float as Float32,
-    c_float as Single,
     c_int as IntC,
     c_int8 as Int8,
     c_int16 as Int16,
@@ -84,8 +82,8 @@ __all__ = [
     'ULong', 'Long',
     'ULongLong', 'LongLong',
 
-    'Float32', 'Single',
-    'Float64', 'Double',
+    'Float32',
+    'Float64',
     'LongDouble',
 
     'Bytes',
@@ -144,7 +142,7 @@ else:
     Object: TypeAlias = ct.py_object
 
 Integer: TypeAlias = UnsignedInteger | SignedInteger
-Floating: TypeAlias = Single | Double | LongDouble
+Floating: TypeAlias = Float32 | Float64 | LongDouble
 Number: TypeAlias = Integer | Floating
 Flexible: TypeAlias = Bytes | Void
 Generic: TypeAlias = Bool | Number | Flexible | Object
