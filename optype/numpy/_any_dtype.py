@@ -80,9 +80,10 @@ __all__ = [
 ]
 
 
-_ST = TypeVar('_ST', bound=np.generic, default=np.generic)
-_T = TypeVar('_T', default=Never)
-_AnyDT: Alias = np.dtype[_ST] | type[_ST | _T] | _dt.HasDType[np.dtype[_ST]]
+_ST = TypeVar('_ST', bound=np.generic)
+_T = TypeVar('_T')
+_Any1: Alias = np.dtype[_ST] | type[_ST] | _dt.HasDType[np.dtype[_ST]]
+_Any2: Alias = np.dtype[_ST] | type[_ST | _T] | _dt.HasDType[np.dtype[_ST]]
 
 # unsigned integers
 
@@ -90,39 +91,39 @@ _AnyDT: Alias = np.dtype[_ST] | type[_ST | _T] | _dt.HasDType[np.dtype[_ST]]
 _UInt8Name: Alias = L['uint8']
 _UInt8Char: Alias = L['u1', '|u1', '=u1', '<u1', '>u1']
 _UInt8Code: Alias = L[_UInt8Name, _UInt8Char]
-AnyUInt8DType: Alias = _AnyDT[np.uint8, _ct.UInt8] | _UInt8Code
+AnyUInt8DType: Alias = _Any2[np.uint8, _ct.UInt8] | _UInt8Code
 
 # TODO: include ushort
 _UInt16Name: Alias = L['uint16']
 _UInt16Char: Alias = L['u2', '|u2', '=u2', '<u2', '>u2']
 _UInt16Code: Alias = L[_UInt16Name, _UInt16Char]
-AnyUInt16DType: Alias = _AnyDT[np.uint16, _ct.UInt16] | _UInt16Code
+AnyUInt16DType: Alias = _Any2[np.uint16, _ct.UInt16] | _UInt16Code
 
 # TODO: include uintc
 _UInt32Name: Alias = L['uint32']
 _UInt32Char: Alias = L['u4', '|u4', '=u4', '<u4', '>u4']
 _UInt32Code: Alias = L[_UInt32Name, _UInt32Char]
-AnyUInt32DType: Alias = _AnyDT[np.uint32, _ct.UInt32] | _UInt32Code
+AnyUInt32DType: Alias = _Any2[np.uint32, _ct.UInt32] | _UInt32Code
 
 _UInt64Name: Alias = L['uint64']
 _UInt64Char: Alias = L['u8', '|u8', '=u8', '<u8', '>u8']
 _UInt64Code: Alias = L[_UInt64Name, _UInt64Char]
-AnyUInt64DType: Alias = _AnyDT[np.uint64, _ct.UInt64] | _UInt64Code
+AnyUInt64DType: Alias = _Any2[np.uint64, _ct.UInt64] | _UInt64Code
 
 _UByteName: Alias = L['ubyte']
 _UByteChar: Alias = L['B', '|B', '=B', '<B', '>B']
 _UByteCode: Alias = L[_UByteName, _UByteChar]
-AnyUByteDType: Alias = _AnyDT[np.ubyte, _ct.UByte] | _UByteCode
+AnyUByteDType: Alias = _Any2[np.ubyte, _ct.UByte] | _UByteCode
 
 _UShortName: Alias = L['ushort']
 _UShortChar: Alias = L['H', '|H', '=H', '<H', '>H']
 _UShortCode: Alias = L[_UShortName, _UShortChar]
-AnyUShortDType: Alias = _AnyDT[np.ushort, _ct.UShort] | _UShortCode
+AnyUShortDType: Alias = _Any2[np.ushort, _ct.UShort] | _UShortCode
 
 _UIntCName: Alias = L['uintc']
 _UIntCChar: Alias = L['I', '|I', '=I', '<I', '>I']
 _UIntCCode: Alias = L[_UIntCName, _UIntCChar]
-AnyUIntCDType: Alias = _AnyDT[np.uintc, _ct.UIntC] | _UIntCCode
+AnyUIntCDType: Alias = _Any2[np.uintc, _ct.UIntC] | _UIntCCode
 
 _UIntName: Alias = L['uint']
 _ULongChar: Alias = L['L', '|L', '=L', '<L', '>L']
@@ -130,26 +131,26 @@ if _x.NP2:
     _UIntPName: Alias = L[_UIntName, 'uintp']
     _UIntPChar: Alias = L['N', '|N', '=N', '<N', '>N']
     _UIntPCode: Alias = L[_UIntPName, _UIntPChar]
-    AnyUIntPDType: Alias = _AnyDT[np.uintp, _ct.UIntP] | _UIntPCode
+    AnyUIntPDType: Alias = _Any2[np.uintp, _ct.UIntP] | _UIntPCode
 
     _ULongName: Alias = L['ulong']
     _ULongCode: Alias = L[_ULongName, _ULongChar]
-    AnyULongDType: Alias = _AnyDT[_x.ULong, _ct.ULong] | _ULongCode
+    AnyULongDType: Alias = _Any2[_x.ULong, _ct.ULong] | _ULongCode
 else:
     _UIntPName: Alias = L['uintp']  # 'uint0' is removed in NumPy 2.0
     _UIntPChar: Alias = L['P', '|P', '=P', '<P', '>P']
     _UIntPCode: Alias = L[_UIntPName, _UIntPChar]
     # assuming that `c_void_p == c_size_t`
-    AnyUIntPDType: Alias = _AnyDT[np.uintp, _ct.UIntP] | _UIntPCode
+    AnyUIntPDType: Alias = _Any2[np.uintp, _ct.UIntP] | _UIntPCode
 
     _ULongName: Alias = L[_UIntName, 'ulong']
     _ULongCode: Alias = L[_ULongName, _ULongChar]
-    AnyULongDType: Alias = _AnyDT[_x.ULong, _ct.ULong] | _ULongCode
+    AnyULongDType: Alias = _Any2[_x.ULong, _ct.ULong] | _ULongCode
 
 _ULongLongName: Alias = L['ulonglong']
 _ULongLongChar: Alias = L['Q', '|Q', '=Q', '<Q', '>Q']
 _ULongLongCode: Alias = L[_ULongLongName, _ULongLongChar]
-AnyULongLongDType: Alias = _AnyDT[np.ulonglong, _ct.ULongLong] | _ULongLongCode
+AnyULongLongDType: Alias = _Any2[np.ulonglong, _ct.ULongLong] | _ULongLongCode
 
 # signed integers
 
@@ -157,39 +158,39 @@ AnyULongLongDType: Alias = _AnyDT[np.ulonglong, _ct.ULongLong] | _ULongLongCode
 _Int8Name: Alias = L['int8']
 _Int8Char: Alias = L['i1', '|i1', '=i1', '<i1', '>i1']
 _Int8Code: Alias = L[_Int8Name, _Int8Char]
-AnyInt8DType: Alias = _AnyDT[np.int8, _ct.Int8] | _Int8Code
+AnyInt8DType: Alias = _Any2[np.int8, _ct.Int8] | _Int8Code
 
 # TODO: include short
 _Int16Name: Alias = L['int16']
 _Int16Char: Alias = L['i2', '|i2', '=i2', '<i2', '>i2']
 _Int16Code: Alias = L[_Int16Name, _Int16Char]
-AnyInt16DType: Alias = _AnyDT[np.int16, _ct.Int16] | _Int16Code
+AnyInt16DType: Alias = _Any2[np.int16, _ct.Int16] | _Int16Code
 
 # TODO: include intc
 _Int32Name: Alias = L['int32']
 _Int32Char: Alias = L['i4', '|i4', '=i4', '<i4', '>i4']
 _Int32Code: Alias = L[_Int32Name, _Int32Char]
-AnyInt32DType: Alias = _AnyDT[np.int32, _ct.Int32] | _Int32Code
+AnyInt32DType: Alias = _Any2[np.int32, _ct.Int32] | _Int32Code
 
 _Int64Name: Alias = L['int64']
 _Int64Char: Alias = L['i8', '|i8', '=i8', '<i8', '>i8']
 _Int64Code: Alias = L[_Int64Name, _Int64Char]
-AnyInt64DType: Alias = _AnyDT[np.int64, _ct.Int64] | _Int64Code
+AnyInt64DType: Alias = _Any2[np.int64, _ct.Int64] | _Int64Code
 
 _ByteName: Alias = L['byte']
 _ByteChar: Alias = L['b', '|b', '=b', '<b', '>b']
 _ByteCode: Alias = L[_ByteName, _ByteChar]
-AnyByteDType: Alias = _AnyDT[np.byte, _ct.Byte] | _ByteCode
+AnyByteDType: Alias = _Any2[np.byte, _ct.Byte] | _ByteCode
 
 _ShortName: Alias = L['short']
 _ShortChar: Alias = L['h', '|h', '=h', '<h', '>h']
 _ShortCode: Alias = L[_ShortName, _ShortChar]
-AnyShortDType: Alias = _AnyDT[np.short, _ct.Short] | _ShortCode
+AnyShortDType: Alias = _Any2[np.short, _ct.Short] | _ShortCode
 
 _IntCName: Alias = L['intc']
 _IntCChar: Alias = L['i', '|i', '=i', '<i', '>i']
 _IntCCode: Alias = L[_IntCName, _IntCChar]
-AnyIntCDType: Alias = _AnyDT[np.intc, _ct.IntC] | _IntCCode
+AnyIntCDType: Alias = _Any2[np.intc, _ct.IntC] | _IntCCode
 
 _IntName: Alias = L['int', 'int_']
 _LongChar: Alias = L['l', '|l', '=l', '<l', '>l']
@@ -197,25 +198,25 @@ if _x.NP2:
     _IntPName: Alias = L['intp', _IntName]
     _IntPChar: Alias = L['n', '|n', '=n', '<n', '>n']
     _IntPCode: Alias = L[_IntPName, _IntPChar]
-    AnyIntPDType: Alias = _AnyDT[np.intp, _ct.IntP] | _IntPCode
+    AnyIntPDType: Alias = _Any2[np.intp, _ct.IntP] | _IntPCode
 
     _LongName: Alias = L['long']
     _LongCode: Alias = L[_LongName, _LongChar]
-    AnyLongDType: Alias = _AnyDT[_x.Long, _ct.Long] | _LongCode
+    AnyLongDType: Alias = _Any2[_x.Long, _ct.Long] | _LongCode
 else:
     _IntPName: Alias = L['intp']  # 'int0' is removed in NumPy 2.0
     _IntPChar: Alias = L['p', '|p', '=p', '<p', '>p']
     _IntPCode: Alias = L[_IntPName, _IntPChar]
-    AnyIntPDType: Alias = _AnyDT[np.intp, _ct.IntP] | _IntPCode
+    AnyIntPDType: Alias = _Any2[np.intp, _ct.IntP] | _IntPCode
 
     _LongName: Alias = L['long', _IntName]
     _LongCode: Alias = L[_LongName, _LongChar]
-    AnyLongDType: Alias = _AnyDT[_x.Long, _ct.Long] | _LongCode
+    AnyLongDType: Alias = _Any2[_x.Long, _ct.Long] | _LongCode
 
 _LongLongName: Alias = L['longlong']
 _LongLongChar: Alias = L['q', '|q', '=q', '<q', '>q']
 _LongLongCode: Alias = L[_LongLongName, _LongLongChar]
-AnyLongLongDType: Alias = _AnyDT[np.longlong, _ct.LongLong] | _LongLongCode
+AnyLongLongDType: Alias = _Any2[np.longlong, _ct.LongLong] | _LongLongCode
 
 # real floating
 
@@ -225,7 +226,7 @@ _Float16Char: Alias = L[
     'e', '|e', '=e', '<e', '>e',
 ]  # fmt: skip
 _Float16Code: Alias = L[_Float16Name, _Float16Char]
-AnyFloat16DType: Alias = _AnyDT[np.float16] | _Float16Code
+AnyFloat16DType: Alias = _Any1[np.float16] | _Float16Code
 
 _Float32Name: Alias = L['float32', 'single']
 _Float32Char: Alias = L[
@@ -233,7 +234,7 @@ _Float32Char: Alias = L[
     'f', '|f', '=f', '<f', '>f',
 ]  # fmt: skip
 _Float32Code: Alias = L[_Float32Name, _Float32Char]
-AnyFloat32DType: Alias = _AnyDT[np.float32, _ct.Float32] | _Float32Code
+AnyFloat32DType: Alias = _Any2[np.float32, _ct.Float32] | _Float32Code
 
 _Float64Name: Alias = L['float64', 'float', 'double']
 _Float64Char: Alias = L[
@@ -241,13 +242,13 @@ _Float64Char: Alias = L[
     'd', '|d', '=d', '<d', '>d',
 ]
 _Float64Code: Alias = L[_Float64Name, _Float64Char]
-AnyFloat64DType: Alias = _AnyDT[np.float64, _ct.Float64] | _Float64Code | None
+AnyFloat64DType: Alias = _Any2[np.float64, _ct.Float64] | _Float64Code | None
 
 _LongDoubleName: Alias = L['longdouble']
 _LongDoubleChar: Alias = L['g', '|g', '=g', '<g', '>g']
 _LongDoubleCode: Alias = L[_LongDoubleName, _LongDoubleChar]
 AnyLongDoubleDType: Alias = (
-    _AnyDT[np.longdouble, _ct.LongDouble]
+    _Any2[np.longdouble, _ct.LongDouble]
     | _LongDoubleCode
 )
 
@@ -258,7 +259,7 @@ _FloatingCode: Alias = L[
     _LongDoubleCode,
 ]
 AnyFloatingDType: Alias = (
-    _AnyDT[np.floating[Any], _ct.Floating]
+    _Any2[np.floating[Any], _ct.Floating]
     | _FloatingCode
 )
 
@@ -270,7 +271,7 @@ _Complex64Char: Alias = L[
     'F', '|F', '=F', '<F', '>F',
 ]
 _Complex64Code: Alias = L[_Complex64Name, _Complex64Char]
-AnyComplex64DType: Alias = _AnyDT[np.complex64] | _Complex64Code
+AnyComplex64DType: Alias = _Any1[np.complex64] | _Complex64Code
 
 _Complex128Name: Alias = L['complex128', 'clongdouble']
 _Complex128Char: Alias = L[
@@ -278,12 +279,12 @@ _Complex128Char: Alias = L[
     'D', '|D', '=D', '<D', '>D',
 ]
 _Complex128Code: Alias = L[_Complex128Name, _Complex128Char]
-AnyComplex128DType: Alias = _AnyDT[np.complex128] | _Complex128Code
+AnyComplex128DType: Alias = _Any1[np.complex128] | _Complex128Code
 
 _CLongDoubleName: Alias = L['clongdouble']
 _CLongDoubleChar: Alias = L['G', '|G', '=G', '<G', '>G']
 _CLongDoubleCode: Alias = L[_CLongDoubleName, _CLongDoubleChar]
-AnyCLongDoubleDType: Alias = _AnyDT[np.clongdouble] | _CLongDoubleCode
+AnyCLongDoubleDType: Alias = _Any1[np.clongdouble] | _CLongDoubleCode
 
 _ComplexFloatingCode: Alias = L[
     _Complex64Code,
@@ -291,7 +292,7 @@ _ComplexFloatingCode: Alias = L[
     _CLongDoubleCode,
 ]
 AnyComplexFloatingDType: Alias = (
-    _AnyDT[np.complexfloating[Any, Any]]
+    _Any1[np.complexfloating[Any, Any]]
     | _ComplexFloatingCode
 )
 
@@ -330,7 +331,7 @@ _DateTime64Char: Alias = L[
     'M8[Y]', '|M8[Y]', '=M8[Y]', '<M8[Y]', '>M8[Y]',
 ]  # fmt: skip
 _DateTime64Code: Alias = L[_DateTime64Name, _DateTime64Char]
-AnyDateTime64DType: Alias = _AnyDT[np.datetime64] | _DateTime64Code
+AnyDateTime64DType: Alias = _Any1[np.datetime64] | _DateTime64Code
 
 _TimeDelta64Name: Alias = L[
     'timedelta64',
@@ -365,7 +366,7 @@ _TimeDelta64Char: Alias = L[
     'm8[Y]', '|m8[Y]', '=m8[Y]', '<m8[Y]', '>m8[Y]',
 ]  # fmt: skip
 _TimeDelta64Code: Alias = L[_TimeDelta64Name, _TimeDelta64Char]
-AnyTimeDelta64DType: Alias = _AnyDT[np.timedelta64] | _TimeDelta64Code
+AnyTimeDelta64DType: Alias = _Any1[np.timedelta64] | _TimeDelta64Code
 
 # flexible
 
@@ -376,7 +377,7 @@ _StrChar: Alias = L[
     'U1', '|U1', '=U1', '<U1', '>U1',
 ]  # fmt: skip
 _StrCode: Alias = L[_StrName, _StrChar]
-AnyStrDType: Alias = _AnyDT[np.str_, str] | _StrCode
+AnyStrDType: Alias = _Any2[np.str_, str] | _StrCode
 
 _BytesName: Alias = L['bytes_', 'bytes']
 _BytesChar: Alias = L[
@@ -385,11 +386,11 @@ _BytesChar: Alias = L[
     'S1', '|S1', '=S1', '<S1', '>S1',
 ]  # fmt: skip
 _BytesCode: Alias = L[_BytesName, _BytesChar]
-AnyBytesDType: Alias = _AnyDT[np.bytes_, bytes | _ct.Bytes] | _BytesCode
+AnyBytesDType: Alias = _Any2[np.bytes_, bytes | _ct.Bytes] | _BytesCode
 
 _CharacterCode: Alias = L[_StrCode, _BytesCode]
 AnyCharacterDType: Alias = (
-    _AnyDT[np.character, bytes | str | _ct.Bytes]
+    _Any2[np.character, bytes | str | _ct.Bytes]
     | _CharacterCode
 )
 
@@ -401,12 +402,12 @@ _VoidChar: Alias = L[
     'V1', '|V1', '=V1', '<V1', '>V1',
 ]
 _VoidCode: Alias = L[_VoidName, _VoidChar]
-AnyVoidDType: Alias = _AnyDT[np.void, memoryview | _ct.Void] | _VoidCode
+AnyVoidDType: Alias = _Any2[np.void, memoryview | _ct.Void] | _VoidCode
 
 # flexible
 _FlexibleCode: Alias = L[_CharacterCode, _VoidCode]
 AnyFlexibleDType: Alias = (
-    _AnyDT[np.flexible, bytes | str | memoryview | _ct.Flexible]
+    _Any2[np.flexible, bytes | str | memoryview | _ct.Flexible]
     | _FlexibleCode
 )
 
@@ -415,7 +416,7 @@ _BoolName: Alias = L['bool', 'bool_']  # 'bool0' was removed in NumPy 2.0
 _BoolChar: Alias = L['?', '|?', '=?', '<?', '>?']
 _BoolCode: Alias = L[_BoolName, _BoolChar]
 # It's ok to use `bool` here
-AnyBoolDType: Alias = _AnyDT[_x.Bool, bool | _ct.Bool] | _BoolCode
+AnyBoolDType: Alias = _Any2[_x.Bool, bool | _ct.Bool] | _BoolCode
 
 # object
 _ObjectName: Alias = L['object', 'object_']
@@ -423,11 +424,11 @@ _ObjectChar: Alias = L['O', '|O', '=O', '<O', '>O']
 _ObjectCode: Alias = L[_ObjectName, _ObjectChar]
 # NOTE: `type[object]` isn't included, since this could lead to many bugs
 #   e.g. in `numpy<2.1` we have `dtype(type[str | float]) -> dtype[object_]`...
-AnyObjectDType: Alias = _AnyDT[np.object_, _ct.Object] | _ObjectCode
+AnyObjectDType: Alias = _Any2[np.object_, _ct.Object] | _ObjectCode
 
 
 _InexactCode: Alias = L[_FloatingCode, _ComplexFloatingCode]
-AnyInexactDType: Alias = _AnyDT[np.inexact[Any], _ct.Floating] | _InexactCode
+AnyInexactDType: Alias = _Any2[np.inexact[Any], _ct.Floating] | _InexactCode
 
 _SignedIntegerName: Alias = L[
     'byte', 'int8', 'short', 'int16', 'intc', 'int32', 'int64',
@@ -480,7 +481,7 @@ if _x.NP2:
     ]
     _UnsignedIntegerCode: Alias = L[_UnsignedIntegerName, _UnsignedIntegerChar]
     AnyUnsignedIntegerDType: Alias = (
-        _AnyDT[np.unsignedinteger[Any], _ct.UnsignedInteger]
+        _Any2[np.unsignedinteger[Any], _ct.UnsignedInteger]
         | _UnsignedIntegerCode
     )
 
@@ -490,20 +491,20 @@ if _x.NP2:
     ]
     _SignedIntegerCode: Alias = L[_SignedIntegerName, _SignedIntegerChar]
     AnySignedIntegerDType: Alias = (
-        _AnyDT[np.signedinteger[Any], _ct.SignedInteger]
+        _Any2[np.signedinteger[Any], _ct.SignedInteger]
         | _SignedIntegerCode
     )
 
     _IntegerCode: Alias = L[_UnsignedIntegerCode, _SignedIntegerCode]
     AnyIntegerDType: Alias = (
-        _AnyDT[np.integer[Any], _ct.Integer]
+        _Any2[np.integer[Any], _ct.Integer]
         | _IntegerCode
     )
 
     _NumberCode: Alias = L[_IntegerCode, _InexactCode]
     # NOTE: this doesn't include `int` or `float` or `complex`, since that
     # would autoamtically include `bool`.
-    AnyNumberDType: Alias = _AnyDT[np.number[Any], _ct.Number] | _NumberCode
+    AnyNumberDType: Alias = _Any2[np.number[Any], _ct.Number] | _NumberCode
 
     # NOTE: `np.dtypes.StringDType` didn't exist in the stubs prior to 2.1 (so
     # I (@jorenham) added them, see https://github.com/numpy/numpy/pull/27008).
@@ -515,38 +516,38 @@ if _x.NP2:
         )
 
         AnyDType: Alias = (
-            _AnyDT[np.generic, object]
+            _Any2[np.generic, object]
             | _dt.HasDType[np.dtypes.StringDType]
             | LiteralString
         )
     else:
         AnyStringDType: Alias = np.dtype[Never] | _StringCode
 
-        AnyDType: Alias = _AnyDT[np.generic, object] | LiteralString
+        AnyDType: Alias = _Any2[np.generic, object] | LiteralString
 else:
     _UnsignedIntegerChar: Alias = _UIntCharCommon
     _UnsignedIntegerCode: Alias = L[_UnsignedIntegerName, _UnsignedIntegerChar]
     AnyUnsignedIntegerDType: Alias = (
-        _AnyDT[np.unsignedinteger[Any], _ct.UnsignedInteger]
+        _Any2[np.unsignedinteger[Any], _ct.UnsignedInteger]
         | _UnsignedIntegerCode
     )
 
     _SignedIntegerChar: Alias = _SIntCharCommon
     _SignedIntegerCode: Alias = L[_SignedIntegerName, _SignedIntegerChar]
     AnySignedIntegerDType: Alias = (
-        _AnyDT[np.signedinteger[Any], _ct.SignedInteger]
+        _Any2[np.signedinteger[Any], _ct.SignedInteger]
         | _SignedIntegerCode
     )
 
     _IntegerCode: Alias = L[_UnsignedIntegerCode, _SignedIntegerCode]
     AnyIntegerDType: Alias = (
-        _AnyDT[np.integer[Any], _ct.Integer]
+        _Any2[np.integer[Any], _ct.Integer]
         | _IntegerCode
     )
 
     _NumberCode: Alias = L[_IntegerCode, _InexactCode]
-    AnyNumberDType: Alias = _AnyDT[np.number[Any], _ct.Number] | _NumberCode
+    AnyNumberDType: Alias = _Any2[np.number[Any], _ct.Number] | _NumberCode
 
     AnyStringDType: Alias = Never
 
-    AnyDType: Alias = _AnyDT[np.generic, object | _ct.Generic] | LiteralString
+    AnyDType: Alias = _Any2[np.generic, object | _ct.Generic] | LiteralString
