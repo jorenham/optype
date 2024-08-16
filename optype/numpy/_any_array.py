@@ -4,11 +4,11 @@ import sys
 from typing import TypeAlias as Alias
 
 import numpy as np
-import numpy.typing as npt
 
 import optype as opt
 import optype.numpy._array as _a
 import optype.numpy._compat as _x
+import optype.numpy._scalar as _sc
 import optype.numpy.ctypeslib as _ct
 
 
@@ -86,23 +86,13 @@ _Any3: Alias = _Any2[_T_np, _T_ct] | _AnyPyArray[_T_py]
 
 AnyArray: Alias = _Any3[np.generic, _ct.Generic, _PyGeneric]
 
-ST_iufc = TypeVar(
-    'ST_iufc',
-    bound=np.number[npt.NBitBase],
-    default=np.number[npt.NBitBase],
-)
+ST_iufc = TypeVar('ST_iufc', bound=_sc.Number, default=_sc.Number)
 # NOTE: `builtins.bool <: int`, so `int` can't be included here
 AnyNumberArray: Alias = _Any2[ST_iufc, _ct.Number]
-AnyIntegerArray: Alias = _Any2[np.integer[npt.NBitBase], _ct.Integer]
-AnyUnsignedIntegerArray: Alias = _Any2[
-    np.unsignedinteger[npt.NBitBase],
-    _ct.UnsignedInteger,
-]
-AnySignedIntegerArray: Alias = _Any2[
-    np.signedinteger[npt.NBitBase],
-    _ct.SignedInteger,
-]
-AnyInexactArray: Alias = _Any2[np.inexact[npt.NBitBase], _ct.Floating]
+AnyIntegerArray: Alias = _Any2[_sc.Integer, _ct.Integer]
+AnyUnsignedIntegerArray: Alias = _Any2[_sc.UnsignedInteger, _ct.UnsignedInteger]
+AnySignedIntegerArray: Alias = _Any2[_sc.SignedInteger, _ct.SignedInteger]
+AnyInexactArray: Alias = _Any2[_sc.Inexact, _ct.Floating]
 
 AnyBoolArray: Alias = _Any3[_x.Bool, _ct.Bool, bool]
 
@@ -133,16 +123,14 @@ AnyLongArray: Alias = _Any2[_x.Long, _ct.Long]  # no int (numpy<=1)
 AnyLongLongArray: Alias = _Any2[np.longlong, _ct.LongLong]
 
 # NOTE: `int <: float` (type-check only), so it can't be included here
-AnyFloatingArray: Alias = _Any2[np.floating[npt.NBitBase], _ct.Floating]
+AnyFloatingArray: Alias = _Any2[_sc.Floating, _ct.Floating]
 AnyFloat16Array: Alias = _Any1[np.float16 | np.half]
 AnyFloat32Array: Alias = _Any2[np.float32 | np.single, _ct.Float32]
 AnyFloat64Array: Alias = _Any2[np.float64 | np.double, _ct.Float64]
 AnyLongDoubleArray: Alias = _Any1[np.longdouble]
 
 # NOTE: `float <: complex` (type-check only), so it can't be included here
-AnyComplexFloatingArray: Alias = _Any1[
-    np.complexfloating[npt.NBitBase, npt.NBitBase],
-]
+AnyComplexFloatingArray: Alias = _Any1[_sc.ComplexFloating]
 AnyComplex64Array: Alias = _Any1[np.complex64 | np.csingle]
 AnyComplex128Array: Alias = _Any1[np.complex128 | np.cdouble]  # no `complex`
 AnyCLongDoubleArray: Alias = _Any1[np.clongdouble]

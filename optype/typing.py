@@ -47,10 +47,7 @@ else:
 # Anything that can be iterated over, e.g. in a `for` loop,`builtins.iter`,
 # `builtins.enumerate`, or `numpy.array`.
 _ValueT = TypeVar('_ValueT', default=Any)
-AnyIterable: TypeAlias = (
-    _c.CanIter[_c.CanNext[_ValueT]]
-    | _c.CanGetitem[int, _ValueT]
-)
+AnyIterable: TypeAlias = _c.CanIter[_c.CanNext[_ValueT]] | _c.CanGetitem[int, _ValueT]
 
 # The closest supertype of a `Literal`, i.e. the allowed types that can be
 # passed to `typing.Literal`.
@@ -119,4 +116,4 @@ LiteralByte: TypeAlias = Literal[
     0xe8, 0xe9, 0xea, 0xeb, 0xec, 0xed, 0xee, 0xef,
     0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7,
     0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd, 0xfe, 0xff,
-]
+]  # fmt: skip

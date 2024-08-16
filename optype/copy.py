@@ -9,21 +9,9 @@ from typing import Any
 
 
 if sys.version_info >= (3, 13):
-    from typing import (
-        Protocol,
-        Self,
-        TypeVar,
-        override,
-        runtime_checkable,
-    )
+    from typing import Protocol, Self, TypeVar, override, runtime_checkable
 else:
-    from typing_extensions import (
-        Protocol,
-        Self,
-        TypeVar,
-        override,
-        runtime_checkable,
-    )
+    from typing_extensions import Protocol, Self, TypeVar, override, runtime_checkable
 
 
 __all__ = (

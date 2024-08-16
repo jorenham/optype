@@ -11,12 +11,7 @@ if TYPE_CHECKING:
 if sys.version_info >= (3, 13):
     from typing import LiteralString, Protocol, TypeVar, is_protocol
 else:
-    from typing_extensions import (
-        LiteralString,
-        Protocol,
-        TypeVar,
-        is_protocol,
-    )
+    from typing_extensions import LiteralString, Protocol, TypeVar, is_protocol
 
 
 __all__ = 'get_callables', 'set_module'
@@ -35,7 +30,8 @@ def get_callables(
     """
     exclude = frozenset({'typing', 'typing_extensions', 'optype._utils'})
     return frozenset({
-        name for name in dir(module)
+        name
+        for name in dir(module)
         if callable(cls := getattr(module, name))
         and (private or not name.startswith('_'))
         and (protocols or not is_protocol(cls))
