@@ -13,9 +13,9 @@ import optype.numpy.ctypeslib as _ct
 
 
 if sys.version_info >= (3, 13):
-    from typing import Any, Never, Protocol, TypeVar
+    from typing import Never, Protocol, TypeVar
 else:
-    from typing_extensions import Any, Never, Protocol, TypeVar
+    from typing_extensions import Never, Protocol, TypeVar
 
 
 # ruff: noqa: RUF022
@@ -45,14 +45,10 @@ __all__ = [
     'AnyULongArray', 'AnyLongArray',
     'AnyULongLongArray', 'AnyLongLongArray',
 
-    'AnyFloat16Array', 'AnyHalfArray',
-    'AnyFloat32Array', 'AnySingleArray',
-    'AnyFloat64Array', 'AnyDoubleArray',
-    'AnyLongDoubleArray',
-
-    'AnyComplex64Array', 'AnyCSingleArray',
-    'AnyComplex128Array', 'AnyCDoubleArray',
-    'AnyCLongDoubleArray',
+    'AnyFloat16Array',
+    'AnyFloat32Array', 'AnyComplex64Array',
+    'AnyFloat64Array', 'AnyComplex128Array',
+    'AnyLongDoubleArray', 'AnyCLongDoubleArray',
 
     'AnyDateTime64Array',
     'AnyTimeDelta64Array',
@@ -83,7 +79,7 @@ _T_np = TypeVar('_T_np', bound=np.generic)
 _T_ct = TypeVar('_T_ct', bound=_ct.CType)
 _T_py = TypeVar('_T_py', bound=_PyGeneric | opt.CanBuffer)
 
-_Any1: Alias = _AnyPyArray[_a.CanArray[Any, np.dtype[_T_np]]]
+_Any1: Alias = _AnyPyArray[_a.CanArray[tuple[int, ...], np.dtype[_T_np]]]
 _Any2: Alias = _Any1[_T_np] | _AnyPyArray[_T_ct] | _ct.Array[_T_ct]
 _Any3: Alias = _Any2[_T_np, _T_ct] | _AnyPyArray[_T_py]
 
@@ -92,18 +88,21 @@ AnyArray: Alias = _Any3[np.generic, _ct.Generic, _PyGeneric]
 
 ST_iufc = TypeVar(
     'ST_iufc',
-    bound=np.number[Any],
+    bound=np.number[npt.NBitBase],
     default=np.number[npt.NBitBase],
 )
 # NOTE: `builtins.bool <: int`, so `int` can't be included here
 AnyNumberArray: Alias = _Any2[ST_iufc, _ct.Number]
-AnyIntegerArray: Alias = _Any2[np.integer[Any], _ct.Integer]
+AnyIntegerArray: Alias = _Any2[np.integer[npt.NBitBase], _ct.Integer]
 AnyUnsignedIntegerArray: Alias = _Any2[
-    np.unsignedinteger[Any],
+    np.unsignedinteger[npt.NBitBase],
     _ct.UnsignedInteger,
 ]
-AnySignedIntegerArray: Alias = _Any2[np.signedinteger[Any], _ct.SignedInteger]
-AnyInexactArray: Alias = _Any2[np.inexact[Any], _ct.Floating]
+AnySignedIntegerArray: Alias = _Any2[
+    np.signedinteger[npt.NBitBase],
+    _ct.SignedInteger,
+]
+AnyInexactArray: Alias = _Any2[np.inexact[npt.NBitBase], _ct.Floating]
 
 AnyBoolArray: Alias = _Any3[_x.Bool, _ct.Bool, bool]
 
@@ -134,23 +133,18 @@ AnyLongArray: Alias = _Any2[_x.Long, _ct.Long]  # no int (numpy<=1)
 AnyLongLongArray: Alias = _Any2[np.longlong, _ct.LongLong]
 
 # NOTE: `int <: float` (type-check only), so it can't be included here
-AnyFloatingArray: Alias = _Any2[np.floating[Any], _ct.Floating]
+AnyFloatingArray: Alias = _Any2[np.floating[npt.NBitBase], _ct.Floating]
 AnyFloat16Array: Alias = _Any1[np.float16 | np.half]
 AnyFloat32Array: Alias = _Any2[np.float32 | np.single, _ct.Float32]
-AnyFloat64Array: Alias = _Any2[np.float64 | np.double, _ct.Float64]  # no float
-AnyHalfArray: Alias = _Any1[np.half]
-AnySingleArray: Alias = _Any2[np.single, _ct.Single]
-AnyDoubleArray: Alias = _Any2[np.double, _ct.Double]  # no float
-# TODO: Figure out what to do with `c_longdouble`
+AnyFloat64Array: Alias = _Any2[np.float64 | np.double, _ct.Float64]
 AnyLongDoubleArray: Alias = _Any1[np.longdouble]
 
 # NOTE: `float <: complex` (type-check only), so it can't be included here
-# NOTE: There are no complex `ctypes`
-AnyComplexFloatingArray: Alias = _Any1[np.complexfloating[Any, Any]]
-AnyComplex64Array: Alias = _Any1[np.complex64]
-AnyComplex128Array: Alias = _Any1[np.complex128]  # no `complex`
-AnyCSingleArray: Alias = _Any1[np.csingle]
-AnyCDoubleArray: Alias = _Any1[np.cdouble]  # no `complex`
+AnyComplexFloatingArray: Alias = _Any1[
+    np.complexfloating[npt.NBitBase, npt.NBitBase],
+]
+AnyComplex64Array: Alias = _Any1[np.complex64 | np.csingle]
+AnyComplex128Array: Alias = _Any1[np.complex128 | np.cdouble]  # no `complex`
 AnyCLongDoubleArray: Alias = _Any1[np.clongdouble]
 
 AnyCharacterArray: Alias = _Any3[np.character, _ct.Bytes, _PyChar]
