@@ -45,7 +45,7 @@ tox = "^4.18.0"
 basedpyright = "^1.16.0"
 codespell = "^2.3.0"
 mypy = "^1.11.1"
-ruff = "^0.5.7"
+ruff = "^0.6.1"
 sp-repo-review = {version = "^2024.4.23", extras = ["cli"]}
 typing-extensions = "*"
 numpy = "~2.0.1"
