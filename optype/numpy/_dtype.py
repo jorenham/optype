@@ -1,5 +1,5 @@
 import sys
-from typing import Any, TypeAlias
+from typing import TypeAlias
 
 import numpy as np
 
@@ -13,17 +13,12 @@ else:
 __all__ = ['DType', 'HasDType']
 
 
-_ST = TypeVar('_ST', bound=np.generic, default=Any)
+_ST = TypeVar('_ST', bound=np.generic, default=np.generic)
 DType: TypeAlias = np.dtype[_ST]
-"""Alias for `numpy.dtype[T: numpy.generic = Any]`."""
+"""Alias for `numpy.dtype[T: numpy.generic = np.generic]`."""
 
 
-_DT_co = TypeVar(
-    '_DT_co',
-    bound=np.dtype[Any],
-    covariant=True,
-    default=np.dtype[Any],
-)
+_DT_co = TypeVar('_DT_co', bound=DType, covariant=True, default=DType)
 
 
 @runtime_checkable
