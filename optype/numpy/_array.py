@@ -50,14 +50,13 @@ _ShapeT_co = TypeVar(
 )
 
 _SCT = TypeVar('_SCT', bound=np.generic, default=np.generic)
-_SCT_co = TypeVar(
-    '_SCT_co',
-    bound=np.generic,
-    covariant=True,
-    default=np.generic,
-)
-
 _DT = TypeVar('_DT', bound=np.dtype[Any], default=np.dtype[Any])
+_DT_co = TypeVar(
+    '_DT_co',
+    bound=np.dtype[Any],
+    covariant=True,
+    default=np.dtype[Any],
+)
 
 
 # NumPy array with optional type params for shape and generic dtype.
@@ -66,24 +65,24 @@ Array: TypeAlias = np.ndarray[_ShapeT, np.dtype[_SCT]]
 
 if _x.NP2 and not _x.NP20:
     @runtime_checkable
-    class CanArray(Protocol[_ShapeT_co, _SCT_co]):
+    class CanArray(Protocol[_ShapeT_co, _DT_co]):
         @overload
         def __array__(
             self,
             dtype: None = ...,
             /,
-        ) -> Array[_ShapeT_co, _SCT_co]: ...
+        ) -> Array[_ShapeT_co, _DT_co]: ...
         @overload
         def __array__(self, dtype: _DT, /) -> np.ndarray[_ShapeT_co, _DT]: ...
 else:
     @runtime_checkable
-    class CanArray(Protocol[_ShapeT, _SCT_co]):
+    class CanArray(Protocol[_ShapeT, _DT_co]):
         @overload
         def __array__(
             self,
             dtype: None = ...,
             /,
-        ) -> Array[_ShapeT, _SCT_co]: ...
+        ) -> np.ndarray[_ShapeT, _DT_co]: ...
         @overload
         def __array__(self, dtype: _DT, /) -> np.ndarray[_ShapeT_co, _DT]: ...
 
