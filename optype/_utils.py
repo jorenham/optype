@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 
 if TYPE_CHECKING:
@@ -32,10 +32,10 @@ def get_callables(
     return frozenset({
         name
         for name in dir(module)
-        if callable(cls := getattr(module, name))
+        if callable(cls := cast(type, getattr(module, name)))
         and (private or not name.startswith('_'))
         and (protocols or not is_protocol(cls))
-        and getattr(module, name).__module__ not in exclude
+        and cls.__module__ not in exclude
     })
 
 

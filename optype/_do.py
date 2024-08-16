@@ -3,9 +3,9 @@
 
 from __future__ import annotations
 
-import math as _math
+import math
 import operator as _o
-import sys as _sys
+import sys
 from typing import TYPE_CHECKING, Final, Literal, ParamSpec, TypeVar, cast, overload
 
 import optype._does as _d
@@ -54,7 +54,7 @@ do_dir: Final = cast(_d.DoesDir, dir)
 
 # callables
 
-if _sys.version_info >= (3, 11):
+if sys.version_info >= (3, 11):
     do_call: Final = cast(_d.DoesCall, _o.call)  # type: ignore[attr-defined]
 else:
     _Pss = ParamSpec('_Pss')
@@ -266,9 +266,9 @@ do_index: Final = cast(_d.DoesIndex, _o.index)
 # rounding
 # (the typeshed stubs for `round` are unnecessarily strict)
 do_round: Final = cast(_d.DoesRound, round)
-do_trunc: Final = cast(_d.DoesTrunc, _math.trunc)
-do_floor: Final = cast(_d.DoesFloor, _math.floor)
-do_ceil: Final = cast(_d.DoesCeil, _math.ceil)
+do_trunc: Final = cast(_d.DoesTrunc, math.trunc)
+do_floor: Final = cast(_d.DoesFloor, math.floor)
+do_ceil: Final = cast(_d.DoesCeil, math.ceil)
 
 
 # type-check the custom ops

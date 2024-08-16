@@ -53,7 +53,7 @@ class ProtoOverload(tpx.Protocol):
     @tpx.overload
     def method(self) -> int: ...
     @tpx.overload
-    def method(self, x: tp.Any, /) -> str: ...
+    def method(self, x: object, /) -> str: ...
 
 
 class Proto(tp.Protocol): ...
@@ -80,48 +80,48 @@ class ProtoFinalX(tpx.Protocol): ...
 
 class FinalMembers:
     @property
-    def p(self) -> tp.Any: pass
+    def p(self) -> object: pass
     @property
     @tp.final
-    def p_final(self) -> tp.Any: pass
+    def p_final(self) -> object: pass
     @tpx.final
-    def p_final_x(self) -> tp.Any: pass
+    def p_final_x(self) -> object: pass
 
-    def f(self) -> tp.Any: pass
+    def f(self) -> object: pass
     @tp.final
-    def f_final(self) -> tp.Any: pass
+    def f_final(self) -> object: pass
     @tpx.final
-    def f_final_x(self) -> tp.Any: pass
+    def f_final_x(self) -> object: pass
 
     @classmethod
-    def cf(cls) -> tp.Any: pass
+    def cf(cls) -> object: pass
     @classmethod
     @tp.final
-    def cf_final1(cls) -> tp.Any: pass
+    def cf_final1(cls) -> object: pass
     @classmethod
     @tpx.final
-    def cf_final1_x(cls) -> tp.Any: pass
+    def cf_final1_x(cls) -> object: pass
     @tp.final
     @classmethod
-    def cf_final2(cls) -> tp.Any: pass
+    def cf_final2(cls) -> object: pass
     @tpx.final
     @classmethod
-    def cf_final2_x(cls) -> tp.Any: pass
+    def cf_final2_x(cls) -> object: pass
 
     @staticmethod
-    def sf() -> tp.Any: pass
+    def sf() -> object: pass
     @staticmethod
     @tp.final
-    def sf_final1() -> tp.Any: pass
+    def sf_final1() -> object: pass
     @staticmethod
     @tpx.final
-    def sf_final1_x() -> tp.Any: pass
+    def sf_final1_x() -> object: pass
     @tp.final
     @staticmethod
-    def sf_final2() -> tp.Any: pass
+    def sf_final2() -> object: pass
     @tpx.final
     @staticmethod
-    def sf_final2_x() -> tp.Any: pass
+    def sf_final2_x() -> object: pass
 
 
 def test_get_args_literals() -> None:
@@ -133,7 +133,7 @@ def test_get_args_literals() -> None:
 
 
 @pytest.mark.parametrize('origin', [type, list, tuple, GenericTP, GenericTPX])
-def test_get_args_generic(origin: tp.Any) -> None:
+def test_get_args_generic(origin: opt.types.GenericType) -> None:
     assert opt.inspect.get_args(origin[FalsyBool]) == (FalsyBool,)
     assert opt.inspect.get_args(origin[FalsyInt]) == (FalsyInt,)
     assert opt.inspect.get_args(origin[FalsyIntCo]) == (FalsyIntCo,)
@@ -150,10 +150,7 @@ def test_get_protocol_members() -> None:
         '__getitem__',
         '__missing__',
     }
-    assert opt.inspect.get_protocol_members(opt.CanWith) == {
-        '__enter__',
-        '__exit__',
-    }
+    assert opt.inspect.get_protocol_members(opt.CanWith) == {'__enter__', '__exit__'}
 
     assert opt.inspect.get_protocol_members(opt.HasName) == {'__name__'}
     assert opt.inspect.get_protocol_members(opt.HasNames) == {
@@ -163,9 +160,7 @@ def test_get_protocol_members() -> None:
     assert opt.inspect.get_protocol_members(opt.HasClass) == {'__class__'}
     assert opt.inspect.get_protocol_members(opt.HasDict) == {'__dict__'}
     assert opt.inspect.get_protocol_members(opt.HasSlots) == {'__slots__'}
-    assert opt.inspect.get_protocol_members(opt.HasAnnotations) == {
-        '__annotations__',
-    }
+    assert opt.inspect.get_protocol_members(opt.HasAnnotations) == {'__annotations__'}
 
     assert opt.inspect.get_protocol_members(CanInit) == {'__init__'}
     assert opt.inspect.get_protocol_members(CanNew) == {'__new__'}
@@ -218,8 +213,19 @@ def test_classmethod_is_final() -> None:
     if sys.version_info >= (3, 11):
         assert opt.inspect.is_final(getattr_static(FinalMembers, 'cf_final1'))
         assert opt.inspect.is_final(getattr_static(FinalMembers, 'cf_final2'))
-    assert opt.inspect.is_final(getattr_static(FinalMembers, 'cf_final1_x'))
-    assert opt.inspect.is_final(getattr_static(FinalMembers, 'cf_final2_x'))
+
+    assert opt.inspect.is_final(
+        tp.cast(
+            'classmethod[FinalMembers, ..., object]',
+            getattr_static(FinalMembers, 'cf_final1_x'),
+        ),
+    )
+    assert opt.inspect.is_final(
+        tp.cast(
+            'classmethod[FinalMembers, ..., object]',
+            getattr_static(FinalMembers, 'cf_final2_x'),
+        ),
+    )
 
 
 def test_staticmethod_is_final() -> None:
@@ -227,16 +233,27 @@ def test_staticmethod_is_final() -> None:
     if sys.version_info >= (3, 11):
         assert opt.inspect.is_final(getattr_static(FinalMembers, 'sf_final1'))
         assert opt.inspect.is_final(getattr_static(FinalMembers, 'sf_final2'))
-    assert opt.inspect.is_final(getattr_static(FinalMembers, 'sf_final1_x'))
-    assert opt.inspect.is_final(getattr_static(FinalMembers, 'sf_final2_x'))
+
+    assert opt.inspect.is_final(
+        tp.cast(
+            'staticmethod[..., object]',
+            getattr_static(FinalMembers, 'sf_final1_x'),
+        ),
+    )
+    assert opt.inspect.is_final(
+        tp.cast(
+            'staticmethod[..., object]',
+            getattr_static(FinalMembers, 'sf_final2_x'),
+        ),
+    )
 
 
 @pytest.mark.parametrize('origin', [type, list, tuple, GenericTP, GenericTPX])
-def test_is_generic_alias(origin: tp.Any) -> None:
+def test_is_generic_alias(origin: opt.types.GenericType) -> None:
     assert not opt.inspect.is_generic_alias(origin)
 
     assert opt.inspect.is_generic_alias(origin[None])
-    Alias = TypeAliasType('Alias', origin[None])  # noqa: N806
+    Alias = TypeAliasType('Alias', origin[None])  # type: ignore[valid-type]  # noqa: N806
     assert opt.inspect.is_generic_alias(Alias)
     assert opt.inspect.is_generic_alias(tp.Annotated[origin[None], None])
     assert opt.inspect.is_generic_alias(tpx.Annotated[origin[None], None])
@@ -266,9 +283,9 @@ def test_is_runtime_protocol() -> None:
 
 
 @pytest.mark.parametrize('origin', [int, tp.Literal[True], Proto, ProtoX])
-def test_is_union_type(origin: tp.Any) -> None:
+def test_is_union_type(origin: type) -> None:
     assert opt.inspect.is_union_type(origin | None)
-    Alias = TypeAliasType('Alias', origin | None)  # noqa: N806
+    Alias: TypeAliasType = TypeAliasType('Alias', origin | None)  # noqa: N806  # pyright: ignore[reportGeneralTypeIssues]
     assert opt.inspect.is_union_type(Alias)
     assert opt.inspect.is_union_type(tp.Annotated[origin | None, None])
     assert opt.inspect.is_union_type(tp.Annotated[origin, None] | None)

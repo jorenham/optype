@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias
+from typing import TYPE_CHECKING, Literal, TypeAlias
 
 
 if sys.version_info >= (3, 13):
@@ -34,7 +34,8 @@ if TYPE_CHECKING:
 from optype._utils import set_module
 
 
-_Ignored: TypeAlias = Any  # usually `None`, but can be anything is fine
+# return type that is usually `None`, but can be anything, as it is ignored at runtime
+_Ignored: TypeAlias = object | None
 
 
 _T = TypeVar('_T')
@@ -60,8 +61,8 @@ _BytesT_co = TypeVar('_BytesT_co', bound=bytes, covariant=True, default=bytes)
 _StrT_contra = TypeVar('_StrT_contra', bound=str, contravariant=True, default=str)
 _StrT_co = TypeVar('_StrT_co', bound=str, covariant=True, default=str)
 
-_AnyT_contra = TypeVar('_AnyT_contra', contravariant=True, default=Any)
-_AnyT_co = TypeVar('_AnyT_co', covariant=True, default=Any)
+_AnyT_contra = TypeVar('_AnyT_contra', contravariant=True, default=object)
+_AnyT_co = TypeVar('_AnyT_co', covariant=True, default=object)
 _ObjectT_contra = TypeVar('_ObjectT_contra', contravariant=True, default=object)
 # can be anything, but defaults to `bool`
 _AnyBoolT_co = TypeVar('_AnyBoolT_co', covariant=True, default=bool)
@@ -173,7 +174,7 @@ class CanNext(Protocol[_V_co]):
     def __next__(self, /) -> _V_co: ...
 
 
-_CanNextT_co = TypeVar('_CanNextT_co', bound=CanNext[Any], covariant=True)
+_CanNextT_co = TypeVar('_CanNextT_co', bound=CanNext[object], covariant=True)
 
 
 @set_module('optype')
@@ -200,7 +201,7 @@ class CanANext(Protocol[_V_co]):
     def __anext__(self, /) -> _V_co: ...
 
 
-_CanANextT_co = TypeVar('_CanANextT_co', bound=CanANext[Any], covariant=True)
+_CanANextT_co = TypeVar('_CanANextT_co', bound=CanANext[object], covariant=True)
 
 
 @set_module('optype')
@@ -320,7 +321,7 @@ class CanDelattr(Protocol[_StrT_contra]):
 
 _AnyStrIterT_co = TypeVar(
     '_AnyStrIterT_co',
-    bound=CanIter[Any],
+    bound=CanIter[CanNext[str]],
     covariant=True,
     default=CanIter[CanIterSelf[str]],
 )
@@ -330,7 +331,7 @@ _AnyStrIterT_co = TypeVar(
 @runtime_checkable
 class CanDir(Protocol[_AnyStrIterT_co]):
     @override
-    def __dir__(self, /) -> _AnyStrIterT_co: ...
+    def __dir__(self, /) -> _AnyStrIterT_co: ...  # pyright: ignore[reportIncompatibleMethodOverride]
 
 
 # Descriptors
@@ -1052,7 +1053,7 @@ class CanReleaseBuffer(Protocol):
 # This should be `asyncio.Future[typing.Any] | None`. But that would make this
 # incompatible with `collections.abc.Awaitable` -- it (annoyingly) uses `Any`:
 # https://github.com/python/typeshed/blob/587ad6/stdlib/asyncio/futures.pyi#L51
-_FutureOrNone: TypeAlias = Any
+_FutureOrNone: TypeAlias = object
 _AsyncGen: TypeAlias = 'Generator[_FutureOrNone, None, _T]'
 
 
@@ -1060,7 +1061,7 @@ _AsyncGen: TypeAlias = 'Generator[_FutureOrNone, None, _T]'
 @runtime_checkable
 class CanAwait(Protocol[_T_co]):
     # Technically speaking, this can return any
-    # `CanNext[None | asyncio.Future[Any]]`. But in theory, the return value
+    # `CanNext[None | asyncio.Future[object]]`. But in theory, the return value
     # of generators are currently impossible to type, because the return value
     # of a `yield from _` is # piggybacked using a `raise StopIteration(value)`
     # from `__next__`. So that also makes `__await__` theoretically

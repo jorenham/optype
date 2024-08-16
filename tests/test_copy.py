@@ -1,7 +1,7 @@
 import sys
 from datetime import date
 from fractions import Fraction
-from typing import Any, Final
+from typing import Final
 
 import pytest
 
@@ -15,7 +15,7 @@ require_py313: Final = pytest.mark.skipif(
 )
 
 
-def get_type_params(cls: type) -> tuple[Any, ...]:
+def get_type_params(cls: type) -> tuple[object, ...]:
     return getattr(cls, '__parameters__', ())
 
 
@@ -33,7 +33,7 @@ def test_protocols(cls: type) -> None:
     assert cls.__name__ in opt.copy.__all__
 
     # ensure each `Can{}` has a corresponding `Can{}Self` sub-protocol
-    cls_self = getattr(opt.copy, f'{cls.__name__}Self')
+    cls_self: type = getattr(opt.copy, f'{cls.__name__}Self')
     assert cls_self is not cls
     assert cls_self.__name__ in opt.copy.__all__
     assert issubclass(cls_self, cls)
