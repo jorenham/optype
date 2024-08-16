@@ -53,9 +53,9 @@ _SCT = TypeVar('_SCT', bound=np.generic, default=np.generic)
 _DT = TypeVar('_DT', bound=np.dtype[Any], default=np.dtype[Any])
 _DT_co = TypeVar(
     '_DT_co',
-    bound=np.dtype[Any],
+    bound=np.dtype[np.generic],
     covariant=True,
-    default=np.dtype[Any],
+    default=np.dtype[np.generic],
 )
 
 
