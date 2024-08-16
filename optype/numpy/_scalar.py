@@ -4,6 +4,7 @@ import sys
 from typing import TYPE_CHECKING, Literal, TypeAlias
 
 import numpy as np
+import numpy.typing as npt
 
 
 if sys.version_info >= (3, 13):
@@ -101,3 +102,21 @@ class Scalar(Protocol[_PT_co, _NB_co]):
     def __array__(self, /) -> _Array0D: ...
     @overload
     def __array__(self, dtype: _DT, /) -> _Array0D[_DT]: ...
+
+
+_N_re = TypeVar('_N_re', bound=npt.NBitBase, default=npt.NBitBase)
+_N_im = TypeVar('_N_im', bound=npt.NBitBase, default=_N_re)
+
+Generic: TypeAlias = np.generic
+Number: TypeAlias = np.number[_N_re]
+
+Integer: TypeAlias = np.integer[_N_re]
+UnsignedInteger: TypeAlias = np.unsignedinteger[_N_re]
+SignedInteger: TypeAlias = np.signedinteger[_N_re]
+
+Inexact: TypeAlias = np.inexact[_N_re]
+Floating: TypeAlias = np.floating[_N_re]
+ComplexFloating: TypeAlias = np.complexfloating[_N_re, _N_im]
+
+Flexible: TypeAlias = np.flexible
+Character: TypeAlias = np.character
