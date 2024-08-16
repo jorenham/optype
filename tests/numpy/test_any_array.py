@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import ctypes as ct
 import datetime as dt
-from typing import TYPE_CHECKING, Any, Final, Literal, TypeAlias
+from typing import TYPE_CHECKING, Any, Final
 
 import numpy as np
 import pytest
@@ -12,12 +12,8 @@ from optype.numpy import _compat as _x
 
 if TYPE_CHECKING:
     import optype.numpy as onp
-    from optype.numpy import _ctype as _ct
+    from optype.numpy import ctypeslib as _ct
 
-
-_0D: TypeAlias = tuple[()]  # noqa: PYI042
-_1D: TypeAlias = tuple[Literal[1]]  # noqa: PYI042
-_2D: TypeAlias = tuple[Literal[1], Literal[1]]  # noqa: PYI042
 
 # All allowed arguments that when passed to `np.array`, will result in an
 # array of the specified scalar type(s).
@@ -51,8 +47,8 @@ FLOATING: Final = *_FLOATING_NP, *_FLOATING_CT
 COMPLEX_FLOATING: Final = (
     np.complex64, np.complex128, np.csingle, np.cdouble, np.clongdouble,
 )  # fmt: skip
-DATETIME64 = np.datetime64, dt.datetime
-TIMEDELTA64 = np.timedelta64, dt.timedelta
+DATETIME64: Final = np.datetime64, dt.datetime
+TIMEDELTA64: Final = np.timedelta64, dt.timedelta
 STR: Final = np.str_, str
 BYTES: Final = np.bytes_, ct.c_char, bytes
 CHARACTER: Final = *STR, *BYTES
@@ -60,55 +56,61 @@ VOID: Final = (np.void,)  # TODO: structured
 FLEXIBLE: Final = (*VOID, *CHARACTER)
 BOOL: Final = _x.Bool, ct.c_bool, bool
 OBJECT: Final = np.object_, ct.py_object
-# fmt: on
 
 
 def test_any_array() -> None:
-    type_np: type[np.integer[Any]] = np.int16
+    type_np = np.int16
+    type_ct = ct.c_int16
     v = 42
 
-    # scalar
+    # Python scalar
 
-    v_py: onp.AnyArray[_0D] = v
+    v_py: onp.AnyArray = v
     assert np.shape(v) == ()
 
-    v_np = type_np(v_py)
-    v_np_any: onp.AnyArray[_0D] = v_np
+    # C scalar
+
+    v_ct: onp.AnyArray = type_ct(42)
+
+    # NumPy scalar
+
+    v_np = type_np(v)
+    v_np_any: onp.AnyArray = v_np
     assert int(v) == v_py
     assert np.shape(v_np) == ()
 
     # 0d
 
     x0_np = np.array(v_py)
-    x0_np_any: onp.AnyArray[_0D] = x0_np
+    x0_np_any: onp.AnyArray = x0_np
     assert np.shape(x0_np) == ()
 
     # 1d
 
     x1_py: list[int] = [v]
-    x1_py_any: onp.AnyArray[_1D] = x1_py
+    x1_py_any: onp.AnyArray = x1_py
     assert np.shape(x1_py) == (1,)
 
     x1_py_np = [x0_np]
-    x1_py_np_any: onp.AnyArray[_1D] = x1_py_np
+    x1_py_np_any: onp.AnyArray = x1_py_np
     assert np.shape(x1_py_np) == (1,)
 
     x1_np = np.array(x1_py)
-    x1_np_any: onp.AnyArray[_1D] = x1_np
+    x1_np_any: onp.AnyArray = x1_np
     assert np.shape(x1_np) == (1,)
 
     # 2d
 
     x2_py = [x1_py]
-    x2_py_any: onp.AnyArray[_2D] = x2_py
+    x2_py_any: onp.AnyArray = x2_py
     assert np.shape(x2_py) == (1, 1)
 
     x2_py_np = [x1_np]
-    x2_py_np_any: onp.AnyArray[_2D] = x2_py_np
+    x2_py_np_any: onp.AnyArray = x2_py_np
     assert np.shape(x2_py_np) == (1, 1)
 
     x2_np = np.array(x2_py)
-    x2_np_any: onp.AnyArray[_2D] = x2_np
+    x2_np_any: onp.AnyArray = x2_np
     assert np.shape(x2_np) == (1, 1)
 
 
@@ -118,7 +120,7 @@ def test_any_unsigned_integer_array(
 ) -> None:
     v = sctype(42)
     x = np.array(v)
-    x_any: onp.AnyUnsignedIntegerArray[_0D] = x
+    x_any: onp.AnyUnsignedIntegerArray = x
     assert np.issubdtype(x.dtype, np.unsignedinteger)
 
 
@@ -128,7 +130,7 @@ def test_any_signed_integer_array(
 ) -> None:
     v = sctype(42)
     x = np.array(v)
-    x_any: onp.AnySignedIntegerArray[_0D] = x
+    x_any: onp.AnySignedIntegerArray = x
     assert np.issubdtype(x.dtype, np.signedinteger)
 
 
@@ -138,7 +140,7 @@ def test_any_integer_array(
 ) -> None:
     v = sctype(42)
     x = np.array(v)
-    x_any: onp.AnyIntegerArray[_0D] = x
+    x_any: onp.AnyIntegerArray = x
     assert np.issubdtype(x.dtype, np.integer)
 
 
@@ -148,7 +150,7 @@ def test_any_floating_array(
 ) -> None:
     v = sctype(42)
     x = np.array(v)
-    x_any: onp.AnyFloatingArray[_0D] = x
+    x_any: onp.AnyFloatingArray = x
     assert np.issubdtype(x.dtype, np.floating)
 
 
@@ -158,7 +160,7 @@ def test_any_complex_floating_array(
 ) -> None:
     v = sctype(42 + 42j)
     x = np.array(v)
-    x_any: onp.AnyComplexFloatingArray[_0D] = x
+    x_any: onp.AnyComplexFloatingArray = x
     assert np.issubdtype(x.dtype, np.complexfloating)
 
 
@@ -169,7 +171,7 @@ def test_any_datetime64_array(
     v: dt.datetime | np.datetime64
     v = sctype.now() if issubclass(sctype, dt.datetime) else sctype()
     x = np.datetime64(v)
-    x_any: onp.AnyDateTime64Array[_0D] = x
+    x_any: onp.AnyDateTime64Array = x
     assert np.issubdtype(x.dtype, np.datetime64)
 
 
@@ -179,7 +181,7 @@ def test_any_timedelta64_array(
 ) -> None:
     v = sctype()
     x = np.timedelta64(v)
-    x_any: onp.AnyTimeDelta64Array[_0D] = x
+    x_any: onp.AnyTimeDelta64Array = x
     assert np.issubdtype(x.dtype, np.timedelta64)
 
 
@@ -187,7 +189,7 @@ def test_any_timedelta64_array(
 def test_any_str_array(sctype: type[str | np.str_]) -> None:
     v = sctype()
     x = np.array(v)
-    x_any: onp.AnyStrArray[_0D] = x
+    x_any: onp.AnyStrArray = x
     assert np.issubdtype(x.dtype, np.str_)
 
 
@@ -195,15 +197,17 @@ def test_any_str_array(sctype: type[str | np.str_]) -> None:
 def test_any_bytes_array(sctype: type[bytes | np.bytes_ | _ct.Bytes]) -> None:
     v = sctype()
     x = np.array(v)
-    x_any: onp.AnyBytesArray[_0D] = x
+    x_any: onp.AnyBytesArray = x
     assert np.issubdtype(x.dtype, np.bytes_)
 
 
 @pytest.mark.parametrize('sctype', CHARACTER)
-def test_any_character_array(sctype: type[_ct.Character]) -> None:
+def test_any_character_array(
+    sctype: type[str | bytes | np.character | _ct.Bytes],
+) -> None:
     v = sctype()
     x = np.array(v)
-    x_any: onp.AnyCharacterArray[_0D] = x
+    x_any: onp.AnyCharacterArray = x
     assert np.issubdtype(x.dtype, np.character)
 
 
@@ -211,7 +215,7 @@ def test_any_character_array(sctype: type[_ct.Character]) -> None:
 def test_any_void_array(sctype: type[memoryview | np.void]) -> None:
     v = sctype(b'')
     x = np.array(v)
-    x_any: onp.AnyVoidArray[_0D] = x
+    x_any: onp.AnyVoidArray = x
     assert np.issubdtype(x.dtype, np.void)
 
 
@@ -221,7 +225,7 @@ def test_any_flexible_array(
 ) -> None:
     v = sctype(0)
     x = np.array(v)
-    x_any: onp.AnyFlexibleArray[_0D] = x
+    x_any: onp.AnyFlexibleArray = x
     assert np.issubdtype(x.dtype, np.flexible)
 
 
@@ -229,7 +233,7 @@ def test_any_flexible_array(
 def test_any_bool_array(sctype: type[bool | np.bool | _ct.Bool]) -> None:
     v = sctype(True)
     x = np.array(v)
-    x_any: onp.AnyBoolArray[_0D] = x
+    x_any: onp.AnyBoolArray = x
     assert np.issubdtype(x.dtype, np.bool_)
 
 
@@ -237,5 +241,5 @@ def test_any_bool_array(sctype: type[bool | np.bool | _ct.Bool]) -> None:
 def test_any_object_array(sctype: type[np.object_ | _ct.Object]) -> None:
     v = sctype()
     x = np.array(v)
-    x_any: onp.AnyObjectArray[_0D] = x
+    x_any: onp.AnyObjectArray = x
     assert np.issubdtype(x.dtype, np.object_)

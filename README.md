@@ -2532,8 +2532,8 @@ for more info.
     <tr>
         <td><code>generic</code></td>
         <td><i><code>Any</code></i></td>
-        <td><code>AnyGenericArray</code></td>
-        <td><code>AnyGenericDType</code></td>
+        <td><code>AnyArray</code></td>
+        <td><code>AnyDType</code></td>
     </tr>
     <tr>
         <td><code>number</code></td>
@@ -2751,18 +2751,18 @@ for more info.
     </tr>
     <tr>
         <th><code>half</code></th>
-        <td><code>AnyHalfArray</code></td>
-        <td><code>AnyHalfDType</code></td>
+        <td><code>AnyFloat16Array</code></td>
+        <td><code>AnyFloat16DType</code></td>
     </tr>
     <tr>
         <th><code>single</code></th>
-        <td><code>AnySingleArray</code></td>
-        <td><code>AnySingleDType</code></td>
+        <td><code>AnyFloat32Array</code></td>
+        <td><code>AnyFloat16DType</code></td>
     </tr>
     <tr>
         <th><code>double</code></th>
-        <td><code>AnyDoubleArray</code></td>
-        <td><code>AnyDoubleDType</code></td>
+        <td><code>AnyFloat64Array</code></td>
+        <td><code>AnyFloat64DType</code></td>
     </tr>
     <tr>
         <th><code>longdouble</code></th>
@@ -2801,13 +2801,13 @@ for more info.
     </tr>
     <tr>
         <th><code>csingle</code></th>
-        <td><code>AnyCSingleArray</code></td>
-        <td><code>AnyCSingleDType</code></td>
+        <td><code>AnyComplex64Array</code></td>
+        <td><code>AnyComplex64DType</code></td>
     </tr>
     <tr>
         <th><code>cdouble</code></th>
-        <td><code>AnyCDoubleArray</code></td>
-        <td><code>AnyCDoubleDType</code></td>
+        <td><code>AnyComplex128Array</code></td>
+        <td><code>AnyComplex128DType</code></td>
     </tr>
     <tr>
         <th><code>clongdouble</code></th>
