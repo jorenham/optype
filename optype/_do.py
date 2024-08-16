@@ -1,164 +1,148 @@
 # mypy: disable-error-code="assignment"
+# pyright: reportInvalidCast=false
 
 from __future__ import annotations
 
 import math as _math
 import operator as _o
 import sys as _sys
-from typing import TYPE_CHECKING, ParamSpec, TypeVar, overload
+from typing import TYPE_CHECKING, Final, Literal, ParamSpec, TypeVar, cast, overload
 
-from ._utils import set_module
+import optype._does as _d
+from optype._utils import set_module
 
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     import optype._can as _c
-    import optype._does as _d
 
 
 # type conversion
-do_bool: _d.DoesBool = bool  # pyright: ignore[reportAssignmentType]
-do_int: _d.DoesInt = int
-do_float: _d.DoesFloat = float
-do_complex: _d.DoesComplex = complex
-do_bytes: _d.DoesBytes = bytes
-do_str: _d.DoesStr = str
-
+do_bool: Final = cast(_d.DoesBool, bool)
+do_int: Final = cast(_d.DoesInt, int)
+do_float: Final = cast(_d.DoesFloat, float)
+do_complex: Final = cast(_d.DoesComplex, complex)
+do_bytes: Final = cast(_d.DoesBytes, bytes)
+do_str: Final = cast(_d.DoesStr, str)
 
 # formatting
-do_repr: _d.DoesRepr = repr
-do_format: _d.DoesFormat = format
-
+do_repr: Final = cast(_d.DoesRepr, repr)
+do_format: Final = cast(_d.DoesFormat, format)
 
 # iteration
-do_next: _d.DoesNext = next
-do_iter: _d.DoesIter = iter
-
+do_next: Final = cast(_d.DoesNext, next)
+do_iter: Final = cast(_d.DoesIter, iter)
 
 # async iteration
-# (the typeshed stubs for `round` are unnecessarily strict)
-do_anext: _d.DoesANext = anext  # pyright: ignore[reportAssignmentType]
-do_aiter: _d.DoesAIter = aiter
-
+do_anext: Final = cast(_d.DoesANext, anext)
+do_aiter: Final = cast(_d.DoesAIter, aiter)
 
 # rich comparison
-do_lt: _d.DoesLt = _o.lt
-do_le: _d.DoesLe = _o.le
-do_eq: _d.DoesEq = _o.eq
-do_ne: _d.DoesNe = _o.ne
-do_gt: _d.DoesGt = _o.gt
-do_ge: _d.DoesGe = _o.ge
-
+do_lt: Final = cast(_d.DoesLt, _o.lt)
+do_le: Final = cast(_d.DoesLe, _o.le)
+do_eq: Final = cast(_d.DoesEq, _o.eq)
+do_ne: Final = cast(_d.DoesNe, _o.ne)
+do_gt: Final = cast(_d.DoesGt, _o.gt)
+do_ge: Final = cast(_d.DoesGe, _o.ge)
 
 # attributes
-do_getattr: _d.DoesGetattr = getattr
-do_setattr: _d.DoesSetattr = setattr
-do_delattr: _d.DoesDelattr = delattr
-do_dir: _d.DoesDir = dir
-
+do_getattr: Final = cast(_d.DoesGetattr, getattr)
+do_setattr: Final = cast(_d.DoesSetattr, setattr)
+do_delattr: Final = cast(_d.DoesDelattr, delattr)
+do_dir: Final = cast(_d.DoesDir, dir)
 
 # callables
 
 if _sys.version_info >= (3, 11):
-    do_call: _d.DoesCall = _o.call  # type: ignore[attr-defined]
+    do_call: Final = cast(_d.DoesCall, _o.call)  # type: ignore[attr-defined]
 else:
-    _Pss_call = ParamSpec('_Pss_call')
-    _R_call = TypeVar('_R_call')
+    _Pss = ParamSpec('_Pss')
+    _R = TypeVar('_R')
 
     @set_module('optype')
-    def do_call(
-        f: _c.CanCall[_Pss_call, _R_call],
-        /,
-        *args: _Pss_call.args,
-        **kwargs: _Pss_call.kwargs,
-    ) -> _R_call:
-        return f(*args, **kwargs)
-
+    def do_call(f: Callable[_Pss, _R], /, *args: _Pss.args, **kw: _Pss.kwargs) -> _R:
+        return f(*args, **kw)
 
 # containers and sequences
 
-do_len: _d.DoesLen = len
-do_length_hint: _d.DoesLengthHint = _o.length_hint
+do_len: Final = cast(_d.DoesLen, len)
+do_length_hint: Final = cast(_d.DoesLengthHint, _o.length_hint)
 
 
 # `operator.getitem` isn't used, because it has an (unreasonably loose, and
 # redundant) overload for `(Sequence[T], slice) -> Sequence[T]`
 # https://github.com/python/typeshed/blob/587ad6b/stdlib/_operator.pyi#L84-L86
 
-_KeyT = TypeVar('_KeyT')
-_ValueT = TypeVar('_ValueT')
-_DefaultT = TypeVar('_DefaultT')
+_KT = TypeVar('_KT')
+_VT = TypeVar('_VT')
+_DT = TypeVar('_DT')
 
 
 @overload
 @set_module('optype')
-def do_getitem(
-    obj: _c.CanGetMissing[_KeyT, _ValueT, _DefaultT],
-    key: _KeyT,
-    /,
-) -> _ValueT | _DefaultT: ...
+def do_getitem(obj: _c.CanGetMissing[_KT, _VT, _DT], key: _KT, /) -> _VT | _DT: ...
 @overload
 @set_module('optype')
-def do_getitem(obj: _c.CanGetitem[_KeyT, _ValueT], key: _KeyT, /) -> _ValueT: ...
+def do_getitem(obj: _c.CanGetitem[_KT, _VT], key: _KT, /) -> _VT: ...
 @set_module('optype')
 def do_getitem(
-    obj: _c.CanGetitem[_KeyT, _ValueT] | _c.CanGetMissing[_KeyT, _ValueT, _DefaultT],
-    key: _KeyT,
+    obj: _c.CanGetitem[_KT, _VT] | _c.CanGetMissing[_KT, _VT, _DT],
+    key: _KT,
     /,
-) -> _ValueT | _DefaultT:
+) -> _VT | _DT:
     """Same as `value = obj[key]`."""
     return obj[key]
 
 
 @set_module('optype')
-def do_setitem(
-    obj: _c.CanSetitem[_KeyT, _ValueT],
-    key: _KeyT,
-    value: _ValueT,
-    /,
-) -> None:
+def do_setitem(obj: _c.CanSetitem[_KT, _VT], key: _KT, value: _VT, /) -> None:
     """Same as `obj[key] = value`."""
     obj[key] = value
 
 
 @set_module('optype')
-def do_delitem(obj: _c.CanDelitem[_KeyT], key: _KeyT, /) -> None:
+def do_delitem(obj: _c.CanDelitem[_KT], key: _KT, /) -> None:
     """Same as `del obj[key]`."""
     del obj[key]
 
 
 @set_module('optype')
-def do_missing(obj: _c.CanMissing[_KeyT, _DefaultT], key: _KeyT, /) -> _DefaultT:
+def do_missing(obj: _c.CanMissing[_KT, _DT], key: _KT, /) -> _DT:
     return obj.__missing__(key)
+
+
+_BoolT = TypeVar('_BoolT', Literal[False], Literal[True], bool)
 
 
 # `operator.contains` cannot be used, as it incorrectly requires `key`
 # to be exactly of type `object`, so that it only accepts `object()`...
 @set_module('optype')
-def do_contains(obj: _c.CanContains[_KeyT], key: _KeyT, /) -> bool:
+def do_contains(obj: _c.CanContains[_KT, _BoolT], key: _KT, /) -> _BoolT:
     """Same as `key in obj`."""
-    return key in obj
+    return cast(_BoolT, key in obj)  # type: ignore[redundant-cast]
 
 
 # `builtins.reversed` is annotated incorrectly within typeshed:
 # https://github.com/python/typeshed/issues/11645
-do_reversed: _d.DoesReversed = reversed  # pyright: ignore[reportAssignmentType]
+do_reversed: Final = cast(_d.DoesReversed, reversed)
 
 
 # infix ops
-do_add: _d.DoesAdd = _o.add
-do_sub: _d.DoesSub = _o.sub
-do_mul: _d.DoesMul = _o.mul
-do_matmul: _d.DoesMatmul = _o.matmul
-do_truediv: _d.DoesTruediv = _o.truediv
-do_floordiv: _d.DoesFloordiv = _o.floordiv
-do_mod: _d.DoesMod = _o.mod
-do_divmod: _d.DoesDivmod = divmod
-do_pow: _d.DoesPow = pow
-do_lshift: _d.DoesLshift = _o.lshift
-do_rshift: _d.DoesRshift = _o.rshift
-do_and: _d.DoesAnd = _o.and_
-do_xor: _d.DoesXor = _o.xor
-do_or: _d.DoesOr = _o.or_
+do_add: Final = cast(_d.DoesAdd, _o.add)
+do_sub: Final = cast(_d.DoesSub, _o.sub)
+do_mul: Final = cast(_d.DoesMul, _o.mul)
+do_matmul: Final = cast(_d.DoesMatmul, _o.matmul)
+do_truediv: Final = cast(_d.DoesTruediv, _o.truediv)
+do_floordiv: Final = cast(_d.DoesFloordiv, _o.floordiv)
+do_mod: Final = cast(_d.DoesMod, _o.mod)
+do_divmod: Final = cast(_d.DoesDivmod, divmod)
+do_pow: Final = cast(_d.DoesPow, pow)
+do_lshift: Final = cast(_d.DoesLshift, _o.lshift)
+do_rshift: Final = cast(_d.DoesRshift, _o.rshift)
+do_and: Final = cast(_d.DoesAnd, _o.and_)
+do_xor: Final = cast(_d.DoesXor, _o.xor)
+do_or: Final = cast(_d.DoesOr, _o.or_)
 
 
 # reflected ops
@@ -255,46 +239,41 @@ def do_ror(a: _c.CanROr[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
 
 
 # augmented ops
-do_iadd: _d.DoesIAdd = _o.iadd
-do_isub: _d.DoesISub = _o.isub
-do_imul: _d.DoesIMul = _o.imul
-do_imatmul: _d.DoesIMatmul = _o.imatmul
-do_itruediv: _d.DoesITruediv = _o.itruediv
-do_ifloordiv: _d.DoesIFloordiv = _o.ifloordiv
-do_imod: _d.DoesIMod = _o.imod
-do_ipow: _d.DoesIPow = _o.ipow
-do_ilshift: _d.DoesILshift = _o.ilshift
-do_irshift: _d.DoesIRshift = _o.irshift
-do_iand: _d.DoesIAnd = _o.iand
-do_ixor: _d.DoesIXor = _o.ixor
-do_ior: _d.DoesIOr = _o.ior
-
+do_iadd: Final = cast(_d.DoesIAdd, _o.iadd)
+do_isub: Final = cast(_d.DoesISub, _o.isub)
+do_imul: Final = cast(_d.DoesIMul, _o.imul)
+do_imatmul: Final = cast(_d.DoesIMatmul, _o.imatmul)
+do_itruediv: Final = cast(_d.DoesITruediv, _o.itruediv)
+do_ifloordiv: Final = cast(_d.DoesIFloordiv, _o.ifloordiv)
+do_imod: Final = cast(_d.DoesIMod, _o.imod)
+do_ipow: Final = cast(_d.DoesIPow, _o.ipow)
+do_ilshift: Final = cast(_d.DoesILshift, _o.ilshift)
+do_irshift: Final = cast(_d.DoesIRshift, _o.irshift)
+do_iand: Final = cast(_d.DoesIAnd, _o.iand)
+do_ixor: Final = cast(_d.DoesIXor, _o.ixor)
+do_ior: Final = cast(_d.DoesIOr, _o.ior)
 
 # unary ops
-do_neg: _d.DoesNeg = _o.neg
-do_pos: _d.DoesPos = _o.pos
-do_abs: _d.DoesAbs = abs
-do_invert: _d.DoesInvert = _o.invert
-
+do_neg: Final = cast(_d.DoesNeg, _o.neg)
+do_pos: Final = cast(_d.DoesPos, _o.pos)
+do_abs: Final = cast(_d.DoesAbs, abs)
+do_invert: Final = cast(_d.DoesInvert, _o.invert)
 
 # fingerprinting
-do_hash: _d.DoesHash = hash
-do_index: _d.DoesIndex = _o.index
-
+do_hash: Final = cast(_d.DoesHash, hash)
+do_index: Final = cast(_d.DoesIndex, _o.index)
 
 # rounding
 # (the typeshed stubs for `round` are unnecessarily strict)
-do_round: _d.DoesRound = round
-do_trunc: _d.DoesTrunc = _math.trunc
-do_floor: _d.DoesFloor = _math.floor
-do_ceil: _d.DoesCeil = _math.ceil
+do_round: Final = cast(_d.DoesRound, round)
+do_trunc: Final = cast(_d.DoesTrunc, _math.trunc)
+do_floor: Final = cast(_d.DoesFloor, _math.floor)
+do_ceil: Final = cast(_d.DoesCeil, _math.ceil)
 
 
 # type-check the custom ops
 # TODO: move these to `tests/do.py`
 if TYPE_CHECKING:
-    _do_call: _d.DoesCall = do_call
-
     _do_getitem: _d.DoesGetitem = do_getitem
     _do_setitem: _d.DoesSetitem = do_setitem
     _do_delitem: _d.DoesDelitem = do_delitem
