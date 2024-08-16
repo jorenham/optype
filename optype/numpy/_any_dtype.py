@@ -127,25 +127,6 @@ AnyUIntCDType: Alias = _Any2[np.uintc, _ct.UIntC] | _UIntCCode
 
 _UIntName: Alias = L['uint']
 _ULongChar: Alias = L['L', '|L', '=L', '<L', '>L']
-if _x.NP2:
-    _UIntPName: Alias = L[_UIntName, 'uintp']
-    _UIntPChar: Alias = L['N', '|N', '=N', '<N', '>N']
-    _UIntPCode: Alias = L[_UIntPName, _UIntPChar]
-    AnyUIntPDType: Alias = _Any2[np.uintp, _ct.UIntP] | _UIntPCode
-
-    _ULongName: Alias = L['ulong']
-    _ULongCode: Alias = L[_ULongName, _ULongChar]
-    AnyULongDType: Alias = _Any2[_x.ULong, _ct.ULong] | _ULongCode
-else:
-    _UIntPName: Alias = L['uintp']  # 'uint0' is removed in NumPy 2.0
-    _UIntPChar: Alias = L['P', '|P', '=P', '<P', '>P']
-    _UIntPCode: Alias = L[_UIntPName, _UIntPChar]
-    # assuming that `c_void_p == c_size_t`
-    AnyUIntPDType: Alias = _Any2[np.uintp, _ct.UIntP] | _UIntPCode
-
-    _ULongName: Alias = L[_UIntName, 'ulong']
-    _ULongCode: Alias = L[_ULongName, _ULongChar]
-    AnyULongDType: Alias = _Any2[_x.ULong, _ct.ULong] | _ULongCode
 
 _ULongLongName: Alias = L['ulonglong']
 _ULongLongChar: Alias = L['Q', '|Q', '=Q', '<Q', '>Q']
@@ -194,24 +175,6 @@ AnyIntCDType: Alias = _Any2[np.intc, _ct.IntC] | _IntCCode
 
 _IntName: Alias = L['int', 'int_']
 _LongChar: Alias = L['l', '|l', '=l', '<l', '>l']
-if _x.NP2:
-    _IntPName: Alias = L['intp', _IntName]
-    _IntPChar: Alias = L['n', '|n', '=n', '<n', '>n']
-    _IntPCode: Alias = L[_IntPName, _IntPChar]
-    AnyIntPDType: Alias = _Any2[np.intp, _ct.IntP] | _IntPCode
-
-    _LongName: Alias = L['long']
-    _LongCode: Alias = L[_LongName, _LongChar]
-    AnyLongDType: Alias = _Any2[_x.Long, _ct.Long] | _LongCode
-else:
-    _IntPName: Alias = L['intp']  # 'int0' is removed in NumPy 2.0
-    _IntPChar: Alias = L['p', '|p', '=p', '<p', '>p']
-    _IntPCode: Alias = L[_IntPName, _IntPChar]
-    AnyIntPDType: Alias = _Any2[np.intp, _ct.IntP] | _IntPCode
-
-    _LongName: Alias = L['long', _IntName]
-    _LongCode: Alias = L[_LongName, _LongChar]
-    AnyLongDType: Alias = _Any2[_x.Long, _ct.Long] | _LongCode
 
 _LongLongName: Alias = L['longlong']
 _LongLongChar: Alias = L['q', '|q', '=q', '<q', '>q']
@@ -442,19 +405,11 @@ _SIntCharCommon: Alias = L[
     _ByteChar,
     _ShortChar,
     _IntCChar,
-    _IntPChar,
     _LongChar,
     _LongLongChar,
     # not associated to any particular signed integer type in numpy>=2.0
     L['p', '|p', '=p', '<p', '>p'],
 ]
-
-# NOTE: At the moment, `np.dtypes.StringDType.type: type[str]`, which is
-# impossible (i.e. `dtype[str]` isn't valid, as `str` isn't a `np.generic`)
-_StringName = Never
-_StringChar: Alias = L['T', '|T', '=T', '<T', '>T']
-_StringCode: Alias = _StringChar
-
 
 _UnsignedIntegerName: Alias = L[
     'ubyte', 'uint8', 'ushort', 'uint16', 'uintc', 'uint32', 'uint64',
@@ -468,15 +423,40 @@ _UIntCharCommon: Alias = L[
     _UByteChar,
     _UShortChar,
     _UIntCChar,
-    _UIntPChar,
     _ULongChar,
     _ULongLongChar,
     # not associated to any unsigned scalar type in numpy>=2.0
     L['P', '|P', '=P', '<P', '>P'],
 ]
+
+# NOTE: At the moment, `np.dtypes.StringDType.type: type[str]`, which is
+# impossible (i.e. `dtype[str]` isn't valid, as `str` isn't a `np.generic`)
+_StringName = Never
+_StringChar: Alias = L['T', '|T', '=T', '<T', '>T']
+_StringCode: Alias = _StringChar
+
 if _x.NP2:
+    _UIntPName: Alias = L[_UIntName, 'uintp']
+    _UIntPChar: Alias = L['N', '|N', '=N', '<N', '>N']
+    _UIntPCode: Alias = L[_UIntPName, _UIntPChar]
+    AnyUIntPDType: Alias = _Any2[np.uintp, _ct.UIntP] | _UIntPCode
+
+    _ULongName: Alias = L['ulong']
+    _ULongCode: Alias = L[_ULongName, _ULongChar]
+    AnyULongDType: Alias = _Any2[_x.ULong, _ct.ULong] | _ULongCode
+
+    _IntPName: Alias = L['intp', _IntName]
+    _IntPChar: Alias = L['n', '|n', '=n', '<n', '>n']
+    _IntPCode: Alias = L[_IntPName, _IntPChar]
+    AnyIntPDType: Alias = _Any2[np.intp, _ct.IntP] | _IntPCode
+
+    _LongName: Alias = L['long']
+    _LongCode: Alias = L[_LongName, _LongChar]
+    AnyLongDType: Alias = _Any2[_x.Long, _ct.Long] | _LongCode
+
     _UnsignedIntegerChar: Alias = L[
         _UIntCharCommon,
+        _UIntPChar,
         L['N', '|N', '=N', '<N', '>N'],
     ]
     _UnsignedIntegerCode: Alias = L[_UnsignedIntegerName, _UnsignedIntegerChar]
@@ -487,6 +467,7 @@ if _x.NP2:
 
     _SignedIntegerChar: Alias = L[
         _SIntCharCommon,
+        _IntPChar,
         L['n', '|n', '=n', '<n', '>n'],
     ]
     _SignedIntegerCode: Alias = L[_SignedIntegerName, _SignedIntegerChar]
@@ -525,14 +506,33 @@ if _x.NP2:
 
         AnyDType: Alias = _Any2[np.generic, object] | LiteralString
 else:
-    _UnsignedIntegerChar: Alias = _UIntCharCommon
+    _UIntPName: Alias = L['uintp']  # 'uint0' is removed in NumPy 2.0
+    _UIntPChar: Alias = L['P', '|P', '=P', '<P', '>P']
+    _UIntPCode: Alias = L[_UIntPName, _UIntPChar]
+    # assuming that `c_void_p == c_size_t`
+    AnyUIntPDType: Alias = _Any2[np.uintp, _ct.UIntP] | _UIntPCode
+
+    _ULongName: Alias = L[_UIntName, 'ulong']
+    _ULongCode: Alias = L[_ULongName, _ULongChar]
+    AnyULongDType: Alias = _Any2[_x.ULong, _ct.ULong] | _ULongCode
+
+    _IntPName: Alias = L['intp']  # 'int0' is removed in NumPy 2.0
+    _IntPChar: Alias = L['p', '|p', '=p', '<p', '>p']
+    _IntPCode: Alias = L[_IntPName, _IntPChar]
+    AnyIntPDType: Alias = _Any2[np.intp, _ct.IntP] | _IntPCode
+
+    _LongName: Alias = L['long', _IntName]
+    _LongCode: Alias = L[_LongName, _LongChar]
+    AnyLongDType: Alias = _Any2[_x.Long, _ct.Long] | _LongCode
+
+    _UnsignedIntegerChar: Alias = L[_UIntCharCommon, _UIntPChar]
     _UnsignedIntegerCode: Alias = L[_UnsignedIntegerName, _UnsignedIntegerChar]
     AnyUnsignedIntegerDType: Alias = (
         _Any2[np.unsignedinteger[Any], _ct.UnsignedInteger]
         | _UnsignedIntegerCode
     )
 
-    _SignedIntegerChar: Alias = _SIntCharCommon
+    _SignedIntegerChar: Alias = L[_SIntCharCommon, _IntPChar]
     _SignedIntegerCode: Alias = L[_SignedIntegerName, _SignedIntegerChar]
     AnySignedIntegerDType: Alias = (
         _Any2[np.signedinteger[Any], _ct.SignedInteger]
