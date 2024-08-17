@@ -288,6 +288,7 @@ allow-dunder-method-names = [
     "__value__",
     "__origin__",
     "__args__",
+    "__metadata__",
     "__parameters__",
     "__typing_unpacked_tuple_args__",
     "__typing_is_unpacked_typevartuple__",
