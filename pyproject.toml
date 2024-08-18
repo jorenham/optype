@@ -42,9 +42,9 @@ pre-commit = "^3.8.0"
 tox = "^4.18.0"
 
 [tool.poetry.group.lint.dependencies]
+basedmypy = "^2.6.0"
 basedpyright = "^1.16.0"
 codespell = "^2.3.0"
-mypy = "^1.11.1"
 ruff = "^0.6.1"
 sp-repo-review = {version = "^2024.4.23", extras = ["cli"]}
 typing-extensions = "*"
@@ -81,7 +81,6 @@ typeCheckingMode = "all"
 # defineConstant = {NP2 = true, NP20 = false}
 defineConstant = {NP2 = true, NP20 = true}
 
-# reportAny = false  # blame typeshed
 reportUnusedCallResult = false  # https://github.com/microsoft/pyright/issues/8650
 reportUnreachable = false  # nothing wrong with `if sys.version_info() >= ...`
 reportUnusedImport = false  # dupe of F401
@@ -96,12 +95,21 @@ always_true = "NP2,NP20"
 modules = ["optype", "tests"]
 exclude = ["^.venv/.*"]
 strict = true
+
 allow_redefinition = true  # needed for python/numpy compat code
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 warn_redundant_casts = true
 warn_unused_ignores = true
 show_error_code_links = true
+
+# based
+disallow_any_expr = false  # https://github.com/numpy/numpy/pull/27211
+
+
+[[tool.mypy.overrides]]
+module = ["tests.*", "tests.numpy.*"]
+disallow_any_decorated = false  # blame pytest
 
 
 [tool.pytest.ini_options]

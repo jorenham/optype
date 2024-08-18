@@ -9,7 +9,7 @@ ci:
     - ruff
     - basedpyright
     - basedpyright-verifytypes
-    - mypy
+    - basedmypy
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -79,8 +79,8 @@ repos:
         always_run: true
         pass_filenames: false
 
-      - id: mypy
-        name: mypy
+      - id: basedmypy
+        name: basedmypy
         entry: poetry run mypy
         language: system
         types_or: [python, pyi]
