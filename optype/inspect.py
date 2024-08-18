@@ -1,3 +1,4 @@
+# mypy: disable-error-code="no-any-explicit,no-any-decorated"
 from __future__ import annotations
 
 import inspect

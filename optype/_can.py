@@ -1,5 +1,4 @@
 # mypy: disable-error-code="override"
-
 from __future__ import annotations
 
 import sys
@@ -278,13 +277,14 @@ class CanGe(Protocol[_AnyT_contra, _AnyBoolT_co]):
 
 # Callables
 
-_P = ParamSpec('_P', default=...)  # this should (but can't) be contravariant
+# this should (but can't) be contravariant
+_P = ParamSpec('_P', default=...)
 
 
 @set_module('optype')
 @runtime_checkable
 class CanCall(Protocol[_P, _AnyT_co]):
-    def __call__(self, /, *args: _P.args, **kwargs: _P.kwargs) -> _AnyT_co: ...
+    def __call__(self, /, *args: _P.args, **kwargs: _P.kwargs) -> _AnyT_co: ...  # type: ignore[no-any-explicit]
 
 
 # Dynamic attribute access
@@ -321,7 +321,7 @@ class CanDelattr(Protocol[_StrT_contra]):
 
 _AnyStrIterT_co = TypeVar(
     '_AnyStrIterT_co',
-    bound=CanIter[CanNext[str]],
+    bound=CanIter[CanNext[object]],
     covariant=True,
     default=CanIter[CanIterSelf[str]],
 )
@@ -519,10 +519,13 @@ class CanPow(
     Protocol[_T_contra, _V_contra, _T_co, _AnyIntT_co],
 ):
     @overload
+    @override
     def __pow__(self, exp: _T_contra, /) -> _T_co: ...
     @overload
+    @override
     def __pow__(self, exp: _T_contra, mod: None = ..., /) -> _T_co: ...
     @overload
+    @override
     def __pow__(self, exp: _T_contra, mod: _V_contra, /) -> _AnyIntT_co: ...
 
 
@@ -911,10 +914,13 @@ class CanRound(
     Protocol[_AnyIntT_contra, _AnyIntT_co, _AnyFloatT_co],
 ):
     @overload
+    @override
     def __round__(self, /) -> _AnyIntT_co: ...
     @overload
+    @override
     def __round__(self, /, ndigits: None = ...) -> _AnyIntT_co: ...
     @overload
+    @override
     def __round__(self, /, ndigits: _AnyIntT_contra) -> _AnyFloatT_co: ...
 
 

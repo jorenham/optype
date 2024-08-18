@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias
+from typing import TYPE_CHECKING, Literal, TypeAlias
 
 
 if sys.version_info >= (3, 13):
@@ -40,9 +40,9 @@ _NDigitsT = TypeVar('_NDigitsT')
 _OutT = TypeVar('_OutT')
 _DefaultT = TypeVar('_DefaultT')
 _SentinelT = TypeVar('_SentinelT')
-_IteratorT = TypeVar('_IteratorT', bound='_c.CanNext[Any]')
-_AIteratorT = TypeVar('_AIteratorT', bound='_c.CanANext[Any]')
-_IterT = TypeVar('_IterT', bound='_c.CanIter[Any]')
+_IteratorT = TypeVar('_IteratorT', bound='_c.CanNext[object]')
+_AIteratorT = TypeVar('_AIteratorT', bound='_c.CanANext[object]')
+_IterT = TypeVar('_IterT', bound='_c.CanIter[_c.CanNext[object]]')
 _BoolT = TypeVar('_BoolT', _JustTrue, _JustFalse, bool)
 _IntT = TypeVar('_IntT', bound=int)
 _StrT = TypeVar('_StrT', bound=str)

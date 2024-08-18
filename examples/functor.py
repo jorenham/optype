@@ -33,7 +33,7 @@ class Functor(Generic[_T_co]):
         """
         return Functor(f(self.value))
 
-    def map2(
+    def map2(  # type: ignore[no-any-explicit]
         self,
         f: Callable[[_T_co, _X], _Y],
         other: Functor[_X] | Any,

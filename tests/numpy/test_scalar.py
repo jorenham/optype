@@ -1,10 +1,17 @@
+# mypy: disable-error-code="unreachable"
+from __future__ import annotations
+
 import sys
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 import pytest
 
 from optype.numpy import Scalar
+
+
+if TYPE_CHECKING:
+    from optype.numpy import _scalar as _sc  # pyright: ignore[reportPrivateUsage]
 
 
 if sys.version_info >= (3, 13):
@@ -13,7 +20,7 @@ else:
     from typing_extensions import assert_type
 
 
-_NP_V2 = np.__version__.startswith('2.')
+NP2 = np.__version__.startswith('2.')
 
 
 def test_from_bool() -> None:
@@ -22,9 +29,6 @@ def test_from_bool() -> None:
 
     s_py: Scalar[bool] = x_py  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     assert not isinstance(x_py, Scalar)
-
-    s_np_any_n: Scalar[Any] = x_np
-    s_np_any_1: Scalar[Any, Literal[1]] = x_np
 
     s_np_n: Scalar[bool] = x_np
     s_np_1: Scalar[bool, Literal[1]] = x_np
@@ -47,7 +51,7 @@ def test_from_bool() -> None:
         np.int64, np.uint64,
     ],
 )
-def test_from_integer(sctype: type[np.integer[Any]]) -> None:
+def test_from_integer(sctype: type[_sc.Integer]) -> None:
     x_py = 42
     x_np = sctype(x_py)
 
@@ -65,7 +69,7 @@ def test_from_integer(sctype: type[np.integer[Any]]) -> None:
 
 
 @pytest.mark.parametrize('sctype', [np.float16, np.float32, np.float64])
-def test_from_floating(sctype: type[np.floating[Any]]) -> None:
+def test_from_floating(sctype: type[_sc.Floating]) -> None:
     x_py = -1 / 12
     x_np = sctype(x_py)
 
@@ -83,7 +87,7 @@ def test_from_floating(sctype: type[np.floating[Any]]) -> None:
 
 
 @pytest.mark.parametrize('sctype', [np.complex64, np.complex128])
-def test_from_complex(sctype: type[np.complexfloating[Any, Any]]) -> None:
+def test_from_complex(sctype: type[_sc.ComplexFloating]) -> None:
     x_py = 3 - 4j
     x_np = sctype(x_py)
 

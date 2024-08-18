@@ -5,7 +5,7 @@ https://docs.python.org/3/library/dataclasses.html
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 
 if TYPE_CHECKING:
@@ -24,8 +24,8 @@ __all__ = ('HasDataclassFields',)
 
 _FieldsT = TypeVar(
     '_FieldsT',
-    bound='Mapping[str, dataclasses.Field[Any]]',
-    default=dict[str, 'dataclasses.Field[Any]'],
+    bound='Mapping[str, dataclasses.Field[object]]',
+    default=dict[str, 'dataclasses.Field[object]'],
 )
 
 

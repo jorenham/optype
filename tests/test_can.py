@@ -10,7 +10,7 @@ temporarily that invalid `optype` use will actually cause the typechecker
 (we only consider (based)pyright at the moment) to complain.
 """
 from collections.abc import Collection, Iterator
-from typing import Any, TypeAlias, TypeVar
+from typing import TypeAlias, TypeVar
 
 import pytest
 
@@ -48,15 +48,12 @@ def test_iadd() -> None:
     some_list: list[int] = [42]
 
     x_iadd: CanIAdd[CanReIter[int], list[int]] = some_list
-    x_iadd_any_in: CanIAdd[Any, list[int]] = some_list
-    x_iadd_any_out: CanIAdd[CanReIter[int], Any] = some_list
     x_iadd_wrong_in: CanIAdd[str, list[int]] = some_list  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     x_iadd_wrong_in_val: CanIAdd[CanReIter[str], list[int]] = some_list  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     x_iadd_wrong_out: CanIAdd[CanReIter[int], list[str]] = some_list  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     assert isinstance(some_list, CanIAdd)
 
     x_iadd_self: CanIAddSelf[CanReIter[int]] = some_list
-    x_iadd_self_any: CanIAddSelf[Any] = some_list
     x_iadd_self_wrong: CanIAddSelf[str] = some_list  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     x_iadd_self_wrong_val: CanIAddSelf[CanReIter[str]] = some_list  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     assert isinstance(some_list, CanIAddSelf)
@@ -70,14 +67,11 @@ def test_imul() -> None:
     some_list: list[int] = [42]
 
     x_imul: CanIMul[int, list[int]] = some_list
-    x_imul_any_in: CanIMul[Any, list[int]] = some_list
-    x_imul_any_out: CanIMul[int, Any] = some_list
     x_imul_wrong_in: CanIMul[str, list[int]] = some_list  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     x_imul_wrong_out: CanIMul[int, list[str]] = some_list  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     assert isinstance(some_list, CanIMul)
 
     x_imul_self: CanIMulSelf[int] = some_list
-    x_imul_self_any: CanIMulSelf[Any] = some_list
     x_imul_self_wrong: CanIMulSelf[str] = some_list  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     assert isinstance(some_list, CanIMulSelf)
 
@@ -90,14 +84,11 @@ def test_isub() -> None:
     some_set: set[int] = {42}
 
     x_isub: CanISub[set[int], set[int]] = some_set
-    x_isub_any_in: CanISub[Any, set[int]] = some_set
-    x_isub_any_out: CanISub[set[int], Any] = some_set
     x_isub_wrong_in: CanISub[int, set[int]] = some_set  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     x_isub_wrong_out: CanISub[set[int], set[str]] = some_set  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     assert isinstance(some_set, CanISub)
 
     x_isub_self: CanISubSelf[set[int]] = some_set
-    x_isub_self_any: CanISubSelf[Any] = some_set
     x_isub_self_wrong: CanISubSelf[str] = some_set  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     assert isinstance(some_set, CanISubSelf)
 
@@ -116,14 +107,11 @@ def test_iand() -> None:
     some_set: set[int] = {42}
 
     x_iand: CanIAnd[set[int], set[int]] = some_set
-    x_iand_any_in: CanIAnd[Any, set[int]] = some_set
-    x_iand_any_out: CanIAnd[set[int], Any] = some_set
     x_iand_wrong_in: CanIAnd[int, set[int]] = some_set  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     x_iand_wrong_out: CanIAnd[set[int], set[str]] = some_set  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     assert isinstance(some_set, CanIAnd)
 
     x_iand_self: CanIAndSelf[set[int]] = some_set
-    x_iand_self_any: CanIAndSelf[Any] = some_set
     x_iand_self_wrong: CanIAndSelf[str] = some_set  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     assert isinstance(some_set, CanIAndSelf)
 
@@ -137,14 +125,11 @@ def test_ixor() -> None:
     some_set: set[bool] = {False, True}
 
     x_ixor: CanIXor[set[bool], set[bool]] = some_set
-    x_ixor_any_in: CanIXor[Any, set[bool]] = some_set
-    x_ixor_any_out: CanIXor[set[bool], Any] = some_set
     x_ixor_wrong_in: CanIXor[set[str], set[bool]] = some_set  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     x_ixor_wrong_out: CanIXor[set[bool], set[str]] = some_set  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     assert isinstance(some_set, CanIXor)
 
     x_ixor_self: CanIXorSelf[set[bool]] = some_set
-    x_ixor_self_any: CanIXorSelf[Any] = some_set
     x_ixor_self_wrong: CanIXorSelf[set[str]] = some_set  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     assert isinstance(some_set, CanIXorSelf)
 
@@ -157,29 +142,23 @@ def test_ior() -> None:
     some_set: set[float] = {1 / 137}
 
     x_ior: CanIOr[set[float], set[float]] = some_set
-    x_ior_any_in: CanIOr[Any, set[float]] = some_set
-    x_ior_any_out: CanIOr[set[float], Any] = some_set
     x_ior_wrong_in: CanIOr[set[complex], set[float]] = some_set  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     x_ior_wrong_out: CanIOr[set[float], set[int]] = some_set  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     assert isinstance(some_set, CanIOr)
 
     x_ior_self: CanIOrSelf[set[float]] = some_set
-    x_ior_self_any: CanIOrSelf[Any] = some_set
     x_ior_self_wrong: CanIOrSelf[set[str]] = some_set  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     assert isinstance(some_set, CanIOrSelf)
 
     some_dict: dict[bytes, int] = {b'answer': 0x2a}
 
     y_ior: CanIOr[dict[bytes, int], dict[bytes, int]] = some_dict
-    y_ior_any_in: CanIOr[Any, dict[bytes, int]] = some_dict
-    y_ior_any_out: CanIOr[dict[bytes, int], Any] = some_dict
     y_ior_wrong_in: CanIOr[dict[str, int], dict[bytes, int]] = some_dict  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     y_ior_wrong_out: CanIOr[dict[bytes, int], dict[str, int]] = some_dict  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
     assert isinstance(some_dict, CanIOr)
 
     y_ior_self: CanIOrSelf[dict[bytes, int]] = some_dict
-    y_ior_self_any: CanIOrSelf[Any] = some_dict
     y_ior_self_wrong: CanIOrSelf[dict[str, int]] = some_dict  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     assert isinstance(some_dict, CanIOrSelf)
 
@@ -188,8 +167,6 @@ def test_can_iter_int() -> None:
     # one can *not* iter and int (pun intended)
     value: int = 42 * 1337
 
-    iter_any: CanIter[Any] = value  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
-    iter_next_any: CanIter[CanNext[Any]] = value  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     iter_next_int: CanIter[CanNext[int]] = value  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     iter_self_int: CanIterSelf[int] = value  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
@@ -214,15 +191,13 @@ def test_can_iter_collection_str(
         | tuple[str, ...]
         | list[str]
         | set[str]
-        | dict[str, Any]
+        | dict[str, object]
     ),
 ) -> None:
     # sanity checks
     assert isinstance(value, Collection)
     assert not isinstance(value, Iterator)
 
-    value_iter_any: CanIter[Any] = value
-    value_iter_next_any: CanIter[CanNext[Any]] = value
     value_iter_next: CanIter[CanNext[str]] = value
     value_iter_next_wrong: CanIter[CanNext[int]] = value  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     value_iter_self: CanIterSelf[str] = value  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
@@ -243,8 +218,6 @@ def test_can_iter_collection_str(
     assert not isinstance(value, CanIterSelf)
 
     ivalue = iter(value)
-    ivalue_iter_any: CanIter[Any] = ivalue
-    ivalue_iter_next_any: CanIter[CanNext[Any]] = ivalue
     ivalue_iter_next: CanIter[CanNext[str]] = ivalue
     ivalue_iter_next_wrong: CanIter[CanNext[int]] = ivalue  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     ivalue_iter_self_str: CanIterSelf[str] = ivalue
@@ -283,11 +256,7 @@ def test_unsliceable_sequence() -> None:
 def test_can_sequence_sequence_str(
     x: str | tuple[str, ...] | list[str] | UnsliceableSequence,
 ) -> None:
-    x_sequence_any_any: CanSequence[Any, Any] = x
-    x_sequence_any_str: CanSequence[Any, str] = x
-    x_sequence_int_any: CanSequence[int, Any] = x
     x_sequence_int_str: CanSequence[int, str] = x
-
     x_sequence_wrong1: CanSequence[slice, str] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     x_sequence_wrong2: CanSequence[int, bytes] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 

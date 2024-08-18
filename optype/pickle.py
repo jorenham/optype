@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import sys
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias
+from typing import TYPE_CHECKING, Concatenate, Literal, TypeAlias
 
 from optype._can import CanIterSelf
 
@@ -34,26 +34,29 @@ __all__ = (
 # 5 is the highest since 3.8, and will become the new default in 3.14
 _ProtocolVersion: TypeAlias = Literal[0, 1, 2, 3, 4, 5]
 
-# _AnyReduceValue: TypeAlias = str | tuple[Any, ...]  # noqa: ERA001
+if sys.version_info >= (3, 11):
+    _AnyCallable: TypeAlias = Callable[Concatenate[object, ...], object]
+else:
+    _AnyCallable: TypeAlias = Callable[..., object]  # type: ignore[no-any-explicit]
 _AnyReduceValue: TypeAlias = (
     str
-    | tuple[Callable[..., Any], tuple[Any, ...]]
-    | tuple[Callable[..., Any], tuple[Any, ...], Any]
-    | tuple[Callable[..., Any], tuple[Any, ...], Any, CanIterSelf[Any] | None]
+    | tuple[_AnyCallable, tuple[object, ...]]
+    | tuple[_AnyCallable, tuple[object, ...], object]
+    | tuple[_AnyCallable, tuple[object, ...], object, CanIterSelf[object] | None]
     | tuple[
-        Callable[..., Any],
-        tuple[Any, ...],
-        Any,
-        CanIterSelf[Any] | None,
-        CanIterSelf[tuple[Any, Any]] | None,
+        _AnyCallable,
+        tuple[object, ...],
+        object,
+        CanIterSelf[object] | None,
+        CanIterSelf[tuple[object, object]] | None,
     ]
     | tuple[
-        Callable[..., Any],
-        tuple[Any, ...],
-        Any,
-        CanIterSelf[Any] | None,
-        CanIterSelf[tuple[Any, Any]] | None,
-        Callable[[Any, Any], Any] | None,
+        _AnyCallable,
+        tuple[object, ...],
+        object,
+        CanIterSelf[object] | None,
+        CanIterSelf[tuple[object, object]] | None,
+        Callable[[object, object], object] | None,
     ]
 )
 _ReduceT_co = TypeVar(
@@ -106,8 +109,8 @@ class CanSetstate(Protocol[_StateT_contra]):
     def __setstate__(self, state: _StateT_contra, /) -> None: ...
 
 
-_ArgT_co = TypeVar('_ArgT_co', covariant=True, default=Any)
-_KwargT = TypeVar('_KwargT', default=Any)
+_ArgT_co = TypeVar('_ArgT_co', covariant=True, default=object)
+_KwargT = TypeVar('_KwargT', default=object)
 
 
 @runtime_checkable
