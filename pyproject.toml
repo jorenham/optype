@@ -48,13 +48,13 @@ codespell = "^2.3.0"
 ruff = "^0.6.1"
 sp-repo-review = {version = "^2024.4.23", extras = ["cli"]}
 typing-extensions = "*"
-numpy = "~2.0.1"
+numpy = "~2.1.0"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.3.2"
 beartype = "^0.18.5"
 typing-extensions = "*"
-numpy = "~2.0.1"
+numpy = "~2.1.0"
 
 
 [tool.poetry.group.test-github]
@@ -79,7 +79,7 @@ pythonVersion = "3.10"
 pythonPlatform = "All"
 typeCheckingMode = "all"
 # defineConstant = {NP2 = true, NP20 = false}
-defineConstant = {NP2 = true, NP20 = true}
+defineConstant = {NP2 = true, NP20 = false}
 
 reportUnusedCallResult = false  # https://github.com/microsoft/pyright/issues/8650
 reportUnreachable = false  # nothing wrong with `if sys.version_info() >= ...`
@@ -89,9 +89,8 @@ reportUnusedVariable = false  # dupe of F841
 
 [tool.mypy]
 python_version = "3.10"
-always_true = "NP2,NP20"
-# always_true = "NP2"
-# always_false = "NP20"
+always_true = "NP2"
+always_false = "NP20"
 modules = ["optype", "tests"]
 exclude = ["^.venv/.*"]
 strict = true
