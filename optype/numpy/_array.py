@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Any, TypeAlias
+from typing import TYPE_CHECKING, TypeAlias
 
 import numpy as np
 
@@ -33,7 +33,7 @@ _ShapeT = TypeVar('_ShapeT', bound=_AnyShape, default=_AnyShape)
 _ShapeT_co = TypeVar('_ShapeT_co', bound=_AnyShape, covariant=True, default=_AnyShape)
 
 _SCT = TypeVar('_SCT', bound=np.generic, default=np.generic)
-_DT = TypeVar('_DT', bound=np.dtype[Any], default=np.dtype[Any])
+_DT = TypeVar('_DT', bound=np.dtype[np.generic], default=np.dtype[np.generic])
 _DT_co = TypeVar(
     '_DT_co',
     bound=np.dtype[np.generic],
@@ -81,7 +81,7 @@ class CanArrayWrap(Protocol):
         def __array_wrap__(
             self,
             array: np.ndarray[_ShapeT, _DT],
-            context: tuple[np.ufunc, tuple[Any, ...], int] | None = ...,
+            context: tuple[np.ufunc, tuple[object, ...], int] | None = ...,
             return_scalar: bool = ...,
             /,
         ) -> np.ndarray[_ShapeT, _DT] | Self: ...
@@ -89,16 +89,16 @@ class CanArrayWrap(Protocol):
         def __array_wrap__(
             self,
             array: np.ndarray[_ShapeT, _DT],
-            context: tuple[np.ufunc, tuple[Any, ...], int] | None = ...,
+            context: tuple[np.ufunc, tuple[object, ...], int] | None = ...,
             /,
         ) -> np.ndarray[_ShapeT, _DT] | Self: ...
 
 
 _ArrayInterfaceT_co = TypeVar(
     '_ArrayInterfaceT_co',
-    bound='Mapping[str, Any]',
+    bound='Mapping[str, object]',
     covariant=True,
-    default=dict[str, Any],
+    default=dict[str, object],
 )
 
 

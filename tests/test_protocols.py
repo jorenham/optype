@@ -1,3 +1,4 @@
+# mypy: disable-error-code="no-any-explicit"
 import sys
 from typing import cast
 

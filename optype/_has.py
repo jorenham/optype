@@ -65,10 +65,11 @@ class HasDict(Protocol[_DictT]):  # type: ignore[misc]
 @set_module('optype')
 @runtime_checkable
 class HasClass(Protocol):
-    @property
+    @property  # type: ignore[explicit-override]  # (basedmypy bug?)
     @override
     def __class__(self) -> type[Self]: ...
     @__class__.setter
+    @override
     def __class__(self, cls: type[Self], /) -> None:
         """Don't."""
 

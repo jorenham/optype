@@ -1,3 +1,4 @@
+# mypy: disable-error-code="no-any-explicit"
 import math
 import sys
 from collections.abc import Callable as Fn

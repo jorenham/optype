@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import enum
 import sys
-from typing import Any, Literal, NoReturn, TypeAlias
+from typing import Literal, NoReturn, TypeAlias
 
 from typing_extensions import LiteralString
 
@@ -46,7 +46,7 @@ else:
 
 # Anything that can be iterated over, e.g. in a `for` loop,`builtins.iter`,
 # `builtins.enumerate`, or `numpy.array`.
-_ValueT = TypeVar('_ValueT', default=Any)
+_ValueT = TypeVar('_ValueT', default=object)
 AnyIterable: TypeAlias = _c.CanIter[_c.CanNext[_ValueT]] | _c.CanGetitem[int, _ValueT]
 
 # The closest supertype of a `Literal`, i.e. the allowed types that can be
@@ -78,7 +78,7 @@ EmptyTuple: TypeAlias = (
 )
 EmptyList: TypeAlias = list[Never]
 EmptySet: TypeAlias = set[Never]
-EmptyDict: TypeAlias = dict[Any, Never] | _EmptyTypedDict
+EmptyDict: TypeAlias = dict[object, Never] | _EmptyTypedDict
 EmptyIterable: TypeAlias = AnyIterable[Never]
 
 

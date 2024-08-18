@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import ctypes as ct
 import datetime as dt
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Final
 
 import numpy as np
 import pytest
@@ -12,7 +12,10 @@ from optype.numpy import _compat as _x
 
 if TYPE_CHECKING:
     import optype.numpy as onp
-    from optype.numpy import ctypeslib as _ct
+    from optype.numpy import (
+        _scalar as _sc,  # pyright: ignore[reportPrivateUsage]
+        ctypeslib as _ct,
+    )
 
 
 # All allowed arguments that when passed to `np.array`, will result in an
@@ -116,7 +119,7 @@ def test_any_array() -> None:
 
 @pytest.mark.parametrize('sctype', UNSIGNED_INTEGER)
 def test_any_unsigned_integer_array(
-    sctype: type[np.unsignedinteger[Any] | _ct.UnsignedInteger],
+    sctype: type[_sc.UnsignedInteger | _ct.UnsignedInteger],
 ) -> None:
     v = sctype(42)
     x = np.array(v)
@@ -126,7 +129,7 @@ def test_any_unsigned_integer_array(
 
 @pytest.mark.parametrize('sctype', SIGNED_INTEGER)
 def test_any_signed_integer_array(
-    sctype: type[np.signedinteger[Any] | _ct.SignedInteger],
+    sctype: type[_sc.SignedInteger | _ct.SignedInteger],
 ) -> None:
     v = sctype(42)
     x = np.array(v)
@@ -136,7 +139,7 @@ def test_any_signed_integer_array(
 
 @pytest.mark.parametrize('sctype', INTEGER)
 def test_any_integer_array(
-    sctype: type[np.integer[Any] | _ct.Integer],
+    sctype: type[_sc.Integer | _ct.Integer],
 ) -> None:
     v = sctype(42)
     x = np.array(v)
@@ -146,7 +149,7 @@ def test_any_integer_array(
 
 @pytest.mark.parametrize('sctype', FLOATING)
 def test_any_floating_array(
-    sctype: type[np.floating[Any] | _ct.Floating],
+    sctype: type[_sc.Floating | _ct.Floating],
 ) -> None:
     v = sctype(42)
     x = np.array(v)
@@ -156,7 +159,7 @@ def test_any_floating_array(
 
 @pytest.mark.parametrize('sctype', COMPLEX_FLOATING)
 def test_any_complex_floating_array(
-    sctype: type[np.complexfloating[Any, Any]],
+    sctype: type[_sc.ComplexFloating],
 ) -> None:
     v = sctype(42 + 42j)
     x = np.array(v)

@@ -106,7 +106,6 @@ show_error_code_links = true
 # based
 disallow_any_expr = false  # https://github.com/numpy/numpy/pull/27211
 
-
 [[tool.mypy.overrides]]
 module = ["tests.*", "tests.numpy.*"]
 disallow_any_decorated = false  # blame pytest

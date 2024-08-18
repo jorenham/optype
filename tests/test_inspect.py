@@ -1,3 +1,4 @@
+# mypy: disable-error-code="unreachable"
 # ruff: noqa: ANN205, ANN206
 from __future__ import annotations
 
@@ -215,13 +216,13 @@ def test_classmethod_is_final() -> None:
         assert opt.inspect.is_final(getattr_static(FinalMembers, 'cf_final2'))
 
     assert opt.inspect.is_final(
-        tp.cast(
+        tp.cast(  # type: ignore[no-any-explicit]
             'classmethod[FinalMembers, ..., object]',
             getattr_static(FinalMembers, 'cf_final1_x'),
         ),
     )
     assert opt.inspect.is_final(
-        tp.cast(
+        tp.cast(  # type: ignore[no-any-explicit]
             'classmethod[FinalMembers, ..., object]',
             getattr_static(FinalMembers, 'cf_final2_x'),
         ),
@@ -235,13 +236,13 @@ def test_staticmethod_is_final() -> None:
         assert opt.inspect.is_final(getattr_static(FinalMembers, 'sf_final2'))
 
     assert opt.inspect.is_final(
-        tp.cast(
+        tp.cast(  # type: ignore[no-any-explicit]
             'staticmethod[..., object]',
             getattr_static(FinalMembers, 'sf_final1_x'),
         ),
     )
     assert opt.inspect.is_final(
-        tp.cast(
+        tp.cast(  # type: ignore[no-any-explicit]
             'staticmethod[..., object]',
             getattr_static(FinalMembers, 'sf_final2_x'),
         ),

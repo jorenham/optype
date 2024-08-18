@@ -1,4 +1,4 @@
-from typing import Any, TypeAlias, TypeVar
+from typing import Protocol, TypeAlias, TypeVar
 
 import numpy as np
 import pytest
@@ -11,12 +11,16 @@ _Shape1D: TypeAlias = tuple[int]
 _Shape2D: TypeAlias = tuple[int, int]
 
 
+class _AnyCallable(Protocol):
+    def __call__(self, /, *args: object, **kwargs: object) -> object: ...
+
+
 # Don't wake up, Neo...
 @pytest.mark.filterwarnings('ignore:the matrix .*:PendingDeprecationWarning')
 def test_can_array() -> None:
     sct: type[np.generic] = np.uint8
 
-    scalar: onp.CanArray[_Shape0D, Any] = sct(42)
+    scalar: onp.CanArray[_Shape0D] = sct(42)
     assert isinstance(scalar, onp.CanArray)
     assert not isinstance(42, onp.CanArray)
 
@@ -45,13 +49,13 @@ def test_can_array_function() -> None:
 
     assert not isinstance(sct(42), onp.CanArrayFunction)
 
-    arr_0d: onp.CanArrayFunction[Any, _Arr0D[np.uint8]] = np.array(42, sct)
+    arr_0d: onp.CanArrayFunction[_AnyCallable, _Arr0D[np.uint8]] = np.array(42, sct)
     assert isinstance(arr_0d, onp.CanArrayFunction)
 
-    arr_1d: onp.CanArrayFunction[Any, _Arr1D[np.uint8]] = np.array([42], sct)
+    arr_1d: onp.CanArrayFunction[_AnyCallable, _Arr1D[np.uint8]] = np.array([42], sct)
     assert isinstance(arr_1d, onp.CanArrayFunction)
 
-    arr_2d: onp.CanArrayFunction[Any, _Arr2D[np.uint8]] = np.array([[42]], sct)
+    arr_2d: onp.CanArrayFunction[_AnyCallable, _Arr2D[np.uint8]] = np.array([[42]], sct)
     assert isinstance(arr_2d, onp.CanArrayFunction)
 
 
@@ -106,16 +110,16 @@ def test_has_array_priority() -> None:
 def test_has_array_interface() -> None:
     sct: type[np.generic] = np.uint8
 
-    scalar: onp.HasArrayInterface[Any] = sct(42)
+    scalar: onp.HasArrayInterface = sct(42)
     assert isinstance(scalar, onp.HasArrayInterface)
 
-    arr_0d: onp.HasArrayInterface[Any] = np.array(42, sct)
+    arr_0d: onp.HasArrayInterface = np.array(42, sct)
     assert isinstance(arr_0d, onp.HasArrayInterface)
     assert not isinstance(42, onp.HasArrayInterface)
 
-    arr_1d: onp.HasArrayInterface[Any] = np.array([42], sct)
+    arr_1d: onp.HasArrayInterface = np.array([42], sct)
     assert isinstance(arr_1d, onp.HasArrayInterface)
     assert not isinstance([42], onp.HasArrayInterface)
 
-    arr_2d: onp.HasArrayInterface[Any] = np.array([[42]], sct)
+    arr_2d: onp.HasArrayInterface = np.array([[42]], sct)
     assert isinstance(arr_2d, onp.HasArrayInterface)

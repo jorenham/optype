@@ -55,7 +55,7 @@ do_dir: Final = cast(_d.DoesDir, dir)
 # callables
 
 if sys.version_info >= (3, 11):
-    do_call: Final = cast(_d.DoesCall, _o.call)  # type: ignore[attr-defined]
+    do_call: Final = cast(_d.DoesCall, _o.call)
 else:
     _Pss = ParamSpec('_Pss')
     _R = TypeVar('_R')
