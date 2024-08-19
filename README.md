@@ -37,10 +37,10 @@
             src="https://img.shields.io/badge/pre--commit-enabled-orange?logo=pre-commit"
         />
     </a>
-    <a href="https://detachhead.github.io/basedpyright">
+    <a href="https://github.com/KotlinIsland/basedmypy">
         <img
-            alt="optype - mypy"
-            src="https://www.mypy-lang.org/static/mypy_badge.svg"
+            alt="optype - basedmypy"
+            src="https://img.shields.io/badge/basedmypy-checked-fd9002"
         />
     </a>
     <a href="https://detachhead.github.io/basedpyright">
