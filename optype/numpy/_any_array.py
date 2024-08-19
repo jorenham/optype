@@ -148,7 +148,10 @@ AnyTimeDelta64Array: Alias = _Any1[np.timedelta64]
 AnyObjectArray: Alias = _Any2[np.object_, _ct.Object]
 
 if _x.NP2 and not _x.NP20:  # `numpy>=2.1`
-    AnyStringArray: Alias = _a.CanArray[tuple[int, ...], np.dtypes.StringDType]
+    AnyStringArray: Alias = _a.CanArray[  # type: ignore[type-var]
+        tuple[int, ...],
+        np.dtypes.StringDType,  # pyright: ignore[reportInvalidTypeArguments]
+    ]
 elif _x.NP2:  # `numpy>=2,<2.1`
     AnyStringArray: Alias = _a.CanArray[tuple[int, ...], np.dtype[Never]]
 else:  # `numpy<2`

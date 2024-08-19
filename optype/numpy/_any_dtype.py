@@ -456,13 +456,11 @@ if _x.NP2:
     # I (@jorenham) added them, see https://github.com/numpy/numpy/pull/27008).
     if not _x.NP20:
         # `numpy>=2.1`
-        AnyStringDType: Alias = _dt.HasDType[np.dtypes.StringDType] | _StringCode
+        _HasStringDType: Alias = _dt.HasDType[np.dtypes.StringDType]  # type: ignore[type-var] # pyright: ignore[reportInvalidTypeArguments]
 
-        AnyDType: Alias = (
-            _Any2[np.generic, object]
-            | _dt.HasDType[np.dtypes.StringDType]
-            | LiteralString
-        )
+        AnyStringDType: Alias = _HasStringDType | _StringCode  # type: ignore[type-var]
+
+        AnyDType: Alias = _Any2[np.generic, object] | _HasStringDType | LiteralString
     else:
         AnyStringDType: Alias = np.dtype[Never] | _StringCode
 

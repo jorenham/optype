@@ -78,7 +78,6 @@ venv = ".venv"
 pythonVersion = "3.10"
 pythonPlatform = "All"
 typeCheckingMode = "all"
-# defineConstant = {NP2 = true, NP20 = false}
 defineConstant = {NP2 = true, NP20 = false}
 
 reportUnusedCallResult = false  # https://github.com/microsoft/pyright/issues/8650
