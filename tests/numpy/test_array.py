@@ -24,17 +24,17 @@ def test_can_array() -> None:
     assert isinstance(scalar, onp.CanArray)
     assert not isinstance(42, onp.CanArray)
 
-    x_0d: onp.CanArray[_Shape0D, np.dtypes.UInt8DType] = np.array(42, sct)
+    x_0d: onp.CanArray[_Shape0D, np.dtype[np.uint8]] = np.array(42, sct)
     assert isinstance(x_0d, onp.CanArray)
 
-    x_1d: onp.CanArray[_Shape1D, np.dtypes.UInt8DType] = np.array([42], sct)
+    x_1d: onp.CanArray[_Shape1D, np.dtype[np.uint8]] = np.array([42], sct)
     assert isinstance(x_1d, onp.CanArray)
     assert not isinstance([42], onp.CanArray)
 
-    x_2d: onp.CanArray[_Shape2D, np.dtypes.UInt8DType] = np.array([[42]], sct)
+    x_2d: onp.CanArray[_Shape2D, np.dtype[np.uint8]] = np.array([[42]], sct)
     assert isinstance(x_2d, onp.CanArray)
 
-    mat: onp.CanArray[_Shape2D, np.dtypes.UInt8DType] = np.asmatrix(42, sct)
+    mat: onp.CanArray[_Shape2D, np.dtype[np.uint8]] = np.asmatrix(42, sct)
     assert isinstance(mat, onp.CanArray)
 
 
