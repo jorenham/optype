@@ -13,12 +13,13 @@ ci:
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v5.0.0
     hooks:
       - id: check-added-large-files
       - id: check-ast
       - id: check-case-conflict
       - id: check-executables-have-shebangs
+      - id: check-illegal-windows-names
       - id: check-json
       - id: check-merge-conflict
       - id: check-shebang-scripts-are-executable
@@ -45,7 +46,7 @@ repos:
       - id: markdownlint
 
   - repo: https://github.com/python-poetry/poetry
-    rev: 1.8.3
+    rev: 1.8.4
     hooks:
       - id: poetry-check
       - id: poetry-lock
@@ -59,7 +60,7 @@ repos:
           - tomli
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.7
+    rev: v0.6.9
     hooks:
       - id: ruff
         args: [--fix, --show-fixes]
