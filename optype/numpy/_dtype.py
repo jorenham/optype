@@ -33,5 +33,6 @@ class HasDType(Protocol[_DT_co]):
     constructor, i.e. its constructor is compatible with a signature that
     looks something like `(HasDType[DT: numpy.DType], ...) -> DT`.
     """
+
     @property
     def dtype(self, /) -> _DT_co: ...

@@ -5,7 +5,9 @@ __all__ = "AnnotatedAlias", "GenericType", "LiteralAlias", "UnionAlias"
 
 
 _T = TypeVar("_T")
-class _C(Generic[_T]):  ...  # noqa: E302
+
+
+class _C(Generic[_T]): ...
 
 
 # typing._GenericAlias

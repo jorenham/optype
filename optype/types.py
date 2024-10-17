@@ -32,6 +32,7 @@ class WrappedFinalType(Protocol):
     Note that the name `HasFinal` isn't used, because `__final__` is
     undocumented, and therefore not a part of the public API.
     """
+
     __final__: Literal[True]
 
 

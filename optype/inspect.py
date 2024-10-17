@@ -11,6 +11,7 @@ if sys.version_info >= (3, 13):
     from typing import TypeAliasType, TypeIs, is_protocol, overload
 else:
     from typing_extensions import TypeAliasType, is_protocol, overload
+
     try:
         from typing_extensions import TypeIs
     except ImportError:
@@ -204,7 +205,7 @@ def is_generic_alias(type_expr: type | object, /) -> TypeIs[GenericType | Generi
     return (
         isinstance(type_expr, GenericType | GenericAlias)
         and not isinstance(type_expr, UnionType | UnionAlias)
-    )
+    )  # fmt: skip
 
 
 def get_args(tp: type | object, /) -> tuple[type | object, ...]:
@@ -265,7 +266,8 @@ def get_protocol_members(cls: type, /) -> frozenset[str]:
         if (
             callable(f := getattr(v, "__func__", v))
             or (isinstance(v, property) and (f := v.fget) is not None)
-        ) and f.__module__ == module
+        )
+        and f.__module__ == module
     }
 
     # this hack here is plagiarized from the (often incorrect)
@@ -278,10 +280,11 @@ def get_protocol_members(cls: type, /) -> frozenset[str]:
     # sometimes __protocol_attrs__ hallicunates some non-existing dunders.
     # the `getattr_static` avoids potential descriptor magic
     members = {
-        member for member in members
+        member
+        for member in members
         if member in annotations
         or inspect.getattr_static(cls, member) is not None
-    }
+    }  # fmt: skip
 
     # also include any of the parents
     for supercls in cls.mro()[1:]:
@@ -304,4 +307,4 @@ def get_protocols(module: ModuleType, /, private: bool = False) -> frozenset[typ
     return frozenset({
         cls for name in members
         if is_protocol(cls := cast(type, getattr(module, name)))
-    })
+    })  # fmt: skip

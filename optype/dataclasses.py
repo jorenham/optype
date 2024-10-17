@@ -2,6 +2,7 @@
 Runtime-protocols for the `dataclasses` standard library.
 https://docs.python.org/3/library/dataclasses.html
 """
+
 from __future__ import annotations
 
 import sys
@@ -32,4 +33,5 @@ _FieldsT = TypeVar(
 @runtime_checkable
 class HasDataclassFields(Protocol[_FieldsT]):
     """Can be used to check whether a type or instance is a dataclass."""
+
     __dataclass_fields__: _FieldsT

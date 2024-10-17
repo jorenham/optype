@@ -44,12 +44,7 @@ def test_from_bool() -> None:
 
 @pytest.mark.parametrize(
     "sctype",
-    [
-        np.int8, np.uint8,
-        np.int16, np.uint16,
-        np.int32, np.uint32,
-        np.int64, np.uint64,
-    ],
+    [np.int8, np.uint8, np.int16, np.uint16, np.int32, np.uint32, np.int64, np.uint64],
 )
 def test_from_integer(sctype: type[_sc.Integer]) -> None:
     x_py = 42

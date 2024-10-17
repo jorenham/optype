@@ -35,7 +35,6 @@ class GenericType:
     def __args__(self, /) -> tuple[object, ...]: ...
     @property
     def __parameters__(self, /) -> tuple[_TypeParam, ...]: ...
-
     def __init__(
         self,
         origin: _TypeExpr | _SpecialForm,
@@ -56,6 +55,7 @@ class GenericType:
 
 @final
 class LiteralAlias(GenericType): ...
+
 @final
 class UnionAlias(GenericType): ...
 
@@ -75,7 +75,6 @@ class UnpackAlias(GenericType, Generic[_Ts_co]):
     def __typing_unpacked_tuple_args__(self, /) -> tuple[object, ...] | None: ...
     @property
     def __typing_is_unpacked_typevartuple__(self, /) -> bool: ...
-
     @property
     @override
     def __origin__(self, /) -> type[_SpecialForm]: ...
@@ -85,6 +84,5 @@ class UnpackAlias(GenericType, Generic[_Ts_co]):
     @property
     @override
     def __parameters__(self, /) -> tuple[()] | tuple[TypeVarTuple]: ...
-
     @override
     def __init__(self, origin: _SpecialForm, args: tuple[_Ts_co], /) -> None: ...

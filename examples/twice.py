@@ -5,6 +5,7 @@ from typing import (
     TypeAlias,
     TypeVar,
 )
+
 if sys.version_info >= (3, 12):
     from typing import assert_type
 else:

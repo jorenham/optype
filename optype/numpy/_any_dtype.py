@@ -2,6 +2,7 @@
 The allowed `np.dtype` arguments for specific scalar types.
 The names are analogous to those in `numpy.dtypes`.
 """
+
 from __future__ import annotations
 
 import sys
@@ -78,7 +79,7 @@ __all__ = [
     "AnyObjectDType",
 
     "AnyStringDType",
-]
+]  # fmt: skip
 
 
 _ST = TypeVar("_ST", bound=np.generic)
@@ -216,8 +217,16 @@ AnyComplex64DType: Alias = _Any1[np.complex64] | _Complex64Code
 
 _Complex128Name: Alias = L["complex128", "clongdouble"]
 _Complex128Char: Alias = L[
-    "c16", "|c16", "=c16", "<c16", ">c16",
-    "D", "|D", "=D", "<D", ">D",
+    "c16",
+    "|c16",
+    "=c16",
+    "<c16",
+    ">c16",
+    "D",
+    "|D",
+    "=D",
+    "<D",
+    ">D",
 ]
 _Complex128Code: Alias = L[_Complex128Name, _Complex128Char]
 AnyComplex128DType: Alias = _Any1[np.complex128] | _Complex128Code
@@ -328,9 +337,21 @@ AnyCharacterDType: Alias = _Any2[np.character, bytes | str | _ct.Bytes] | _Chara
 # TODO: Include structured DType values, e.g. `dtype(('u8', 4))`
 _VoidName: Alias = L["void"]  # 'void0' was removed in NumPy 2.0
 _VoidChar: Alias = L[
-    "V", "|V", "=V", "<V", ">V",
-    "V0", "|V0", "=V0", "<V0", ">V0",
-    "V1", "|V1", "=V1", "<V1", ">V1",
+    "V",
+    "|V",
+    "=V",
+    "<V",
+    ">V",
+    "V0",
+    "|V0",
+    "=V0",
+    "<V0",
+    ">V0",
+    "V1",
+    "|V1",
+    "=V1",
+    "<V1",
+    ">V1",
 ]
 _VoidCode: Alias = L[_VoidName, _VoidChar]
 AnyVoidDType: Alias = _Any2[np.void, memoryview | _ct.Void] | _VoidCode
@@ -338,8 +359,7 @@ AnyVoidDType: Alias = _Any2[np.void, memoryview | _ct.Void] | _VoidCode
 # flexible
 _FlexibleCode: Alias = L[_CharacterCode, _VoidCode]
 AnyFlexibleDType: Alias = (
-    _Any2[np.flexible, bytes | str | memoryview | _ct.Flexible]
-    | _FlexibleCode
+    _Any2[np.flexible, bytes | str | memoryview | _ct.Flexible] | _FlexibleCode
 )
 
 # bool_
@@ -429,8 +449,7 @@ if _x.NP2:
     ]
     _UnsignedIntegerCode: Alias = L[_UnsignedIntegerName, _UnsignedIntegerChar]
     AnyUnsignedIntegerDType: Alias = (
-        _Any2[_sc.UnsignedInteger, _ct.UnsignedInteger]
-        | _UnsignedIntegerCode
+        _Any2[_sc.UnsignedInteger, _ct.UnsignedInteger] | _UnsignedIntegerCode
     )
 
     _SignedIntegerChar: Alias = L[
@@ -440,8 +459,7 @@ if _x.NP2:
     ]
     _SignedIntegerCode: Alias = L[_SignedIntegerName, _SignedIntegerChar]
     AnySignedIntegerDType: Alias = (
-        _Any2[_sc.SignedInteger, _ct.SignedInteger]
-        | _SignedIntegerCode
+        _Any2[_sc.SignedInteger, _ct.SignedInteger] | _SignedIntegerCode
     )
 
     _IntegerCode: Alias = L[_UnsignedIntegerCode, _SignedIntegerCode]
@@ -488,15 +506,13 @@ else:
     _UnsignedIntegerChar: Alias = L[_UIntCharCommon, _UIntPChar]
     _UnsignedIntegerCode: Alias = L[_UnsignedIntegerName, _UnsignedIntegerChar]
     AnyUnsignedIntegerDType: Alias = (
-        _Any2[_sc.UnsignedInteger, _ct.UnsignedInteger]
-        | _UnsignedIntegerCode
+        _Any2[_sc.UnsignedInteger, _ct.UnsignedInteger] | _UnsignedIntegerCode
     )
 
     _SignedIntegerChar: Alias = L[_SIntCharCommon, _IntPChar]
     _SignedIntegerCode: Alias = L[_SignedIntegerName, _SignedIntegerChar]
     AnySignedIntegerDType: Alias = (
-        _Any2[_sc.SignedInteger, _ct.SignedInteger]
-        | _SignedIntegerCode
+        _Any2[_sc.SignedInteger, _ct.SignedInteger] | _SignedIntegerCode
     )
 
     _IntegerCode: Alias = L[_UnsignedIntegerCode, _SignedIntegerCode]

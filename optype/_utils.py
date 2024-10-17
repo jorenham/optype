@@ -62,17 +62,20 @@ def set_module(module: LiteralString, /) -> _DoesSetModule:
     ```python
     from typing import overload
 
+
     @overload
-    @set_module('spamlib')
+    @set_module("spamlib")
     def process(response: None, /) -> None: ...
 
+
     @overload
-    @set_module('spamlib')
+    @set_module("spamlib")
     def process(response: bytes, /) -> str: ...
 
-    @set_module('spamlib')
+
+    @set_module("spamlib")
     def process(response: byes | None, /) -> str | None:
-        ...  # implementation here
+        pass  # implementation here
     ```
     """
     assert module

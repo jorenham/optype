@@ -105,6 +105,7 @@ class CanBytes(Protocol[_BytesT_co]):
     So if `__bytes__` returns an instance of a custom `bytes` subtype
     `Y <: bytes`, then `bytes()` will also return `Y` (i.e. no upcasting).
     """
+
     def __bytes__(self, /) -> _BytesT_co: ...
 
 
@@ -116,11 +117,13 @@ class CanStr(Protocol[_StrT_co]):
     `+Y`. That means that if `__str__()` returns an instance of a custom `str`
     subtype `Y <: str`, then `str()` will also return `Y` (i.e. no upcasting).
     """
+
     @override
     def __str__(self, /) -> _StrT_co: ...
 
 
 # Object representation
+
 
 @set_module("optype")
 @runtime_checkable
@@ -143,6 +146,7 @@ class CanRepr(Protocol[_StrT_co]):
     That means that if `__repr__` returns an instance of a custom `str`
     subtype `Y <: str`, then `repr()` will also return `Y` (i.e. no upcasting).
     """
+
     @override
     def __repr__(self, /) -> _StrT_co: ...
 
@@ -155,6 +159,7 @@ class CanFormat(Protocol[_StrT_contra, _StrT_co]):
     `-X` *contra*variant, and `+Y` *co*variant. Both `X` and `Y` can be `str`
     or `str` subtypes. Note that `format()` *does not* upcast `Y` to `str`.
     """
+
     @override
     def __format__(self, fmt: _StrT_contra, /) -> _StrT_co: ...  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
 
@@ -170,6 +175,7 @@ class CanNext(Protocol[_V_co]):
     also have a `__iter__` method, which isn't needed in most cases (at least
     not in cpython).
     """
+
     def __next__(self, /) -> _V_co: ...
 
 
@@ -180,6 +186,7 @@ _CanNextT_co = TypeVar("_CanNextT_co", bound=CanNext[object], covariant=True)
 @runtime_checkable
 class CanIter(Protocol[_CanNextT_co]):
     """Like `collections.abc.Iterable[V]`, but with a flexible return type."""
+
     def __iter__(self, /) -> _CanNextT_co: ...
 
 
@@ -187,6 +194,7 @@ class CanIter(Protocol[_CanNextT_co]):
 @runtime_checkable
 class CanIterSelf(CanNext[_V_co], CanIter[CanNext[_V_co]], Protocol[_V_co]):
     """Like `collections.abc.Iterator[V]`, but without the `abc` nonsense."""
+
     @override
     def __iter__(self, /) -> Self: ...
 
@@ -213,6 +221,7 @@ class CanAIter(Protocol[_CanANextT_co]):
 @runtime_checkable
 class CanAIterSelf(CanAIter["CanAIterSelf[_V_co]"], CanANext[_V_co], Protocol[_V_co]):
     """Like `collections.abc.AsyncIterator[T]`, but without the `abc` nonsense."""
+
     @override
     def __aiter__(self, /) -> Self: ...
 
@@ -236,6 +245,7 @@ class CanEq(Protocol[_ObjectT_contra, _AnyBoolT_co]):  # noqa: PLW1641
     So in reality, it should be `__eq__: (Self, X, /) -> Y`, with `X` unbounded
     and *contra*variant, and `+Y` unbounded and *co*variant.
     """
+
     @override
     def __eq__(self, rhs: _ObjectT_contra, /) -> _AnyBoolT_co: ...  # pyright:ignore[reportIncompatibleMethodOverride]
 
@@ -247,6 +257,7 @@ class CanNe(Protocol[_ObjectT_contra, _AnyBoolT_co]):
     Just like `__eq__`, the `__ne__` method is incorrectly annotated in
     typeshed. Refer to `CanEq` for why this is.
     """
+
     @override
     def __ne__(self, rhs: _ObjectT_contra, /) -> _AnyBoolT_co: ...  # pyright:ignore[reportIncompatibleMethodOverride]
 
@@ -300,6 +311,7 @@ class CanGetattr(Protocol[_StrT_contra, _AnyT_co]):
 @runtime_checkable
 class CanGetattribute(Protocol[_StrT_contra, _AnyT_co]):
     """Note that `isinstance(x, CanGetattribute)` is always `True`."""
+
     @override
     def __getattribute__(self, name: _StrT_contra, /) -> _AnyT_co: ...  # type: ignore[misc]  # pyright: ignore[reportIncompatibleMethodOverride]
 
@@ -308,6 +320,7 @@ class CanGetattribute(Protocol[_StrT_contra, _AnyT_co]):
 @runtime_checkable
 class CanSetattr(Protocol[_StrT_contra, _AnyT_contra]):
     """Note that `isinstance(x, CanSetattr)` is always true."""
+
     @override
     def __setattr__(self, name: _StrT_contra, value: _AnyT_contra, /) -> _Ignored: ...  # type: ignore[misc]  # pyright: ignore[reportIncompatibleMethodOverride]
 
@@ -365,6 +378,7 @@ class CanSetName(Protocol[_T_contra, _StrT_contra]):
 
 
 # Collection type operands.
+
 
 @set_module("optype")
 @runtime_checkable
@@ -447,6 +461,7 @@ class CanSequence(
 
 
 # Arithmetic operands
+
 
 @set_module("optype")
 @runtime_checkable
@@ -560,6 +575,7 @@ class CanOr(Protocol[_T_contra, _T_co]):
 
 
 # Reflected arithmetic operands
+
 
 @set_module("optype")
 @runtime_checkable
@@ -835,6 +851,7 @@ class CanIOrSelf(CanIOr[_T_contra, "CanIOrSelf[_T_contra]"], Protocol[_T_contra]
 
 
 # Unary arithmetic ops
+
 
 @set_module("optype")
 @runtime_checkable

@@ -130,7 +130,6 @@ xfail_strict = true
 [tool.repo-review]
 ignore = [
     "PY004",    # no `docs/` (maybe later)
-    "PC110",    # no auto-format (yet)
     "PC140",    # basedmypy > mypy
     "PC170",    # no sphinx
     "PC180",    # no css or js
@@ -209,6 +208,10 @@ force-exclude = true
         "ANN001",   # missing-type-function-argument (deprecated)
         "ANN002",   # missing-type-args (deprecated)
         "ANN401",   # any-type
+        # flake8-commas
+        "COM812",   # missing-trailing-comma (ruff format)
+        # flake8-implicit-str-concat
+        "ISC001",   # single-line-implicit-string-concatenation (ruff format)
         # flake8-pyi
         "PYI034",   # non-self-return-type
         "PYI036",   # bad-exit-annotation

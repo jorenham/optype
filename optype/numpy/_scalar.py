@@ -82,10 +82,12 @@ class Scalar(Protocol[_PT_co, _NB_co]):
     def __ne__(self, other: object, /) -> np.bool_: ...  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
 
     def __bool__(self, /) -> bool: ...
+
     # Unlike `numpy/__init__.pyi` suggests, there exists no `__bytes__` method
     # in `np.generic`. Instead, it implements the (C) buffer protocol.
 
     if sys.version_info >= (3, 12):
+
         def __buffer__(self, flags: int, /) -> memoryview: ...
 
     def __copy__(self, /) -> Self: ...
