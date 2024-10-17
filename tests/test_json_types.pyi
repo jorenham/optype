@@ -1,13 +1,13 @@
-import optype as opt
+import optype as o
 
-def f_val(obj: opt.json.Value, /) -> str: ...
-def f_aval(obj: opt.json.AnyValue, /) -> str: ...
+def f_val(obj: o.json.Value, /) -> str: ...
+def f_aval(obj: o.json.AnyValue, /) -> str: ...
 
-val: opt.json.Value
-val_arr_obj: opt.json.Value | opt.json.Array | opt.json.Object
-aval: opt.json.AnyValue
-aval_aarr_aobj: opt.json.AnyValue | opt.json.AnyArray | opt.json.AnyObject
-aval_val: opt.json.AnyValue | opt.json.Value
+val: o.json.Value
+val_arr_obj: o.json.Value | o.json.Array | o.json.Object
+aval: o.json.AnyValue
+aval_aarr_aobj: o.json.AnyValue | o.json.AnyArray | o.json.AnyObject
+aval_val: o.json.AnyValue | o.json.Value
 
 _ = f_val(val_arr_obj)
 

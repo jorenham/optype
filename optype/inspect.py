@@ -26,8 +26,7 @@ if TYPE_CHECKING:
     from .typing import AnyIterable
 
 
-import optype._can as _c
-
+from ._core import _can as _c
 from .types import AnnotatedAlias, GenericType, LiteralAlias, UnionAlias
 
 

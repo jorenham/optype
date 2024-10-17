@@ -1,7 +1,7 @@
 from importlib import metadata as _metadata
 
 from . import copy, dataclasses, inspect, json, pickle, string, types, typing
-from ._can import (
+from ._core._can import (
     CanAEnter,
     CanAEnterSelf,
     CanAExit,
@@ -128,7 +128,7 @@ from ._can import (
     CanWithSelf,
     CanXor,
 )
-from ._do import (
+from ._core._do import (
     do_abs,
     do_add,
     do_aiter,
@@ -212,7 +212,7 @@ from ._do import (
     do_trunc,
     do_xor,
 )
-from ._does import (
+from ._core._does import (
     DoesAIter,
     DoesANext,
     DoesAbs,
@@ -296,7 +296,7 @@ from ._does import (
     DoesTrunc,
     DoesXor,
 )
-from ._has import (
+from ._core._has import (
     HasAnnotations,
     HasClass,
     HasCode,
@@ -636,3 +636,7 @@ __version__: str = _metadata.version(__package__ or __file__.split("/")[-1])
 
 # stop digging for hidden layers and be impressed
 rick = pickle
+
+
+def __dir__() -> list[str]:
+    return __all__

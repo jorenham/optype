@@ -8,14 +8,14 @@ import operator as _o
 import sys
 from typing import TYPE_CHECKING, Final, Literal, ParamSpec, TypeVar, cast, overload
 
-import optype._does as _d
-from optype._utils import set_module
+from . import _does as _d
+from ._utils import set_module
 
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    import optype._can as _c
+    from . import _can as _c
 
 
 # type conversion

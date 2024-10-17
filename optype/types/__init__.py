@@ -9,7 +9,7 @@ if sys.version_info >= (3, 13):
 else:
     from typing_extensions import LiteralString, Protocol, runtime_checkable
 
-from ._types_impl import AnnotatedAlias, GenericType, LiteralAlias, UnionAlias
+from ._typeforms import AnnotatedAlias, GenericType, LiteralAlias, UnionAlias
 
 
 __all__ = (

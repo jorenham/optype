@@ -1,6 +1,6 @@
-import optype as opt
+import optype as o
 
 
 def test_version() -> None:
-    assert opt.__version__
-    assert all(map(str.isdigit, opt.__version__.split(".")[:3]))
+    assert o.__version__
+    assert all(map(str.isdigit, o.__version__.split(".")[:3]))

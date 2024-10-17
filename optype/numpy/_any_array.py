@@ -5,7 +5,7 @@ from typing import TypeAlias as Alias
 
 import numpy as np
 
-import optype as opt
+import optype as o
 import optype.numpy._array as _a
 import optype.numpy._compat as _x
 import optype.numpy._scalar as _sc
@@ -77,7 +77,7 @@ _PyGeneric: Alias = int | float | complex | _PyChar
 
 _T_np = TypeVar("_T_np", bound=np.generic)
 _T_ct = TypeVar("_T_ct", bound=_ct.CType)
-_T_py = TypeVar("_T_py", bound=_PyGeneric | opt.CanBuffer)
+_T_py = TypeVar("_T_py", bound=_PyGeneric | o.CanBuffer)
 
 _Any1: Alias = _AnyPyArray[_a.CanArray[tuple[int, ...], np.dtype[_T_np]]]
 _Any2: Alias = _Any1[_T_np] | _AnyPyArray[_T_ct] | _ct.Array[_T_ct]
@@ -99,7 +99,7 @@ AnyBoolArray: Alias = _Any3[_x.Bool, _ct.Bool, bool]
 # NOTE: This requires enabling PEP 688 semantics in your type-checker:
 #   - mypy: see https://github.com/python/mypy/issues/15313
 #   - pyright: set `disableBytesTypePromotions = true` (or `strict = true`)
-AnyUInt8Array: Alias = _Any3[np.uint8, _ct.UInt8, opt.CanBuffer]
+AnyUInt8Array: Alias = _Any3[np.uint8, _ct.UInt8, o.CanBuffer]
 AnyUInt16Array: Alias = _Any2[np.uint16, _ct.UInt16]
 AnyUInt32Array: Alias = _Any2[np.uint32, _ct.UInt32]
 AnyUInt64Array: Alias = _Any2[np.uint64, _ct.UInt64]

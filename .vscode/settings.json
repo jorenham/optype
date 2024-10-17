@@ -11,5 +11,6 @@
   "mypy-type-checker.args": [
     "--config-file=pyproject.toml"
   ],
-  "python.testing.pytestEnabled": true
+  "python.testing.pytestEnabled": true,
+  "editor.defaultFormatter": "charliermarsh.ruff"
 }
