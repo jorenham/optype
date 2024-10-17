@@ -1,5 +1,5 @@
 ci:
-  autoupdate_branch: "dev"
+  autoupdate_branch: "master"
   autoupdate_commit_msg: "update pre-commit hooks"
   skip:
     - markdownlint
