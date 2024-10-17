@@ -176,19 +176,11 @@ which could serve as inspiration.
 
 ### Your First Code Contribution
 
-Ensure you have [poetry](https://python-poetry.org/docs/#installation)
-installed.
-It can help to use optype's lowest-supported Python version, so that you don't
-accidentally use those bleeding-edge Python features that you shouldn't, e.g.
+Ensure you have [uv](https://github.com/astral-sh/uv) installed.
+Now you can install the dev dependencies:
 
 ```bash
-poetry env use python3.11
-```
-
-Now you can install the dev dependencies using
-
-```bash
-poetry install --sync
+uv sync
 ```
 
 ### pre-commit
@@ -197,7 +189,7 @@ Optype uses [pre-commit](https://pre-commit.com/) to ensure that the code is
 formatted and typed correctly when committing the changes.
 
 ```bash
-poetry run pre-commit install
+uv run pre-commit install
 ```
 
 > [!NOTE]
@@ -210,7 +202,7 @@ Optype uses [pytest](https://docs.pytest.org/en/stable/) for unit testing.
 These tests can be run with
 
 ```bash
-poetry run pytest
+uv run pytest
 ```
 
 ### Tox
@@ -219,7 +211,7 @@ The pre-commit hooks and the tests can easily be run with
 [tox](https://github.com/tox-dev/tox):
 
 ```bash
-poetry run tox -p all
+uv run tox -p all
 ```
 
 This will run the tests in parallel on all supported Python versions.
