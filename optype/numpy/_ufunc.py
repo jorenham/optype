@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import sys
-from collections.abc import Callable as CanCall
+from collections.abc import Callable as CanCall, Iterable
 from typing import (
     TYPE_CHECKING,
     Literal as L,  # noqa: N817
@@ -23,8 +23,6 @@ else:
 if TYPE_CHECKING:
     from collections.abc import Mapping
     from types import NotImplementedType
-
-    import optype as opt
 
 
 __all__ = ['CanArrayFunction', 'CanArrayUFunc', 'UFunc']
@@ -229,7 +227,7 @@ class CanArrayFunction(Protocol[_FT_contra, _T_co]):
         /,
         func: _FT_contra,
         # although this could be tighter, this ensures numpy.typing compat
-        types: opt.CanIter[opt.CanIterSelf[type[CanArrayFunction]]],
+        types: Iterable[type[CanArrayFunction]],
         # ParamSpec can only be used on *args and **kwargs for some reason...
         args: tuple[object, ...],
         kwargs: Mapping[str, object],

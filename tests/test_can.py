@@ -9,7 +9,7 @@ This is a simple and effective way to test for false positive, by
 temporarily that invalid `optype` use will actually cause the typechecker
 (we only consider (based)pyright at the moment) to complain.
 """
-from collections.abc import Collection, Iterator
+from collections.abc import Collection, Iterable, Iterator
 from typing import TypeAlias, TypeVar
 
 import pytest
@@ -47,13 +47,13 @@ def test_iadd() -> None:
     """
     some_list: list[int] = [42]
 
-    x_iadd: CanIAdd[CanReIter[int], list[int]] = some_list
+    x_iadd: CanIAdd[Iterable[int], list[int]] = some_list
     x_iadd_wrong_in: CanIAdd[str, list[int]] = some_list  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     x_iadd_wrong_in_val: CanIAdd[CanReIter[str], list[int]] = some_list  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     x_iadd_wrong_out: CanIAdd[CanReIter[int], list[str]] = some_list  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     assert isinstance(some_list, CanIAdd)
 
-    x_iadd_self: CanIAddSelf[CanReIter[int]] = some_list
+    x_iadd_self: CanIAddSelf[Iterable[int]] = some_list
     x_iadd_self_wrong: CanIAddSelf[str] = some_list  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     x_iadd_self_wrong_val: CanIAddSelf[CanReIter[str]] = some_list  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     assert isinstance(some_list, CanIAddSelf)
