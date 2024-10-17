@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from collections.abc import Generator
     from types import TracebackType
 
-from optype._utils import set_module
+from ._utils import set_module
 
 
 # return type that is usually `None`, but can be anything, as it is ignored at runtime

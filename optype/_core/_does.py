@@ -12,7 +12,7 @@ else:
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    import optype._can as _c
+    from . import _can as _c
 
 
 from ._utils import set_module

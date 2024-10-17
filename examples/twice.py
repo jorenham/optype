@@ -11,13 +11,13 @@ if sys.version_info >= (3, 12):
 else:
     from typing_extensions import assert_type
 
-import optype as opt
+import optype as o
 
 Y = TypeVar("Y")
 Two: TypeAlias = Literal[2]
 
 
-def twice(x: opt.CanRMul[Two, Y], /) -> Y:
+def twice(x: o.CanRMul[Two, Y], /) -> Y:
     return 2 * x
 
 
@@ -29,8 +29,8 @@ assert_type(twice([object()]), list[object])
 
 
 # %%
-def twice2(x: opt.CanRMul[Two, Y] | opt.CanMul[Two, Y], /) -> Y:
-    return 2 * x if isinstance(x, opt.CanRMul) else x * 2
+def twice2(x: o.CanRMul[Two, Y] | o.CanMul[Two, Y], /) -> Y:
+    return 2 * x if isinstance(x, o.CanRMul) else x * 2
 
 
 # %%

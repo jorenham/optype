@@ -1,12 +1,12 @@
 import pytest
 
-import optype as opt
+import optype as o
 from optype.inspect import get_protocol_members, is_runtime_protocol
 
 
 @pytest.mark.parametrize(
     "cls",
-    [getattr(opt.pickle, k) for k in opt.pickle.__all__],
+    [getattr(o.pickle, k) for k in o.pickle.__all__],
 )
 def test_protocols(cls: type) -> None:
     # ensure correct name
@@ -15,7 +15,7 @@ def test_protocols(cls: type) -> None:
     assert cls.__name__.startswith("Can")
 
     # ensure exported
-    assert cls.__name__ in opt.pickle.__all__
+    assert cls.__name__ in o.pickle.__all__
 
     # ensure single-method protocols
     assert len(get_protocol_members(cls) - {"__new__"}) == 1

@@ -7,13 +7,9 @@ from __future__ import annotations
 
 import sys
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Concatenate, Literal, TypeAlias
+from typing import Concatenate, Literal, TypeAlias
 
-from optype._can import CanIterSelf
-
-
-if TYPE_CHECKING:
-    from ._can import CanIndex
+from ._core._can import CanIndex, CanIterSelf
 
 
 if sys.version_info >= (3, 13):

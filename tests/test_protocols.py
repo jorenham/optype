@@ -4,12 +4,8 @@ from typing import cast
 
 import pytest
 
-import optype as opt
-import optype._can
-import optype._do
-import optype._does
-import optype._has
-from optype._utils import get_callables
+import optype as o
+from optype._core import _can, _do, _does, _has, _utils
 from optype.inspect import (
     get_protocol_members,
     get_protocols,
@@ -38,7 +34,7 @@ def _is_dunder(name: str, /) -> bool:
 
 def _pascamel_to_snake(
     pascamel: str,
-    start: opt.CanLt[int, opt.CanBool] = 0,
+    start: o.CanLt[int, o.CanBool] = 0,
     /,
 ) -> str:
     """Converts 'CamelCase' or 'pascalCase' to 'snake_case'."""
@@ -57,57 +53,60 @@ def _pascamel_to_snake(
 
 def test_all_public() -> None:
     """
-    Ensure all of protocols from `optype._can`, `optype._has`, and
-    `optype._does` are in `optype.__all__`.
+    Ensure all of protocols from `_can`, `_has`, and
+    `_does` are in `optype.__all__`.
     """
-    protocols_all = get_protocols(opt)
-    protocols_can = get_protocols(optype._can)
-    protocols_has = get_protocols(optype._has)
-    protocols_does = get_protocols(optype._does)
+    protocols_all = get_protocols(o)
+    protocols_can = get_protocols(_can)
+    protocols_has = get_protocols(_has)
+    protocols_does = get_protocols(_does)
 
     assert protocols_can | protocols_has | protocols_does == protocols_all
 
 
-@pytest.mark.parametrize("cls", get_protocols(optype._can))
+@pytest.mark.parametrize("cls", get_protocols(_can))
 def test_can_runtime_checkable(cls: type) -> None:
     """Ensure that all `Can*` protocols are `@runtime_checkable`."""
     assert is_runtime_protocol(cls)
 
 
-@pytest.mark.parametrize("cls", get_protocols(optype._has))
+@pytest.mark.parametrize("cls", get_protocols(_has))
 def test_has_runtime_checkable(cls: type) -> None:
     """Ensure that all `Has*` protocols are `@runtime_checkable`."""
     assert is_runtime_protocol(cls)
 
 
-@pytest.mark.parametrize("cls", get_protocols(optype._does))
+@pytest.mark.parametrize("cls", get_protocols(_does))
 def test_does_not_runtime_checkable(cls: type) -> None:
     """Ensure that all `Does*` protocols are **not** `@runtime_checkable`."""
     assert not is_runtime_protocol(cls)
 
 
 def test_num_does_eq_num_do() -> None:
-    num_does = len(get_protocols(optype._does))
-    num_do = len(get_callables(optype._do))
-    assert num_does == num_do
+    num_does = len(set_does := get_protocols(_does))
+    num_do = len(set_do := _utils.get_callables(_do))
+
+    assert not {t.__name__ for t in set_does if not t.__name__.startswith("Does")}
+    assert not {k for k in set_do if not k.startswith("do_")}
+
+    assert num_does == num_do, {k[3:] for k in set_do} - {
+        t.__name__[4:].lower() for t in set_does
+    }
 
 
-@pytest.mark.parametrize("cls", get_protocols(optype._does))
+@pytest.mark.parametrize("cls", get_protocols(_does))
 def test_does_has_do(cls: type) -> None:
     """Ensure that all `Does*` protocols have a corresponding `do_` op."""
     name = cls.__name__.removeprefix("Does")
     assert name != cls.__name__
 
     do_name = f"do_{_pascamel_to_snake(name, 1)}"
-    do_op: opt.CanCall[..., object] | None = getattr(optype._do, do_name, None)
+    do_op: o.CanCall[..., object] | None = getattr(_do, do_name, None)
     assert do_op is not None, do_name
     assert callable(do_op), do_name
 
 
-@pytest.mark.parametrize(
-    "cls",
-    get_protocols(optype._can) | get_protocols(optype._has),
-)
+@pytest.mark.parametrize("cls", get_protocols(_can) | get_protocols(_has))
 def test_name_matches_dunder(cls: type) -> None:
     """
     Ensure that each single-member `Can*` and `Has*` name matches the name of
