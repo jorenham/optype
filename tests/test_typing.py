@@ -6,7 +6,7 @@ from typing_extensions import TypeVar
 import optype as opt
 
 
-_IntT_co = TypeVar('_IntT_co', bound=int, covariant=True)
+_IntT_co = TypeVar("_IntT_co", bound=int, covariant=True)
 
 
 # `Any*` type aliases
@@ -44,7 +44,7 @@ class ComplexLike:
         return self._x
 
 
-_V_co = TypeVar('_V_co', covariant=True)
+_V_co = TypeVar("_V_co", covariant=True)
 
 
 class SequenceLike(Generic[_V_co]):
@@ -62,7 +62,7 @@ def test_any_int() -> None:
     p_int_like: opt.typing.AnyInt[Literal[4]] = IntLike(4)
 
     n_complex: opt.typing.AnyInt = 5j  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
-    n_str: opt.typing.AnyInt = '6'  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    n_str: opt.typing.AnyInt = "6"  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
 
 def test_any_float() -> None:
@@ -74,7 +74,7 @@ def test_any_float() -> None:
 
     n_int_like: opt.typing.AnyFloat = IntLike(5)  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     n_complex: opt.typing.AnyInt = 6j  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
-    n_str: opt.typing.AnyInt = '7'  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    n_str: opt.typing.AnyInt = "7"  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
 
 def test_any_complex() -> None:
@@ -87,19 +87,19 @@ def test_any_complex() -> None:
     p_complex_like: opt.typing.AnyComplex = ComplexLike(6.0)
 
     n_int_like: opt.typing.AnyComplex = IntLike(7)  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
-    n_str: opt.typing.AnyComplex = '8'  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    n_str: opt.typing.AnyComplex = "8"  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
 
 def test_any_iterable() -> None:
     p_tuple: opt.typing.AnyIterable[bool] = (False,)
     p_list: opt.typing.AnyIterable[int] = [1]
     p_set: opt.typing.AnyIterable[float] = {2.0}
-    p_dict: opt.typing.AnyIterable[str] = {'3': 4}
+    p_dict: opt.typing.AnyIterable[str] = {"3": 4}
     p_range: opt.typing.AnyIterable[complex] = range(5)
     p_generator: opt.typing.AnyIterable[complex] = (i for i in range(6))
-    p_str: opt.typing.AnyIterable[str] = '7'
-    p_bytes: opt.typing.AnyIterable[int] = b'8'
-    p_sequence: opt.typing.AnyIterable[bytes] = SequenceLike(b'9')
+    p_str: opt.typing.AnyIterable[str] = "7"
+    p_bytes: opt.typing.AnyIterable[int] = b"8"
+    p_sequence: opt.typing.AnyIterable[bytes] = SequenceLike(b"9")
 
 
 class ColorChannel(enum.Enum):
@@ -112,8 +112,8 @@ def test_any_literal() -> None:
     p_int: opt.typing.AnyLiteral = 1
     n_float: opt.typing.AnyLiteral = 2.0  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     n_complex: opt.typing.AnyLiteral = 3j  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
-    p_str: opt.typing.AnyLiteral = '4'
-    p_bytes: opt.typing.AnyLiteral = b'5'
+    p_str: opt.typing.AnyLiteral = "4"
+    p_bytes: opt.typing.AnyLiteral = b"5"
     p_enum: opt.typing.AnyLiteral = ColorChannel.R
 
 
@@ -121,13 +121,13 @@ def test_any_literal() -> None:
 
 
 def test_empty_string() -> None:
-    empty: opt.typing.EmptyString = ''
-    not_empty: opt.typing.EmptyString = '0'  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    empty: opt.typing.EmptyString = ""
+    not_empty: opt.typing.EmptyString = "0"  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
 
 def test_empty_bytes() -> None:
-    empty: opt.typing.EmptyBytes = b''
-    not_empty: opt.typing.EmptyBytes = b'0'  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    empty: opt.typing.EmptyBytes = b""
+    not_empty: opt.typing.EmptyBytes = b"0"  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
 
 def test_empty_tuple() -> None:

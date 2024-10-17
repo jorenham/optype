@@ -18,24 +18,24 @@ if TYPE_CHECKING:
 
 
 __all__ = [
-    'Array',
-    'CanArray',
-    'CanArrayFinalize',
-    'CanArrayWrap',
-    'HasArrayInterface',
-    'HasArrayPriority',
+    "Array",
+    "CanArray",
+    "CanArrayFinalize",
+    "CanArrayWrap",
+    "HasArrayInterface",
+    "HasArrayPriority",
 ]
 
 
 _AnyShape: TypeAlias = tuple[int, ...]
 
-_ShapeT = TypeVar('_ShapeT', bound=_AnyShape, default=_AnyShape)
-_ShapeT_co = TypeVar('_ShapeT_co', bound=_AnyShape, covariant=True, default=_AnyShape)
+_ShapeT = TypeVar("_ShapeT", bound=_AnyShape, default=_AnyShape)
+_ShapeT_co = TypeVar("_ShapeT_co", bound=_AnyShape, covariant=True, default=_AnyShape)
 
-_SCT = TypeVar('_SCT', bound=np.generic, default=np.generic)
-_DT = TypeVar('_DT', bound=np.dtype[np.generic], default=np.dtype[np.generic])
+_SCT = TypeVar("_SCT", bound=np.generic, default=np.generic)
+_DT = TypeVar("_DT", bound=np.dtype[np.generic], default=np.dtype[np.generic])
 _DT_co = TypeVar(
-    '_DT_co',
+    "_DT_co",
     bound=np.dtype[np.generic],
     covariant=True,
     default=np.dtype[np.generic],
@@ -67,7 +67,7 @@ else:
 
 # this is almost always a `ndarray`, but setting a `bound` might break in some
 # edge cases
-_T_contra = TypeVar('_T_contra', contravariant=True, default=object)
+_T_contra = TypeVar("_T_contra", contravariant=True, default=object)
 
 
 @runtime_checkable
@@ -95,8 +95,8 @@ class CanArrayWrap(Protocol):
 
 
 _ArrayInterfaceT_co = TypeVar(
-    '_ArrayInterfaceT_co',
-    bound='Mapping[str, object]',
+    "_ArrayInterfaceT_co",
+    bound="Mapping[str, object]",
     covariant=True,
     default=dict[str, object],
 )

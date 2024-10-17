@@ -20,50 +20,50 @@ else:
 
 # ruff: noqa: RUF022
 __all__ = [
-    'AnyArray',
-    'AnyNumberArray',
-    'AnyIntegerArray',
-    'AnyUnsignedIntegerArray',
-    'AnySignedIntegerArray',
-    'AnyInexactArray',
-    'AnyFloatingArray',
-    'AnyComplexFloatingArray',
-    'AnyFlexibleArray',
-    'AnyCharacterArray',
+    "AnyArray",
+    "AnyNumberArray",
+    "AnyIntegerArray",
+    "AnyUnsignedIntegerArray",
+    "AnySignedIntegerArray",
+    "AnyInexactArray",
+    "AnyFloatingArray",
+    "AnyComplexFloatingArray",
+    "AnyFlexibleArray",
+    "AnyCharacterArray",
 
-    'AnyBoolArray',
+    "AnyBoolArray",
 
-    'AnyUInt8Array', 'AnyInt8Array',
-    'AnyUInt8Array', 'AnyInt8Array',
-    'AnyUInt16Array', 'AnyInt16Array',
-    'AnyUInt32Array', 'AnyInt32Array',
-    'AnyUInt64Array', 'AnyInt64Array',
-    'AnyUByteArray', 'AnyByteArray',
-    'AnyUShortArray', 'AnyShortArray',
-    'AnyUIntCArray', 'AnyIntCArray',
-    'AnyUIntPArray', 'AnyIntPArray',
-    'AnyULongArray', 'AnyLongArray',
-    'AnyULongLongArray', 'AnyLongLongArray',
+    "AnyUInt8Array", "AnyInt8Array",
+    "AnyUInt8Array", "AnyInt8Array",
+    "AnyUInt16Array", "AnyInt16Array",
+    "AnyUInt32Array", "AnyInt32Array",
+    "AnyUInt64Array", "AnyInt64Array",
+    "AnyUByteArray", "AnyByteArray",
+    "AnyUShortArray", "AnyShortArray",
+    "AnyUIntCArray", "AnyIntCArray",
+    "AnyUIntPArray", "AnyIntPArray",
+    "AnyULongArray", "AnyLongArray",
+    "AnyULongLongArray", "AnyLongLongArray",
 
-    'AnyFloat16Array',
-    'AnyFloat32Array', 'AnyComplex64Array',
-    'AnyFloat64Array', 'AnyComplex128Array',
-    'AnyLongDoubleArray', 'AnyCLongDoubleArray',
+    "AnyFloat16Array",
+    "AnyFloat32Array", "AnyComplex64Array",
+    "AnyFloat64Array", "AnyComplex128Array",
+    "AnyLongDoubleArray", "AnyCLongDoubleArray",
 
-    'AnyDateTime64Array',
-    'AnyTimeDelta64Array',
+    "AnyDateTime64Array",
+    "AnyTimeDelta64Array",
 
-    'AnyBytesArray',
-    'AnyStrArray',
-    'AnyVoidArray',
-    'AnyObjectArray',
+    "AnyBytesArray",
+    "AnyStrArray",
+    "AnyVoidArray",
+    "AnyObjectArray",
 
-    'AnyStringArray',
+    "AnyStringArray",
 ]  # fmt: skip
 
 
-_T = TypeVar('_T')
-_T_co = TypeVar('_T_co', covariant=True)
+_T = TypeVar("_T")
+_T_co = TypeVar("_T_co", covariant=True)
 
 
 class _PyArrray(Protocol[_T_co]):
@@ -75,9 +75,9 @@ _AnyPyArray: Alias = _T | _PyArrray[_T]
 _PyChar: Alias = bytes | str
 _PyGeneric: Alias = int | float | complex | _PyChar
 
-_T_np = TypeVar('_T_np', bound=np.generic)
-_T_ct = TypeVar('_T_ct', bound=_ct.CType)
-_T_py = TypeVar('_T_py', bound=_PyGeneric | opt.CanBuffer)
+_T_np = TypeVar("_T_np", bound=np.generic)
+_T_ct = TypeVar("_T_ct", bound=_ct.CType)
+_T_py = TypeVar("_T_py", bound=_PyGeneric | opt.CanBuffer)
 
 _Any1: Alias = _AnyPyArray[_a.CanArray[tuple[int, ...], np.dtype[_T_np]]]
 _Any2: Alias = _Any1[_T_np] | _AnyPyArray[_T_ct] | _ct.Array[_T_ct]
@@ -86,7 +86,7 @@ _Any3: Alias = _Any2[_T_np, _T_ct] | _AnyPyArray[_T_py]
 
 AnyArray: Alias = _Any3[np.generic, _ct.Generic, _PyGeneric]
 
-ST_iufc = TypeVar('ST_iufc', bound=_sc.Number, default=_sc.Number)
+ST_iufc = TypeVar("ST_iufc", bound=_sc.Number, default=_sc.Number)
 # NOTE: `builtins.bool <: int`, so `int` can't be included here
 AnyNumberArray: Alias = _Any2[ST_iufc, _ct.Number]
 AnyIntegerArray: Alias = _Any2[_sc.Integer, _ct.Integer]

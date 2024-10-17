@@ -23,14 +23,14 @@ FalsyBool = tp.Literal[False]
 FalsyInt: tp.TypeAlias = tp.Annotated[tp.Literal[0], (int, False)]
 FalsyIntCo: tp.TypeAlias = FalsyBool | FalsyInt
 # this is equivalent to `type FalsyStr = ...` on `python>=3.12`
-FalsyStr = TypeAliasType('FalsyStr', tp.Literal['', b''])
-Falsy = TypeAliasType('Falsy', tp.Literal[None, FalsyIntCo] | FalsyStr)
+FalsyStr = TypeAliasType("FalsyStr", tp.Literal["", b""])
+Falsy = TypeAliasType("Falsy", tp.Literal[None, FalsyIntCo] | FalsyStr)
 
-_T = tp.TypeVar('_T')
-_T_tpx = tp.TypeVar('_T_tpx')
+_T = tp.TypeVar("_T")
+_T_tpx = tp.TypeVar("_T_tpx")
 
-_Pss = tp.ParamSpec('_Pss')
-_T_co = tp.TypeVar('_T_co', covariant=True)
+_Pss = tp.ParamSpec("_Pss")
+_T_co = tp.TypeVar("_T_co", covariant=True)
 
 
 class GenericTP(tp.Generic[_T]): ...
@@ -129,11 +129,11 @@ def test_get_args_literals() -> None:
     assert opt.inspect.get_args(FalsyBool) == (False,)
     assert opt.inspect.get_args(FalsyInt) == (0,)
     assert opt.inspect.get_args(FalsyIntCo) == (False, 0)
-    assert opt.inspect.get_args(FalsyStr) == ('', b'')
-    assert opt.inspect.get_args(Falsy) == (None, False, 0, '', b'')
+    assert opt.inspect.get_args(FalsyStr) == ("", b"")
+    assert opt.inspect.get_args(Falsy) == (None, False, 0, "", b"")
 
 
-@pytest.mark.parametrize('origin', [type, list, tuple, GenericTP, GenericTPX])
+@pytest.mark.parametrize("origin", [type, list, tuple, GenericTP, GenericTPX])
 def test_get_args_generic(origin: opt.types.GenericType) -> None:
     assert opt.inspect.get_args(origin[FalsyBool]) == (FalsyBool,)
     assert opt.inspect.get_args(origin[FalsyInt]) == (FalsyInt,)
@@ -143,30 +143,30 @@ def test_get_args_generic(origin: opt.types.GenericType) -> None:
 
 
 def test_get_protocol_members() -> None:
-    assert opt.inspect.get_protocol_members(opt.CanAdd) == {'__add__'}
-    assert opt.inspect.get_protocol_members(opt.CanPow) == {'__pow__'}
-    assert opt.inspect.get_protocol_members(opt.CanHash) == {'__hash__'}
-    assert opt.inspect.get_protocol_members(opt.CanEq) == {'__eq__'}
+    assert opt.inspect.get_protocol_members(opt.CanAdd) == {"__add__"}
+    assert opt.inspect.get_protocol_members(opt.CanPow) == {"__pow__"}
+    assert opt.inspect.get_protocol_members(opt.CanHash) == {"__hash__"}
+    assert opt.inspect.get_protocol_members(opt.CanEq) == {"__eq__"}
     assert opt.inspect.get_protocol_members(opt.CanGetMissing) == {
-        '__getitem__',
-        '__missing__',
+        "__getitem__",
+        "__missing__",
     }
-    assert opt.inspect.get_protocol_members(opt.CanWith) == {'__enter__', '__exit__'}
+    assert opt.inspect.get_protocol_members(opt.CanWith) == {"__enter__", "__exit__"}
 
-    assert opt.inspect.get_protocol_members(opt.HasName) == {'__name__'}
+    assert opt.inspect.get_protocol_members(opt.HasName) == {"__name__"}
     assert opt.inspect.get_protocol_members(opt.HasNames) == {
-        '__name__',
-        '__qualname__',
+        "__name__",
+        "__qualname__",
     }
-    assert opt.inspect.get_protocol_members(opt.HasClass) == {'__class__'}
-    assert opt.inspect.get_protocol_members(opt.HasDict) == {'__dict__'}
-    assert opt.inspect.get_protocol_members(opt.HasSlots) == {'__slots__'}
-    assert opt.inspect.get_protocol_members(opt.HasAnnotations) == {'__annotations__'}
+    assert opt.inspect.get_protocol_members(opt.HasClass) == {"__class__"}
+    assert opt.inspect.get_protocol_members(opt.HasDict) == {"__dict__"}
+    assert opt.inspect.get_protocol_members(opt.HasSlots) == {"__slots__"}
+    assert opt.inspect.get_protocol_members(opt.HasAnnotations) == {"__annotations__"}
 
-    assert opt.inspect.get_protocol_members(CanInit) == {'__init__'}
-    assert opt.inspect.get_protocol_members(CanNew) == {'__new__'}
+    assert opt.inspect.get_protocol_members(CanInit) == {"__init__"}
+    assert opt.inspect.get_protocol_members(CanNew) == {"__new__"}
 
-    assert opt.inspect.get_protocol_members(ProtoOverload) == {'method'}
+    assert opt.inspect.get_protocol_members(ProtoOverload) == {"method"}
 
 
 def test_get_protocols() -> None:
@@ -212,19 +212,19 @@ def test_method_is_final() -> None:
 def test_classmethod_is_final() -> None:
     assert not opt.inspect.is_final(FinalMembers.cf)
     if sys.version_info >= (3, 11):
-        assert opt.inspect.is_final(getattr_static(FinalMembers, 'cf_final1'))
-        assert opt.inspect.is_final(getattr_static(FinalMembers, 'cf_final2'))
+        assert opt.inspect.is_final(getattr_static(FinalMembers, "cf_final1"))
+        assert opt.inspect.is_final(getattr_static(FinalMembers, "cf_final2"))
 
     assert opt.inspect.is_final(
         tp.cast(  # type: ignore[no-any-explicit]
-            'classmethod[FinalMembers, ..., object]',
-            getattr_static(FinalMembers, 'cf_final1_x'),
+            "classmethod[FinalMembers, ..., object]",
+            getattr_static(FinalMembers, "cf_final1_x"),
         ),
     )
     assert opt.inspect.is_final(
         tp.cast(  # type: ignore[no-any-explicit]
-            'classmethod[FinalMembers, ..., object]',
-            getattr_static(FinalMembers, 'cf_final2_x'),
+            "classmethod[FinalMembers, ..., object]",
+            getattr_static(FinalMembers, "cf_final2_x"),
         ),
     )
 
@@ -232,29 +232,29 @@ def test_classmethod_is_final() -> None:
 def test_staticmethod_is_final() -> None:
     assert not opt.inspect.is_final(FinalMembers.sf)
     if sys.version_info >= (3, 11):
-        assert opt.inspect.is_final(getattr_static(FinalMembers, 'sf_final1'))
-        assert opt.inspect.is_final(getattr_static(FinalMembers, 'sf_final2'))
+        assert opt.inspect.is_final(getattr_static(FinalMembers, "sf_final1"))
+        assert opt.inspect.is_final(getattr_static(FinalMembers, "sf_final2"))
 
     assert opt.inspect.is_final(
         tp.cast(  # type: ignore[no-any-explicit]
-            'staticmethod[..., object]',
-            getattr_static(FinalMembers, 'sf_final1_x'),
+            "staticmethod[..., object]",
+            getattr_static(FinalMembers, "sf_final1_x"),
         ),
     )
     assert opt.inspect.is_final(
         tp.cast(  # type: ignore[no-any-explicit]
-            'staticmethod[..., object]',
-            getattr_static(FinalMembers, 'sf_final2_x'),
+            "staticmethod[..., object]",
+            getattr_static(FinalMembers, "sf_final2_x"),
         ),
     )
 
 
-@pytest.mark.parametrize('origin', [type, list, tuple, GenericTP, GenericTPX])
+@pytest.mark.parametrize("origin", [type, list, tuple, GenericTP, GenericTPX])
 def test_is_generic_alias(origin: opt.types.GenericType) -> None:
     assert not opt.inspect.is_generic_alias(origin)
 
     assert opt.inspect.is_generic_alias(origin[None])
-    Alias = TypeAliasType('Alias', origin[None])  # type: ignore[valid-type]  # noqa: N806
+    Alias = TypeAliasType("Alias", origin[None])  # type: ignore[valid-type]  # noqa: N806
     assert opt.inspect.is_generic_alias(Alias)
     assert opt.inspect.is_generic_alias(tp.Annotated[origin[None], None])
     assert opt.inspect.is_generic_alias(tpx.Annotated[origin[None], None])
@@ -265,8 +265,8 @@ def test_is_generic_alias(origin: opt.types.GenericType) -> None:
 def test_is_iterable() -> None:
     assert opt.inspect.is_iterable([])
     assert opt.inspect.is_iterable(())
-    assert opt.inspect.is_iterable('')
-    assert opt.inspect.is_iterable(b'')
+    assert opt.inspect.is_iterable("")
+    assert opt.inspect.is_iterable(b"")
     assert opt.inspect.is_iterable(range(2))
     assert opt.inspect.is_iterable(i for i in range(2))
 
@@ -283,10 +283,10 @@ def test_is_runtime_protocol() -> None:
     assert not opt.inspect.is_runtime_protocol(ProtoFinalX)
 
 
-@pytest.mark.parametrize('origin', [int, tp.Literal[True], Proto, ProtoX])
+@pytest.mark.parametrize("origin", [int, tp.Literal[True], Proto, ProtoX])
 def test_is_union_type(origin: type) -> None:
     assert opt.inspect.is_union_type(origin | None)
-    Alias: TypeAliasType = TypeAliasType('Alias', origin | None)  # noqa: N806  # pyright: ignore[reportGeneralTypeIssues]
+    Alias: TypeAliasType = TypeAliasType("Alias", origin | None)  # noqa: N806  # pyright: ignore[reportGeneralTypeIssues]
     assert opt.inspect.is_union_type(Alias)
     assert opt.inspect.is_union_type(tp.Annotated[origin | None, None])
     assert opt.inspect.is_union_type(tp.Annotated[origin, None] | None)

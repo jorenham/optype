@@ -20,7 +20,7 @@ else:
     from typing_extensions import assert_type
 
 
-NP2 = np.__version__.startswith('2.')
+NP2 = np.__version__.startswith("2.")
 
 
 def test_from_bool() -> None:
@@ -43,7 +43,7 @@ def test_from_bool() -> None:
 
 
 @pytest.mark.parametrize(
-    'sctype',
+    "sctype",
     [
         np.int8, np.uint8,
         np.int16, np.uint16,
@@ -68,7 +68,7 @@ def test_from_integer(sctype: type[_sc.Integer]) -> None:
     assert_type(y_py, bool)  # type: ignore[assert-type]  # pyright: ignore[reportAssertTypeFailure]
 
 
-@pytest.mark.parametrize('sctype', [np.float16, np.float32, np.float64])
+@pytest.mark.parametrize("sctype", [np.float16, np.float32, np.float64])
 def test_from_floating(sctype: type[_sc.Floating]) -> None:
     x_py = -1 / 12
     x_np = sctype(x_py)
@@ -86,7 +86,7 @@ def test_from_floating(sctype: type[_sc.Floating]) -> None:
     assert_type(y_py, int)  # type: ignore[assert-type]  # pyright: ignore[reportAssertTypeFailure]
 
 
-@pytest.mark.parametrize('sctype', [np.complex64, np.complex128])
+@pytest.mark.parametrize("sctype", [np.complex64, np.complex128])
 def test_from_complex(sctype: type[_sc.ComplexFloating]) -> None:
     x_py = 3 - 4j
     x_np = sctype(x_py)

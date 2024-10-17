@@ -148,7 +148,6 @@ force-exclude = true
     indent-style = "space"
     line-ending = "lf"
     preview = true
-    quote-style = "single"
 
     [tool.ruff.lint]
     preview = true
@@ -263,9 +262,6 @@ force-exclude = true
 
         [tool.ruff.lint.flake8-errmsg]
         max-string-length = 42  # this took a while to figure out
-
-        [tool.ruff.lint.flake8-quotes]
-        inline-quotes = "single"
 
         [tool.ruff.lint.flake8-type-checking]
         exempt-modules = ["typing", "typing_extensions"]

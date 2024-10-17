@@ -12,7 +12,7 @@ else:
 
 import optype as opt
 
-Y = TypeVar('Y')
+Y = TypeVar("Y")
 Two: TypeAlias = Literal[2]
 
 
@@ -35,18 +35,18 @@ def twice2(x: opt.CanRMul[Two, Y] | opt.CanMul[Two, Y], /) -> Y:
 # %%
 class RMulThing:
     def __rmul__(self, y: Two, /) -> str:
-        return f'{y} * _'
+        return f"{y} * _"
 
 
 assert_type(twice2(RMulThing()), str)
-assert twice2(RMulThing()) == '2 * _'
+assert twice2(RMulThing()) == "2 * _"
 
 
 # %%
 class MulThing:
     def __mul__(self, y: Two, /) -> str:
-        return f'_ * {y}'
+        return f"_ * {y}"
 
 
 assert_type(twice2(MulThing()), str)
-assert twice2(MulThing()) == '_ * 2'
+assert twice2(MulThing()) == "_ * 2"

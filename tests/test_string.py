@@ -8,7 +8,7 @@ import optype as opt
 
 
 @pytest.mark.parametrize(
-    ('opt_str', 'std_str'),
+    ("opt_str", "std_str"),
     [
         (opt.string.DIGITS_OCT, string.octdigits),
         (opt.string.DIGITS, string.digits),
@@ -28,7 +28,7 @@ def test_optype_eq_stdlib(
     assert opt_str == tuple(std_str)
 
 
-_ArgT_co = TypeVar('_ArgT_co', bound=opt.typing.AnyLiteral, covariant=True)
+_ArgT_co = TypeVar("_ArgT_co", bound=opt.typing.AnyLiteral, covariant=True)
 
 
 # a `typing.Literal` stores it's values in `__args__`
@@ -37,7 +37,7 @@ class _HasArgs(Protocol[_ArgT_co]):
 
 
 @pytest.mark.parametrize(
-    ('const', 'lit'),
+    ("const", "lit"),
     [
         (opt.string.DIGITS_BIN, opt.string.DigitBin),
         (opt.string.DIGITS_OCT, opt.string.DigitOct),

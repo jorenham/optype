@@ -13,13 +13,13 @@ from ._types_impl import AnnotatedAlias, GenericType, LiteralAlias, UnionAlias
 
 
 __all__ = (
-    'AnnotatedAlias',
-    'GenericType',
-    'LiteralAlias',
-    'ProtocolType',
-    'RuntimeProtocolType',
-    'UnionAlias',
-    'WrappedFinalType',
+    "AnnotatedAlias",
+    "GenericType",
+    "LiteralAlias",
+    "ProtocolType",
+    "RuntimeProtocolType",
+    "UnionAlias",
+    "WrappedFinalType",
 )
 
 

@@ -40,29 +40,29 @@ if TYPE_CHECKING:
     from ._can import CanIter, CanNext
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class HasMatchArgs(Protocol):
     __match_args__: ClassVar[tuple[LiteralString, ...] | list[LiteralString]]
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class HasSlots(Protocol):
     __slots__: ClassVar[LiteralString | CanIter[CanNext[LiteralString]]]  # type: ignore[assignment]
 
 
-_DictT = TypeVar('_DictT', bound='Mapping[str, object]', default=dict[str, object])
+_DictT = TypeVar("_DictT", bound="Mapping[str, object]", default=dict[str, object])
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class HasDict(Protocol[_DictT]):  # type: ignore[misc]
     # the typeshed annotations for `builtins.object.__dict__` too narrow
     __dict__: _DictT  # type: ignore[assignment]  # pyright: ignore[reportIncompatibleVariableOverride]
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class HasClass(Protocol):
     @property  # type: ignore[explicit-override]  # (basedmypy bug?)
@@ -74,34 +74,34 @@ class HasClass(Protocol):
         """Don't."""
 
 
-_ModuleT_co = TypeVar('_ModuleT_co', covariant=True, bound=str, default=str)
+_ModuleT_co = TypeVar("_ModuleT_co", covariant=True, bound=str, default=str)
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class HasModule(Protocol[_ModuleT_co]):
     __module__: _ModuleT_co
 
 
-_NameT = TypeVar('_NameT', bound=str, default=str)
+_NameT = TypeVar("_NameT", bound=str, default=str)
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class HasName(Protocol[_NameT]):
     __name__: _NameT
 
 
-_QualnameT = TypeVar('_QualnameT', bound=str, default=str)
+_QualnameT = TypeVar("_QualnameT", bound=str, default=str)
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class HasQualname(Protocol[_QualnameT]):  # pyright: ignore[reportInvalidTypeVarUse]
     __qualname__: _QualnameT
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class HasNames(  # pyright: ignore[reportIncompatibleVariableOverride,reportInvalidTypeVarUse]
     HasName[_NameT],
@@ -112,10 +112,10 @@ class HasNames(  # pyright: ignore[reportIncompatibleVariableOverride,reportInva
 
 # docs and type hints
 
-_DocT_co = TypeVar('_DocT_co', covariant=True, bound=str, default=str)
+_DocT_co = TypeVar("_DocT_co", covariant=True, bound=str, default=str)
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class HasDoc(Protocol[_DocT_co]):
     # note that docstrings are stripped if ran with e.g. `python -OO`
@@ -123,24 +123,24 @@ class HasDoc(Protocol[_DocT_co]):
 
 
 _AnnotationsT_co = TypeVar(
-    '_AnnotationsT_co',
+    "_AnnotationsT_co",
     covariant=True,
     bound=dict[str, object],
     default=dict[str, object],
 )
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class HasAnnotations(Protocol[_AnnotationsT_co]):  # pyright: ignore[reportInvalidTypeVarUse]
     __annotations__: _AnnotationsT_co  # pyright: ignore[reportIncompatibleVariableOverride]
 
 
 # should be one of `(TypeVar, TypeVarTuple, ParamSpec)`
-_TypeParamsTs = TypeVarTuple('_TypeParamsTs')
+_TypeParamsTs = TypeVarTuple("_TypeParamsTs")
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class HasTypeParams(Protocol[Unpack[_TypeParamsTs]]):
     # Note that `*Ps: (TypeVar, ParamSpec, TypeVarTuple)` should hold
@@ -149,39 +149,39 @@ class HasTypeParams(Protocol[Unpack[_TypeParamsTs]]):
 
 # functions and methods
 
-_FuncTss = ParamSpec('_FuncTss')
-_FuncT_co = TypeVar('_FuncT_co', covariant=True)
+_FuncTss = ParamSpec("_FuncTss")
+_FuncT_co = TypeVar("_FuncT_co", covariant=True)
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class HasFunc(Protocol[_FuncTss, _FuncT_co]):
     @property
     def __func__(self) -> Callable[_FuncTss, _FuncT_co]: ...
 
 
-_WrappedTss = ParamSpec('_WrappedTss')
-_WrappedT_co = TypeVar('_WrappedT_co', covariant=True)
+_WrappedTss = ParamSpec("_WrappedTss")
+_WrappedT_co = TypeVar("_WrappedT_co", covariant=True)
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class HasWrapped(Protocol[_WrappedTss, _WrappedT_co]):
     @property
     def __wrapped__(self) -> Callable[_WrappedTss, _WrappedT_co]: ...
 
 
-_SelfT_co = TypeVar('_SelfT_co', covariant=True, default=object)
+_SelfT_co = TypeVar("_SelfT_co", covariant=True, default=object)
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class HasSelf(Protocol[_SelfT_co]):
     @property
     def __self__(self) -> _SelfT_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class HasCode(Protocol):
     __code__: CodeType

@@ -16,7 +16,7 @@ class _AnyCallable(Protocol):
 
 
 # Don't wake up, Neo...
-@pytest.mark.filterwarnings('ignore:the matrix .*:PendingDeprecationWarning')
+@pytest.mark.filterwarnings("ignore:the matrix .*:PendingDeprecationWarning")
 def test_can_array() -> None:
     sct: type[np.generic] = np.uint8
 
@@ -38,7 +38,7 @@ def test_can_array() -> None:
     assert isinstance(mat, onp.CanArray)
 
 
-_T = TypeVar('_T', bound=np.generic)
+_T = TypeVar("_T", bound=np.generic)
 _Arr0D: TypeAlias = onp.Array[tuple[()], _T]
 _Arr1D: TypeAlias = onp.Array[tuple[int], _T]
 _Arr2D: TypeAlias = onp.Array[tuple[int, int], _T]

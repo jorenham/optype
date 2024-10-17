@@ -36,7 +36,7 @@ from optype import (
 )
 
 
-_T_ReIter = TypeVar('_T_ReIter')
+_T_ReIter = TypeVar("_T_ReIter")
 CanReIter: TypeAlias = CanIter[CanIterSelf[_T_ReIter]]
 
 
@@ -150,7 +150,7 @@ def test_ior() -> None:
     x_ior_self_wrong: CanIOrSelf[set[str]] = some_set  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     assert isinstance(some_set, CanIOrSelf)
 
-    some_dict: dict[bytes, int] = {b'answer': 0x2a}
+    some_dict: dict[bytes, int] = {b"answer": 0x2a}
 
     y_ior: CanIOr[dict[bytes, int], dict[bytes, int]] = some_dict
     y_ior_wrong_in: CanIOr[dict[str, int], dict[bytes, int]] = some_dict  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
@@ -176,13 +176,13 @@ def test_can_iter_int() -> None:
 
 
 @pytest.mark.parametrize(
-    'value',
+    "value",
     [
-        'spam',
-        (('spam', 'ham'),),
-        (['spam', 'ham'],),
-        ({'spam', 'ham'},),
-        ({'spam': 'food', 'ham': 0xf00d},),
+        "spam",
+        (("spam", "ham"),),
+        (["spam", "ham"],),
+        ({"spam", "ham"},),
+        ({"spam": "food", "ham": 0xf00d},),
     ],
 )
 def test_can_iter_collection_str(
@@ -235,7 +235,7 @@ class UnsliceableSequence:
 
     def __len__(self, /) -> int:
         # wishful thinking; this will raise a `ValueError` at runtime
-        return int('inf')
+        return int("inf")
 
 
 def test_unsliceable_sequence() -> None:
@@ -245,11 +245,11 @@ def test_unsliceable_sequence() -> None:
 
 
 @pytest.mark.parametrize(
-    'x',
+    "x",
     [
-        'spam ham',
-        (('spam', 'ham'),),
-        (['spam', 'ham'],),
+        "spam ham",
+        (("spam", "ham"),),
+        (["spam", "ham"],),
         UnsliceableSequence(),
     ],
 )

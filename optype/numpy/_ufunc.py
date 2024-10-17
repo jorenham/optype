@@ -25,32 +25,32 @@ if TYPE_CHECKING:
     from types import NotImplementedType
 
 
-__all__ = ['CanArrayFunction', 'CanArrayUFunc', 'UFunc']
+__all__ = ["CanArrayFunction", "CanArrayUFunc", "UFunc"]
 
 
 _FT_co = TypeVar(
-    '_FT_co',
+    "_FT_co",
     bound=CanCall[..., object],
     covariant=True,
     default=CanCall[..., object],
 )
-_NInT_co = TypeVar('_NInT_co', bound=int, covariant=True, default=int)
-_NoutT_co = TypeVar('_NoutT_co', bound=int, covariant=True, default=int)
+_NInT_co = TypeVar("_NInT_co", bound=int, covariant=True, default=int)
+_NoutT_co = TypeVar("_NoutT_co", bound=int, covariant=True, default=int)
 _SigT_co = TypeVar(
-    '_SigT_co',
+    "_SigT_co",
     bound=LiteralString | None,
     covariant=True,
     default=LiteralString | None,
 )
 # numpy < 2.1
 _SigT_str_co = TypeVar(
-    '_SigT_str_co',
+    "_SigT_str_co",
     bound=str | None,
     covariant=True,
     default=str | None,
 )
 _IdT_co = TypeVar(
-    '_IdT_co',
+    "_IdT_co",
     bound=int | float | complex | bytes | str | None,
     covariant=True,
     default=float | None,
@@ -179,15 +179,15 @@ else:
         def outer(self, /) -> CanCall[..., object] | None: ...
 
 
-_MethodCommon: Alias = L['__call__', 'reduce', 'reduceat', 'accumulate', 'outer']
+_MethodCommon: Alias = L["__call__", "reduce", "reduceat", "accumulate", "outer"]
 if _x.NP2:  # type: ignore[redundant-expr]
-    _Method: Alias = L[_MethodCommon, 'at']
+    _Method: Alias = L[_MethodCommon, "at"]
 else:
-    _Method: Alias = L[_MethodCommon, 'inner']
+    _Method: Alias = L[_MethodCommon, "inner"]
 
 
-_UFT_contra = TypeVar('_UFT_contra', bound=UFunc, contravariant=True, default=np.ufunc)
-_T_co = TypeVar('_T_co', covariant=True, default=object)
+_UFT_contra = TypeVar("_UFT_contra", bound=UFunc, contravariant=True, default=np.ufunc)
+_T_co = TypeVar("_T_co", covariant=True, default=object)
 
 
 @runtime_checkable
@@ -213,7 +213,7 @@ class CanArrayUFunc(Protocol[_UFT_contra, _T_co]):
 
 
 _FT_contra = TypeVar(
-    '_FT_contra',
+    "_FT_contra",
     bound=CanCall[..., object],
     contravariant=True,
     default=CanCall[..., object],
