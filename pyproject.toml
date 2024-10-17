@@ -1,91 +1,91 @@
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-
-[tool.poetry]
+[project]
 name = "optype"
-version = "0.7.0.dev0"
 description = "Building blocks for precise & flexible type hints"
-authors = ["Joren Hammudoglu <jhammudoglu@gmail.com>"]
-license = "BSD-3-Clause"
+version = "0.7.0.dev0"
+authors = [
+  {name = "Joren Hammudoglu", email = "jhammudoglu@gmail.com"},
+]
+license = {file = "LICENSE"}
 readme = "README.md"
+keywords = ["type", "typing", "type hints", "numpy"]
 classifiers = [
     "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: BSD License",
     "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Typing :: Typed",
 ]
-repository = "https://github.com/jorenham/optype/"
-documentation = "https://github.com/jorenham/optype/blob/master/README.md"
-
-[tool.poetry.urls]
-Issues = "https://github.com/jorenham/optype/issues"
-Changelog = "https://github.com/jorenham/optype/releases"
-
-[tool.poetry.extras]
-numpy = ["numpy"]
-
-[tool.poetry.dependencies]
 # https://scientific-python.org/specs/spec-0000/
-python = "^3.10"
-numpy = {version = ">=1.24,<3", optional = true}
-typing-extensions = {version = ">=4.8", python = "<3.13"}
+requires-python = ">=3.10"
+dependencies = [
+    "typing-extensions >= 4.10.0; python_version < '3.13'"
+]
 
-[tool.poetry.group.dev.dependencies]
-pre-commit = "^4.0.1"
-tox = "^4.22.0"
+    [project.optional-dependencies]
+    numpy = ["numpy >= 1.24"]
 
-[tool.poetry.group.lint.dependencies]
-basedmypy = "^2.6.0"
-basedpyright = "^1.19.0"
-codespell = "^2.3.0"
-ruff = "^0.6.9"
-sp-repo-review = {version = "^2024.8.19", extras = ["cli"]}
-typing-extensions = "*"
-numpy = "~2.1.2"
+    [project.urls]
+    Repository = "https://github.com/jorenham/optype/"
+    Documentation = "https://github.com/jorenham/optype/blob/master/README.md"
+    Issues = "https://github.com/jorenham/optype/issues"
+    Changelog = "https://github.com/jorenham/optype/releases"
+    Funding = "https://github.com/sponsors/jorenham"
 
-[tool.poetry.group.test.dependencies]
-pytest = "^8.3.3"
-beartype = "^0.19.0"
-typing-extensions = "*"
-numpy = "~2.1.2"
+[tool.uv]
+dev-dependencies = [
+  "numpy",
+  "typing_extensions",
 
+  "basedmypy >= 2.6.0",
+  "basedpyright >= 1.19.0",
+  "beartype >= 0.19.0",
+  "codespell >= 2.3.0",
+  "pre-commit >= 4.0.1",
+  "pytest >= 8.3.3",
+  "ruff >= 0.6.9",
+  "sp-repo-review[cli] >= 2024.8.19",
+  "tox >= 4.23.0",
+]
+python-downloads = "manual"
 
-[tool.poetry.group.test-github]
-optional = true
-[tool.poetry.group.test-github.dependencies]
-pytest-github-actions-annotate-failures = ">=0.2.0,<1.0"
-
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "/.cache",
+    "/.github",
+    "/.mypy_cache",
+    "/.pytest_cache",
+    "/.ruff_cache",
+    "/.tox",
+    "/.venv",
+    "/.vscode",
+    "/dist",
+    "/examples",
+    "/tests",
+    ".editorconfig",
+    ".gitignore",
+    ".mardownlint.yaml",
+    ".pre-commit-config.yaml",
+    "uv.lock",
+]
 
 [tool.codespell]
 context = 2
-skip = "poetry.lock,pyproject.toml"
+skip = "uv.lock,pyproject.toml"
 ignore-words-list = "AtMost,AtLeast,CanGe,ND,nin"
-
-
-[tool.pyright]
-include = ["optype", "examples", "tests"]
-ignore = ["**/.venv"]
-stubPath = "."
-venvPath = "."
-venv = ".venv"
-pythonVersion = "3.10"
-pythonPlatform = "All"
-typeCheckingMode = "all"
-defineConstant = {NP2 = true, NP20 = false}
-
-reportUnusedCallResult = false  # https://github.com/microsoft/pyright/issues/8650
-reportUnreachable = false  # nothing wrong with `if sys.version_info() >= ...`
-reportUnusedImport = false  # dupe of F401
-reportUnusedVariable = false  # dupe of F841
-
 
 [tool.mypy]
 python_version = "3.10"
+modules = ["optype", "examples", "tests"]
 always_true = "NP2"
 always_false = "NP20"
-modules = ["optype", "tests"]
-exclude = ["^.venv/.*"]
 strict = true
 
 allow_redefinition = true
@@ -100,237 +100,235 @@ disallow_any_expr = false  # https://github.com/numpy/numpy/pull/27211
 warn_unreachable = true
 enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
 
-[[tool.mypy.overrides]]
-module = ["tests.*", "tests.numpy.*"]
-disallow_any_decorated = false  # blame pytest
+    [[tool.mypy.overrides]]
+    module = ["tests.*", "tests.numpy.*"]
+    disallow_any_decorated = false  # blame pytest
 
+[tool.pyright]
+pythonVersion = "3.10"
+pythonPlatform = "All"
+include = ["optype", "examples", "tests"]
+stubPath = "."
+venvPath = "."
+venv = ".venv"
+typeCheckingMode = "all"
+defineConstant = {NP2 = true, NP20 = false}
+reportUnreachable = false  # nothing wrong with `if sys.version_info() >= ...`
+reportUnusedCallResult = false  # https://github.com/microsoft/pyright/issues/8650
+reportUnusedImport = false  # dupe of F401
+reportUnusedVariable = false  # dupe of F841
 
 [tool.pytest.ini_options]
-addopts = [
-    "-ra",
-    "--doctest-modules",
-    "--strict-config",
-    "--strict-markers",
-]
-doctest_optionflags = [
-    "NORMALIZE_WHITESPACE",
-    "IGNORE_EXCEPTION_DETAIL",
-    "ELLIPSIS",
-]
-filterwarnings = ["error"]
-log_cli_level = "INFO"
 minversion = "8.0"
 testpaths = ["optype", "examples", "tests"]
+addopts = ["-ra", "--doctest-modules", "--strict-config", "--strict-markers"]
+doctest_optionflags = ["NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL", "ELLIPSIS"]
+filterwarnings = ["error"]
+log_cli_level = "INFO"
 xfail_strict = true
-
 
 [tool.repo-review]
 ignore = [
     "PY004",    # no `docs/` (maybe later)
-    "PC110",    # no auto-format
+    "PC110",    # no auto-format (yet)
     "PC140",    # basedmypy > mypy
     "PC170",    # no sphinx
     "PC180",    # no css or js
     "RTD",      # no readthedocs
 ]
 
-
 [tool.ruff]
 src = ["optype", "examples", "tests"]
-target-version = "py310"
 indent-width = 4
 show-fixes = true
 force-exclude = true
 
-[tool.ruff.lint]
-preview = true
-select = [
-    "F",        # pyflakes
-    "E",        # pycodestyle: error
-    "W",        # pycodestyle: warning
-    "C90",      # mccabe
-    "I",        # isort
-    "N",        # pep8-naming
-    "UP",       # pyupgrade
-    "YTT",      # flake8-2020
-    "ANN",      # flake8-annotations
-    "ASYNC",    # flake8-async
-    "BLE",      # flake8-blind-except
-    "B",        # flake8-bugbear
-    "A",        # flake8-builtins
-    "COM",      # flake8-commas
-    "C4",       # flake8-comprehensions
-    "DTZ",      # flake8-datetimez
-    "T10",      # flake8-debugger
-    "EXE",      # flake8-executable
-    "EM",      # flake8-errmsg
-    "FA",       # flake8-future-annotations
-    "ISC",      # flake8-implicit-str-concat
-    "ICN",      # flake8-import-conventions
-    "LOG",      # flake8-logging
-    "G",        # flake8-logging-format
-    "INP",      # flake8-no-pep420
-    "PIE",      # flake8-pie
-    "T20",      # flake8-print
-    "PYI",      # flake8-pyi
-    "PT",       # flake8-pytest-style
-    "Q",        # flake8-quotes
-    "RSE",      # flake8-raise
-    "RET",      # flake8-return
-    "SLF",      # flake8-self
-    "SLOT",     # flake8-slots
-    "SIM",      # flake8-simplify
-    "TID",      # flake8-tidy-imports
-    "TCH",      # flake8-type-checking
-    "ARG",      # flake8-unused-arguments
-    "PTH",      # flake8-use-pathlib
-    "ERA",      # eradicate
-    "PD",       # pandas-vet
-    "PGH",      # pygrep-hooks
-    "PL",       # pylint
-    "TRY",      # tryceratops
-    "FLY",      # flynt
-    "NPY",      # NumPy
-    "FAST",     # FastAPI
-    "AIR",      # airflow
-    "PERF",     # perflint,
-    "FURB",     # refurb
-    "RUF",      # ruff
-]
-ignore = [
-    # flake8-annotations
-    "ANN001",   # missing-type-function-argument (deprecated)
-    "ANN002",   # missing-type-args (deprecated)
-    "ANN401",   # any-type
-    # flake8-pyi
-    "PYI034",   # non-self-return-type
-    "PYI036",   # bad-exit-annotation
-    # pylint
-    "PLR0904",  # too-many-public-methods
-    # tryceratops
-    "TRY003",   # raise-vanilla-args
-    # refurb
-    "FURB118",  # reimplemented-operator
-]
+    [tool.ruff.format]
+    # keep in sync with .editorconfig
+    indent-style = "space"
+    line-ending = "lf"
+    preview = true
+    quote-style = "single"
 
-[tool.ruff.lint.per-file-ignores]
-"examples/*" = [
-    # isort
-    "I001",     # unsorted-imports
-    # flake8-no-pep420
-    "INP001",   # implicit-namespace-package
-    # pylint
-    "PLR2004",  # magic-value-comparison
-]
-"tests/*" = [
-    #  pyflakes
-    "F841",     # unused-variable
-    # flake8-annotations
-    "ANN201",   # missing-return-type
-    # flake8-self
-    "SLF001",   # private-member-access
-    # pylint
-    "PLC2701",  # import-private-name
-    "PLR2004",  # magic-value-comparison
-    "PLR0914",  # too-many-locals
-]
+    [tool.ruff.lint]
+    preview = true
+    select = [
+        "F",        # pyflakes
+        "E",        # pycodestyle: error
+        "W",        # pycodestyle: warning
+        "C90",      # mccabe
+        "I",        # isort
+        "N",        # pep8-naming
+        "UP",       # pyupgrade
+        "YTT",      # flake8-2020
+        "ANN",      # flake8-annotations
+        "ASYNC",    # flake8-async
+        "BLE",      # flake8-blind-except
+        "B",        # flake8-bugbear
+        "A",        # flake8-builtins
+        "COM",      # flake8-commas
+        "C4",       # flake8-comprehensions
+        "DTZ",      # flake8-datetimez
+        "T10",      # flake8-debugger
+        "EXE",      # flake8-executable
+        "EM",      # flake8-errmsg
+        "FA",       # flake8-future-annotations
+        "ISC",      # flake8-implicit-str-concat
+        "ICN",      # flake8-import-conventions
+        "LOG",      # flake8-logging
+        "G",        # flake8-logging-format
+        "INP",      # flake8-no-pep420
+        "PIE",      # flake8-pie
+        "T20",      # flake8-print
+        "PYI",      # flake8-pyi
+        "PT",       # flake8-pytest-style
+        "Q",        # flake8-quotes
+        "RSE",      # flake8-raise
+        "RET",      # flake8-return
+        "SLF",      # flake8-self
+        "SLOT",     # flake8-slots
+        "SIM",      # flake8-simplify
+        "TID",      # flake8-tidy-imports
+        "TCH",      # flake8-type-checking
+        "ARG",      # flake8-unused-arguments
+        "PTH",      # flake8-use-pathlib
+        "ERA",      # eradicate
+        "PD",       # pandas-vet
+        "PGH",      # pygrep-hooks
+        "PL",       # pylint
+        "TRY",      # tryceratops
+        "FLY",      # flynt
+        "NPY",      # NumPy
+        "FAST",     # FastAPI
+        "AIR",      # airflow
+        "PERF",     # perflint,
+        "FURB",     # refurb
+        "RUF",      # ruff
+    ]
+    ignore = [
+        # flake8-annotations
+        "ANN001",   # missing-type-function-argument (deprecated)
+        "ANN002",   # missing-type-args (deprecated)
+        "ANN401",   # any-type
+        # flake8-pyi
+        "PYI034",   # non-self-return-type
+        "PYI036",   # bad-exit-annotation
+        # pylint
+        "PLR0904",  # too-many-public-methods
+        # tryceratops
+        "TRY003",   # raise-vanilla-args
+        # refurb
+        "FURB118",  # reimplemented-operator
+    ]
 
-[tool.ruff.lint.flake8-builtins]
-builtins-allowed-modules = [
-    "copy",
-    "dataclasses",
-    "inspect",
-    "json",
-    "pickle",
-    "string",
-    "types",
-    "typing",
-]
+    [tool.ruff.lint.per-file-ignores]
+    "examples/*" = [
+        # isort
+        "I001",     # unsorted-imports
+        # flake8-no-pep420
+        "INP001",   # implicit-namespace-package
+        # pylint
+        "PLR2004",  # magic-value-comparison
+    ]
+    "tests/*" = [
+        #  pyflakes
+        "F841",     # unused-variable
+        # flake8-annotations
+        "ANN201",   # missing-return-type
+        # flake8-self
+        "SLF001",   # private-member-access
+        # pylint
+        "PLC2701",  # import-private-name
+        "PLR2004",  # magic-value-comparison
+        "PLR0914",  # too-many-locals
+    ]
 
-[tool.ruff.lint.flake8-import-conventions.extend-aliases]
-"ctypes" = "ct"
-"datetime" = "dt"
-"numpy.typing" = "npt"
-"optype" = "opt"
-"optype.numpy" = "onp"
+        [tool.ruff.lint.flake8-builtins]
+        builtins-allowed-modules = [
+            "copy",
+            "dataclasses",
+            "inspect",
+            "json",
+            "pickle",
+            "string",
+            "types",
+            "typing",
+        ]
 
-[tool.ruff.lint.flake8-errmsg]
-max-string-length = 42  # this took a while to figure out
+        [tool.ruff.lint.flake8-import-conventions.extend-aliases]
+        "ctypes" = "ct"
+        "datetime" = "dt"
+        "numpy.typing" = "npt"
+        "optype.numpy" = "onp"
 
-[tool.ruff.lint.flake8-quotes]
-inline-quotes = "single"
+        [tool.ruff.lint.flake8-errmsg]
+        max-string-length = 42  # this took a while to figure out
 
-[tool.ruff.lint.flake8-type-checking]
-exempt-modules = ["typing", "typing_extensions"]
+        [tool.ruff.lint.flake8-quotes]
+        inline-quotes = "single"
 
-[tool.ruff.lint.isort]
-case-sensitive = true
-combine-as-imports = true
-known-first-party = ["optype"]
-known-third-party = ["numpy", "pytest"]
-lines-after-imports = 2
-lines-between-types = 0
+        [tool.ruff.lint.flake8-type-checking]
+        exempt-modules = ["typing", "typing_extensions"]
 
-[tool.ruff.lint.pylint]
-allow-dunder-method-names = [
-    "__name__",     # attr of e.g. `type` and `function`
-    "__qualname__", # attr like `__name__`
-    "__replace__",  # method used by `copy.replace` (py313+)
-    "__self__",     # attr of a bound method
-    "__func__",     # attr of e.g. `classmethod`
-    "__wrapped__",     # attr of e.g. `classmethod`
+        [tool.ruff.lint.isort]
+        case-sensitive = true
+        combine-as-imports = true
+        known-first-party = ["optype"]
+        known-third-party = ["beartype", "numpy", "pytest"]
+        lines-after-imports = 2
+        lines-between-types = 0
 
-    # used within the `typing` standard library
-    "__value__",
-    "__origin__",
-    "__args__",
-    "__metadata__",
-    "__parameters__",
-    "__typing_unpacked_tuple_args__",
-    "__typing_is_unpacked_typevartuple__",
+        [tool.ruff.lint.pylint]
+        allow-dunder-method-names = [
+            "__name__",     # attr of e.g. `type` and `function`
+            "__qualname__", # attr like `__name__`
+            "__replace__",  # method used by `copy.replace` (py313+)
+            "__self__",     # attr of a bound method
+            "__func__",     # attr of e.g. `classmethod`
+            "__wrapped__",     # attr of e.g. `classmethod`
 
-    # `numpy` special methods
-    "__array__",
-    "__array_finalize__",
-    "__array_function__",
-    "__array_priority__",
-    "__array_ufunc__",
-    "__array_wrap__",
-    "__array_interface__",
-    "__array_struct__",
-]
-allow-magic-value-types = ["int"]
+            # used within the `typing` standard library
+            "__value__",
+            "__origin__",
+            "__args__",
+            "__metadata__",
+            "__parameters__",
+            "__typing_unpacked_tuple_args__",
+            "__typing_is_unpacked_typevartuple__",
 
-[tool.ruff.format]
-# keep in sync with .editorconfig
-indent-style = "space"
-line-ending = "lf"
-preview = true
-quote-style = "single"
-
+            # `numpy` special methods
+            "__array__",
+            "__array_finalize__",
+            "__array_function__",
+            "__array_priority__",
+            "__array_ufunc__",
+            "__array_wrap__",
+            "__array_interface__",
+            "__array_struct__",
+        ]
+        allow-magic-value-types = ["int"]
 
 [tool.tox]
 isolated_build = true
-requires = ["tox>=4.21.2"]
 env_list = ["repo-review", "pre-commit", "3.10", "3.11", "3.12", "3.13"]
 
-[tool.tox.env_run_base]
-description = "test with {base_python}"
-skip_install = true
-allowlist_externals = ["poetry"]
-commands_pre = [["poetry", "install"]]
-commands = [["poetry", "run", "pytest"]]
+    [tool.tox.env_run_base]
+    description = "test with {base_python}"
+    skip_install = true
+    allowlist_externals = ["uv"]
+    commands_pre = [["uv", "sync", "--frozen"]]
+    commands = [["uv", "run", "pytest"]]
 
-[tool.tox.env.pre-commit]
-description = "pre-commit"
-skip_install = true
-allowlist_externals = ["poetry"]
-commands_pre = [["poetry", "install"]]
-commands = [["poetry", "run", "pre-commit", "run", "--all-files"]]
+    [tool.tox.env.pre-commit]
+    description = "pre-commit"
+    skip_install = true
+    allowlist_externals = ["uv"]
+    commands_pre = [["uv", "sync", "--frozen"]]
+    commands = [["uv", "run", "pre-commit", "run", "--all-files"]]
 
-[tool.tox.env.repo-review]
-description = "repo-review"
-skip_install = true
-allowlist_externals = ["poetry"]
-commands_pre = [["poetry", "install"]]
-commands = [["poetry", "run", "repo-review", "."]]
+    [tool.tox.env.repo-review]
+    description = "repo-review"
+    skip_install = true
+    allowlist_externals = ["uv"]
+    commands_pre = [["uv", "sync", "--frozen"]]
+    commands = [["uv", "run", "repo-review", "."]]
