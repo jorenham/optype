@@ -15,7 +15,7 @@ else:
     from typing_extensions import LiteralString
 
 
-_SCT = TypeVar('_SCT', bound=np.generic)
+_SCT = TypeVar("_SCT", bound=np.generic)
 _ScalarOrArray: TypeAlias = np.ndarray[Any, np.dtype[_SCT]] | _SCT
 
 _N0: TypeAlias = Literal[0]

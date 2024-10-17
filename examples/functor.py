@@ -14,14 +14,14 @@ if TYPE_CHECKING:
     from types import NotImplementedType
 
 
-_T_co = TypeVar('_T_co', covariant=True)
-_X = TypeVar('_X')
-_Y = TypeVar('_Y')
+_T_co = TypeVar("_T_co", covariant=True)
+_X = TypeVar("_X")
+_Y = TypeVar("_Y")
 
 
 @final
 class Functor(Generic[_T_co]):
-    __match_args__ = __slots__ = ('value',)
+    __match_args__ = __slots__ = ("value",)
 
     def __init__(self, value: _T_co, /) -> None:
         self.value = value
@@ -55,7 +55,7 @@ class Functor(Generic[_T_co]):
 
     @override
     def __repr__(self, /) -> str:
-        return f'{type(self).__name__}({self.value!r})'
+        return f"{type(self).__name__}({self.value!r})"
 
     @override
     def __hash__(self: Functor[opt.CanHash], /) -> int:

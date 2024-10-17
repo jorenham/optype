@@ -11,29 +11,29 @@ from optype.inspect import get_protocol_members, is_runtime_protocol
 
 require_py313: Final = pytest.mark.skipif(
     sys.version_info < (3, 13),
-    reason='requires python>=3.13',
+    reason="requires python>=3.13",
 )
 
 
 def get_type_params(cls: type) -> tuple[object, ...]:
-    return getattr(cls, '__parameters__', ())
+    return getattr(cls, "__parameters__", ())
 
 
 @pytest.mark.parametrize(
-    'cls',
-    [getattr(opt.copy, k) for k in opt.copy.__all__ if not k.endswith('Self')],
+    "cls",
+    [getattr(opt.copy, k) for k in opt.copy.__all__ if not k.endswith("Self")],
 )
 def test_protocols(cls: type) -> None:
     # ensure correct name
-    assert cls.__module__ == 'optype.copy'
+    assert cls.__module__ == "optype.copy"
     assert cls.__name__ == cls.__qualname__
-    assert cls.__name__.startswith('Can')
+    assert cls.__name__.startswith("Can")
 
     # ensure exported
     assert cls.__name__ in opt.copy.__all__
 
     # ensure each `Can{}` has a corresponding `Can{}Self` sub-protocol
-    cls_self: type = getattr(opt.copy, f'{cls.__name__}Self')
+    cls_self: type = getattr(opt.copy, f"{cls.__name__}Self")
     assert cls_self is not cls
     assert cls_self.__name__ in opt.copy.__all__
     assert issubclass(cls_self, cls)

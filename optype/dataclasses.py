@@ -19,13 +19,13 @@ else:
     from typing_extensions import Protocol, TypeVar, runtime_checkable
 
 
-__all__ = ('HasDataclassFields',)
+__all__ = ("HasDataclassFields",)
 
 
 _FieldsT = TypeVar(
-    '_FieldsT',
-    bound='Mapping[str, dataclasses.Field[object]]',
-    default=dict[str, 'dataclasses.Field[object]'],
+    "_FieldsT",
+    bound="Mapping[str, dataclasses.Field[object]]",
+    default=dict[str, "dataclasses.Field[object]"],
 )
 
 

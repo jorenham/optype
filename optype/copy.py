@@ -14,14 +14,14 @@ else:
 
 
 __all__ = (
-    'CanCopy', 'CanCopySelf',
-    'CanDeepcopy', 'CanDeepcopySelf',
-    'CanReplace', 'CanReplaceSelf',
+    "CanCopy", "CanCopySelf",
+    "CanDeepcopy", "CanDeepcopySelf",
+    "CanReplace", "CanReplaceSelf",
 )  # fmt: skip
 
-_T_co = TypeVar('_T_co', covariant=True)
-_V_contra = TypeVar('_V_contra', contravariant=True)
-_AnyV_contra = TypeVar('_AnyV_contra', contravariant=True, default=object)
+_T_co = TypeVar("_T_co", covariant=True)
+_V_contra = TypeVar("_V_contra", contravariant=True)
+_AnyV_contra = TypeVar("_AnyV_contra", contravariant=True, default=object)
 
 
 @runtime_checkable
@@ -31,7 +31,7 @@ class CanCopy(Protocol[_T_co]):
 
 
 @runtime_checkable
-class CanCopySelf(CanCopy['CanCopySelf'], Protocol):
+class CanCopySelf(CanCopy["CanCopySelf"], Protocol):
     """Runtime-checkable alias `CanCopySelf = CanCopy[Self]`."""
     @override
     def __copy__(self, /) -> Self: ...
@@ -44,7 +44,7 @@ class CanDeepcopy(Protocol[_T_co]):
 
 
 @runtime_checkable
-class CanDeepcopySelf(CanDeepcopy['CanDeepcopySelf'], Protocol):
+class CanDeepcopySelf(CanDeepcopy["CanDeepcopySelf"], Protocol):
     """Runtime-checkable alias `CanDeepcopySelf = CanDeepcopy[Self]`."""
     @override
     def __deepcopy__(self, memo: dict[int, object], /) -> Self: ...
@@ -61,7 +61,7 @@ class CanReplace(Protocol[_V_contra, _T_co]):
 
 @runtime_checkable
 class CanReplaceSelf(
-    CanReplace[_AnyV_contra, 'CanReplaceSelf[_AnyV_contra]'],
+    CanReplace[_AnyV_contra, "CanReplaceSelf[_AnyV_contra]"],
     Protocol[_AnyV_contra],
 ):
     """Runtime-checkable alias `CanReplaceSelf[-V = object] = CanReplace[V, Self]`."""

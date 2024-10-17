@@ -28,9 +28,9 @@ def _is_dunder(name: str, /) -> bool:
     """Whether the name is a valid `__dunder_name__`."""
     return (
         len(name) > 4
-        and name[:2] == name[-2:] == '__'
-        and name[2] != '_'
-        and name[-3] != '_'
+        and name[:2] == name[-2:] == "__"
+        and name[2] != "_"
+        and name[-3] != "_"
         and name[2:-2].isidentifier()
         and (name.islower() or name.isupper())
     )
@@ -44,13 +44,13 @@ def _pascamel_to_snake(
     """Converts 'CamelCase' or 'pascalCase' to 'snake_case'."""
     assert pascamel.isidentifier()
 
-    snake = ''.join(
-        f'_{char}' if i > start and char.isupper() else char
+    snake = "".join(
+        f"_{char}" if i > start and char.isupper() else char
         for i, char in enumerate(pascamel)
     ).lower()
     assert snake.isidentifier()
-    assert snake[0] != '_'
-    assert snake[-1] != '_'
+    assert snake[0] != "_"
+    assert snake[-1] != "_"
 
     return snake
 
@@ -68,19 +68,19 @@ def test_all_public() -> None:
     assert protocols_can | protocols_has | protocols_does == protocols_all
 
 
-@pytest.mark.parametrize('cls', get_protocols(optype._can))
+@pytest.mark.parametrize("cls", get_protocols(optype._can))
 def test_can_runtime_checkable(cls: type) -> None:
     """Ensure that all `Can*` protocols are `@runtime_checkable`."""
     assert is_runtime_protocol(cls)
 
 
-@pytest.mark.parametrize('cls', get_protocols(optype._has))
+@pytest.mark.parametrize("cls", get_protocols(optype._has))
 def test_has_runtime_checkable(cls: type) -> None:
     """Ensure that all `Has*` protocols are `@runtime_checkable`."""
     assert is_runtime_protocol(cls)
 
 
-@pytest.mark.parametrize('cls', get_protocols(optype._does))
+@pytest.mark.parametrize("cls", get_protocols(optype._does))
 def test_does_not_runtime_checkable(cls: type) -> None:
     """Ensure that all `Does*` protocols are **not** `@runtime_checkable`."""
     assert not is_runtime_protocol(cls)
@@ -92,20 +92,20 @@ def test_num_does_eq_num_do() -> None:
     assert num_does == num_do
 
 
-@pytest.mark.parametrize('cls', get_protocols(optype._does))
+@pytest.mark.parametrize("cls", get_protocols(optype._does))
 def test_does_has_do(cls: type) -> None:
     """Ensure that all `Does*` protocols have a corresponding `do_` op."""
-    name = cls.__name__.removeprefix('Does')
+    name = cls.__name__.removeprefix("Does")
     assert name != cls.__name__
 
-    do_name = f'do_{_pascamel_to_snake(name, 1)}'
+    do_name = f"do_{_pascamel_to_snake(name, 1)}"
     do_op: opt.CanCall[..., object] | None = getattr(optype._do, do_name, None)
     assert do_op is not None, do_name
     assert callable(do_op), do_name
 
 
 @pytest.mark.parametrize(
-    'cls',
+    "cls",
     get_protocols(optype._can) | get_protocols(optype._has),
 )
 def test_name_matches_dunder(cls: type) -> None:
@@ -115,10 +115,10 @@ def test_name_matches_dunder(cls: type) -> None:
     than it has super optypes. I.e. require at most 1 member (attr, prop or
     method) for each **concrete** Protocol.
     """
-    assert cls.__module__ == 'optype'
+    assert cls.__module__ == "optype"
 
     prefix = cls.__qualname__[:3]
-    assert prefix in {'Can', 'Has'}
+    assert prefix in {"Can", "Has"}
 
     name = cls.__name__
     assert name.startswith(prefix)
@@ -130,7 +130,7 @@ def test_name_matches_dunder(cls: type) -> None:
     parents = [
         parent
         for parent in cls.mro()[1:]
-        if not parent.__name__.endswith('Self')
+        if not parent.__name__.endswith("Self")
         and is_protocol(parent)
     ]
     if parents:
@@ -138,7 +138,7 @@ def test_name_matches_dunder(cls: type) -> None:
             member
             for member in members
             if callable(f := cast(object, getattr(cls, member)))
-            and getattr(f, '__override__', False)
+            and getattr(f, "__override__", False)
         }
         own_members = members - overridden
     else:
@@ -173,6 +173,6 @@ def test_name_matches_dunder(cls: type) -> None:
 
         # prevent comparing apples with oranges: paint the apples orange!
         if _is_dunder(member_expect):
-            member_predict = f'__{member_predict}__'
+            member_predict = f"__{member_predict}__"
 
         assert member_predict == member_expect

@@ -24,12 +24,12 @@ if TYPE_CHECKING:
     from typing_extensions import CapsuleType
 
 
-__all__ = ['Scalar']
+__all__ = ["Scalar"]
 
 
-_PT_co = TypeVar('_PT_co', covariant=True)
-_NB_co = TypeVar('_NB_co', bound=int, covariant=True, default=int)
-_DT = TypeVar('_DT', bound=np.dtype[np.generic], default=np.dtype[np.generic])
+_PT_co = TypeVar("_PT_co", covariant=True)
+_NB_co = TypeVar("_NB_co", bound=int, covariant=True, default=int)
+_DT = TypeVar("_DT", bound=np.dtype[np.generic], default=np.dtype[np.generic])
 
 _L0: TypeAlias = Literal[0]
 _L1: TypeAlias = Literal[1]
@@ -97,8 +97,8 @@ class Scalar(Protocol[_PT_co, _NB_co]):
     def __array__(self, dtype: _DT, /) -> _Array0D[_DT]: ...
 
 
-_N_re = TypeVar('_N_re', bound=npt.NBitBase, default=npt.NBitBase)
-_N_im = TypeVar('_N_im', bound=npt.NBitBase, default=_N_re)
+_N_re = TypeVar("_N_re", bound=npt.NBitBase, default=npt.NBitBase)
+_N_im = TypeVar("_N_im", bound=npt.NBitBase, default=_N_re)
 
 Generic: TypeAlias = np.generic
 Number: TypeAlias = np.number[_N_re]

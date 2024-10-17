@@ -19,7 +19,7 @@ from typing_extensions import (
     override,
 )
 
-__all__ = 'AnnotatedAlias', 'GenericType', 'LiteralAlias', 'UnionAlias'
+__all__ = "AnnotatedAlias", "GenericType", "LiteralAlias", "UnionAlias"
 
 _TypeExpr: TypeAlias = type | _types.GenericAlias | GenericType | TypeAliasType
 _TypeParam: TypeAlias = (
@@ -67,7 +67,7 @@ class AnnotatedAlias(GenericType):
     @property
     def __metadata__(self, /) -> tuple[object, Unpack[tuple[object, ...]]]: ...
 
-_Ts_co = TypeVar('_Ts_co', bound=tuple[object, ...] | TypeVarTuple, covariant=True)
+_Ts_co = TypeVar("_Ts_co", bound=tuple[object, ...] | TypeVarTuple, covariant=True)
 
 @type_check_only
 class UnpackAlias(GenericType, Generic[_Ts_co]):

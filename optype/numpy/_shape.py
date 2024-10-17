@@ -9,15 +9,15 @@ else:
 
 
 __all__ = [
-    'AtLeast0D', 'AtLeast1D', 'AtLeast2D', 'AtLeast3D',
-    'AtMost0D', 'AtMost1D', 'AtMost2D', 'AtMost3D',
+    "AtLeast0D", "AtLeast1D", "AtLeast2D", "AtLeast3D",
+    "AtMost0D", "AtMost1D", "AtMost2D", "AtMost3D",
 ]  # fmt: skip
 
 
-_N0 = TypeVar('_N0', bound=int, default=int)
-_N1 = TypeVar('_N1', bound=int, default=int)
-_N2 = TypeVar('_N2', bound=int, default=int)
-_Ns = TypeVar('_Ns', bound=int, default=int)
+_N0 = TypeVar("_N0", bound=int, default=int)
+_N1 = TypeVar("_N1", bound=int, default=int)
+_N2 = TypeVar("_N2", bound=int, default=int)
+_Ns = TypeVar("_Ns", bound=int, default=int)
 
 
 # 0D (scalar)

@@ -14,7 +14,7 @@ else:
     from typing_extensions import LiteralString, Protocol, TypeVar, is_protocol
 
 
-__all__ = 'get_callables', 'set_module'
+__all__ = "get_callables", "set_module"
 
 
 def get_callables(
@@ -28,12 +28,12 @@ def get_callables(
     Return the public callables (types are callables too) in the given module,
     except for `typing.Protocol`.
     """
-    exclude = frozenset({'typing', 'typing_extensions', 'optype._utils'})
+    exclude = frozenset({"typing", "typing_extensions", "optype._utils"})
     return frozenset({
         name
         for name in dir(module)
         if callable(cls := getattr(module, name))  # pyright: ignore[reportAny]
-        and (private or not name.startswith('_'))
+        and (private or not name.startswith("_"))
         and (protocols or not (isinstance(cls, type) and is_protocol(cls)))
         and cls.__module__ not in exclude
     })
@@ -44,7 +44,7 @@ class _HasModule(Protocol):
     __module__: str
 
 
-_HasModuleT = TypeVar('_HasModuleT', bound=_HasModule)
+_HasModuleT = TypeVar("_HasModuleT", bound=_HasModule)
 
 
 class _DoesSetModule(Protocol):
@@ -76,10 +76,10 @@ def set_module(module: LiteralString, /) -> _DoesSetModule:
     ```
     """
     assert module
-    assert all(map(str.isidentifier, module.split('.')))
+    assert all(map(str.isidentifier, module.split(".")))
 
     def do_set_module(has_module: _HasModuleT, /) -> _HasModuleT:
-        assert hasattr(has_module, '__module__')
+        assert hasattr(has_module, "__module__")
         has_module.__module__ = module
         return has_module
 

@@ -22,12 +22,12 @@ else:
 
 
 __all__ = (
-    'CanGetnewargs',
-    'CanGetnewargsEx',
-    'CanGetstate',
-    'CanReduce',
-    'CanReduceEx',
-    'CanSetstate',
+    "CanGetnewargs",
+    "CanGetnewargsEx",
+    "CanGetstate",
+    "CanReduce",
+    "CanReduceEx",
+    "CanSetstate",
 )
 
 
@@ -60,7 +60,7 @@ _AnyReduceValue: TypeAlias = (
     ]
 )
 _ReduceT_co = TypeVar(
-    '_ReduceT_co',
+    "_ReduceT_co",
     bound=_AnyReduceValue,
     covariant=True,
     default=_AnyReduceValue,
@@ -89,8 +89,8 @@ class CanReduceEx(Protocol[_ReduceT_co]):
     ) -> _ReduceT_co: ...
 
 
-_StateT_co = TypeVar('_StateT_co', covariant=True)
-_StateT_contra = TypeVar('_StateT_contra', contravariant=True)
+_StateT_co = TypeVar("_StateT_co", covariant=True)
+_StateT_contra = TypeVar("_StateT_contra", contravariant=True)
 
 
 @runtime_checkable
@@ -109,8 +109,8 @@ class CanSetstate(Protocol[_StateT_contra]):
     def __setstate__(self, state: _StateT_contra, /) -> None: ...
 
 
-_ArgT_co = TypeVar('_ArgT_co', covariant=True, default=object)
-_KwargT = TypeVar('_KwargT', default=object)
+_ArgT_co = TypeVar("_ArgT_co", covariant=True, default=object)
+_KwargT = TypeVar("_KwargT", default=object)
 
 
 @runtime_checkable

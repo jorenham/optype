@@ -5,7 +5,7 @@ from typing import TypeAlias
 
 from typing_extensions import TypeVar
 
-__all__ = 'CScalar', 'CType'
+__all__ = "CScalar", "CType"
 
-_T = TypeVar('_T', default=object)
+_T = TypeVar("_T", default=object)
 CScalar: TypeAlias = ct._SimpleCData[_T]  # noqa: SLF001

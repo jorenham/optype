@@ -10,15 +10,15 @@ else:
     from typing_extensions import Protocol, TypeVar, runtime_checkable
 
 
-__all__ = ['DType', 'HasDType']
+__all__ = ["DType", "HasDType"]
 
 
-_ST = TypeVar('_ST', bound=np.generic, default=np.generic)
+_ST = TypeVar("_ST", bound=np.generic, default=np.generic)
 DType: TypeAlias = np.dtype[_ST]
 """Alias for `numpy.dtype[T: numpy.generic = np.generic]`."""
 
 
-_DT_co = TypeVar('_DT_co', bound=DType, covariant=True, default=DType)
+_DT_co = TypeVar("_DT_co", bound=DType, covariant=True, default=DType)
 
 
 @runtime_checkable

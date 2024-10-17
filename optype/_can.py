@@ -37,67 +37,67 @@ from optype._utils import set_module
 _Ignored: TypeAlias = object | None
 
 
-_T = TypeVar('_T')
-_T_contra = TypeVar('_T_contra', contravariant=True)
-_T_co = TypeVar('_T_co', covariant=True)
+_T = TypeVar("_T")
+_T_contra = TypeVar("_T_contra", contravariant=True)
+_T_co = TypeVar("_T_co", covariant=True)
 
-_K_contra = TypeVar('_K_contra', contravariant=True)
+_K_contra = TypeVar("_K_contra", contravariant=True)
 
-_V_contra = TypeVar('_V_contra', contravariant=True)
-_V_co = TypeVar('_V_co', covariant=True)
-_VV_co = TypeVar('_VV_co', covariant=True, default=_V_co)
+_V_contra = TypeVar("_V_contra", contravariant=True)
+_V_co = TypeVar("_V_co", covariant=True)
+_VV_co = TypeVar("_VV_co", covariant=True, default=_V_co)
 
 _JustBoolT_co = TypeVar(
-    '_JustBoolT_co',
+    "_JustBoolT_co",
     Literal[False], Literal[True], Literal[False, True], bool,
     covariant=True,
     default=bool,
 )  # fmt: skip
 
-_IntT_contra = TypeVar('_IntT_contra', bound=int, contravariant=True, default=int)
-_IntT_co = TypeVar('_IntT_co', bound=int, covariant=True, default=int)
-_BytesT_co = TypeVar('_BytesT_co', bound=bytes, covariant=True, default=bytes)
-_StrT_contra = TypeVar('_StrT_contra', bound=str, contravariant=True, default=str)
-_StrT_co = TypeVar('_StrT_co', bound=str, covariant=True, default=str)
+_IntT_contra = TypeVar("_IntT_contra", bound=int, contravariant=True, default=int)
+_IntT_co = TypeVar("_IntT_co", bound=int, covariant=True, default=int)
+_BytesT_co = TypeVar("_BytesT_co", bound=bytes, covariant=True, default=bytes)
+_StrT_contra = TypeVar("_StrT_contra", bound=str, contravariant=True, default=str)
+_StrT_co = TypeVar("_StrT_co", bound=str, covariant=True, default=str)
 
-_AnyT_contra = TypeVar('_AnyT_contra', contravariant=True, default=object)
-_AnyT_co = TypeVar('_AnyT_co', covariant=True, default=object)
-_ObjectT_contra = TypeVar('_ObjectT_contra', contravariant=True, default=object)
+_AnyT_contra = TypeVar("_AnyT_contra", contravariant=True, default=object)
+_AnyT_co = TypeVar("_AnyT_co", covariant=True, default=object)
+_ObjectT_contra = TypeVar("_ObjectT_contra", contravariant=True, default=object)
 # can be anything, but defaults to `bool`
-_AnyBoolT_co = TypeVar('_AnyBoolT_co', covariant=True, default=bool)
-_AnyIntT_contra = TypeVar('_AnyIntT_contra', contravariant=True, default=int)
-_AnyIntT_co = TypeVar('_AnyIntT_co', covariant=True, default=int)
-_AnyFloatT_co = TypeVar('_AnyFloatT_co', covariant=True, default=float)
-_AnyNoneT_co = TypeVar('_AnyNoneT_co', covariant=True, default=None)
+_AnyBoolT_co = TypeVar("_AnyBoolT_co", covariant=True, default=bool)
+_AnyIntT_contra = TypeVar("_AnyIntT_contra", contravariant=True, default=int)
+_AnyIntT_co = TypeVar("_AnyIntT_co", covariant=True, default=int)
+_AnyFloatT_co = TypeVar("_AnyFloatT_co", covariant=True, default=float)
+_AnyNoneT_co = TypeVar("_AnyNoneT_co", covariant=True, default=None)
 
 # Type conversion
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanBool(Protocol[_JustBoolT_co]):
     def __bool__(self, /) -> _JustBoolT_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanInt(Protocol[_IntT_co]):
     def __int__(self, /) -> _IntT_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanFloat(Protocol):
     def __float__(self, /) -> float: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanComplex(Protocol):
     def __complex__(self, /) -> complex: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanBytes(Protocol[_BytesT_co]):
     """
@@ -108,7 +108,7 @@ class CanBytes(Protocol[_BytesT_co]):
     def __bytes__(self, /) -> _BytesT_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanStr(Protocol[_StrT_co]):
     """
@@ -122,20 +122,20 @@ class CanStr(Protocol[_StrT_co]):
 
 # Object representation
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanHash(Protocol):
     @override
     def __hash__(self, /) -> int: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanIndex(Protocol[_IntT_co]):
     def __index__(self, /) -> _IntT_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanRepr(Protocol[_StrT_co]):
     """
@@ -147,7 +147,7 @@ class CanRepr(Protocol[_StrT_co]):
     def __repr__(self, /) -> _StrT_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanFormat(Protocol[_StrT_contra, _StrT_co]):
     """
@@ -162,7 +162,7 @@ class CanFormat(Protocol[_StrT_contra, _StrT_co]):
 # Iteration
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanNext(Protocol[_V_co]):
     """
@@ -173,17 +173,17 @@ class CanNext(Protocol[_V_co]):
     def __next__(self, /) -> _V_co: ...
 
 
-_CanNextT_co = TypeVar('_CanNextT_co', bound=CanNext[object], covariant=True)
+_CanNextT_co = TypeVar("_CanNextT_co", bound=CanNext[object], covariant=True)
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanIter(Protocol[_CanNextT_co]):
     """Like `collections.abc.Iterable[V]`, but with a flexible return type."""
     def __iter__(self, /) -> _CanNextT_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanIterSelf(CanNext[_V_co], CanIter[CanNext[_V_co]], Protocol[_V_co]):
     """Like `collections.abc.Iterator[V]`, but without the `abc` nonsense."""
@@ -194,24 +194,24 @@ class CanIterSelf(CanNext[_V_co], CanIter[CanNext[_V_co]], Protocol[_V_co]):
 # Async Iteration
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanANext(Protocol[_V_co]):
     def __anext__(self, /) -> _V_co: ...
 
 
-_CanANextT_co = TypeVar('_CanANextT_co', bound=CanANext[object], covariant=True)
+_CanANextT_co = TypeVar("_CanANextT_co", bound=CanANext[object], covariant=True)
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanAIter(Protocol[_CanANextT_co]):
     def __aiter__(self, /) -> _CanANextT_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
-class CanAIterSelf(CanAIter['CanAIterSelf[_V_co]'], CanANext[_V_co], Protocol[_V_co]):
+class CanAIterSelf(CanAIter["CanAIterSelf[_V_co]"], CanANext[_V_co], Protocol[_V_co]):
     """Like `collections.abc.AsyncIterator[T]`, but without the `abc` nonsense."""
     @override
     def __aiter__(self, /) -> Self: ...
@@ -220,7 +220,7 @@ class CanAIterSelf(CanAIter['CanAIterSelf[_V_co]'], CanANext[_V_co], Protocol[_V
 # Rich comparison operands
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanEq(Protocol[_ObjectT_contra, _AnyBoolT_co]):  # noqa: PLW1641
     """
@@ -240,7 +240,7 @@ class CanEq(Protocol[_ObjectT_contra, _AnyBoolT_co]):  # noqa: PLW1641
     def __eq__(self, rhs: _ObjectT_contra, /) -> _AnyBoolT_co: ...  # pyright:ignore[reportIncompatibleMethodOverride]
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanNe(Protocol[_ObjectT_contra, _AnyBoolT_co]):
     """
@@ -251,25 +251,25 @@ class CanNe(Protocol[_ObjectT_contra, _AnyBoolT_co]):
     def __ne__(self, rhs: _ObjectT_contra, /) -> _AnyBoolT_co: ...  # pyright:ignore[reportIncompatibleMethodOverride]
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanLt(Protocol[_AnyT_contra, _AnyBoolT_co]):
     def __lt__(self, rhs: _AnyT_contra, /) -> _AnyBoolT_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanLe(Protocol[_AnyT_contra, _AnyBoolT_co]):
     def __le__(self, rhs: _AnyT_contra, /) -> _AnyBoolT_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanGt(Protocol[_AnyT_contra, _AnyBoolT_co]):
     def __gt__(self, rhs: _AnyT_contra, /) -> _AnyBoolT_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanGe(Protocol[_AnyT_contra, _AnyBoolT_co]):
     def __ge__(self, rhs: _AnyT_contra, /) -> _AnyBoolT_co: ...
@@ -278,10 +278,10 @@ class CanGe(Protocol[_AnyT_contra, _AnyBoolT_co]):
 # Callables
 
 # this should (but can't) be contravariant
-_P = ParamSpec('_P', default=...)
+_P = ParamSpec("_P", default=...)
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanCall(Protocol[_P, _AnyT_co]):
     def __call__(self, /, *args: _P.args, **kwargs: _P.kwargs) -> _AnyT_co: ...  # type: ignore[no-any-explicit]
@@ -290,13 +290,13 @@ class CanCall(Protocol[_P, _AnyT_co]):
 # Dynamic attribute access
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanGetattr(Protocol[_StrT_contra, _AnyT_co]):
     def __getattr__(self, name: _StrT_contra, /) -> _AnyT_co: ...  # type: ignore[misc]
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanGetattribute(Protocol[_StrT_contra, _AnyT_co]):
     """Note that `isinstance(x, CanGetattribute)` is always `True`."""
@@ -304,7 +304,7 @@ class CanGetattribute(Protocol[_StrT_contra, _AnyT_co]):
     def __getattribute__(self, name: _StrT_contra, /) -> _AnyT_co: ...  # type: ignore[misc]  # pyright: ignore[reportIncompatibleMethodOverride]
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanSetattr(Protocol[_StrT_contra, _AnyT_contra]):
     """Note that `isinstance(x, CanSetattr)` is always true."""
@@ -312,7 +312,7 @@ class CanSetattr(Protocol[_StrT_contra, _AnyT_contra]):
     def __setattr__(self, name: _StrT_contra, value: _AnyT_contra, /) -> _Ignored: ...  # type: ignore[misc]  # pyright: ignore[reportIncompatibleMethodOverride]
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanDelattr(Protocol[_StrT_contra]):
     @override
@@ -320,14 +320,14 @@ class CanDelattr(Protocol[_StrT_contra]):
 
 
 _AnyStrIterT_co = TypeVar(
-    '_AnyStrIterT_co',
+    "_AnyStrIterT_co",
     bound=CanIter[CanNext[object]],
     covariant=True,
     default=CanIter[CanIterSelf[str]],
 )
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanDir(Protocol[_AnyStrIterT_co]):
     @override
@@ -337,7 +337,7 @@ class CanDir(Protocol[_AnyStrIterT_co]):
 # Descriptors
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanGet(Protocol[_T_contra, _V_co, _VV_co]):
     @overload
@@ -346,19 +346,19 @@ class CanGet(Protocol[_T_contra, _V_co, _VV_co]):
     def __get__(self, obj: None, cls: type[_T_contra], /) -> _VV_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanSet(Protocol[_T_contra, _V_contra]):
     def __set__(self, owner: _T_contra, value: _V_contra, /) -> _Ignored: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanDelete(Protocol[_T_contra]):
     def __delete__(self, owner: _T_contra, /) -> _Ignored: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanSetName(Protocol[_T_contra, _StrT_contra]):
     def __set_name__(self, cls: type[_T_contra], name: _StrT_contra, /) -> _Ignored: ...
@@ -366,37 +366,37 @@ class CanSetName(Protocol[_T_contra, _StrT_contra]):
 
 # Collection type operands.
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanLen(Protocol[_IntT_co]):
     def __len__(self, /) -> _IntT_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanLengthHint(Protocol[_IntT_co]):
     def __length_hint__(self, /) -> _IntT_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanGetitem(Protocol[_K_contra, _V_co]):
     def __getitem__(self, key: _K_contra, /) -> _V_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanSetitem(Protocol[_K_contra, _V_contra]):
     def __setitem__(self, key: _K_contra, value: _V_contra, /) -> _Ignored: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanDelitem(Protocol[_K_contra]):
     def __delitem__(self, key: _K_contra, /) -> None: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanReversed(Protocol[_T_co]):
     # `builtin.reversed` can return anything, but in practice it's always
@@ -404,7 +404,7 @@ class CanReversed(Protocol[_T_co]):
     def __reversed__(self, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanContains(Protocol[_ObjectT_contra, _JustBoolT_co]):
     # usually the key is required to also be a hashable object, but this
@@ -412,13 +412,13 @@ class CanContains(Protocol[_ObjectT_contra, _JustBoolT_co]):
     def __contains__(self, key: _ObjectT_contra, /) -> _JustBoolT_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanMissing(Protocol[_K_contra, _V_co]):
     def __missing__(self, key: _K_contra, /) -> _V_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanGetMissing(
     CanGetitem[_K_contra, _V_co],
@@ -427,10 +427,10 @@ class CanGetMissing(
 ): ...
 
 
-_IndexT_contra = TypeVar('_IndexT_contra', bound=CanIndex | slice, contravariant=True)
+_IndexT_contra = TypeVar("_IndexT_contra", bound=CanIndex | slice, contravariant=True)
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanSequence(
     CanLen[_IntT_co],
@@ -448,55 +448,55 @@ class CanSequence(
 
 # Arithmetic operands
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanAdd(Protocol[_T_contra, _T_co]):
     def __add__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanSub(Protocol[_T_contra, _T_co]):
     def __sub__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanMul(Protocol[_T_contra, _T_co]):
     def __mul__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanMatmul(Protocol[_T_contra, _T_co]):
     def __matmul__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanTruediv(Protocol[_T_contra, _T_co]):
     def __truediv__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanFloordiv(Protocol[_T_contra, _T_co]):
     def __floordiv__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanMod(Protocol[_T_contra, _T_co]):
     def __mod__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanDivmod(Protocol[_T_contra, _T_co]):
     def __divmod__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanPow2(Protocol[_T_contra, _T_co]):
     @overload
@@ -505,13 +505,13 @@ class CanPow2(Protocol[_T_contra, _T_co]):
     def __pow__(self, exp: _T_contra, mod: None = ..., /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanPow3(Protocol[_T_contra, _V_contra, _AnyIntT_co]):
     def __pow__(self, exp: _T_contra, mod: _V_contra, /) -> _AnyIntT_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanPow(
     CanPow2[_T_contra, _T_co],
@@ -529,31 +529,31 @@ class CanPow(
     def __pow__(self, exp: _T_contra, mod: _V_contra, /) -> _AnyIntT_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanLshift(Protocol[_T_contra, _T_co]):
     def __lshift__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanRshift(Protocol[_T_contra, _T_co]):
     def __rshift__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanAnd(Protocol[_T_contra, _T_co]):
     def __and__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanXor(Protocol[_T_contra, _T_co]):
     def __xor__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanOr(Protocol[_T_contra, _T_co]):
     def __or__(self, rhs: _T_contra, /) -> _T_co: ...
@@ -561,86 +561,86 @@ class CanOr(Protocol[_T_contra, _T_co]):
 
 # Reflected arithmetic operands
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanRAdd(Protocol[_T_contra, _T_co]):
     def __radd__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanRSub(Protocol[_T_contra, _T_co]):
     def __rsub__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanRMul(Protocol[_T_contra, _T_co]):
     def __rmul__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanRMatmul(Protocol[_T_contra, _T_co]):
     def __rmatmul__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanRTruediv(Protocol[_T_contra, _T_co]):
     def __rtruediv__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanRFloordiv(Protocol[_T_contra, _T_co]):
     def __rfloordiv__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanRMod(Protocol[_T_contra, _T_co]):
     def __rmod__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanRDivmod(Protocol[_T_contra, _T_co]):
     # can return anything, but is almost always a 2-tuple
     def __rdivmod__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanRPow(Protocol[_T_contra, _T_co]):
     def __rpow__(self, x: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanRLshift(Protocol[_T_contra, _T_co]):
     def __rlshift__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanRRshift(Protocol[_T_contra, _T_co]):
     def __rrshift__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanRAnd(Protocol[_T_contra, _T_co]):
     def __rand__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanRXor(Protocol[_T_contra, _T_co]):
     def __rxor__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanROr(Protocol[_T_contra, _T_co]):
     def __ror__(self, rhs: _T_contra, /) -> _T_co: ...
@@ -649,241 +649,241 @@ class CanROr(Protocol[_T_contra, _T_co]):
 # Augmented arithmetic operands
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanIAdd(Protocol[_T_contra, _T_co]):
     def __iadd__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
-class CanIAddSelf(CanIAdd[_T_contra, 'CanIAddSelf[_T_contra]'], Protocol[_T_contra]):
+class CanIAddSelf(CanIAdd[_T_contra, "CanIAddSelf[_T_contra]"], Protocol[_T_contra]):
     @override
     def __iadd__(self, rhs: _T_contra, /) -> Self: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanISub(Protocol[_T_contra, _T_co]):
     def __isub__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
-class CanISubSelf(CanISub[_T_contra, 'CanISubSelf[_T_contra]'], Protocol[_T_contra]):
+class CanISubSelf(CanISub[_T_contra, "CanISubSelf[_T_contra]"], Protocol[_T_contra]):
     @override
     def __isub__(self, rhs: _T_contra, /) -> Self: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanIMul(Protocol[_T_contra, _T_co]):
     def __imul__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
-class CanIMulSelf(CanIMul[_T_contra, 'CanIMulSelf[_T_contra]'], Protocol[_T_contra]):
+class CanIMulSelf(CanIMul[_T_contra, "CanIMulSelf[_T_contra]"], Protocol[_T_contra]):
     @override
     def __imul__(self, rhs: _T_contra, /) -> Self: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanIMatmul(Protocol[_T_contra, _T_co]):
     def __imatmul__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanIMatmulSelf(
-    CanIMatmul[_T_contra, 'CanIMatmulSelf[_T_contra]'],
+    CanIMatmul[_T_contra, "CanIMatmulSelf[_T_contra]"],
     Protocol[_T_contra],
 ):
     @override
     def __imatmul__(self, rhs: _T_contra, /) -> Self: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanITruediv(Protocol[_T_contra, _T_co]):
     def __itruediv__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanITruedivSelf(
-    CanITruediv[_T_contra, 'CanITruedivSelf[_T_contra]'],
+    CanITruediv[_T_contra, "CanITruedivSelf[_T_contra]"],
     Protocol[_T_contra],
 ):
     @override
     def __itruediv__(self, rhs: _T_contra, /) -> Self: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanIFloordiv(Protocol[_T_contra, _T_co]):
     def __ifloordiv__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanIFloordivSelf(
-    CanIFloordiv[_T_contra, 'CanIFloordivSelf[_T_contra]'],
+    CanIFloordiv[_T_contra, "CanIFloordivSelf[_T_contra]"],
     Protocol[_T_contra],
 ):
     @override
     def __ifloordiv__(self, rhs: _T_contra, /) -> Self: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanIMod(Protocol[_T_contra, _T_co]):
     def __imod__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
-class CanIModSelf(CanIMod[_T_contra, 'CanIModSelf[_T_contra]'], Protocol[_T_contra]):
+class CanIModSelf(CanIMod[_T_contra, "CanIModSelf[_T_contra]"], Protocol[_T_contra]):
     @override
     def __imod__(self, rhs: _T_contra, /) -> Self: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanIPow(Protocol[_T_contra, _T_co]):
     # no augmented pow/3 exists
     def __ipow__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
-class CanIPowSelf(CanIPow[_T_contra, 'CanIPowSelf[_T_contra]'], Protocol[_T_contra]):
+class CanIPowSelf(CanIPow[_T_contra, "CanIPowSelf[_T_contra]"], Protocol[_T_contra]):
     @override
     def __ipow__(self, rhs: _T_contra, /) -> Self: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanILshift(Protocol[_T_contra, _T_co]):
     def __ilshift__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanILshiftSelf(
-    CanILshift[_T_contra, 'CanILshiftSelf[_T_contra]'],
+    CanILshift[_T_contra, "CanILshiftSelf[_T_contra]"],
     Protocol[_T_contra],
 ):
     @override
     def __ilshift__(self, rhs: _T_contra, /) -> Self: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanIRshift(Protocol[_T_contra, _T_co]):
     def __irshift__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanIRshiftSelf(
-    CanIRshift[_T_contra, 'CanIRshiftSelf[_T_contra]'],
+    CanIRshift[_T_contra, "CanIRshiftSelf[_T_contra]"],
     Protocol[_T_contra],
 ):
     @override
     def __irshift__(self, rhs: _T_contra, /) -> Self: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanIAnd(Protocol[_T_contra, _T_co]):
     def __iand__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
-class CanIAndSelf(CanIAnd[_T_contra, 'CanIAndSelf[_T_contra]'], Protocol[_T_contra]):
+class CanIAndSelf(CanIAnd[_T_contra, "CanIAndSelf[_T_contra]"], Protocol[_T_contra]):
     @override
     def __iand__(self, rhs: _T_contra, /) -> Self: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanIXor(Protocol[_T_contra, _T_co]):
     def __ixor__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
-class CanIXorSelf(CanIXor[_T_contra, 'CanIXorSelf[_T_contra]'], Protocol[_T_contra]):
+class CanIXorSelf(CanIXor[_T_contra, "CanIXorSelf[_T_contra]"], Protocol[_T_contra]):
     @override
     def __ixor__(self, rhs: _T_contra, /) -> Self: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanIOr(Protocol[_T_contra, _T_co]):
     def __ior__(self, rhs: _T_contra, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
-class CanIOrSelf(CanIOr[_T_contra, 'CanIOrSelf[_T_contra]'], Protocol[_T_contra]):
+class CanIOrSelf(CanIOr[_T_contra, "CanIOrSelf[_T_contra]"], Protocol[_T_contra]):
     @override
     def __ior__(self, rhs: _T_contra, /) -> Self: ...
 
 
 # Unary arithmetic ops
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanNeg(Protocol[_T_co]):
     def __neg__(self, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
-class CanNegSelf(CanNeg['CanNegSelf'], Protocol):
+class CanNegSelf(CanNeg["CanNegSelf"], Protocol):
     @override
     def __neg__(self, /) -> Self: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanPos(Protocol[_T_co]):
     def __pos__(self, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
-class CanPosSelf(CanPos['CanPosSelf'], Protocol):
+class CanPosSelf(CanPos["CanPosSelf"], Protocol):
     @override
     def __pos__(self, /) -> Self: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanAbs(Protocol[_T_co]):
     def __abs__(self, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
-class CanAbsSelf(CanAbs['CanAbsSelf'], Protocol):
+class CanAbsSelf(CanAbs["CanAbsSelf"], Protocol):
     @override
     def __abs__(self, /) -> Self: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanInvert(Protocol[_T_co]):
     def __invert__(self, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
-class CanInvertSelf(CanInvert['CanInvertSelf'], Protocol):
+class CanInvertSelf(CanInvert["CanInvertSelf"], Protocol):
     @override
     def __invert__(self, /) -> Self: ...
 
@@ -891,7 +891,7 @@ class CanInvertSelf(CanInvert['CanInvertSelf'], Protocol):
 # Rounding
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanRound1(Protocol[_AnyIntT_co]):
     @overload
@@ -900,13 +900,13 @@ class CanRound1(Protocol[_AnyIntT_co]):
     def __round__(self, /, ndigits: None = ...) -> _AnyIntT_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanRound2(Protocol[_AnyIntT_contra, _AnyFloatT_co]):
     def __round__(self, /, ndigits: _AnyIntT_contra) -> _AnyFloatT_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanRound(
     CanRound1[_AnyIntT_co],
@@ -924,19 +924,19 @@ class CanRound(
     def __round__(self, /, ndigits: _AnyIntT_contra) -> _AnyFloatT_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanTrunc(Protocol[_AnyIntT_co]):
     def __trunc__(self, /) -> _AnyIntT_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanFloor(Protocol[_AnyIntT_co]):
     def __floor__(self, /) -> _AnyIntT_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanCeil(Protocol[_AnyIntT_co]):
     def __ceil__(self, /) -> _AnyIntT_co: ...
@@ -945,23 +945,23 @@ class CanCeil(Protocol[_AnyIntT_co]):
 # Context managers
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanEnter(Protocol[_T_co]):
     def __enter__(self, /) -> _T_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
-class CanEnterSelf(CanEnter['CanEnterSelf'], Protocol):
+class CanEnterSelf(CanEnter["CanEnterSelf"], Protocol):
     @override
     def __enter__(self, /) -> Self: ...  # pyright: ignore[reportMissingSuperCall]
 
 
-_ExcT = TypeVar('_ExcT', bound=BaseException)
+_ExcT = TypeVar("_ExcT", bound=BaseException)
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanExit(Protocol[_AnyNoneT_co]):
     @overload
@@ -976,7 +976,7 @@ class CanExit(Protocol[_AnyNoneT_co]):
     ) -> _AnyNoneT_co: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanWith(
     CanEnter[_T_co],
@@ -985,7 +985,7 @@ class CanWith(
 ): ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanWithSelf(CanEnterSelf, CanExit[_AnyNoneT_co], Protocol[_AnyNoneT_co]): ...
 
@@ -993,20 +993,20 @@ class CanWithSelf(CanEnterSelf, CanExit[_AnyNoneT_co], Protocol[_AnyNoneT_co]): 
 # Async context managers
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanAEnter(Protocol[_T_co]):
     def __aenter__(self, /) -> CanAwait[_T_co]: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
-class CanAEnterSelf(CanAEnter['CanAEnterSelf'], Protocol):
+class CanAEnterSelf(CanAEnter["CanAEnterSelf"], Protocol):
     @override
     def __aenter__(self, /) -> CanAwait[Self]: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanAExit(Protocol[_AnyNoneT_co]):
     @overload
@@ -1021,7 +1021,7 @@ class CanAExit(Protocol[_AnyNoneT_co]):
     ) -> CanAwait[_AnyNoneT_co]: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanAsyncWith(
     CanAEnter[_T_co],
@@ -1030,7 +1030,7 @@ class CanAsyncWith(
 ): ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanAsyncWithSelf(
     CanAEnterSelf,
@@ -1042,13 +1042,13 @@ class CanAsyncWithSelf(
 # Buffer protocol
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanBuffer(Protocol[_IntT_contra]):
     def __buffer__(self, buffer: _IntT_contra, /) -> memoryview: ...
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanReleaseBuffer(Protocol):
     def __release_buffer__(self, buffer: memoryview, /) -> None: ...
@@ -1060,10 +1060,10 @@ class CanReleaseBuffer(Protocol):
 # incompatible with `collections.abc.Awaitable` -- it (annoyingly) uses `Any`:
 # https://github.com/python/typeshed/blob/587ad6/stdlib/asyncio/futures.pyi#L51
 _FutureOrNone: TypeAlias = object
-_AsyncGen: TypeAlias = 'Generator[_FutureOrNone, None, _T]'
+_AsyncGen: TypeAlias = "Generator[_FutureOrNone, None, _T]"
 
 
-@set_module('optype')
+@set_module("optype")
 @runtime_checkable
 class CanAwait(Protocol[_T_co]):
     # Technically speaking, this can return any

@@ -31,15 +31,15 @@ from .types import AnnotatedAlias, GenericType, LiteralAlias, UnionAlias
 
 
 __all__ = (
-    'get_args',
-    'get_protocol_members',
-    'get_protocols',
-    'is_final',
-    'is_generic_alias',
-    'is_iterable',
-    'is_protocol',
-    'is_runtime_protocol',
-    'is_union_type',
+    "get_args",
+    "get_protocol_members",
+    "get_protocols",
+    "is_final",
+    "is_generic_alias",
+    "is_iterable",
+    "is_protocol",
+    "is_runtime_protocol",
+    "is_union_type",
 )
 
 
@@ -149,13 +149,13 @@ def is_final(
     `@classmethod` and `@staticmethod` decorators and `@final`.
     """
     if callable(arg):  # classes are also callable
-        if getattr(arg, '__final__', False):
+        if getattr(arg, "__final__", False):
             return True
         return isinstance(arg, staticmethod) and is_final(arg.__wrapped__)
     if isinstance(arg, property) and arg.fget is not None:
         return is_final(arg.fget)
     if isinstance(arg, classmethod):
-        return getattr(arg, '__final__', False) or is_final(arg.__wrapped__)
+        return getattr(arg, "__final__", False) or is_final(arg.__wrapped__)
 
     return False
 
@@ -167,7 +167,7 @@ def _get_alias(tp: type | object, /) -> type | object:
             seen.add(tp)
             tp = cast(type | object, tp.__value__)
             if tp in seen:
-                raise RecursionError('type alias of itself')
+                raise RecursionError("type alias of itself")
             continue
         if isinstance(tp, AnnotatedAlias):
             assert len(tp.__args__) == 1
@@ -186,7 +186,7 @@ def is_runtime_protocol(type_expr: type | object, /) -> bool:
     if isinstance(type_expr, AnnotatedAlias | TypeAliasType):
         type_expr = _get_alias(type_expr)
     return (
-        getattr(type_expr, '_is_runtime_protocol', False)
+        getattr(type_expr, "_is_runtime_protocol", False)
         and isinstance(type_expr, type)
         and is_protocol(type_expr)
     )
@@ -216,7 +216,7 @@ def get_args(tp: type | object, /) -> tuple[type | object, ...]:
     - raises `TypeError` if `tp` if isn't a generic type (alias).
     """
     if isinstance(tp, str):
-        raise NotImplementedError('str')
+        raise NotImplementedError("str")
 
     _raise = True
     if isinstance(tp, AnnotatedAlias | TypeAliasType):
@@ -235,7 +235,7 @@ def get_args(tp: type | object, /) -> tuple[type | object, ...]:
                 args.append(arg)
         return tuple(args)
 
-    if hasattr(tp, '__origin__') and hasattr(tp, '__args__'):
+    if hasattr(tp, "__origin__") and hasattr(tp, "__args__"):
         return _get_args(tp)
 
     if _raise and not isinstance(tp, type):
@@ -253,7 +253,7 @@ def get_protocol_members(cls: type, /) -> frozenset[str]:
     - doesn't include methods of base types from different module.
     """
     if not is_protocol(cls):
-        msg = f'{cls!r} is not a protocol'
+        msg = f"{cls!r} is not a protocol"
         raise TypeError(msg)
 
     annotations, module = cls.__annotations__, cls.__module__
@@ -263,7 +263,7 @@ def get_protocol_members(cls: type, /) -> frozenset[str]:
         name
         for name, v in member_dict.items()
         if (
-            callable(f := getattr(v, '__func__', v))
+            callable(f := getattr(v, "__func__", v))
             or (isinstance(v, property) and (f := v.fget) is not None)
         ) and f.__module__ == module
     }
@@ -272,7 +272,7 @@ def get_protocol_members(cls: type, /) -> frozenset[str]:
     # `typing_extensions.get_protocol_members`.
     # Maybe the `typing.get_protocol_member`s` that's coming in 3.13 will
     # won't be as broken. I have little hope though...
-    if hasattr(cls, '__protocol_attrs__'):
+    if hasattr(cls, "__protocol_attrs__"):
         members |= cast(set[str], cls.__protocol_attrs__)
 
     # sometimes __protocol_attrs__ hallicunates some non-existing dunders.
@@ -296,10 +296,10 @@ def get_protocols(module: ModuleType, /, private: bool = False) -> frozenset[typ
     members: list[str] | tuple[str, ...]
     if private:
         members = dir(module)
-    elif hasattr(module, '__all__'):
+    elif hasattr(module, "__all__"):
         members = cast(list[str] | tuple[str, ...], module.__all__)
     else:
-        members = [k for k in dir(module) if not k.startswith('_')]
+        members = [k for k in dir(module) if not k.startswith("_")]
 
     return frozenset({
         cls for name in members
