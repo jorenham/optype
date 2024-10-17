@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Any, Generic, TypeVar, final
+from typing import TYPE_CHECKING, Any, Generic, TypeVar, cast, final
 import optype as opt
 
 if sys.version_info >= (3, 12):
@@ -45,12 +45,13 @@ class Functor(Generic[_T_co]):
         is returned if `f` is not supported for the types, or if other is not
         a `Functor`.
         """
-        if isinstance(other, Functor):
-            y = f(self.value, other.value)
-            if y is not NotImplemented:
-                return Functor(y)
+        if not isinstance(other, Functor):
+            return NotImplemented
 
-        return NotImplemented
+        other = cast(Functor[_X], other)
+        y = f(self.value, other.value)
+
+        return NotImplemented if y is NotImplemented else Functor(y)
 
     @override
     def __repr__(self, /) -> str:

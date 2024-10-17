@@ -1,7 +1,6 @@
 {
   "editor.rulers": [88],
   "git.branchProtection": ["master"],
-  "githubPullRequests.overrideDefaultBranch": "master",
   "mypy-type-checker.args": [
     "--config-file=pyproject.toml"
   ]

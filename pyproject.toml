@@ -63,7 +63,7 @@ skip = "poetry.lock,pyproject.toml"
 ignore-words-list = "AtMost,AtLeast,CanGe,ND,nin"
 
 
-[tool.basedpyright]
+[tool.pyright]
 include = ["optype", "examples", "tests"]
 ignore = ["**/.venv"]
 stubPath = "."
@@ -109,7 +109,6 @@ addopts = [
     "--doctest-modules",
     "--strict-config",
     "--strict-markers",
-    "--showlocals",
 ]
 doctest_optionflags = [
     "NORMALIZE_WHITESPACE",
@@ -126,11 +125,9 @@ xfail_strict = true
 [tool.repo-review]
 ignore = [
     "PY004",    # no `docs/` (maybe later)
-    "PC110",    # no auto-format (all formatters are bad for readability atm)
-    "PC140",    # no mypy
+    "PC110",    # no auto-format
     "PC170",    # no sphinx
     "PC180",    # no css or js
-    "MY",       # no mypy
     "RTD",      # no readthedocs
 ]
 
@@ -141,7 +138,6 @@ target-version = "py310"
 indent-width = 4
 show-fixes = true
 force-exclude = true
-extend-exclude = [".github", ".vscode"]
 
 [tool.ruff.lint]
 preview = true
@@ -263,8 +259,6 @@ inline-quotes = "single"
 
 [tool.ruff.lint.flake8-type-checking]
 exempt-modules = ["typing", "typing_extensions"]
-quote-annotations = true
-strict = true
 
 [tool.ruff.lint.isort]
 case-sensitive = true
