@@ -81,48 +81,76 @@ class ProtoFinalX(tpx.Protocol): ...
 
 class FinalMembers:
     @property
-    def p(self) -> object: pass
+    def p(self) -> object:
+        pass
+
     @property
     @tp.final
-    def p_final(self) -> object: pass
-    @tpx.final
-    def p_final_x(self) -> object: pass
+    def p_final(self) -> object:
+        pass
 
-    def f(self) -> object: pass
-    @tp.final
-    def f_final(self) -> object: pass
     @tpx.final
-    def f_final_x(self) -> object: pass
+    def p_final_x(self) -> object:
+        pass
+
+    def f(self) -> object:
+        pass
+
+    @tp.final
+    def f_final(self) -> object:
+        pass
+
+    @tpx.final
+    def f_final_x(self) -> object:
+        pass
 
     @classmethod
-    def cf(cls) -> object: pass
+    def cf(cls) -> object:
+        pass
+
     @classmethod
     @tp.final
-    def cf_final1(cls) -> object: pass
+    def cf_final1(cls) -> object:
+        pass
+
     @classmethod
     @tpx.final
-    def cf_final1_x(cls) -> object: pass
+    def cf_final1_x(cls) -> object:
+        pass
+
     @tp.final
     @classmethod
-    def cf_final2(cls) -> object: pass
+    def cf_final2(cls) -> object:
+        pass
+
     @tpx.final
     @classmethod
-    def cf_final2_x(cls) -> object: pass
+    def cf_final2_x(cls) -> object:
+        pass
 
     @staticmethod
-    def sf() -> object: pass
+    def sf() -> object:
+        pass
+
     @staticmethod
     @tp.final
-    def sf_final1() -> object: pass
+    def sf_final1() -> object:
+        pass
+
     @staticmethod
     @tpx.final
-    def sf_final1_x() -> object: pass
+    def sf_final1_x() -> object:
+        pass
+
     @tp.final
     @staticmethod
-    def sf_final2() -> object: pass
+    def sf_final2() -> object:
+        pass
+
     @tpx.final
     @staticmethod
-    def sf_final2_x() -> object: pass
+    def sf_final2_x() -> object:
+        pass
 
 
 def test_get_args_literals() -> None:

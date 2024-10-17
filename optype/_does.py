@@ -112,6 +112,7 @@ class DoesAIter(Protocol):
 
 # type conversion
 
+
 @set_module("optype")
 class DoesComplex(Protocol):
     def __call__(self, obj: _c.CanComplex, /) -> complex: ...
@@ -350,6 +351,7 @@ class DoesReversed(Protocol):
     Note that typeshed's annotations for `reversed` are completely wrong:
     https://github.com/python/typeshed/issues/11645
     """
+
     @overload
     def __call__(self, reversible: _c.CanReversed[_OutT], /) -> _OutT: ...
     @overload

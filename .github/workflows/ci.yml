@@ -41,7 +41,9 @@ jobs:
         run: uv run codespell .
 
       - name: ruff check
-        run: uv run ruff check --output-format=github
+        run: |
+          uv run ruff check --output-format=github
+          uv run ruff format --check
 
       - name: basedmypy
         run: uv run mypy .

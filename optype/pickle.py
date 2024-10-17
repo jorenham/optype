@@ -2,6 +2,7 @@
 Runtime-protocols for the `pickle` standard library.
 https://docs.python.org/3/library/pickle.html
 """
+
 from __future__ import annotations
 
 import sys
@@ -72,6 +73,7 @@ class CanReduce(Protocol[_ReduceT_co]):
     """
     https://docs.python.org/3/library/pickle.html#object.__reduce__
     """
+
     @override
     def __reduce__(self, /) -> _ReduceT_co: ...
 
@@ -81,6 +83,7 @@ class CanReduceEx(Protocol[_ReduceT_co]):
     """
     https://docs.python.org/3/library/pickle.html#object.__reduce_ex__
     """
+
     @override
     def __reduce_ex__(  # pyright: ignore[reportIncompatibleMethodOverride]
         self,
@@ -98,6 +101,7 @@ class CanGetstate(Protocol[_StateT_co]):
     """
     https://docs.python.org/3/library/pickle.html#object.__getstate__
     """
+
     def __getstate__(self, /) -> _StateT_co: ...
 
 
@@ -106,6 +110,7 @@ class CanSetstate(Protocol[_StateT_contra]):
     """
     https://docs.python.org/3/library/pickle.html#object.__setstate__
     """
+
     def __setstate__(self, state: _StateT_contra, /) -> None: ...
 
 
@@ -118,6 +123,7 @@ class CanGetnewargs(Protocol[_ArgT_co]):
     """
     https://docs.python.org/3/library/pickle.html#object.__getnewargs__
     """
+
     def __new__(cls, /, *args: _ArgT_co) -> Self: ...
     def __getnewargs__(self, /) -> tuple[_ArgT_co, ...]: ...
 
@@ -127,7 +133,9 @@ class CanGetnewargsEx(Protocol[_ArgT_co, _KwargT]):
     """
     https://docs.python.org/3/library/pickle.html#object.__getnewargs_ex__
     """
+
     def __new__(cls, /, *args: _ArgT_co, **kwargs: _KwargT) -> Self: ...
     def __getnewargs_ex__(
-        self, /,
+        self,
+        /,
     ) -> tuple[tuple[_ArgT_co, ...], dict[str, _KwargT]]: ...

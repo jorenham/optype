@@ -56,6 +56,7 @@ AnyLiteral: TypeAlias = bool | int | LiteralString | bytes | None | enum.Enum
 
 # Empty collection type aliases
 
+
 @final
 class _EmptyTypedDict(TypedDict):
     pass

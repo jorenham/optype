@@ -5,6 +5,7 @@ if TYPE_CHECKING:
     import sys
 
     import optype.numpy as onp
+
     if sys.version_info >= (3, 13):
         from typing import Never
     else:

@@ -209,6 +209,10 @@ force-exclude = true
         "ANN001",   # missing-type-function-argument (deprecated)
         "ANN002",   # missing-type-args (deprecated)
         "ANN401",   # any-type
+        # flake8-commas
+        "COM812",   # missing-trailing-comma (ruff format)
+        # flake8-implicit-str-concat
+        "ISC001",   # single-line-implicit-string-concatenation (ruff format)
         # flake8-pyi
         "PYI034",   # non-self-return-type
         "PYI036",   # bad-exit-annotation

@@ -73,6 +73,7 @@ if _x.NP2 and not _x.NP20:
         At the moment (`numpy>=2.0,<2.2`), the only GUFuncs within numpy are
         `matmul`, and `vecdot`.
         """
+
         @property
         def __call__(self, /) -> _FT_co: ...
 
@@ -147,6 +148,7 @@ else:
         At the moment (`numpy>=2.0,<2.2`), the only GUFuncs within numpy are
         `matmul`, and `vecdot`.
         """
+
         @property
         def __call__(self, /) -> _FT_co: ...
 

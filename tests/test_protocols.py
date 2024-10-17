@@ -132,7 +132,7 @@ def test_name_matches_dunder(cls: type) -> None:
         for parent in cls.mro()[1:]
         if not parent.__name__.endswith("Self")
         and is_protocol(parent)
-    ]
+    ]  # fmt: skip
     if parents:
         overridden = {
             member

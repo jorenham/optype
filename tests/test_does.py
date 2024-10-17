@@ -15,7 +15,7 @@ def test_iadd_iadd() -> None:
             self.x = x
 
         def __iadd__(self, y: int, /) -> int:
-            self.x += + y
+            self.x += +y
             return self.x
 
     lhs = IntIAdd(1)

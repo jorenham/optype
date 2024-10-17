@@ -9,6 +9,7 @@ NOTE:
     If this is not the case for you, then please open an issue at:
     https://github.com/jorenham/optype/issues
 """
+
 from __future__ import annotations
 
 import ctypes as ct
@@ -113,7 +114,7 @@ assert SIZE_SINGLE == 4, f"`sizeof(float) = {SIZE_SINGLE}`, expected 4"
 assert SIZE_DOUBLE == 8, f"`sizeof(double) = {SIZE_DOUBLE}`, expected 8"
 assert SIZE_LONGDOUBLE in {8, 12, 16}, (
     f"`sizeof(long double) = {SIZE_LONGDOUBLE}`, expected 12 or 16"
-)
+)  # fmt: skip
 
 
 CT = TypeVar("CT", bound=CType)
@@ -123,11 +124,11 @@ Array: TypeAlias = ct.Array[CT] | ct.Array["Array[CT]"]
 UnsignedInteger: TypeAlias = (
     UInt8 | UInt16 | UInt32 | UInt64 | UIntP
     | UByte | UShort | UIntC | ULong | ULongLong
-)
+)  # fmt: skip
 SignedInteger: TypeAlias = (
     Int8 | Int16 | Int32 | Int64 | IntP
     | Byte | Short | IntC | Long | LongLong
-)
+)  # fmt: skip
 Void: TypeAlias = ct.Structure | ct.Union
 
 # subscripting at runtime will give an error

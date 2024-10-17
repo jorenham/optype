@@ -1,7 +1,15 @@
-{
+  {
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnPaste": true,
+    "editor.formatOnSave": true,
+    "editor.formatOnSaveMode": "modificationsIfAvailable",
+    "editor.formatOnType": true
+  },
   "editor.rulers": [88],
   "git.branchProtection": ["master"],
   "mypy-type-checker.args": [
     "--config-file=pyproject.toml"
-  ]
+  ],
+  "python.testing.pytestEnabled": true
 }

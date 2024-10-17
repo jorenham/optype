@@ -51,8 +51,8 @@
     </a>
     <a href="https://github.com/astral-sh/ruff">
         <img
-            alt="optype - ruff"
-            src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json"
+            alt="optype - code style: ruff"
+            src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/format.json"
         />
     </a>
 </p>

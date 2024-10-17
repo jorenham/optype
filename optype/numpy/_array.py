@@ -47,13 +47,16 @@ Array: TypeAlias = np.ndarray[_ShapeT, np.dtype[_SCT]]
 
 
 if _x.NP2 and not _x.NP20:
+
     @runtime_checkable
     class CanArray(Protocol[_ShapeT_co, _DT_co]):
         @overload
         def __array__(self, dtype: None = ..., /) -> np.ndarray[_ShapeT_co, _DT_co]: ...
         @overload
         def __array__(self, dtype: _DT, /) -> np.ndarray[_ShapeT_co, _DT]: ...
+
 else:
+
     @runtime_checkable
     class CanArray(Protocol[_ShapeT, _DT_co]):
         @overload
@@ -78,6 +81,7 @@ class CanArrayFinalize(Protocol[_T_contra]):
 @runtime_checkable
 class CanArrayWrap(Protocol):
     if _x.NP2:
+
         def __array_wrap__(
             self,
             array: np.ndarray[_ShapeT, _DT],
@@ -85,7 +89,9 @@ class CanArrayWrap(Protocol):
             return_scalar: bool = ...,
             /,
         ) -> np.ndarray[_ShapeT, _DT] | Self: ...
+
     else:
+
         def __array_wrap__(
             self,
             array: np.ndarray[_ShapeT, _DT],

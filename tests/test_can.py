@@ -9,6 +9,7 @@ This is a simple and effective way to test for false positive, by
 temporarily that invalid `optype` use will actually cause the typechecker
 (we only consider (based)pyright at the moment) to complain.
 """
+
 from collections.abc import Collection, Iterable, Iterator
 from typing import TypeAlias, TypeVar
 
@@ -150,7 +151,7 @@ def test_ior() -> None:
     x_ior_self_wrong: CanIOrSelf[set[str]] = some_set  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     assert isinstance(some_set, CanIOrSelf)
 
-    some_dict: dict[bytes, int] = {b"answer": 0x2a}
+    some_dict: dict[bytes, int] = {b"answer": 0x2A}
 
     y_ior: CanIOr[dict[bytes, int], dict[bytes, int]] = some_dict
     y_ior_wrong_in: CanIOr[dict[str, int], dict[bytes, int]] = some_dict  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
@@ -182,17 +183,11 @@ def test_can_iter_int() -> None:
         (("spam", "ham"),),
         (["spam", "ham"],),
         ({"spam", "ham"},),
-        ({"spam": "food", "ham": 0xf00d},),
+        ({"spam": "food", "ham": 0xF00D},),
     ],
 )
 def test_can_iter_collection_str(
-    value: (
-        str
-        | tuple[str, ...]
-        | list[str]
-        | set[str]
-        | dict[str, object]
-    ),
+    value: (str | tuple[str, ...] | list[str] | set[str] | dict[str, object]),
 ) -> None:
     # sanity checks
     assert isinstance(value, Collection)
@@ -204,14 +199,8 @@ def test_can_iter_collection_str(
     value_iter_iter_self: CanIter[CanIterSelf[str]] = value
 
     # strings are iterables of strings; making them infinitely nested
-    value_2_iter_next: CanIter[CanNext[
-        CanIter[CanNext[str]]
-    ]] = value
-    value_3_iter_next: CanIter[CanNext[
-        CanIter[CanNext[
-            CanIter[CanNext[str]]
-        ]]
-    ]] = value
+    value_2_iter_next: CanIter[CanNext[CanIter[CanNext[str]]]] = value
+    value_3_iter_next: CanIter[CanNext[CanIter[CanNext[CanIter[CanNext[str]]]]]] = value
 
     assert isinstance(value, CanIter)
     assert not isinstance(value, CanNext)

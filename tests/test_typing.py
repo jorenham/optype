@@ -157,6 +157,7 @@ def test_empty_iterable() -> None:
 
 # `Literal*` type aliases
 
+
 def test_literal_bool() -> None:
     p_true: opt.typing.LiteralBool = False
     p_false: opt.typing.LiteralBool = True
