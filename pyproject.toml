@@ -310,33 +310,27 @@ quote-style = "single"
 
 
 [tool.tox]
-legacy_tox_ini = """
-[tox]
 isolated_build = true
-requires = tox>=4
-envlist =
-    repo-review
-    pre-commit
-    py{310,311,312,313}
+requires = ["tox>=4.21.2"]
+env_list = ["repo-review", "pre-commit", "3.10", "3.11", "3.12", "3.13"]
 
-[testenv]
-description = pytest
+[tool.tox.env_run_base]
+description = "test with {base_python}"
 skip_install = true
-allowlist_externals = poetry
-commands_pre = poetry install --sync
-commands = poetry run pytest
+allowlist_externals = ["poetry"]
+commands_pre = [["poetry", "install"]]
+commands = [["poetry", "run", "pytest"]]
 
-[testenv:pre-commit]
-description = pre-commit
+[tool.tox.env.pre-commit]
+description = "pre-commit"
 skip_install = true
-allowlist_externals = poetry
-commands_pre = poetry install --sync
-commands = poetry run pre-commit run --all-files
+allowlist_externals = ["poetry"]
+commands_pre = [["poetry", "install"]]
+commands = [["poetry", "run", "pre-commit", "run", "--all-files"]]
 
-[testenv:repo-review]
-description = repo-review
+[tool.tox.env.repo-review]
+description = "repo-review"
 skip_install = true
-allowlist_externals = poetry
-commands_pre = poetry install --sync
-commands = poetry run repo-review .
-"""
+allowlist_externals = ["poetry"]
+commands_pre = [["poetry", "install"]]
+commands = [["poetry", "run", "repo-review", "."]]
