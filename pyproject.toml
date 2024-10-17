@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "optype"
-version = "0.6.1"
+version = "0.7.0.dev0"
 description = "Building blocks for precise & flexible type hints"
 authors = ["Joren Hammudoglu <jhammudoglu@gmail.com>"]
 license = "BSD-3-Clause"
@@ -14,47 +14,41 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Operating System :: OS Independent",
     "Typing :: Typed",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
 ]
 repository = "https://github.com/jorenham/optype/"
-documentation = "https://github.com/jorenham/optype?tab=readme-ov-file#optype"
+documentation = "https://github.com/jorenham/optype/blob/master/README.md"
 
 [tool.poetry.urls]
-"Bug Tracker" = "https://github.com/jorenham/optype/issues"
-"Changelog" = "https://github.com/jorenham/optype/releases"
+Issues = "https://github.com/jorenham/optype/issues"
+Changelog = "https://github.com/jorenham/optype/releases"
 
 [tool.poetry.extras]
 numpy = ["numpy"]
 
 [tool.poetry.dependencies]
-# bump to `^3.11` after 2025-04-04, and to `^3.12` after 2026-04-24
-python = "^3.10.1"
+# https://scientific-python.org/specs/spec-0000/
+python = "^3.10"
+numpy = {version = ">=1.24,<3", optional = true}
 typing-extensions = {version = ">=4.8", python = "<3.13"}
 
-# https://scientific-python.org/specs/spec-0000/
-numpy = {version = ">=1.24,<3", optional = true}
-
 [tool.poetry.group.dev.dependencies]
-pre-commit = "^3.8.0"
-tox = "^4.18.0"
+pre-commit = "^4.0.1"
+tox = "^4.22.0"
 
 [tool.poetry.group.lint.dependencies]
 basedmypy = "^2.6.0"
-basedpyright = "^1.16.0"
+basedpyright = "^1.19.0"
 codespell = "^2.3.0"
-ruff = "^0.6.1"
-sp-repo-review = {version = "^2024.4.23", extras = ["cli"]}
+ruff = "^0.6.9"
+sp-repo-review = {version = "^2024.8.19", extras = ["cli"]}
 typing-extensions = "*"
-numpy = "~2.1.0"
+numpy = "~2.1.2"
 
 [tool.poetry.group.test.dependencies]
-pytest = "^8.3.2"
-beartype = "^0.18.5"
+pytest = "^8.3.3"
+beartype = "^0.19.0"
 typing-extensions = "*"
-numpy = "~2.1.0"
+numpy = "~2.1.2"
 
 
 [tool.poetry.group.test-github]
@@ -69,7 +63,7 @@ skip = "poetry.lock,pyproject.toml"
 ignore-words-list = "AtMost,AtLeast,CanGe,ND,nin"
 
 
-[tool.basedpyright]
+[tool.pyright]
 include = ["optype", "examples", "tests"]
 ignore = ["**/.venv"]
 stubPath = "."
@@ -94,15 +88,17 @@ modules = ["optype", "tests"]
 exclude = ["^.venv/.*"]
 strict = true
 
-allow_redefinition = true  # needed for python/numpy compat code
+allow_redefinition = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 warn_redundant_casts = true
 warn_unused_ignores = true
 show_error_code_links = true
-
 # based
 disallow_any_expr = false  # https://github.com/numpy/numpy/pull/27211
+# repo-review recommendations
+warn_unreachable = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
 
 [[tool.mypy.overrides]]
 module = ["tests.*", "tests.numpy.*"]
@@ -115,7 +111,6 @@ addopts = [
     "--doctest-modules",
     "--strict-config",
     "--strict-markers",
-    "--showlocals",
 ]
 doctest_optionflags = [
     "NORMALIZE_WHITESPACE",
@@ -132,11 +127,10 @@ xfail_strict = true
 [tool.repo-review]
 ignore = [
     "PY004",    # no `docs/` (maybe later)
-    "PC110",    # no auto-format (all formatters are bad for readability atm)
-    "PC140",    # no mypy
+    "PC110",    # no auto-format
+    "PC140",    # basedmypy > mypy
     "PC170",    # no sphinx
     "PC180",    # no css or js
-    "MY",       # no mypy
     "RTD",      # no readthedocs
 ]
 
@@ -147,7 +141,6 @@ target-version = "py310"
 indent-width = 4
 show-fixes = true
 force-exclude = true
-extend-exclude = [".github", ".vscode"]
 
 [tool.ruff.lint]
 preview = true
@@ -269,8 +262,6 @@ inline-quotes = "single"
 
 [tool.ruff.lint.flake8-type-checking]
 exempt-modules = ["typing", "typing_extensions"]
-quote-annotations = true
-strict = true
 
 [tool.ruff.lint.isort]
 case-sensitive = true
@@ -326,7 +317,7 @@ requires = tox>=4
 envlist =
     repo-review
     pre-commit
-    py{310,311,312,313rc1}
+    py{310,311,312,313}
 
 [testenv]
 description = pytest
