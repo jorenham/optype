@@ -113,9 +113,10 @@ from typing import Literal
 from typing import TypeAlias, TypeVar
 from optype import CanRMul
 
-R = TypeVar('R')
+R = TypeVar("R")
 Two: TypeAlias = Literal[2]
 RMul2: TypeAlias = CanRMul[Two, R]
+
 
 def twice(x: RMul2[R]) -> R:
     return 2 * x
@@ -130,6 +131,7 @@ from optype import CanRMul
 
 type Two = Literal[2]
 type RMul2[R] = CanRMul[Two, R]
+
 
 def twice[R](x: RMul2[R]) -> R:
     return 2 * x
@@ -158,6 +160,7 @@ from optype import CanMul
 Mul2: TypeAlias = CanMul[Two, R]
 CMul2: TypeAlias = Mul2[R] | RMul2[R]
 
+
 def twice2(x: CMul2[R]) -> R:
     if isinstance(x, CanRMul):
         return 2 * x
@@ -173,6 +176,7 @@ from optype import CanMul
 
 type Mul2[R] = CanMul[Two, R]
 type CMul2[R] = Mul2[R] | RMul2[R]
+
 
 def twice2[R](x: CMul2[R]) -> R:
     if isinstance(x, CanRMul):
@@ -1622,7 +1626,7 @@ To illustrate one of the (many) issues with `typing.get_args`:
 
 ```pycon
 >>> from typing import Literal, TypeAlias, get_args
->>> Falsy: TypeAlias = Literal[None] | Literal[False, 0] | Literal['', b'']
+>>> Falsy: TypeAlias = Literal[None] | Literal[False, 0] | Literal["", b""]
 >>> get_args(Falsy)
 (typing.Literal[None], typing.Literal[False, 0], typing.Literal['', b''])
 ```
@@ -1963,7 +1967,7 @@ Each of the `optype.string` constants is exactly the same as the corresponding
 ```pycon
 >>> import string
 >>> import optype as opt
->>> ''.join(opt.string.PRINTABLE) == string.printable
+>>> "".join(opt.string.PRINTABLE) == string.printable
 True
 >>> tuple(string.printable) == opt.string.PRINTABLE
 True
@@ -2218,7 +2222,7 @@ definitions.
 Its generic type signature looks roughly like:
 
 ```python
-UFunc[
+type UFunc[
     # The type of the (bound) `__call__` method.
     Fn: CanCall = CanCall,
     # The types of the `nin` and `nout` (readonly) attributes.
@@ -2234,7 +2238,7 @@ UFunc[
     # this should always be `None`.
     # Note that `complex` also includes `bool | int | float`.
     Id: complex | bytes | str | None = float | None,
-]
+] = ...
 ```
 
 > [!NOTE]
@@ -2301,7 +2305,7 @@ The shape aliases are roughly defined as:
 ```python
 type AtLeast0D[
     Ds: int = int,
-]
+] = _
 ```
 
 </td>
@@ -2315,7 +2319,7 @@ tuple[Ds, ...]
 <td>
 
 ```python
-type AtMost0D
+type AtMost0D = _
 ```
 
 </td>
@@ -2335,7 +2339,7 @@ tuple[()]
 type AtLeast1D[
     D0: int = int,
     Ds: int = int,
-]
+] = _
 ```
 
 </td>
@@ -2354,7 +2358,7 @@ tuple[
 ```python
 type AtMost1D[
     D0: int = int,
-]
+] = _
 ```
 
 </td>
@@ -2375,7 +2379,7 @@ type AtLeast2D[
     D0: int = int,
     D1: int = int,
     Ds: int = int,
-]
+] = _
 ```
 
 </td>
@@ -2396,18 +2400,20 @@ tuple[
 type AtMost2D[
     D0: int = int,
     D1: int = int,
-]
+] = _
 ```
 
 </td>
 <td>
 
+<!-- blacken-docs:off -->
 ```python
 (
     tuple[D0, D1]
     | AtMost1D[D0]
 )
 ```
+<!-- blacken-docs:on -->
 
 </td>
 </tr>
@@ -2421,7 +2427,7 @@ type AtLeast3D[
     D1: int = int,
     D2: int = int,
     Ds: int = int,
-]
+] = _
 ```
 
 </td>
@@ -2444,18 +2450,20 @@ type AtMost3D[
     D0: int = int,
     D1: int = int,
     D2: int = int,
-]
+] = _
 ```
 
 </td>
 <td>
 
+<!-- blacken-docs:off -->
 ```python
 (
     tuple[D0, D1, D2]
     | AtMost2D[D0, D1]
 )
 ```
+<!-- blacken-docs:on -->
 
 </td>
 </tr>
@@ -2470,13 +2478,13 @@ a typing perspective.
 Its type signature looks roughly like this:
 
 ```python
-Scalar[
+type Scalar[
     # The "Python type", so that `Scalar.item() -> PT`.
     PT: object,
     # The "N-bits" type (without having to deal with `npt.NBitBase`).
     # It matches the `itemsize: NB` property.
     NB: int = int,
-]
+] = ...
 ```
 
 It can be used as e.g.
@@ -2925,18 +2933,20 @@ runtime-checkable and extensible (i.e. not `@final`).
 class CanArray[
     ND: tuple[int, ...] = ...,
     ST: np.generic = ...,
-]
+]: ...
 ```
 
 </td>
 <td>
 
+<!-- blacken-docs:off -->
 ```python
 def __array__[RT = ST](
     _,
     dtype: DType[RT] | None = ...,
 ) -> Array[ND, RT]
 ```
+<!-- blacken-docs:on -->
 
 </td>
 <td>
@@ -2953,7 +2963,7 @@ def __array__[RT = ST](
 class CanArrayUFunc[
     U: UFunc = ...,
     R: object = ...,
-]
+]: ...
 ```
 
 </td>
@@ -2966,7 +2976,7 @@ def __array_ufunc__(
     method: LiteralString,
     *args: object,
     **kwargs: object,
-) -> R
+) -> R: ...
 ```
 
 </td>
@@ -2984,7 +2994,7 @@ def __array_ufunc__(
 class CanArrayFunction[
     F: CanCall[..., object] = ...,
     R = object,
-]
+]: ...
 ```
 
 </td>
@@ -2997,7 +3007,7 @@ def __array_function__(
     types: CanIterSelf[type[CanArrayFunction]],
     args: tuple[object, ...],
     kwargs: Mapping[str, object],
-) -> R
+) -> R: ...
 ```
 
 </td>
@@ -3014,14 +3024,14 @@ def __array_function__(
 ```python
 class CanArrayFinalize[
     T: object = ...,
-]
+]: ...
 ```
 
 </td>
 <td>
 
 ```python
-def __array_finalize__(_, obj: T)
+def __array_finalize__(_, obj: T): ...
 ```
 
 </td>
@@ -3036,12 +3046,13 @@ def __array_finalize__(_, obj: T)
 <td>
 
 ```python
-class CanArrayWrap
+class CanArrayWrap: ...
 ```
 
 </td>
 <td>
 
+<!-- blacken-docs:off -->
 ```python
 def __array_wrap__[ND, ST](
     _,
@@ -3050,6 +3061,7 @@ def __array_wrap__[ND, ST](
     return_scalar: bool = ...,
 ) -> Self | Array[ND, ST]
 ```
+<!-- blacken-docs:on -->
 
 </td>
 <td>
@@ -3065,7 +3077,7 @@ def __array_wrap__[ND, ST](
 ```python
 class HasArrayInterface[
     V: Mapping[str, object] = ...,
-]
+]: ...
 ```
 
 </td>
@@ -3087,7 +3099,7 @@ __array_interface__: V
 <td>
 
 ```python
-class HasArrayPriority
+class HasArrayPriority: ...
 ```
 
 </td>
@@ -3111,7 +3123,7 @@ __array_priority__: float
 ```python
 class HasDType[
     DT: DType = ...,
-]
+]: ...
 ```
 
 </td>
