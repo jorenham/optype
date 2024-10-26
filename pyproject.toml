@@ -26,7 +26,7 @@ classifiers = [
 # https://scientific-python.org/specs/spec-0000/
 requires-python = ">=3.10"
 dependencies = [
-    "typing-extensions >= 4.10.0; python_version < '3.13'"
+    "typing-extensions >= 4.10; python_version < '3.13'"
 ]
 
     [project.optional-dependencies]
@@ -45,14 +45,14 @@ dev-dependencies = [
   "typing_extensions",
 
   "basedmypy >= 2.6.0",
-  "basedpyright >= 1.19.0",
+  "basedpyright >= 1.19.1",
   "beartype >= 0.19.0",
   "codespell >= 2.3.0",
   "pre-commit >= 4.0.1",
   "pytest >= 8.3.3",
-  "ruff >= 0.6.9",
+  "ruff >= 0.7.1",
   "sp-repo-review[cli] >= 2024.8.19",
-  "tox >= 4.23.0",
+  "tox >= 4.23.2",
 ]
 python-downloads = "manual"
 
