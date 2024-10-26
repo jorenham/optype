@@ -295,6 +295,10 @@ force-exclude = true
             "__typing_unpacked_tuple_args__",
             "__typing_is_unpacked_typevartuple__",
 
+            # `dlpack`
+            "__dlpack__",
+            "__dlpack_device__",
+
             # `numpy` special methods
             "__array__",
             "__array_finalize__",
