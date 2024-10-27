@@ -87,13 +87,14 @@ modules = ["optype", "examples", "tests"]
 always_true = "NP2"
 always_false = "NP20"
 strict = true
+disable_bytearray_promotion = true
+disable_memoryview_promotion = true
 
 allow_redefinition = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 warn_redundant_casts = true
 warn_unused_ignores = true
-show_error_code_links = true
 # based
 disallow_any_expr = false  # https://github.com/numpy/numpy/pull/27211
 # repo-review recommendations
@@ -298,6 +299,9 @@ force-exclude = true
             # `dlpack`
             "__dlpack__",
             "__dlpack_device__",
+
+            # array-api
+            "__array_namespace__",
 
             # `numpy` special methods
             "__array__",
