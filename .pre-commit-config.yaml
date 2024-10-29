@@ -8,7 +8,6 @@ ci:
     - ruff-format
     - basedmypy
     - basedpyright
-    - basedpyright-verifytypes
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -69,19 +68,12 @@ repos:
     hooks:
       - id: basedmypy
         name: basedmypy
-        entry: uv run mypy
+        entry: TERM=dumb uv run mypy
         language: system
         types_or: [python, pyi]
 
       - id: basedpyright
         name: basedpyright
-        entry: uv run basedpyright
+        entry: uv run basedpyright --threads=3
         language: system
         types_or: [python, pyi]
-
-      - id: basedpyright-verifytypes
-        name: basedpyright --verifytypes
-        entry: uv run basedpyright --ignoreexternal --verifytypes optype
-        language: system
-        always_run: true
-        pass_filenames: false
