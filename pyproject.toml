@@ -39,22 +39,31 @@ dependencies = [
     Changelog = "https://github.com/jorenham/optype/releases"
     Funding = "https://github.com/sponsors/jorenham"
 
-[tool.uv]
-dev-dependencies = [
-  "numpy",
-  "typing_extensions",
-
-  "basedmypy >= 2.6.0",
-  "basedpyright >= 1.19.1",
-  "beartype >= 0.19.0",
-  "codespell >= 2.3.0",
-  "pre-commit >= 4.0.1",
-  "pytest >= 8.3.3",
-  "ruff >= 0.7.1",
-  "sp-repo-review[cli] >= 2024.8.19",
-  "tox >= 4.23.2",
+[dependency-groups]
+dev = [
+    "numpy",
+    "pre-commit >= 4.0.1",
+    "tox >= 4.23.2",
+    "typing_extensions",
 ]
-python-downloads = "manual"
+lint = [
+    "codespell >= 2.3.0",
+    "ruff >= 0.7.1",
+    "sp-repo-review[cli] >= 2024.8.19",
+]
+test = [
+    "beartype >= 0.19.0",
+    "numpy",
+    "pytest >= 8.3.3",
+]
+typecheck = [
+    "basedmypy >= 2.6.0",
+    "basedpyright >= 1.19.1",
+    "numpy",
+]
+
+[tool.uv]
+default-groups = ["dev", "lint", "test", "typecheck"]
 
 [tool.hatch.build.targets.sdist]
 exclude = [
@@ -73,6 +82,9 @@ exclude = [
     ".gitignore",
     ".mardownlint.yaml",
     ".pre-commit-config.yaml",
+    "CODE_OF_CONDUCT.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
     "uv.lock",
 ]
 
@@ -114,6 +126,8 @@ venvPath = "."
 venv = ".venv"
 typeCheckingMode = "all"
 defineConstant = {NP2 = true, NP20 = false}
+useLibraryCodeForTypes = false
+enableReachabilityAnalysis = false
 reportUnreachable = false  # nothing wrong with `if sys.version_info() >= ...`
 reportUnusedCallResult = false  # https://github.com/microsoft/pyright/issues/8650
 reportUnusedImport = false  # dupe of F401

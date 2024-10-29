@@ -294,17 +294,25 @@ numpy = [
 
 [package.dependency-groups]
 dev = [
-    { name = "basedmypy" },
-    { name = "basedpyright" },
-    { name = "beartype" },
-    { name = "codespell" },
     { name = "numpy" },
     { name = "pre-commit" },
-    { name = "pytest" },
-    { name = "ruff" },
-    { name = "sp-repo-review", extra = ["cli"] },
     { name = "tox" },
     { name = "typing-extensions" },
+]
+lint = [
+    { name = "codespell" },
+    { name = "ruff" },
+    { name = "sp-repo-review", extra = ["cli"] },
+]
+test = [
+    { name = "beartype" },
+    { name = "numpy" },
+    { name = "pytest" },
+]
+typecheck = [
+    { name = "basedmypy" },
+    { name = "basedpyright" },
+    { name = "numpy" },
 ]
 
 [package.metadata]
@@ -315,17 +323,25 @@ requires-dist = [
 
 [package.metadata.dependency-groups]
 dev = [
-    { name = "basedmypy", specifier = ">=2.6.0" },
-    { name = "basedpyright", specifier = ">=1.19.1" },
-    { name = "beartype", specifier = ">=0.19.0" },
-    { name = "codespell", specifier = ">=2.3.0" },
     { name = "numpy" },
     { name = "pre-commit", specifier = ">=4.0.1" },
-    { name = "pytest", specifier = ">=8.3.3" },
-    { name = "ruff", specifier = ">=0.7.1" },
-    { name = "sp-repo-review", extras = ["cli"], specifier = ">=2024.8.19" },
     { name = "tox", specifier = ">=4.23.2" },
     { name = "typing-extensions" },
+]
+lint = [
+    { name = "codespell", specifier = ">=2.3.0" },
+    { name = "ruff", specifier = ">=0.7.1" },
+    { name = "sp-repo-review", extras = ["cli"], specifier = ">=2024.8.19" },
+]
+test = [
+    { name = "beartype", specifier = ">=0.19.0" },
+    { name = "numpy" },
+    { name = "pytest", specifier = ">=8.3.3" },
+]
+typecheck = [
+    { name = "basedmypy", specifier = ">=2.6.0" },
+    { name = "basedpyright", specifier = ">=1.19.1" },
+    { name = "numpy" },
 ]
 
 [[package]]
@@ -478,16 +494,16 @@ cli = [
 
 [[package]]
 name = "rich"
-version = "13.9.2"
+version = "13.9.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "markdown-it-py" },
     { name = "pygments" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/aa/9e/1784d15b057b0075e5136445aaea92d23955aad2c93eaede673718a40d95/rich-13.9.2.tar.gz", hash = "sha256:51a2c62057461aaf7152b4d611168f93a9fc73068f8ded2790f29fe2b5366d0c", size = 222843 }
+sdist = { url = "https://files.pythonhosted.org/packages/d9/e9/cf9ef5245d835065e6673781dbd4b8911d352fb770d56cf0879cf11b7ee1/rich-13.9.3.tar.gz", hash = "sha256:bc1e01b899537598cf02579d2b9f4a415104d3fc439313a7a2c165d76557a08e", size = 222889 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/67/91/5474b84e505a6ccc295b2d322d90ff6aa0746745717839ee0c5fb4fdcceb/rich-13.9.2-py3-none-any.whl", hash = "sha256:8c82a3d3f8dcfe9e734771313e606b39d8247bb6b826e196f4914b333b743cf1", size = 242117 },
+    { url = "https://files.pythonhosted.org/packages/9a/e2/10e9819cf4a20bd8ea2f5dabafc2e6bf4a78d6a0965daeb60a4b34d1c11f/rich-13.9.3-py3-none-any.whl", hash = "sha256:9836f5096eb2172c9e77df411c1b009bace4193d6a481d534fea75ebba758283", size = 242157 },
 ]
 
 [[package]]
@@ -590,14 +606,14 @@ wheels = [
 
 [[package]]
 name = "virtualenv"
-version = "20.26.6"
+version = "20.27.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "distlib" },
     { name = "filelock" },
     { name = "platformdirs" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3f/40/abc5a766da6b0b2457f819feab8e9203cbeae29327bd241359f866a3da9d/virtualenv-20.26.6.tar.gz", hash = "sha256:280aede09a2a5c317e409a00102e7077c6432c5a38f0ef938e643805a7ad2c48", size = 9372482 }
+sdist = { url = "https://files.pythonhosted.org/packages/10/7f/192dd6ab6d91ebea7adf6c030eaf549b1ec0badda9f67a77b633602f66ac/virtualenv-20.27.0.tar.gz", hash = "sha256:2ca56a68ed615b8fe4326d11a0dca5dfbe8fd68510fb6c6349163bed3c15f2b2", size = 6483858 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/59/90/57b8ac0c8a231545adc7698c64c5a36fa7cd8e376c691b9bde877269f2eb/virtualenv-20.26.6-py3-none-any.whl", hash = "sha256:7345cc5b25405607a624d8418154577459c3e0277f5466dd79c49d5e492995f2", size = 5999862 },
+    { url = "https://files.pythonhosted.org/packages/c8/15/828ec11907aee2349a9342fa71fba4ba7f3af938162a382dd7da339dea16/virtualenv-20.27.0-py3-none-any.whl", hash = "sha256:44a72c29cceb0ee08f300b314848c86e57bf8d1f13107a5e671fb9274138d655", size = 3110969 },
 ]

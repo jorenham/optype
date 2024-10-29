@@ -9,6 +9,5 @@
     "editor.rulers": [88],
     "git.branchProtection": ["master"],
     "mypy-type-checker.args": ["--config-file=pyproject.toml", "--ide"],
-    "python.testing.pytestEnabled": true,
-    "editor.defaultFormatter": "charliermarsh.ruff"
+    "python.testing.pytestEnabled": true
   }
