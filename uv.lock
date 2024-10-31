@@ -292,10 +292,21 @@ numpy = [
     { name = "numpy" },
 ]
 
-[package.dependency-groups]
+[package.dev-dependencies]
+common = [
+    { name = "numpy" },
+    { name = "typing-extensions" },
+]
 dev = [
+    { name = "basedmypy" },
+    { name = "basedpyright" },
+    { name = "beartype" },
+    { name = "codespell" },
     { name = "numpy" },
     { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "ruff" },
+    { name = "sp-repo-review", extra = ["cli"] },
     { name = "tox" },
     { name = "typing-extensions" },
 ]
@@ -306,13 +317,21 @@ lint = [
 ]
 test = [
     { name = "beartype" },
-    { name = "numpy" },
     { name = "pytest" },
 ]
-typecheck = [
+type = [
     { name = "basedmypy" },
     { name = "basedpyright" },
     { name = "numpy" },
+    { name = "typing-extensions" },
+]
+typetest = [
+    { name = "basedmypy" },
+    { name = "basedpyright" },
+    { name = "beartype" },
+    { name = "numpy" },
+    { name = "pytest" },
+    { name = "typing-extensions" },
 ]
 
 [package.metadata]
@@ -321,10 +340,21 @@ requires-dist = [
     { name = "typing-extensions", marker = "python_full_version < '3.13'", specifier = ">=4.10" },
 ]
 
-[package.metadata.dependency-groups]
+[package.metadata.requires-dev]
+common = [
+    { name = "numpy" },
+    { name = "typing-extensions" },
+]
 dev = [
+    { name = "basedmypy", specifier = ">=2.6.0" },
+    { name = "basedpyright", specifier = ">=1.19.1" },
+    { name = "beartype", specifier = ">=0.19.0" },
+    { name = "codespell", specifier = ">=2.3.0" },
     { name = "numpy" },
     { name = "pre-commit", specifier = ">=4.0.1" },
+    { name = "pytest", specifier = ">=8.3.3" },
+    { name = "ruff", specifier = ">=0.7.1" },
+    { name = "sp-repo-review", extras = ["cli"], specifier = ">=2024.8.19" },
     { name = "tox", specifier = ">=4.23.2" },
     { name = "typing-extensions" },
 ]
@@ -335,13 +365,21 @@ lint = [
 ]
 test = [
     { name = "beartype", specifier = ">=0.19.0" },
-    { name = "numpy" },
     { name = "pytest", specifier = ">=8.3.3" },
 ]
-typecheck = [
+type = [
     { name = "basedmypy", specifier = ">=2.6.0" },
     { name = "basedpyright", specifier = ">=1.19.1" },
     { name = "numpy" },
+    { name = "typing-extensions" },
+]
+typetest = [
+    { name = "basedmypy", specifier = ">=2.6.0" },
+    { name = "basedpyright", specifier = ">=1.19.1" },
+    { name = "beartype", specifier = ">=0.19.0" },
+    { name = "numpy" },
+    { name = "pytest", specifier = ">=8.3.3" },
+    { name = "typing-extensions" },
 ]
 
 [[package]]

@@ -25,45 +25,47 @@ classifiers = [
 ]
 # https://scientific-python.org/specs/spec-0000/
 requires-python = ">=3.10"
-dependencies = [
-    "typing-extensions >= 4.10; python_version < '3.13'"
-]
+dependencies = ["typing-extensions>=4.10; python_version<'3.13'"]
 
-    [project.optional-dependencies]
-    numpy = ["numpy >= 1.24"]
+[project.optional-dependencies]
+numpy = ["numpy>=1.24"]
 
-    [project.urls]
-    Repository = "https://github.com/jorenham/optype/"
-    Documentation = "https://github.com/jorenham/optype/blob/master/README.md"
-    Issues = "https://github.com/jorenham/optype/issues"
-    Changelog = "https://github.com/jorenham/optype/releases"
-    Funding = "https://github.com/sponsors/jorenham"
+[project.urls]
+Repository = "https://github.com/jorenham/optype/"
+Documentation = "https://github.com/jorenham/optype/blob/master/README.md"
+Issues = "https://github.com/jorenham/optype/issues"
+Changelog = "https://github.com/jorenham/optype/releases"
+Funding = "https://github.com/sponsors/jorenham"
 
 [dependency-groups]
-dev = [
+lint = [
+    "codespell>=2.3.0",
+    "ruff>=0.7.1",
+    "sp-repo-review[cli]>=2024.8.19",
+]
+common = [
     "numpy",
-    "pre-commit >= 4.0.1",
-    "tox >= 4.23.2",
     "typing_extensions",
 ]
-lint = [
-    "codespell >= 2.3.0",
-    "ruff >= 0.7.1",
-    "sp-repo-review[cli] >= 2024.8.19",
+type = [
+    {include-group = "common"},
+    "basedmypy>=2.6.0",
+    "basedpyright>=1.19.1",
 ]
 test = [
-    "beartype >= 0.19.0",
-    "numpy",
-    "pytest >= 8.3.3",
+    "beartype>=0.19.0",
+    "pytest>=8.3.3",
 ]
-typecheck = [
-    "basedmypy >= 2.6.0",
-    "basedpyright >= 1.19.1",
-    "numpy",
+typetest = [
+    {include-group = "type"},
+    {include-group = "test"},
 ]
-
-[tool.uv]
-default-groups = ["dev", "lint", "test", "typecheck"]
+dev = [
+    {include-group = "lint"},
+    {include-group = "typetest"},
+    "pre-commit>=4.0.1",
+    "tox>=4.23.2",
+]
 
 [tool.hatch.build.targets.sdist]
 exclude = [
@@ -133,6 +135,7 @@ reportUnusedCallResult = false  # https://github.com/microsoft/pyright/issues/86
 reportUnusedImport = false  # dupe of F401
 reportUnusedVariable = false  # dupe of F841
 
+
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["optype", "examples", "tests"]
@@ -184,7 +187,7 @@ force-exclude = true
         "DTZ",      # flake8-datetimez
         "T10",      # flake8-debugger
         "EXE",      # flake8-executable
-        "EM",      # flake8-errmsg
+        "EM",       # flake8-errmsg
         "FA",       # flake8-future-annotations
         "ISC",      # flake8-implicit-str-concat
         "ICN",      # flake8-import-conventions
