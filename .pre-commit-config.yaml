@@ -68,7 +68,7 @@ repos:
     hooks:
       - id: basedmypy
         name: basedmypy
-        entry: TERM=dumb uv run mypy
+        entry: uv run mypy
         language: system
         types_or: [python, pyi]
 

@@ -1,15 +1,9 @@
-# ruff: noqa: N801
+# ruff: noqa: PYI042
 # mypy: disable-error-code="no-any-explicit, no-any-decorated"
 from __future__ import annotations
 
 import sys
-from typing import (  # noqa: N817
-    Any,
-    Literal as L,
-    Protocol,
-    TypeAlias,
-    runtime_checkable,
-)
+from typing import Literal as L, Protocol, TypeAlias, runtime_checkable  # noqa: N817
 
 from optype import CanBool, CanComplex, CanFloat, CanIndex
 
@@ -21,26 +15,53 @@ else:
 
 
 __all__ = [  # noqa: RUF022
-    "Bool", "Int8", "Int16", "Int32", "Int64", "UInt8", "UInt16", "UInt32", "UInt64",
-    "Float16", "Float32", "Float64", "Complex64", "Complex128",
-    "SignedInteger", "UnsignedInteger", "Integer", "RealFloating", "ComplexFloating",
+    "DType",
     "Numeric",
+    "Integral",
+    "Real",
+    "SignedInteger",
+    "UnsignedInteger",
+    "ComplexFloating",
+    "RealFloating",
+    "Inexact",
+    "Bool",
+    "Int8", "Int16", "Int32", "Int64",
+    "UInt8", "UInt16", "UInt32", "UInt64",
+    "Float16", "Float32", "Float64",
+    "Complex64", "Complex128",
+    "DefaultInt", "DefaultFloat", "DefaultComplex",
 ]  # fmt: skip
 
-#
-# numpy
-#
 
-_KindT_co = TypeVar("_KindT_co", bound=L["b", "i", "u", "f", "c"], covariant=True)
-_CharT_co = TypeVar("_CharT_co", bound=str, covariant=True)
-_NameT_co = TypeVar("_NameT_co", bound=str, covariant=True)
-_ItemN_co = TypeVar("_ItemN_co", bound=int, covariant=True)
-_DataN_co = TypeVar("_DataN_co", bound=int, covariant=True)
-_T_co = TypeVar("_T_co", covariant=True)
+_1: TypeAlias = L[1]
+_2: TypeAlias = L[2]
+_4: TypeAlias = L[4]
+_8: TypeAlias = L[8]
+_16: TypeAlias = L[16]
+
+_NByte_i: TypeAlias = L[1, 2, 4, 8]
+_NByte_f: TypeAlias = L[2, 4, 8]
+_NByte_c: TypeAlias = L[8, 16]
+_NByte_fc: TypeAlias = L[_NByte_f, _NByte_c]
+_NByte_ifc: TypeAlias = L[_NByte_i, _NByte_c]
+
+
+# numpy
+
+_KindT_co = TypeVar("_KindT_co", bound=str, covariant=True, default=str)
+_CharT_co = TypeVar("_CharT_co", bound=str, covariant=True, default=str)
+_NameT_co = TypeVar("_NameT_co", bound=str, covariant=True, default=str)
+_ItemN_co = TypeVar("_ItemN_co", bound=int, covariant=True, default=int)
+_DataN_co = TypeVar("_DataN_co", bound=int, covariant=True, default=int)
+_T_co = TypeVar(
+    "_T_co",
+    covariant=True,
+    default=CanBool | CanIndex | CanFloat | CanComplex,
+)
 
 
 @runtime_checkable
-class _DType_np(Protocol[_KindT_co, _CharT_co, _NameT_co, _ItemN_co, _DataN_co, _T_co]):
+class _DTypeNP(Protocol[_KindT_co, _CharT_co, _NameT_co, _ItemN_co, _DataN_co, _T_co]):
     @property
     def kind(self) -> _KindT_co: ...
     @property
@@ -53,149 +74,92 @@ class _DType_np(Protocol[_KindT_co, _CharT_co, _NameT_co, _ItemN_co, _DataN_co, 
     def alignment(self) -> _DataN_co: ...
     @property
     def type(self) -> type[_T_co]: ...
-    @property
-    def ndim(self) -> L[0]: ...
-    @property
-    def shape(self) -> tuple[()]: ...
 
 
 # These correspond to the `numpy.dtypes.{}DType` data types
-_Bool_np: TypeAlias = _DType_np[L["b"], L["?"], L["bool"], L[1], L[1], CanBool]
-_Int8_np: TypeAlias = _DType_np[L["i"], L["b"], L["int8"], L[1], L[1], CanIndex]
-_Int16_np: TypeAlias = _DType_np[L["i"], L["h"], L["int16"], L[2], L[2], CanIndex]
-_Int32_np: TypeAlias = _DType_np[L["i"], L["i", "l"], L["int32"], L[4], L[4], CanIndex]
-_Int64_np: TypeAlias = _DType_np[L["i"], L["l", "q"], L["int64"], L[8], L[8], CanIndex]
-_UInt8_np: TypeAlias = _DType_np[L["u"], L["B"], L["uint8"], L[1], L[1], CanIndex]
-_UInt16_np: TypeAlias = _DType_np[L["u"], L["H"], L["uint16"], L[2], L[2], CanIndex]
-_UInt32_np: TypeAlias = _DType_np[
-    L["u"], L["I", "L"], L["uint32"], L[4], L[4], CanIndex
-]
-_UInt64_np: TypeAlias = _DType_np[
-    L["u"], L["L", "Q"], L["uint64"], L[8], L[8], CanIndex
-]
+_b1_np: TypeAlias = _DTypeNP[L["b"], L["?"], L["bool"], _1, _1, CanBool]
+_i1_np: TypeAlias = _DTypeNP[L["i"], L["b"], L["int8"], _1, _1, CanIndex]
+_i2_np: TypeAlias = _DTypeNP[L["i"], L["h"], L["int16"], _2, _2, CanIndex]
+_i4_np: TypeAlias = _DTypeNP[L["i"], L["i", "l"], L["int32"], _4, _4, CanIndex]
+_i8_np: TypeAlias = _DTypeNP[L["i"], L["l", "q"], L["int64"], _8, _8, CanIndex]
+_u1_np: TypeAlias = _DTypeNP[L["u"], L["B"], L["uint8"], _1, _1, CanIndex]
+_u2_np: TypeAlias = _DTypeNP[L["u"], L["H"], L["uint16"], _2, _2, CanIndex]
+_u4_np: TypeAlias = _DTypeNP[L["u"], L["I", "L"], L["uint32"], _4, _4, CanIndex]
+_u8_np: TypeAlias = _DTypeNP[L["u"], L["L", "Q"], L["uint64"], _8, _8, CanIndex]
 # `float16` isn't part of the array-api spec, but the array-api does allow using it
-_Float16_np: TypeAlias = _DType_np[L["f"], L["e"], L["float16"], L[2], L[2], CanFloat]
-_Float32_np: TypeAlias = _DType_np[L["f"], L["f"], L["float32"], L[4], L[4], CanFloat]
-_Float64_np: TypeAlias = _DType_np[L["f"], L["d"], L["float64"], L[8], L[8], float]
-_Complex64_np: TypeAlias = _DType_np[
-    L["c"], L["F"], L["complex64"], L[8], L[4], CanComplex
-]
-_Complex128_np: TypeAlias = _DType_np[
-    L["c"], L["D"], L["complex128"], L[16], L[8], complex
-]
+_f2_np: TypeAlias = _DTypeNP[L["f"], L["e"], L["float16"], _2, _2, CanFloat]
+_f4_np: TypeAlias = _DTypeNP[L["f"], L["f"], L["float32"], _4, _4, CanFloat]
+_f8_np: TypeAlias = _DTypeNP[L["f"], L["d"], L["float64"], _8, _8, CanFloat]
+_c8_np: TypeAlias = _DTypeNP[L["c"], L["F"], L["complex64"], _8, _4, CanComplex]
+_c16_np: TypeAlias = _DTypeNP[L["c"], L["D"], L["complex128"], _16, _8, CanComplex]
 
 # the `kind` of array-api dtypes, as used in `isdtype()`
 # https://data-apis.org/array-api/latest/API_specification/generated/array_api.isdtype
-_SInt_np: TypeAlias = _Int8_np | _Int16_np | _Int32_np | _Int64_np
-_UInt_np: TypeAlias = _UInt8_np | _UInt16_np | _UInt32_np | _UInt64_np
-_Int_np: TypeAlias = _SInt_np | _UInt_np
-_Float_np: TypeAlias = _Float16_np | _Float32_np | _Float64_np
-_Complex_np: TypeAlias = _Complex64_np | _Complex128_np
-_Number_np: TypeAlias = _Int_np | _Float_np | _Complex_np
+__Char_i0: TypeAlias = L["i", "l", "q"]
+__Char_i: TypeAlias = L["b", "h", __Char_i0]
+__Char_u: TypeAlias = L["B", "H", "I", "L", "Q"]
+__Char_f: TypeAlias = L["e", "f", "d"]
+__Char_c: TypeAlias = L["F", "D"]
 
-#
-# array-api-strict
-#
+__Name_i: TypeAlias = L["int8", "int16", "int32", "int64"]
+__Name_i0: TypeAlias = L["int32", "int64"]
+__Name_u: TypeAlias = L["uint8", "uint16", "uint32", "uint64"]
+__Name_f: TypeAlias = L["float16", "float32", "float64"]
+__Name_c: TypeAlias = L["complex64", "complex128"]
 
-_NPT = TypeVar("_NPT", bound=_DType_np[Any, Any, Any, Any, Any, Any])
-_NPT_co = TypeVar(
-    "_NPT_co",
-    covariant=True,
-    bound=_DType_np[Any, Any, Any, Any, Any, Any],
-)
+_i0_np: TypeAlias = _DTypeNP[L["i"], __Char_i0, __Name_i0, L[4, 8], L[4, 8], CanIndex]
+_f0_np: TypeAlias = _f8_np
+_c0_np: TypeAlias = _c16_np
+
+_i_np: TypeAlias = _DTypeNP[L["i"], __Char_i, __Name_i, _NByte_i, _NByte_i, CanIndex]
+_u_np: TypeAlias = _DTypeNP[L["u"], __Char_u, __Name_u, _NByte_i, _NByte_i, CanIndex]
+_f_np: TypeAlias = _DTypeNP[L["f"], __Char_f, __Name_f, _NByte_f, _NByte_f, CanFloat]
+_c_np: TypeAlias = _DTypeNP[L["c"], __Char_c, __Name_c, _NByte_c, _NByte_f, CanComplex]
+
+_iu_np: TypeAlias = _DTypeNP[
+    L["i", "u"],
+    L[__Char_i, __Char_u],
+    L[__Name_i, __Name_u],
+    _NByte_i,
+    _NByte_i,
+    CanIndex,
+]
+_fc_np: TypeAlias = _DTypeNP[
+    L["f", "c"],
+    L[__Char_f, __Char_c],
+    L[__Name_f, __Name_c],
+    _NByte_fc,
+    _NByte_f,
+    CanFloat | CanComplex,
+]
+_iuf_np: TypeAlias = _DTypeNP[
+    L["i", "u", "f"],
+    L[__Char_i, __Char_u, __Char_f],
+    L[__Name_i, __Name_u, __Name_f],
+    _NByte_i,
+    _NByte_i,
+    CanIndex | CanFloat,
+]
+_iufc_np: TypeAlias = _DTypeNP[
+    L["i", "u", "f", "c"],
+    L[__Char_i, __Char_u, __Char_f, __Char_c],
+    L[__Name_i, __Name_u, __Name_f, __Name_c],
+    _NByte_ifc,
+    _NByte_i,
+    CanIndex | CanFloat | CanComplex,
+]
 
 
-# https://github.com/data-apis/array-api-strict/blob/2.1/array_api_strict/_dtypes.py
-@runtime_checkable
-class _DType_xp(Protocol[_NPT_co]):
-    @property
-    def _np_dtype(self, /) -> _NPT_co: ...
-    def __init__(self, /, np_dtype: _NPT_co) -> None: ...
-
-
-#
-# sparse, with backends: MLIR & finch (julia wrapper)
-#
-
-_T_contra = TypeVar("_T_contra", contravariant=True, default=_T_co)
-_WidthN_co = TypeVar("_WidthN_co", bound=int, covariant=True)
-
-
-# https://github.com/pydata/sparse/blob/cc3c8d9/sparse/mlir_backend/_dtypes.py
-@runtime_checkable
-class _DType_ir(Protocol[_WidthN_co, _NPT_co]):
-    @property
-    def bit_width(self, /) -> _WidthN_co: ...
-    @property
-    def np_dtype(self, /) -> _NPT_co: ...
-
-
-# this is a highly dynamic and untyped wrapper around a julia type value (but it's not
-# a python type); so there's not much we can do here
-@runtime_checkable
-class _DType_jl(Protocol[_NameT_co, _T_co, _T_contra]):
-    @property
-    def __name__(self, /) -> _NameT_co: ...
-    def __call__(self, x: _T_contra, /) -> _T_co: ...
-
-
-__NameSignedInt: TypeAlias = L["Int8", "Int16", "Int32", "Int64"]
-__NameUnsignedInt: TypeAlias = L["UInt8", "UInt16", "UInt32", "UInt64"]
-__NameInt: TypeAlias = L[__NameSignedInt, __NameUnsignedInt]
-__NameFloat: TypeAlias = L["Float16", "Float32", "Float64"]
-__NameComplex: TypeAlias = L["Complex"]  # julia's `ComplexF{16,32,64}` have same names
-
-_Bool_sparse: TypeAlias = _DType_jl[L["Bool"], bool]
-_Int8_sparse: TypeAlias = _DType_ir[L[8], _Int8_np] | _DType_jl[L["Int8"], int]
-_Int16_sparse: TypeAlias = _DType_ir[L[16], _Int16_np] | _DType_jl[L["Int16"], int]
-_Int32_sparse: TypeAlias = _DType_ir[L[32], _Int32_np] | _DType_jl[L["Int32"], int]
-_Int64_sparse: TypeAlias = _DType_ir[L[64], _Int64_np] | _DType_jl[L["Int64"], int]
-_UInt8_sparse: TypeAlias = _DType_ir[L[8], _UInt8_np] | _DType_jl[L["UInt8"], int]
-_UInt16_sparse: TypeAlias = _DType_ir[L[16], _UInt16_np] | _DType_jl[L["UInt16"], int]
-_UInt32_sparse: TypeAlias = _DType_ir[L[32], _UInt32_np] | _DType_jl[L["UInt32"], int]
-_UInt64_sparse: TypeAlias = _DType_ir[L[64], _UInt64_np] | _DType_jl[L["UInt64"], int]
-_Float16_sparse: TypeAlias = (
-    _DType_ir[L[16], _Float16_np] | _DType_jl[L["Float16"], float]
-)
-_Float32_sparse: TypeAlias = (
-    _DType_ir[L[32], _Float32_np] | _DType_jl[L["Float32"], float]
-)
-_Float64_sparse: TypeAlias = (
-    _DType_ir[L[64], _Float64_np] | _DType_jl[L["Float64"], float]
-)
-_Complex64_sparse: TypeAlias = (
-    _DType_ir[L[64], _Complex64_np] | _DType_jl[__NameComplex, complex]  # jl.ComplexF32
-)
-_Complex128_sparse: TypeAlias = (
-    _DType_ir[L[128], _Complex128_np]
-    | _DType_jl[__NameComplex, complex]  # jl.ComplexF64
-)
-
-__NBitInt: TypeAlias = L[8, 16, 32, 64]
-_SInt_sparse: TypeAlias = _DType_ir[__NBitInt, _SInt_np] | _DType_jl[__NameInt, int]
-_UInt_sparse: TypeAlias = (
-    _DType_ir[__NBitInt, _UInt_np] | _DType_jl[__NameUnsignedInt, int]
-)
-_Int_sparse: TypeAlias = _DType_ir[__NBitInt, _Int_np] | _DType_jl[__NameInt, int]
-_Float_sparse: TypeAlias = (
-    _DType_ir[L[16, 32, 64], _Float_np] | _DType_jl[__NameFloat, float]
-)
-_Complex_sparse: TypeAlias = (
-    _DType_ir[L[64, 128], _Complex_np] | _DType_jl[__NameComplex, complex]
-)
-_Number_sparse: TypeAlias = _Int_sparse | _Float_sparse | _Complex_sparse
-
-#
 # pytorch
-#
 
 _SignB_co = TypeVar("_SignB_co", covariant=True, bound=bool, default=bool)
 _FloatB_co = TypeVar("_FloatB_co", covariant=True, bound=bool, default=bool)
 _ComplexB_co = TypeVar("_ComplexB_co", covariant=True, bound=bool, default=bool)
 
 
-# https://github.com/pytorch/pytorch/blob/v2.5.0/torch/_C/__init__.pyi.in#L181-L189
-class _DType_torch(Protocol[_ItemN_co, _SignB_co, _FloatB_co, _ComplexB_co]):
+@runtime_checkable
+class _DTypeTorch(Protocol[_ItemN_co, _SignB_co, _FloatB_co, _ComplexB_co]):
+    # https://github.com/pytorch/pytorch/blob/v2.5.0/torch/_C/__init__.pyi.in#L181-L189
     @property
     def itemsize(self, /) -> _ItemN_co: ...
     @property
@@ -206,58 +170,86 @@ class _DType_torch(Protocol[_ItemN_co, _SignB_co, _FloatB_co, _ComplexB_co]):
     def is_complex(self, /) -> _ComplexB_co: ...
 
 
+_TorchT = TypeVar("_TorchT", bound=_DTypeTorch)
+
+
 _F: TypeAlias = L[False]
 _T: TypeAlias = L[True]
 
-_Bool_torch: TypeAlias = _DType_torch[L[1], _F, _F, _F]
-_Int8_torch: TypeAlias = _DType_torch[L[1], _T, _F, _F]
-_Int16_torch: TypeAlias = _DType_torch[L[2], _T, _F, _F]
-_Int32_torch: TypeAlias = _DType_torch[L[4], _T, _F, _F]
-_Int64_torch: TypeAlias = _DType_torch[L[8], _T, _F, _F]
-_UInt8_torch: TypeAlias = _DType_torch[L[1], _F, _F, _F]
-_UInt16_torch: TypeAlias = _DType_torch[L[2], _F, _F, _F]
-_UInt32_torch: TypeAlias = _DType_torch[L[4], _F, _F, _F]
-_UInt64_torch: TypeAlias = _DType_torch[L[8], _F, _F, _F]
-_Float16_torch: TypeAlias = _DType_torch[L[2], _T, _T, _F]
-_Float32_torch: TypeAlias = _DType_torch[L[4], _T, _T, _F]
-_Float64_torch: TypeAlias = _DType_torch[L[8], _T, _T, _F]
-_Complex64_torch: TypeAlias = _DType_torch[L[8], _T, _F, _T]
-_Complex128_torch: TypeAlias = _DType_torch[L[16], _T, _F, _T]
+_b1_torch: TypeAlias = _DTypeTorch[_1, _F, _F, _F]
+_i1_torch: TypeAlias = _DTypeTorch[_1, _T, _F, _F]
+_i2_torch: TypeAlias = _DTypeTorch[_2, _T, _F, _F]
+_i4_torch: TypeAlias = _DTypeTorch[_4, _T, _F, _F]
+_i8_torch: TypeAlias = _DTypeTorch[_8, _T, _F, _F]
+_u1_torch: TypeAlias = _DTypeTorch[_1, _F, _F, _F]
+_u2_torch: TypeAlias = _DTypeTorch[_2, _F, _F, _F]
+_u4_torch: TypeAlias = _DTypeTorch[_4, _F, _F, _F]
+_u8_torch: TypeAlias = _DTypeTorch[_8, _F, _F, _F]
+_f2_torch: TypeAlias = _DTypeTorch[_2, _T, _T, _F]
+_f4_torch: TypeAlias = _DTypeTorch[_4, _T, _T, _F]
+_f8_torch: TypeAlias = _DTypeTorch[_8, _T, _T, _F]
+_c8_torch: TypeAlias = _DTypeTorch[_8, _T, _F, _T]
+_c16_torch: TypeAlias = _DTypeTorch[_16, _T, _F, _T]
 
-_SInt_torch: TypeAlias = _DType_torch[L[1, 2, 4, 8], _T, _F, _F]
-_UInt_torch: TypeAlias = _DType_torch[L[1, 2, 4, 8], _F, _F, _F]
-_Int_torch: TypeAlias = _DType_torch[L[1, 2, 4, 8], bool, _F, _F]
-_Float_torch: TypeAlias = _DType_torch[L[2, 4, 8], _T, _T, _F]
-_Complex_torch: TypeAlias = _DType_torch[L[8, 16], _T, _F, _T]
-_Number_torch: TypeAlias = _Int_torch | _Float_torch | _Complex_torch
 
-#
+_i_torch: TypeAlias = _DTypeTorch[_NByte_i, _T, _F, _F]
+_u_torch: TypeAlias = _DTypeTorch[_NByte_i, _F, _F, _F]
+_f_torch: TypeAlias = _DTypeTorch[_NByte_f, _T, _T, _F]
+_c_torch: TypeAlias = _DTypeTorch[_NByte_c, _T, _F, _T]
+_iu_torch: TypeAlias = _DTypeTorch[_NByte_i, bool, _F, _F]
+_fc_torch: TypeAlias = _DTypeTorch[_NByte_fc, bool, bool, bool]
+_iuf_torch: TypeAlias = _DTypeTorch[_NByte_i, bool, bool, _F]
+_iufc_torch: TypeAlias = _DTypeTorch[_NByte_ifc, bool, bool, bool]
+
+_i0_torch: TypeAlias = _DTypeTorch[L[4, 8], _T, _F, _F]
+_f0_torch: TypeAlias = _DTypeTorch[L[4, 8], _T, _T, _F]
+_c0_torch: TypeAlias = _c_torch
+
+# array-api-strict
+
+_NPT = TypeVar("_NPT", bound=_DTypeNP)
+_NPT_co = TypeVar("_NPT_co", covariant=True, bound=_DTypeNP)
+
+
+@runtime_checkable
+class _DTypeXP(Protocol[_NPT_co]):
+    # https://github.com/data-apis/array-api-strict/blob/2.1/array_api_strict/_dtypes.py
+    @property
+    def _np_dtype(self, /) -> _NPT_co: ...
+    def __init__(self, /, np_dtype: _NPT_co) -> None: ...
+
+
 # putting it all together
-#
 
-_DType_xnp: TypeAlias = _NPT | _DType_xp[_NPT]
+_DType: TypeAlias = _NPT | _TorchT | _DTypeXP[_NPT]
 
-Bool: TypeAlias = _DType_xnp[_Bool_np] | _Bool_sparse | _Bool_torch
-Int8: TypeAlias = _DType_xnp[_Int8_np] | _Int8_sparse | _Int8_torch
-Int16: TypeAlias = _DType_xnp[_Int16_np] | _Int16_sparse | _Int16_torch
-Int32: TypeAlias = _DType_xnp[_Int32_np] | _Int32_sparse | _Int32_torch
-Int64: TypeAlias = _DType_xnp[_Int64_np] | _Int64_sparse | _Int64_torch
-UInt8: TypeAlias = _DType_xnp[_UInt8_np] | _UInt8_sparse | _UInt8_torch
-UInt16: TypeAlias = _DType_xnp[_UInt16_np] | _UInt16_sparse | _UInt16_torch
-UInt32: TypeAlias = _DType_xnp[_UInt32_np] | _UInt32_sparse | _UInt32_torch
-UInt64: TypeAlias = _DType_xnp[_UInt64_np] | _UInt64_sparse | _UInt64_torch
-Float16: TypeAlias = _DType_xnp[_Float16_np] | _Float16_sparse | _Float16_torch
-Float32: TypeAlias = _DType_xnp[_Float32_np] | _Float32_sparse | _Float32_torch
-Float64: TypeAlias = _DType_xnp[_Float64_np] | _Float64_sparse | _Float64_torch
-Complex64: TypeAlias = _DType_xnp[_Complex64_np] | _Complex64_sparse | _Complex64_torch
-Complex128: TypeAlias = (
-    _DType_xnp[_Complex128_np] | _Complex128_sparse | _Complex128_torch
-)
+Bool: TypeAlias = _DType[_b1_np, _b1_torch]
+Int8: TypeAlias = _DType[_i1_np, _i1_torch]
+Int16: TypeAlias = _DType[_i2_np, _i2_torch]
+Int32: TypeAlias = _DType[_i4_np, _i4_torch]
+Int64: TypeAlias = _DType[_i8_np, _i8_torch]
+UInt8: TypeAlias = _DType[_u1_np, _u1_torch]
+UInt16: TypeAlias = _DType[_u2_np, _u2_torch]
+UInt32: TypeAlias = _DType[_u4_np, _u4_torch]
+UInt64: TypeAlias = _DType[_u8_np, _u8_torch]
+Float16: TypeAlias = _DType[_f2_np, _f2_torch]
+Float32: TypeAlias = _DType[_f4_np, _f4_torch]
+Float64: TypeAlias = _DType[_f8_np, _f8_torch]
+Complex64: TypeAlias = _DType[_c8_np, _c8_torch]
+Complex128: TypeAlias = _DType[_c16_np, _c16_torch]
 
-SignedInteger: TypeAlias = _DType_xnp[_SInt_np] | _SInt_sparse | _SInt_torch
-UnsignedInteger: TypeAlias = _DType_xnp[_UInt_np] | _UInt_sparse | _UInt_torch
-Integer: TypeAlias = _DType_xnp[_Int_np] | _Int_sparse | _Int_torch
-RealFloating: TypeAlias = _DType_xnp[_Float_np] | _Float_sparse | _Float_torch
-ComplexFloating: TypeAlias = _DType_xnp[_Complex_np] | _Complex_sparse | _Complex_torch
-Numeric: TypeAlias = _DType_xnp[_Number_np] | _Number_sparse | _Number_torch
-DType: TypeAlias = Bool | Numeric
+DefaultInt: TypeAlias = _DType[_i0_np, _i0_torch]
+DefaultFloat: TypeAlias = _DType[_f0_np, _f0_torch]
+DefaultComplex: TypeAlias = _DType[_c0_np, _c0_torch]
+
+SignedInteger: TypeAlias = _DType[_i_np, _i_torch]
+UnsignedInteger: TypeAlias = _DType[_u_np, _u_torch]
+RealFloating: TypeAlias = _DType[_f_np, _f_torch]
+ComplexFloating: TypeAlias = _DType[_c_np, _c_torch]
+
+Integral: TypeAlias = _DType[_iu_np, _iu_torch]
+Real: TypeAlias = _DType[_iuf_np, _iuf_torch]
+Inexact: TypeAlias = _DType[_fc_np, _fc_torch]
+Numeric: TypeAlias = _DType[_iufc_np, _iufc_torch]
+
+DType: TypeAlias = _DType[_DTypeNP, _DTypeTorch]
