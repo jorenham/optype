@@ -6,9 +6,7 @@ build-backend = "hatchling.build"
 name = "optype"
 description = "Building blocks for precise & flexible type hints"
 version = "0.7.0.dev0"
-authors = [
-  {name = "Joren Hammudoglu", email = "jhammudoglu@gmail.com"},
-]
+authors = [{name = "Joren Hammudoglu", email = "jhammudoglu@gmail.com"}]
 license = {file = "LICENSE"}
 readme = "README.md"
 keywords = ["type", "typing", "type hints", "numpy"]
@@ -52,7 +50,13 @@ type = [
     "basedmypy[faster-cache]>=2.7.0",
     "basedpyright>=1.20.0",
 ]
+array-api = [
+    "array-api-compat>=1.9.1",
+    "array-api-strict>=2.1",
+]
 test = [
+    {include-group = "common"},
+    {include-group = "array-api"},
     "beartype>=0.19.0",
     "pytest>=8.3.3",
 ]
