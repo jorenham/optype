@@ -14,6 +14,7 @@ from ._typeforms import AnnotatedAlias, GenericType, LiteralAlias, UnionAlias
 
 __all__ = (
     "AnnotatedAlias",
+    "Deprecated",
     "GenericType",
     "LiteralAlias",
     "ProtocolType",
@@ -21,6 +22,20 @@ __all__ = (
     "UnionAlias",
     "WrappedFinalType",
 )
+
+
+def __dir__() -> tuple[str, ...]:
+    return __all__
+
+
+@runtime_checkable
+class Deprecated(Protocol):
+    """
+    A runtime-protocol that represents a type or method that's decorated with
+    `@typing.deprecated` or `@typing_extensions.deprecated`.
+    """
+
+    __deprecated__: str
 
 
 @runtime_checkable
