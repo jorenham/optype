@@ -1,5 +1,5 @@
 import enum
-from typing import Generic, Literal
+from typing import Generic, Literal, final
 
 from typing_extensions import TypeVar
 
@@ -12,6 +12,7 @@ _IntT_co = TypeVar("_IntT_co", bound=int, covariant=True)
 # `Any*` type aliases
 
 
+@final
 class Index(Generic[_IntT_co]):
     def __init__(self, x: _IntT_co, /) -> None:
         self._x = x
@@ -20,6 +21,7 @@ class Index(Generic[_IntT_co]):
         return self._x
 
 
+@final
 class IntLike(Generic[_IntT_co]):
     def __init__(self, x: _IntT_co, /) -> None:
         self._x = x
@@ -28,6 +30,7 @@ class IntLike(Generic[_IntT_co]):
         return self._x
 
 
+@final
 class FloatLike:
     def __init__(self, x: float, /) -> None:
         self._x = x
@@ -36,6 +39,7 @@ class FloatLike:
         return self._x
 
 
+@final
 class ComplexLike:
     def __init__(self, x: complex, /) -> None:
         self._x = x
@@ -47,6 +51,7 @@ class ComplexLike:
 _V_co = TypeVar("_V_co", covariant=True)
 
 
+@final
 class SequenceLike(Generic[_V_co]):
     def __init__(self, /, *values: _V_co) -> None:
         self._xs = values
