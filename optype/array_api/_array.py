@@ -1,3 +1,4 @@
+# ruff: noqa: ERA001
 # mypy: disable-error-code="no-any-explicit, no-any-decorated"
 from __future__ import annotations
 
@@ -7,244 +8,131 @@ from typing import TYPE_CHECKING, Any, Literal, TypeAlias
 
 from optype._core._can import CanIndex
 
+from ._dtypes import Bool, DType
+
 
 if sys.version_info >= (3, 13):
-    from typing import Protocol, Self, TypeVar, override, runtime_checkable
+    from types import CapsuleType
+    from typing import Never, Protocol, Self, TypeVar, runtime_checkable
 else:
-    from typing_extensions import Protocol, Self, TypeVar, override, runtime_checkable
+    from typing_extensions import (
+        CapsuleType,
+        Never,
+        Protocol,
+        Self,
+        TypeVar,
+        runtime_checkable,
+    )
 
 
 if TYPE_CHECKING:
-    from ._common import APIVersion
+    import enum
+
+    from ._device import Device
 
 
-from optype.dlpack import CanDLPack, CanDLPackDevice
+__all__ = ["Array"]
 
-
-__all__ = ["Array", "CanArrayNamespace"]
-
-
-Shape: TypeAlias = tuple[int, ...]
-DType: TypeAlias = object  # TODO
-Device: TypeAlias = object  # TODO
 
 _IndexSingle: TypeAlias = CanIndex | slice | types.EllipsisType | None
 _IndexMulti: TypeAlias = _IndexSingle | tuple[_IndexSingle, ...]
 
-_NamespaceT_co = TypeVar("_NamespaceT_co", covariant=True, default=types.ModuleType)
-_ShapeT_co = TypeVar("_ShapeT_co", covariant=True, bound=Shape, default=Shape)
-_DTypeT_co = TypeVar("_DTypeT_co", covariant=True, bound=DType, default=Any)
-_DeviceT_co = TypeVar("_DeviceT_co", covariant=True, bound=Device, default=Any)
-
-_MT = TypeVar("_MT", bound=int)
-_NT = TypeVar("_NT", bound=int)
-
-_Shape_mT = TypeVar(
-    "_Shape_mT",
-    tuple[int, int],
-    tuple[int, int, int],
-    tuple[int, int, int, int],
-    # because we can't see more that 4 dimensions anyway
-    tuple[int, ...],
-)
-_ShapeT = TypeVar("_ShapeT", bound=Shape)
-_DTypeT = TypeVar("_DTypeT", bound=DType)
-_DeviceT = TypeVar("_DeviceT", bound=Device)
+_T_co = TypeVar("_T_co", covariant=True, bound=DType, default=DType)
 
 
 @runtime_checkable
-class CanArrayNamespace(Protocol[_NamespaceT_co]):
+class BaseArray(Protocol[_T_co]):
+    @property
+    def dtype(self, /) -> _T_co: ...
+    @property
+    def device(self, /) -> Device: ...
+    def to_device(self, device: Never, /, *, stream: int | None = None) -> Self: ...
+
+    # TODO: Return a dedicated array-api namespace type.
     def __array_namespace__(
         self,
         /,
         *,
-        api_version: APIVersion | None = None,
-    ) -> _NamespaceT_co: ...
+        api_version: Literal["2023.12"] | None = None,
+    ) -> types.ModuleType: ...
+
+    def __dlpack__(
+        self,
+        /,
+        *,
+        stream: int | None = None,
+        max_version: tuple[int, int] | None = None,
+        dl_device: tuple[int, Literal[0]] | None = None,
+        # NOTE: thee `copy: bool | None` is omitted because of a `numpy<2.2` typing bug
+    ) -> CapsuleType: ...
+    def __dlpack_device__(self, /) -> tuple[enum.Enum | int, int]: ...
 
 
-# pyright has a weird variance-related bug here
 @runtime_checkable
-class Array(  # noqa: PLW1641  # pyright: ignore[reportInvalidTypeVarUse]
-    CanArrayNamespace[_NamespaceT_co],
-    CanDLPack,
-    CanDLPackDevice,
-    Protocol[_ShapeT_co, _DTypeT_co, _DeviceT_co, _NamespaceT_co],
-):
+class Array(BaseArray[_T_co], Protocol[_T_co]):
     @property
-    def shape(self, /) -> _ShapeT_co: ...
-    @property
-    def dtype(self, /) -> _DTypeT_co: ...
-    @property
-    def device(self, /) -> _DeviceT_co: ...
-
+    def shape(self, /) -> tuple[int, ...]: ...
     @property
     def ndim(self, /) -> int: ...
     @property
     def size(self, /) -> int: ...
 
     @property
-    def T(  # noqa: N802
-        self: Array[tuple[_MT, _NT], _DTypeT, _DeviceT],
-        /,
-    ) -> Array[tuple[_NT, _MT], _DTypeT, _DeviceT]: ...
+    def T(self, /) -> Self: ...  # noqa: N802
     @property
-    def mT(  # noqa: N802
-        self: Array[_Shape_mT, _DTypeT, _DeviceT],
-        /,
-    ) -> Array[_Shape_mT, _DTypeT, _DeviceT]: ...
+    def mT(self, /) -> Self: ...  # noqa: N802
+
+    # NOTE: for `numpy.ndarray` compatibility, we can't accept or return `Array` here.
+    def __lt__(self, x: float, /) -> Any: ...  # pyright: ignore[reportAny]
+    def __le__(self, x: float, /) -> Any: ...  # pyright: ignore[reportAny]
+    def __ge__(self, x: float, /) -> Any: ...  # pyright: ignore[reportAny]
+    def __gt__(self, x: float, /) -> Any: ...  # pyright: ignore[reportAny]
+
+    # binary arithmetic operators
+    def __matmul__(self, x: Self, /) -> Self: ...
+    def __add__(self, x: int | Self, /) -> Self: ...
+    def __sub__(self, x: int | Self, /) -> Self: ...
+    def __mul__(self, x: int | Self, /) -> Self: ...
+    def __pow__(self, x: int | Self, /) -> Self: ...
+    def __mod__(self, x: int | Self, /) -> Self: ...
+
+    def __rmatmul__(self, x: Self, /) -> Self: ...
+    def __radd__(self, x: int, /) -> Self: ...
+    def __rsub__(self, x: int, /) -> Self: ...
+    def __rmul__(self, x: int, /) -> Self: ...
+    def __rpow__(self, x: int, /) -> Self: ...
+    def __rmod__(self, x: int, /) -> Self: ...
+
+    # NOTE: uncommenting these methods causes causes type-checking performance issues
+    # def __truediv__(self, x: float | Self, /) -> Array[_T_co] | Array[Float0]: ...
+    # def __floordiv__(self, x: float | Self, /) -> Array[_T_co] | Array[Float0]: ...
+    # def __rtruediv__(self, x: float, /) -> Array[_T_co] | Array[Float0]: ...
+    # def __rfloordiv__(self, x: float, /) -> Array[_T_co] | Array[Float0]: ...
+
+    # bitwise operators
+    # TODO: fix the `numpy.ndarray` bitwise ops (currently impossible to match against)
+    # NOTE: uncommenting the following causes pyrght performance issues
+    # def __and__(self, x: Any, /) -> Array[Integer_co]: ...
+    # def __or__(self, x: Any, /) -> Array[Integer_co]: ...
+    # def __xor__(self, x: Any, /) -> Array[Integer_co]: ...
+
+    # subscripting operators
+    def __getitem__(self, k: _IndexMulti | Array[Bool], /) -> Self: ...
+
+    # TODO: require the scalar value to match the array dtype
+    def __setitem__(self, k: _IndexMulti | Array, v: complex | Array, /) -> None: ...
 
     # builtin type conversion
-    def __bool__(self: Array[tuple[Literal[1], ...]], /) -> bool: ...
-    # TODO: require self dtype to be integral
-    def __index__(self: Array[tuple[()]], /) -> int: ...
-    # TODO: require self dtype to be real
-    def __int__(self: Array[tuple[()]], /) -> int: ...
-    def __float__(self: Array[tuple[()]], /) -> float: ...
-    def __complex__(self: Array[tuple[()]], /) -> complex: ...
+    def __bool__(self, /) -> bool: ...
+    def __index__(self, /) -> int: ...
+    def __int__(self, /) -> int: ...
+    def __float__(self, /) -> float: ...
+    def __complex__(self, /) -> complex: ...
 
     # unary arithmetic operators
     def __pos__(self, /) -> Self: ...
     def __neg__(self, /) -> Self: ...
-    # TODO: overload on self dtype: real -> self, complex -> float
-    def __abs__(self, /) -> Array[_ShapeT_co, Any, _DeviceT_co]: ...
-    # TODO: require self and return dtype as bool or int
-    def __invert__(self, /) -> Array[_ShapeT_co, Any, _DeviceT_co]: ...
 
-    # rich comparison operators
-    # TODO: use specific boolean return dtype for all comparison ops
-    @override
-    def __eq__(  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
-        self,
-        x: complex | Array[_ShapeT, Any, _DeviceT],
-        /,
-    ) -> Array[_ShapeT_co | _ShapeT, Any, _DeviceT_co | _DeviceT]: ...
-    @override
-    def __ne__(  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
-        self,
-        x: complex | Array[_ShapeT, Any, _DeviceT],
-        /,
-    ) -> Array[_ShapeT_co | _ShapeT, Any, _DeviceT_co | _DeviceT]: ...
-    # TODO: require self dtype as real for all inequality comparison ops
-    def __lt__(
-        self,
-        x: float | Array[_ShapeT, Any, _DeviceT],
-        /,
-    ) -> Array[_ShapeT_co | _ShapeT, Any, _DeviceT_co | _DeviceT]: ...
-    def __le__(
-        self,
-        x: float | Array[_ShapeT, Any, _DeviceT],
-        /,
-    ) -> Array[_ShapeT_co | _ShapeT, Any, _DeviceT_co | _DeviceT]: ...
-    def __ge__(
-        self,
-        x: float | Array[_ShapeT, Any, _DeviceT],
-        /,
-    ) -> Array[_ShapeT_co | _ShapeT, Any, _DeviceT_co | _DeviceT]: ...
-    def __gt__(
-        self,
-        x: float | Array[_ShapeT, Any, _DeviceT],
-        /,
-    ) -> Array[_ShapeT_co | _ShapeT, Any, _DeviceT_co | _DeviceT]: ...
-
-    # binary arithmetic operators
-    # NOTE: the aray-api does not specify `__divmod__`
-    def __add__(
-        self,
-        x: complex | Array[_ShapeT, _DTypeT, _DeviceT],
-        /,
-    ) -> Array[_ShapeT_co | _ShapeT, _DTypeT_co | _DTypeT, _DeviceT_co | _DeviceT]: ...
-    def __sub__(
-        self,
-        x: complex | Array[_ShapeT, _DTypeT, _DeviceT],
-        /,
-    ) -> Array[_ShapeT_co | _ShapeT, _DTypeT_co | _DTypeT, _DeviceT_co | _DeviceT]: ...
-    def __mul__(
-        self,
-        x: complex | Array[_ShapeT, _DTypeT, _DeviceT],
-        /,
-    ) -> Array[_ShapeT_co | _ShapeT, _DTypeT_co | _DTypeT, _DeviceT_co | _DeviceT]: ...
-    # TODO: overloads for specific shapes, see the docs for the exact overloads
-    def __matmul__(
-        self,
-        x: complex | Array[tuple[int, ...], _DTypeT, _DeviceT],
-        /,
-    ) -> Array[tuple[int, ...], _DTypeT_co | _DTypeT, _DeviceT_co | _DeviceT]: ...
-    # TODO: disallow int / int (it's unspecified)
-    # TODO: always return float or complex dtype
-    def __truediv__(
-        self,
-        x: complex | Array[_ShapeT, Any, _DeviceT],
-        /,
-    ) -> Array[_ShapeT_co | _ShapeT, Any, _DeviceT_co | _DeviceT]: ...
-    # TODO: disallow complex dtypes
-    # TODO: always return float dtype
-    def __floordiv__(
-        self,
-        x: float | Array[_ShapeT, Any, _DeviceT],
-        /,
-    ) -> Array[_ShapeT_co | _ShapeT, Any, _DeviceT_co | _DeviceT]: ...
-    def __mod__(
-        self,
-        x: float | Array[_ShapeT, _DTypeT, _DeviceT],
-        /,
-    ) -> Array[_ShapeT_co | _ShapeT, _DTypeT_co | _DTypeT, _DeviceT_co | _DeviceT]: ...
-    # NOTE: the aray-api does not specify the modulus parameter
-    def __pow__(
-        self,
-        x: complex | Array[_ShapeT, _DTypeT, _DeviceT],
-        /,
-    ) -> Array[_ShapeT_co | _ShapeT, _DTypeT_co | _DTypeT, _DeviceT_co | _DeviceT]: ...
-
-    # bitwise operators
-    # TODO: always require and return integer dtypes for the bitshift operators
-    def __lshift__(
-        self,
-        x: int | Array[_ShapeT, _DTypeT, _DeviceT],
-        /,
-    ) -> Array[_ShapeT_co | _ShapeT, _DTypeT_co | _DTypeT, _DeviceT_co | _DeviceT]: ...
-    def __rshift__(
-        self,
-        x: int | Array[_ShapeT, _DTypeT, _DeviceT],
-        /,
-    ) -> Array[_ShapeT_co | _ShapeT, _DTypeT_co | _DTypeT, _DeviceT_co | _DeviceT]: ...
-    # TODO: always require and return int or int dtypes for the logical bitwise ops
-    def __and__(
-        self,
-        x: int | Array[_ShapeT, _DTypeT, _DeviceT],
-        /,
-    ) -> Array[_ShapeT_co | _ShapeT, _DTypeT_co | _DTypeT, _DeviceT_co | _DeviceT]: ...
-    def __xor__(
-        self,
-        x: int | Array[_ShapeT, _DTypeT, _DeviceT],
-        /,
-    ) -> Array[_ShapeT_co | _ShapeT, _DTypeT_co | _DTypeT, _DeviceT_co | _DeviceT]: ...
-    def __or__(
-        self,
-        x: int | Array[_ShapeT, _DTypeT, _DeviceT],
-        /,
-    ) -> Array[_ShapeT_co | _ShapeT, _DTypeT_co | _DTypeT, _DeviceT_co | _DeviceT]: ...
-
-    # subscripting operators
-    # TODO: overloads for specific shapes
-    # TODO: require the index arrays to be of boolean dtype
-    def __getitem__(
-        self,
-        k: _IndexMulti | Array,
-        /,
-    ) -> Array[tuple[int, ...], _DTypeT_co, _DeviceT_co]: ...
-    # TODO: require the scalar value to match the array dtype
-    def __setitem__(
-        self: Array[Any, _DTypeT, _DeviceT],
-        k: _IndexMulti | Array,
-        v: complex | Array,
-        /,
-    ) -> None: ...
-
-    # dlpack
-    def to_device(
-        self,
-        device: _DeviceT,
-        /,
-        *,
-        stream: int | None = None,
-    ) -> Array[_ShapeT_co, _DTypeT_co, _DeviceT]: ...
+    # TODO: Re-enable after https://github.com/numpy/numpy/pull/27659
+    # def __abs__(self, /) -> Array[Any]: ...
+    # def __invert__(self, /) -> Self: ...
