@@ -46,9 +46,14 @@ class _CanGetNewArgs(Protocol[_NewArgsT_co]):
     def __getnewargs__(self, /) -> _NewArgsT_co: ...
 
 
+@runtime_checkable
+class _CanClassGetItem(Protocol):
+    def __class_getitem__(cls, k: object, /) -> GenericAlias: ...
+
+
 # NOTE: forcibly set to invariant to work around the incorrect int/float promotion rules
 @runtime_checkable
-class _CanItem(Protocol[_ItemT]):  # pyright: ignore[reportInvalidTypeVarUse]
+class _CanItem(Protocol[_ItemT]):  # type:ignore[misc]  # pyright: ignore[reportInvalidTypeVarUse]
     def item(self, /) -> _ItemT: ...
 
 
@@ -72,6 +77,26 @@ class ComplexFloating_co(_CanArrayNamespace, _CanItem[complex], Protocol):
 
 
 @runtime_checkable
+class Number(_CanArrayNamespace, _CanClassGetItem, _CanItem[complex], Protocol):
+    """Integers, real- and complex floats, i.e. `ComplexFloating_co` minus `Bool`."""
+
+    if not TYPE_CHECKING:
+        # NOTE: this is a workaround for `numpy<2.2`
+        def __round__(self, ndigits: int | None = None, /) -> int | Self: ...
+
+
+@runtime_checkable
+class RealNumber(_CanArrayNamespace, _CanClassGetItem, _CanItem[float], Protocol):
+    """Integers and real floats, i.e. `Number` minus `Bool`."""
+
+    def is_integer(self, /) -> bool: ...
+
+    if not TYPE_CHECKING:
+        # NOTE: this is a workaround for `numpy<2.2`
+        def __round__(self, ndigits: int | None = None, /) -> int | Self: ...
+
+
+@runtime_checkable
 class Integer(Integer_co, Protocol):
     """Signed and unsigned integers."""
 
@@ -86,31 +111,13 @@ class Floating(Floating_co, Protocol):
 
 
 @runtime_checkable
-class ComplexFloating(ComplexFloating_co, Protocol):
+class ComplexFloating(Number, Protocol):
     """
     IMPORTANT: On `numpy<2.2` this does not work as expected when type-checking!
     Use `Complex128` or `Number` instead.
     """
 
     def __complex__(self, /) -> complex: ...
-
-
-@runtime_checkable
-class Number(ComplexFloating_co, Protocol):
-    """Integers, real- and complex floats, i.e. `ComplexFloating_co` minus `Bool`."""
-
-    def __class_getitem__(cls, k: object, /) -> GenericAlias: ...
-
-    if not TYPE_CHECKING:
-        # NOTE: this is a workaround for `numpy<2.2`
-        def __round__(self, ndigits: int | None = None, /) -> int | Self: ...
-
-
-@runtime_checkable
-class RealNumber(Number, Protocol):
-    """Integers and real floats, i.e. `Number` minus `Bool`."""
-
-    def is_integer(self, /) -> bool: ...
 
 
 @runtime_checkable

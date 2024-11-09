@@ -8,87 +8,91 @@ from optype.array_api import _sctypes_numpy as sct
 
 @pytest.mark.parametrize("v", [False, 0, 0.0, 0j])
 def test_no_builtins(v: complex) -> None:
-    b: sct.Bool = v  # pyright: ignore[reportAssignmentType]
-    f8: sct.Float64 = v  # pyright: ignore[reportAssignmentType]
-    c16: sct.Complex128 = v  # pyright: ignore[reportAssignmentType]
+    b: sct.Bool = v  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    f8: sct.Float64 = v  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    c16: sct.Complex128 = v  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     assert not isinstance(v, sct.Bool)
     assert not isinstance(v, sct.Float64)
     assert not isinstance(v, sct.Complex128)
 
-    iu: sct.Integer = v  # pyright: ignore[reportAssignmentType]
-    f: sct.Floating = v  # pyright: ignore[reportAssignmentType]
-    c: sct.ComplexFloating = v  # pyright: ignore[reportAssignmentType]
+    iu: sct.Integer = v  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    f: sct.Floating = v  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    c: sct.ComplexFloating = v  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     assert not isinstance(v, sct.Integer)
     assert not isinstance(v, sct.Floating)
     assert not isinstance(v, sct.ComplexFloating)
 
-    iuf: sct.RealNumber = v  # pyright: ignore[reportAssignmentType]
-    iufc: sct.Number = v  # pyright: ignore[reportAssignmentType]
+    iuf: sct.RealNumber = v  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    iufc: sct.Number = v  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     assert not isinstance(v, sct.RealNumber)
     assert not isinstance(v, sct.Number)
 
-    biu: sct.Integer_co = v  # pyright: ignore[reportAssignmentType]
-    biuf: sct.Floating_co = v  # pyright: ignore[reportAssignmentType]
-    biufc: sct.ComplexFloating_co = v  # pyright: ignore[reportAssignmentType]
+    biu: sct.Integer_co = v  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    biuf: sct.Floating_co = v  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    biufc: sct.ComplexFloating_co = v  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     assert not isinstance(v, sct.Integer_co)
     assert not isinstance(v, sct.Floating_co)
     assert not isinstance(v, sct.ComplexFloating_co)
 
 
 def test_bool() -> None:
-    i1_x: sct.Bool = np.int8()  # pyright: ignore[reportAssignmentType]
-    u1_x: sct.Bool = np.uint8()  # pyright: ignore[reportAssignmentType]
-    f2_x: sct.Bool = np.float16()  # pyright: ignore[reportAssignmentType]
-    f4_x: sct.Bool = np.float32()  # pyright: ignore[reportAssignmentType]
-    f8_x: sct.Bool = np.float64()  # pyright: ignore[reportAssignmentType]
-    c8_x: sct.Bool = np.complex64()  # pyright: ignore[reportAssignmentType]
-    c16_x: sct.Bool = np.complex128()  # pyright: ignore[reportAssignmentType]
+    i1_x: sct.Bool = np.int8()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    u1_x: sct.Bool = np.uint8()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    f2_x: sct.Bool = np.float16()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    f4_x: sct.Bool = np.float32()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    f8_x: sct.Bool = np.float64()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    c8_x: sct.Bool = np.complex64()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    c16_x: sct.Bool = np.complex128()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
-    b1: sct.Bool = np.bool_()
+    v = np.bool_()
+    b1: sct.Bool = v
 
-    assert isinstance(b1, sct.ComplexFloating_co)
-    assert isinstance(b1, sct.Floating_co)
-    assert isinstance(b1, sct.Integer_co)
-    assert isinstance(b1, sct.Bool)
+    assert isinstance(v, sct.ComplexFloating_co)
+    assert isinstance(v, sct.Floating_co)
+    assert isinstance(v, sct.Integer_co)
+    assert isinstance(v, sct.Bool)
 
-    assert not isinstance(b1, sct.Complex128)
-    assert not isinstance(b1, sct.Float64)
+    assert not isinstance(v, sct.Complex128)
+    assert not isinstance(v, sct.Float64)
 
-    assert not isinstance(b1, sct.Number)
-    assert not isinstance(b1, sct.ComplexFloating)
-    assert not isinstance(b1, sct.Floating)
-    assert not isinstance(b1, sct.Integer)
+    assert not isinstance(v, sct.Number)
+    assert not isinstance(v, sct.ComplexFloating)
+    assert not isinstance(v, sct.Floating)
+    assert not isinstance(v, sct.Integer)
 
 
 def test_float64() -> None:
-    b1_x: sct.Float64 = np.bool_()  # pyright: ignore[reportAssignmentType]
+    b1_x: sct.Float64 = np.bool_()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    i8_x: sct.Float64 = np.int64()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    u8_x: sct.Float64 = np.uint64()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    c8_x: sct.Float64 = np.complex64()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    c16_x: sct.Float64 = np.complex128()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    # mypy false negatives
     f2_x: sct.Float64 = np.float16()  # pyright: ignore[reportAssignmentType]
     f4_x: sct.Float64 = np.float32()  # pyright: ignore[reportAssignmentType]
-    i8_x: sct.Float64 = np.int64()  # pyright: ignore[reportAssignmentType]
-    u8_x: sct.Float64 = np.uint64()  # pyright: ignore[reportAssignmentType]
-    c8_x: sct.Float64 = np.complex64()  # pyright: ignore[reportAssignmentType]
-    c16_x: sct.Float64 = np.complex128()  # pyright: ignore[reportAssignmentType]
 
-    f8: sct.Float64 = np.float64()
+    v = np.float64()
+    f8: sct.Float64 = v
 
-    assert isinstance(f8, sct.Number)
-    assert isinstance(f8, sct.ComplexFloating_co)
-    assert isinstance(f8, sct.Floating_co)
-    assert isinstance(f8, sct.Floating)
-    assert isinstance(f8, sct.Float64)
+    assert isinstance(v, sct.Number)
+    assert isinstance(v, sct.ComplexFloating_co)
+    assert isinstance(v, sct.Floating_co)
+    assert isinstance(v, sct.Floating)
+    assert isinstance(v, sct.Float64)
 
-    assert not isinstance(f8, sct.Complex128)
-    assert not isinstance(f8, sct.Integer_co)
-    assert not isinstance(f8, sct.Integer)
+    assert not isinstance(v, sct.Complex128)
+    assert not isinstance(v, sct.Integer_co)
+    assert not isinstance(v, sct.Integer)
 
 
 def test_complex128() -> None:
-    b1_x: sct.Complex128 = np.bool_()  # pyright: ignore[reportAssignmentType]
-    f2_x: sct.Complex128 = np.float16()  # pyright: ignore[reportAssignmentType]
-    f4_x: sct.Complex128 = np.float32()  # pyright: ignore[reportAssignmentType]
-    f8_x: sct.Complex128 = np.float64()  # pyright: ignore[reportAssignmentType]
-    i8_x: sct.Complex128 = np.int64()  # pyright: ignore[reportAssignmentType]
-    u8_x: sct.Complex128 = np.uint64()  # pyright: ignore[reportAssignmentType]
+    b1_x: sct.Complex128 = np.bool_()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    f2_x: sct.Complex128 = np.float16()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    f4_x: sct.Complex128 = np.float32()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    f8_x: sct.Complex128 = np.float64()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    i8_x: sct.Complex128 = np.int64()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    u8_x: sct.Complex128 = np.uint64()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    # mypy false negative
     c8_x: sct.Complex128 = np.complex64()  # pyright: ignore[reportAssignmentType]
 
     c16: sct.Complex128 = np.complex128()
@@ -109,12 +113,12 @@ def test_complex128() -> None:
     [np.int8, np.uint8, np.int16, np.uint16, np.int32, np.uint32, np.int64, np.uint64],
 )
 def test_integer(sctype: type[np.integer[Any]]) -> None:
-    b1_x: sct.Integer = np.bool_()  # pyright: ignore[reportAssignmentType]
-    f2_x: sct.Integer = np.float16()  # pyright: ignore[reportAssignmentType]
-    f4_x: sct.Integer = np.float32()  # pyright: ignore[reportAssignmentType]
-    f8_x: sct.Integer = np.float64()  # pyright: ignore[reportAssignmentType]
-    c8_x: sct.Integer = np.complex64()  # pyright: ignore[reportAssignmentType]
-    c16_x: sct.Integer = np.complex128()  # pyright: ignore[reportAssignmentType]
+    b1_x: sct.Integer = np.bool_()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    f2_x: sct.Integer = np.float16()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    f4_x: sct.Integer = np.float32()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    f8_x: sct.Integer = np.float64()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    c8_x: sct.Integer = np.complex64()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    c16_x: sct.Integer = np.complex128()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
     iu: sct.Integer = sctype()
 
@@ -131,11 +135,11 @@ def test_integer(sctype: type[np.integer[Any]]) -> None:
 
 @pytest.mark.parametrize("sctype", [np.float16, np.float32, np.float64, np.longdouble])
 def test_floating(sctype: type[np.floating[Any]]) -> None:
-    b1_x: sct.Floating = np.bool_()  # pyright: ignore[reportAssignmentType]
-    i8_x: sct.Floating = np.int64()  # pyright: ignore[reportAssignmentType]
-    u8_x: sct.Floating = np.uint64()  # pyright: ignore[reportAssignmentType]
-    c8_x: sct.Floating = np.complex64()  # pyright: ignore[reportAssignmentType]
-    c16_x: sct.Floating = np.complex128()  # pyright: ignore[reportAssignmentType]
+    b1_x: sct.Floating = np.bool_()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    i8_x: sct.Floating = np.int64()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    u8_x: sct.Floating = np.uint64()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    c8_x: sct.Floating = np.complex64()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    c16_x: sct.Floating = np.complex128()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
     f: sct.Floating = sctype()
 
