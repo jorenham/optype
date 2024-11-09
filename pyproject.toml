@@ -101,12 +101,13 @@ ignore-words-list = "AtMost,AtLeast,CanGe,ND,nin"
 
 [tool.mypy]
 python_version = "3.10"
-modules = ["optype", "examples", "tests"]
+packages = ["optype", "examples", "tests"]
 always_true = "NP2"
 always_false = "NP20"
 strict = true
 disable_bytearray_promotion = true
 disable_memoryview_promotion = true
+plugins = ["numpy.typing.mypy_plugin"]
 
 allow_redefinition = true
 disallow_untyped_defs = true
@@ -122,6 +123,8 @@ enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
     [[tool.mypy.overrides]]
     module = ["tests.*", "tests.numpy.*"]
     disallow_any_decorated = false  # blame pytest
+    warn_unreachable = false  # assert not isinstance(...)
+    disable_error_code = ["no-any-explicit", "unreachable"]
 
 [tool.pyright]
 pythonVersion = "3.10"
