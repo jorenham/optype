@@ -225,6 +225,7 @@ The API of `optype` is flat; a single `import optype as opt` is all you need
     - [`Any*` type aliases](#any-type-aliases)
     - [`Empty*` type aliases](#empty-type-aliases)
     - [Literal types](#literal-types)
+- [`optype.array_api`](#optypearray_api)
 - [`optype.dlpack`](#optypedlpack)
 - [`optype.numpy`](#optypenumpy)
     - [`Array`](#array)
@@ -2095,6 +2096,10 @@ yield no elements.
         </td>
     </tr>
 </table>
+
+### `optype.array_api`
+
+*Coming soon...*
 
 ### `optype.dlpack`
 
