@@ -38,21 +38,22 @@ Funding = "https://github.com/sponsors/jorenham"
 [dependency-groups]
 lint = [
     "codespell>=2.3.0",
-    "ruff>=0.7.2",
+    "ruff>=0.7.3",
     "sp-repo-review[cli]>=2024.8.19",
 ]
 common = [
-    "numpy",
-    "typing_extensions",
+    "numpy>=1.24",
+    "typing-extensions>=4.10",
 ]
 type = [
     {include-group = "common"},
     "basedmypy[faster-cache]>=2.7.0",
-    "basedpyright>=1.20.0",
+    "basedpyright>=1.21.0",
 ]
 array-api = [
     "array-api-compat>=1.9.1",
-    "array-api-strict>=2.1",
+    "array-api-strict>=2.1.3",
+    "torch>=2.5.1",
 ]
 test = [
     {include-group = "common"},
@@ -70,6 +71,14 @@ dev = [
     "pre-commit>=4.0.1",
     "tox>=4.23.2",
 ]
+
+[tool.uv.sources]
+torch = {index = "pytorch"}
+
+[[tool.uv.index]]
+name = "pytorch"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [tool.hatch.build.targets.sdist]
 exclude = [
