@@ -1,9 +1,9 @@
 # pyright: reportPrivateUsage=false
+import sys
 from typing import Any, TypeAlias
 
 import numpy as np
 import pytest
-import torch
 
 import optype.array_api as oxp  # noqa: TCH001
 from optype.array_api._dtypes import _DTypeNP, _DTypeTorch
@@ -12,25 +12,32 @@ from optype.array_api._dtypes import _DTypeNP, _DTypeTorch
 _AnyDTypeNP: TypeAlias = _DTypeNP[Any]
 
 
+@pytest.mark.skipif(
+    sys.platform != "linux" and sys.version_info >= (3, 13),
+    reason="pytorch 1.5.1 on python 3.13 requires linux",
+)
 @pytest.mark.parametrize(
-    "dtype",
+    "dtype_name",
     [
-        torch.bool,
-        torch.int8,
-        torch.int16,
-        torch.int32,
-        torch.int64,
-        torch.uint8,
-        torch.uint16,
-        torch.uint32,
-        torch.uint64,
-        torch.float32,
-        torch.float64,
-        torch.complex64,
-        torch.complex128,
+        "bool",
+        "int8",
+        "int16",
+        "int32",
+        "int64",
+        "uint8",
+        "uint16",
+        "uint32",
+        "uint64",
+        "float32",
+        "float64",
+        "complex64",
+        "complex128",
     ],
 )
-def test_torch(dtype: torch.dtype) -> None:
+def test_torch(dtype_name: str) -> None:
+    import torch  # noqa: PLC0415
+
+    dtype: torch.dtype = getattr(torch, dtype_name)
     _dtype: _DTypeTorch = dtype
     assert isinstance(dtype, _DTypeTorch)
 
