@@ -144,7 +144,7 @@ venvPath = "."
 venv = ".venv"
 typeCheckingMode = "all"
 defineConstant = {NP2 = true, NP20 = false}
-useLibraryCodeForTypes = false
+useLibraryCodeForTypes = true
 enableReachabilityAnalysis = false
 reportUnreachable = false  # nothing wrong with `if sys.version_info() >= ...`
 reportUnusedCallResult = false  # https://github.com/microsoft/pyright/issues/8650
