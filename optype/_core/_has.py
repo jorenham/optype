@@ -103,7 +103,7 @@ class HasQualname(Protocol[_QualnameT]):  # pyright: ignore[reportInvalidTypeVar
 
 @set_module("optype")
 @runtime_checkable
-class HasNames(  # pyright: ignore[reportInvalidTypeVarUse]
+class HasNames(  # pyright: ignore[reportIncompatibleVariableOverride,reportInvalidTypeVarUse]
     HasName[_NameT],
     HasQualname[_QualnameT],
     Protocol[_NameT, _QualnameT],

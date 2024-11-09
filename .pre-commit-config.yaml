@@ -8,6 +8,7 @@ ci:
     - ruff-format
     - basedmypy
     - basedpyright
+    - basedpyright-verifytypes
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -58,7 +59,7 @@ repos:
           - tomli
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.7.3
+    rev: v0.7.1
     hooks:
       - id: ruff
         args: [--fix, --show-fixes]
@@ -74,6 +75,13 @@ repos:
 
       - id: basedpyright
         name: basedpyright
-        entry: uv run basedpyright --threads=3
+        entry: uv run basedpyright
         language: system
         types_or: [python, pyi]
+
+      - id: basedpyright-verifytypes
+        name: basedpyright --verifytypes
+        entry: uv run basedpyright --ignoreexternal --verifytypes optype
+        language: system
+        always_run: true
+        pass_filenames: false

@@ -8,11 +8,7 @@
     },
     "editor.rulers": [88],
     "git.branchProtection": ["master"],
-    "mypy-type-checker.args": [
-      "--ide",
-      "--config-file=${workspaceFolder}/pyproject.toml"
-    ],
-    "mypy-type-checker.cwd": "${fileDirname}",
-    "mypy-type-checker.path": ["uv", "run", "mypy"],
-    "python.testing.pytestEnabled": true
+    "mypy-type-checker.args": ["--config-file=pyproject.toml", "--ide"],
+    "python.testing.pytestEnabled": true,
+    "editor.defaultFormatter": "charliermarsh.ruff"
   }

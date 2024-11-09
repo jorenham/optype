@@ -1,5 +1,4 @@
 import sys
-from typing import final
 
 from optype import do_iadd
 
@@ -11,7 +10,6 @@ else:
 
 
 def test_iadd_iadd() -> None:
-    @final
     class IntIAdd:
         def __init__(self, x: int, /) -> None:
             self.x = x
@@ -28,7 +26,6 @@ def test_iadd_iadd() -> None:
 
 
 def test_iadd_add() -> None:
-    @final
     class IntAdd:
         def __init__(self, x: int, /) -> None:
             self.x = x
@@ -44,7 +41,6 @@ def test_iadd_add() -> None:
 
 
 def test_iadd_radd() -> None:
-    @final
     class IntRAdd:
         def __init__(self, x: int, /) -> None:
             self.x = x
