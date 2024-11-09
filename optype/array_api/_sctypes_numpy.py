@@ -113,11 +113,15 @@ class Floating(Floating_co, Protocol):
 @runtime_checkable
 class ComplexFloating(Number, Protocol):
     """
+    IMPORTANT: On `python<3.11` `complex.__complex__` does not exist, which makes
+    distringuishing between float and complex types impossible in certain cases.
     IMPORTANT: On `numpy<2.2` this does not work as expected when type-checking!
     Use `Complex128` or `Number` instead.
     """
 
-    def __complex__(self, /) -> complex: ...
+    if sys.version_info >= (3, 11):
+
+        def __complex__(self, /) -> complex: ...
 
 
 @runtime_checkable

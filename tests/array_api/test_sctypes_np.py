@@ -1,3 +1,4 @@
+import sys
 from typing import Any
 
 import numpy as np
@@ -51,7 +52,8 @@ def test_float64() -> None:
     assert isinstance(v, sct.Floating)
     assert isinstance(v, sct.Float64)
 
-    assert not isinstance(v, sct.Complex128)
+    if sys.version_info >= (3, 11):
+        assert not isinstance(v, sct.Complex128)
     assert not isinstance(v, sct.Integer_co)
     assert not isinstance(v, sct.Integer)
 
@@ -120,7 +122,8 @@ def test_floating(sctype: type[np.floating[Any]]) -> None:
     assert isinstance(f, sct.Floating_co)
     assert isinstance(f, sct.Floating)
 
-    assert not isinstance(f, sct.Complex128)
+    if sys.version_info >= (3, 11):
+        assert not isinstance(f, sct.Complex128)
     assert not isinstance(f, sct.Integer_co)
     assert not isinstance(f, sct.Integer)
 
