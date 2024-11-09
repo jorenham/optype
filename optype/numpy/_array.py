@@ -6,12 +6,13 @@ from typing import TYPE_CHECKING, TypeAlias
 import numpy as np
 
 import optype.numpy._compat as _x
+from optype.numpy._dtype import DType
 
 
 if sys.version_info >= (3, 13):
-    from typing import Protocol, Self, TypeVar, overload, runtime_checkable
+    from typing import Protocol, Self, TypeVar, runtime_checkable
 else:
-    from typing_extensions import Protocol, Self, TypeVar, overload, runtime_checkable
+    from typing_extensions import Protocol, Self, TypeVar, runtime_checkable
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -29,41 +30,29 @@ __all__ = [
 
 _AnyShape: TypeAlias = tuple[int, ...]
 
-_ShapeT = TypeVar("_ShapeT", bound=_AnyShape, default=_AnyShape)
-_ShapeT_co = TypeVar("_ShapeT_co", bound=_AnyShape, covariant=True, default=_AnyShape)
-
-_SCT = TypeVar("_SCT", bound=np.generic, default=np.generic)
-_DT = TypeVar("_DT", bound=np.dtype[np.generic], default=np.dtype[np.generic])
-_DT_co = TypeVar(
-    "_DT_co",
-    bound=np.dtype[np.generic],
-    covariant=True,
-    default=np.dtype[np.generic],
-)
-
-
 # NumPy array with optional type params for shape and generic dtype.
-Array: TypeAlias = np.ndarray[_ShapeT, np.dtype[_SCT]]
+_ShapeT = TypeVar("_ShapeT", bound=_AnyShape)
+_ScalarT = TypeVar("_ScalarT", bound=np.generic, default=np.generic)
+Array: TypeAlias = np.ndarray[_ShapeT, np.dtype[_ScalarT]]
 
+
+_ShapeT0 = TypeVar("_ShapeT0", bound=_AnyShape, default=_AnyShape)
+_ShapeT_co = TypeVar("_ShapeT_co", covariant=True, bound=_AnyShape, default=_AnyShape)
+
+_DTypeT = TypeVar("_DTypeT", bound=DType)
+_DTypeT_co = TypeVar("_DTypeT_co", bound=DType, covariant=True, default=DType)
 
 if _x.NP2 and not _x.NP20:
-
+    # numpy >= 2.1: shape is covariant
     @runtime_checkable
-    class CanArray(Protocol[_ShapeT_co, _DT_co]):
-        @overload
-        def __array__(self, dtype: None = ..., /) -> np.ndarray[_ShapeT_co, _DT_co]: ...
-        @overload
-        def __array__(self, dtype: _DT, /) -> np.ndarray[_ShapeT_co, _DT]: ...
+    class CanArray(Protocol[_ShapeT_co, _DTypeT_co]):
+        def __array__(self, /) -> np.ndarray[_ShapeT_co, _DTypeT_co]: ...
 
 else:
-
+    # numpy < 2.1: shape is invariant
     @runtime_checkable
-    class CanArray(Protocol[_ShapeT, _DT_co]):
-        @overload
-        def __array__(self, dtype: None = ..., /) -> np.ndarray[_ShapeT, _DT_co]: ...
-        @overload
-        def __array__(self, dtype: _DT, /) -> np.ndarray[_ShapeT_co, _DT]: ...
-
+    class CanArray(Protocol[_ShapeT0, _DTypeT_co]):
+        def __array__(self, /) -> np.ndarray[_ShapeT0, _DTypeT_co]: ...
 
 ###########################
 
@@ -84,26 +73,26 @@ class CanArrayWrap(Protocol):
 
         def __array_wrap__(
             self,
-            array: np.ndarray[_ShapeT, _DT],
+            array: np.ndarray[_ShapeT, _DTypeT],
             context: tuple[np.ufunc, tuple[object, ...], int] | None = ...,
             return_scalar: bool = ...,
             /,
-        ) -> np.ndarray[_ShapeT, _DT] | Self: ...
+        ) -> np.ndarray[_ShapeT, _DTypeT] | Self: ...
 
     else:
 
         def __array_wrap__(
             self,
-            array: np.ndarray[_ShapeT, _DT],
+            array: np.ndarray[_ShapeT, _DTypeT],
             context: tuple[np.ufunc, tuple[object, ...], int] | None = ...,
             /,
-        ) -> np.ndarray[_ShapeT, _DT] | Self: ...
+        ) -> np.ndarray[_ShapeT, _DTypeT] | Self: ...
 
 
 _ArrayInterfaceT_co = TypeVar(
     "_ArrayInterfaceT_co",
-    bound="Mapping[str, object]",
     covariant=True,
+    bound="Mapping[str, object]",
     default=dict[str, object],
 )
 

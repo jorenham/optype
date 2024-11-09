@@ -1,4 +1,5 @@
-from typing import Protocol, TypeAlias, TypeVar
+from collections.abc import Callable
+from typing import TypeAlias, TypeVar, cast
 
 import numpy as np
 import pytest
@@ -10,32 +11,36 @@ _Shape0D: TypeAlias = tuple[()]
 _Shape1D: TypeAlias = tuple[int]
 _Shape2D: TypeAlias = tuple[int, int]
 
-
-class _AnyCallable(Protocol):
-    def __call__(self, /, *args: object, **kwargs: object) -> object: ...
+_AnyCallable: TypeAlias = Callable[[], object]
 
 
 # Don't wake up, Neo...
 @pytest.mark.filterwarnings("ignore:the matrix .*:PendingDeprecationWarning")
 def test_can_array() -> None:
-    sct: type[np.generic] = np.uint8
+    dt = np.dtypes.Int8DType()
 
-    scalar: onp.CanArray[_Shape0D] = sct(42)
-    assert isinstance(scalar, onp.CanArray)
-    assert not isinstance(42, onp.CanArray)
+    val_x = dt.type(42)
+    val_y: onp.CanArray[_Shape0D, np.dtype[np.int8]] = val_x
+    assert isinstance(val_x, onp.CanArray)
+    assert not isinstance(val_x.tolist(), onp.CanArray)
 
-    x_0d: onp.CanArray[_Shape0D, np.dtype[np.uint8]] = np.array(42, sct)
-    assert isinstance(x_0d, onp.CanArray)
+    nd0_x = cast(np.ndarray[_Shape0D, np.dtypes.Int8DType], np.empty((), dt))
+    nd0_y: onp.CanArray[_Shape0D, np.dtype[np.int8]] = nd0_x
+    assert isinstance(nd0_x, onp.CanArray)
 
-    x_1d: onp.CanArray[_Shape1D, np.dtype[np.uint8]] = np.array([42], sct)
-    assert isinstance(x_1d, onp.CanArray)
-    assert not isinstance([42], onp.CanArray)
+    nd1_x = cast(np.ndarray[_Shape1D, np.dtypes.Int8DType], np.empty((42,), dt))
+    nd1_y: onp.CanArray[_Shape1D, np.dtype[np.int8]] = nd1_x
+    assert isinstance(nd1_x, onp.CanArray)
+    assert not isinstance(nd1_x.tolist(), onp.CanArray)
 
-    x_2d: onp.CanArray[_Shape2D, np.dtype[np.uint8]] = np.array([[42]], sct)
-    assert isinstance(x_2d, onp.CanArray)
+    nd2_x = cast(np.ndarray[_Shape2D, np.dtypes.Int8DType], np.empty((6, 7), dt))
+    nd2_y: onp.CanArray[_Shape2D, np.dtype[np.int8]] = nd2_x
+    assert isinstance(nd2_x, onp.CanArray)
+    assert not isinstance(nd2_x.tolist(), onp.CanArray)
 
-    mat: onp.CanArray[_Shape2D, np.dtype[np.uint8]] = np.asmatrix(42, sct)
-    assert isinstance(mat, onp.CanArray)
+    mat_x = np.asmatrix([[1, 0], [0, 1]], dt)
+    mat_y: onp.CanArray[_Shape2D, np.dtypes.Int8DType] = mat_x
+    assert isinstance(mat_x, onp.CanArray)
 
 
 _T = TypeVar("_T", bound=np.generic)
