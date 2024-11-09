@@ -24,7 +24,7 @@ __all__ = [  # noqa: RUF022
     "Bool",
     "Int8", "Int16", "Int32", "Int64",
     "UInt8", "UInt16", "UInt32", "UInt64",
-    "Float16", "Float32", "Float64",
+    "Float32", "Float64",
     "Complex64", "Complex128",
     "Int0", "Float0", "Complex0",
 ]  # fmt: skip
@@ -83,7 +83,6 @@ UInt8: TypeAlias = _DType[_sct_np.Integer]
 UInt16: TypeAlias = _DType[_sct_np.Integer]
 UInt32: TypeAlias = _DType[_sct_np.Integer]
 UInt64: TypeAlias = _DType[_sct_np.Integer]
-Float16: TypeAlias = _DType[_sct_np.Floating]
 Float32: TypeAlias = _DType[_sct_np.Floating]
 Float64: TypeAlias = _DType[_sct_np.Float64]
 Complex64: TypeAlias = _DType[_sct_np.ComplexFloating]

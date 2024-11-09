@@ -115,15 +115,6 @@ def test_uint64_np() -> None:
     assert isinstance(u8, _DTypeNP)
 
 
-def test_float16_np() -> None:
-    f2: oxp.Float16 = np.dtype(np.float32)
-    f2_f: oxp.RealFloating = f2
-    f2_iuf: oxp.Real = f2
-    f2_iufc: oxp.Numeric = f2
-    f2_biufc: oxp.DType = f2
-    assert isinstance(f2, _DTypeNP)
-
-
 def test_float32_np() -> None:
     f4: oxp.Float32 = np.dtype(np.float32)
     f4_f: oxp.RealFloating = f4
