@@ -192,7 +192,7 @@ class DoesEq(Protocol):
     @overload
     def __call__(self, lhs: _c.CanEq[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
     @overload
-    def __call__(self, lhs: _LeftT, rhs: _c.CanEq[_LeftT, _OutT], /) -> _OutT: ...  # type: ignore[overload-cannot-match]  # pyright: ignore[reportOverlappingOverload]
+    def __call__(self, lhs: _LeftT, rhs: _c.CanEq[_LeftT, _OutT], /) -> _OutT: ...  # type: ignore[misc]  # pyright: ignore[reportOverlappingOverload]
 
 
 @set_module("optype")
@@ -200,7 +200,7 @@ class DoesNe(Protocol):
     @overload
     def __call__(self, lhs: _c.CanNe[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
     @overload
-    def __call__(self, lhs: _LeftT, rhs: _c.CanNe[_LeftT, _OutT], /) -> _OutT: ...  # type: ignore[overload-cannot-match]  # pyright: ignore[reportOverlappingOverload]
+    def __call__(self, lhs: _LeftT, rhs: _c.CanNe[_LeftT, _OutT], /) -> _OutT: ...  # type: ignore[misc]  # pyright: ignore[reportOverlappingOverload]
 
 
 @set_module("optype")

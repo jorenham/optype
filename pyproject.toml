@@ -6,7 +6,9 @@ build-backend = "hatchling.build"
 name = "optype"
 description = "Building blocks for precise & flexible type hints"
 version = "0.7.0.dev0"
-authors = [{name = "Joren Hammudoglu", email = "jhammudoglu@gmail.com"}]
+authors = [
+  {name = "Joren Hammudoglu", email = "jhammudoglu@gmail.com"},
+]
 license = {file = "LICENSE"}
 readme = "README.md"
 keywords = ["type", "typing", "type hints", "numpy"]
@@ -23,62 +25,36 @@ classifiers = [
 ]
 # https://scientific-python.org/specs/spec-0000/
 requires-python = ">=3.10"
-dependencies = ["typing-extensions>=4.10; python_version<'3.13'"]
-
-[project.optional-dependencies]
-numpy = ["numpy>=1.24"]
-
-[project.urls]
-Repository = "https://github.com/jorenham/optype/"
-Documentation = "https://github.com/jorenham/optype/blob/master/README.md"
-Issues = "https://github.com/jorenham/optype/issues"
-Changelog = "https://github.com/jorenham/optype/releases"
-Funding = "https://github.com/sponsors/jorenham"
-
-[dependency-groups]
-lint = [
-    "codespell>=2.3.0",
-    "ruff>=0.7.3",
-    "sp-repo-review[cli]>=2024.8.19",
-]
-common = [
-    "numpy>=1.24",
-    "typing-extensions>=4.10",
-]
-type = [
-    {include-group = "common"},
-    "basedmypy[faster-cache]>=2.7.0",
-    "basedpyright>=1.21.0",
-]
-array-api = [
-    "array-api-compat>=1.9.1",
-    "array-api-strict>=2.1.3",
-    "torch>=2.5.1; python_version<'3.13' or sys_platform=='linux'",
-]
-test = [
-    {include-group = "common"},
-    {include-group = "array-api"},
-    "beartype>=0.19.0",
-    "pytest>=8.3.3",
-]
-typetest = [
-    {include-group = "type"},
-    {include-group = "test"},
-]
-dev = [
-    {include-group = "lint"},
-    {include-group = "typetest"},
-    "pre-commit>=4.0.1",
-    "tox>=4.23.2",
+dependencies = [
+    "typing-extensions >= 4.10; python_version < '3.13'"
 ]
 
-[tool.uv.sources]
-torch = {index = "pytorch", marker = "sys_platform == 'linux'"}
+    [project.optional-dependencies]
+    numpy = ["numpy >= 1.24"]
 
-[[tool.uv.index]]
-name = "pytorch"
-url = "https://download.pytorch.org/whl/cpu"
-explicit = true
+    [project.urls]
+    Repository = "https://github.com/jorenham/optype/"
+    Documentation = "https://github.com/jorenham/optype/blob/master/README.md"
+    Issues = "https://github.com/jorenham/optype/issues"
+    Changelog = "https://github.com/jorenham/optype/releases"
+    Funding = "https://github.com/sponsors/jorenham"
+
+[tool.uv]
+dev-dependencies = [
+  "numpy",
+  "typing_extensions",
+
+  "basedmypy >= 2.6.0",
+  "basedpyright >= 1.19.1",
+  "beartype >= 0.19.0",
+  "codespell >= 2.3.0",
+  "pre-commit >= 4.0.1",
+  "pytest >= 8.3.3",
+  "ruff >= 0.7.1",
+  "sp-repo-review[cli] >= 2024.8.19",
+  "tox >= 4.23.2",
+]
+python-downloads = "manual"
 
 [tool.hatch.build.targets.sdist]
 exclude = [
@@ -97,9 +73,6 @@ exclude = [
     ".gitignore",
     ".mardownlint.yaml",
     ".pre-commit-config.yaml",
-    "CODE_OF_CONDUCT.md",
-    "CONTRIBUTING.md",
-    "SECURITY.md",
     "uv.lock",
 ]
 
@@ -110,19 +83,17 @@ ignore-words-list = "AtMost,AtLeast,CanGe,ND,nin"
 
 [tool.mypy]
 python_version = "3.10"
-packages = ["optype", "examples", "tests"]
+modules = ["optype", "examples", "tests"]
 always_true = "NP2"
 always_false = "NP20"
 strict = true
-disable_bytearray_promotion = true
-disable_memoryview_promotion = true
-plugins = ["numpy.typing.mypy_plugin"]
 
 allow_redefinition = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 warn_redundant_casts = true
 warn_unused_ignores = true
+show_error_code_links = true
 # based
 disallow_any_expr = false  # https://github.com/numpy/numpy/pull/27211
 # repo-review recommendations
@@ -132,8 +103,6 @@ enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
     [[tool.mypy.overrides]]
     module = ["tests.*", "tests.numpy.*"]
     disallow_any_decorated = false  # blame pytest
-    warn_unreachable = false  # assert not isinstance(...)
-    disable_error_code = ["no-any-explicit", "unreachable"]
 
 [tool.pyright]
 pythonVersion = "3.10"
@@ -144,13 +113,10 @@ venvPath = "."
 venv = ".venv"
 typeCheckingMode = "all"
 defineConstant = {NP2 = true, NP20 = false}
-useLibraryCodeForTypes = true
-enableReachabilityAnalysis = false
 reportUnreachable = false  # nothing wrong with `if sys.version_info() >= ...`
 reportUnusedCallResult = false  # https://github.com/microsoft/pyright/issues/8650
 reportUnusedImport = false  # dupe of F401
 reportUnusedVariable = false  # dupe of F841
-
 
 [tool.pytest.ini_options]
 minversion = "8.0"
@@ -203,7 +169,7 @@ force-exclude = true
         "DTZ",      # flake8-datetimez
         "T10",      # flake8-debugger
         "EXE",      # flake8-executable
-        "EM",       # flake8-errmsg
+        "EM",      # flake8-errmsg
         "FA",       # flake8-future-annotations
         "ISC",      # flake8-implicit-str-concat
         "ICN",      # flake8-import-conventions
@@ -332,9 +298,6 @@ force-exclude = true
             # `dlpack`
             "__dlpack__",
             "__dlpack_device__",
-
-            # array-api
-            "__array_namespace__",
 
             # `numpy` special methods
             "__array__",

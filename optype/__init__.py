@@ -1,6 +1,6 @@
 from importlib import metadata as _metadata
 
-from . import array_api, copy, dataclasses, inspect, json, pickle, string, types, typing
+from . import copy, dataclasses, inspect, json, pickle, string, types, typing
 from ._core._can import (
     CanAEnter,
     CanAEnterSelf,
@@ -539,7 +539,6 @@ __all__ = [
     "HasTypeParams",
     "HasWrapped",
     "__version__",
-    "array_api",
     "copy",
     "dataclasses",
     "do_abs",
