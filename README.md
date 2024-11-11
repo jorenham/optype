@@ -2612,10 +2612,10 @@ See the [docs][REF-SCT] for more info on the NumPy scalar type hierarchy.
         <th align="center" colspan="2"><code>optype.numpy._</code></th>
     </tr>
     <tr>
-        <th>scalar type</th>
-        <th>base type</th>
-        <th>array-like type</th>
-        <th>dtype-like type</th>
+        <th>scalar</th>
+        <th>scalar base</th>
+        <th>array-like</th>
+        <th>dtype-like</th>
     </tr>
     <tr>
         <td><code>generic</code></td>
@@ -2668,67 +2668,79 @@ See the [docs][REF-SCT] for more info on the NumPy scalar type hierarchy.
 
 <table>
     <tr>
-        <th align="center" colspan="2">
-            <code>numpy._</code>
-        </th>
-        <th align="center" colspan="2">
-            <code>optype.numpy._</code>
-        </th>
+        <th align="center" colspan="2"><code>numpy._</code></th>
+        <th align="center"><code>numpy.dtypes._</code></th>
+        <th align="center" colspan="2"><code>optype.numpy._</code></th>
     </tr>
     <tr>
-        <th>scalar type</th>
-        <th>base type</th>
-        <th>array-like type</th>
-        <th>dtype-like type</th>
+        <th>scalar</th>
+        <th>scalar base</th>
+        <th>dtype</th>
+        <th>array-like</th>
+        <th>dtype-like</th>
     </tr>
     <tr>
-        <th><code>uint8</code></th>
-        <td rowspan="10"><code>unsignedinteger</code></td>
+        <td><code>uint8</code>, <code>ubyte</code></td>
+        <td rowspan="8"><code>unsignedinteger</code></td>
+        <td><code>UInt8DType</code></td>
         <td><code>AnyUInt8Array</code></td>
         <td><code>AnyUInt8DType</code></td>
     </tr>
     <tr>
-        <th><code>uint16</code></th>
+        <td><code>uint16</code>, <code>ushort</code></td>
+        <td><code>UInt16DType</code></td>
         <td><code>AnyUInt16Array</code></td>
         <td><code>AnyUInt16DType</code></td>
     </tr>
     <tr>
-        <th><code>uint32</code></th>
+<td>
+
+`uint32`[^5]
+
+</td>
+        <td><code>UInt32DType</code></td>
         <td><code>AnyUInt32Array</code></td>
         <td><code>AnyUInt32DType</code></td>
     </tr>
     <tr>
-        <th><code>uint64</code></th>
+        <td><code>uint64</code></td>
+        <td><code>UInt64DType</code></td>
         <td><code>AnyUInt64Array</code></td>
         <td><code>AnyUInt64DType</code></td>
     </tr>
     <tr>
-        <th><code>uintp</code></th>
-        <td><code>AnyUIntPArray</code></td>
-        <td><code>AnyUIntPDType</code></td>
-    </tr>
-    <tr>
-        <th><code>ubyte</code></th>
-        <td><code>AnyUByteArray</code></td>
-        <td><code>AnyUByteDType</code></td>
-    </tr>
-    <tr>
-        <th><code>ushort</code></th>
-        <td><code>AnyUShortArray</code></td>
-        <td><code>AnyUShortDType</code></td>
-    </tr>
-    <tr>
-        <th><code>uintc</code></th>
+<td>
+
+`uintc`[^5]
+
+</td>
+        <td><code>UIntDType</code></td>
         <td><code>AnyUIntCArray</code></td>
         <td><code>AnyUIntCDType</code></td>
     </tr>
     <tr>
-        <th><code>ulong</code></th>
+<td>
+
+`uintp`, `uint_` [^7]
+
+</td>
+        <td></td>
+        <td><code>AnyUIntPArray</code></td>
+        <td><code>AnyUIntPDType</code></td>
+    </tr>
+    <tr>
+<td>
+
+`ulong`[^6]
+
+</td>
+        <td><code>ULongDType</code></td>
         <td><code>AnyULongArray</code></td>
         <td><code>AnyULongDType</code></td>
     </tr>
     <tr>
-        <th><code>ulonglong</code></th>
+        <td><code>ulonglong</code></td>
+        <td><code>ULongLongDType</code></td>
         <td><code>AnyULongLongArray</code></td>
         <td><code>AnyULongLongDType</code></td>
     </tr>
@@ -2738,161 +2750,204 @@ See the [docs][REF-SCT] for more info on the NumPy scalar type hierarchy.
 
 <table>
     <tr>
-        <th align="center" colspan="2">
-            <code>numpy._</code>
-        </th>
-        <th align="center" colspan="2">
-            <code>optype.numpy._</code>
-        </th>
+        <th align="center" colspan="2"><code>numpy._</code></th>
+        <th align="center"><code>numpy.dtypes._</code></th>
+        <th align="center" colspan="2"><code>optype.numpy._</code></th>
     </tr>
     <tr>
-        <th>scalar type</th>
-        <th>base type</th>
-        <th>array-like type</th>
-        <th>dtype-like type</th>
+        <th>scalar</th>
+        <th>scalar base</th>
+        <th>dtype</th>
+        <th>array-like</th>
+        <th>dtype-like</th>
     </tr>
     <tr>
-        <th><code>int8</code></th>
-        <td rowspan="10"><code>signedinteger</code></td>
+        <td><code>int8</code></td>
+        <td rowspan="8"><code>signedinteger</code></td>
+        <td><code>Int8DType</code></td>
         <td><code>AnyInt8Array</code></td>
         <td><code>AnyInt8DType</code></td>
     </tr>
     <tr>
-        <th><code>int16</code></th>
+        <td><code>int16</code></td>
+        <td><code>Int16DType</code></td>
         <td><code>AnyInt16Array</code></td>
         <td><code>AnyInt16DType</code></td>
     </tr>
     <tr>
-        <th><code>int32</code></th>
+<td>
+
+`int32`[^5]
+
+</td>
+        <td><code>Int32DType</code></td>
         <td><code>AnyInt32Array</code></td>
         <td><code>AnyInt32DType</code></td>
     </tr>
     <tr>
-        <th><code>int64</code></th>
+        <td><code>int64</code></td>
+        <td><code>Int64DType</code></td>
         <td><code>AnyInt64Array</code></td>
         <td><code>AnyInt64DType</code></td>
     </tr>
     <tr>
-        <th><code>intp</code></th>
-        <td><code>AnyIntPArray</code></td>
-        <td><code>AnyIntPDType</code></td>
-    </tr>
-    <tr>
-        <th><code>byte</code></th>
-        <td><code>AnyByteArray</code></td>
-        <td><code>AnyByteDType</code></td>
-    </tr>
-    <tr>
-        <th><code>short</code></th>
-        <td><code>AnyShortArray</code></td>
-        <td><code>AnyShortDType</code></td>
-    </tr>
-    <tr>
-        <th><code>intc</code></th>
+<td>
+
+`intc`[^5]
+
+</td>
+        <td><code>IntDType</code></td>
         <td><code>AnyIntCArray</code></td>
         <td><code>AnyIntCDType</code></td>
     </tr>
     <tr>
-        <th><code>long</code></th>
+<td>
+
+`intp`, `int_` [^7]
+
+</td>
+        <td></td>
+        <td><code>AnyIntPArray</code></td>
+        <td><code>AnyIntPDType</code></td>
+    </tr>
+    <tr>
+<td>
+
+`long`[^6]
+
+</td>
+        <td><code>LongDType</code></td>
         <td><code>AnyLongArray</code></td>
         <td><code>AnyLongDType</code></td>
     </tr>
     <tr>
-        <th><code>longlong</code></th>
+        <td><code>longlong</code></td>
+        <td><code>LongLongDType</code></td>
         <td><code>AnyLongLongArray</code></td>
         <td><code>AnyLongLongDType</code></td>
     </tr>
 </table>
 
+[^5]: On unix-based platforms `np.[u]intc` are aliases for `np.[u]int32`.
+[^6]: On NumPy 1 `np.uint` and `np.int_` are what in NumPy 2 are now the `np.ulong` and `np.long` types, respectively.
+[^7]: Since NumPy 2, `np.uint` and `np.int_` are aliases for `np.uintp` and `np.intp`, respectively.
+
 ##### Floats
 
 <table>
     <tr>
-        <th align="center" colspan="2">
-            <code>numpy._</code>
-        </th>
-        <th align="center" colspan="2">
-            <code>optype.numpy._</code>
-        </th>
+        <th align="center" colspan="2"><code>numpy._</code></th>
+        <th align="center"><code>numpy.dtypes._</code></th>
+        <th align="center" colspan="2"><code>optype.numpy._</code></th>
     </tr>
     <tr>
-        <th>scalar type</th>
-        <th>base type</th>
-        <th>array-like type</th>
-        <th>dtype-like type</th>
+        <th>scalar</th>
+        <th>scalar base</th>
+        <th>dtype</th>
+        <th>array-like</th>
+        <th>dtype-like</th>
     </tr>
     <tr>
-        <th><code>float16</code></th>
-        <td rowspan="7"><code>floating</code></td>
-        <td rowspan="2"><code>AnyFloat16Array</code></td>
-        <td rowspan="2"><code>AnyFloat16DType</code></td>
+        <td>
+            <code>float16</code>,<br>
+            <code>half</code>
+        </td>
+        <td rowspan="2"><code>np.floating</code></td>
+        <td><code>Float16DType</code></td>
+        <td><code>AnyFloat16Array</code></td>
+        <td><code>AnyFloat16DType</code></td>
     </tr>
     <tr>
-        <th><code>half</code></th>
+        <td>
+            <code>float32</code>,<br>
+            <code>single</code>
+        </td>
+        <td><code>Float32DType</code></td>
+        <td><code>AnyFloat32Array</code></td>
+        <td><code>AnyFloat32DType</code></td>
     </tr>
     <tr>
-        <th><code>float32</code></th>
-        <td rowspan="2"><code>AnyFloat32Array</code></td>
-        <td rowspan="2"><code>AnyFloat32DType</code></td>
+        <td>
+            <code>float64</code>,<br>
+            <code>double</code>
+        </td>
+        <td>
+            <code>np.floating &</code><br>
+            <code>builtins.float</code>
+        </td>
+        <td><code>Float64DType</code></td>
+        <td><code>AnyFloat64Array</code></td>
+        <td><code>AnyFloat64DType</code></td>
     </tr>
     <tr>
-        <th><code>single</code></th>
-    </tr>
-    <tr>
-        <th><code>float64</code></th>
-        <td rowspan="2"><code>AnyFloat64Array</code></td>
-        <td rowspan="2"><code>AnyFloat64DType</code></td>
-    </tr>
-    <tr>
-        <th><code>double</code></th>
-    </tr>
-    <tr>
-        <th><code>longdouble</code></th>
+<td>
+
+`longdouble`[^13]
+
+</td>
+        <td><code>np.floating</code></td>
+        <td><code>LongDoubleDType</code></td>
         <td><code>AnyLongDoubleArray</code></td>
         <td><code>AnyLongDoubleDType</code></td>
     </tr>
 </table>
 
+[^13]: Depending on the platform, `np.longdouble` is (almost always) an alias for **either** `float128`,
+    `float96`, or (sometimes) `float64`.
+
 ##### Complex numbers
 
 <table>
     <tr>
-        <th align="center" colspan="2">
-            <code>numpy._</code>
-        </th>
-        <th align="center" colspan="2">
-            <code>optype.numpy._</code>
-        </th>
+        <th align="center" colspan="2"><code>numpy._</code></th>
+        <th align="center"><code>numpy.dtypes._</code></th>
+        <th align="center" colspan="2"><code>optype.numpy._</code></th>
     </tr>
     <tr>
-        <th>scalar type</th>
-        <th>base type</th>
-        <th>array-like type</th>
-        <th>dtype-like type</th>
+        <th>scalar</th>
+        <th>scalar base</th>
+        <th>dtype</th>
+        <th>array-like</th>
+        <th>dtype-like</th>
     </tr>
     <tr>
-        <th><code>complex64</code></th>
-        <td rowspan="7"><code>complexfloating</code></td>
-        <td rowspan="2"><code>AnyComplex64Array</code></td>
-        <td rowspan="2"><code>AnyComplex64DType</code></td>
+        <td>
+            <code>complex64</code>,<br>
+            <code>csingle</code>
+        </td>
+        <td><code>complexfloating</code></td>
+        <td><code>Complex64DType</code></td>
+        <td><code>AnyComplex64Array</code></td>
+        <td><code>AnyComplex64DType</code></td>
     </tr>
     <tr>
-        <th><code>csingle</code></th>
+        <td>
+            <code>complex128</code>,<br>
+            <code>cdouble</code>
+        </td>
+        <td>
+            <code>complexfloating &</code><br>
+            <code>builtins.complex</code>
+        </td>
+        <td><code>Complex128DType</code></td>
+        <td><code>AnyComplex128Array</code></td>
+        <td><code>AnyComplex128DType</code></td>
     </tr>
     <tr>
-        <th><code>complex128</code></th>
-        <td rowspan="2"><code>AnyComplex128Array</code></td>
-        <td rowspan="2"><code>AnyComplex128DType</code></td>
-    </tr>
-    <tr>
-        <th><code>cdouble</code></th>
-    </tr>
-    <tr>
-        <th><code>clongdouble</code></th>
+<td>
+
+`clongdouble`[^16]
+
+</td>
+        <td><code>complexfloating</code></td>
+        <td><code>CLongDoubleDType</code></td>
         <td><code>AnyCLongDoubleArray</code></td>
         <td><code>AnyCLongDoubleDType</code></td>
     </tr>
 </table>
+
+[^16]: Depending on the platform, `np.clongdouble` is (almost always) an alias for **either** `complex256`,
+    `complex192`, or (sometimes) `complex128`.
 
 ##### "Flexible"
 
@@ -2901,33 +2956,34 @@ that depends on the specific `np.dtype` instantiation.
 
 <table>
     <tr>
-        <th align="center" colspan="2">
-            <code>numpy._</code>
-        </th>
-        <th align="center" colspan="2">
-            <code>optype.numpy._</code>
-        </th>
+        <th align="center" colspan="2"><code>numpy._</code></th>
+        <th align="center"><code>numpy.dtypes._</code></th>
+        <th align="center" colspan="2"><code>optype.numpy._</code></th>
     </tr>
     <tr>
-        <th>scalar type</th>
-        <th>base type</th>
-        <th>array-like type</th>
-        <th>dtype-like type</th>
+        <th>scalar</th>
+        <th>scalar base</th>
+        <th>dtype</th>
+        <th>array-like</th>
+        <th>dtype-like</th>
     </tr>
     <tr>
-        <th><code>str_</code></th>
+        <td><code>bytes_</code></td>
         <td rowspan="2"><code>character</code></td>
-        <td><code>AnyStrArray</code></td>
-        <td><code>AnyStrDType</code></td>
-    </tr>
-    <tr>
-        <th><code>bytes_</code></th>
+        <td><code>BytesDType</code></td>
         <td><code>AnyBytesArray</code></td>
         <td><code>AnyBytesDType</code></td>
     </tr>
     <tr>
-        <th><code>void</code></th>
+        <td><code>str_</code></td>
+        <td><code>StrDType</code></td>
+        <td><code>AnyStrArray</code></td>
+        <td><code>AnyStrDType</code></td>
+    </tr>
+    <tr>
+        <td><code>void</code></td>
         <td><code>flexible</code></td>
+        <td><code>VoidDType</code></td>
         <td><code>AnyVoidArray</code></td>
         <td><code>AnyVoidDType</code></td>
     </tr>
@@ -2937,46 +2993,70 @@ that depends on the specific `np.dtype` instantiation.
 
 <table>
     <tr>
-        <th align="center" colspan="2">
-            <code>numpy._</code>
-        </th>
-        <th align="center" colspan="2">
-            <code>optype.numpy._</code>
-        </th>
+        <th align="center" colspan="2"><code>numpy._</code></th>
+        <th align="center"><code>numpy.dtypes._</code></th>
+        <th align="center" colspan="2"><code>optype.numpy._</code></th>
     </tr>
     <tr>
-        <th>scalar type</th>
-        <th>base type</th>
-        <th>array-like type</th>
-        <th>dtype-like type</th>
+        <th>scalar</th>
+        <th>scalar base</th>
+        <th>dtype</th>
+        <th>array-like</th>
+        <th>dtype-like</th>
     </tr>
     <tr>
-        <th><code>bool_</code></th>
-        <td rowspan="5"><code>generic</code></td>
+<td>
+
+`bool_`[^0]
+
+</td>
+        <td rowspan="3"><code>generic</code></td>
+        <td><code>BoolDType</code></td>
         <td><code>AnyBoolArray</code></td>
         <td><code>AnyBoolDType</code></td>
     </tr>
     <tr>
-        <th><code>datetime64</code></th>
-        <td><code>AnyDateTime64Array</code></td>
-        <td><code>AnyDateTime64DType</code></td>
-    </tr>
-    <tr>
-        <th><code>timedelta64</code></th>
-        <td><code>AnyTimeDelta64Array</code></td>
-        <td><code>AnyTimeDelta64DType</code></td>
-    </tr>
-    <tr>
-        <th><code>object_</code></th>
+        <td><code>object_</code></td>
+        <td><code>ObjectDType</code></td>
         <td><code>AnyObjectArray</code></td>
         <td><code>AnyObjectDType</code></td>
     </tr>
     <tr>
-        <td>missing</td>
+        <td><code>datetime64</code></td>
+        <td><code>DateTime64DType</code></td>
+        <td><code>AnyDateTime64Array</code></td>
+        <td><code>AnyDateTime64DType</code></td>
+    </tr>
+    <tr>
+        <td><code>timedelta64</code></td>
+<td>
+
+*`generic`*[^22]
+
+</td>
+        <td><code>TimeDelta64DType</code></td>
+        <td><code>AnyTimeDelta64Array</code></td>
+        <td><code>AnyTimeDelta64DType</code></td>
+    </tr>
+    <tr>
+<td colspan=2>
+
+[^2056]
+
+</td>
+        <td><code>StringDType</code></td>
         <td><code>AnyStringArray</code></td>
         <td><code>AnyStringDType</code></td>
     </tr>
 </table>
+
+[^0]: Since NumPy 2, `np.bool` is preferred over `np.bool_`, which only exists for backwards compatibility.
+
+[^22]: At runtime `np.timedelta64` is a subclass of `np.signedinteger`, but this is currently not
+    reflected in the type annotations.
+
+[^2056]: The `np.dypes.StringDType` has no associated numpy scalar type, and its `.type` attribute returns the
+    `builtins.str` type instead. But from a typing perspective, such a `np.dtype[builtins.str]` isn't a valid type.
 
 #### Low-level interfaces
 
