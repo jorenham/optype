@@ -49,9 +49,21 @@ from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 
 
 if sys.version_info >= (3, 13):
-    from typing import TypeVar
+    from typing import Never, TypeVar
 else:
-    from typing_extensions import TypeVar
+    from typing_extensions import Never, TypeVar
+
+
+if sys.version_info >= (3, 14):
+    from ctypes import (
+        c_double_complex as Complex128,
+        c_float_complex as Complex64,
+        c_longdouble_complex as CLongDouble,
+    )
+else:
+    Complex64 = Never
+    Complex128 = Never
+    CLongDouble = Never
 
 from ._ctypeslib import CScalar, CType
 
@@ -65,9 +77,11 @@ __all__ = [
     "Generic",
     "Number",
     "Integer",
+    "Inexact",
     "UnsignedInteger",
     "SignedInteger",
     "Floating",
+    "ComplexFloating",
     "Flexible",
 
     "Bool",
@@ -86,6 +100,10 @@ __all__ = [
     "Float32",
     "Float64",
     "LongDouble",
+
+    "Complex64",
+    "Complex128",
+    "CLongDouble",
 
     "Bytes",
     "Void",
@@ -121,24 +139,37 @@ CT = TypeVar("CT", bound=CType)
 Array: TypeAlias = ct.Array[CT] | ct.Array["Array[CT]"]
 
 
+# `c_(u)byte` is an alias for `c_(u)int8`
 UnsignedInteger: TypeAlias = (
-    UInt8 | UInt16 | UInt32 | UInt64 | UIntP
-    | UByte | UShort | UIntC | ULong | ULongLong
+    UInt8 | UInt16 | UInt32 | UInt64
+    | UShort | UIntC | UIntP | ULong | ULongLong
 )  # fmt: skip
 SignedInteger: TypeAlias = (
-    Int8 | Int16 | Int32 | Int64 | IntP
-    | Byte | Short | IntC | Long | LongLong
+    Int8 | Int16 | Int32 | Int64
+    | Short | IntC | IntP | Long | LongLong
 )  # fmt: skip
+
 Void: TypeAlias = ct.Structure | ct.Union
 
-# subscripting at runtime will give an error
+# subscripting at runtime will give an error, and no default is defined...
 if TYPE_CHECKING:
     Object: TypeAlias = ct.py_object[object]
 else:
     Object: TypeAlias = ct.py_object
 
-Integer: TypeAlias = UnsignedInteger | SignedInteger
-Floating: TypeAlias = Float32 | Float64 | LongDouble
-Number: TypeAlias = Integer | Floating
 Flexible: TypeAlias = Bytes | Void
-Generic: TypeAlias = Bool | Number | Flexible | Object
+# CScalar is invariant, so this won't match `CScalar[bool]`
+Integer: TypeAlias = CScalar[int]
+# NOTE: mypy incorrectly ignores the invariance of `CScalar` when using `float`
+Floating: TypeAlias = CScalar[float]
+
+if sys.version_info >= (3, 14):
+    ComplexFloating: TypeAlias = CScalar[complex]
+    Inexact: TypeAlias = Floating | ComplexFloating
+    Number: TypeAlias = Integer | Inexact
+    Generic: TypeAlias = Bool | Number | Flexible | Object
+else:
+    ComplexFloating: TypeAlias = Never
+    Inexact: TypeAlias = Floating
+    Number: TypeAlias = Integer | Floating
+    Generic: TypeAlias = Bool | Integer | Floating | Flexible | Object
