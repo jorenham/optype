@@ -158,13 +158,22 @@ else:
     Object: TypeAlias = ct.py_object
 
 Flexible: TypeAlias = Bytes | Void
-# CScalar is invariant, so this won't match `CScalar[bool]`
-Integer: TypeAlias = CScalar[int]
-# NOTE: mypy incorrectly ignores the invariance of `CScalar` when using `float`
-Floating: TypeAlias = CScalar[float]
+if TYPE_CHECKING:
+    # CScalar is invariant, so this won't match `CScalar[bool]`
+    Integer: TypeAlias = CScalar[int]
+    # NOTE: mypy incorrectly ignores the invariance of `CScalar` when using `float`
+    Floating: TypeAlias = CScalar[float]
+else:
+    Integer: TypeAlias = UnsignedInteger | SignedInteger
+    Floating: TypeAlias = ct.c_float | ct.c_double | ct.c_longdouble
 
 if sys.version_info >= (3, 14):
-    ComplexFloating: TypeAlias = CScalar[complex]
+    if TYPE_CHECKING:
+        ComplexFloating: TypeAlias = CScalar[complex]
+    else:
+        ComplexFloating: TypeAlias = (
+            ct.c_float_complex | ct.c_double_complex | ct.c_longdouble_complex
+        )
     Inexact: TypeAlias = Floating | ComplexFloating
     Number: TypeAlias = Integer | Inexact
     Generic: TypeAlias = Bool | Number | Flexible | Object
