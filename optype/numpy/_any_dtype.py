@@ -117,9 +117,12 @@ AnyUIntCDType = AnyUInt32DType
 _Name_u8: Alias = L["uint64"]
 _Char_u8: Alias = L["u8", "<u8", ">u8"]
 _Code_u8: Alias = L[_Name_u8, _Char_u8]
-# NOTE: the `ulonglong` class is not always an alias, but its `__new__` returns `int64`
 AnyUInt64DType: Alias = _AnyDType[np.uint64] | _Code_u8
-AnyULongLongDType = AnyUInt64DType
+
+_Name_Q: Alias = L["ulonglong"]
+_Char_Q: Alias = L["Q"]
+_Code_Q: Alias = L[_Name_Q, _Char_Q]
+AnyULongLongDType: Alias = _AnyDType[np.ulonglong] | _Code_Q
 
 # `UInt`, `UIntP`, and `ULong` are defined later as they differ in numpy 1 and 2
 _Name_u0_common: Alias = L["uint"]
@@ -150,7 +153,11 @@ _Name_i8: Alias = L["int64"]
 _Char_i8: Alias = L["i8", "<i8", ">i8"]
 _Code_i8: Alias = L[_Name_i8, _Char_i8]
 AnyInt64DType: Alias = _AnyDType[np.int64] | _Code_i8
-AnyLongLongDType = AnyInt64DType
+
+_Name_q: Alias = L["longlong"]
+_Char_q: Alias = L["q"]
+_Code_q: Alias = L[_Name_q, _Char_q]
+AnyLongLongDType: Alias = _AnyDType[np.longlong] | _Code_q
 
 # `Int_`, `IntP`, and `Long` are defined later as they differ in numpy 1 and 2
 _IntName: Alias = L["int", "int_"]
