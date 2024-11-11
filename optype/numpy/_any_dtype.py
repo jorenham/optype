@@ -108,11 +108,16 @@ _Code_u2: Alias = L[_Name_u2, _Char_u2]
 AnyUInt16DType: Alias = _AnyDType[np.uint16] | _Code_u2
 AnyUShortDType = AnyUInt16DType
 
-_Name_u4: Alias = L["uint32", "uintc"]
-_Char_u4: Alias = L["I", "u4", "<u4", ">u4"]
+_Name_u4: Alias = L["uint32"]
+_Char_u4: Alias = L["u4", "<u4", ">u4"]
 _Code_u4: Alias = L[_Name_u4, _Char_u4]
 AnyUInt32DType: Alias = _AnyDType[np.uint32] | _Code_u4
-AnyUIntCDType = AnyUInt32DType
+
+# `uintc` is an alias for `uint32` on linux
+_Name_I: Alias = L["uintc"]
+_Char_I: Alias = L["I"]
+_Code_I: Alias = L[_Name_I, _Char_I]
+AnyUIntCDType: Alias = _AnyDType[np.uintc] | _Code_I
 
 _Name_u8: Alias = L["uint64"]
 _Char_u8: Alias = L["u8", "<u8", ">u8"]
@@ -127,7 +132,14 @@ AnyULongLongDType: Alias = _AnyDType[np.ulonglong] | _Code_Q
 # `UInt`, `UIntP`, and `ULong` are defined later as they differ in numpy 1 and 2
 _Name_u0_common: Alias = L["uint"]
 _Char_L: Alias = L["L", "<L", ">L"]
+_Char_P: Alias = L["P", "<P", ">P"]  # not associated to any scalar type in numpy>=2.0
 
+_Name_ux: Alias = L[
+    "uint", "uintp",
+    "uint8", "uint16", "uint32", "uint64",
+    "ubyte", "ushort", "uintc", "ulong", "ulonglong",
+]  # fmt: skip
+_Char_ux_common: Alias = L[_Char_u1, _Char_u2, _Char_u4, _Char_u8, _Char_L, _Char_P]
 
 # signed integers
 
@@ -143,11 +155,16 @@ _Code_i2: Alias = L[_Name_i2, _Char_i2]
 AnyInt16DType: Alias = _AnyDType[np.int16] | _Code_i2
 AnyShortDType = AnyInt16DType
 
-_Name_i4: Alias = L["int32", "intc"]
-_Char_i4: Alias = L["i", "i4", "<i4", ">i4"]
+_Name_i4: Alias = L["int32"]
+_Char_i4: Alias = L["i4", "<i4", ">i4"]
 _Code_i4: Alias = L[_Name_i4, _Char_i4]
 AnyInt32DType: Alias = _AnyDType[np.int32] | _Code_i4
-AnyIntCDType = AnyInt32DType
+
+# `intc` is an alias for `int32` on linux
+_Name_i: Alias = L["intc"]
+_Char_i: Alias = L["i"]
+_Code_i: Alias = L[_Char_i, _Name_i]
+AnyIntCDType: Alias = _AnyDType[np.intc] | _Code_i
 
 _Name_i8: Alias = L["int64"]
 _Char_i8: Alias = L["i8", "<i8", ">i8"]
@@ -160,8 +177,9 @@ _Code_q: Alias = L[_Name_q, _Char_q]
 AnyLongLongDType: Alias = _AnyDType[np.longlong] | _Code_q
 
 # `Int_`, `IntP`, and `Long` are defined later as they differ in numpy 1 and 2
-_IntName: Alias = L["int", "int_"]
+_Name_i0_common: Alias = L["int", "int_"]
 _Char_l: Alias = L["l", "<l", ">l"]
+_Char_p: Alias = L["p", "<p", ">p"]  # not associated to any scalar type in numpy>=2.0
 
 # real floating
 
@@ -185,8 +203,8 @@ _Char_g: Alias = L["g", "f12", "f16", "<f12", "<f16", ">f12", ">f16"]
 _Code_g: Alias = L[_Name_g, _Char_g]
 AnyLongDoubleDType: Alias = _AnyDType[np.longdouble] | _Code_g
 
-_Code_f: Alias = L[_Code_f2, _Code_f4, _Code_f8, _Code_g]
-AnyFloatingDType: Alias = _AnyDType[_sc.Floating] | _Code_f
+_Code_fx: Alias = L[_Code_f2, _Code_f4, _Code_f8, _Code_g]
+AnyFloatingDType: Alias = _AnyDType[_sc.Floating] | _Code_fx
 
 # complex floating
 
@@ -205,8 +223,8 @@ _Char_G: Alias = L["G", "c24", "c32", "<c24", "<c32", ">c24", ">c32"]
 _Code_G: Alias = L[_Name_G, _Char_G]
 AnyCLongDoubleDType: Alias = _AnyDType[np.clongdouble] | _Code_G
 
-_Code_c: Alias = L[_Code_c8, _Code_c16, _Code_G]
-AnyComplexFloatingDType: Alias = _AnyDType[_sc.ComplexFloating] | _Code_c
+_Code_cx: Alias = L[_Code_c8, _Code_c16, _Code_G]
+AnyComplexFloatingDType: Alias = _AnyDType[_sc.ComplexFloating] | _Code_cx
 
 # temporal
 
@@ -321,22 +339,15 @@ _Code_O: Alias = L[_Name_O, _Char_O]
 #   e.g. in `numpy<2.1` we have `dtype(type[str | float]) -> dtype[object_]`...
 AnyObjectDType: Alias = _AnyDType[np.object_] | _Code_O
 
-_Code_fc: Alias = L[_Code_f, _Code_c]
+_Code_fc: Alias = L[_Code_fx, _Code_cx]
 AnyInexactDType: Alias = _AnyDType[_sc.Inexact] | _Code_fc
 
-_Name_i: Alias = L[
-    "byte", "int8", "short", "int16", "intc", "int32", "int64",
-    "intp", "int", "int_", "long", "longlong",
+_Name_ix: Alias = L[
+    "int", "int_", "intp",
+    "int8", "int16", "int32", "int64",
+    "byte", "short", "intc", "long", "longlong",
 ]  # fmt: skip
-_Char_p: Alias = L["p", "<p", ">p"]  # not associated to any scalar type in numpy>=2.0
-_Char_i_common: Alias = L[_Char_i1, _Char_i2, _Char_i4, _Char_i8, _Char_l, _Char_p]
-
-_Name_u: Alias = L[
-    "ubyte", "uint8", "ushort", "uint16", "uintc", "uint32", "uint64",
-    "uintp", "uint", "ulong", "ulonglong",
-]  # fmt: skip
-_Char_P: Alias = L["P", "<P", ">P"]  # not associated to any scalar type in numpy>=2.0
-_Char_u_common: Alias = L[_Char_u1, _Char_u2, _Char_u4, _Char_u8, _Char_L, _Char_P]
+_Char_ix_common: Alias = L[_Char_i1, _Char_i2, _Char_i4, _Char_i8, _Char_l, _Char_p]
 
 # NOTE: At the moment, `np.dtypes.StringDType.type: type[str]`, which is
 # impossible (i.e. `dtype[str]` isn't valid, as `str` isn't a `np.generic`)
@@ -354,7 +365,7 @@ if _x.NP2:
     _Code_L: Alias = L[_Name_L, _Char_L]
     AnyULongDType: Alias = _AnyDType[_x.ULong] | _Code_L
 
-    _Name_i0: Alias = L["intp", _IntName]
+    _Name_i0: Alias = L["intp", _Name_i0_common]
     _Char_i0: Alias = L["n", "<n", ">n"]
     _Code_i0: Alias = L[_Name_i0, _Char_i0]
     AnyIntPDType: Alias = _AnyDType[np.intp] | _Code_i0
@@ -363,15 +374,15 @@ if _x.NP2:
     _Code_l: Alias = L[_Name_l, _Char_l]
     AnyLongDType: Alias = _AnyDType[_x.Long] | _Code_l
 
-    _Char_u: Alias = L[_Char_u_common, _Char_u0, _Char_P]
-    _Code_u: Alias = L[_Name_u, _Char_u]
-    AnyUnsignedIntegerDType: Alias = _AnyDType[_sc.UnsignedInteger] | _Code_u
+    _Char_ux: Alias = L[_Char_ux_common, _Char_u0, _Char_P]
+    _Code_ux: Alias = L[_Name_ux, _Char_ux]
+    AnyUnsignedIntegerDType: Alias = _AnyDType[_sc.UnsignedInteger] | _Code_ux
 
-    _Char_i: Alias = L[_Char_i_common, _Char_i0, _Char_p]
-    _Code_i: Alias = L[_Name_i, _Char_i]
-    AnySignedIntegerDType: Alias = _AnyDType[_sc.SignedInteger] | _Code_i
+    _Char_ix: Alias = L[_Char_ix_common, _Char_i0, _Char_p]
+    _Code_ix: Alias = L[_Name_ix, _Char_ix]
+    AnySignedIntegerDType: Alias = _AnyDType[_sc.SignedInteger] | _Code_ix
 
-    _Code_ui: Alias = L[_Code_u, _Code_i]
+    _Code_ui: Alias = L[_Code_ux, _Code_ix]
     AnyIntegerDType: Alias = _AnyDType[_sc.Integer] | _Code_ui
 
     _Code_uifc: Alias = L[_Code_ui, _Code_fc]
@@ -407,19 +418,19 @@ else:
     _Code_i0: Alias = L[_Name_i0, _Char_i0]
     AnyIntPDType: Alias = _AnyDType[np.intp] | _Code_i0
 
-    _Name_l: Alias = L["long", _IntName]
+    _Name_l: Alias = L["long", _Name_i0_common]
     _Code_l: Alias = L[_Name_l, _Char_l]
     AnyLongDType: Alias = _AnyDType[_x.Long] | _Code_l
 
-    _Char_u: Alias = L[_Char_u_common, _Char_u0]
-    _Code_u: Alias = L[_Name_u, _Char_u]
-    AnyUnsignedIntegerDType: Alias = _AnyDType[_sc.UnsignedInteger] | _Code_u
+    _Char_ux: Alias = L[_Char_ux_common, _Char_u0]
+    _Code_ux: Alias = L[_Name_ux, _Char_ux]
+    AnyUnsignedIntegerDType: Alias = _AnyDType[_sc.UnsignedInteger] | _Code_ux
 
-    _Char_i: Alias = L[_Char_i_common, _Char_i0]
-    _Code_i: Alias = L[_Name_i, _Char_i]
-    AnySignedIntegerDType: Alias = _AnyDType[_sc.SignedInteger] | _Code_i
+    _Char_ix: Alias = L[_Char_ix_common, _Char_i0]
+    _Code_ix: Alias = L[_Name_ix, _Char_ix]
+    AnySignedIntegerDType: Alias = _AnyDType[_sc.SignedInteger] | _Code_ix
 
-    _Code_ui: Alias = L[_Code_u, _Code_i]
+    _Code_ui: Alias = L[_Code_ux, _Code_ix]
     AnyIntegerDType: Alias = _AnyDType[_sc.Integer] | _Code_ui
 
     _Code_uifc: Alias = L[_Code_ui, _Code_fc]
