@@ -1,3 +1,4 @@
+# mypy: disable-error-code="no-any-explicit"
 """
 The allowed `np.dtype` arguments for specific scalar types.
 The names are analogous to those in `numpy.dtypes`.
@@ -204,7 +205,7 @@ _Code_g: Alias = L[_Name_g, _Char_g]
 AnyLongDoubleDType: Alias = _AnyDType[np.longdouble] | _Code_g
 
 _Code_fx: Alias = L[_Code_f2, _Code_f4, _Code_f8, _Code_g]
-AnyFloatingDType: Alias = _AnyDType[_sc.Floating] | _Code_fx
+AnyFloatingDType: Alias = _AnyDType[_sc.floating] | _Code_fx
 
 # complex floating
 
@@ -224,7 +225,7 @@ _Code_G: Alias = L[_Name_G, _Char_G]
 AnyCLongDoubleDType: Alias = _AnyDType[np.clongdouble] | _Code_G
 
 _Code_cx: Alias = L[_Code_c8, _Code_c16, _Code_G]
-AnyComplexFloatingDType: Alias = _AnyDType[_sc.ComplexFloating] | _Code_cx
+AnyComplexFloatingDType: Alias = _AnyDType[_sc.cfloating] | _Code_cx
 
 # temporal
 
@@ -340,7 +341,7 @@ _Code_O: Alias = L[_Name_O, _Char_O]
 AnyObjectDType: Alias = _AnyDType[np.object_] | _Code_O
 
 _Code_fc: Alias = L[_Code_fx, _Code_cx]
-AnyInexactDType: Alias = _AnyDType[_sc.Inexact] | _Code_fc
+AnyInexactDType: Alias = _AnyDType[_sc.inexact] | _Code_fc
 
 _Name_ix: Alias = L[
     "int", "int_", "intp",
@@ -376,19 +377,19 @@ if _x.NP2:
 
     _Char_ux: Alias = L[_Char_ux_common, _Char_u0, _Char_P]
     _Code_ux: Alias = L[_Name_ux, _Char_ux]
-    AnyUnsignedIntegerDType: Alias = _AnyDType[_sc.UnsignedInteger] | _Code_ux
+    AnyUnsignedIntegerDType: Alias = _AnyDType[_sc.uinteger] | _Code_ux
 
     _Char_ix: Alias = L[_Char_ix_common, _Char_i0, _Char_p]
     _Code_ix: Alias = L[_Name_ix, _Char_ix]
-    AnySignedIntegerDType: Alias = _AnyDType[_sc.SignedInteger] | _Code_ix
+    AnySignedIntegerDType: Alias = _AnyDType[_sc.sinteger] | _Code_ix
 
     _Code_ui: Alias = L[_Code_ux, _Code_ix]
-    AnyIntegerDType: Alias = _AnyDType[_sc.Integer] | _Code_ui
+    AnyIntegerDType: Alias = _AnyDType[_sc.integer] | _Code_ui
 
     _Code_uifc: Alias = L[_Code_ui, _Code_fc]
     # NOTE: this doesn't include `int` or `float` or `complex`, since that
     # would autoamtically include `bool`.
-    AnyNumberDType: Alias = _AnyDType[_sc.Number] | _Code_uifc
+    AnyNumberDType: Alias = _AnyDType[_sc.number] | _Code_uifc
 
     # NOTE: `np.dtypes.StringDType` didn't exist in the stubs prior to 2.1 (so
     # I (@jorenham) added them, see https://github.com/numpy/numpy/pull/27008).
@@ -424,17 +425,17 @@ else:
 
     _Char_ux: Alias = L[_Char_ux_common, _Char_u0]
     _Code_ux: Alias = L[_Name_ux, _Char_ux]
-    AnyUnsignedIntegerDType: Alias = _AnyDType[_sc.UnsignedInteger] | _Code_ux
+    AnyUnsignedIntegerDType: Alias = _AnyDType[_sc.uinteger] | _Code_ux
 
     _Char_ix: Alias = L[_Char_ix_common, _Char_i0]
     _Code_ix: Alias = L[_Name_ix, _Char_ix]
-    AnySignedIntegerDType: Alias = _AnyDType[_sc.SignedInteger] | _Code_ix
+    AnySignedIntegerDType: Alias = _AnyDType[_sc.sinteger] | _Code_ix
 
     _Code_ui: Alias = L[_Code_ux, _Code_ix]
-    AnyIntegerDType: Alias = _AnyDType[_sc.Integer] | _Code_ui
+    AnyIntegerDType: Alias = _AnyDType[_sc.integer] | _Code_ui
 
     _Code_uifc: Alias = L[_Code_ui, _Code_fc]
-    AnyNumberDType: Alias = _AnyDType[_sc.Number] | _Code_uifc
+    AnyNumberDType: Alias = _AnyDType[_sc.number] | _Code_uifc
 
     AnyStringDType: Alias = Never
 

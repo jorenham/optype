@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import sys
-from collections.abc import Callable as CanCall, Iterable
+from collections.abc import Callable, Iterable
 from typing import (
     TYPE_CHECKING,
     Literal as L,  # noqa: N817
@@ -12,6 +12,7 @@ from typing import (
 import numpy as np
 
 import optype.numpy._compat as _x
+from optype._core._utils import set_module
 
 
 if sys.version_info >= (3, 13):
@@ -28,40 +29,33 @@ if TYPE_CHECKING:
 __all__ = ["CanArrayFunction", "CanArrayUFunc", "UFunc"]
 
 
-_FT_co = TypeVar(
-    "_FT_co",
-    bound=CanCall[..., object],
-    covariant=True,
-    default=CanCall[..., object],
-)
-_NInT_co = TypeVar("_NInT_co", bound=int, covariant=True, default=int)
-_NoutT_co = TypeVar("_NoutT_co", bound=int, covariant=True, default=int)
+_AnyFunc: Alias = Callable[..., object]
+_AnyArray: Alias = np.ndarray[tuple[int, ...], np.dtype[np.generic]]
+
+_FT_co = TypeVar("_FT_co", covariant=True, bound=_AnyFunc, default=_AnyFunc)
+_NInT_co = TypeVar("_NInT_co", covariant=True, bound=int, default=int)
+_NoutT_co = TypeVar("_NoutT_co", covariant=True, bound=int, default=int)
 _SigT_co = TypeVar(
     "_SigT_co",
-    bound=LiteralString | None,
     covariant=True,
+    bound=LiteralString | None,
     default=LiteralString | None,
 )
 # numpy < 2.1
-_SigT_str_co = TypeVar(
-    "_SigT_str_co",
-    bound=str | None,
-    covariant=True,
-    default=str | None,
-)
+_SigT0_co = TypeVar("_SigT0_co", covariant=True, bound=str | None, default=str | None)
 _IdT_co = TypeVar(
     "_IdT_co",
-    bound=int | float | complex | bytes | str | None,
     covariant=True,
+    bound=complex | bytes | str | None,
     default=float | None,
 )
 
-_AnyArray: Alias = np.ndarray[tuple[int, ...], np.dtype[np.generic]]
 
 if _x.NP2 and not _x.NP20:
     # `numpy>=2.1`
 
     @runtime_checkable
+    @set_module("optype.numpy")
     class UFunc(Protocol[_FT_co, _NInT_co, _NoutT_co, _SigT_co, _IdT_co]):
         """
         A generic interface for `numpy.ufunc` "universal function" instances,
@@ -119,25 +113,26 @@ if _x.NP2 and not _x.NP20:
 
         # raises `ValueError` i.f.f. `nout != 1 or bool(signature)`
         @property
-        def at(self, /) -> CanCall[..., None]: ...
+        def at(self, /) -> Callable[..., None]: ...
         # raises `ValueError` i.f.f. `nin != 2 or nout != 1 or bool(signature)`
         @property
-        def reduce(self, /) -> CanCall[..., object]: ...
+        def outer(self, /) -> _AnyFunc: ...
         # raises `ValueError` i.f.f. `nin != 2 or nout != 1 or bool(signature)`
         @property
-        def reduceat(self, /) -> CanCall[..., _AnyArray]: ...
+        def reduce(self, /) -> _AnyFunc: ...
         # raises `ValueError` i.f.f. `nin != 2 or nout != 1 or bool(signature)`
         @property
-        def accumulate(self, /) -> CanCall[..., _AnyArray]: ...
+        def reduceat(self, /) -> Callable[..., _AnyArray]: ...
         # raises `ValueError` i.f.f. `nin != 2 or nout != 1 or bool(signature)`
         @property
-        def outer(self, /) -> CanCall[..., object]: ...
+        def accumulate(self, /) -> Callable[..., _AnyArray]: ...
 
 else:
     # `numpy<2.1`
 
     @runtime_checkable
-    class UFunc(Protocol[_FT_co, _NInT_co, _NoutT_co, _SigT_str_co, _IdT_co]):
+    @set_module("optype.numpy")
+    class UFunc(Protocol[_FT_co, _NInT_co, _NoutT_co, _SigT0_co, _IdT_co]):
         """
         A generic interface for `numpy.ufunc` "universal function" instances,
         e.g. `numpy.exp`, `numpy.add`, `numpy.frexp`, `numpy.divmod`.
@@ -157,7 +152,7 @@ else:
         @property
         def nout(self, /) -> _NoutT_co: ...
         @property
-        def signature(self, /) -> _SigT_str_co: ...
+        def signature(self, /) -> _SigT0_co: ...
         @property
         def identity(self, /) -> _IdT_co: ...
         @property
@@ -170,15 +165,15 @@ else:
         # The following *methods* were incorrectly typed prior to NumPy 2.1,
         # which I (@jorenham) fixed: https://github.com/numpy/numpy/pull/26847
         @property
-        def at(self, /) -> CanCall[..., None] | None: ...
+        def at(self, /) -> Callable[..., None] | None: ...
         @property
-        def reduce(self, /) -> CanCall[..., object] | None: ...
+        def outer(self, /) -> _AnyFunc | None: ...
         @property
-        def reduceat(self, /) -> CanCall[..., _AnyArray] | None: ...
+        def reduce(self, /) -> _AnyFunc | None: ...
         @property
-        def accumulate(self, /) -> CanCall[..., _AnyArray] | None: ...
+        def reduceat(self, /) -> Callable[..., _AnyArray] | None: ...
         @property
-        def outer(self, /) -> CanCall[..., object] | None: ...
+        def accumulate(self, /) -> Callable[..., _AnyArray] | None: ...
 
 
 _MethodCommon: Alias = L["__call__", "reduce", "reduceat", "accumulate", "outer"]
@@ -188,11 +183,12 @@ else:
     _Method: Alias = L[_MethodCommon, "inner"]
 
 
-_UFT_contra = TypeVar("_UFT_contra", bound=UFunc, contravariant=True, default=np.ufunc)
+_UFT_contra = TypeVar("_UFT_contra", contravariant=True, bound=UFunc, default=np.ufunc)
 _T_co = TypeVar("_T_co", covariant=True, default=object)
 
 
 @runtime_checkable
+@set_module("optype.numpy")
 class CanArrayUFunc(Protocol[_UFT_contra, _T_co]):
     """
     Interface for ufunc operands.
@@ -216,13 +212,14 @@ class CanArrayUFunc(Protocol[_UFT_contra, _T_co]):
 
 _FT_contra = TypeVar(
     "_FT_contra",
-    bound=CanCall[..., object],
     contravariant=True,
-    default=CanCall[..., object],
+    bound=_AnyFunc,
+    default=_AnyFunc,
 )
 
 
 @runtime_checkable
+@set_module("optype.numpy")
 class CanArrayFunction(Protocol[_FT_contra, _T_co]):
     def __array_function__(
         self,

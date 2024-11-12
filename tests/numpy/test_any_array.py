@@ -119,7 +119,7 @@ def test_any_array() -> None:
 
 @pytest.mark.parametrize("sctype", UNSIGNED_INTEGER)
 def test_any_unsigned_integer_array(
-    sctype: type[_sc.UnsignedInteger | _ct.UnsignedInteger],
+    sctype: type[_sc.uinteger | _ct.UnsignedInteger],
 ) -> None:
     v = sctype(42)
     x = np.array(v)
@@ -129,7 +129,7 @@ def test_any_unsigned_integer_array(
 
 @pytest.mark.parametrize("sctype", SIGNED_INTEGER)
 def test_any_signed_integer_array(
-    sctype: type[_sc.SignedInteger | _ct.SignedInteger],
+    sctype: type[_sc.sinteger | _ct.SignedInteger],
 ) -> None:
     v = sctype(42)
     x = np.array(v)
@@ -139,7 +139,7 @@ def test_any_signed_integer_array(
 
 @pytest.mark.parametrize("sctype", INTEGER)
 def test_any_integer_array(
-    sctype: type[_sc.Integer | _ct.Integer],
+    sctype: type[_sc.integer | _ct.Integer],
 ) -> None:
     v = sctype(42)
     x = np.array(v)
@@ -149,7 +149,7 @@ def test_any_integer_array(
 
 @pytest.mark.parametrize("sctype", FLOATING)
 def test_any_floating_array(
-    sctype: type[_sc.Floating | _ct.Floating],
+    sctype: type[_sc.floating | _ct.Floating],
 ) -> None:
     v = sctype(42)
     x = np.array(v)
@@ -159,7 +159,7 @@ def test_any_floating_array(
 
 @pytest.mark.parametrize("sctype", COMPLEX_FLOATING)
 def test_any_complex_floating_array(
-    sctype: type[_sc.ComplexFloating],
+    sctype: type[_sc.cfloating],
 ) -> None:
     v = sctype(42 + 42j)
     x = np.array(v)

@@ -3,6 +3,8 @@ from typing import TypeAlias
 
 import numpy as np
 
+from optype._core._utils import set_module
+
 
 if sys.version_info >= (3, 13):
     from typing import Protocol, TypeVar, runtime_checkable
@@ -22,6 +24,7 @@ _DT_co = TypeVar("_DT_co", bound=DType, covariant=True, default=DType)
 
 
 @runtime_checkable
+@set_module("optype.numpy")
 class HasDType(Protocol[_DT_co]):
     """HasDType[DT: np.dtype[Any] = Any]
 

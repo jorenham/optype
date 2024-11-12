@@ -17,3 +17,7 @@ __all__ += _dtype.__all__
 __all__ += _scalar.__all__
 __all__ += _shape.__all__
 __all__ += _ufunc.__all__
+
+
+def __dir__() -> list[str]:
+    return __all__

@@ -46,7 +46,7 @@ def test_from_bool() -> None:
     "sctype",
     [np.int8, np.uint8, np.int16, np.uint16, np.int32, np.uint32, np.int64, np.uint64],
 )
-def test_from_integer(sctype: type[_sc.Integer]) -> None:
+def test_from_integer(sctype: type[_sc.integer]) -> None:
     x_py = 42
     x_np = sctype(x_py)
 
@@ -64,7 +64,7 @@ def test_from_integer(sctype: type[_sc.Integer]) -> None:
 
 
 @pytest.mark.parametrize("sctype", [np.float16, np.float32, np.float64])
-def test_from_floating(sctype: type[_sc.Floating]) -> None:
+def test_from_floating(sctype: type[_sc.floating]) -> None:
     x_py = -1 / 12
     x_np = sctype(x_py)
 
@@ -82,7 +82,7 @@ def test_from_floating(sctype: type[_sc.Floating]) -> None:
 
 
 @pytest.mark.parametrize("sctype", [np.complex64, np.complex128])
-def test_from_complex(sctype: type[_sc.ComplexFloating]) -> None:
+def test_from_complex(sctype: type[_sc.cfloating]) -> None:
     x_py = 3 - 4j
     x_np = sctype(x_py)
 
