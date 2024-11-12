@@ -1,3 +1,4 @@
+# mypy: disable-error-code="no-any-explicit"
 from __future__ import annotations
 
 import sys
@@ -29,6 +30,10 @@ if TYPE_CHECKING:
 
 __all__ = [
     "Array",
+    "Array1D",
+    "Array1D",
+    "Array2D",
+    "ArrayND",
     "CanArray",
     "CanArrayFinalize",
     "CanArrayWrap",
@@ -37,23 +42,58 @@ __all__ = [
 ]
 
 
-_ND = TypeVar("_ND", bound=AtLeast0D)
-_ND0_co = TypeVar("_ND0_co", covariant=True, bound=AtLeast0D, default=AtLeast0D)
-_ND0 = TypeVar("_ND0", bound=AtLeast0D, default=AtLeast0D)
-_ST = TypeVar("_ST", bound=np.generic, default=np.generic)
-_DT = TypeVar("_DT", bound=DType)
-_DT_co = TypeVar("_DT_co", bound=DType, covariant=True, default=DType)
+_NDT = TypeVar("_NDT", bound=AtLeast0D, default=AtLeast0D)
+_NDT_co = TypeVar("_NDT_co", bound=AtLeast0D, default=AtLeast0D, covariant=True)
+_DTT = TypeVar("_DTT", bound=DType, default=DType)
+_DTT_co = TypeVar("_DTT_co", bound=DType, default=DType, covariant=True)
+_SCT = TypeVar("_SCT", bound=np.generic, default=np.generic)
 
 
-Array = TypeAliasType("Array", np.ndarray[_ND, np.dtype[_ST]], type_params=(_ND, _ST))
+Array = TypeAliasType(
+    "Array",
+    np.ndarray[_NDT, np.dtype[_SCT]],
+    type_params=(_NDT, _SCT),
+)
 """
+Shape-typed array alias, defined as:
+
 ```py
 type Array[
-    ND: (int, ...) = AtLeast0D,
+    ND: (int, ...) = (int, ...),
     ST: np.generic = np.generic,
-] = np.ndarray[ND, ST]
+] = np.ndarray[ND, np.dtype[ST]]
 ```
 """
+
+ArrayND = TypeAliasType(
+    "ArrayND",
+    np.ndarray[_NDT, np.dtype[_SCT]],
+    type_params=(_SCT, _NDT),
+)
+"""
+Like `Array`, but with flipped type-parameters, i.e.:
+
+type ArrayND[
+    ST: np.generic = np.generic,
+    ND: (int, ...) = (int, ...),
+] = np.ndarray[ND, np.dtype[ST]]
+"""
+
+Array1D = TypeAliasType(
+    "Array1D",
+    np.ndarray[tuple[int], np.dtype[_SCT]],
+    type_params=(_SCT,),
+)
+Array2D = TypeAliasType(
+    "Array2D",
+    np.ndarray[tuple[int, int], np.dtype[_SCT]],
+    type_params=(_SCT,),
+)
+Array3D = TypeAliasType(
+    "Array3D",
+    np.ndarray[tuple[int, int, int], np.dtype[_SCT]],
+    type_params=(_SCT,),
+)
 
 
 ###########################
@@ -62,15 +102,15 @@ if _x.NP2 and not _x.NP20:
     # numpy >= 2.1: shape is covariant
     @runtime_checkable
     @set_module("optype.numpy")
-    class CanArray(Protocol[_ND0_co, _DT_co]):
-        def __array__(self, /) -> np.ndarray[_ND0_co, _DT_co]: ...
+    class CanArray(Protocol[_NDT_co, _DTT_co]):
+        def __array__(self, /) -> np.ndarray[_NDT_co, _DTT_co]: ...
 
 else:
     # numpy < 2.1: shape is invariant
     @runtime_checkable
     @set_module("optype.numpy")
-    class CanArray(Protocol[_ND0, _DT_co]):
-        def __array__(self, /) -> np.ndarray[_ND0, _DT_co]: ...
+    class CanArray(Protocol[_NDT, _DTT_co]):
+        def __array__(self, /) -> np.ndarray[_NDT, _DTT_co]: ...
 
 
 # this is almost always a `ndarray`, but setting a `bound` might break in some
@@ -91,20 +131,20 @@ class CanArrayWrap(Protocol):
 
         def __array_wrap__(
             self,
-            array: np.ndarray[_ND, _DT],
+            array: np.ndarray[_NDT, _DTT],
             context: tuple[np.ufunc, tuple[object, ...], int] | None = ...,
             return_scalar: bool = ...,
             /,
-        ) -> np.ndarray[_ND, _DT] | Self: ...
+        ) -> np.ndarray[_NDT, _DTT] | Self: ...
 
     else:
 
         def __array_wrap__(
             self,
-            array: np.ndarray[_ND, _DT],
+            array: np.ndarray[_NDT, _DTT],
             context: tuple[np.ufunc, tuple[object, ...], int] | None = ...,
             /,
-        ) -> np.ndarray[_ND, _DT] | Self: ...
+        ) -> np.ndarray[_NDT, _DTT] | Self: ...
 
 
 _ArrayInterfaceT_co = TypeVar(
