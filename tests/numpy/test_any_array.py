@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ctypes as ct
 import datetime as dt
+from collections import deque
 from typing import TYPE_CHECKING, Final
 
 import numpy as np
@@ -66,25 +67,28 @@ def test_any_array() -> None:
     type_ct = ct.c_int16
     v = 42
 
-    # Python scalar
-
-    v_py: onp.AnyArray = v
-    assert np.shape(v) == ()
-
-    # C scalar
-
-    v_ct: onp.AnyArray = type_ct(42)
+    v_empty_list: onp.AnyArray = []
+    v_empty_tuple: onp.AnyArray = ()
+    v_empty_deque: onp.AnyArray = deque(())
+    v_empty_bytearray: onp.AnyArray = bytearray(b"")
+    v_empty_memoryview: onp.AnyArray = memoryview(b"")
+    # rejection
+    v_bool: onp.AnyArray = False  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    v_int: onp.AnyArray = 0  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    v_float: onp.AnyArray = 0.0  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    v_complex: onp.AnyArray = 0j  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    v_empty_set: onp.AnyArray = set()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    v_dict: onp.AnyArray = {}  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
     # NumPy scalar
 
     v_np = type_np(v)
-    v_np_any: onp.AnyArray = v_np
-    assert int(v) == v_py
+    v_np_any: onp.AnyArray = [v_np]
     assert np.shape(v_np) == ()
 
     # 0d
 
-    x0_np = np.array(v_py)
+    x0_np = np.array(v)
     x0_np_any: onp.AnyArray = x0_np
     assert np.shape(x0_np) == ()
 
@@ -119,7 +123,7 @@ def test_any_array() -> None:
 
 @pytest.mark.parametrize("sctype", UNSIGNED_INTEGER)
 def test_any_unsigned_integer_array(
-    sctype: type[_sc.UnsignedInteger | _ct.UnsignedInteger],
+    sctype: type[_sc.uinteger | _ct.UnsignedInteger],
 ) -> None:
     v = sctype(42)
     x = np.array(v)
@@ -129,7 +133,7 @@ def test_any_unsigned_integer_array(
 
 @pytest.mark.parametrize("sctype", SIGNED_INTEGER)
 def test_any_signed_integer_array(
-    sctype: type[_sc.SignedInteger | _ct.SignedInteger],
+    sctype: type[_sc.sinteger | _ct.SignedInteger],
 ) -> None:
     v = sctype(42)
     x = np.array(v)
@@ -139,7 +143,7 @@ def test_any_signed_integer_array(
 
 @pytest.mark.parametrize("sctype", INTEGER)
 def test_any_integer_array(
-    sctype: type[_sc.Integer | _ct.Integer],
+    sctype: type[_sc.integer | _ct.Integer],
 ) -> None:
     v = sctype(42)
     x = np.array(v)
@@ -149,7 +153,7 @@ def test_any_integer_array(
 
 @pytest.mark.parametrize("sctype", FLOATING)
 def test_any_floating_array(
-    sctype: type[_sc.Floating | _ct.Floating],
+    sctype: type[_sc.floating | _ct.Floating],
 ) -> None:
     v = sctype(42)
     x = np.array(v)
@@ -159,7 +163,7 @@ def test_any_floating_array(
 
 @pytest.mark.parametrize("sctype", COMPLEX_FLOATING)
 def test_any_complex_floating_array(
-    sctype: type[_sc.ComplexFloating],
+    sctype: type[_sc.cfloating],
 ) -> None:
     v = sctype(42 + 42j)
     x = np.array(v)
@@ -173,7 +177,7 @@ def test_any_datetime64_array(
 ) -> None:
     v: dt.datetime | np.datetime64
     v = sctype.now() if issubclass(sctype, dt.datetime) else sctype()
-    x = np.datetime64(v)
+    x = np.array(np.datetime64(v))
     x_any: onp.AnyDateTime64Array = x
     assert np.issubdtype(x.dtype, np.datetime64)
 
@@ -183,7 +187,7 @@ def test_any_timedelta64_array(
     sctype: type[np.timedelta64 | dt.timedelta],
 ) -> None:
     v = sctype()
-    x = np.timedelta64(v)
+    x = np.array(np.timedelta64(v))
     x_any: onp.AnyTimeDelta64Array = x
     assert np.issubdtype(x.dtype, np.timedelta64)
 

@@ -1,10 +1,14 @@
+# mypy: disable-error-code="no-any-explicit"
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Literal, TypeAlias
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias
 
 import numpy as np
 import numpy.typing as npt
+from typing_extensions import TypeAliasType
+
+from optype._core._utils import set_module
 
 
 if sys.version_info >= (3, 13):
@@ -37,6 +41,7 @@ _Array0D: TypeAlias = np.ndarray[tuple[()], _DT]
 
 
 @runtime_checkable
+@set_module("optype.numpy")
 class Scalar(Protocol[_PT_co, _NB_co]):
     """
     A lightweight `numpy.generic` interface that's actually generic, and
@@ -99,19 +104,17 @@ class Scalar(Protocol[_PT_co, _NB_co]):
     def __array__(self, dtype: _DT, /) -> _Array0D[_DT]: ...
 
 
-_N_re = TypeVar("_N_re", bound=npt.NBitBase, default=npt.NBitBase)
-_N_im = TypeVar("_N_im", bound=npt.NBitBase, default=_N_re)
+# `NBitBase` invariant and doesn't actually do anything, so the default should be `Any`
+_N = TypeVar("_N", bound=npt.NBitBase, default=Any)
 
-Generic: TypeAlias = np.generic
-Number: TypeAlias = np.number[_N_re]
+generic = np.generic
+flexible = np.flexible
+character = np.character
 
-Integer: TypeAlias = np.integer[_N_re]
-UnsignedInteger: TypeAlias = np.unsignedinteger[_N_re]
-SignedInteger: TypeAlias = np.signedinteger[_N_re]
-
-Inexact: TypeAlias = np.inexact[_N_re]
-Floating: TypeAlias = np.floating[_N_re]
-ComplexFloating: TypeAlias = np.complexfloating[_N_re, _N_im]
-
-Flexible: TypeAlias = np.flexible
-Character: TypeAlias = np.character
+number = TypeAliasType("number", np.number[_N], type_params=(_N,))
+integer = TypeAliasType("integer", np.integer[_N], type_params=(_N,))
+uinteger = TypeAliasType("uinteger", np.unsignedinteger[_N], type_params=(_N,))
+sinteger = TypeAliasType("sinteger", np.signedinteger[_N], type_params=(_N,))
+inexact = TypeAliasType("inexact", np.inexact[_N], type_params=(_N,))
+floating = TypeAliasType("floating", np.floating[_N], type_params=(_N,))
+cfloating = TypeAliasType("cfloating", np.complexfloating[_N, _N], type_params=(_N,))

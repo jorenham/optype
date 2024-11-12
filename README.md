@@ -2588,10 +2588,22 @@ the type parameter can be omitted, in which case it's equivalent to
 
 #### `Any*Array` and `Any*DType`
 
-The `Any{Scalar}Array` type aliases describe *everything* that, when passed to
-`numpy.asarray` (or any other `numpy.ndarray` constructor), results in a
-`numpy.ndarray` with specific [dtype][REF-DTYPE], i.e.
-`numpy.dtypes.{Scalar}DType`.
+The `Any{Scalar}Array` type aliases describe array-likes that are coercible to an
+`numpy.ndarray` with specific [dtype][REF-DTYPE].
+
+Unlike `numpy.typing.ArrayLike`, these `optype.numpy` aliases *do not*
+include include scalar types. To illustrate:
+
+```py
+import numpy.typing as npt
+import optype.numpy as onp
+
+v_np: npt.ArrayLike = 3.14  # accepted
+v_op: onp.AnyArray = 3.14  # rejected
+
+sigma1_np: npt.ArrayLike = [[0, 1], [1, 0]]  # accepted
+sigma1_op: onp.AnyArray = [[0, 1], [1, 0]]  # accepted
+```
 
 > [!NOTE]
 > The [`numpy.dtypes` docs][REF-DTYPES] exists since NumPy 1.25, but its

@@ -53,6 +53,8 @@ jobs:
 
       - name: basedpyright --verifytypes
         run: uv run basedpyright --ignoreexternal --verifytypes optype
+        # https://github.com/microsoft/pyright/issues/9446
+        continue-on-error: true
 
   test:
     timeout-minutes: 5

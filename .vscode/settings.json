@@ -1,4 +1,7 @@
   {
+    "[markdown]": {
+      "editor.rulers": [88]
+    },
     "[python]": {
       "editor.defaultFormatter": "charliermarsh.ruff",
       "editor.formatOnPaste": true,
