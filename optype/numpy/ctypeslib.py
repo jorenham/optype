@@ -111,6 +111,10 @@ __all__ = [
 ]  # fmt: skip
 
 
+def __dir__() -> list[str]:
+    return __all__
+
+
 SIZE_BYTE: Final = cast(Literal[1], ct.sizeof(ct.c_byte))
 SIZE_SHORT: Final = cast(Literal[2], ct.sizeof(ct.c_short))
 SIZE_INTC: Final = cast(Literal[4], ct.sizeof(ct.c_int))
@@ -136,8 +140,8 @@ assert SIZE_LONGDOUBLE in {8, 12, 16}, (
 
 
 CT = TypeVar("CT", bound=CType)
-Array: TypeAlias = ct.Array[CT] | ct.Array["Array[CT]"]
-
+_Array: TypeAlias = ct.Array[CT] | ct.Array["_Array[CT]"]
+Array = TypeAliasType("Array", _Array[CT], type_params=(CT,))
 
 # `c_(u)byte` is an alias for `c_(u)int8`
 _UnsignedInteger: TypeAlias = (
