@@ -227,11 +227,11 @@ The API of `optype` is flat; a single `import optype as opt` is all you need
     - [Literal types](#literal-types)
 - [`optype.dlpack`](#optypedlpack)
 - [`optype.numpy`](#optypenumpy)
-    - [`Array`](#array)
-    - [`UFunc`](#ufunc)
-    - [`Shape type aliases`](#shape-type-aliases)
-    - [`Scalar`](#scalar)
+    - [Array types](#array-types)
+    - [Shape types](#shape-types)
     - [`DType`](#dtype)
+    - [`Scalar`](#scalar)
+    - [`UFunc`](#ufunc)
     - [`Any*Array` and `Any*DType`](#anyarray-and-anydtype)
     - [Low-level interfaces](#low-level-interfaces)
 
@@ -2193,7 +2193,7 @@ pip install "optype[numpy]"
 > [PEP 696][PEP696] type parameter syntax will be used, which is supported
 > since Python 3.13.
 
-#### `Array`
+#### Array types
 
 Optype provides the generic `onp.Array` type alias for `np.ndarray`.
 It is similar to `npt.NDArray`, but includes two (optional) type parameters:
@@ -2205,11 +2205,20 @@ their differences become clear:
 
 <table>
 <tr>
-<th width="415px">
-    <code>numpy.typing.NDArray</code>
+<th>
+
+`numpy.typing.NDArray`[^1]
+
 </th>
-<th width="415px">
-    <code>optype.numpy.Array</code>
+<th>
+
+`optype.numpy.Array`
+
+</th>
+<th>
+
+`optype.numpy.ArrayND`
+
 </th>
 </tr>
 <tr>
@@ -2218,8 +2227,8 @@ their differences become clear:
 ```python
 type NDArray[
     # no shape type
-    ST: np.generic,  # no default
-] = np.ndarray[Any, np.dtype[ST]]
+    ST: generic,  # no default
+] = ndarray[Any, dtype[ST]]
 ```
 
 </td>
@@ -2227,14 +2236,27 @@ type NDArray[
 
 ```python
 type Array[
-    ND: tuple[int, ...] = tuple[int, ...],
-    ST: np.generic = np.generic,
-] = np.ndarray[ND, np.dtype[ST]]
+    ND: (int, ...) = (int, ...),
+    ST: generic = generic,
+] = ndarray[ND, dtype[ST]]
+```
+
+</td>
+<td>
+
+```python
+type ArrayND[
+    ST: generic = generic,
+    ND: (int, ...) = (int, ...),
+] = ndarray[ND, dtype[ST]]
 ```
 
 </td>
 </tr>
 </table>
+
+[^1]: Since `numpy>=2.2` the `NDArray` alias uses `tuple[int, ...]` as shape-type
+    instead of `Any`.
 
 > [!IMPORTANT]
 > The shape type parameter (`ND`) of `np.ndarray` is currently defined as
@@ -2270,57 +2292,7 @@ With `onp.Array`, it becomes possible to type the shape of arrays,
 > A little bird told me that `onp.Array` might be backported to NumPy in the
 > near future.
 
-#### `UFunc`
-
-A large portion of numpy's public API consists of *universal functions*, often
-denoted as [ufuncs][DOC-UFUNC], which are (callable) instances of
-[`np.ufunc`][REF_UFUNC].
-
-> [!TIP]
-> Custom ufuncs can be created using [`np.frompyfunc`][REF_FROMPY], but also
-> through a user-defined class that implements the required attributes and
-> methods (i.e., duck typing).
->
-But `np.ufunc` has a big issue; it accepts no type parameters.
-This makes it very difficult to properly annotate its callable signature and
-its literal attributes (e.g. `.nin` and `.identity`).
-
-This is where `optype.numpy.UFunc` comes into play:
-It's a runtime-checkable generic typing protocol, that has been thoroughly
-type- and unit-tested to ensure compatibility with all of numpy's ufunc
-definitions.
-Its generic type signature looks roughly like:
-
-```python
-type UFunc[
-    # The type of the (bound) `__call__` method.
-    Fn: CanCall = CanCall,
-    # The types of the `nin` and `nout` (readonly) attributes.
-    # Within numpy these match either `Literal[1]` or `Literal[2]`.
-    Nin: int = int,
-    Nout: int = int,
-    # The type of the `signature` (readonly) attribute;
-    # Must be `None` unless this is a generalized ufunc (gufunc), e.g.
-    # `np.matmul`.
-    Sig: str | None = str | None,
-    # The type of the `identity` (readonly) attribute (used in `.reduce`).
-    # Unless `Nin: Literal[2]`, `Nout: Literal[1]`, and `Sig: None`,
-    # this should always be `None`.
-    # Note that `complex` also includes `bool | int | float`.
-    Id: complex | bytes | str | None = float | None,
-] = ...
-```
-
-> [!NOTE]
-> Unfortunately, the extra callable methods of `np.ufunc` (`at`, `reduce`,
-> `reduceat`, `accumulate`, and `outer`), are incorrectly annotated (as `None`
-> *attributes*, even though at runtime they're methods that raise a
-> `ValueError` when called).
-> This currently makes it impossible to properly type these in
-> `optype.numpy.UFunc`; doing so would make it incompatible with numpy's
-> ufuncs.
-
-#### Shape type aliases
+#### Shape types
 
 A *shape* is nothing more than a tuple of (non-negative) integers, i.e.
 an instance of `tuple[int, ...]` such as `(42,)`, `(6, 6, 6)` or `()`.
@@ -2539,6 +2511,23 @@ type AtMost3D[
 </tr>
 </table>
 
+#### `DType`
+
+In NumPy, a *dtype* (data type) object, is an instance of the
+`numpy.dtype[ST: np.generic]` type.
+It's commonly used to convey metadata of a scalar type, e.g. within arrays.
+
+Because the type parameter of `np.dtype` isn't optional, it could be more
+convenient to use the alias `optype.numpy.DType`, which is defined as:
+
+```python
+type DType[ST: np.generic = np.generic] = np.dtype[ST]
+```
+
+Apart from the "CamelCase" name, the only difference with `np.dtype` is that
+the type parameter can be omitted, in which case it's equivalent to
+`np.dtype[np.generic]`, but shorter.
+
 #### `Scalar`
 
 The `optype.numpy.Scalar` interface is a generic runtime-checkable protocol,
@@ -2569,22 +2558,55 @@ alpha: Scalar[float, Literal[8]] = np.float64(1 / 137)
 > The second type argument for `itemsize` can be omitted, which is equivalent
 > to setting it to `int`, so `Scalar[PT]` and `Scalar[PT, int]` are equivalent.
 
-#### `DType`
+#### `UFunc`
 
-In NumPy, a *dtype* (data type) object, is an instance of the
-`numpy.dtype[ST: np.generic]` type.
-It's commonly used to convey metadata of a scalar type, e.g. within arrays.
+A large portion of numpy's public API consists of *universal functions*, often
+denoted as [ufuncs][DOC-UFUNC], which are (callable) instances of
+[`np.ufunc`][REF_UFUNC].
 
-Because the type parameter of `np.dtype` isn't optional, it could be more
-convenient to use the alias `optype.numpy.DType`, which is defined as:
+> [!TIP]
+> Custom ufuncs can be created using [`np.frompyfunc`][REF_FROMPY], but also
+> through a user-defined class that implements the required attributes and
+> methods (i.e., duck typing).
+>
+But `np.ufunc` has a big issue; it accepts no type parameters.
+This makes it very difficult to properly annotate its callable signature and
+its literal attributes (e.g. `.nin` and `.identity`).
+
+This is where `optype.numpy.UFunc` comes into play:
+It's a runtime-checkable generic typing protocol, that has been thoroughly
+type- and unit-tested to ensure compatibility with all of numpy's ufunc
+definitions.
+Its generic type signature looks roughly like:
 
 ```python
-type DType[ST: np.generic = np.generic] = np.dtype[ST]
+type UFunc[
+    # The type of the (bound) `__call__` method.
+    Fn: CanCall = CanCall,
+    # The types of the `nin` and `nout` (readonly) attributes.
+    # Within numpy these match either `Literal[1]` or `Literal[2]`.
+    Nin: int = int,
+    Nout: int = int,
+    # The type of the `signature` (readonly) attribute;
+    # Must be `None` unless this is a generalized ufunc (gufunc), e.g.
+    # `np.matmul`.
+    Sig: str | None = str | None,
+    # The type of the `identity` (readonly) attribute (used in `.reduce`).
+    # Unless `Nin: Literal[2]`, `Nout: Literal[1]`, and `Sig: None`,
+    # this should always be `None`.
+    # Note that `complex` also includes `bool | int | float`.
+    Id: complex | bytes | str | None = float | None,
+] = ...
 ```
 
-Apart from the "CamelCase" name, the only difference with `np.dtype` is that
-the type parameter can be omitted, in which case it's equivalent to
-`np.dtype[np.generic]`, but shorter.
+> [!NOTE]
+> Unfortunately, the extra callable methods of `np.ufunc` (`at`, `reduce`,
+> `reduceat`, `accumulate`, and `outer`), are incorrectly annotated (as `None`
+> *attributes*, even though at runtime they're methods that raise a
+> `ValueError` when called).
+> This currently makes it impossible to properly type these in
+> `optype.numpy.UFunc`; doing so would make it incompatible with numpy's
+> ufuncs.
 
 #### `Any*Array` and `Any*DType`
 
