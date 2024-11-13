@@ -17,6 +17,12 @@
             src="https://img.shields.io/pypi/pyversions/optype?style=flat"
         />
     </a>
+    <a href="https://scientific-python.org/specs/spec-0000/">
+        <img
+            alt="optype - SPEC 0 — minimum supported dependencies"
+            src="https://img.shields.io/badge/SPEC-0-green?style=flat&labelColor=%23004811&color=%235CA038"
+        />
+    </a>
     <a href="https://github.com/jorenham/optype">
         <img
             alt="optype - license"
@@ -52,7 +58,7 @@
     <a href="https://github.com/astral-sh/ruff">
         <img
             alt="optype - code style: ruff"
-            src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/format.json"
+            src="https://img.shields.io/endpoint?style=flat&url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/format.json"
         />
     </a>
 </p>
