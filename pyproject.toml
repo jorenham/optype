@@ -48,7 +48,7 @@ common = [
 type = [
     {include-group = "common"},
     "basedmypy[faster-cache]>=2.7.0",
-    "basedpyright>=1.21.0",
+    "basedpyright>=1.21.1",
 ]
 test = [
     {include-group = "common"},

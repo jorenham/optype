@@ -43,14 +43,14 @@ faster-cache = [
 
 [[package]]
 name = "basedpyright"
-version = "1.21.0"
+version = "1.21.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "nodejs-wheel-binaries" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/94/91/d66f9ece468b3daa2f3d357304c816438be4595006928ea5639fb6b5139e/basedpyright-1.21.0.tar.gz", hash = "sha256:e3a9f5b89acc7f23d5a10d95ea6056b2247fcd15b8b248ad44c560c85c39d5e3", size = 20789741 }
+sdist = { url = "https://files.pythonhosted.org/packages/7a/57/ea77a6bad60ad7cb7b457957968a93f62730629316301b7d48fc439cb87f/basedpyright-1.21.1.tar.gz", hash = "sha256:c27e5921768db2141360889978678152a685fe1c6ff95652b2157240a5fd575c", size = 20840717 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/20/f7/97af385e43208d600f892da1b8c94f35d4e9165d5c774013bb202617dd7d/basedpyright-1.21.0-py3-none-any.whl", hash = "sha256:48902c476d6301c556df6eeae9acf1e34b176b14f8702ad5c770f4e6a747018a", size = 11148428 },
+    { url = "https://files.pythonhosted.org/packages/f6/94/06f6a4b34167e838b81e46e40d5acdb03cb56dd2c229319aff091f9f43cb/basedpyright-1.21.1-py3-none-any.whl", hash = "sha256:e4c30c84d5fe0f33ba2f7bd5b20019aa6f031ef4c5032705b4960dad52066667", size = 11173914 },
 ]
 
 [[package]]
@@ -361,7 +361,7 @@ common = [
 ]
 dev = [
     { name = "basedmypy", extras = ["faster-cache"], specifier = ">=2.7.0" },
-    { name = "basedpyright", specifier = ">=1.21.0" },
+    { name = "basedpyright", specifier = ">=1.21.1" },
     { name = "beartype", specifier = ">=0.19.0" },
     { name = "codespell", specifier = ">=2.3.0" },
     { name = "numpy", specifier = ">=1.24" },
@@ -385,13 +385,13 @@ test = [
 ]
 type = [
     { name = "basedmypy", extras = ["faster-cache"], specifier = ">=2.7.0" },
-    { name = "basedpyright", specifier = ">=1.21.0" },
+    { name = "basedpyright", specifier = ">=1.21.1" },
     { name = "numpy", specifier = ">=1.24" },
     { name = "typing-extensions", specifier = ">=4.10" },
 ]
 typetest = [
     { name = "basedmypy", extras = ["faster-cache"], specifier = ">=2.7.0" },
-    { name = "basedpyright", specifier = ">=1.21.0" },
+    { name = "basedpyright", specifier = ">=1.21.1" },
     { name = "beartype", specifier = ">=0.19.0" },
     { name = "numpy", specifier = ">=1.24" },
     { name = "pytest", specifier = ">=8.3.3" },
