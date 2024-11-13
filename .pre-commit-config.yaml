@@ -8,7 +8,7 @@ ci:
     - ruff-format
     - basedmypy
     - basedpyright
-    # - basedpyright-verifytypes
+    - basedpyright-verifytypes
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -79,10 +79,9 @@ repos:
         language: system
         types_or: [python, pyi]
 
-      # https://github.com/microsoft/pyright/issues/9446
-      # - id: basedpyright-verifytypes
-      #   name: basedpyright --verifytypes
-      #   entry: uv run basedpyright --ignoreexternal --verifytypes optype
-      #   language: system
-      #   always_run: true
-      #   pass_filenames: false
+      - id: basedpyright-verifytypes
+        name: basedpyright --verifytypes
+        entry: uv run basedpyright --ignoreexternal --verifytypes optype
+        language: system
+        always_run: true
+        pass_filenames: false
