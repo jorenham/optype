@@ -43,6 +43,10 @@ __all__ = (
 )
 
 
+def __dir__() -> tuple[str, ...]:
+    return __all__
+
+
 def is_iterable(obj: object, /) -> TypeIs[AnyIterable]:
     """
     Check whether the object can be iterated over, i.e. if it can be used in

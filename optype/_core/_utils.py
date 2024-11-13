@@ -1,17 +1,16 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING
-
-
-if TYPE_CHECKING:
-    from types import ModuleType
+from typing import TYPE_CHECKING, Protocol
 
 
 if sys.version_info >= (3, 13):
-    from typing import LiteralString, Protocol, TypeVar, is_protocol
+    from typing import LiteralString, TypeVar, is_protocol
 else:
-    from typing_extensions import LiteralString, Protocol, TypeVar, is_protocol
+    from typing_extensions import LiteralString, TypeVar, is_protocol
+
+if TYPE_CHECKING:
+    from types import ModuleType
 
 
 __all__ = "get_callables", "set_module"

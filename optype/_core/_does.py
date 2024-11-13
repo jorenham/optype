@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Literal, TypeAlias
+from typing import TYPE_CHECKING, Literal, Protocol, TypeAlias
 
 
 if sys.version_info >= (3, 13):
-    from typing import ParamSpec, Protocol, TypeVar, overload
+    from typing import ParamSpec, TypeVar, overload
 else:
-    from typing_extensions import ParamSpec, Protocol, TypeVar, overload
+    from typing_extensions import ParamSpec, TypeVar, overload
 
 if TYPE_CHECKING:
     from collections.abc import Callable

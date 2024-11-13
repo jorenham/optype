@@ -7,15 +7,15 @@ from __future__ import annotations
 
 import sys
 from collections.abc import Callable
-from typing import Concatenate, Literal, TypeAlias
-
-from ._core._can import CanIndex, CanIterSelf
+from typing import Concatenate, Literal, Protocol, TypeAlias
 
 
 if sys.version_info >= (3, 13):
-    from typing import Protocol, Self, TypeVar, override, runtime_checkable
+    from typing import Self, TypeVar, override, runtime_checkable
 else:
-    from typing_extensions import Protocol, Self, TypeVar, override, runtime_checkable
+    from typing_extensions import Self, TypeVar, override, runtime_checkable
+
+from ._core._can import CanIndex, CanIterSelf
 
 
 __all__ = (
@@ -26,6 +26,10 @@ __all__ = (
     "CanReduceEx",
     "CanSetstate",
 )
+
+
+def __dir__() -> tuple[str, ...]:
+    return __all__
 
 
 # 5 is the highest since 3.8, and will become the new default in 3.14

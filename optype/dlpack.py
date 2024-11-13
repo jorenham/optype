@@ -7,17 +7,21 @@ from __future__ import annotations
 
 import enum
 import sys
-from typing import Any, runtime_checkable
+from typing import Any, Protocol
 
 
 if sys.version_info >= (3, 13):
     from types import CapsuleType
-    from typing import Protocol, TypeVar
+    from typing import TypeVar, runtime_checkable
 else:
-    from typing_extensions import CapsuleType, Protocol, TypeVar
+    from typing_extensions import CapsuleType, TypeVar, runtime_checkable
 
 
-__all__ = ["CanDLPack", "CanDLPackDevice"]
+__all__ = "CanDLPack", "CanDLPackDevice"
+
+
+def __dir__() -> tuple[str, ...]:
+    return __all__
 
 
 class DLDeviceType(enum.IntEnum):
