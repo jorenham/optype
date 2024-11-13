@@ -8,15 +8,16 @@ from typing import TYPE_CHECKING, Any, Literal, cast, get_args as _get_args
 
 
 if sys.version_info >= (3, 13):
-    from typing import TypeAliasType, TypeIs, is_protocol, overload
+    from typing import TypeAliasType, TypeIs, _get_protocol_attrs, is_protocol, overload
 else:
-    from typing_extensions import TypeAliasType, is_protocol, overload
+    from typing_extensions import (  # type: ignore[attr-defined]
+        TypeAliasType,
+        TypeIs,
+        _get_protocol_attrs,  # noqa: PLC2701  # pyright: ignore[reportAttributeAccessIssue, reportUnknownVariableType]
+        is_protocol,
+        overload,
+    )
 
-    try:
-        from typing_extensions import TypeIs
-    except ImportError:
-        # fallback for `typing_extensions<4.10`
-        from typing import TypeGuard as TypeIs  # type: ignore[assignment]
 
 if TYPE_CHECKING:
     from collections.abc import Callable as CanCall
@@ -41,6 +42,10 @@ __all__ = (
     "is_runtime_protocol",
     "is_union_type",
 )
+
+
+def __dir__() -> tuple[str, ...]:
+    return __all__
 
 
 def is_iterable(obj: object, /) -> TypeIs[AnyIterable]:
@@ -275,6 +280,9 @@ def get_protocol_members(cls: type, /) -> frozenset[str]:
     # won't be as broken. I have little hope though...
     if hasattr(cls, "__protocol_attrs__"):
         members |= cast(set[str], cls.__protocol_attrs__)
+    else:
+        # python <3.11
+        members |= cast(set[str], _get_protocol_attrs(cls))
 
     # sometimes __protocol_attrs__ hallicunates some non-existing dunders.
     # the `getattr_static` avoids potential descriptor magic

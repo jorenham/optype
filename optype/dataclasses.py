@@ -6,7 +6,13 @@ https://docs.python.org/3/library/dataclasses.html
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
+
+
+if sys.version_info >= (3, 13):
+    from typing import TypeVar, runtime_checkable
+else:
+    from typing_extensions import TypeVar, runtime_checkable
 
 
 if TYPE_CHECKING:
@@ -14,13 +20,11 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
 
-if sys.version_info >= (3, 13):
-    from typing import Protocol, TypeVar, runtime_checkable
-else:
-    from typing_extensions import Protocol, TypeVar, runtime_checkable
-
-
 __all__ = ("HasDataclassFields",)
+
+
+def __dir__() -> tuple[str, ...]:
+    return __all__
 
 
 _FieldsT = TypeVar(

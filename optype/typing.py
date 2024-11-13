@@ -4,13 +4,18 @@ import enum
 import sys
 from typing import Literal, NoReturn, TypeAlias
 
-from typing_extensions import LiteralString
-
 
 if sys.version_info >= (3, 13):
-    from typing import Never, TypeVar, TypedDict, Unpack, final
+    from typing import LiteralString, Never, TypeVar, TypedDict, Unpack, final
 else:
-    from typing_extensions import Never, TypeVar, TypedDict, Unpack, final
+    from typing_extensions import (
+        LiteralString,
+        Never,
+        TypeVar,
+        TypedDict,
+        Unpack,
+        final,
+    )
 
 from ._core import _can as _c
 
@@ -31,6 +36,10 @@ __all__ = (
     "LiteralBool",
     "LiteralByte",
 )
+
+
+def __dir__() -> tuple[str, ...]:
+    return __all__
 
 
 # Anything that can *always* be converted to an `int` / `float` / `complex`

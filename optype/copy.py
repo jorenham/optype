@@ -6,12 +6,13 @@ https://docs.python.org/3/library/copy.html
 from __future__ import annotations
 
 import sys
+from typing import Protocol
 
 
 if sys.version_info >= (3, 13):
-    from typing import Protocol, Self, TypeVar, override, runtime_checkable
+    from typing import Self, TypeVar, override, runtime_checkable
 else:
-    from typing_extensions import Protocol, Self, TypeVar, override, runtime_checkable
+    from typing_extensions import Self, TypeVar, override, runtime_checkable
 
 
 __all__ = (
@@ -20,9 +21,14 @@ __all__ = (
     "CanReplace", "CanReplaceSelf",
 )  # fmt: skip
 
+
+def __dir__() -> tuple[str, ...]:
+    return __all__
+
+
 _T_co = TypeVar("_T_co", covariant=True)
-_V_contra = TypeVar("_V_contra", contravariant=True)
-_AnyV_contra = TypeVar("_AnyV_contra", contravariant=True, default=object)
+_VT_contra = TypeVar("_VT_contra", contravariant=True)
+_VT0_contra = TypeVar("_VT0_contra", contravariant=True, default=object)
 
 
 @runtime_checkable
@@ -56,21 +62,21 @@ class CanDeepcopySelf(CanDeepcopy["CanDeepcopySelf"], Protocol):
 
 
 @runtime_checkable
-class CanReplace(Protocol[_V_contra, _T_co]):
+class CanReplace(Protocol[_VT_contra, _T_co]):
     """
     Anything that can be used as `copy.replace(_: CanReplace[-V, +T]) -> T` (since
     Python 3.13+).
     """
 
-    def __replace__(self, /, **changes: _V_contra) -> _T_co: ...
+    def __replace__(self, /, **changes: _VT_contra) -> _T_co: ...
 
 
 @runtime_checkable
 class CanReplaceSelf(
-    CanReplace[_AnyV_contra, "CanReplaceSelf[_AnyV_contra]"],
-    Protocol[_AnyV_contra],
+    CanReplace[_VT0_contra, "CanReplaceSelf[_VT0_contra]"],
+    Protocol[_VT0_contra],
 ):
     """Runtime-checkable alias `CanReplaceSelf[-V = object] = CanReplace[V, Self]`."""
 
     @override
-    def __replace__(self, /, **changes: _AnyV_contra) -> Self: ...
+    def __replace__(self, /, **changes: _VT0_contra) -> Self: ...

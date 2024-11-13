@@ -2,13 +2,12 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Literal, TypeAlias
+from typing import TYPE_CHECKING, Literal, Protocol, TypeAlias
 
 
 if sys.version_info >= (3, 13):
     from typing import (
         ParamSpec,
-        Protocol,
         Self,
         TypeVar,
         overload,
@@ -18,7 +17,6 @@ if sys.version_info >= (3, 13):
 else:
     from typing_extensions import (
         ParamSpec,
-        Protocol,
         Self,
         TypeVar,
         overload,
@@ -447,8 +445,8 @@ _IndexT_contra = TypeVar("_IndexT_contra", bound=CanIndex | slice, contravariant
 @set_module("optype")
 @runtime_checkable
 class CanSequence(
-    CanLen[_IntT_co],
     CanGetitem[_IndexT_contra, _V_co],
+    CanLen[_IntT_co],
     Protocol[_IndexT_contra, _V_co, _IntT_co],
 ):
     """

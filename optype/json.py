@@ -15,7 +15,13 @@ if sys.version_info >= (3, 13):
 else:
     from typing_extensions import TypeVar
 
+
 __all__ = "AnyArray", "AnyObject", "AnyValue", "Array", "Object", "_Value"
+
+
+def __dir__() -> tuple[str, ...]:
+    return __all__
+
 
 _Primitive: TypeAlias = None | bool | int | float | str
 

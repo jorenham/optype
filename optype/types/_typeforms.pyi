@@ -3,19 +3,19 @@ import types as _types
 from collections.abc import Iterator
 from typing import (
     Generic,
-    ParamSpec,
     TypeAlias,
     _SpecialForm,  # pyright: ignore[reportPrivateUsage]
-    final,
     type_check_only,
 )
 
 from typing_extensions import (
+    ParamSpec,
     Self,
     TypeAliasType,
     TypeVar,
     TypeVarTuple,
     Unpack,
+    final,
     override,
 )
 
