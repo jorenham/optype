@@ -60,7 +60,7 @@ AnyIterable: TypeAlias = _c.CanIter[_c.CanNext[_ValueT]] | _c.CanGetitem[int, _V
 
 # The closest supertype of a `Literal`, i.e. the allowed types that can be
 # passed to `typing.Literal`.
-AnyLiteral: TypeAlias = bool | int | LiteralString | bytes | None | enum.Enum
+AnyLiteral: TypeAlias = bool | int | LiteralString | bytes | enum.Enum | None
 
 
 # Empty collection type aliases

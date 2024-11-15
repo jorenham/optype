@@ -23,7 +23,7 @@ def __dir__() -> tuple[str, ...]:
     return __all__
 
 
-_Primitive: TypeAlias = None | bool | int | float | str
+_Primitive: TypeAlias = bool | int | float | str | None
 
 # Return types of `json.load[s]`
 _Value: TypeAlias = _Primitive | dict[str, "_Value"] | list["_Value"]
