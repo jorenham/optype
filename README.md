@@ -231,6 +231,7 @@ The API of `optype` is flat; a single `import optype as opt` is all you need
     - [`Any*` type aliases](#any-type-aliases)
     - [`Empty*` type aliases](#empty-type-aliases)
     - [Literal types](#literal-types)
+    - [`Just*` types](#just-types) (experimental)
 - [`optype.dlpack`](#optypedlpack)
 - [`optype.numpy`](#optypenumpy)
     - [Array types](#array-types)
@@ -2101,6 +2102,38 @@ yield no elements.
         </td>
     </tr>
 </table>
+
+#### `Just` types
+
+> [!WARNING]
+> This is experimental, and is likely to change in the future.
+
+The `JustInt` type can be used to *only* accept instances of type `int`. Subtypes
+like `bool` will be rejected. This works with recent versions of mypy and pyright.
+
+```pyi
+import optype.typing as opt
+
+def only_int_pls(x: opt.JustInt, /) -> None: ...
+
+f(42)  # accepted
+f(True)  # rejected
+```
+
+The `Just` type is a generic variant of `JustInt`. At the moment of writing, pyright
+doesn't support this yet, but it will soon (after the bundled typeshed is updated).
+
+```pyi
+import optype.typing as opt
+
+class A: ...
+class B(A): ...
+
+def must_have_type_a(a: opt.Just[A]) -> None: ...
+
+must_have_type_a(A())  # accepted
+must_have_type_a(B())  # rejected (at least with mypy)
+```
 
 ### `optype.dlpack`
 
