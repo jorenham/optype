@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import enum
 import sys
-from typing import Literal, NoReturn, TypeAlias
+from typing import Literal, NoReturn, Protocol, TypeAlias
+
+from typing_extensions import Self, override
 
 
 if sys.version_info >= (3, 13):
@@ -33,6 +35,8 @@ __all__ = (
     "EmptySet",
     "EmptyString",
     "EmptyTuple",
+    "Just",
+    "JustInt",
     "LiteralBool",
     "LiteralByte",
 )
@@ -127,3 +131,47 @@ LiteralByte: TypeAlias = Literal[
     0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7,
     0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd, 0xfe, 0xff,
 ]  # fmt: skip
+
+
+# Experimental
+
+_T = TypeVar("_T")
+
+
+class Just(Protocol[_T]):
+    """
+    Experimental "invariant" wrapper type, so that `Invariant[int]` only accepts `int`
+    but not `bool` (or any other `int` subtypes).
+
+    NOTE: Requires https://github.com/python/typeshed/pull/13021 to work in pyright
+    NOTE: In mypy this doesn't work with the special-cased `float` and `complex` (bug)
+
+    WARNING: Experimental
+    """
+
+    @property  # type: ignore[explicit-override]  # seriously..?
+    @override
+    def __class__(self, /) -> type[_T]: ...  # pyright: ignore[reportIncompatibleMethodOverride]
+    @__class__.setter
+    @override
+    def __class__(self, t: type[_T], /) -> None: ...
+
+
+class JustInt(Just[int], Protocol):
+    """
+    Like `Just[int]`, but also works on pyright for those that use a typeshed version
+    before https://github.com/python/typeshed/pull/13021.
+
+    Note that the `__new__` trick below only works with pyright; the `__class__` in
+    `Just` is (also) required for this to work with mypy.
+
+    WARNING: Experimental
+
+    ```python
+    def f(x: JustInt) -> int:
+        assert type(x) is int
+        return (x,)
+    ```
+    """
+
+    def __new__(cls, x: str | bytes | bytearray, /, base: _c.CanIndex) -> Self: ...
