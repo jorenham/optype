@@ -4,7 +4,7 @@ import enum
 import sys
 from typing import Literal, NoReturn, Protocol, TypeAlias
 
-from typing_extensions import override
+from typing_extensions import Self, override
 
 
 if sys.version_info >= (3, 13):
@@ -35,7 +35,8 @@ __all__ = (
     "EmptySet",
     "EmptyString",
     "EmptyTuple",
-    "Invariant",
+    "Just",
+    "JustInt",
     "LiteralBool",
     "LiteralByte",
 )
@@ -137,13 +138,15 @@ LiteralByte: TypeAlias = Literal[
 _T = TypeVar("_T")
 
 
-class Invariant(Protocol[_T]):
+class Just(Protocol[_T]):
     """
     Experimental "invariant" wrapper type, so that `Invariant[int]` only accepts `int`
     but not `bool` (or any other `int` subtypes).
 
     NOTE: Requires https://github.com/python/typeshed/pull/13021 to work in pyright
     NOTE: In mypy this doesn't work with the special-cased `float` and `complex` (bug)
+
+    WARNING: Experimental
     """
 
     @property  # type: ignore[explicit-override]  # seriously..?
@@ -152,3 +155,23 @@ class Invariant(Protocol[_T]):
     @__class__.setter
     @override
     def __class__(self, t: type[_T], /) -> None: ...
+
+
+class JustInt(Just[int], Protocol):
+    """
+    Like `Just[int]`, but also works on pyright for those that use a typeshed version
+    before https://github.com/python/typeshed/pull/13021.
+
+    Note that the `__new__` trick below only works with pyright; the `__class__` in
+    `Just` is (also) required for this to work with mypy.
+
+    WARNING: Experimental
+
+    ```python
+    def f(x: JustInt) -> int:
+        assert type(x) is int
+        return (x,)
+    ```
+    """
+
+    def __new__(cls, x: str | bytes | bytearray, /, base: _c.CanIndex) -> Self: ...
