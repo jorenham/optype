@@ -15,8 +15,8 @@ else:
 
 
 __all__ = [
-    "ToArray0D",
     "ToArray1D",
+    "ToArray2D",
     "ToArrayND",
     "ToBool",
     "ToBool1D",
@@ -44,8 +44,8 @@ _To1D: TypeAlias = CanArrayND[ST] | Sequence[T | ST]
 _To2D: TypeAlias = CanArrayND[ST] | Sequence[_To1D[ST, T]]
 
 ToScalar: TypeAlias = complex | bytes | str | np.generic
-ToArray0D: TypeAlias = _To1D[np.generic, complex | bytes | str]
-ToArray1D: TypeAlias = _To2D[np.generic, complex | bytes | str]
+ToArray1D: TypeAlias = _To1D[np.generic, complex | bytes | str]
+ToArray2D: TypeAlias = _To2D[np.generic, complex | bytes | str]
 ToArrayND: TypeAlias = _To1D[np.generic, complex | bytes | str] | Sequence["ToArrayND"]
 
 ToBool: TypeAlias = bool | np.bool_
