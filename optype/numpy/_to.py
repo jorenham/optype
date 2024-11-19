@@ -1,12 +1,11 @@
-# mypy: disable-error-code="no-any-explicit"
-
-from __future__ import annotations
-
 from collections.abc import Sequence
-from typing import Any, Protocol, TypeAlias, TypeVar
+from typing import TypeAlias, TypeVar
 
 import numpy as np
 from typing_extensions import TypeAliasType
+
+from ._array import CanArrayND
+from ._scalar import floating, integer, number
 
 
 __all__ = [
@@ -32,27 +31,11 @@ __all__ = [
     "ToVector",
 ]
 
-_Integer: TypeAlias = np.integer[Any]
-_Floating: TypeAlias = np.floating[Any]
+T = TypeVar("T")
+ST = TypeVar("ST", bound=np.generic)
 
-
-_T = TypeVar("_T")
-_ST = TypeVar("_ST", bound=np.generic)
-_ST_co = TypeVar("_ST_co", bound=np.generic, covariant=True)
-
-
-class _CanNDArray(Protocol[_ST_co]):
-    """
-    Similar to `optype.numpy.CanArray`, but must be sized (i.e. excludes scalars),
-    and is parameterized by only the scalar type (instead of the shape and dtype).
-    """
-
-    def __len__(self, /) -> int: ...
-    def __array__(self, /) -> np.ndarray[tuple[int, ...], np.dtype[_ST_co]]: ...
-
-
-_To1D: TypeAlias = _CanNDArray[_ST] | Sequence[_T | _ST]
-_To2D: TypeAlias = _CanNDArray[_ST] | Sequence[_To1D[_ST, _T]]
+_To1D: TypeAlias = CanArrayND[ST] | Sequence[T | ST]
+_To2D: TypeAlias = CanArrayND[ST] | Sequence[_To1D[ST, T]]
 
 ToScalar: TypeAlias = complex | bytes | str | np.generic
 ToVector: TypeAlias = _To1D[np.generic, complex | bytes | str]
@@ -64,19 +47,19 @@ ToBool1D: TypeAlias = _To1D[np.bool_, bool]
 ToBool2D: TypeAlias = _To2D[np.bool_, bool]
 ToBoolND: TypeAlias = _To1D[np.bool_, bool] | Sequence["ToBoolND"]
 
-_i_co = TypeAliasType("_i_co", _Integer | np.bool_)
+_i_co = TypeAliasType("_i_co", integer | np.bool_)  # type: ignore[no-any-explicit]
 ToInt: TypeAlias = int | _i_co
 ToInt1D: TypeAlias = _To1D[_i_co, int]
 ToInt2D: TypeAlias = _To2D[_i_co, int]
 ToIntND: TypeAlias = _To1D[_i_co, int] | Sequence["ToIntND"]
 
-_f_co = TypeAliasType("_f_co", _Floating | _Integer | np.bool_)
+_f_co = TypeAliasType("_f_co", floating | integer | np.bool_)  # type: ignore[no-any-explicit]
 ToFloat: TypeAlias = float | _f_co
 ToFloat1D: TypeAlias = _To1D[_f_co, float]
 ToFloat2D: TypeAlias = _To2D[_f_co, float]
 ToFloatND: TypeAlias = _To1D[_f_co, float] | Sequence["ToFloatND"]
 
-_c_co = TypeAliasType("_c_co", np.number[Any] | np.bool_)
+_c_co = TypeAliasType("_c_co", number | np.bool_)  # type: ignore[no-any-explicit]
 ToComplex: TypeAlias = complex | _c_co
 ToComplex1D: TypeAlias = _To1D[_c_co, complex]
 ToComplex2D: TypeAlias = _To2D[_c_co, complex]
