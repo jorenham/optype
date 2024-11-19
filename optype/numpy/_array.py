@@ -36,6 +36,7 @@ __all__ = [
     "ArrayND",
     "CanArray",
     "CanArrayFinalize",
+    "CanArrayND",
     "CanArrayWrap",
     "HasArrayInterface",
     "HasArrayPriority",
@@ -47,6 +48,7 @@ _NDT_co = TypeVar("_NDT_co", bound=AtLeast0D, default=AtLeast0D, covariant=True)
 _DTT = TypeVar("_DTT", bound=DType, default=DType)
 _DTT_co = TypeVar("_DTT_co", bound=DType, default=DType, covariant=True)
 _SCT = TypeVar("_SCT", bound=np.generic, default=np.generic)
+_SCT_co = TypeVar("_SCT_co", bound=np.generic, default=np.generic, covariant=True)
 
 
 Array = TypeAliasType(
@@ -167,3 +169,15 @@ class HasArrayInterface(Protocol[_ArrayInterfaceT_co]):
 class HasArrayPriority(Protocol):
     @property
     def __array_priority__(self, /) -> float: ...
+
+
+@runtime_checkable
+@set_module("optype.numpy")
+class CanArrayND(Protocol[_SCT_co]):
+    """
+    Similar to `optype.numpy.CanArray`, but must be sized (i.e. excludes scalars),
+    and is parameterized by only the scalar type (instead of the shape and dtype).
+    """
+
+    def __len__(self, /) -> int: ...
+    def __array__(self, /) -> np.ndarray[tuple[int, ...], np.dtype[_SCT_co]]: ...

@@ -234,8 +234,8 @@ The API of `optype` is flat; a single `import optype as opt` is all you need
     - [`Just*` types](#just-types) (experimental)
 - [`optype.dlpack`](#optypedlpack)
 - [`optype.numpy`](#optypenumpy)
-    - [Array types](#array-types)
-    - [Shape types](#shape-types)
+    - [Shape-typing with `Array`](#shape-typing-with-array)
+    - [Array-likes](#array-likes)
     - [`DType`](#dtype)
     - [`Scalar`](#scalar)
     - [`UFunc`](#ufunc)
@@ -2232,7 +2232,7 @@ pip install "optype[numpy]"
 > [PEP 696][PEP696] type parameter syntax will be used, which is supported
 > since Python 3.13.
 
-#### Array types
+#### Shape-typing with `Array`
 
 Optype provides the generic `onp.Array` type alias for `np.ndarray`.
 It is similar to `npt.NDArray`, but includes two (optional) type parameters:
@@ -2294,49 +2294,35 @@ type ArrayND[
 </tr>
 </table>
 
+Additionally, there are the three `Array{1,2,3}D[ST: generic]` aliases, which are
+equivalent to `Array` with `tuple[int]`, `tuple[int, int]` and `tuple[int, int, int]` as
+shape-type, respectively.
+
 [^1]: Since `numpy>=2.2` the `NDArray` alias uses `tuple[int, ...]` as shape-type
     instead of `Any`.
 
-> [!NOTE]
-> Before NumPy 2.1, the shape type parameter (`ND`) of `np.ndarray` was defined as
-> invariant. So it's recommended to only use integer literals for shape types on
-> `numpy>=2.1`, and use a plain `int` tuples before that.
+> [!TIP]
+> Before NumPy 2.1, the shape type parameter of `ndarray` (i.e. the type of
+> `ndarray.shape`) was invariant. It is therefore recommended to not use `Literal`
+> within shape types on `numpy<2.1`. So with `numpy>=2.1` you can use
+> `tuple[Literal[3], Literal[3]]` without problem, but with `numpy<2.1` you should use
+> `tuple[int, int]` instead.
 >
 > See [numpy/numpy#25729](https://github.com/numpy/numpy/issues/25729) and
 > [numpy/numpy#26081](https://github.com/numpy/numpy/pull/26081) for details.
 
-<details>
-<summary>
-In fact, `onp.Array` is *almost* a  generalization of `npt.NDArray`.
-</summary>
-
-This is because `npt.NDArray` can be defined purely in terms of `onp.Array`
-(but not vice-versa).
-
-```python
-type NDArray[ST: np.generic] = onp.Array[Any, ST]
-```
-
-</details>
-
-With `onp.Array`, it becomes possible to type the shape of arrays,
-
-> [!NOTE]
-> A little bird told me that `onp.Array` might be backported to NumPy in the
-> near future.
-
-#### Shape types
+With `onp.Array`, it becomes possible to type the *shape* of arrays.
 
 A *shape* is nothing more than a tuple of (non-negative) integers, i.e.
-an instance of `tuple[int, ...]` such as `(42,)`, `(6, 6, 6)` or `()`.
+an instance of `tuple[int, ...]` such as `(42,)`, `(480, 720, 3)` or `()`.
 The length of a shape is often referred to as the *number of dimensions*
 or the *dimensionality* of the array or scalar.
 For arrays this is accessible through the `np.ndarray.ndim`, which is
 an alias for `len(np.ndarray.shape)`.
 
 > [!NOTE]
-> Before NumPy 2, the maximum number of dimensions was 32, but has since
-> been increased to 64.
+> Before NumPy 2, the maximum number of dimensions was `32`, but has since
+> been increased to `ndim <= 64`.
 
 To make typing the shape of an array easier, optype provides two families of
 shape type aliases: `AtLeast{N}D` and `AtMost{N}D`.
@@ -2346,12 +2332,6 @@ is limited to `0`, `1`, `2`, and `3`.
 Both of these families are generic, and their (optional) type parameters must
 be either `int` (default), or a literal (non-negative) integer, i.e. like
 `typing.Literal[N: int]`.
-
-> [!NOTE]
-> NumPy's functions with a `shape` parameter usually also accept a "base"
-> `int`, which is shorthand for `tuple[int]`.
-> But for the sake of consistency, `AtLeast{N}D` and `AtMost{N}D` are
-> limited to integer *tuples*.
 
 The names `AtLeast{N}D` and `AtMost{N}D` are pretty much as self-explanatory:
 
@@ -2544,6 +2524,99 @@ type AtMost3D[
 </tr>
 </table>
 
+#### Array-likes
+
+Similar to the `numpy._typing._ArrayLike{}_co` *coercible array-like* types,
+`optype.numpy` provides the `optype.numpy.To{}ND`. Unlike the ones in `numpy`, these
+don't accept "bare" scalar types (the `__len__` method is required).
+Additionally, there are the `To{}1D` and `To{}2D` for vector-likes and matrix-likes, and
+the `To{}` aliases for "bare" scalar types.
+
+<table>
+<tr>
+    <th align="center" colspan="2">scalar types</th>
+    <th align="center">scalar-like</th>
+    <th align="center">1-d array-like</th>
+    <th align="center">2-d array-like</th>
+    <th align="center">n-d array-like</th>
+</tr>
+<tr>
+    <th align="center"><code>builtins</code></th>
+    <th align="center"><code>numpy</code></th>
+    <th align="center" colspan="4"><code>optype.numpy</code></th>
+</tr>
+<tr><td colspan="6"></td></tr>
+<tr>
+    <td align="left"><code>bool</code></td>
+    <td align="left"><code>bool_</code></td>
+    <td align="left"><code>ToBool</code></td>
+    <td align="left"><code>ToBool1D</code></td>
+    <td align="left"><code>ToBool2D</code></td>
+    <td align="left"><code>ToBoolND</code></td>
+</tr>
+<tr><td colspan="6"></td></tr>
+<tr>
+    <td align="left"><code>int</code></td>
+    <td align="left">
+        <code>integer</code><br>
+        <code>| bool_</code>
+    </td>
+    <td align="left"><code>ToInt</code></td>
+    <td align="left"><code>ToInt1D</code></td>
+    <td align="left"><code>ToInt2D</code></td>
+    <td align="left"><code>ToIntND</code></td>
+</tr>
+<tr><td colspan="6"></td></tr>
+<tr>
+    <td align="left">
+        <code>float</code><br>
+        <code>| int</code>
+    </td>
+    <td align="left">
+        <code>floating</code><br>
+        <code>| integer</code><br>
+        <code>| bool_</code>
+    </td>
+    <td align="left"><code>ToFloat</code></td>
+    <td align="left"><code>ToFloat1D</code></td>
+    <td align="left"><code>ToFloat2D</code></td>
+    <td align="left"><code>ToFloatND</code></td>
+</tr>
+<tr><td colspan="6"></td></tr>
+<tr>
+    <td align="left">
+        <code>complex</code><br>
+        <code>| float</code><br>
+        <code>| int</code>
+    </td>
+    <td align="left">
+        <code>number</code><br>
+        <code>| bool_</code>
+    </td>
+    <td align="left"><code>ToComplex</code></td>
+    <td align="left"><code>ToComplex1D</code></td>
+    <td align="left"><code>ToComplex2D</code></td>
+    <td align="left"><code>ToComplexND</code></td>
+</tr>
+<tr><td colspan="6"></td></tr>
+<tr>
+    <td align="left">
+        <code>bytes</code><br>
+        <code>| str</code><br>
+        <code>| complex</code><br>
+        <code>| float</code><br>
+        <code>| int</code>
+    </td>
+    <td align="left"><code>generic</code></td>
+    <td align="left"><code>ToScalar</code></td>
+    <td align="left"><code>ToArray1D</code></td>
+    <td align="left"><code>ToArray2D</code></td>
+    <td align="left"><code>ToArrayND</code></td>
+</tr>
+</table>
+
+Source code: [`optype/numpy/_to.py`][CODE-NP-TO]
+
 #### `DType`
 
 In NumPy, a *dtype* (data type) object, is an instance of the
@@ -2644,10 +2717,12 @@ type UFunc[
 #### `Any*Array` and `Any*DType`
 
 The `Any{Scalar}Array` type aliases describe array-likes that are coercible to an
-`numpy.ndarray` with specific [dtype][REF-DTYPE].
+`numpy.ndarray` with specific [dtype][REF-DTYPES].
 
-Unlike `numpy.typing.ArrayLike`, these `optype.numpy` aliases *do not*
-include include scalar types. To illustrate:
+Unlike `numpy.typing.ArrayLike`, these `optype.numpy` aliases **don't**
+accept "bare" scalar types such as `float` and `np.float64`. However, arrays of
+"zero dimensions" like `onp.Array[tuple[()], np.float64]` will be accepted.
+This is in line with the behavior of [`numpy.isscalar`][REF-ISSCALAR] on `numpy >= 2`.
 
 ```py
 import numpy.typing as npt
@@ -2668,8 +2743,8 @@ sigma1_op: onp.AnyArray = [[0, 1], [1, 0]]  # accepted
 See the [docs][REF-SCT] for more info on the NumPy scalar type hierarchy.
 
 [REF-SCT]: https://numpy.org/doc/stable/reference/arrays.scalars.html
-[REF-DTYPE]: https://numpy.org/doc/stable/reference/arrays.dtypes.html
 [REF-DTYPES]: https://numpy.org/doc/stable/reference/arrays.dtypes.html
+[REF-ISSCALAR]: https://numpy.org/doc/stable/reference/generated/numpy.isscalar.html
 
 ##### Abstract types
 
@@ -3371,6 +3446,8 @@ dtype: DT
 [REF_ARRAY-INTER]: https://numpy.org/doc/stable/reference/arrays.interface.html#python-side
 [REF_ARRAY-PRIO]: https://numpy.org/doc/stable/reference/arrays.classes.html#numpy.class.__array_priority__
 [REF_DTYPE]: https://numpy.org/doc/stable/reference/arrays.dtypes.html#specifying-and-constructing-data-types
+
+[CODE-NP-TO]: https://github.com/jorenham/optype/blob/master/optype/numpy/_to.py
 
 [NEP13]: https://numpy.org/neps/nep-0013-ufunc-overrides.html
 [NEP18]: https://numpy.org/neps/nep-0018-array-function-protocol.html
