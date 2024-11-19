@@ -1,14 +1,23 @@
+import sys
 from collections.abc import Sequence
 from typing import TypeAlias, TypeVar
 
 import numpy as np
-from typing_extensions import TypeAliasType
 
 from ._array import CanArrayND
 from ._scalar import floating, integer, number
 
 
+if sys.version_info >= (3, 13):
+    from typing import TypeAliasType
+else:
+    from typing_extensions import TypeAliasType
+
+
 __all__ = [
+    "ToArray0D",
+    "ToArray1D",
+    "ToArrayND",
     "ToBool",
     "ToBool1D",
     "ToBool2D",
@@ -25,10 +34,7 @@ __all__ = [
     "ToInt1D",
     "ToInt2D",
     "ToIntND",
-    "ToMatrix",
     "ToScalar",
-    "ToTensor",
-    "ToVector",
 ]
 
 T = TypeVar("T")
@@ -38,9 +44,9 @@ _To1D: TypeAlias = CanArrayND[ST] | Sequence[T | ST]
 _To2D: TypeAlias = CanArrayND[ST] | Sequence[_To1D[ST, T]]
 
 ToScalar: TypeAlias = complex | bytes | str | np.generic
-ToVector: TypeAlias = _To1D[np.generic, complex | bytes | str]
-ToMatrix: TypeAlias = _To2D[np.generic, complex | bytes | str]
-ToTensor: TypeAlias = _To1D[np.generic, complex | bytes | str] | Sequence["ToTensor"]
+ToArray0D: TypeAlias = _To1D[np.generic, complex | bytes | str]
+ToArray1D: TypeAlias = _To2D[np.generic, complex | bytes | str]
+ToArrayND: TypeAlias = _To1D[np.generic, complex | bytes | str] | Sequence["ToArrayND"]
 
 ToBool: TypeAlias = bool | np.bool_
 ToBool1D: TypeAlias = _To1D[np.bool_, bool]
