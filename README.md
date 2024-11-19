@@ -235,10 +235,11 @@ The API of `optype` is flat; a single `import optype as opt` is all you need
 - [`optype.dlpack`](#optypedlpack)
 - [`optype.numpy`](#optypenumpy)
     - [Shape-typing with `Array`](#shape-typing-with-array)
-    - [`Any*Array` and `Any*DType`](#anyarray-and-anydtype)
+    - [Array-likes](#array-likes)
     - [`DType`](#dtype)
     - [`Scalar`](#scalar)
     - [`UFunc`](#ufunc)
+    - [`Any*Array` and `Any*DType`](#anyarray-and-anydtype)
     - [Low-level interfaces](#low-level-interfaces)
 
 <!-- TOC end -->
