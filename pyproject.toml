@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "optype"
 description = "Building blocks for precise & flexible type hints"
-version = "0.7.0"
+version = "0.7.1"
 authors = [{name = "Joren Hammudoglu", email = "jhammudoglu@gmail.com"}]
 license = {file = "LICENSE"}
 readme = "README.md"
@@ -81,7 +81,7 @@ exclude = [
     "/tests",
     ".editorconfig",
     ".gitignore",
-    ".mardownlint.yaml",
+    ".markdownlint.yaml",
     ".pre-commit-config.yaml",
     "CODE_OF_CONDUCT.md",
     "CONTRIBUTING.md",
