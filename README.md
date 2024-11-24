@@ -2529,29 +2529,27 @@ type AtMost3D[
 Similar to the `numpy._typing._ArrayLike{}_co` *coercible array-like* types,
 `optype.numpy` provides the `optype.numpy.To{}ND`. Unlike the ones in `numpy`, these
 don't accept "bare" scalar types (the `__len__` method is required).
-Additionally, there are the `To{}1D` and `To{}2D` for vector-likes and matrix-likes, and
-the `To{}` aliases for "bare" scalar types.
+Additionally, there are the `To{}1D`, `To{}2D`, and `To{}3D` for vector-likes,
+matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
 
 <table>
 <tr>
     <th align="center" colspan="2">scalar types</th>
     <th align="center">scalar-like</th>
-    <th align="center">1-d array-like</th>
-    <th align="center">2-d array-like</th>
-    <th align="center">n-d array-like</th>
+    <th align="center"><code>{1,2,3}</code>-d array-like</th>
+    <th align="center"><code>N</code>-d array-like</th>
 </tr>
 <tr>
     <th align="center"><code>builtins</code></th>
     <th align="center"><code>numpy</code></th>
     <th align="center" colspan="4"><code>optype.numpy</code></th>
 </tr>
-<tr><td colspan="6"></td></tr>
+<tr><td colspan="5"></td></tr>
 <tr>
     <td align="left"><code>bool</code></td>
     <td align="left"><code>bool_</code></td>
     <td align="left"><code>ToBool</code></td>
-    <td align="left"><code>ToBool1D</code></td>
-    <td align="left"><code>ToBool2D</code></td>
+    <td align="left"><code>ToBool{1,2,3}D</code></td>
     <td align="left"><code>ToBoolND</code></td>
 </tr>
 <tr><td colspan="6"></td></tr>
@@ -2562,8 +2560,7 @@ the `To{}` aliases for "bare" scalar types.
         <code>| bool_</code>
     </td>
     <td align="left"><code>ToInt</code></td>
-    <td align="left"><code>ToInt1D</code></td>
-    <td align="left"><code>ToInt2D</code></td>
+    <td align="left"><code>ToInt{1,2,3}D</code></td>
     <td align="left"><code>ToIntND</code></td>
 </tr>
 <tr><td colspan="6"></td></tr>
@@ -2578,8 +2575,7 @@ the `To{}` aliases for "bare" scalar types.
         <code>| bool_</code>
     </td>
     <td align="left"><code>ToFloat</code></td>
-    <td align="left"><code>ToFloat1D</code></td>
-    <td align="left"><code>ToFloat2D</code></td>
+    <td align="left"><code>ToFloat{1,2,3}D</code></td>
     <td align="left"><code>ToFloatND</code></td>
 </tr>
 <tr><td colspan="6"></td></tr>
@@ -2594,8 +2590,7 @@ the `To{}` aliases for "bare" scalar types.
         <code>| bool_</code>
     </td>
     <td align="left"><code>ToComplex</code></td>
-    <td align="left"><code>ToComplex1D</code></td>
-    <td align="left"><code>ToComplex2D</code></td>
+    <td align="left"><code>ToComplex{1,2,3}D</code></td>
     <td align="left"><code>ToComplexND</code></td>
 </tr>
 <tr><td colspan="6"></td></tr>
@@ -2609,8 +2604,7 @@ the `To{}` aliases for "bare" scalar types.
     </td>
     <td align="left"><code>generic</code></td>
     <td align="left"><code>ToScalar</code></td>
-    <td align="left"><code>ToArray1D</code></td>
-    <td align="left"><code>ToArray2D</code></td>
+    <td align="left"><code>ToArray{1,2,3}D</code></td>
     <td align="left"><code>ToArrayND</code></td>
 </tr>
 </table>
