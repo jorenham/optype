@@ -47,7 +47,7 @@ _VV_co = TypeVar("_VV_co", covariant=True, default=_V_co)
 
 _JustBoolT_co = TypeVar(
     "_JustBoolT_co",
-    Literal[False], Literal[True], Literal[False, True], bool,
+    Literal[False], Literal[True], Literal[False, True], bool,  # noqa: RUF038
     covariant=True,
     default=bool,
 )  # fmt: skip

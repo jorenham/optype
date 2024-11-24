@@ -18,8 +18,8 @@ GenericType = type(_C[None])
 AnnotatedAlias = type(Annotated[None, None])
 
 # typing._LiteralGenericAlias
-LiteralAlias = type(Literal[None])
+LiteralAlias = type(Literal[0])
 
 # typing._UnionGenericAlias
 # NOTE: this is not the same as `types.UnionType`!
-UnionAlias = type(Literal[None] | None)
+UnionAlias = type(str | None)
