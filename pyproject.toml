@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "optype"
 description = "Building blocks for precise & flexible type hints"
-version = "0.7.2"
+version = "0.7.3.dev0"
 authors = [{name = "Joren Hammudoglu", email = "jhammudoglu@gmail.com"}]
 license = {file = "LICENSE"}
 readme = "README.md"
