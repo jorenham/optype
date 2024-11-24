@@ -2540,9 +2540,12 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
     <th align="center"><code>N</code>-d array-like</th>
 </tr>
 <tr>
-    <th align="center"><code>builtins</code></th>
-    <th align="center"><code>numpy</code></th>
-    <th align="center" colspan="4"><code>optype.numpy</code></th>
+    <th align="left">
+        <code>builtins</code> /<br>
+        <a href="#optypetyping"><code>optype.typing</code></a>
+    </th>
+    <th align="left"><code>numpy</code></th>
+    <th align="left" colspan="4"><code>optype.numpy</code></th>
 </tr>
 <tr><td colspan="5"></td></tr>
 <tr>
@@ -2551,6 +2554,18 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
     <td align="left"><code>ToBool</code></td>
     <td align="left"><code>ToBool{1,2,3}D</code></td>
     <td align="left"><code>ToBoolND</code></td>
+</tr>
+<tr><td colspan="6"></td></tr>
+<tr>
+    <td align="left">
+        <a href="#just-types"><code>JustInt</code><a>
+    </td>
+    <td align="left">
+        <code>integer</code>
+    </td>
+    <td align="left"><code>ToJustInt</code></td>
+    <td align="left"><code>ToJustInt{1,2,3}D</code></td>
+    <td align="left"><code>ToJustIntND</code></td>
 </tr>
 <tr><td colspan="6"></td></tr>
 <tr>
