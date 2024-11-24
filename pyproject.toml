@@ -119,7 +119,7 @@ enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
     disallow_any_decorated = false  # blame pytest
     disable_error_code = ["no-any-explicit", "unreachable"]
 
-[tool.pyright]
+[tool.basedpyright]
 pythonVersion = "3.10"
 pythonPlatform = "All"
 include = ["optype", "examples", "tests"]

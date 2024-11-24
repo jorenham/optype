@@ -1,6 +1,6 @@
 # pyright: reportAny=false
 import sys
-from typing import Any, Final
+from typing import Final
 
 
 if sys.version_info >= (3, 13):
@@ -14,7 +14,9 @@ import pytest
 from optype.numpy import _any_dtype  # pyright: ignore[reportPrivateUsage]
 
 
-def _get_dtype_codes(dtype: np.dtype[Any]) -> tuple[frozenset[str], frozenset[str]]:
+def _get_dtype_codes(
+    dtype: np.dtype[np.generic],
+) -> tuple[frozenset[str], frozenset[str]]:
     try:
         strcode = dtype.str[1:]
         literal_name = getattr(_any_dtype, f"_Name_{strcode}")

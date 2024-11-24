@@ -4,7 +4,7 @@ from __future__ import annotations
 import inspect
 import sys
 from types import GenericAlias, UnionType
-from typing import TYPE_CHECKING, Any, Literal, cast, get_args as _get_args
+from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, get_args as _get_args
 
 
 if sys.version_info >= (3, 13):
@@ -80,7 +80,7 @@ def is_iterable(obj: object, /) -> TypeIs[AnyIterable]:
 
         # not all sequence-likes implement __len__, e.g. `ctypes.pointer`
         try:
-            obj[0]
+            obj[0]  # pyright: ignore[reportArgumentType]
         except (IndexError, StopIteration):
             pass
         except (KeyError, ValueError, TypeError):
@@ -89,6 +89,9 @@ def is_iterable(obj: object, /) -> TypeIs[AnyIterable]:
         return True
 
     return False
+
+
+_AnyClassMethod: TypeAlias = classmethod[Any, ..., object]  # pyright: ignore[reportExplicitAny]
 
 
 @overload
@@ -101,7 +104,7 @@ def is_final(fn: CanCall[..., object], /) -> bool: ...
 def is_final(prop: property, /) -> bool: ...
 @overload
 def is_final(
-    clsmethod: classmethod[Any, ..., object] | staticmethod[..., object],
+    clsmethod: _AnyClassMethod | staticmethod[..., object],
     /,
 ) -> bool: ...
 def is_final(
@@ -110,7 +113,7 @@ def is_final(
         | type
         | CanCall[..., object]
         | property
-        | classmethod[Any, ..., object]
+        | _AnyClassMethod
         | staticmethod[..., object]
     ),
     /,
