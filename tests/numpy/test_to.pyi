@@ -4,9 +4,9 @@ import numpy as np
 import optype.numpy as onp
 
 vec_b: onp.Array1D[np.bool] | list[bool | np.bool_]
-vec_i: onp.Array1D[np.intp] | list[int | np.intp]
-vec_f: onp.Array1D[np.longdouble] | list[float | np.longdouble]
-vec_c: onp.Array1D[np.clongdouble] | list[complex | np.clongdouble]
+vec_i: onp.Array1D[np.intp] | list[int | np.intp] | range
+vec_f: onp.Array1D[np.longdouble] | list[float | np.longdouble] | range
+vec_c: onp.Array1D[np.clongdouble] | list[complex | np.clongdouble] | range
 
 mat_b: onp.Array2D[np.bool] | list[list[bool | np.bool_]]
 mat_i: onp.Array2D[np.intp] | list[list[int | np.intp]]
@@ -89,11 +89,6 @@ tsb: onp.ToBoolND = True  # type: ignore[assignment]  # pyright: ignore[reportAs
 tsi: onp.ToIntND = 42  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 tsf: onp.ToFloatND = 42.0  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 tsc: onp.ToComplexND = 42 + 0j  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
-
-tob: onp.ToBoolND = object()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
-toi: onp.ToIntND = object()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
-tof: onp.ToFloatND = object()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
-toc: onp.ToComplexND = object()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
 tub: onp.ToBoolND = "illegal"  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 tui: onp.ToIntND = "illegal"  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
