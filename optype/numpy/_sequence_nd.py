@@ -1,6 +1,9 @@
 from typing import Any, Protocol, TypeVar
 
 
+__all__ = ["SequenceND"]
+
+
 T_co = TypeVar("T_co", covariant=True)
 
 
