@@ -22,4 +22,4 @@ LiteralAlias = type(Literal[0])
 
 # typing._UnionGenericAlias
 # NOTE: this is not the same as `types.UnionType`!
-UnionAlias = type(str | None)
+UnionAlias = type(Literal[0] | None)

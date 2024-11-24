@@ -91,7 +91,7 @@ def is_iterable(obj: object, /) -> TypeIs[AnyIterable]:
     return False
 
 
-_AnyClassMethod: TypeAlias = classmethod[Any, ..., object]  # pyright: ignore[reportExplicitAny]
+_AnyClassMethod: TypeAlias = "classmethod[Any, ..., object]"  # pyright: ignore[reportExplicitAny]
 
 
 @overload
