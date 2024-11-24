@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "optype"
 description = "Building blocks for precise & flexible type hints"
-version = "0.7.1"
+version = "0.7.2.dev0"
 authors = [{name = "Joren Hammudoglu", email = "jhammudoglu@gmail.com"}]
 license = {file = "LICENSE"}
 readme = "README.md"
@@ -38,7 +38,7 @@ Funding = "https://github.com/sponsors/jorenham"
 [dependency-groups]
 lint = [
     "codespell>=2.3.0",
-    "ruff>=0.7.4",
+    "ruff>=0.8.0",
     "sp-repo-review[cli]>=2024.8.19",
 ]
 common = [
@@ -48,7 +48,7 @@ common = [
 type = [
     {include-group = "common"},
     "basedmypy[faster-cache]>=2.7.0",
-    "basedpyright>=1.21.1",
+    "basedpyright>=1.22.0",
 ]
 test = [
     {include-group = "common"},
