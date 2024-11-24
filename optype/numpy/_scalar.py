@@ -105,7 +105,7 @@ class Scalar(Protocol[_PT_co, _NB_co]):
 
 
 # `NBitBase` invariant and doesn't actually do anything, so the default should be `Any`
-_N = TypeVar("_N", bound=npt.NBitBase, default=Any)
+_N = TypeVar("_N", bound=npt.NBitBase, default=Any)  # pyright: ignore[reportExplicitAny]
 
 generic = np.generic
 flexible = np.flexible

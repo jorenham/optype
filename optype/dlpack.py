@@ -92,7 +92,7 @@ class CanDLPack(Protocol[_TypeT_co, _DeviceT_co]):  # type: ignore[misc] # pyrig
         dl_device: tuple[_TypeT_co, _DeviceT_co] | None = None,
         # NOTE: This should be `bool | None`, but because of an incorrect annotation in
         # `numpy.ndarray.__dlpack__`, this is not possible at the moment.
-        copy: Any | None = None,
+        copy: Any | None = None,  # pyright: ignore[reportExplicitAny]
     ) -> CapsuleType: ...
 
 
