@@ -9,9 +9,6 @@ import numpy as np
 import optype.numpy._compat as _x
 from optype._core._utils import set_module
 
-from ._dtype import DType
-from ._shape import AtLeast0D
-
 
 if sys.version_info >= (3, 13):
     from typing import Protocol, Self, TypeAliasType, TypeVar, runtime_checkable
@@ -33,8 +30,12 @@ __all__ = [
     "Array1D",
     "Array1D",
     "Array2D",
+    "Array3D",
     "ArrayND",
     "CanArray",
+    "CanArray1D",
+    "CanArray2D",
+    "CanArray3D",
     "CanArrayFinalize",
     "CanArrayND",
     "CanArrayWrap",
@@ -43,10 +44,20 @@ __all__ = [
 ]
 
 
-_NDT = TypeVar("_NDT", bound=AtLeast0D, default=AtLeast0D)
-_NDT_co = TypeVar("_NDT_co", bound=AtLeast0D, default=AtLeast0D, covariant=True)
-_DTT = TypeVar("_DTT", bound=DType, default=DType)
-_DTT_co = TypeVar("_DTT_co", bound=DType, default=DType, covariant=True)
+_NDT = TypeVar("_NDT", bound=tuple[int, ...], default=tuple[int, ...])
+_NDT_co = TypeVar(
+    "_NDT_co",
+    bound=tuple[int, ...],
+    default=tuple[int, ...],
+    covariant=True,
+)
+_DTT = TypeVar("_DTT", bound=np.dtype[np.generic], default=np.dtype[np.generic])
+_DTT_co = TypeVar(
+    "_DTT_co",
+    bound=np.dtype[np.generic],
+    default=np.dtype[np.generic],
+    covariant=True,
+)
 _SCT = TypeVar("_SCT", bound=np.generic, default=np.generic)
 _SCT_co = TypeVar("_SCT_co", bound=np.generic, default=np.generic, covariant=True)
 
@@ -115,6 +126,45 @@ else:
         def __array__(self, /) -> np.ndarray[_NDT, _DTT_co]: ...
 
 
+@runtime_checkable
+@set_module("optype.numpy")
+class CanArrayND(Protocol[_SCT_co]):
+    """
+    Similar to `optype.numpy.CanArray`, but must be sized (i.e. excludes scalars),
+    and is parameterized by only the scalar type (instead of the shape and dtype).
+    """
+
+    def __len__(self, /) -> int: ...
+    def __array__(self, /) -> np.ndarray[tuple[int, ...], np.dtype[_SCT_co]]: ...
+
+
+@runtime_checkable
+@set_module("optype.numpy")
+class CanArray1D(Protocol[_SCT_co]):
+    """The 1-d variant of `optype.numpy.CanArrayND`."""
+
+    def __len__(self, /) -> int: ...
+    def __array__(self, /) -> np.ndarray[tuple[int], np.dtype[_SCT_co]]: ...
+
+
+@runtime_checkable
+@set_module("optype.numpy")
+class CanArray2D(Protocol[_SCT_co]):
+    """The 2-d variant of `optype.numpy.CanArrayND`."""
+
+    def __len__(self, /) -> int: ...
+    def __array__(self, /) -> np.ndarray[tuple[int, int], np.dtype[_SCT_co]]: ...
+
+
+@runtime_checkable
+@set_module("optype.numpy")
+class CanArray3D(Protocol[_SCT_co]):
+    """The 2-d variant of `optype.numpy.CanArrayND`."""
+
+    def __len__(self, /) -> int: ...
+    def __array__(self, /) -> np.ndarray[tuple[int, int, int], np.dtype[_SCT_co]]: ...
+
+
 # this is almost always a `ndarray`, but setting a `bound` might break in some
 # edge cases
 _T_contra = TypeVar("_T_contra", contravariant=True, default=object)
@@ -169,15 +219,3 @@ class HasArrayInterface(Protocol[_ArrayInterfaceT_co]):
 class HasArrayPriority(Protocol):
     @property
     def __array_priority__(self, /) -> float: ...
-
-
-@runtime_checkable
-@set_module("optype.numpy")
-class CanArrayND(Protocol[_SCT_co]):
-    """
-    Similar to `optype.numpy.CanArray`, but must be sized (i.e. excludes scalars),
-    and is parameterized by only the scalar type (instead of the shape and dtype).
-    """
-
-    def __len__(self, /) -> int: ...
-    def __array__(self, /) -> np.ndarray[tuple[int, ...], np.dtype[_SCT_co]]: ...
