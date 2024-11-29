@@ -173,7 +173,7 @@ def _get_alias(tp: type | object, /) -> type | object:
     for _ in range(sys.getrecursionlimit()):
         if isinstance(tp, TypeAliasType):
             seen.add(tp)
-            tp = cast(type | object, tp.__value__)
+            tp = cast("type | object", tp.__value__)
             if tp in seen:
                 raise RecursionError("type alias of itself")
             continue
@@ -282,10 +282,10 @@ def get_protocol_members(cls: type, /) -> frozenset[str]:
     # Maybe the `typing.get_protocol_member`s` that's coming in 3.13 will
     # won't be as broken. I have little hope though...
     if hasattr(cls, "__protocol_attrs__"):
-        members |= cast(set[str], cls.__protocol_attrs__)
+        members |= cast("set[str]", cls.__protocol_attrs__)
     else:
         # python <3.11
-        members |= cast(set[str], _get_protocol_attrs(cls))
+        members |= cast("set[str]", _get_protocol_attrs(cls))
 
     # sometimes __protocol_attrs__ hallicunates some non-existing dunders.
     # the `getattr_static` avoids potential descriptor magic
@@ -310,11 +310,11 @@ def get_protocols(module: ModuleType, /, private: bool = False) -> frozenset[typ
     if private:
         members = dir(module)
     elif hasattr(module, "__all__"):
-        members = cast(list[str] | tuple[str, ...], module.__all__)
+        members = cast("list[str] | tuple[str, ...]", module.__all__)
     else:
         members = [k for k in dir(module) if not k.startswith("_")]
 
     return frozenset({
         cls for name in members
-        if is_protocol(cls := cast(type, getattr(module, name)))
+        if is_protocol(cls := cast("type", getattr(module, name)))
     })  # fmt: skip

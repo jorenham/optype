@@ -272,7 +272,7 @@ def test_anyufunc_custom_np() -> None:
     assert fn.nout == 1
     assert fn.nargs == 3
     assert fn.signature is None
-    assert cast(None, fn.identity) is None
+    assert cast("None", fn.identity) is None
 
     fn_any: UFunc = fn
 

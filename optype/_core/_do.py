@@ -8,54 +8,53 @@ import operator as _o
 import sys
 from typing import TYPE_CHECKING, Final, Literal, ParamSpec, TypeVar, cast, overload
 
-from . import _does as _d
 from ._utils import set_module
 
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from . import _can as _c
+    from . import _can as _c, _does as _d
 
 
 # type conversion
-do_bool: Final = cast(_d.DoesBool, bool)
-do_int: Final = cast(_d.DoesInt, int)
-do_float: Final = cast(_d.DoesFloat, float)
-do_complex: Final = cast(_d.DoesComplex, complex)
-do_bytes: Final = cast(_d.DoesBytes, bytes)
-do_str: Final = cast(_d.DoesStr, str)
+do_bool: Final = cast("_d.DoesBool", bool)
+do_int: Final = cast("_d.DoesInt", int)
+do_float: Final = cast("_d.DoesFloat", float)
+do_complex: Final = cast("_d.DoesComplex", complex)
+do_bytes: Final = cast("_d.DoesBytes", bytes)
+do_str: Final = cast("_d.DoesStr", str)
 
 # formatting
-do_repr: Final = cast(_d.DoesRepr, repr)
-do_format: Final = cast(_d.DoesFormat, format)
+do_repr: Final = cast("_d.DoesRepr", repr)
+do_format: Final = cast("_d.DoesFormat", format)
 
 # iteration
-do_next: Final = cast(_d.DoesNext, next)
-do_iter: Final = cast(_d.DoesIter, iter)
+do_next: Final = cast("_d.DoesNext", next)
+do_iter: Final = cast("_d.DoesIter", iter)
 
 # async iteration
-do_anext: Final = cast(_d.DoesANext, anext)
-do_aiter: Final = cast(_d.DoesAIter, aiter)
+do_anext: Final = cast("_d.DoesANext", anext)
+do_aiter: Final = cast("_d.DoesAIter", aiter)
 
 # rich comparison
-do_lt: Final = cast(_d.DoesLt, _o.lt)
-do_le: Final = cast(_d.DoesLe, _o.le)
-do_eq: Final = cast(_d.DoesEq, _o.eq)
-do_ne: Final = cast(_d.DoesNe, _o.ne)
-do_gt: Final = cast(_d.DoesGt, _o.gt)
-do_ge: Final = cast(_d.DoesGe, _o.ge)
+do_lt: Final = cast("_d.DoesLt", _o.lt)
+do_le: Final = cast("_d.DoesLe", _o.le)
+do_eq: Final = cast("_d.DoesEq", _o.eq)
+do_ne: Final = cast("_d.DoesNe", _o.ne)
+do_gt: Final = cast("_d.DoesGt", _o.gt)
+do_ge: Final = cast("_d.DoesGe", _o.ge)
 
 # attributes
-do_getattr: Final = cast(_d.DoesGetattr, getattr)
-do_setattr: Final = cast(_d.DoesSetattr, setattr)
-do_delattr: Final = cast(_d.DoesDelattr, delattr)
-do_dir: Final = cast(_d.DoesDir, dir)
+do_getattr: Final = cast("_d.DoesGetattr", getattr)
+do_setattr: Final = cast("_d.DoesSetattr", setattr)
+do_delattr: Final = cast("_d.DoesDelattr", delattr)
+do_dir: Final = cast("_d.DoesDir", dir)
 
 # callables
 
 if sys.version_info >= (3, 11):
-    do_call: Final = cast(_d.DoesCall, _o.call)
+    do_call: Final = cast("_d.DoesCall", _o.call)
 else:
     _Pss = ParamSpec("_Pss")
     _R = TypeVar("_R")
@@ -66,8 +65,8 @@ else:
 
 # containers and sequences
 
-do_len: Final = cast(_d.DoesLen, len)
-do_length_hint: Final = cast(_d.DoesLengthHint, _o.length_hint)
+do_len: Final = cast("_d.DoesLen", len)
+do_length_hint: Final = cast("_d.DoesLengthHint", _o.length_hint)
 
 
 # `operator.getitem` isn't used, because it has an (unreasonably loose, and
@@ -120,29 +119,29 @@ _BoolT = TypeVar("_BoolT", Literal[False], Literal[True], bool)
 @set_module("optype")
 def do_contains(obj: _c.CanContains[_KT, _BoolT], key: _KT, /) -> _BoolT:
     """Same as `key in obj`."""
-    return cast(_BoolT, key in obj)  # type: ignore[redundant-cast]
+    return cast("_BoolT", key in obj)  # type: ignore[redundant-cast]
 
 
 # `builtins.reversed` is annotated incorrectly within typeshed:
 # https://github.com/python/typeshed/issues/11645
-do_reversed: Final = cast(_d.DoesReversed, reversed)
+do_reversed: Final = cast("_d.DoesReversed", reversed)
 
 
 # infix ops
-do_add: Final = cast(_d.DoesAdd, _o.add)
-do_sub: Final = cast(_d.DoesSub, _o.sub)
-do_mul: Final = cast(_d.DoesMul, _o.mul)
-do_matmul: Final = cast(_d.DoesMatmul, _o.matmul)
-do_truediv: Final = cast(_d.DoesTruediv, _o.truediv)
-do_floordiv: Final = cast(_d.DoesFloordiv, _o.floordiv)
-do_mod: Final = cast(_d.DoesMod, _o.mod)
-do_divmod: Final = cast(_d.DoesDivmod, divmod)
-do_pow: Final = cast(_d.DoesPow, pow)
-do_lshift: Final = cast(_d.DoesLshift, _o.lshift)
-do_rshift: Final = cast(_d.DoesRshift, _o.rshift)
-do_and: Final = cast(_d.DoesAnd, _o.and_)
-do_xor: Final = cast(_d.DoesXor, _o.xor)
-do_or: Final = cast(_d.DoesOr, _o.or_)
+do_add: Final = cast("_d.DoesAdd", _o.add)
+do_sub: Final = cast("_d.DoesSub", _o.sub)
+do_mul: Final = cast("_d.DoesMul", _o.mul)
+do_matmul: Final = cast("_d.DoesMatmul", _o.matmul)
+do_truediv: Final = cast("_d.DoesTruediv", _o.truediv)
+do_floordiv: Final = cast("_d.DoesFloordiv", _o.floordiv)
+do_mod: Final = cast("_d.DoesMod", _o.mod)
+do_divmod: Final = cast("_d.DoesDivmod", divmod)
+do_pow: Final = cast("_d.DoesPow", pow)
+do_lshift: Final = cast("_d.DoesLshift", _o.lshift)
+do_rshift: Final = cast("_d.DoesRshift", _o.rshift)
+do_and: Final = cast("_d.DoesAnd", _o.and_)
+do_xor: Final = cast("_d.DoesXor", _o.xor)
+do_or: Final = cast("_d.DoesOr", _o.or_)
 
 
 # reflected ops
@@ -239,36 +238,36 @@ def do_ror(a: _c.CanROr[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
 
 
 # augmented ops
-do_iadd: Final = cast(_d.DoesIAdd, _o.iadd)
-do_isub: Final = cast(_d.DoesISub, _o.isub)
-do_imul: Final = cast(_d.DoesIMul, _o.imul)
-do_imatmul: Final = cast(_d.DoesIMatmul, _o.imatmul)
-do_itruediv: Final = cast(_d.DoesITruediv, _o.itruediv)
-do_ifloordiv: Final = cast(_d.DoesIFloordiv, _o.ifloordiv)
-do_imod: Final = cast(_d.DoesIMod, _o.imod)
-do_ipow: Final = cast(_d.DoesIPow, _o.ipow)
-do_ilshift: Final = cast(_d.DoesILshift, _o.ilshift)
-do_irshift: Final = cast(_d.DoesIRshift, _o.irshift)
-do_iand: Final = cast(_d.DoesIAnd, _o.iand)
-do_ixor: Final = cast(_d.DoesIXor, _o.ixor)
-do_ior: Final = cast(_d.DoesIOr, _o.ior)
+do_iadd: Final = cast("_d.DoesIAdd", _o.iadd)
+do_isub: Final = cast("_d.DoesISub", _o.isub)
+do_imul: Final = cast("_d.DoesIMul", _o.imul)
+do_imatmul: Final = cast("_d.DoesIMatmul", _o.imatmul)
+do_itruediv: Final = cast("_d.DoesITruediv", _o.itruediv)
+do_ifloordiv: Final = cast("_d.DoesIFloordiv", _o.ifloordiv)
+do_imod: Final = cast("_d.DoesIMod", _o.imod)
+do_ipow: Final = cast("_d.DoesIPow", _o.ipow)
+do_ilshift: Final = cast("_d.DoesILshift", _o.ilshift)
+do_irshift: Final = cast("_d.DoesIRshift", _o.irshift)
+do_iand: Final = cast("_d.DoesIAnd", _o.iand)
+do_ixor: Final = cast("_d.DoesIXor", _o.ixor)
+do_ior: Final = cast("_d.DoesIOr", _o.ior)
 
 # unary ops
-do_neg: Final = cast(_d.DoesNeg, _o.neg)
-do_pos: Final = cast(_d.DoesPos, _o.pos)
-do_abs: Final = cast(_d.DoesAbs, abs)
-do_invert: Final = cast(_d.DoesInvert, _o.invert)
+do_neg: Final = cast("_d.DoesNeg", _o.neg)
+do_pos: Final = cast("_d.DoesPos", _o.pos)
+do_abs: Final = cast("_d.DoesAbs", abs)
+do_invert: Final = cast("_d.DoesInvert", _o.invert)
 
 # fingerprinting
-do_hash: Final = cast(_d.DoesHash, hash)
-do_index: Final = cast(_d.DoesIndex, _o.index)
+do_hash: Final = cast("_d.DoesHash", hash)
+do_index: Final = cast("_d.DoesIndex", _o.index)
 
 # rounding
 # (the typeshed stubs for `round` are unnecessarily strict)
-do_round: Final = cast(_d.DoesRound, round)
-do_trunc: Final = cast(_d.DoesTrunc, math.trunc)
-do_floor: Final = cast(_d.DoesFloor, math.floor)
-do_ceil: Final = cast(_d.DoesCeil, math.ceil)
+do_round: Final = cast("_d.DoesRound", round)
+do_trunc: Final = cast("_d.DoesTrunc", math.trunc)
+do_floor: Final = cast("_d.DoesFloor", math.floor)
+do_ceil: Final = cast("_d.DoesCeil", math.ceil)
 
 
 # type-check the custom ops

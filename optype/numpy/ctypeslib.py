@@ -115,12 +115,12 @@ def __dir__() -> list[str]:
     return __all__
 
 
-SIZE_BYTE: Final = cast(Literal[1], ct.sizeof(ct.c_byte))
-SIZE_SHORT: Final = cast(Literal[2], ct.sizeof(ct.c_short))
-SIZE_INTC: Final = cast(Literal[4], ct.sizeof(ct.c_int))
-SIZE_INTP: Final = cast(Literal[4, 8], ct.sizeof(ct.c_ssize_t))
-SIZE_LONG: Final = cast(Literal[4, 8], ct.sizeof(ct.c_long))
-SIZE_LONGLONG: Final = cast(Literal[8], ct.sizeof(ct.c_longlong))
+SIZE_BYTE: Final = cast("Literal[1]", ct.sizeof(ct.c_byte))
+SIZE_SHORT: Final = cast("Literal[2]", ct.sizeof(ct.c_short))
+SIZE_INTC: Final = cast("Literal[4]", ct.sizeof(ct.c_int))
+SIZE_INTP: Final = cast("Literal[4, 8]", ct.sizeof(ct.c_ssize_t))
+SIZE_LONG: Final = cast("Literal[4, 8]", ct.sizeof(ct.c_long))
+SIZE_LONGLONG: Final = cast("Literal[8]", ct.sizeof(ct.c_longlong))
 
 assert SIZE_BYTE == 1, f"`sizeof(byte) = {SIZE_BYTE}`, expected 1"
 assert SIZE_SHORT == 2, f"`sizeof(short) = {SIZE_SHORT}`, expected 2"
@@ -128,9 +128,9 @@ assert SIZE_INTC == 4, f"`sizeof(int) = {SIZE_INTC}`, expected 4"
 assert SIZE_INTP in {4, 8}, f"`sizeof(ssize_t) = {SIZE_INTP}`, expected 4 or 8"
 assert SIZE_LONG in {4, 8}, f"`sizeof(long int) = {SIZE_LONG}`, expected 4 or 8"
 
-SIZE_SINGLE: Final = cast(Literal[4], ct.sizeof(ct.c_float))
-SIZE_DOUBLE: Final = cast(Literal[8], ct.sizeof(ct.c_double))
-SIZE_LONGDOUBLE: Final = cast(Literal[8, 12, 16], ct.sizeof(ct.c_longdouble))
+SIZE_SINGLE: Final = cast("Literal[4]", ct.sizeof(ct.c_float))
+SIZE_DOUBLE: Final = cast("Literal[8]", ct.sizeof(ct.c_double))
+SIZE_LONGDOUBLE: Final = cast("Literal[8, 12, 16]", ct.sizeof(ct.c_longdouble))
 
 assert SIZE_SINGLE == 4, f"`sizeof(float) = {SIZE_SINGLE}`, expected 4"
 assert SIZE_DOUBLE == 8, f"`sizeof(double) = {SIZE_DOUBLE}`, expected 8"
