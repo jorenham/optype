@@ -38,7 +38,7 @@ Funding = "https://github.com/sponsors/jorenham"
 [dependency-groups]
 lint = [
     "codespell>=2.3.0",
-    "ruff>=0.8.0",
+    "ruff>=0.8.1",
     "sp-repo-review[cli]>=2024.8.19",
 ]
 common = [
