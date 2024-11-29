@@ -7,7 +7,7 @@ name = "optype"
 description = "Building blocks for precise & flexible type hints"
 version = "0.7.3.dev0"
 authors = [{name = "Joren Hammudoglu", email = "jhammudoglu@gmail.com"}]
-license = {file = "LICENSE"}
+license = "BSD-3-Clause"
 readme = "README.md"
 keywords = ["type", "typing", "type hints", "numpy"]
 classifiers = [
