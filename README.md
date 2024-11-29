@@ -11,6 +11,12 @@
             src="https://img.shields.io/pypi/v/optype?style=flat"
         />
     </a>
+    <a href="https://anaconda.org/conda-forge/optype">
+        <img
+            alt="optype - conda-forge"
+            src="https://anaconda.org/conda-forge/optype/badges/version.svg"
+        />
+    </a>
     <a href="https://github.com/jorenham/optype">
         <img
             alt="optype - Python Versions"
