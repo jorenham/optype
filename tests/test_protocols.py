@@ -136,7 +136,7 @@ def test_name_matches_dunder(cls: type) -> None:
         overridden = {
             member
             for member in members
-            if callable(f := cast(object, getattr(cls, member)))
+            if callable(f := cast("object", getattr(cls, member)))
             and getattr(f, "__override__", False)
         }
         own_members = members - overridden
