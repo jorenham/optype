@@ -11,6 +11,12 @@
             src="https://img.shields.io/pypi/v/optype?style=flat"
         />
     </a>
+    <a href="https://anaconda.org/conda-forge/optype">
+        <img
+            alt="optype - conda-forge"
+            src="https://anaconda.org/conda-forge/optype/badges/version.svg"
+        />
+    </a>
     <a href="https://github.com/jorenham/optype">
         <img
             alt="optype - Python Versions"
@@ -67,7 +73,9 @@
 
 ## Installation
 
-Optype is available as [`optype`][OPTYPE] on PyPI:
+### PyPI
+
+Optype is available as [`optype`][PYPI] on PyPI:
 
 ```shell
 pip install optype
@@ -84,7 +92,16 @@ pip install "optype[numpy]"
 
 See the [`optype.numpy` docs](#optypenumpy) for more info.
 
-[OPTYPE]: https://pypi.org/project/optype/
+### Conda
+
+Optype can also be installed as with `conda` from the [`conda-forge`][CONDA] channel:
+
+```shell
+conda install conda-forge::optype
+```
+
+[PYPI]: https://pypi.org/project/optype/
+[CONDA]: https://anaconda.org/conda-forge/optype
 [NUMPY]: https://github.com/numpy/numpy
 
 ## Example
