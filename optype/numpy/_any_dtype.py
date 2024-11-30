@@ -7,7 +7,10 @@ The names are analogous to those in `numpy.dtypes`.
 from __future__ import annotations
 
 import sys
-from typing import Literal as L, TypeAlias as Alias  # noqa: N817
+from typing import (
+    Literal as L,  # noqa: N817
+    TypeAlias as Alias,
+)
 
 import numpy as np
 
@@ -388,7 +391,7 @@ if _x.NP2:
 
     _Code_uifc: Alias = L[_Code_ui, _Code_fc]
     # NOTE: this doesn't include `int` or `float` or `complex`, since that
-    # would autoamtically include `bool`.
+    # would automatically include `bool`.
     AnyNumberDType: Alias = _AnyDType[_sc.number] | _Code_uifc
 
     # NOTE: `np.dtypes.StringDType` didn't exist in the stubs prior to 2.1 (so

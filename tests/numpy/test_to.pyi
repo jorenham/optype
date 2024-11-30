@@ -77,7 +77,7 @@ mub: onp.ToBool2D = "illegal"  # type: ignore[assignment]  # pyright: ignore[rep
 muj: onp.ToJustInt2D = "illegal"  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 mui: onp.ToInt2D = "illegal"  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 muf: onp.ToFloat2D = "illegal"  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
-muc: onp.ToComplex2D = "illegal"  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+muz: onp.ToComplex2D = "illegal"  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
 # tensors
 tb: onp.ToBoolND = arr_b
