@@ -1,24 +1,30 @@
 import string
-from typing import Final
+import sys
+from typing import Final, Protocol, TypeVar
+
+
+if sys.version_info >= (3, 13):
+    from typing import LiteralString
+else:
+    from typing_extensions import LiteralString
 
 import pytest
-from typing_extensions import LiteralString, Protocol, TypeVar
 
-import optype as o
+import optype as op
 
 
 @pytest.mark.parametrize(
     ("opt_str", "std_str"),
     [
-        (o.string.DIGITS_OCT, string.octdigits),
-        (o.string.DIGITS, string.digits),
-        (o.string.DIGITS_HEX, string.hexdigits),
-        (o.string.LETTERS_LOWER, string.ascii_lowercase),
-        (o.string.LETTERS_UPPER, string.ascii_uppercase),
-        (o.string.LETTERS, string.ascii_letters),
-        (o.string.PUNCTUATION, string.punctuation),
-        (o.string.WHITESPACE, string.whitespace),
-        (o.string.PRINTABLE, string.printable),
+        (op.string.DIGITS_OCT, string.octdigits),
+        (op.string.DIGITS, string.digits),
+        (op.string.DIGITS_HEX, string.hexdigits),
+        (op.string.LETTERS_LOWER, string.ascii_lowercase),
+        (op.string.LETTERS_UPPER, string.ascii_uppercase),
+        (op.string.LETTERS, string.ascii_letters),
+        (op.string.PUNCTUATION, string.punctuation),
+        (op.string.WHITESPACE, string.whitespace),
+        (op.string.PRINTABLE, string.printable),
     ],
 )
 def test_optype_eq_stdlib(
@@ -28,7 +34,7 @@ def test_optype_eq_stdlib(
     assert opt_str == tuple(std_str)
 
 
-_ArgT_co = TypeVar("_ArgT_co", bound=o.typing.AnyLiteral, covariant=True)
+_ArgT_co = TypeVar("_ArgT_co", bound=op.typing.AnyLiteral, covariant=True)
 
 
 # a `typing.Literal` stores it's values in `__args__`
@@ -39,20 +45,20 @@ class _HasArgs(Protocol[_ArgT_co]):
 @pytest.mark.parametrize(
     ("const", "lit"),
     [
-        (o.string.DIGITS_BIN, o.string.DigitBin),
-        (o.string.DIGITS_OCT, o.string.DigitOct),
-        (o.string.DIGITS, o.string.Digit),
-        (o.string.DIGITS_HEX, o.string.DigitHex),
-        (o.string.LETTERS_LOWER, o.string.LetterLower),
-        (o.string.LETTERS_UPPER, o.string.LetterUpper),
-        (o.string.LETTERS, o.string.Letter),
-        (o.string.PUNCTUATION, o.string.Punctuation),
-        (o.string.WHITESPACE, o.string.Whitespace),
-        (o.string.PRINTABLE, o.string.Printable),
+        (op.string.DIGITS_BIN, op.string.DigitBin),
+        (op.string.DIGITS_OCT, op.string.DigitOct),
+        (op.string.DIGITS, op.string.Digit),
+        (op.string.DIGITS_HEX, op.string.DigitHex),
+        (op.string.LETTERS_LOWER, op.string.LetterLower),
+        (op.string.LETTERS_UPPER, op.string.LetterUpper),
+        (op.string.LETTERS, op.string.Letter),
+        (op.string.PUNCTUATION, op.string.Punctuation),
+        (op.string.WHITESPACE, op.string.Whitespace),
+        (op.string.PRINTABLE, op.string.Printable),
     ],
 )
 def test_literal_args_eq_constant(
     const: tuple[LiteralString, ...],
     lit: _HasArgs[LiteralString],
 ) -> None:
-    assert o.inspect.get_args(lit) == const
+    assert op.inspect.get_args(lit) == const

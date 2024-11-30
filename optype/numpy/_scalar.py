@@ -6,17 +6,27 @@ from typing import TYPE_CHECKING, Any, Literal, TypeAlias
 
 import numpy as np
 import numpy.typing as npt
-from typing_extensions import TypeAliasType
 
 from optype._core._utils import set_module
 
 
 if sys.version_info >= (3, 13):
-    from typing import Protocol, Self, TypeVar, overload, override, runtime_checkable
-else:
-    from typing_extensions import (
+    from types import CapsuleType
+    from typing import (
         Protocol,
         Self,
+        TypeAliasType,
+        TypeVar,
+        overload,
+        override,
+        runtime_checkable,
+    )
+else:
+    from typing_extensions import (
+        CapsuleType,
+        Protocol,
+        Self,
+        TypeAliasType,
         TypeVar,
         overload,
         override,
@@ -25,7 +35,6 @@ else:
 
 if TYPE_CHECKING:
     from numpy._core.multiarray import flagsobj
-    from typing_extensions import CapsuleType
 
 
 __all__ = ["Scalar"]
