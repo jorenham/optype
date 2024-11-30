@@ -249,6 +249,8 @@ force-exclude = true
         "F841",     # unused-variable
         # flake8-annotations
         "ANN201",   # missing-return-type
+        # flake8-pyi
+        "PYI015",
         # flake8-self
         "SLF001",   # private-member-access
         # pylint
