@@ -4,7 +4,7 @@ from typing import cast
 
 import pytest
 
-import optype as o
+import optype as op
 from optype._core import _can, _do, _does, _has, _utils
 from optype.inspect import (
     get_protocol_members,
@@ -34,7 +34,7 @@ def _is_dunder(name: str, /) -> bool:
 
 def _pascamel_to_snake(
     pascamel: str,
-    start: o.CanLt[int, o.CanBool] = 0,
+    start: op.CanLt[int, op.CanBool] = 0,
     /,
 ) -> str:
     """Converts 'CamelCase' or 'pascalCase' to 'snake_case'."""
@@ -56,7 +56,7 @@ def test_all_public() -> None:
     Ensure all of protocols from `_can`, `_has`, and
     `_does` are in `optype.__all__`.
     """
-    protocols_all = get_protocols(o)
+    protocols_all = get_protocols(op)
     protocols_can = get_protocols(_can)
     protocols_has = get_protocols(_has)
     protocols_does = get_protocols(_does)
@@ -101,7 +101,7 @@ def test_does_has_do(cls: type) -> None:
     assert name != cls.__name__
 
     do_name = f"do_{_pascamel_to_snake(name, 1)}"
-    do_op: o.CanCall[..., object] | None = getattr(_do, do_name, None)
+    do_op: op.CanCall[..., object] | None = getattr(_do, do_name, None)
     assert do_op is not None, do_name
     assert callable(do_op), do_name
 

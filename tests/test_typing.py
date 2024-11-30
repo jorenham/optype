@@ -1,7 +1,12 @@
 import enum
+import sys
 from typing import Generic, Literal, final
 
-from typing_extensions import TypeVar
+
+if sys.version_info >= (3, 13):
+    from typing import TypeVar
+else:
+    from typing_extensions import TypeVar
 
 import optype.typing as opt
 

@@ -16,7 +16,7 @@ else:
     from typing_extensions import TypeAliasType
 
 
-import optype as o
+import optype as op
 
 
 FalsyBool = tp.Literal[False]
@@ -154,102 +154,102 @@ class FinalMembers:
 
 
 def test_get_args_literals() -> None:
-    assert o.inspect.get_args(FalsyBool) == (False,)
-    assert o.inspect.get_args(FalsyInt) == (0,)
-    assert o.inspect.get_args(FalsyIntCo) == (False, 0)
-    assert o.inspect.get_args(FalsyStr) == ("", b"")
-    assert o.inspect.get_args(Falsy) == (None, False, 0, "", b"")
+    assert op.inspect.get_args(FalsyBool) == (False,)
+    assert op.inspect.get_args(FalsyInt) == (0,)
+    assert op.inspect.get_args(FalsyIntCo) == (False, 0)
+    assert op.inspect.get_args(FalsyStr) == ("", b"")
+    assert op.inspect.get_args(Falsy) == (None, False, 0, "", b"")
 
 
 @pytest.mark.parametrize("origin", [type, list, tuple, GenericTP, GenericTPX])
-def test_get_args_generic(origin: o.types.GenericType) -> None:
-    assert o.inspect.get_args(origin[FalsyBool]) == (FalsyBool,)
-    assert o.inspect.get_args(origin[FalsyInt]) == (FalsyInt,)
-    assert o.inspect.get_args(origin[FalsyIntCo]) == (FalsyIntCo,)
-    assert o.inspect.get_args(origin[FalsyStr]) == (FalsyStr,)
-    assert o.inspect.get_args(origin[Falsy]) == (Falsy,)
+def test_get_args_generic(origin: op.types.GenericType) -> None:
+    assert op.inspect.get_args(origin[FalsyBool]) == (FalsyBool,)
+    assert op.inspect.get_args(origin[FalsyInt]) == (FalsyInt,)
+    assert op.inspect.get_args(origin[FalsyIntCo]) == (FalsyIntCo,)
+    assert op.inspect.get_args(origin[FalsyStr]) == (FalsyStr,)
+    assert op.inspect.get_args(origin[Falsy]) == (Falsy,)
 
 
 def test_get_protocol_members() -> None:
-    assert o.inspect.get_protocol_members(o.CanAdd) == {"__add__"}
-    assert o.inspect.get_protocol_members(o.CanPow) == {"__pow__"}
-    assert o.inspect.get_protocol_members(o.CanHash) == {"__hash__"}
-    assert o.inspect.get_protocol_members(o.CanEq) == {"__eq__"}
-    assert o.inspect.get_protocol_members(o.CanGetMissing) == {
+    assert op.inspect.get_protocol_members(op.CanAdd) == {"__add__"}
+    assert op.inspect.get_protocol_members(op.CanPow) == {"__pow__"}
+    assert op.inspect.get_protocol_members(op.CanHash) == {"__hash__"}
+    assert op.inspect.get_protocol_members(op.CanEq) == {"__eq__"}
+    assert op.inspect.get_protocol_members(op.CanGetMissing) == {
         "__getitem__",
         "__missing__",
     }
-    assert o.inspect.get_protocol_members(o.CanWith) == {"__enter__", "__exit__"}
+    assert op.inspect.get_protocol_members(op.CanWith) == {"__enter__", "__exit__"}
 
-    assert o.inspect.get_protocol_members(o.HasName) == {"__name__"}
-    assert o.inspect.get_protocol_members(o.HasNames) == {
+    assert op.inspect.get_protocol_members(op.HasName) == {"__name__"}
+    assert op.inspect.get_protocol_members(op.HasNames) == {
         "__name__",
         "__qualname__",
     }
-    assert o.inspect.get_protocol_members(o.HasClass) == {"__class__"}
-    assert o.inspect.get_protocol_members(o.HasDict) == {"__dict__"}
-    assert o.inspect.get_protocol_members(o.HasSlots) == {"__slots__"}
-    assert o.inspect.get_protocol_members(o.HasAnnotations) == {"__annotations__"}
+    assert op.inspect.get_protocol_members(op.HasClass) == {"__class__"}
+    assert op.inspect.get_protocol_members(op.HasDict) == {"__dict__"}
+    assert op.inspect.get_protocol_members(op.HasSlots) == {"__slots__"}
+    assert op.inspect.get_protocol_members(op.HasAnnotations) == {"__annotations__"}
 
-    assert o.inspect.get_protocol_members(CanInit) == {"__init__"}
-    assert o.inspect.get_protocol_members(CanNew) == {"__new__"}
+    assert op.inspect.get_protocol_members(CanInit) == {"__init__"}
+    assert op.inspect.get_protocol_members(CanNew) == {"__new__"}
 
-    assert o.inspect.get_protocol_members(ProtoOverload) == {"method"}
+    assert op.inspect.get_protocol_members(ProtoOverload) == {"method"}
 
 
 def test_get_protocols() -> None:
     import collections.abc  # noqa: PLC0415
     import types  # noqa: PLC0415
 
-    assert not o.inspect.get_protocols(collections.abc)
-    assert not o.inspect.get_protocols(types)
+    assert not op.inspect.get_protocols(collections.abc)
+    assert not op.inspect.get_protocols(types)
     # ... hence optype
 
-    protocols_tp = o.inspect.get_protocols(tp)
+    protocols_tp = op.inspect.get_protocols(tp)
     assert protocols_tp
-    assert o.inspect.get_protocols(tp, private=True) >= protocols_tp
+    assert op.inspect.get_protocols(tp, private=True) >= protocols_tp
 
-    protocols_tpx = o.inspect.get_protocols(tpx)
+    protocols_tpx = op.inspect.get_protocols(tpx)
     assert protocols_tpx
-    assert o.inspect.get_protocols(tpx, private=True) >= protocols_tpx
+    assert op.inspect.get_protocols(tpx, private=True) >= protocols_tpx
 
 
 def test_type_is_final() -> None:
-    assert not o.inspect.is_final(Proto)
-    assert not o.inspect.is_final(ProtoX)
-    assert not o.inspect.is_final(ProtoRuntime)
+    assert not op.inspect.is_final(Proto)
+    assert not op.inspect.is_final(ProtoX)
+    assert not op.inspect.is_final(ProtoRuntime)
     if sys.version_info >= (3, 11):
-        assert o.inspect.is_final(ProtoFinal)
-    assert o.inspect.is_final(ProtoFinalX)
+        assert op.inspect.is_final(ProtoFinal)
+    assert op.inspect.is_final(ProtoFinalX)
 
 
 def test_property_is_final() -> None:
-    assert not o.inspect.is_final(FinalMembers.p)
+    assert not op.inspect.is_final(FinalMembers.p)
     if sys.version_info >= (3, 11):
-        assert o.inspect.is_final(FinalMembers.p_final)
-    assert o.inspect.is_final(FinalMembers.p_final_x)
+        assert op.inspect.is_final(FinalMembers.p_final)
+    assert op.inspect.is_final(FinalMembers.p_final_x)
 
 
 def test_method_is_final() -> None:
-    assert not o.inspect.is_final(FinalMembers.f)
+    assert not op.inspect.is_final(FinalMembers.f)
     if sys.version_info >= (3, 11):
-        assert o.inspect.is_final(FinalMembers.f_final)
-    assert o.inspect.is_final(FinalMembers.f_final_x)
+        assert op.inspect.is_final(FinalMembers.f_final)
+    assert op.inspect.is_final(FinalMembers.f_final_x)
 
 
 def test_classmethod_is_final() -> None:
-    assert not o.inspect.is_final(FinalMembers.cf)
+    assert not op.inspect.is_final(FinalMembers.cf)
     if sys.version_info >= (3, 11):
-        assert o.inspect.is_final(getattr_static(FinalMembers, "cf_final1"))
-        assert o.inspect.is_final(getattr_static(FinalMembers, "cf_final2"))
+        assert op.inspect.is_final(getattr_static(FinalMembers, "cf_final1"))
+        assert op.inspect.is_final(getattr_static(FinalMembers, "cf_final2"))
 
-    assert o.inspect.is_final(
+    assert op.inspect.is_final(
         tp.cast(  # type: ignore[no-any-explicit]
             "classmethod[FinalMembers, ..., object]",
             getattr_static(FinalMembers, "cf_final1_x"),
         ),
     )
-    assert o.inspect.is_final(
+    assert op.inspect.is_final(
         tp.cast(  # type: ignore[no-any-explicit]
             "classmethod[FinalMembers, ..., object]",
             getattr_static(FinalMembers, "cf_final2_x"),
@@ -258,18 +258,18 @@ def test_classmethod_is_final() -> None:
 
 
 def test_staticmethod_is_final() -> None:
-    assert not o.inspect.is_final(FinalMembers.sf)
+    assert not op.inspect.is_final(FinalMembers.sf)
     if sys.version_info >= (3, 11):
-        assert o.inspect.is_final(getattr_static(FinalMembers, "sf_final1"))
-        assert o.inspect.is_final(getattr_static(FinalMembers, "sf_final2"))
+        assert op.inspect.is_final(getattr_static(FinalMembers, "sf_final1"))
+        assert op.inspect.is_final(getattr_static(FinalMembers, "sf_final2"))
 
-    assert o.inspect.is_final(
+    assert op.inspect.is_final(
         tp.cast(  # type: ignore[no-any-explicit]
             "staticmethod[..., object]",
             getattr_static(FinalMembers, "sf_final1_x"),
         ),
     )
-    assert o.inspect.is_final(
+    assert op.inspect.is_final(
         tp.cast(  # type: ignore[no-any-explicit]
             "staticmethod[..., object]",
             getattr_static(FinalMembers, "sf_final2_x"),
@@ -278,46 +278,46 @@ def test_staticmethod_is_final() -> None:
 
 
 @pytest.mark.parametrize("origin", [type, list, tuple, GenericTP, GenericTPX])
-def test_is_generic_alias(origin: o.types.GenericType) -> None:
-    assert not o.inspect.is_generic_alias(origin)
+def test_is_generic_alias(origin: op.types.GenericType) -> None:
+    assert not op.inspect.is_generic_alias(origin)
 
-    assert o.inspect.is_generic_alias(origin[None])
+    assert op.inspect.is_generic_alias(origin[None])
     Alias = TypeAliasType("Alias", origin[None])  # type: ignore[valid-type]  # noqa: N806
-    assert o.inspect.is_generic_alias(Alias)
-    assert o.inspect.is_generic_alias(tp.Annotated[origin[None], None])
-    assert o.inspect.is_generic_alias(tpx.Annotated[origin[None], None])
+    assert op.inspect.is_generic_alias(Alias)
+    assert op.inspect.is_generic_alias(tp.Annotated[origin[None], None])
+    assert op.inspect.is_generic_alias(tpx.Annotated[origin[None], None])
 
-    assert not o.inspect.is_generic_alias(origin[None] | None)
+    assert not op.inspect.is_generic_alias(origin[None] | None)
 
 
 def test_is_iterable() -> None:
-    assert o.inspect.is_iterable([])
-    assert o.inspect.is_iterable(())
-    assert o.inspect.is_iterable("")
-    assert o.inspect.is_iterable(b"")
-    assert o.inspect.is_iterable(range(2))
-    assert o.inspect.is_iterable(i for i in range(2))
+    assert op.inspect.is_iterable([])
+    assert op.inspect.is_iterable(())
+    assert op.inspect.is_iterable("")
+    assert op.inspect.is_iterable(b"")
+    assert op.inspect.is_iterable(range(2))
+    assert op.inspect.is_iterable(i for i in range(2))
 
 
 def test_is_runtime_protocol() -> None:
-    assert o.inspect.is_runtime_protocol(o.CanAdd)
-    assert not o.inspect.is_runtime_protocol(o.DoesAdd)
+    assert op.inspect.is_runtime_protocol(op.CanAdd)
+    assert not op.inspect.is_runtime_protocol(op.DoesAdd)
 
-    assert not o.inspect.is_runtime_protocol(Proto)
-    assert not o.inspect.is_runtime_protocol(ProtoX)
-    assert o.inspect.is_runtime_protocol(ProtoRuntime)
-    assert o.inspect.is_runtime_protocol(ProtoRuntimeX)
-    assert not o.inspect.is_runtime_protocol(ProtoFinal)
-    assert not o.inspect.is_runtime_protocol(ProtoFinalX)
+    assert not op.inspect.is_runtime_protocol(Proto)
+    assert not op.inspect.is_runtime_protocol(ProtoX)
+    assert op.inspect.is_runtime_protocol(ProtoRuntime)
+    assert op.inspect.is_runtime_protocol(ProtoRuntimeX)
+    assert not op.inspect.is_runtime_protocol(ProtoFinal)
+    assert not op.inspect.is_runtime_protocol(ProtoFinalX)
 
 
 @pytest.mark.parametrize("origin", [int, tp.Literal[True], Proto, ProtoX])
 def test_is_union_type(origin: type) -> None:
-    assert o.inspect.is_union_type(origin | None)
+    assert op.inspect.is_union_type(origin | None)
     Alias: TypeAliasType = TypeAliasType("Alias", origin | None)  # noqa: N806  # pyright: ignore[reportGeneralTypeIssues]
-    assert o.inspect.is_union_type(Alias)
-    assert o.inspect.is_union_type(tp.Annotated[origin | None, None])
-    assert o.inspect.is_union_type(tp.Annotated[origin, None] | None)
+    assert op.inspect.is_union_type(Alias)
+    assert op.inspect.is_union_type(tp.Annotated[origin | None, None])
+    assert op.inspect.is_union_type(tp.Annotated[origin, None] | None)
 
-    assert not o.inspect.is_union_type(origin)
-    assert not o.inspect.is_union_type(origin | origin)
+    assert not op.inspect.is_union_type(origin)
+    assert not op.inspect.is_union_type(origin | origin)

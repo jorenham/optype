@@ -1,6 +1,12 @@
-from typing_extensions import deprecated
+import sys
 
-import optype.types as opt
+
+if sys.version_info >= (3, 13):
+    from warnings import deprecated
+else:
+    from typing_extensions import deprecated
+
+import optype.types as opts
 
 
 @deprecated("Use f_new instead")
@@ -16,10 +22,10 @@ class New: ...
 
 
 def test_deprecated_callable() -> None:
-    assert isinstance(f_old, opt.Deprecated)  # pyright: ignore[reportDeprecated]
-    assert not isinstance(f_new, opt.Deprecated)
+    assert isinstance(f_old, opts.Deprecated)  # pyright: ignore[reportDeprecated]
+    assert not isinstance(f_new, opts.Deprecated)
 
 
 def test_deprecated_type() -> None:
-    assert isinstance(Old, opt.Deprecated)  # pyright: ignore[reportDeprecated]
-    assert not isinstance(New, opt.Deprecated)
+    assert isinstance(Old, opts.Deprecated)  # pyright: ignore[reportDeprecated]
+    assert not isinstance(New, opts.Deprecated)
