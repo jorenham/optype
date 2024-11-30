@@ -242,7 +242,7 @@ The API of `optype` is flat; a single `import optype as opt` is all you need
 - [`optype.dataclasses`](#optypedataclasses)
 - [`optype.inspect`](#optypeinspect)
 - [`optype.json`](#optypejson)
-- [`optype.pickle`](#optypepickle)
+- [`optype.pickle`](#optypepickle)<!-- - - [`optype.rick`](#optyperick) -->
 - [`optype.string`](#optypestring)
 - [`optype.typing`](#optypetyping)
     - [`Any*` type aliases](#any-type-aliases)
@@ -1892,6 +1892,12 @@ interfaces:
         <td><code>CanGetnewargsEx[V, KV]</code></td>
     </tr>
 </table>
+
+<!--
+### `optype.rick`
+
+I'm a pickle.
+-->
 
 ### `optype.string`
 
