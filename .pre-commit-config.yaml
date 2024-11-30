@@ -2,10 +2,6 @@ ci:
   autoupdate_branch: "master"
   autoupdate_commit_msg: "update pre-commit hooks"
   skip:
-    - markdownlint
-    - codespell
-    - ruff
-    - ruff-format
     - basedmypy
     - basedpyright
     - basedpyright-verifytypes
@@ -51,12 +47,10 @@ repos:
     hooks:
       - id: markdownlint
 
-  - repo: https://github.com/codespell-project/codespell
-    rev: v2.3.0
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.28.1
     hooks:
-      - id: codespell
-        additional_dependencies:
-          - tomli
+      - id: typos
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.8.1

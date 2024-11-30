@@ -4,7 +4,8 @@
     "davidanson.vscode-markdownlint",
     "detachhead.basedpyright",
     "ms-python.mypy-type-checker",
-    "ms-python.python"
+    "ms-python.python",
+    "tekumara.typos-vscode"
   ],
   "unwantedRecommendations": ["ms-pyright.pyright", "ms-python.vscode-pylance"]
 }

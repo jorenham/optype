@@ -37,7 +37,6 @@ Funding = "https://github.com/sponsors/jorenham"
 
 [dependency-groups]
 lint = [
-    "codespell>=2.3.0",
     "ruff>=0.8.1",
     "sp-repo-review[cli]>=2024.8.19",
 ]
@@ -88,11 +87,6 @@ exclude = [
     "SECURITY.md",
     "uv.lock",
 ]
-
-[tool.codespell]
-context = 2
-skip = "uv.lock,pyproject.toml"
-ignore-words-list = "AtMost,AtLeast,CanGe,ND,nin"
 
 [tool.mypy]
 python_version = "3.10"
@@ -353,3 +347,7 @@ env_list = ["repo-review", "pre-commit", "3.10", "3.11", "3.12", "3.13"]
     allowlist_externals = ["uv"]
     commands_pre = [["uv", "sync", "--frozen"]]
     commands = [["uv", "run", "repo-review", "."]]
+
+
+[tool.typos.default]
+extend-ignore-identifiers-re = ["ND|nd", "(N|n)in"]

@@ -29,7 +29,10 @@ jobs:
           config: ".markdownlint.yaml"
           globs: "**/*.md"
 
-      - name: Install uv
+      - name: typos
+        uses: crate-ci/typos@master
+
+      - name: install uv
         uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
@@ -37,8 +40,6 @@ jobs:
       - name: uv sync
         run: uv sync --frozen --python 3.10
 
-      - name: codespell
-        run: uv run codespell .
 
       - name: ruff check
         run: |
