@@ -2554,7 +2554,7 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
     <th align="center" colspan="2">scalar types</th>
     <th align="center">scalar-like</th>
     <th align="center"><code>{1,2,3}</code>-d array-like</th>
-    <th align="center"><code>N</code>-d array-like</th>
+    <th align="center"><code>*</code>-d array-like</th>
 </tr>
 <tr>
     <th align="left">
@@ -2562,14 +2562,14 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
         <a href="#optypetyping"><code>optype.typing</code></a>
     </th>
     <th align="left"><code>numpy</code></th>
-    <th align="left" colspan="4"><code>optype.numpy</code></th>
+    <th align="center" colspan="4"><code>optype.numpy</code></th>
 </tr>
 <tr><td colspan="5"></td></tr>
 <tr>
     <td align="left"><code>bool</code></td>
     <td align="left"><code>bool_</code></td>
     <td align="left"><code>ToBool</code></td>
-    <td align="left"><code>ToBool{1,2,3}D</code></td>
+    <td align="left"><code>ToBool[strict]{1,2,3}D</code></td>
     <td align="left"><code>ToBoolND</code></td>
 </tr>
 <tr><td colspan="6"></td></tr>
@@ -2581,7 +2581,7 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
         <code>integer</code>
     </td>
     <td align="left"><code>ToJustInt</code></td>
-    <td align="left"><code>ToJustInt{1,2,3}D</code></td>
+    <td align="left"><code>ToJustInt[strict]{1,2,3}D</code></td>
     <td align="left"><code>ToJustIntND</code></td>
 </tr>
 <tr><td colspan="6"></td></tr>
@@ -2592,7 +2592,7 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
         <code>| bool_</code>
     </td>
     <td align="left"><code>ToInt</code></td>
-    <td align="left"><code>ToInt{1,2,3}D</code></td>
+    <td align="left"><code>ToInt[strict]{1,2,3}D</code></td>
     <td align="left"><code>ToIntND</code></td>
 </tr>
 <tr><td colspan="6"></td></tr>
@@ -2607,7 +2607,7 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
         <code>| bool_</code>
     </td>
     <td align="left"><code>ToFloat</code></td>
-    <td align="left"><code>ToFloat{1,2,3}D</code></td>
+    <td align="left"><code>ToFloat[strict]{1,2,3}D</code></td>
     <td align="left"><code>ToFloatND</code></td>
 </tr>
 <tr><td colspan="6"></td></tr>
@@ -2622,7 +2622,7 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
         <code>| bool_</code>
     </td>
     <td align="left"><code>ToComplex</code></td>
-    <td align="left"><code>ToComplex{1,2,3}D</code></td>
+    <td align="left"><code>ToComplex[strict]{1,2,3}D</code></td>
     <td align="left"><code>ToComplexND</code></td>
 </tr>
 <tr><td colspan="6"></td></tr>
@@ -2636,10 +2636,19 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
     </td>
     <td align="left"><code>generic</code></td>
     <td align="left"><code>ToScalar</code></td>
-    <td align="left"><code>ToArray{1,2,3}D</code></td>
+    <td align="left"><code>ToArray[strict]{1,2,3}D</code></td>
     <td align="left"><code>ToArrayND</code></td>
 </tr>
 </table>
+
+> [!NOTE]
+> The `To*Strict{1,2,3}D` aliases were added in `optype 0.7.3`.
+>
+> These array-likes with *strict shape-type* require the shape-typed input to be
+> shape-typed.
+> This means that e.g. `ToFloat1D` and `ToFloat2D` are disjoint (non-overlapping),
+> and makes them suitable to overload array-likes of a particular dtype for different
+> numbers of dimensions.
 
 Source code: [`optype/numpy/_to.py`][CODE-NP-TO]
 
