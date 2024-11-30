@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -45,6 +45,11 @@ __all__ = [
 
 
 _NDT = TypeVar("_NDT", bound=tuple[int, ...], default=tuple[int, ...])
+_NDT_any = TypeVar(  # for numpy < 2.1
+    "_NDT_any",
+    bound=tuple[int, ...],
+    default=Any,  # pyright: ignore[reportExplicitAny]
+)
 _NDT_co = TypeVar(
     "_NDT_co",
     bound=tuple[int, ...],
@@ -118,24 +123,34 @@ if _x.NP2 and not _x.NP20:
     class CanArray(Protocol[_NDT_co, _DTT_co]):
         def __array__(self, /) -> np.ndarray[_NDT_co, _DTT_co]: ...
 
+    @runtime_checkable
+    @set_module("optype.numpy")
+    class CanArrayND(Protocol[_SCT_co, _NDT_co]):
+        """
+        Similar to `optype.numpy.CanArray`, but must be sized (i.e. excludes scalars),
+        and is parameterized by only the scalar type (instead of the shape and dtype).
+        """
+
+        def __len__(self, /) -> int: ...
+        def __array__(self, /) -> np.ndarray[_NDT_co, np.dtype[_SCT_co]]: ...
+
 else:
     # numpy < 2.1: shape is invariant
     @runtime_checkable
     @set_module("optype.numpy")
-    class CanArray(Protocol[_NDT, _DTT_co]):
-        def __array__(self, /) -> np.ndarray[_NDT, _DTT_co]: ...
+    class CanArray(Protocol[_NDT_any, _DTT_co]):
+        def __array__(self, /) -> np.ndarray[_NDT_any, _DTT_co]: ...
 
+    @runtime_checkable
+    @set_module("optype.numpy")
+    class CanArrayND(Protocol[_SCT_co, _NDT_any]):
+        """
+        Similar to `optype.numpy.CanArray`, but must be sized (i.e. excludes scalars),
+        and is parameterized by only the scalar type (instead of the shape and dtype).
+        """
 
-@runtime_checkable
-@set_module("optype.numpy")
-class CanArrayND(Protocol[_SCT_co]):
-    """
-    Similar to `optype.numpy.CanArray`, but must be sized (i.e. excludes scalars),
-    and is parameterized by only the scalar type (instead of the shape and dtype).
-    """
-
-    def __len__(self, /) -> int: ...
-    def __array__(self, /) -> np.ndarray[tuple[int, ...], np.dtype[_SCT_co]]: ...
+        def __len__(self, /) -> int: ...
+        def __array__(self, /) -> np.ndarray[_NDT_any, np.dtype[_SCT_co]]: ...
 
 
 @runtime_checkable
