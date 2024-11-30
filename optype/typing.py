@@ -4,19 +4,28 @@ import enum
 import sys
 from typing import Literal, NoReturn, Protocol, TypeAlias
 
-from typing_extensions import Self, override
-
 
 if sys.version_info >= (3, 13):
-    from typing import LiteralString, Never, TypeVar, TypedDict, Unpack, final
-else:
-    from typing_extensions import (
+    from typing import (
         LiteralString,
         Never,
+        Self,
         TypeVar,
         TypedDict,
         Unpack,
         final,
+        override,
+    )
+else:
+    from typing_extensions import (
+        LiteralString,
+        Never,
+        Self,
+        TypeVar,
+        TypedDict,
+        Unpack,
+        final,
+        override,
     )
 
 from ._core import _can as _c
