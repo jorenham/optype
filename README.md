@@ -2311,9 +2311,9 @@ type ArrayND[
 </tr>
 </table>
 
-Additionally, there are the three `Array{1,2,3}D[ST: generic]` aliases, which are
-equivalent to `Array` with `tuple[int]`, `tuple[int, int]` and `tuple[int, int, int]` as
-shape-type, respectively.
+Additionally, there are the three `Array{0,1,2,3}D[ST: generic]` aliases, which are
+equivalent to `Array` with `tuple[()]`, `tuple[int]`, `tuple[int, int]` and
+`tuple[int, int, int]` as shape-type, respectively.
 
 [^1]: Since `numpy>=2.2` the `NDArray` alias uses `tuple[int, ...]` as shape-type
     instead of `Any`.

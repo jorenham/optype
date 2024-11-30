@@ -27,12 +27,14 @@ if TYPE_CHECKING:
 
 __all__ = [
     "Array",
+    "Array0D",
     "Array1D",
     "Array1D",
     "Array2D",
     "Array3D",
     "ArrayND",
     "CanArray",
+    "CanArray0D",
     "CanArray1D",
     "CanArray2D",
     "CanArray3D",
@@ -97,6 +99,11 @@ type ArrayND[
 ] = np.ndarray[ND, np.dtype[ST]]
 """
 
+Array0D = TypeAliasType(
+    "Array0D",
+    np.ndarray[tuple[()], np.dtype[_SCT]],
+    type_params=(_SCT,),
+)
 Array1D = TypeAliasType(
     "Array1D",
     np.ndarray[tuple[int], np.dtype[_SCT]],
@@ -151,6 +158,19 @@ else:
 
         def __len__(self, /) -> int: ...
         def __array__(self, /) -> np.ndarray[_NDT_any, np.dtype[_SCT_co]]: ...
+
+
+@runtime_checkable
+@set_module("optype.numpy")
+class CanArray0D(Protocol[_SCT_co]):
+    """
+    The 0-d variant of `optype.numpy.CanArrayND`.
+
+    This accepts e.g. `np.asarray(3.14)`, but rejects `np.float64(3.14)`.
+    """
+
+    def __len__(self, /) -> int: ...  # always 0
+    def __array__(self, /) -> np.ndarray[tuple[()], np.dtype[_SCT_co]]: ...
 
 
 @runtime_checkable
