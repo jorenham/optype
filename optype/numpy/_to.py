@@ -7,9 +7,9 @@ import numpy as np
 
 import optype.typing as opt
 
-from ._array import CanArray1D, CanArray2D, CanArray3D, CanArrayND
+from ._array import CanArray0D, CanArray1D, CanArray2D, CanArray3D, CanArrayND
 from ._scalar import floating, integer, number
-from ._sequence_nd import SequenceND
+from ._sequence_nd import SequenceND as SeqND
 
 
 if sys.version_info >= (3, 13):
@@ -69,55 +69,37 @@ __all__ = [
     "ToScalar",
 ]  # fmt: skip
 
-ST = TypeVar("ST", bound=np.generic)
-T = TypeVar("T")
 
-_To1D = TypeAliasType(
-    "_To1D",
-    CanArrayND[ST] | Seq[ST | T],
-    type_params=(ST, T),
+V = TypeVar("V")
+S = TypeVar("S", bound=np.generic)
+
+_To0D: TypeAlias = V | S | CanArray0D[S]
+
+_To1D = TypeAliasType("_To1D", CanArrayND[S] | Seq[_To0D[V, S]], type_params=(V, S))
+_To2D = TypeAliasType("_To2D", CanArrayND[S] | Seq[_To1D[V, S]], type_params=(V, S))
+_To3D = TypeAliasType("_To3D", CanArrayND[S] | Seq[_To2D[V, S]], type_params=(V, S))
+_ToND = TypeAliasType(
+    "_ToND",
+    CanArrayND[S] | SeqND[CanArrayND[S]] | SeqND[_To0D[V, S]],
+    type_params=(V, S),
 )
+
 _ToStrict1D = TypeAliasType(
     "_ToStrict1D",
-    CanArray1D[ST] | Seq[ST | T],
-    type_params=(ST, T),
-)
-
-_To2D = TypeAliasType(
-    "_To2D",
-    CanArrayND[ST] | Seq[CanArrayND[ST]] | Seq[Seq[ST | T]],
-    type_params=(ST, T),
+    CanArray1D[S] | Seq[_To0D[V, S]],
+    type_params=(V, S),
 )
 _ToStrict2D = TypeAliasType(
     "_ToStrict2D",
-    CanArray2D[ST] | Seq[CanArray1D[ST]] | Seq[Seq[ST | T]],
-    type_params=(ST, T),
-)
-
-_To3D = TypeAliasType(
-    "_To3D",
-    (
-        CanArrayND[ST]
-        | Seq[CanArrayND[ST]]
-        | Seq[Seq[CanArrayND[ST]]]
-        | Seq[Seq[Seq[ST | T]]]
-    ),
-    type_params=(ST, T),
+    CanArray2D[S] | Seq[_ToStrict1D[V, S]],
+    type_params=(V, S),
 )
 _ToStrict3D = TypeAliasType(
     "_ToStrict3D",
-    (
-        CanArray3D[ST]
-        | Seq[CanArray2D[ST]]
-        | Seq[Seq[CanArray1D[ST]]]
-        | Seq[Seq[Seq[ST | T]]]
-    ),
-    type_params=(ST, T),
+    CanArray3D[S] | Seq[_ToStrict2D[V, S]],
+    type_params=(V, S),
 )
 
-# recursive sequence type cannot be used due to a mypy bug:
-# https://github.com/python/mypy/issues/18184
-_ToND: TypeAlias = CanArrayND[ST] | SequenceND[T | ST] | SequenceND[CanArrayND[ST]]
 
 _PyBool: TypeAlias = bool | Literal[0, 1]  # 0 and 1 are sometimes used as bool values
 _PyScalar: TypeAlias = complex | bytes | str  # `complex` equivs `complex | float | int`
@@ -126,56 +108,56 @@ _Int = TypeAliasType("_Int", integer | np.bool_)
 _Float = TypeAliasType("_Float", floating | integer | np.bool_)
 _Complex = TypeAliasType("_Complex", number | np.bool_)
 
-ToScalar: TypeAlias = np.generic | _PyScalar
-ToArray1D: TypeAlias = _To1D[np.generic, _PyScalar]
-ToArrayStrict1D: TypeAlias = _ToStrict1D[np.generic, _PyScalar]
-ToArray2D: TypeAlias = _To2D[np.generic, _PyScalar]
-ToArrayStrict2D: TypeAlias = _ToStrict2D[np.generic, _PyScalar]
-ToArray3D: TypeAlias = _To3D[np.generic, _PyScalar]
-ToArrayStrict3D: TypeAlias = _ToStrict3D[np.generic, _PyScalar]
-ToArrayND: TypeAlias = _ToND[np.generic, _PyScalar]
+ToScalar: TypeAlias = _PyScalar | np.generic
+ToArray1D: TypeAlias = _To1D[_PyScalar, np.generic]
+ToArray2D: TypeAlias = _To2D[_PyScalar, np.generic]
+ToArray3D: TypeAlias = _To3D[_PyScalar, np.generic]
+ToArrayND: TypeAlias = _ToND[_PyScalar, np.generic]
+ToArrayStrict1D: TypeAlias = _ToStrict1D[_PyScalar, np.generic]
+ToArrayStrict2D: TypeAlias = _ToStrict2D[_PyScalar, np.generic]
+ToArrayStrict3D: TypeAlias = _ToStrict3D[_PyScalar, np.generic]
 
-ToBool: TypeAlias = np.bool_ | _PyBool
-ToBool1D: TypeAlias = _To1D[np.bool_, _PyBool]
-ToBoolStrict1D: TypeAlias = _ToStrict1D[np.bool_, _PyBool]
-ToBool2D: TypeAlias = _To2D[np.bool_, _PyBool]
-ToBoolStrict2D: TypeAlias = _ToStrict2D[np.bool_, _PyBool]
-ToBool3D: TypeAlias = _To3D[np.bool_, _PyBool]
-ToBoolStrict3D: TypeAlias = _ToStrict3D[np.bool_, _PyBool]
-ToBoolND: TypeAlias = _ToND[np.bool_, _PyBool]
+ToBool: TypeAlias = _PyBool | np.bool_
+ToBool1D: TypeAlias = _To1D[_PyBool, np.bool_]
+ToBool2D: TypeAlias = _To2D[_PyBool, np.bool_]
+ToBool3D: TypeAlias = _To3D[_PyBool, np.bool_]
+ToBoolND: TypeAlias = _ToND[_PyBool, np.bool_]
+ToBoolStrict1D: TypeAlias = _ToStrict1D[_PyBool, np.bool_]
+ToBoolStrict2D: TypeAlias = _ToStrict2D[_PyBool, np.bool_]
+ToBoolStrict3D: TypeAlias = _ToStrict3D[_PyBool, np.bool_]
 
-ToJustInt: TypeAlias = integer | opt.JustInt
-ToJustInt1D: TypeAlias = _To1D[integer, opt.JustInt]
-ToJustIntStrict1D: TypeAlias = _ToStrict1D[integer, opt.JustInt]
-ToJustInt2D: TypeAlias = _To2D[integer, opt.JustInt]
-ToJustIntStrict2D: TypeAlias = _ToStrict2D[integer, opt.JustInt]
-ToJustInt3D: TypeAlias = _To3D[integer, opt.JustInt]
-ToJustIntStrict3D: TypeAlias = _ToStrict3D[integer, opt.JustInt]
-ToJustIntND: TypeAlias = _ToND[integer, opt.JustInt]
+ToJustInt: TypeAlias = opt.JustInt | integer
+ToJustInt1D: TypeAlias = _To1D[opt.JustInt, integer]
+ToJustInt2D: TypeAlias = _To2D[opt.JustInt, integer]
+ToJustInt3D: TypeAlias = _To3D[opt.JustInt, integer]
+ToJustIntND: TypeAlias = _ToND[opt.JustInt, integer]
+ToJustIntStrict1D: TypeAlias = _ToStrict1D[opt.JustInt, integer]
+ToJustIntStrict3D: TypeAlias = _ToStrict3D[opt.JustInt, integer]
+ToJustIntStrict2D: TypeAlias = _ToStrict2D[opt.JustInt, integer]
 
-ToInt: TypeAlias = _Int | int
-ToInt1D: TypeAlias = _To1D[_Int, int]
-ToIntStrict1D: TypeAlias = _ToStrict1D[_Int, int]
-ToInt2D: TypeAlias = _To2D[_Int, int]
-ToIntStrict2D: TypeAlias = _ToStrict2D[_Int, int]
-ToInt3D: TypeAlias = _To3D[_Int, int]
-ToIntStrict3D: TypeAlias = _ToStrict3D[_Int, int]
-ToIntND: TypeAlias = _ToND[_Int, int]
+ToInt: TypeAlias = int | _Int
+ToInt1D: TypeAlias = _To1D[int, _Int]
+ToInt2D: TypeAlias = _To2D[int, _Int]
+ToInt3D: TypeAlias = _To3D[int, _Int]
+ToIntND: TypeAlias = _ToND[int, _Int]
+ToIntStrict1D: TypeAlias = _ToStrict1D[int, _Int]
+ToIntStrict2D: TypeAlias = _ToStrict2D[int, _Int]
+ToIntStrict3D: TypeAlias = _ToStrict3D[int, _Int]
 
-ToFloat: TypeAlias = _Float | float
-ToFloat1D: TypeAlias = _To1D[_Float, float]
-ToFloatStrict1D: TypeAlias = _ToStrict1D[_Float, float]
-ToFloat2D: TypeAlias = _To2D[_Float, float]
-ToFloatStrict2D: TypeAlias = _ToStrict2D[_Float, float]
-ToFloat3D: TypeAlias = _To3D[_Float, float]
-ToFloatStrict3D: TypeAlias = _ToStrict3D[_Float, float]
-ToFloatND: TypeAlias = _ToND[_Float, float]
+ToFloat: TypeAlias = float | _Float
+ToFloat1D: TypeAlias = _To1D[float, _Float]
+ToFloat2D: TypeAlias = _To2D[float, _Float]
+ToFloat3D: TypeAlias = _To3D[float, _Float]
+ToFloatND: TypeAlias = _ToND[float, _Float]
+ToFloatStrict1D: TypeAlias = _ToStrict1D[float, _Float]
+ToFloatStrict2D: TypeAlias = _ToStrict2D[float, _Float]
+ToFloatStrict3D: TypeAlias = _ToStrict3D[float, _Float]
 
-ToComplex: TypeAlias = _Complex | complex
-ToComplex1D: TypeAlias = _To1D[_Complex, complex]
-ToComplexStrict1D: TypeAlias = _ToStrict1D[_Complex, complex]
-ToComplex2D: TypeAlias = _To2D[_Complex, complex]
-ToComplexStrict2D: TypeAlias = _ToStrict2D[_Complex, complex]
-ToComplex3D: TypeAlias = _To3D[_Complex, complex]
-ToComplexStrict3D: TypeAlias = _ToStrict3D[_Complex, complex]
-ToComplexND: TypeAlias = _ToND[_Complex, complex]
+ToComplex: TypeAlias = complex | _Complex
+ToComplex1D: TypeAlias = _To1D[complex, _Complex]
+ToComplex2D: TypeAlias = _To2D[complex, _Complex]
+ToComplex3D: TypeAlias = _To3D[complex, _Complex]
+ToComplexND: TypeAlias = _ToND[complex, _Complex]
+ToComplexStrict1D: TypeAlias = _ToStrict1D[complex, _Complex]
+ToComplexStrict2D: TypeAlias = _ToStrict2D[complex, _Complex]
+ToComplexStrict3D: TypeAlias = _ToStrict3D[complex, _Complex]
