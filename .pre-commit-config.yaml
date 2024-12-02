@@ -48,7 +48,7 @@ repos:
       - id: markdownlint
 
   - repo: https://github.com/crate-ci/typos
-    rev: v1.28.1
+    rev: typos-dict-v0.11.37
     hooks:
       - id: typos
 
