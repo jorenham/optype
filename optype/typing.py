@@ -45,6 +45,8 @@ __all__ = (
     "EmptyString",
     "EmptyTuple",
     "Just",
+    "JustComplex",
+    "JustFloat",
     "JustInt",
     "LiteralBool",
     "LiteralByte",
@@ -55,8 +57,111 @@ def __dir__() -> tuple[str, ...]:
     return __all__
 
 
-# Anything that can *always* be converted to an `int` / `float` / `complex`
+_T = TypeVar("_T")
 _IntT = TypeVar("_IntT", bound=int, default=int)
+_ValueT = TypeVar("_ValueT", default=object)
+
+
+# "Just" types
+
+
+class Just(Protocol[_T]):
+    """
+    Experimental "invariant" wrapper type, so that `Invariant[int]` only accepts `int`
+    but not `bool` (or any other `int` subtypes).
+
+    Important:
+        This requires `pyright>=1.390` to work.
+
+    Warning:
+        In mypy this doesn't work with the special-cased `float` and `complex`,
+        caused by (at least) one of the >1200 confirmed mypy bugs.
+
+    Note:
+        The only reason that this worked on mypy `1.13.0` and below, is because
+        of (yet another) bug, where mypy blindly aassumes that the setter of a property
+        has the same parameter type as the return type of the getter, even though that's
+        the main usecase of `@property`...
+    """
+
+    @property  # type: ignore[explicit-override]  # seriously..?
+    @override
+    def __class__(self, /) -> type[_T]: ...  # pyright: ignore[reportIncompatibleMethodOverride]
+    @__class__.setter
+    @override
+    def __class__(self, t: type[_T], /) -> None: ...
+
+
+class JustInt(Just[int], Protocol):
+    """
+    A `pyright<1.390` compatible version of `Just[int]`.
+
+    Example:
+        This example shows a situation you want to accept instances of just `int`,
+        and reject and other instances, even they're subtypes of `int` such as `bool`,
+
+        ```python
+        def f(x: int, /) -> int:
+            assert type(x) is int
+            return x
+
+
+        f(1337)  # accepted
+        f(True)  # accepted :(
+        ```
+
+        But because `bool <: int`, booleans are also assignable to `int`, which we
+        don't want to allow.
+
+        Previously, it was considered impossible to achieve this using just python
+        typing, and it was told that a PEP would be necessary to make it work.
+
+        But this is not the case at all, and `optype` provides a clean counter-example
+        that works with pyright and (even) mypy:
+
+        ```python
+        def f_fixed(x: JustInt, /) -> int:
+            assert type(x) is int
+            return x  # accepted
+
+
+        f_fixed(1337)  # accepted
+        f_fixed(True)  # rejected :)
+        ```
+
+    Note:
+        On `mypy` this behaves in the same way as `Just[int]`, which accidentally
+        already works because of a mypy bug.
+    """
+
+    def __new__(cls, x: str | bytes | bytearray, /, base: _c.CanIndex) -> Self: ...
+
+
+class JustFloat(Just[float], Protocol):
+    """
+    Like `Just[float]`, but also works on `pyright<1.390`.
+
+    Warning:
+        Unlike `JustInt`, this DOES NOT WORK IN MYPY (due to a bug related to the
+        special-cased "promotion rules" of `float`)
+    """
+
+    def hex(self, /) -> str: ...
+
+
+class JustComplex(Just[complex], Protocol):
+    """
+    Like `Just[complex]`, but also works on `pyright<1.390`.
+
+    Warning:
+        Unlike `JustInt`, this DOES NOT WORK IN MYPY (due to a bug related to the
+        special-cased "promotion rules" of `complex`).
+    """
+
+    def __new__(cls, /, real: complex | AnyFloat, imag: complex | AnyFloat) -> Self: ...
+
+
+# Anything that can *always* be converted to an `int` / `float` / `complex`
 AnyInt: TypeAlias = _IntT | _c.CanInt[_IntT] | _c.CanIndex[_IntT]
 
 AnyFloat: TypeAlias = _c.CanFloat | _c.CanIndex
@@ -68,12 +173,11 @@ else:
 
 # Anything that can be iterated over, e.g. in a `for` loop,`builtins.iter`,
 # `builtins.enumerate`, or `numpy.array`.
-_ValueT = TypeVar("_ValueT", default=object)
 AnyIterable: TypeAlias = _c.CanIter[_c.CanNext[_ValueT]] | _c.CanGetitem[int, _ValueT]
 
 # The closest supertype of a `Literal`, i.e. the allowed types that can be
 # passed to `typing.Literal`.
-AnyLiteral: TypeAlias = bool | int | LiteralString | bytes | enum.Enum | None
+AnyLiteral: TypeAlias = bool | JustInt | LiteralString | bytes | enum.Enum | None
 
 
 # Empty collection type aliases
@@ -104,6 +208,8 @@ EmptySet: TypeAlias = set[Never]
 EmptyDict: TypeAlias = dict[object, Never] | _EmptyTypedDict
 EmptyIterable: TypeAlias = AnyIterable[Never]
 
+
+# Literal
 
 LiteralBool: TypeAlias = Literal[False, True]  # noqa: RUF038
 LiteralByte: TypeAlias = Literal[
@@ -140,47 +246,3 @@ LiteralByte: TypeAlias = Literal[
     0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7,
     0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd, 0xfe, 0xff,
 ]  # fmt: skip
-
-
-# Experimental
-
-_T = TypeVar("_T")
-
-
-class Just(Protocol[_T]):
-    """
-    Experimental "invariant" wrapper type, so that `Invariant[int]` only accepts `int`
-    but not `bool` (or any other `int` subtypes).
-
-    NOTE: Requires https://github.com/python/typeshed/pull/13021 to work in pyright
-    NOTE: In mypy this doesn't work with the special-cased `float` and `complex` (bug)
-
-    WARNING: Experimental
-    """
-
-    @property  # type: ignore[explicit-override]  # seriously..?
-    @override
-    def __class__(self, /) -> type[_T]: ...  # pyright: ignore[reportIncompatibleMethodOverride]
-    @__class__.setter
-    @override
-    def __class__(self, t: type[_T], /) -> None: ...
-
-
-class JustInt(Just[int], Protocol):
-    """
-    Like `Just[int]`, but also works on pyright for those that use a typeshed version
-    before https://github.com/python/typeshed/pull/13021.
-
-    Note that the `__new__` trick below only works with pyright; the `__class__` in
-    `Just` is (also) required for this to work with mypy.
-
-    WARNING: Experimental
-
-    ```python
-    def f(x: JustInt) -> int:
-        assert type(x) is int
-        return (x,)
-    ```
-    """
-
-    def __new__(cls, x: str | bytes | bytearray, /, base: _c.CanIndex) -> Self: ...

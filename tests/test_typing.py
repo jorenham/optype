@@ -18,7 +18,9 @@ _IntT_co = TypeVar("_IntT_co", bound=int, covariant=True)
 
 
 @final
-class Index(Generic[_IntT_co]):
+class SimpleIndex(Generic[_IntT_co]):
+    __slots__ = ("_x",)
+
     def __init__(self, x: _IntT_co, /) -> None:
         self._x = x
 
@@ -27,7 +29,9 @@ class Index(Generic[_IntT_co]):
 
 
 @final
-class IntLike(Generic[_IntT_co]):
+class SimpleInt(Generic[_IntT_co]):
+    __slots__ = ("_x",)
+
     def __init__(self, x: _IntT_co, /) -> None:
         self._x = x
 
@@ -36,7 +40,9 @@ class IntLike(Generic[_IntT_co]):
 
 
 @final
-class FloatLike:
+class SimpleFloat:
+    __slots__ = ("_x",)
+
     def __init__(self, x: float, /) -> None:
         self._x = x
 
@@ -45,7 +51,9 @@ class FloatLike:
 
 
 @final
-class ComplexLike:
+class SimpleComplex:
+    __slots__ = ("_x",)
+
     def __init__(self, x: complex, /) -> None:
         self._x = x
 
@@ -68,8 +76,8 @@ class SequenceLike(Generic[_V_co]):
 def test_any_int() -> None:
     p_bool: opt.AnyInt = True
     p_int: opt.AnyInt[Literal[2]] = 2
-    p_index: opt.AnyInt[Literal[3]] = Index(3)
-    p_int_like: opt.AnyInt[Literal[4]] = IntLike(4)
+    p_index: opt.AnyInt[Literal[3]] = SimpleIndex(3)
+    p_int_like: opt.AnyInt[Literal[4]] = SimpleInt(4)
 
     n_complex: opt.AnyInt = 5j  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     n_str: opt.AnyInt = "6"  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
@@ -79,10 +87,10 @@ def test_any_float() -> None:
     p_bool: opt.AnyFloat = True
     p_int: opt.AnyFloat = 1
     p_float: opt.AnyFloat = 2.0
-    p_index: opt.AnyFloat = Index(3)
-    p_float_like: opt.AnyFloat = FloatLike(4.0)
+    p_index: opt.AnyFloat = SimpleIndex(3)
+    p_float_like: opt.AnyFloat = SimpleFloat(4.0)
 
-    n_int_like: opt.AnyFloat = IntLike(5)  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    n_int_like: opt.AnyFloat = SimpleInt(5)  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     n_complex: opt.AnyInt = 6j  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     n_str: opt.AnyInt = "7"  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
@@ -92,11 +100,11 @@ def test_any_complex() -> None:
     p_int: opt.AnyComplex = 1
     p_float: opt.AnyComplex = 2.0
     p_complex: opt.AnyComplex = 3j
-    p_index: opt.AnyComplex = Index(4)
-    p_float_like: opt.AnyComplex = FloatLike(5.0)
-    p_complex_like: opt.AnyComplex = ComplexLike(6.0)
+    p_index: opt.AnyComplex = SimpleIndex(4)
+    p_float_like: opt.AnyComplex = SimpleFloat(5.0)
+    p_complex_like: opt.AnyComplex = SimpleComplex(6.0)
 
-    n_int_like: opt.AnyComplex = IntLike(7)  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    n_int_like: opt.AnyComplex = SimpleInt(7)  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     n_str: opt.AnyComplex = "8"  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
 
@@ -186,13 +194,13 @@ def test_literal_byte() -> None:
     n_256: opt.LiteralByte = 256  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     n_m1: opt.LiteralByte = -1  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     n_bool: opt.LiteralByte = False  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
-    n_ix0: opt.LiteralByte = Index(0)  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    n_ix0: opt.LiteralByte = SimpleIndex(0)  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
     # mypy doesn't understand `Literal` aliases...
     assert len(opt.LiteralByte.__args__) == 256  # type: ignore[attr-defined]
 
 
-def test_just() -> None:
+def test_just_custom() -> None:
     # positives
 
     class A: ...
@@ -205,23 +213,62 @@ def test_just() -> None:
 
     b_b: opt.Just[B] = b
     b_a: opt.Just[B] = a  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+
     # TODO: `pyright: ignore` after https://github.com/python/typeshed/issues/12997
     b_c: opt.Just[B] = c  # type: ignore[assignment]
 
 
+def test_just_object() -> None:
+    class A: ...
+
+    tn_object: opt.Just[object] = object()
+
+    # TODO: `pyright: ignore` after https://github.com/python/typeshed/issues/12997
+    tp_custom: opt.Just[object] = A()  # type: ignore[assignment]
+
+
 def test_just_int() -> None:
     # instance assignment: true negatives
-    x_int: int = int("42")
-    x_int_lit: Literal[42] = 42
-    tn_int: opt.JustInt = x_int
-    tn_lit: opt.JustInt = x_int_lit
+    tn_int: opt.JustInt = int("42")
+    tn_int_literal: opt.JustInt = 42
 
     # instance assignment: true positives
-    x_bool: bool = bool(x_int)
-    x_true: Literal[True] = True
-    tp_bool: opt.JustInt = x_bool  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
-    tp_true: opt.JustInt = x_true  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    tp_bool: opt.JustInt = bool([])  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    tp_true: opt.JustInt = True  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
     # type assignment
     tn_int_type: type[opt.JustInt] = int
     tp_int_type: type[opt.JustInt] = bool  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+
+    # docstring example
+    def f(x: opt.JustInt, /) -> int:
+        assert type(x) is int
+        return x
+
+    def g() -> None:  # pyright: ignore[reportUnusedFunction]
+        f(1337)  # accepted
+        f(True)  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]
+
+
+def test_just_float() -> None:
+    # NOTE: A mypy bug causes false negatives (but works fine in pyright)
+    tn_float: opt.JustFloat = float("inf")
+    tp_int: opt.JustFloat = int("42")  # pyright: ignore[reportAssignmentType]
+    tp_int_literal: opt.JustFloat = 42  # pyright: ignore[reportAssignmentType]
+    tp_bool: opt.JustFloat = bool([])  # pyright: ignore[reportAssignmentType]
+    tp_bool_literal: opt.JustFloat = True  # pyright: ignore[reportAssignmentType]
+
+    tn_float_type: type[opt.JustFloat] = float
+    tp_str_type: type[opt.JustFloat] = str  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    tp_int_type: type[opt.JustFloat] = int  # pyright: ignore[reportAssignmentType]
+    tp_bool_type: type[opt.JustFloat] = bool  # pyright: ignore[reportAssignmentType]
+
+
+def test_just_complex() -> None:
+    # NOTE: A mypy bug causes false negatives (but works fine in pyright)
+    tn_complex: opt.JustComplex = complex("inf")
+    tp_float: opt.JustComplex = float("inf")  # pyright: ignore[reportAssignmentType]
+
+    tn_complex_type: type[opt.JustComplex] = complex
+    tp_str_type: type[opt.JustComplex] = str  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    tp_float_type: type[opt.JustComplex] = float  # pyright: ignore[reportAssignmentType]
