@@ -213,18 +213,14 @@ def test_just_custom() -> None:
 
     b_b: opt.Just[B] = b
     b_a: opt.Just[B] = a  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
-
-    # TODO: `pyright: ignore` after https://github.com/python/typeshed/issues/12997
-    b_c: opt.Just[B] = c  # type: ignore[assignment]
+    b_c: opt.Just[B] = c  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
 
 def test_just_object() -> None:
     class A: ...
 
     tn_object: opt.Just[object] = object()
-
-    # TODO: `pyright: ignore` after https://github.com/python/typeshed/issues/12997
-    tp_custom: opt.Just[object] = A()  # type: ignore[assignment]
+    tp_custom: opt.Just[object] = A()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
 
 def test_just_int() -> None:
