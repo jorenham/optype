@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Literal, Protocol, TypeAlias
+from typing import TYPE_CHECKING, Protocol, TypeAlias
 
 
 if sys.version_info >= (3, 13):
@@ -45,13 +45,7 @@ _V_contra = TypeVar("_V_contra", contravariant=True)
 _V_co = TypeVar("_V_co", covariant=True)
 _VV_co = TypeVar("_VV_co", covariant=True, default=_V_co)
 
-_JustBoolT_co = TypeVar(
-    "_JustBoolT_co",
-    Literal[False], Literal[True], Literal[False, True], bool,  # noqa: RUF038
-    covariant=True,
-    default=bool,
-)  # fmt: skip
-
+_BoolT_co = TypeVar("_BoolT_co", bound=bool, default=bool, covariant=True)
 _IntT_contra = TypeVar("_IntT_contra", bound=int, contravariant=True, default=int)
 _IntT_co = TypeVar("_IntT_co", bound=int, covariant=True, default=int)
 _BytesT_co = TypeVar("_BytesT_co", bound=bytes, covariant=True, default=bytes)
@@ -73,8 +67,8 @@ _AnyNoneT_co = TypeVar("_AnyNoneT_co", covariant=True, default=None)
 
 @set_module("optype")
 @runtime_checkable
-class CanBool(Protocol[_JustBoolT_co]):
-    def __bool__(self, /) -> _JustBoolT_co: ...
+class CanBool(Protocol[_BoolT_co]):
+    def __bool__(self, /) -> _BoolT_co: ...
 
 
 @set_module("optype")
@@ -418,10 +412,10 @@ class CanReversed(Protocol[_T_co]):
 
 @set_module("optype")
 @runtime_checkable
-class CanContains(Protocol[_ObjectT_contra, _JustBoolT_co]):
+class CanContains(Protocol[_ObjectT_contra, _BoolT_co]):
     # usually the key is required to also be a hashable object, but this
     # isn't strictly required
-    def __contains__(self, key: _ObjectT_contra, /) -> _JustBoolT_co: ...
+    def __contains__(self, key: _ObjectT_contra, /) -> _BoolT_co: ...
 
 
 @set_module("optype")
