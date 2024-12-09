@@ -92,10 +92,10 @@ def test_dtype_has_codes(
     sctypes: set[type] = set()
     for code in codes:
         try:
-            _dtype = np.dtype(code)
+            dtype_ = np.dtype(code)
         except TypeError:
             continue
-        sctypes.add(_dtype.type)
+        sctypes.add(dtype_.type)
 
     assert len(sctypes) == 1
 
