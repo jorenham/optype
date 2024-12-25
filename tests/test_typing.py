@@ -222,6 +222,9 @@ def test_just_object() -> None:
     tn_object: opt.Just[object] = object()
     tp_custom: opt.Just[object] = A()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
+    tn_object_type: type[opt.Just[object]] = object
+    tp_custom_type: type[opt.Just[object]] = A  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+
 
 def test_just_int() -> None:
     # instance assignment: true negatives
