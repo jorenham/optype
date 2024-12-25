@@ -253,6 +253,7 @@ The API of `optype` is flat; a single `import optype as opt` is all you need
 - [`optype.numpy`](#optypenumpy)
     - [Shape-typing with `Array`](#shape-typing-with-array)
     - [Array-likes](#array-likes)
+    - [`compat`](#compat)
     - [`DType`](#dtype)
     - [`Scalar`](#scalar)
     - [`UFunc`](#ufunc)
@@ -2657,6 +2658,19 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
 > numbers of dimensions.
 
 Source code: [`optype/numpy/_to.py`][CODE-NP-TO]
+
+#### `compat`
+
+Compatibility module for supporting a wide (currently `1.23` - `2.2`) range of numpy
+versions. It contains two kinds of things:
+
+- All [`numpy.exceptions`][NP-EXC], which didn't exist before `<1.25`, making it very
+difficult to use if you need to support those versions, especially within stubs.
+- The abstract numeric scalar types, with `numpy>=2.2` type-parameter defaults, which
+I explained in the [`release notes`][NP-REL22].
+
+[NP-EXC]: https://numpy.org/doc/stable/reference/routines.exceptions.html
+[NP-REL22]: https://numpy.org/doc/stable/release/2.2.0-notes.html#new-features
 
 #### `DType`
 
