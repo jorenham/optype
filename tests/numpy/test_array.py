@@ -17,7 +17,7 @@ _AnyCallable: TypeAlias = Callable[[], object]
 # Don't wake up, Neo...
 @pytest.mark.filterwarnings("ignore:the matrix .*:PendingDeprecationWarning")
 def test_can_array() -> None:
-    dt = np.dtypes.Int8DType()
+    dt = np.dtype(np.int8)
 
     val_x = dt.type(42)
     val_y: onp.CanArray[_Shape0D, np.dtype[np.int8]] = val_x
@@ -28,13 +28,13 @@ def test_can_array() -> None:
     nd0_y: onp.CanArray[_Shape0D, np.dtype[np.int8]] = nd0_x
     assert isinstance(nd0_x, onp.CanArray)
 
-    nd1_x = cast("np.ndarray[_Shape1D, np.dtypes.Int8DType]", np.empty((42,), dt))
+    nd1_x = cast("np.ndarray[_Shape1D, np.dtype[np.int8]]", np.empty((42,), dt))
     nd1_y: onp.CanArray[_Shape1D, np.dtype[np.int8]] = nd1_x
     assert isinstance(nd1_x, onp.CanArray)
     assert not isinstance(nd1_x.tolist(), onp.CanArray)
 
     nd2_x = cast(
-        "np.ndarray[_Shape2D, np.dtypes.Int8DType]",
+        "np.ndarray[_Shape2D, np.dtype[np.int8]]",
         cast("object", np.empty((6, 7), dt)),
     )
     nd2_y: onp.CanArray[_Shape2D, np.dtype[np.int8]] = nd2_x
@@ -42,7 +42,7 @@ def test_can_array() -> None:
     assert not isinstance(nd2_x.tolist(), onp.CanArray)
 
     mat_x = np.asmatrix([[1, 0], [0, 1]], dt)
-    mat_y: onp.CanArray[_Shape2D, np.dtypes.Int8DType] = mat_x
+    mat_y: onp.CanArray[_Shape2D, np.dtype[np.int8]] = mat_x
     assert isinstance(mat_x, onp.CanArray)
 
 
