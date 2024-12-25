@@ -115,7 +115,7 @@ def test_dtype_has_codes(
 @pytest.mark.parametrize("unit", _TIME_UNITS)
 def test_time_units(
     unit: str,
-    dtype: np.dtypes.DateTime64DType | np.dtypes.TimeDelta64DType,
+    dtype: np.dtype[np.datetime64] | np.dtype[np.timedelta64],
     names: frozenset[str],
     chars: frozenset[str],
 ) -> None:
