@@ -16,6 +16,6 @@
       "--config-file=${workspaceFolder}/pyproject.toml"
     ],
     "mypy-type-checker.cwd": ".",
-    "mypy-type-checker.path": ["uv", "run", "mypy"],
+    "mypy-type-checker.path": ["uv", "run", "--no-sync", "mypy"],
     "python.testing.pytestEnabled": true
   }
