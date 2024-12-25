@@ -69,7 +69,7 @@ jobs:
         run: uv sync --locked
 
       - name: Install numpy ${{ matrix.np }}
-        run: uv pip install "numpy==1.23.*"
+        run: uv pip install "numpy==${{ matrix.np }}.*"
 
       - name: basedpyright
         run: uv run --no-sync basedpyright
@@ -79,14 +79,17 @@ jobs:
 
   test:
     timeout-minutes: 5
+    runs-on: ${{ matrix.os }}
 
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
         py: ["3.10", "3.13"]
-
-    runs-on: ${{ matrix.os }}
+        include:
+          - os: ubuntu-latest
+            py: "3.10"
+            np: "1.23.5"
 
     steps:
       - uses: actions/checkout@v4
@@ -100,14 +103,8 @@ jobs:
         run: uv sync --locked
 
       - name: Install old numpy
-        if: ${{ matrix.py == '3.10' }}
-        run: uv pip install "numpy==1.23.5"
+        if: ${{ matrix.np == '1.23.5' }}
+        run: uv pip install "numpy==${{ matrix.np }}"
 
       - name: pytest
         run: uv run --no-sync pytest
-
-      - name: basedpyright
-        run: uv run --no-sync basedpyright
-
-      - name: basedmypy
-        run: uv run --no-sync mypy .
