@@ -1,3 +1,4 @@
+# mypy: disable-error-code="no-any-explicit, no-any-decorated"
 import sys
 from typing import TypeAlias
 
@@ -26,7 +27,7 @@ _DT_co = TypeVar("_DT_co", bound=DType, covariant=True, default=DType)
 @runtime_checkable
 @set_module("optype.numpy")
 class HasDType(Protocol[_DT_co]):
-    """HasDType[DT: np.dtype[Any] = Any]
+    """HasDType[DT: np.dtype[np.generic] = np.dtype[np.generic]]
 
     Runtime checkable protocol for objects (or types) that have a `dtype`
     attribute (or property), such as `numpy.ndarray` instances, or

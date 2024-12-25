@@ -66,12 +66,7 @@ class DLDataTypeCode(enum.IntEnum):
     BOOL = 6
 
 
-_TypeT_co = TypeVar(
-    "_TypeT_co",
-    covariant=True,
-    bound=enum.Enum | int,
-    default=enum.Enum | int,
-)
+_TypeT_co = TypeVar("_TypeT_co", covariant=True, bound=enum.Enum | int, default=int)
 _DeviceT_co = TypeVar("_DeviceT_co", covariant=True, bound=int, default=int)
 
 
@@ -91,8 +86,8 @@ class CanDLPack(Protocol[_TypeT_co, _DeviceT_co]):  # type: ignore[misc] # pyrig
         max_version: tuple[int, int] | None = None,
         dl_device: tuple[_TypeT_co, _DeviceT_co] | None = None,
         # NOTE: This should be `bool | None`, but because of an incorrect annotation in
-        # `numpy.ndarray.__dlpack__`, this is not possible at the moment.
-        copy: Any | None = None,  # pyright: ignore[reportExplicitAny]
+        # `numpy.ndarray.__dlpack__` on `numpy < 2.2.0`, this is not possible.
+        copy: bool | Any | None = None,  # pyright: ignore[reportExplicitAny]
     ) -> CapsuleType: ...
 
 

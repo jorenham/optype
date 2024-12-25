@@ -92,10 +92,10 @@ def test_dtype_has_codes(
     sctypes: set[type] = set()
     for code in codes:
         try:
-            _dtype = np.dtype(code)
+            dtype_ = np.dtype(code)
         except TypeError:
             continue
-        sctypes.add(_dtype.type)
+        sctypes.add(dtype_.type)
 
     assert len(sctypes) == 1
 
@@ -104,7 +104,7 @@ def test_dtype_has_codes(
     ("dtype", "names", "chars"),
     [
         (dtype, *_get_dtype_codes(dtype))
-        for dtype in map(np.dtype, [np.datetime64, np.timedelta64])
+        for dtype in [np.dtype(np.datetime64), np.dtype(np.timedelta64)]
     ],
 )
 @pytest.mark.parametrize("unit", _TIME_UNITS)

@@ -24,7 +24,7 @@ def test_can_array() -> None:
     assert isinstance(val_x, onp.CanArray)
     assert not isinstance(val_x.tolist(), onp.CanArray)
 
-    nd0_x = cast("np.ndarray[_Shape0D, np.dtypes.Int8DType]", np.empty((), dt))
+    nd0_x = np.empty((), dt)
     nd0_y: onp.CanArray[_Shape0D, np.dtype[np.int8]] = nd0_x
     assert isinstance(nd0_x, onp.CanArray)
 
@@ -33,7 +33,10 @@ def test_can_array() -> None:
     assert isinstance(nd1_x, onp.CanArray)
     assert not isinstance(nd1_x.tolist(), onp.CanArray)
 
-    nd2_x = cast("np.ndarray[_Shape2D, np.dtypes.Int8DType]", np.empty((6, 7), dt))
+    nd2_x = cast(
+        "np.ndarray[_Shape2D, np.dtypes.Int8DType]",
+        cast("object", np.empty((6, 7), dt)),
+    )
     nd2_y: onp.CanArray[_Shape2D, np.dtype[np.int8]] = nd2_x
     assert isinstance(nd2_x, onp.CanArray)
     assert not isinstance(nd2_x.tolist(), onp.CanArray)
