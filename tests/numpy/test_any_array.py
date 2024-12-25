@@ -167,7 +167,7 @@ def test_any_complex_floating_array(
 
 
 def test_any_datetime_array() -> None:
-    v = dt.datetime.now(tz=dt.timezone.utc)
+    v = dt.datetime.now()  # noqa: DTZ005
     x = np.array(np.datetime64(v))
     x_any: onp.AnyDateTime64Array = x
     assert np.issubdtype(x.dtype, np.datetime64)
