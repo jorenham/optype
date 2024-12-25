@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Any, TypeAlias
+from typing import TYPE_CHECKING, Any, Protocol, TypeAlias
 
 import numpy as np
 
@@ -13,9 +13,9 @@ from optype._core._utils import set_module
 
 
 if sys.version_info >= (3, 13):
-    from typing import Never, Protocol, TypeAliasType, TypeVar
+    from typing import Never, TypeAliasType, TypeVar
 else:
-    from typing_extensions import Never, Protocol, TypeAliasType, TypeVar
+    from typing_extensions import Never, TypeAliasType, TypeVar
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -36,6 +36,7 @@ __all__ = [
 
     "AnyBoolArray",
 
+    "AnyUIntArray", "AnyIntArray",
     "AnyUInt8Array", "AnyInt8Array",
     "AnyUInt8Array", "AnyInt8Array",
     "AnyUInt16Array", "AnyInt16Array",
@@ -60,15 +61,14 @@ __all__ = [
     "AnyStrArray",
     "AnyVoidArray",
     "AnyObjectArray",
-
     "AnyStringArray",
 ]  # fmt: skip
 
 
-_T = TypeVar("_T")
 _T_co = TypeVar("_T_co", covariant=True)
+_T = TypeVar("_T")
+_ST_co = TypeVar("_ST_co", bound=np.generic, covariant=True)
 _ST = TypeVar("_ST", bound=np.generic, default=np.generic)
-_ST_co = TypeVar("_ST_co", covariant=True, bound=np.generic)
 _VT = TypeVar("_VT", default=_ST)
 
 
@@ -115,9 +115,10 @@ AnyUShortArray = AnyUInt16Array
 AnyUInt32Array: TypeAlias = _AnyArray[np.uint32]
 AnyUInt64Array: TypeAlias = _AnyArray[np.uint64]
 AnyUIntCArray: TypeAlias = _AnyArray[np.uintc]
-AnyUIntPArray: TypeAlias = _AnyArray[np.uintp]
-AnyULongArray: TypeAlias = _AnyArray[_x.ULong]
 AnyULongLongArray: TypeAlias = _AnyArray[np.ulonglong]
+AnyULongArray: TypeAlias = _AnyArray[_x.ULong]
+AnyUIntPArray: TypeAlias = _AnyArray[np.uintp]
+AnyUIntArray: TypeAlias = _AnyArray[np.uint]
 
 AnyInt8Array: TypeAlias = _AnyArray[np.int8]
 AnyByteArray = AnyInt8Array
@@ -126,10 +127,11 @@ AnyShortArray = AnyInt16Array
 AnyInt32Array: TypeAlias = _AnyArray[np.int32]
 AnyInt64Array: TypeAlias = _AnyArray[np.int64]
 AnyIntCArray: TypeAlias = _AnyArray[np.intc]
-# TODO: also allow `Just[int]` values
-AnyIntPArray: TypeAlias = _AnyArray[np.intp]  # no int (numpy>=2)
-AnyLongArray: TypeAlias = _AnyArray[_x.Long]  # no int (numpy<=1)
 AnyLongLongArray: TypeAlias = _AnyArray[np.longlong]
+# TODO: also allow `Just[int]` values
+AnyLongArray: TypeAlias = _AnyArray[_x.Long]  # no int (numpy<=1)
+AnyIntPArray: TypeAlias = _AnyArray[np.intp]  # no int (numpy>=2)
+AnyIntArray: TypeAlias = _AnyArray[np.int_]  # no int
 
 # TODO: also allow `Just[float]` values
 AnyFloatingArray: TypeAlias = _AnyArray[_sc.floating]
