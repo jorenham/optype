@@ -35,25 +35,47 @@ jobs:
       - name: install uv
         uses: astral-sh/setup-uv@v5
         with:
-          enable-cache: true
+          python-version: 3.13
 
       - name: uv sync
-        run: uv sync --frozen --python 3.10
-
+        run: uv sync --locked
 
       - name: ruff check
         run: |
           uv run ruff check --output-format=github
           uv run ruff format --check
 
-      - name: basedmypy
-        run: uv run mypy .
-
-      - name: basedpyright
-        run: uv run basedpyright
-
       - name: basedpyright --verifytypes
         run: uv run basedpyright --ignoreexternal --verifytypes optype
+
+  typecheck:
+    timeout-minutes: 5
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        np: ["1.23", "1.25", "2.0", "2.2"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: setup uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: 3.10
+
+      - name: uv sync
+        run: uv sync --locked
+
+      - name: Install numpy ${{ matrix.np }}
+        run: uv pip install "numpy==1.23.*"
+
+      - name: basedpyright
+        run: uv run --no-sync basedpyright
+
+      - name: basedmypy
+        run: uv run --no-sync mypy .
 
   test:
     timeout-minutes: 5
@@ -61,8 +83,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.10", "3.13"]
+        os: [ubuntu-latest, windows-latest]
+        py: ["3.10", "3.13"]
 
     runs-on: ${{ matrix.os }}
 
@@ -72,13 +94,20 @@ jobs:
       - name: setup uv
         uses: astral-sh/setup-uv@v5
         with:
-          enable-cache: true
-
-      - name: setup python ${{ matrix.python-version }}
-        run: uv python install ${{ matrix.python-version }}
+          python-version: ${{ matrix.py }}
 
       - name: uv sync
-        run: uv sync
+        run: uv sync --locked
+
+      - name: Install old numpy
+        if: ${{ matrix.py == '3.10' }}
+        run: uv pip install "numpy==1.23.5"
 
       - name: pytest
-        run: uv run pytest
+        run: uv run --no-sync pytest
+
+      - name: basedpyright
+        run: uv run --no-sync basedpyright
+
+      - name: basedmypy
+        run: uv run --no-sync mypy .
