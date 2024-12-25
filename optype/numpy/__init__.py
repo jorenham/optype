@@ -9,6 +9,7 @@ from . import (
     _shape,
     _to,
     _ufunc,
+    compat,
     ctypeslib,
 )
 from ._any_array import *
@@ -22,7 +23,7 @@ from ._to import *
 from ._ufunc import *
 
 
-__all__ = ["ctypeslib"]
+__all__ = ["compat", "ctypeslib"]
 __all__ += _any_array.__all__
 __all__ += _any_dtype.__all__
 __all__ += _array.__all__
