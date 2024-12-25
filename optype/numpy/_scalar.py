@@ -115,6 +115,8 @@ class Scalar(Protocol[_PT_co, _NB_co]):
 
 # `NBitBase` invariant and doesn't actually do anything, so the default should be `Any`
 _N = TypeVar("_N", bound=npt.NBitBase, default=Any)  # pyright: ignore[reportExplicitAny]
+_N1 = TypeVar("_N1", bound=npt.NBitBase, default=Any)  # pyright: ignore[reportExplicitAny]
+_N2 = TypeVar("_N2", bound=npt.NBitBase, default=_N1)
 
 generic = np.generic
 flexible = np.flexible
@@ -126,4 +128,8 @@ uinteger = TypeAliasType("uinteger", np.unsignedinteger[_N], type_params=(_N,))
 sinteger = TypeAliasType("sinteger", np.signedinteger[_N], type_params=(_N,))
 inexact = TypeAliasType("inexact", np.inexact[_N], type_params=(_N,))
 floating = TypeAliasType("floating", np.floating[_N], type_params=(_N,))
-cfloating = TypeAliasType("cfloating", np.complexfloating[_N, _N], type_params=(_N,))
+cfloating = TypeAliasType(
+    "cfloating",
+    np.complexfloating[_N1, _N2],
+    type_params=(_N1, _N2),
+)
