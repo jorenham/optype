@@ -95,6 +95,7 @@ strict = true
 disable_bytearray_promotion = true
 disable_memoryview_promotion = true
 
+# NOTE: must match [tool.basedpyright.defineConstant]
 always_true = "NP125,NP20,NP21,NP22"
 always_false = "NP30"
 
@@ -129,7 +130,12 @@ reportUnusedCallResult = false  # https://github.com/microsoft/pyright/issues/86
 reportUnusedImport = false  # dupe of F401
 reportUnusedVariable = false  # dupe of F841
 
-defineConstant = {NP125=true, NP20=true, NP21=true, NP22=true, NP30=false}
+[tool.basedpyright.defineConstant]
+NP125 = true
+NP20 = true
+NP21 = true
+NP22 = true
+NP30 = false
 
 [tool.pytest.ini_options]
 minversion = "8.0"

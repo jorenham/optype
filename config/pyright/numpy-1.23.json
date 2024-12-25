@@ -1,0 +1,10 @@
+{
+  "extends": "../../pyproject.toml",
+  "defineConstants": {
+    "NP125": false,
+    "NP20": false,
+    "NP21": false,
+    "NP22": false,
+    "NP30": false
+  }
+}

@@ -55,7 +55,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        np: ["1.23", "1.25", "2.0", "2.2"]
+        np: ["1.23", "1.25", "2.0", "2.1", "2.2"]
 
     steps:
       - uses: actions/checkout@v4
@@ -72,7 +72,10 @@ jobs:
         run: uv pip install "numpy==${{ matrix.np }}.*"
 
       - name: basedpyright
-        run: uv run --no-sync basedpyright
+        run: >
+          uv run --no-sync
+          basedpyright
+          -p config/pyright/numpy-${{ matrix.np }}.json
 
       - name: basedmypy
         run: uv run --no-sync mypy .
@@ -89,7 +92,7 @@ jobs:
         include:
           - os: ubuntu-latest
             py: "3.10"
-            np: "1.23.5"
+            np: "1.23"
 
     steps:
       - uses: actions/checkout@v4
@@ -103,8 +106,8 @@ jobs:
         run: uv sync --locked
 
       - name: Install old numpy
-        if: ${{ matrix.np == '1.23.5' }}
-        run: uv pip install "numpy==${{ matrix.np }}"
+        if: ${{ matrix.np == '1.23' }}
+        run: uv pip install "numpy==${{ matrix.np }}.*"
 
       - name: pytest
         run: uv run --no-sync pytest
