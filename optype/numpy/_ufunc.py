@@ -52,8 +52,7 @@ _IdT_co = TypeVar(
 )
 
 
-if _x.NP2 and not _x.NP20:
-    # `numpy>=2.1`
+if _x.NP21:
 
     @runtime_checkable
     @set_module("optype.numpy")
@@ -178,7 +177,7 @@ else:
 
 
 _MethodCommon: Alias = L["__call__", "reduce", "reduceat", "accumulate", "outer"]
-if _x.NP2:  # type: ignore[redundant-expr]
+if _x.NP20:
     _Method: Alias = L[_MethodCommon, "at"]
 else:
     _Method: Alias = L[_MethodCommon, "inner"]

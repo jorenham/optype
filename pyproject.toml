@@ -91,11 +91,12 @@ exclude = [
 [tool.mypy]
 python_version = "3.10"
 packages = ["optype", "examples", "tests"]
-always_true = "NP2"
-always_false = "NP20"
 strict = true
 disable_bytearray_promotion = true
 disable_memoryview_promotion = true
+
+always_true = "NP125,NP20,NP21,NP22"
+always_false = "NP30"
 
 allow_redefinition = true
 disallow_untyped_defs = true
@@ -121,7 +122,6 @@ stubPath = "."
 venvPath = "."
 venv = ".venv"
 typeCheckingMode = "all"
-defineConstant = {NP2 = true, NP20 = false}
 useLibraryCodeForTypes = false
 enableReachabilityAnalysis = false
 reportUnreachable = false  # nothing wrong with `if sys.version_info() >= ...`
@@ -129,6 +129,7 @@ reportUnusedCallResult = false  # https://github.com/microsoft/pyright/issues/86
 reportUnusedImport = false  # dupe of F401
 reportUnusedVariable = false  # dupe of F841
 
+defineConstant = {NP125=true, NP20=true, NP21=true, NP22=true, NP30=false}
 
 [tool.pytest.ini_options]
 minversion = "8.0"

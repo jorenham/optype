@@ -77,12 +77,12 @@ _VT = TypeVar("_VT", default=_ST)
 class _AnyArrayNP(Protocol[_ST_co]):
     def __len__(self, /) -> int: ...
 
-    if _x.NP2 and not _x.NP20:
-        # `numpy>=2.1`
+    if _x.NP21:
+
         def __array__(self, /) -> np.ndarray[tuple[int, ...], np.dtype[_ST_co]]: ...
 
     else:
-        # `numpy<2.1`
+
         def __array__(self, /) -> np.ndarray[Any, np.dtype[_ST_co]]: ...
 
 
@@ -172,19 +172,19 @@ AnyTimeDelta64Array: TypeAlias = _AnyArray[np.timedelta64]
 AnyObjectArray: TypeAlias = _AnyArray[np.object_, np.object_ | opt.Just[object]]
 
 
-if _x.NP2:
+if _x.NP20:
 
     @set_module("optype.numpy")
     class AnyStringArray(Protocol):
         def __len__(self, /) -> int: ...
 
-        if _x.NP2 and not _x.NP20:
+        if _x.NP21:
             # `numpy>=2.1`
             def __array__(
                 self, /
             ) -> np.ndarray[tuple[int, ...], np.dtypes.StringDType]: ...
 
-        elif _x.NP2:
+        elif _x.NP20:
             # `numpy>=2,<2.1`
             def __array__(self, /) -> np.ndarray[Any, np.dtype[Never]]: ...
 

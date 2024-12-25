@@ -419,7 +419,7 @@ _Name_T = Never
 _Char_T: Alias = L["T"]
 _Code_T: Alias = _Char_T
 
-if _x.NP2:
+if _x.NP20:
     _Name_u0: Alias = L[_Name_u0_common, "uintp"]
     _Char_u0: Alias = L["N", "<N", ">N"]
     _Code_u0: Alias = L[_Name_u0, _Char_u0]
@@ -467,7 +467,7 @@ if _x.NP2:
 
     # NOTE: `np.dtypes.StringDType` didn't exist in the stubs prior to 2.1 (so
     # I (@jorenham) added them, see https://github.com/numpy/numpy/pull/27008).
-    if not _x.NP20:
+    if _x.NP21:
         # `numpy>=2.1`
         _HasStringDType: Alias = _dt.HasDType[np.dtypes.StringDType]  # type: ignore[type-var] # pyright: ignore[reportInvalidTypeArguments]
         AnyStringDType = TypeAliasType("AnyStringDType", _HasStringDType | _Code_T)  # type: ignore[type-var]
