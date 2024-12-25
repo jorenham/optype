@@ -226,10 +226,10 @@ def get_args(tp: type | object, /) -> tuple[type | object, ...]:
     if isinstance(tp, str):
         raise NotImplementedError("str")
 
-    _raise = True
+    should_raise = True
     if isinstance(tp, AnnotatedAlias | TypeAliasType):
         tp = _get_alias(tp)
-        _raise = False
+        should_raise = False
 
     if isinstance(tp, UnionType | UnionAlias | LiteralAlias):
         arg: object
@@ -246,7 +246,7 @@ def get_args(tp: type | object, /) -> tuple[type | object, ...]:
     if hasattr(tp, "__origin__") and hasattr(tp, "__args__"):
         return _get_args(tp)
 
-    if _raise and not isinstance(tp, type):
+    if should_raise and not isinstance(tp, type):
         raise TypeError(repr(tp))
 
     return ()

@@ -26,7 +26,7 @@ requires-python = ">=3.10"
 dependencies = ["typing-extensions>=4.10; python_version<'3.13'"]
 
 [project.optional-dependencies]
-numpy = ["numpy>=1.24"]
+numpy = ["numpy>=1.23.5"]
 
 [project.urls]
 Repository = "https://github.com/jorenham/optype/"
@@ -37,7 +37,7 @@ Funding = "https://github.com/sponsors/jorenham"
 
 [dependency-groups]
 lint = [
-    "ruff>=0.8.1",
+    "ruff>=0.8.4",
     "sp-repo-review[cli]>=2024.8.19",
 ]
 common = [
@@ -46,8 +46,8 @@ common = [
 ]
 type = [
     {include-group = "common"},
-    "basedmypy[faster-cache]>=2.8.0",
-    "basedpyright>=1.22.1",
+    "basedmypy[faster-cache]>=2.8.1",
+    "basedpyright>=1.23.1",
 ]
 test = [
     {include-group = "common"},

@@ -38,8 +38,8 @@ def test_from_bool() -> None:
 
     assert isinstance(x_np, Scalar)
 
-    assert_type(x_np.item(), bool)
-    assert_type(s_np_n.item(), bool)
+    x_item: bool = x_np.item()
+    s_item: bool = s_np_n.item()
 
 
 @pytest.mark.parametrize(

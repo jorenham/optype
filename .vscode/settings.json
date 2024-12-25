@@ -15,7 +15,7 @@
       "--ide",
       "--config-file=${workspaceFolder}/pyproject.toml"
     ],
-    "mypy-type-checker.cwd": "${fileDirname}",
+    "mypy-type-checker.cwd": ".",
     "mypy-type-checker.path": ["uv", "run", "mypy"],
     "python.testing.pytestEnabled": true
   }
