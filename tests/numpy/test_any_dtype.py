@@ -73,6 +73,10 @@ _NAME_MAP: Final = {
 }
 
 
+def _normalized_dtype_name(dtype: np.dtype[np.generic]) -> str:
+    return dtype.name.split("[")[0]  # avoid e.g. "datetime64[ns]"
+
+
 @pytest.mark.parametrize(
     ("dtype", "names", "chars"),
     [(dtype, *_get_dtype_codes(dtype)) for dtype in _DTYPES],
@@ -89,15 +93,16 @@ def test_dtype_has_codes(
     assert dtype.str[1:] in chars, (dtype.str, chars)
 
     codes = names | chars
-    sctypes: set[type] = set()
+    out_names: set[str] = set()
     for code in codes:
         try:
             dtype_ = np.dtype(code)
         except TypeError:
             continue
-        sctypes.add(dtype_.type)
 
-    assert len(sctypes) == 1
+        out_names.add(_normalized_dtype_name(dtype_))
+
+    assert len(out_names) == 1
 
 
 @pytest.mark.parametrize(
