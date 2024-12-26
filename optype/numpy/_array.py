@@ -43,6 +43,7 @@ __all__ = [
     "CanArrayWrap",
     "HasArrayInterface",
     "HasArrayPriority",
+    "Matrix",
 ]
 
 
@@ -68,6 +69,9 @@ _DTT_co = TypeVar(
 _SCT = TypeVar("_SCT", bound=np.generic, default=np.generic)
 _SCT_co = TypeVar("_SCT_co", bound=np.generic, default=np.generic, covariant=True)
 
+_MT = TypeVar("_MT", bound=int, default=int)
+_NT = TypeVar("_NT", bound=int, default=_MT)
+
 
 Array0D = TypeAliasType(
     "Array0D",
@@ -91,7 +95,29 @@ Array3D = TypeAliasType(
 )
 
 
-###########################
+Matrix = TypeAliasType(
+    "Matrix",
+    np.matrix[tuple[_MT, _NT], np.dtype[_SCT]],
+    type_params=(_SCT, _MT, _NT),
+)
+"""
+Alias of `np.matrix` that is similar to `ArrayND`:
+
+```py
+type Matrix[
+    ST: np.generic = np.generic,
+    MT: int = int,
+    NT: int = MT,
+] = np.matrix[tuple[MT, NT], np.dtype[ST]]
+```
+
+Only a "base" `int` type, or `Literal` or positive integers should be used as type
+arguments to `MT` and `NT`. Be careful not to pass it a `bool` or any other `int`
+subtype such as `Never`. There's also no need to use `Any` for `MT` or `NT`, as
+the (variadic) type parameters of `tuple` are covariant (even though that's
+supposed to be illegal for variadic type params, which makes no fucking sense).
+"""
+
 
 if _x.NP21:
     # numpy >= 2.1: shape is covariant
@@ -190,6 +216,9 @@ else:
 
         def __len__(self, /) -> int: ...
         def __array__(self, /) -> np.ndarray[_NDT_any, np.dtype[_SCT_co]]: ...
+
+
+###########################
 
 
 @runtime_checkable
