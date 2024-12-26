@@ -75,47 +75,10 @@ jobs:
         run: >
           uv run --no-sync
           basedpyright
-          -p config/pyright/numpy-${{ matrix.np }}.json
+          -p scripts/config/bpr-np-${{ matrix.np }}.json
 
       - name: basedmypy
-        if: ${{ matrix.np == '2.2' }}
-        run: uv run --no-sync mypy .
-
-      # currently impossible: https://github.com/KotlinIsland/basedmypy/issues/849
-      # - name: basedmypy
-      #   if: ${{ matrix.np == '2.1' }}
-      #   run: >
-      #     uv run --no-sync
-      #     mypy
-      #     --always-false NP22
-      #     .
-      # - name: basedmypy
-      #   if: ${{ matrix.np == '2.0' }}
-      #   run: >
-      #     uv run --no-sync
-      #     mypy
-      #     --always-false NP21
-      #     --always-false NP22
-      #     .
-      # - name: basedmypy
-      #   if: ${{ matrix.np == '1.25' }}
-      #   run: >
-      #     uv run --no-sync
-      #     mypy
-      #     --always-false NP20
-      #     --always-false NP21
-      #     --always-false NP22
-      #     .
-      # - name: basedmypy
-      #   if: ${{ matrix.np == '1.23' }}
-      #   run: >
-      #     uv run --no-sync
-      #     mypy
-      #     --always-false NP125
-      #     --always-false NP20
-      #     --always-false NP21
-      #     --always-false NP22
-      #     .
+        run: uv run --no-sync scripts/bmp.py
 
   test:
     timeout-minutes: 5

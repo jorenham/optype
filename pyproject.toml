@@ -41,7 +41,7 @@ lint = [
     "sp-repo-review[cli]>=2024.8.19",
 ]
 common = [
-    "numpy>=1.24",
+    "numpy>=1.23.5",
     "typing-extensions>=4.10",
 ]
 type = [
@@ -95,20 +95,14 @@ strict = true
 disable_bytearray_promotion = true
 disable_memoryview_promotion = true
 
-# NOTE: must match [tool.basedpyright.defineConstant]
-always_true = "NP125,NP20,NP21,NP22"
-always_false = "NP30"
-
 allow_redefinition = true
+disallow_any_expr = false
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-# based
-disallow_any_expr = false  # https://github.com/numpy/numpy/pull/27211
-# repo-review recommendations
-warn_unreachable = true
 enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+warn_redundant_casts = true
+warn_unreachable = true
+warn_unused_ignores = true
 
     [[tool.mypy.overrides]]
     module = ["tests.*", "tests.numpy.*"]
@@ -130,12 +124,12 @@ reportUnusedCallResult = false  # https://github.com/microsoft/pyright/issues/86
 reportUnusedImport = false  # dupe of F401
 reportUnusedVariable = false  # dupe of F841
 
-[tool.basedpyright.defineConstant]
-NP125 = true
-NP20 = true
-NP21 = true
-NP22 = true
-NP30 = false
+    [tool.basedpyright.defineConstant]
+    NP125 = true
+    NP20 = true
+    NP21 = true
+    NP22 = true
+    NP30 = false
 
 [tool.pytest.ini_options]
 minversion = "8.0"

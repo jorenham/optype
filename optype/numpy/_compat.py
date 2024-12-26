@@ -20,6 +20,8 @@ NP20: Final = np.__version__.startswith("2.")
 NP21: Final = NP20 and not np.__version__.startswith("2.0.")
 # >=2.2
 NP22: Final = NP21 and not np.__version__.startswith("2.1.")
+# >=2.2
+NP30: Final = NP21 and not np.__version__.startswith("3.")
 
 
 if NP20:

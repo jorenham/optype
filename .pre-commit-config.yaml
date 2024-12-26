@@ -63,7 +63,7 @@ repos:
     hooks:
       - id: basedmypy
         name: basedmypy
-        entry: uv run --no-sync mypy
+        entry: uv run --no-sync scripts/bmp.py
         language: system
         types_or: [python, pyi]
 
