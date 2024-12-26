@@ -1,3 +1,5 @@
+# pyright: reportAny=false
+
 from __future__ import annotations
 
 import ctypes as ct
