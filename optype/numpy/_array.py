@@ -43,6 +43,13 @@ __all__ = [
     "CanArrayWrap",
     "HasArrayInterface",
     "HasArrayPriority",
+    "MArray",
+    "MArray0D",
+    "MArray1D",
+    "MArray1D",
+    "MArray2D",
+    "MArray3D",
+    "Matrix",
 ]
 
 
@@ -68,6 +75,129 @@ _DTT_co = TypeVar(
 _SCT = TypeVar("_SCT", bound=np.generic, default=np.generic)
 _SCT_co = TypeVar("_SCT_co", bound=np.generic, default=np.generic, covariant=True)
 
+_MT = TypeVar("_MT", bound=int, default=int)
+_NT = TypeVar("_NT", bound=int, default=_MT)
+
+
+Matrix = TypeAliasType(
+    "Matrix",
+    np.matrix[tuple[_MT, _NT], np.dtype[_SCT]],
+    type_params=(_SCT, _MT, _NT),
+)
+"""
+Alias of `np.matrix` that is similar to `ArrayND`:
+
+```py
+type Matrix[
+    SCT: np.generic = np.generic,
+    M: int = int,
+    N: int = M,
+] = np.matrix[tuple[M, N], np.dtype[SCT]]
+```
+
+Only a "base" `int` type, or `Literal` or positive integers should be used as type
+arguments to `MT` and `NT`. Be careful not to pass it a `bool` or any other `int`
+subtype such as `Never`. There's also no need to use `Any` for `MT` or `NT`, as
+the (variadic) type parameters of `tuple` are covariant (even though that's
+supposed to be illegal for variadic type params, which makes no fucking sense).
+"""
+
+if _x.NP21:
+    # numpy >= 2.1: shape is covariant
+
+    Array = TypeAliasType(
+        "Array",
+        np.ndarray[_NDT, np.dtype[_SCT]],
+        type_params=(_NDT, _SCT),
+    )
+    """
+    Shape-typed array alias, defined as:
+
+    ```py
+    type Array[
+        NDT: (int, ...) = (int, ...),
+        SCT: np.generic = np.generic,
+    ] = np.ndarray[NDT, np.dtype[SCT]]
+    ```
+    """
+
+    ArrayND = TypeAliasType(
+        "ArrayND",
+        np.ndarray[_NDT, np.dtype[_SCT]],
+        type_params=(_SCT, _NDT),
+    )
+    """
+    Like `Array`, but with flipped type-parameters, i.e.:
+
+    type ArrayND[
+        SCT: np.generic = np.generic,
+        NDT: (int, ...) = (int, ...),
+    ] = np.ndarray[NDT, np.dtype[SCT]]
+
+    Because the optional shape-type parameter comes *after* the scalar-type, `ArrayND`
+    can be seen as a flexible generalization of `npt.NDArray`.
+    """
+
+    MArray = TypeAliasType(
+        "MArray",
+        np.ma.MaskedArray[_NDT, np.dtype[_SCT]],
+        type_params=(_SCT, _NDT),
+    )
+    """
+    Just like `ArrayND`, but for `np.ma.MaskedArray` instead of `np.ndarray`.
+
+    type MArray[
+        SCT: np.generic = np.generic,
+        NDT: (int, ...) = (int, ...),
+    ] = np.ma.MaskedArray[NDT, np.dtype[SCT]]
+    """
+
+    @runtime_checkable
+    @set_module("optype.numpy")
+    class CanArray(Protocol[_NDT_co, _DTT_co]):
+        def __array__(self, /) -> np.ndarray[_NDT_co, _DTT_co]: ...
+
+    @runtime_checkable
+    @set_module("optype.numpy")
+    class CanArrayND(Protocol[_SCT_co, _NDT_co]):
+        """
+        Similar to `onp.CanArray`, but must be sized (i.e. excludes scalars), and is
+        parameterized by only the scalar type (instead of the shape and dtype).
+        """
+
+        def __len__(self, /) -> int: ...
+        def __array__(self, /) -> np.ndarray[_NDT_co, np.dtype[_SCT_co]]: ...
+
+else:
+    # numpy < 2.1: shape is invariant
+
+    Array = TypeAliasType(
+        "Array",
+        np.ndarray[_NDT_any, np.dtype[_SCT]],
+        type_params=(_NDT_any, _SCT),
+    )
+    ArrayND = TypeAliasType(
+        "ArrayND",
+        np.ndarray[_NDT_any, np.dtype[_SCT]],
+        type_params=(_SCT, _NDT_any),
+    )
+    MArray = TypeAliasType(
+        "MArray",
+        np.ma.MaskedArray[_NDT_any, np.dtype[_SCT]],
+        type_params=(_SCT, _NDT_any),
+    )
+
+    @runtime_checkable
+    @set_module("optype.numpy")
+    class CanArray(Protocol[_NDT_any, _DTT_co]):
+        def __array__(self, /) -> np.ndarray[_NDT_any, _DTT_co]: ...
+
+    @runtime_checkable
+    @set_module("optype.numpy")
+    class CanArrayND(Protocol[_SCT_co, _NDT_any]):
+        def __len__(self, /) -> int: ...
+        def __array__(self, /) -> np.ndarray[_NDT_any, np.dtype[_SCT_co]]: ...
+
 
 Array0D = TypeAliasType(
     "Array0D",
@@ -90,106 +220,29 @@ Array3D = TypeAliasType(
     type_params=(_SCT,),
 )
 
+MArray0D = TypeAliasType(
+    "MArray0D",
+    np.ma.MaskedArray[tuple[()], np.dtype[_SCT]],
+    type_params=(_SCT,),
+)
+MArray1D = TypeAliasType(
+    "MArray1D",
+    np.ma.MaskedArray[tuple[int], np.dtype[_SCT]],
+    type_params=(_SCT,),
+)
+MArray2D = TypeAliasType(
+    "MArray2D",
+    np.ma.MaskedArray[tuple[int, int], np.dtype[_SCT]],
+    type_params=(_SCT,),
+)
+MArray3D = TypeAliasType(
+    "MArray3D",
+    np.ma.MaskedArray[tuple[int, int, int], np.dtype[_SCT]],
+    type_params=(_SCT,),
+)
+
 
 ###########################
-
-if _x.NP21:
-    # numpy >= 2.1: shape is covariant
-
-    Array = TypeAliasType(
-        "Array",
-        np.ndarray[_NDT, np.dtype[_SCT]],
-        type_params=(_NDT, _SCT),
-    )
-    """
-    Shape-typed array alias, defined as:
-
-    ```py
-    type Array[
-        ND: (int, ...) = (int, ...),
-        ST: np.generic = np.generic,
-    ] = np.ndarray[ND, np.dtype[ST]]
-    ```
-    """
-
-    ArrayND = TypeAliasType(
-        "ArrayND",
-        np.ndarray[_NDT, np.dtype[_SCT]],
-        type_params=(_SCT, _NDT),
-    )
-    """
-    Like `Array`, but with flipped type-parameters, i.e.:
-
-    type ArrayND[
-        ST: np.generic = np.generic,
-        ND: (int, ...) = (int, ...),
-    ] = np.ndarray[ND, np.dtype[ST]]
-    """
-
-    @runtime_checkable
-    @set_module("optype.numpy")
-    class CanArray(Protocol[_NDT_co, _DTT_co]):
-        def __array__(self, /) -> np.ndarray[_NDT_co, _DTT_co]: ...
-
-    @runtime_checkable
-    @set_module("optype.numpy")
-    class CanArrayND(Protocol[_SCT_co, _NDT_co]):
-        """
-        Similar to `optype.numpy.CanArray`, but must be sized (i.e. excludes scalars),
-        and is parameterized by only the scalar type (instead of the shape and dtype).
-        """
-
-        def __len__(self, /) -> int: ...
-        def __array__(self, /) -> np.ndarray[_NDT_co, np.dtype[_SCT_co]]: ...
-
-else:
-    # numpy < 2.1: shape is invariant
-
-    Array = TypeAliasType(
-        "Array",
-        np.ndarray[_NDT_any, np.dtype[_SCT]],
-        type_params=(_NDT_any, _SCT),
-    )
-    """
-    Shape-typed array alias, defined as:
-
-    ```py
-    type Array[
-        ND: (int, ...) = Any,
-        ST: np.generic = np.generic,
-    ] = np.ndarray[ND, np.dtype[ST]]
-    ```
-    """
-
-    ArrayND = TypeAliasType(
-        "ArrayND",
-        np.ndarray[_NDT_any, np.dtype[_SCT]],
-        type_params=(_SCT, _NDT_any),
-    )
-    """
-    Like `Array`, but with flipped type-parameters, i.e.:
-
-    type ArrayND[
-        ST: np.generic = np.generic,
-        ND: (int, ...) = (int, ...),
-    ] = np.ndarray[ND, np.dtype[ST]]
-    """
-
-    @runtime_checkable
-    @set_module("optype.numpy")
-    class CanArray(Protocol[_NDT_any, _DTT_co]):
-        def __array__(self, /) -> np.ndarray[_NDT_any, _DTT_co]: ...
-
-    @runtime_checkable
-    @set_module("optype.numpy")
-    class CanArrayND(Protocol[_SCT_co, _NDT_any]):
-        """
-        Similar to `optype.numpy.CanArray`, but must be sized (i.e. excludes scalars),
-        and is parameterized by only the scalar type (instead of the shape and dtype).
-        """
-
-        def __len__(self, /) -> int: ...
-        def __array__(self, /) -> np.ndarray[_NDT_any, np.dtype[_SCT_co]]: ...
 
 
 @runtime_checkable
