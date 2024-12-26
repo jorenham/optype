@@ -63,19 +63,19 @@ repos:
     hooks:
       - id: basedmypy
         name: basedmypy
-        entry: uv run mypy
+        entry: uv run --no-sync mypy
         language: system
         types_or: [python, pyi]
 
       - id: basedpyright
         name: basedpyright
-        entry: uv run basedpyright
+        entry: uv run --no-sync basedpyright
         language: system
         types_or: [python, pyi]
 
       - id: basedpyright-verifytypes
         name: basedpyright --verifytypes
-        entry: uv run basedpyright --ignoreexternal --verifytypes optype
+        entry: uv run --no-sync basedpyright --ignoreexternal --verifytypes optype
         language: system
         always_run: true
         pass_filenames: false
