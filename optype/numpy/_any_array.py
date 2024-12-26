@@ -1,4 +1,6 @@
 # mypy: disable-error-code="no-any-explicit"
+# pyright: reportExplicitAny=false
+
 from __future__ import annotations
 
 import sys
@@ -91,7 +93,7 @@ class _AnyArrayPY0(Protocol[_T_co]):
     def __len__(self, /) -> int: ...
     def __getitem__(self, i: int, /) -> _T_co | _AnyArrayPY0[_T_co]: ...
     def __reversed__(self, /) -> Iterator[_T_co | _AnyArrayPY0[_T_co]]: ...
-    def index(self, x: Any, /) -> int: ...  # pyright: ignore[reportAny,reportExplicitAny]
+    def index(self, x: Any, /) -> int: ...  # pyright: ignore[reportAny]
 
 
 _AnyArrayPY: TypeAlias = tuple[_T, ...] | _AnyArrayPY0[_T]

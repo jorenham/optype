@@ -41,7 +41,7 @@ def test_can_array() -> None:
     assert isinstance(nd2_x, onp.CanArray)
     assert not isinstance(nd2_x.tolist(), onp.CanArray)
 
-    mat_x = np.asmatrix([[1, 0], [0, 1]], dt)
+    mat_x = np.matrix([[1, 0], [0, 1]], dt)
     mat_y: onp.CanArray[_Shape2D, np.dtype[np.int8]] = mat_x
     assert isinstance(mat_x, onp.CanArray)
 

@@ -1,4 +1,5 @@
 # mypy: disable-error-code="no-any-explicit, no-any-decorated"
+# pyright: reportInvalidTypeArguments=false
 
 """
 The allowed `np.dtype` arguments for specific scalar types.
@@ -469,7 +470,7 @@ if _x.NP20:
     # I (@jorenham) added them, see https://github.com/numpy/numpy/pull/27008).
     if _x.NP21:
         # `numpy>=2.1`
-        _HasStringDType: Alias = _dt.HasDType[np.dtypes.StringDType]  # type: ignore[type-var] # pyright: ignore[reportInvalidTypeArguments]
+        _HasStringDType: Alias = _dt.HasDType[np.dtypes.StringDType]  # type: ignore[type-var]
         AnyStringDType = TypeAliasType("AnyStringDType", _HasStringDType | _Code_T)  # type: ignore[type-var]
         AnyDType = TypeAliasType(
             "AnyDType",

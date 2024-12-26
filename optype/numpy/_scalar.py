@@ -1,4 +1,6 @@
+# ruff: noqa: PLW1641
 # mypy: disable-error-code="no-any-explicit, no-any-decorated"
+
 from __future__ import annotations
 
 import sys
@@ -8,6 +10,8 @@ import numpy as np
 import numpy.typing as npt
 
 from optype._core._utils import set_module
+
+from ._compat import NP20
 
 
 if sys.version_info >= (3, 13):
@@ -34,7 +38,10 @@ else:
     )
 
 if TYPE_CHECKING:
-    from numpy._core.multiarray import flagsobj
+    if NP20:
+        from numpy._core.multiarray import flagsobj
+    else:
+        from numpy.core.multiarray import flagsobj
 
 
 __all__ = ["Scalar"]
@@ -57,7 +64,6 @@ class Scalar(Protocol[_PT_co, _NB_co]):
     doesn't require all that nasty `numpy.typing.NBitBase` stuff.
     """
 
-    def item(self, k: _L0 | tuple[()] | tuple[_L0] = ..., /) -> _PT_co: ...
     # unfortunately `| int` is required for compat with `numpy.__init__.pyi`
     @property
     def itemsize(self, /) -> _NB_co | int: ...
@@ -81,15 +87,20 @@ class Scalar(Protocol[_PT_co, _NB_co]):
     @property
     def strides(self, /) -> tuple[()]: ...
 
+    def item(self, k: _L0 | tuple[()] | tuple[_L0] = ..., /) -> _PT_co: ...
+
     @property
     def __array_priority__(self, /) -> float: ...  # -1000000.0
     @property
-    def __array_interface__(self, /) -> dict[str, object]: ...  # TypedDict?
+    def __array_interface__(self, /) -> dict[str, Any]: ...  # pyright: ignore[reportExplicitAny]
     @property
     def __array_struct__(self, /) -> CapsuleType: ...
 
-    @override
-    def __hash__(self, /) -> int: ...
+    if NP20:
+
+        @override
+        def __hash__(self, /) -> int: ...
+
     @override
     def __eq__(self, other: object, /) -> np.bool_: ...  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
     @override

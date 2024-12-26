@@ -62,6 +62,11 @@ BOOL: Final = _x.Bool, ct.c_bool, bool
 OBJECT: Final = np.object_, ct.py_object
 
 
+def _shape(a: object, /) -> tuple[int, ...]:
+    # backport of `np.shape` that also works on nunmpy<2 or something
+    return np.asarray(a).shape
+
+
 def test_any_array() -> None:
     type_np = np.int16
     type_ct = ct.c_int16
@@ -84,41 +89,41 @@ def test_any_array() -> None:
 
     v_np = type_np(v)
     v_np_any: onp.AnyArray = [v_np]
-    assert np.shape(v_np) == ()
+    assert _shape(v_np) == ()
 
     # 0d
 
     x0_np = np.array(v)
     x0_np_any: onp.AnyArray = x0_np
-    assert np.shape(x0_np) == ()
+    assert _shape(x0_np) == ()
 
     # 1d
 
     x1_py: list[int] = [v]
     x1_py_any: onp.AnyArray = x1_py
-    assert np.shape(x1_py) == (1,)
+    assert _shape(x1_py) == (1,)
 
     x1_py_np = [x0_np]
     x1_py_np_any: onp.AnyArray = x1_py_np
-    assert np.shape(x1_py_np) == (1,)
+    assert _shape(x1_py_np) == (1,)
 
     x1_np = np.array(x1_py)
     x1_np_any: onp.AnyArray = x1_np
-    assert np.shape(x1_np) == (1,)
+    assert _shape(x1_np) == (1,)
 
     # 2d
 
     x2_py = [x1_py]
     x2_py_any: onp.AnyArray = x2_py
-    assert np.shape(x2_py) == (1, 1)
+    assert _shape(x2_py) == (1, 1)
 
     x2_py_np = [x1_np]
     x2_py_np_any: onp.AnyArray = x2_py_np
-    assert np.shape(x2_py_np) == (1, 1)
+    assert _shape(x2_py_np) == (1, 1)
 
     x2_np = np.array(x2_py)
     x2_np_any: onp.AnyArray = x2_np
-    assert np.shape(x2_np) == (1, 1)
+    assert _shape(x2_np) == (1, 1)
 
 
 @pytest.mark.parametrize("sctype", UNSIGNED_INTEGER)
@@ -232,7 +237,7 @@ def test_any_flexible_array(
 
 
 @pytest.mark.parametrize("sctype", BOOL)
-def test_any_bool_array(sctype: type[bool | np.bool | _ct.Bool]) -> None:
+def test_any_bool_array(sctype: type[bool | np.bool_ | _ct.Bool]) -> None:
     x = np.array(sctype(True))
     x_any: onp.AnyBoolArray = x
     assert np.issubdtype(x.dtype, np.bool_)

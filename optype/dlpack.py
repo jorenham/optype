@@ -17,7 +17,7 @@ else:
     from typing_extensions import CapsuleType, TypeVar, runtime_checkable
 
 
-__all__ = "CanDLPack", "CanDLPackDevice"
+__all__ = "CanDLPack", "CanDLPackCompat", "CanDLPackDevice"
 
 
 def __dir__() -> tuple[str, ...]:
@@ -76,6 +76,7 @@ _DeviceT_co = TypeVar("_DeviceT_co", covariant=True, bound=int, default=int)
 # is utter nonsense.
 
 
+# requires numpy>=2.1
 @runtime_checkable
 class CanDLPack(Protocol[_TypeT_co, _DeviceT_co]):  # type: ignore[misc] # pyright: ignore[reportInvalidTypeVarUse]
     def __dlpack__(  # type: ignore[no-any-explicit]
@@ -89,6 +90,11 @@ class CanDLPack(Protocol[_TypeT_co, _DeviceT_co]):  # type: ignore[misc] # pyrig
         # `numpy.ndarray.__dlpack__` on `numpy < 2.2.0`, this is not possible.
         copy: bool | Any | None = None,  # pyright: ignore[reportExplicitAny]
     ) -> CapsuleType: ...
+
+
+@runtime_checkable
+class CanDLPackCompat(Protocol):
+    def __dlpack__(self, /, *, stream: None = None) -> CapsuleType: ...
 
 
 @runtime_checkable
