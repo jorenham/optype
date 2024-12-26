@@ -251,12 +251,9 @@ The API of `optype` is flat; a single `import optype as opt` is all you need
     - [`Just*` types](#just-types) (experimental)
 - [`optype.dlpack`](#optypedlpack)
 - [`optype.numpy`](#optypenumpy)
-    - [Shape-typing with `Array`](#shape-typing-with-array)
+    - [Shape-typing](#shape-typing)
     - [Array-likes](#array-likes)
-    - [`compat`](#compat)
-    - [`DType`](#dtype)
-    - [`Scalar`](#scalar)
-    - [`UFunc`](#ufunc)
+    - [`compat` module](#compat-module)
     - [`Any*Array` and `Any*DType`](#anyarray-and-anydtype)
     - [Low-level interfaces](#low-level-interfaces)
 
@@ -2256,14 +2253,16 @@ pip install "optype[numpy]"
 > [PEP 696][PEP696] type parameter syntax will be used, which is supported
 > since Python 3.13.
 
-#### Shape-typing with `Array`
+#### Shape-typing
+
+##### Array aliases
 
 Optype provides the generic `onp.Array` type alias for `np.ndarray`.
 It is similar to `npt.NDArray`, but includes two (optional) type parameters:
 one that matches the *shape type* (`ND: tuple[int, ...]`),
 and one that matches the *scalar type* (`ST: np.generic`).
 
-When put the definitions of `npt.NDArray` and `onp.Array` side-by-side,
+When we put the definitions of `npt.NDArray` and `onp.Array` side-by-side,
 their differences become clear:
 
 <table>
@@ -2290,8 +2289,8 @@ their differences become clear:
 ```python
 type NDArray[
     # no shape type
-    ST: generic,  # no default
-] = ndarray[Any, dtype[ST]]
+    SCT: generic,  # no default
+] = ndarray[Any, dtype[SCT]]
 ```
 
 </td>
@@ -2299,9 +2298,9 @@ type NDArray[
 
 ```python
 type Array[
-    ND: (int, ...) = (int, ...),
-    ST: generic = generic,
-] = ndarray[ND, dtype[ST]]
+    NDT: (int, ...) = (int, ...),
+    SCT: generic = generic,
+] = ndarray[NDT, dtype[SCT]]
 ```
 
 </td>
@@ -2309,16 +2308,16 @@ type Array[
 
 ```python
 type ArrayND[
-    ST: generic = generic,
-    ND: (int, ...) = (int, ...),
-] = ndarray[ND, dtype[ST]]
+    SCT: generic = generic,
+    NDT: (int, ...) = (int, ...),
+] = ndarray[NDT, dtype[SCT]]
 ```
 
 </td>
 </tr>
 </table>
 
-Additionally, there are the three `Array{0,1,2,3}D[ST: generic]` aliases, which are
+Additionally, there are the four `Array{0,1,2,3}D` aliases, which are
 equivalent to `Array` with `tuple[()]`, `tuple[int]`, `tuple[int, int]` and
 `tuple[int, int, int]` as shape-type, respectively.
 
@@ -2335,7 +2334,67 @@ equivalent to `Array` with `tuple[()]`, `tuple[int]`, `tuple[int, int]` and
 > See [numpy/numpy#25729](https://github.com/numpy/numpy/issues/25729) and
 > [numpy/numpy#26081](https://github.com/numpy/numpy/pull/26081) for details.
 
-With `onp.Array`, it becomes possible to type the *shape* of arrays.
+In the same way as `ArrayND` for `ndarray` (shown for reference), its subtypes
+`np.ma.MaskedArray` and `np.matrix` are also aliased:
+
+<table>
+<tr>
+<th>
+
+`ArrayND` (`np.ndarray`)
+
+</th>
+<th>
+
+`MArray` (`np.ma.MaskedArray`)
+
+</th>
+<th>
+
+`Matrix` (`np.matrix`)
+
+</th>
+</tr>
+<tr>
+<td>
+
+```python
+type ArrayND[
+    SCT: generic = generic,
+    NDT: (int, ...) = (int, ...),
+] = ndarray[NDT, dtype[SCT]]
+```
+
+</td>
+
+<td>
+
+```python
+type MArray[
+    SCT: generic = generic,
+    NDT: (int, ...) = (int, ...),
+] = ma.MaskedArray[NDT, dtype[SCT]]
+```
+
+</td>
+<td>
+
+```python
+type Matrix[
+    SCT: generic = generic,
+    M: int = int,
+    N: int = M,
+] = matrix[(M, N), dtype[SCT]]
+```
+
+</td>
+</tr>
+</table>
+
+For masked arrays with specific `ndim`, you could also use one of the four
+`MArray{0,1,2,3}D` aliases.
+
+##### Shape aliases
 
 A *shape* is nothing more than a tuple of (non-negative) integers, i.e.
 an instance of `tuple[int, ...]` such as `(42,)`, `(480, 720, 3)` or `()`.
@@ -2659,7 +2718,7 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
 
 Source code: [`optype/numpy/_to.py`][CODE-NP-TO]
 
-#### `compat`
+#### `compat` module
 
 Compatibility module for supporting a wide (currently `1.23` - `2.2`) range of numpy
 versions. It contains two kinds of things:
