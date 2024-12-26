@@ -2,7 +2,7 @@
 Compatibility with older numpy versions.
 """
 
-from ._compat import NP2, Long as long, ULong as ulong  # noqa: N813
+from ._compat import NP125, Long as long, ULong as ulong  # noqa: N813
 from ._scalar import (
     cfloating as complexfloating,
     floating,
@@ -32,7 +32,7 @@ __all__ = [
     "unsignedinteger",
 ]
 
-if NP2:
+if NP125:
     from numpy.exceptions import (
         AxisError,
         ComplexWarning,
@@ -50,8 +50,4 @@ else:
         VisibleDeprecationWarning,
     )
 
-    try:
-        from numpy import DTypePromotionError
-    except ImportError:
-        # numpy<1.25
-        class DTypePromotionError(TypeError): ...
+    class DTypePromotionError(TypeError): ...

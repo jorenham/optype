@@ -1,4 +1,6 @@
 # mypy: disable-error-code="no-any-explicit"
+# pyright: reportExplicitAny=false
+
 from __future__ import annotations
 
 import sys
@@ -77,12 +79,12 @@ _VT = TypeVar("_VT", default=_ST)
 class _AnyArrayNP(Protocol[_ST_co]):
     def __len__(self, /) -> int: ...
 
-    if _x.NP2 and not _x.NP20:
-        # `numpy>=2.1`
+    if _x.NP21:
+
         def __array__(self, /) -> np.ndarray[tuple[int, ...], np.dtype[_ST_co]]: ...
 
     else:
-        # `numpy<2.1`
+
         def __array__(self, /) -> np.ndarray[Any, np.dtype[_ST_co]]: ...
 
 
@@ -91,7 +93,7 @@ class _AnyArrayPY0(Protocol[_T_co]):
     def __len__(self, /) -> int: ...
     def __getitem__(self, i: int, /) -> _T_co | _AnyArrayPY0[_T_co]: ...
     def __reversed__(self, /) -> Iterator[_T_co | _AnyArrayPY0[_T_co]]: ...
-    def index(self, x: Any, /) -> int: ...  # pyright: ignore[reportAny,reportExplicitAny]
+    def index(self, x: Any, /) -> int: ...  # pyright: ignore[reportAny]
 
 
 _AnyArrayPY: TypeAlias = tuple[_T, ...] | _AnyArrayPY0[_T]
@@ -172,19 +174,19 @@ AnyTimeDelta64Array: TypeAlias = _AnyArray[np.timedelta64]
 AnyObjectArray: TypeAlias = _AnyArray[np.object_, np.object_ | opt.Just[object]]
 
 
-if _x.NP2:
+if _x.NP20:
 
     @set_module("optype.numpy")
     class AnyStringArray(Protocol):
         def __len__(self, /) -> int: ...
 
-        if _x.NP2 and not _x.NP20:
+        if _x.NP21:
             # `numpy>=2.1`
             def __array__(
                 self, /
             ) -> np.ndarray[tuple[int, ...], np.dtypes.StringDType]: ...
 
-        elif _x.NP2:
+        elif _x.NP20:
             # `numpy>=2,<2.1`
             def __array__(self, /) -> np.ndarray[Any, np.dtype[Never]]: ...
 

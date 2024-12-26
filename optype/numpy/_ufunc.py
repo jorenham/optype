@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 import sys
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from typing import (
     TYPE_CHECKING,
+    Any,
     Literal as L,  # noqa: N817
     TypeAlias as Alias,
 )
@@ -51,8 +52,7 @@ _IdT_co = TypeVar(
 )
 
 
-if _x.NP2 and not _x.NP20:
-    # `numpy>=2.1`
+if _x.NP21:
 
     @runtime_checkable
     @set_module("optype.numpy")
@@ -109,7 +109,7 @@ if _x.NP2 and not _x.NP20:
         # Also note that the elements aren't necessarily unique, because the
         # available data types are system dependent.
         @property
-        def types(self, /) -> list[LiteralString]: ...
+        def types(self, /) -> Sequence[LiteralString]: ...
 
         # raises `ValueError` i.f.f. `nout != 1 or bool(signature)`
         @property
@@ -160,7 +160,7 @@ else:
         @property
         def ntypes(self, /) -> int: ...
         @property
-        def types(self, /) -> list[str]: ...
+        def types(self, /) -> Sequence[str]: ...
 
         # The following *methods* were incorrectly typed prior to NumPy 2.1,
         # which I (@jorenham) fixed: https://github.com/numpy/numpy/pull/26847
@@ -170,14 +170,18 @@ else:
         def outer(self, /) -> _AnyFunc | None: ...
         @property
         def reduce(self, /) -> _AnyFunc | None: ...
-        @property
-        def reduceat(self, /) -> Callable[..., _AnyArray] | None: ...
+
+        if _x.NP125:
+            # `reduceat` was missing in the stubs in `1.23`
+            @property
+            def reduceat(self, /) -> Callable[..., _AnyArray] | None: ...
+
         @property
         def accumulate(self, /) -> Callable[..., _AnyArray] | None: ...
 
 
 _MethodCommon: Alias = L["__call__", "reduce", "reduceat", "accumulate", "outer"]
-if _x.NP2:  # type: ignore[redundant-expr]
+if _x.NP20:
     _Method: Alias = L[_MethodCommon, "at"]
 else:
     _Method: Alias = L[_MethodCommon, "inner"]
@@ -205,8 +209,8 @@ class CanArrayUFunc(Protocol[_UFT_contra, _T_co]):
         /,
         ufunc: _UFT_contra,
         method: _Method,
-        *args: object,
-        **kwargs: object,
+        *args: Any,  # pyright: ignore[reportAny, reportExplicitAny]
+        **kwargs: Any,  # pyright: ignore[reportAny, reportExplicitAny]
     ) -> _T_co: ...
 
 

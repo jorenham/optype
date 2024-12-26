@@ -346,14 +346,14 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 common = [
-    { name = "numpy", specifier = ">=1.24" },
+    { name = "numpy", specifier = ">=1.23.5" },
     { name = "typing-extensions", specifier = ">=4.10" },
 ]
 dev = [
     { name = "basedmypy", extras = ["faster-cache"], specifier = ">=2.8.1" },
     { name = "basedpyright", specifier = ">=1.23.1" },
     { name = "beartype", specifier = ">=0.19.0" },
-    { name = "numpy", specifier = ">=1.24" },
+    { name = "numpy", specifier = ">=1.23.5" },
     { name = "pre-commit", specifier = ">=4.0.1" },
     { name = "pytest", specifier = ">=8.3.4" },
     { name = "ruff", specifier = ">=0.8.4" },
@@ -367,21 +367,21 @@ lint = [
 ]
 test = [
     { name = "beartype", specifier = ">=0.19.0" },
-    { name = "numpy", specifier = ">=1.24" },
+    { name = "numpy", specifier = ">=1.23.5" },
     { name = "pytest", specifier = ">=8.3.4" },
     { name = "typing-extensions", specifier = ">=4.10" },
 ]
 type = [
     { name = "basedmypy", extras = ["faster-cache"], specifier = ">=2.8.1" },
     { name = "basedpyright", specifier = ">=1.23.1" },
-    { name = "numpy", specifier = ">=1.24" },
+    { name = "numpy", specifier = ">=1.23.5" },
     { name = "typing-extensions", specifier = ">=4.10" },
 ]
 typetest = [
     { name = "basedmypy", extras = ["faster-cache"], specifier = ">=2.8.1" },
     { name = "basedpyright", specifier = ">=1.23.1" },
     { name = "beartype", specifier = ">=0.19.0" },
-    { name = "numpy", specifier = ">=1.24" },
+    { name = "numpy", specifier = ">=1.23.5" },
     { name = "pytest", specifier = ">=8.3.4" },
     { name = "typing-extensions", specifier = ">=4.10" },
 ]

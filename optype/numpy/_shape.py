@@ -8,7 +8,7 @@ else:
     from typing_extensions import TypeAliasType, TypeVar, Unpack
 
 
-from ._compat import NP2
+from ._compat import NP20
 
 
 __all__ = [
@@ -73,7 +73,7 @@ AtMost3D = TypeAliasType(
 
 # ND
 
-if NP2:
+if NP20:
     NDim = TypeAliasType(
         "NDim",
         Literal[

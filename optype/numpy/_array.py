@@ -93,7 +93,7 @@ Array3D = TypeAliasType(
 
 ###########################
 
-if _x.NP2 and not _x.NP20:
+if _x.NP21:
     # numpy >= 2.1: shape is covariant
 
     Array = TypeAliasType(
@@ -246,7 +246,7 @@ class CanArrayFinalize(Protocol[_T_contra]):
 @runtime_checkable
 @set_module("optype.numpy")
 class CanArrayWrap(Protocol):
-    if _x.NP2:
+    if _x.NP20:
 
         def __array_wrap__(
             self,
