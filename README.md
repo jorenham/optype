@@ -3088,7 +3088,7 @@ See the [docs][REF-SCT] for more info on the NumPy scalar type hierarchy.
 [^6]: On NumPy 1 `np.uint` and `np.int_` are what in NumPy 2 are now the `np.ulong` and `np.long` types, respectively.
 [^7]: Since NumPy 2, `np.uint` and `np.int_` are aliases for `np.uintp` and `np.intp`, respectively.
 
-##### Floats
+##### Real floats
 
 <table>
     <tr>
@@ -3151,7 +3151,7 @@ See the [docs][REF-SCT] for more info on the NumPy scalar type hierarchy.
 [^13]: Depending on the platform, `np.longdouble` is (almost always) an alias for **either** `float128`,
     `float96`, or (sometimes) `float64`.
 
-##### Complex numbers
+##### Complex floats
 
 <table>
     <tr>
@@ -3224,17 +3224,21 @@ that depends on the specific `np.dtype` instantiation.
         <th>dtype-like</th>
     </tr>
     <tr>
-        <td><code>bytes_</code></td>
-        <td rowspan="2"><code>character</code></td>
-        <td><code>BytesDType</code></td>
-        <td><code>AnyBytesArray</code></td>
-        <td><code>AnyBytesDType</code></td>
-    </tr>
-    <tr>
         <td><code>str_</code></td>
+        <td rowspan="3"><code>character</code></td>
         <td><code>StrDType</code></td>
         <td><code>AnyStrArray</code></td>
         <td><code>AnyStrDType</code></td>
+    </tr>
+    <tr>
+        <td rowspan="2"><code>bytes_</code></td>
+        <td><code>BytesDType</code></td>
+        <td rowspan="2"><code>AnyBytesArray</code></td>
+        <td><code>AnyBytesDType</code></td>
+    </tr>
+    <tr>
+        <td><code>dtype("c")</code></td>
+        <td><code>AnyBytes8DType</code></td>
     </tr>
     <tr>
         <td><code>void</code></td>
