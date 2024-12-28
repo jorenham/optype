@@ -83,6 +83,7 @@ __all__ = [
     "AnyTimeDelta64DType",
 
     "AnyBytesDType",
+    "AnyBytes8DType",
     "AnyStrDType",
     "AnyVoidDType",
     "AnyObjectDType",
@@ -276,6 +277,7 @@ AnyComplexFloatingDType = TypeAliasType(
 )
 
 # temporal
+# NOTE: The units only include the "unit units", even though e.g.`[5s]` is also valid.
 
 _Name_M8: Alias = L[
     "datetime64",
@@ -356,19 +358,26 @@ AnyTimeDelta64DType = TypeAliasType(
 # flexible
 
 _Name_U: Alias = L["str", "str_", "unicode"]
-_Char_U: Alias = L["U", "U0", "<U0", ">U0"]
+_Char_U: Alias = L["U", "U0", "|U0", "<U0", ">U0"]
 _Code_U: Alias = L[_Name_U, _Char_U]
 AnyStrDType = TypeAliasType("AnyStrDType", type[str] | _ToDType[np.str_] | _Code_U)
 
 _Name_S: Alias = L["bytes", "bytes_"]
-_Char_S: Alias = L["S", "S0", "|S0"]
+_Char_S: Alias = L["S", "S0", "|S0", "<S0", ">S0"]
 _Code_S: Alias = L[_Name_S, _Char_S]
 AnyBytesDType = TypeAliasType(
     "AnyBytesDType",
     type[bytes] | _ToDType[np.bytes_] | _Code_S,
 )
 
-_Code_SU: Alias = L[_Code_U, _Code_S]
+# NOTE: `dtype("c").name == "bytes8"`, but `dtype("bytes8")` raises a TypeError.
+_Name_c: Alias = L["bytes8"]
+# NOTE: `dtype("c") == dtype("S1"), but `dtype("c").char != dtype("S1")`
+_Char_c: Alias = L["c", "S1", "|S1", "<S1", ">S1"]
+_Code_c: Alias = L[_Name_c, _Char_c]
+AnyBytes8DType = TypeAliasType("AnyBytes8DType", _Code_c)
+
+_Code_SU: Alias = L[_Code_U, _Code_S, _Code_c]
 AnyCharacterDType = TypeAliasType(
     "AnyCharacterDType",
     type[bytes | str] | _ToDType[np.character] | _Code_SU,
