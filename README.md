@@ -2936,8 +2936,23 @@ See the [docs][REF-SCT] for more info on the NumPy scalar type hierarchy.
         <th>dtype-like</th>
     </tr>
     <tr>
+<td>
+
+`uint_` [^5]
+
+</td>
+        <td rowspan="9"><code>unsignedinteger</code></td>
+        <td rowspan="2"></td>
+        <td><code>AnyUIntArray</code></td>
+        <td><code>AnyUIntDType</code></td>
+    </tr>
+    <tr>
+        <td><code>uintp</code></td>
+        <td><code>AnyUIntPArray</code></td>
+        <td><code>AnyUIntPDType</code></td>
+    </tr>
+    <tr>
         <td><code>uint8</code>, <code>ubyte</code></td>
-        <td rowspan="8"><code>unsignedinteger</code></td>
         <td><code>UInt8DType</code></td>
         <td><code>AnyUInt8Array</code></td>
         <td><code>AnyUInt8DType</code></td>
@@ -2951,7 +2966,7 @@ See the [docs][REF-SCT] for more info on the NumPy scalar type hierarchy.
     <tr>
 <td>
 
-`uint32`[^5]
+`uint32`[^6]
 
 </td>
         <td><code>UInt32DType</code></td>
@@ -2967,7 +2982,7 @@ See the [docs][REF-SCT] for more info on the NumPy scalar type hierarchy.
     <tr>
 <td>
 
-`uintc`[^5]
+`uintc`[^6]
 
 </td>
         <td><code>UIntDType</code></td>
@@ -2977,17 +2992,7 @@ See the [docs][REF-SCT] for more info on the NumPy scalar type hierarchy.
     <tr>
 <td>
 
-`uintp`, `uint_` [^7]
-
-</td>
-        <td></td>
-        <td><code>AnyUIntPArray</code></td>
-        <td><code>AnyUIntPDType</code></td>
-    </tr>
-    <tr>
-<td>
-
-`ulong`[^6]
+`ulong`[^7]
 
 </td>
         <td><code>ULongDType</code></td>
@@ -3018,14 +3023,29 @@ See the [docs][REF-SCT] for more info on the NumPy scalar type hierarchy.
         <th>dtype-like</th>
     </tr>
     <tr>
-        <td><code>int8</code></td>
-        <td rowspan="8"><code>signedinteger</code></td>
+<td>
+
+`int_` [^5]
+
+</td>
+        <td rowspan="9"><code>signedinteger</code></td>
+        <td rowspan="2"></td>
+        <td><code>AnyIntArray</code></td>
+        <td><code>AnyIntDType</code></td>
+    </tr>
+    <tr>
+        <td><code>intp</code></td>
+        <td><code>AnyIntPArray</code></td>
+        <td><code>AnyIntPDType</code></td>
+    </tr>
+    <tr>
+        <td><code>int8</code>, <code>byte</code></td>
         <td><code>Int8DType</code></td>
         <td><code>AnyInt8Array</code></td>
         <td><code>AnyInt8DType</code></td>
     </tr>
     <tr>
-        <td><code>int16</code></td>
+        <td><code>int16</code>, <code>short</code></td>
         <td><code>Int16DType</code></td>
         <td><code>AnyInt16Array</code></td>
         <td><code>AnyInt16DType</code></td>
@@ -3033,7 +3053,7 @@ See the [docs][REF-SCT] for more info on the NumPy scalar type hierarchy.
     <tr>
 <td>
 
-`int32`[^5]
+`int32`[^6]
 
 </td>
         <td><code>Int32DType</code></td>
@@ -3049,7 +3069,7 @@ See the [docs][REF-SCT] for more info on the NumPy scalar type hierarchy.
     <tr>
 <td>
 
-`intc`[^5]
+`intc`[^6]
 
 </td>
         <td><code>IntDType</code></td>
@@ -3059,17 +3079,7 @@ See the [docs][REF-SCT] for more info on the NumPy scalar type hierarchy.
     <tr>
 <td>
 
-`intp`, `int_` [^7]
-
-</td>
-        <td></td>
-        <td><code>AnyIntPArray</code></td>
-        <td><code>AnyIntPDType</code></td>
-    </tr>
-    <tr>
-<td>
-
-`long`[^6]
+`long`[^7]
 
 </td>
         <td><code>LongDType</code></td>
@@ -3084,11 +3094,11 @@ See the [docs][REF-SCT] for more info on the NumPy scalar type hierarchy.
     </tr>
 </table>
 
-[^5]: On unix-based platforms `np.[u]intc` are aliases for `np.[u]int32`.
-[^6]: On NumPy 1 `np.uint` and `np.int_` are what in NumPy 2 are now the `np.ulong` and `np.long` types, respectively.
-[^7]: Since NumPy 2, `np.uint` and `np.int_` are aliases for `np.uintp` and `np.intp`, respectively.
+[^5]: Since NumPy 2, `np.uint` and `np.int_` are aliases for `np.uintp` and `np.intp`, respectively.
+[^6]: On unix-based platforms `np.[u]intc` are aliases for `np.[u]int32`.
+[^7]: On NumPy 1 `np.uint` and `np.int_` are what in NumPy 2 are now the `np.ulong` and `np.long` types, respectively.
 
-##### Floats
+##### Real floats
 
 <table>
     <tr>
@@ -3151,7 +3161,7 @@ See the [docs][REF-SCT] for more info on the NumPy scalar type hierarchy.
 [^13]: Depending on the platform, `np.longdouble` is (almost always) an alias for **either** `float128`,
     `float96`, or (sometimes) `float64`.
 
-##### Complex numbers
+##### Complex floats
 
 <table>
     <tr>
@@ -3224,17 +3234,21 @@ that depends on the specific `np.dtype` instantiation.
         <th>dtype-like</th>
     </tr>
     <tr>
-        <td><code>bytes_</code></td>
-        <td rowspan="2"><code>character</code></td>
-        <td><code>BytesDType</code></td>
-        <td><code>AnyBytesArray</code></td>
-        <td><code>AnyBytesDType</code></td>
-    </tr>
-    <tr>
         <td><code>str_</code></td>
+        <td rowspan="3"><code>character</code></td>
         <td><code>StrDType</code></td>
         <td><code>AnyStrArray</code></td>
         <td><code>AnyStrDType</code></td>
+    </tr>
+    <tr>
+        <td rowspan="2"><code>bytes_</code></td>
+        <td><code>BytesDType</code></td>
+        <td rowspan="2"><code>AnyBytesArray</code></td>
+        <td><code>AnyBytesDType</code></td>
+    </tr>
+    <tr>
+        <td><code>dtype("c")</code></td>
+        <td><code>AnyBytes8DType</code></td>
     </tr>
     <tr>
         <td><code>void</code></td>

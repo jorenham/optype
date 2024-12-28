@@ -57,6 +57,7 @@ _DTYPES: Final = (
     np.dtype(np.clongdouble),
     np.dtype(np.object_),
     np.dtype(np.bytes_),
+    np.dtype("c"),
     np.dtype(np.str_),
     np.dtype(np.void),
     np.dtype(np.datetime64),
