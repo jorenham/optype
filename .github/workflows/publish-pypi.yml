@@ -1,4 +1,4 @@
-name: Build a new release, and publish to pyy
+name: Build a new release, and publish to PyPI
 
 on:
   workflow_dispatch:
@@ -16,7 +16,7 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - uses: actions/checkout@v4\
+      - uses: actions/checkout@v4
       - name: setup uv
         uses: astral-sh/setup-uv@v5
         with:
