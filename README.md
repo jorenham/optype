@@ -2624,15 +2624,15 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
 <tr>
     <th align="center" colspan="2"><i>exact</i> scalar types</th>
     <th align="center">scalar-like</th>
-    <th align="center"><code>{1,2,3}</code>-d array-like</th>
-    <th align="center"><code>>0</code>-d array-like</th>
+    <th align="center"><code>{1,2,3,N}</code>-d array-like</th>
+    <th align="center">strict <code>{1,2,3}</code>-d array-like</th>
 </tr>
 <tr>
     <td align="left"><code>bool</code></td>
     <td align="left"><code>bool_</code></td>
     <td align="left"><code>ToJustBool</code></td>
-    <td align="left"><code>ToJustBool[strict]{1,2,3}D</code></td>
-    <td align="left"><code>ToJustBoolND</code></td>
+    <td align="left"><code>ToJustBool{}D</code></td>
+    <td align="left"><code>ToJustBoolStrict{}D</code></td>
 </tr>
 <tr>
     <td align="left">
@@ -2642,15 +2642,15 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
     </td>
     <td align="left"><code>bool_</code></td>
     <td align="left"><code>ToBool</code></td>
-    <td align="left"><code>ToBool[strict]{1,2,3}D</code></td>
-    <td align="left"><code>ToBoolND</code></td>
+    <td align="left"><code>ToBool{}D</code></td>
+    <td align="left"><code>ToBoolStrict{}D</code></td>
 </tr>
 <tr>
     <td align="left"><code>~int</code></td>
     <td align="left"><code>integer</code></td>
     <td align="left"><code>ToJustInt</code></td>
-    <td align="left"><code>ToJustInt[strict]{1,2,3}D</code></td>
-    <td align="left"><code>ToJustIntND</code></td>
+    <td align="left"><code>ToJustInt{}D</code></td>
+    <td align="left"><code>ToJustIntStrict{}D</code></td>
 </tr>
 <tr>
     <td align="left">
@@ -2662,15 +2662,39 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
         <code>| bool_</code>
     </td>
     <td align="left"><code>ToInt</code></td>
-    <td align="left"><code>ToInt[strict]{1,2,3}D</code></td>
-    <td align="left"><code>ToIntND</code></td>
+    <td align="left"><code>ToInt{}D</code></td>
+    <td align="left"><code>ToIntStrict{}D</code></td>
+</tr>
+<tr>
+    <td align="left"><code>~float</code></td>
+    <td align="left"><code>float64</code></td>
+    <td align="left"><code>ToJustFloat64</code></td>
+    <td align="left"><code>ToJustFloat64_{}D</code></td>
+    <td align="left"><code>ToJustFloat64Strict{}D</code></td>
+</tr>
+<tr>
+    <td align="left">
+        <code>float</code><br>
+        <code>| int</code><br>
+        <code>| bool</code>
+    </td>
+    <td align="left">
+        <code>float64</code><br>
+        <code>| float32</code><br>
+        <code>| float16</code><br>
+        <code>| integer</code><br>
+        <code>| bool_</code>
+    </td>
+    <td align="left"><code>ToFloat64</code></td>
+    <td align="left"><code>ToFloat64_{}D</code></td>
+    <td align="left"><code>ToFloat64Strict{}D</code></td>
 </tr>
 <tr>
     <td align="left"><code>~float</code></td>
     <td align="left"><code>floating</code></td>
     <td align="left"><code>ToJustFloat</code></td>
-    <td align="left"><code>ToJustFloat[strict]{1,2,3}D</code></td>
-    <td align="left"><code>ToJustFloatND</code></td>
+    <td align="left"><code>ToJustFloat{}D</code></td>
+    <td align="left"><code>ToJustFloatStrict{}D</code></td>
 </tr>
 <tr>
     <td align="left">
@@ -2684,15 +2708,43 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
         <code>| bool_</code>
     </td>
     <td align="left"><code>ToFloat</code></td>
-    <td align="left"><code>ToFloat[strict]{1,2,3}D</code></td>
-    <td align="left"><code>ToFloatND</code></td>
+    <td align="left"><code>ToFloat{}D</code></td>
+    <td align="left"><code>ToFloatStrict{}D</code></td>
+</tr>
+<tr>
+    <td align="left"><code>~complex</code></td>
+    <td align="left"><code>complex128</code></td>
+    <td align="left"><code>ToJustComplex128</code></td>
+    <td align="left"><code>ToJustComplex128_{}D</code></td>
+    <td align="left"><code>ToJustComplex128Strict{}D</code></td>
+</tr>
+<tr>
+    <td align="left">
+        <code>complex</code><br>
+        <code>| float</code><br>
+        <code>| int</code><br>
+        <code>| bool</code>
+    </td>
+    <td align="left">
+        <code>complex128</code><br>
+        <code>| complex64</code><br>
+        <code>| float64</code><br>
+        <code>| float64</code><br>
+        <code>| float32</code><br>
+        <code>| float16</code><br>
+        <code>| integer</code><br>
+        <code>| bool_</code>
+    </td>
+    <td align="left"><code>ToComplex128</code></td>
+    <td align="left"><code>ToComplex128_{}D</code></td>
+    <td align="left"><code>ToComplex128Strict{}D</code></td>
 </tr>
 <tr>
     <td align="left"><code>~complex</code></td>
     <td align="left"><code>complexfloating</code></td>
     <td align="left"><code>ToJustComplex</code></td>
-    <td align="left"><code>ToJustComplex[strict]{1,2,3}D</code></td>
-    <td align="left"><code>ToJustComplexND</code></td>
+    <td align="left"><code>ToJustComplex{}D</code></td>
+    <td align="left"><code>ToJustComplexStrict{}D</code></td>
 </tr>
 <tr>
     <td align="left">
@@ -2706,8 +2758,8 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
         <code>| bool_</code>
     </td>
     <td align="left"><code>ToComplex</code></td>
-    <td align="left"><code>ToComplex[strict]{1,2,3}D</code></td>
-    <td align="left"><code>ToComplexND</code></td>
+    <td align="left"><code>ToComplex{}D</code></td>
+    <td align="left"><code>ToComplexStrict{}D</code></td>
 </tr>
 <tr>
     <td align="left">
@@ -2720,8 +2772,8 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
     </td>
     <td align="left"><code>generic</code></td>
     <td align="left"><code>ToScalar</code></td>
-    <td align="left"><code>ToArray[strict]{1,2,3}D</code></td>
-    <td align="left"><code>ToArrayND</code></td>
+    <td align="left"><code>ToArray{}D</code></td>
+    <td align="left"><code>ToArrayStrict{}D</code></td>
 </tr>
 </table>
 
