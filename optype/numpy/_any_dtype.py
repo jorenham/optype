@@ -95,8 +95,8 @@ __all__ = [
 _SCT = TypeVar("_SCT", bound=np.generic)
 _SCT_co = TypeVar("_SCT_co", covariant=True, bound=np.generic)
 
-_IsFloat: Alias = type[opt.Just[float]]
-_IsComplex: Alias = type[opt.Just[complex]]
+_IsFloat: Alias = type[opt.JustFloat]
+_IsComplex: Alias = type[opt.JustComplex]
 _IsObject: Alias = type[opt.Just[object]]
 
 
