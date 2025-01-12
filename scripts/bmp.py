@@ -59,7 +59,12 @@ def _np_version_range(
 def main(*args: str) -> int:
     v0 = _np_version()
 
-    cmd: list[str] = ["mypy", "--tb", "--hide-error-context"]
+    cmd: list[str] = [
+        "mypy",
+        "--tb",
+        "--hide-error-context",
+        "--hide-error-code-links",
+    ]
     for vi in _np_version_range():
         const = f"NP{vi[0]}{vi[1]}"
         supported = "true" if v0 >= vi else "false"
