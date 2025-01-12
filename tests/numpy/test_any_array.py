@@ -32,7 +32,7 @@ _UNSIGNED_INTEGER_CT: Final = (
     ct.c_uint8, ct.c_uint16, ct.c_uint32, ct.c_uint64, ct.c_size_t,
     ct.c_ubyte, ct.c_ushort, ct.c_uint, ct.c_ulong, ct.c_ulonglong,
 )  # fmt: skip
-UNSIGNED_INTEGER: Final = (*_UNSIGNED_INTEGER_NP, *_UNSIGNED_INTEGER_CT)
+UNSIGNED_INTEGER: Final = *_UNSIGNED_INTEGER_NP, *_UNSIGNED_INTEGER_CT
 _SIGNED_INTEGER_NP: Final = (
     np.int8, np.int16, np.int32, np.int64, np.intp,
     np.byte, np.short, np.intc, _x.Long, np.longlong,
@@ -41,8 +41,8 @@ _SIGNED_INTEGER_CT: Final = (
     ct.c_int8, ct.c_int16, ct.c_int32, ct.c_int64, ct.c_ssize_t,
     ct.c_byte, ct.c_short, ct.c_int, ct.c_long, ct.c_longlong,
 )  # fmt: skip
-SIGNED_INTEGER: Final = (*_SIGNED_INTEGER_NP, *_SIGNED_INTEGER_CT)
-INTEGER: Final = (*UNSIGNED_INTEGER, *SIGNED_INTEGER)
+SIGNED_INTEGER: Final = *_SIGNED_INTEGER_NP, *_SIGNED_INTEGER_CT
+INTEGER: Final = *UNSIGNED_INTEGER, *SIGNED_INTEGER
 
 _FLOATING_NP: Final = (
     np.float16, np.float32, np.float64,
@@ -59,9 +59,13 @@ STR: Final = np.str_, str
 BYTES: Final = np.bytes_, ct.c_char, bytes
 CHARACTER: Final = *STR, *BYTES
 VOID: Final = (np.void,)  # TODO: structured
-FLEXIBLE: Final = (*VOID, *CHARACTER)
+FLEXIBLE: Final = *VOID, *CHARACTER
 BOOL: Final = _x.Bool, ct.c_bool, bool
 OBJECT: Final = np.object_, ct.py_object
+
+
+# workaround for `numpy==2.1.*` where shape can be `Any`
+# mypy: disable-error-code="no-any-return"
 
 
 def _shape(a: object, /) -> tuple[int, ...]:
@@ -147,27 +151,21 @@ def test_any_signed_integer_array(
 
 
 @pytest.mark.parametrize("sctype", INTEGER)
-def test_any_integer_array(
-    sctype: type[_sc.integer | _ct.Integer],
-) -> None:
+def test_any_integer_array(sctype: type[_sc.integer | _ct.Integer]) -> None:
     x = np.array(sctype(42))
     x_any: onp.AnyIntegerArray = x
     assert np.issubdtype(x.dtype, np.integer)
 
 
 @pytest.mark.parametrize("sctype", FLOATING)
-def test_any_floating_array(
-    sctype: type[_sc.floating | _ct.Floating],
-) -> None:
+def test_any_floating_array(sctype: type[_sc.floating | _ct.Floating]) -> None:
     x = np.array(sctype(42))
     x_any: onp.AnyFloatingArray = x
     assert np.issubdtype(x.dtype, np.floating)
 
 
 @pytest.mark.parametrize("sctype", COMPLEX_FLOATING)
-def test_any_complex_floating_array(
-    sctype: type[_sc.cfloating],
-) -> None:
+def test_any_complex_floating_array(sctype: type[_sc.cfloating]) -> None:
     x = np.array(sctype(42 + 42j))
     x_any: onp.AnyComplexFloatingArray = x
     assert np.issubdtype(x.dtype, np.complexfloating)
