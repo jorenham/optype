@@ -22,6 +22,8 @@ NP20: Final = NP126 and not np.__version__.startswith("1.26.")
 NP21: Final = NP20 and not np.__version__.startswith("2.0.")
 # >=2.2
 NP22: Final = NP21 and not np.__version__.startswith("2.1.")
+# >=2.3
+NP23: Final = NP22 and not np.__version__.startswith("2.2.")
 # >=3.0
 NP30: Final = False
 

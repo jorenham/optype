@@ -12,10 +12,10 @@ from typing_extensions import Generator
 _Version: TypeAlias = tuple[int, int]
 
 # TODO: figure these out dynamically, e.g. with `distutils` or from `pyproject.toml`
-_NP_MIN: Final = 1, 23
-_NP_MAX: Final = 2, 2
-
-_NP_MAX_1: Final = 26
+_NP1_MIN: Final = 1, 23
+_NP1_MAX: Final = 1, 26
+_NP2_MIN: Final = 2, 0
+_NP2_MAX: Final = 2, 3
 
 
 def _np_version() -> _Version:
@@ -23,16 +23,16 @@ def _np_version() -> _Version:
 
     major, minor = map(int, np.__version__.split(".", 3)[:2])
     version = major, minor
-    assert _NP_MIN <= version <= _NP_MAX
+    assert _NP1_MIN <= version <= _NP2_MAX
     return version
 
 
 def _np_version_range(
-    first: _Version = _NP_MIN,
-    last: _Version = _NP_MAX,
+    first: _Version = _NP1_MIN,
+    last: _Version = _NP2_MAX,
 ) -> Generator[_Version]:
-    assert _NP_MIN <= first <= _NP_MAX
-    assert _NP_MIN <= last <= _NP_MAX
+    assert _NP1_MIN <= first <= _NP2_MAX
+    assert _NP1_MIN <= last <= _NP2_MAX
 
     if first >= last:
         return
@@ -40,10 +40,9 @@ def _np_version_range(
     v0, v1 = first
 
     while v0 < last[0]:
-        if v1 > _NP_MAX_1:
+        if v1 > _NP1_MAX[1]:
             assert v0 == 1
-            v0 += 1
-            v1 = 0
+            v0, v1 = _NP2_MIN
             break
 
         yield v0, v1

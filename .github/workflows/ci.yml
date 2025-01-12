@@ -55,7 +55,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        np: ["1.23", "1.25", "2.0", "2.1", "2.2"]
+        np: ["1.23", "1.24", "1.25", "1.26", "2.0", "2.1", "2.2"]
 
     steps:
       - uses: actions/checkout@v4
@@ -69,7 +69,7 @@ jobs:
         run: uv sync --locked
 
       - name: Install numpy ${{ matrix.np }}
-        run: uv pip install "numpy==${{ matrix.np }}"
+        run: uv pip install "numpy==${{ matrix.np }}.*"
 
       - name: basedpyright
         run: >
