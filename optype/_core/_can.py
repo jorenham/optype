@@ -433,13 +433,14 @@ class CanGetMissing(
 ): ...
 
 
-_IndexT_contra = TypeVar("_IndexT_contra", bound=CanIndex | slice, contravariant=True)
+# https://github.com/KotlinIsland/basedmypy/issues/861
+_IndexT_contra = TypeVar("_IndexT_contra", bound=CanIndex | slice, contravariant=True)  # type: ignore[no-any-explicit]
 
 
 @set_module("optype")
 @runtime_checkable
 class CanSequence(
-    CanGetitem[_IndexT_contra, _V_co],
+    CanGetitem[_IndexT_contra, _V_co],  # type: ignore[no-any-explicit]  # huh?
     CanLen[_IntT_co],
     Protocol[_IndexT_contra, _V_co, _IntT_co],
 ):

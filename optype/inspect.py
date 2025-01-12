@@ -163,7 +163,7 @@ def is_final(
     if isinstance(arg, property) and arg.fget is not None:
         return is_final(arg.fget)
     if isinstance(arg, classmethod):
-        return getattr(arg, "__final__", False) or is_final(arg.__wrapped__)
+        return bool(getattr(arg, "__final__", False)) or is_final(arg.__wrapped__)
 
     return False
 
@@ -194,7 +194,7 @@ def is_runtime_protocol(type_expr: type | object, /) -> bool:
     if isinstance(type_expr, AnnotatedAlias | TypeAliasType):
         type_expr = _get_alias(type_expr)
     return (
-        getattr(type_expr, "_is_runtime_protocol", False)
+        bool(getattr(type_expr, "_is_runtime_protocol", False))
         and isinstance(type_expr, type)
         and is_protocol(type_expr)
     )

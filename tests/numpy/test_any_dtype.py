@@ -1,6 +1,6 @@
 # pyright: reportAny=false
 import sys
-from typing import Final
+from typing import Any, Final
 
 
 if sys.version_info >= (3, 13):
@@ -14,16 +14,21 @@ import pytest
 from optype.numpy import _any_dtype  # pyright: ignore[reportPrivateUsage]
 
 
+# basedmypy 2.9.1 workaround
+def _getattr(obj: object, attr: str, /) -> Any:  # pyright: ignore[reportExplicitAny]
+    return getattr(obj, attr)
+
+
 def _get_dtype_codes(
     dtype: np.dtype[np.generic],
 ) -> tuple[frozenset[str], frozenset[str]]:
     try:
         strcode = dtype.str[1:]
-        literal_name = getattr(_any_dtype, f"_Name_{strcode}")
-        literal_char = getattr(_any_dtype, f"_Char_{strcode}")
+        literal_name = _getattr(_any_dtype, f"_Name_{strcode}")
+        literal_char = _getattr(_any_dtype, f"_Char_{strcode}")
     except AttributeError:
-        literal_name = getattr(_any_dtype, f"_Name_{dtype.char}")
-        literal_char = getattr(_any_dtype, f"_Char_{dtype.char}")
+        literal_name = _getattr(_any_dtype, f"_Name_{dtype.char}")
+        literal_char = _getattr(_any_dtype, f"_Char_{dtype.char}")
 
     names = frozenset(() if literal_name is Never else literal_name.__args__)
     chars = frozenset(() if literal_char is Never else literal_char.__args__)
