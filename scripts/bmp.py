@@ -1,4 +1,4 @@
-# ruff: noqa: T201  # noqa: INP001
+#!/usr/bin/env python
 
 """Run as `uv run scripts/bmp.py` from the repo root."""
 
@@ -59,7 +59,7 @@ def _np_version_range(
 def main(*args: str) -> int:
     v0 = _np_version()
 
-    cmd: list[str] = ["mypy"]
+    cmd: list[str] = ["mypy", "--tb", "--hide-error-context"]
     for vi in _np_version_range():
         const = f"NP{vi[0]}{vi[1]}"
         supported = "true" if v0 >= vi else "false"
@@ -70,6 +70,7 @@ def main(*args: str) -> int:
     else:
         cmd.extend(args)
 
+    print(*cmd)  # noqa: T201
     return subprocess.call(cmd)
 
 
