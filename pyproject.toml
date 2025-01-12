@@ -37,7 +37,7 @@ Funding = "https://github.com/sponsors/jorenham"
 
 [dependency-groups]
 lint = [
-    "ruff>=0.8.4",
+    "ruff>=0.9.1",
     "sp-repo-review[cli]>=2024.8.19",
 ]
 common = [
@@ -46,8 +46,8 @@ common = [
 ]
 type = [
     {include-group = "common"},
-    "basedmypy[faster-cache]>=2.8.1",
-    "basedpyright>=1.23.1",
+    "basedmypy[faster-cache]>=2.9.1",
+    "basedpyright>=1.23.2",
 ]
 test = [
     {include-group = "common"},
