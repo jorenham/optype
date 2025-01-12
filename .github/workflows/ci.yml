@@ -24,7 +24,7 @@ jobs:
           plugins: sp-repo-review
 
       - name: markdownlint
-        uses: DavidAnson/markdownlint-cli2-action@v18
+        uses: DavidAnson/markdownlint-cli2-action@v19
         with:
           config: ".markdownlint.yaml"
           globs: "**/*.md"
@@ -69,7 +69,7 @@ jobs:
         run: uv sync --locked
 
       - name: Install numpy ${{ matrix.np }}
-        run: uv pip install "numpy==${{ matrix.np }}.*"
+        run: uv pip install "numpy==${{ matrix.np }}"
 
       - name: basedpyright
         run: >
