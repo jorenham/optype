@@ -2,7 +2,7 @@
 
 """Run as `uv run scripts/bmp.py` from the repo root."""
 
-import os
+import subprocess
 import sys
 from typing import Final, TypeAlias
 
@@ -59,21 +59,18 @@ def _np_version_range(
 def main(*args: str) -> int:
     v0 = _np_version()
 
-    tokens: list[str] = ["mypy"]
+    cmd: list[str] = ["mypy"]
     for vi in _np_version_range():
         const = f"NP{vi[0]}{vi[1]}"
         supported = "true" if v0 >= vi else "false"
-        tokens.append(f"--always-{supported}={const}")
+        cmd.append(f"--always-{supported}={const}")
 
     if not args:
-        tokens.append(".")
+        cmd.append(".")
     else:
-        tokens.extend(args)
+        cmd.extend(args)
 
-    cmd = " ".join(tokens)
-    print(cmd)
-
-    return os.system(cmd)
+    return subprocess.call(cmd)
 
 
 if __name__ == "__main__":
