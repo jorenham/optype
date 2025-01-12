@@ -1,9 +1,9 @@
-name: Build a new release, and publish to PyPI
+name: build and publish to PyPI
 
 on:
   workflow_dispatch:
-  push:
-    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+  release:
+    types: [prereleased, released]
 
 jobs:
   pypi-publish:
