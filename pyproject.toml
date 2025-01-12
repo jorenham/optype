@@ -114,6 +114,7 @@ warn_unused_ignores = true
 pythonVersion = "3.10"
 pythonPlatform = "All"
 include = ["optype", "examples", "tests"]
+ignore = [".venv"]
 stubPath = "."
 venvPath = "."
 venv = ".venv"
