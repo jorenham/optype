@@ -76,7 +76,7 @@ def test_any_array() -> None:
 
     v_empty_list: onp.AnyArray = []
     v_empty_tuple: onp.AnyArray = ()
-    v_empty_deque: onp.AnyArray = deque(())
+    v_empty_deque: onp.AnyArray = deque(())  # noqa: RUF037
     v_empty_bytearray: onp.AnyArray = bytearray(b"")
     v_empty_memoryview: onp.AnyArray = memoryview(b"")
     # rejection
