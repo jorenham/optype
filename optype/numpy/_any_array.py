@@ -103,23 +103,20 @@ _AnyArray = TypeAliasType(
     type_params=(_ST, _VT),
 )
 
-_JustFloat: TypeAlias = opt.Just[float]
-_JustComplex: TypeAlias = opt.Just[complex]
-
 ###
 
 AnyArray: TypeAlias = _AnyArray[_ST, object] | CanBuffer
 
 AnyNumberArray: TypeAlias = _AnyArray[
     _sc.number,
-    _sc.number | opt.JustInt | _JustFloat | _JustComplex,
+    _sc.number | opt.JustInt | opt.JustFloat | opt.JustComplex,
 ]
 AnyIntegerArray: TypeAlias = _AnyArray[_sc.integer, _sc.integer | opt.JustInt]
 AnySignedIntegerArray: TypeAlias = _AnyArray[_sc.sinteger, _sc.sinteger | opt.JustInt]
 AnyUnsignedIntegerArray: TypeAlias = _AnyArray[_sc.uinteger]
 AnyInexactArray: TypeAlias = _AnyArray[
     _sc.inexact,
-    _sc.inexact | _JustFloat | _JustComplex,
+    _sc.inexact | opt.JustFloat | opt.JustComplex,
 ]
 
 AnyBoolArray: TypeAlias = _AnyArray[_x.Bool, _x.Bool | bool]
@@ -148,18 +145,20 @@ AnyLongArray: TypeAlias = _AnyArray[_x.Long]  # no int (numpy<=1)
 AnyIntPArray: TypeAlias = _AnyArray[np.intp]  # no int (numpy>=2)
 AnyIntArray: TypeAlias = _AnyArray[np.int_, np.int_ | opt.JustInt]
 
-AnyFloatingArray: TypeAlias = _AnyArray[_sc.floating, _sc.floating | _JustFloat]
+AnyFloatingArray: TypeAlias = _AnyArray[_sc.floating, _sc.floating | opt.JustFloat]
 AnyFloat16Array: TypeAlias = _AnyArray[np.float16]
 AnyFloat32Array: TypeAlias = _AnyArray[np.float32]
-AnyFloat64Array: TypeAlias = _AnyArray[np.float64, np.float64 | _JustFloat]
+AnyFloat64Array: TypeAlias = _AnyArray[np.float64, np.float64 | opt.JustFloat]
 AnyLongDoubleArray: TypeAlias = _AnyArray[np.longdouble]
 
 AnyComplexFloatingArray: TypeAlias = _AnyArray[
     _sc.cfloating,
-    _sc.cfloating | _JustComplex,
+    _sc.cfloating | opt.JustComplex,
 ]
 AnyComplex64Array: TypeAlias = _AnyArray[np.complex64]
-AnyComplex128Array: TypeAlias = _AnyArray[np.complex128, np.complex128 | _JustComplex]
+AnyComplex128Array: TypeAlias = _AnyArray[
+    np.complex128, np.complex128 | opt.JustComplex
+]
 AnyCLongDoubleArray: TypeAlias = _AnyArray[np.clongdouble]
 
 AnyCharacterArray: TypeAlias = _AnyArray[np.character, np.character | bytes | str]
