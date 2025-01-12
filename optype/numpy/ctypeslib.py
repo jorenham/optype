@@ -41,7 +41,6 @@ from ctypes import (
     c_uint32 as UInt32,
     c_uint64 as UInt64,
     c_ulong as ULong,
-    # NOTE: `ulongdouble` only works as type, not as value!
     c_ulonglong as ULongLong,
     c_ushort as UShort,
 )
@@ -65,7 +64,7 @@ else:
     Complex128 = Never
     CLongDouble = Never
 
-from ._ctypeslib import CScalar, CType
+from ._ctypeslib import CScalar, CType  # type: ignore[type-check-only]
 
 
 # ruff: noqa: RUF022

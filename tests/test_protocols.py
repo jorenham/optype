@@ -101,7 +101,7 @@ def test_does_has_do(cls: type) -> None:
     assert name != cls.__name__
 
     do_name = f"do_{_pascamel_to_snake(name, 1)}"
-    do_op: op.CanCall[..., object] | None = getattr(_do, do_name, None)
+    do_op = cast("op.CanCall[..., object] | None", getattr(_do, do_name, None))
     assert do_op is not None, do_name
     assert callable(do_op), do_name
 
@@ -136,7 +136,7 @@ def test_name_matches_dunder(cls: type) -> None:
         overridden = {
             member
             for member in members
-            if callable(f := cast("object", getattr(cls, member)))
+            if callable(f := getattr(cls, member))  # pyright: ignore[reportAny])
             and getattr(f, "__override__", False)
         }
         own_members = members - overridden

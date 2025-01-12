@@ -2,7 +2,6 @@ ci:
   autoupdate_branch: "master"
   autoupdate_commit_msg: "update pre-commit hooks"
   skip:
-    - basedmypy
     - basedpyright
     - basedpyright-verifytypes
 
@@ -53,7 +52,7 @@ repos:
       - id: typos
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.4
+    rev: v0.9.1
     hooks:
       - id: ruff
         args: [--fix, --show-fixes]
@@ -61,12 +60,6 @@ repos:
 
   - repo: local
     hooks:
-      - id: basedmypy
-        name: basedmypy
-        entry: uv run --no-sync scripts/bmp.py
-        language: system
-        types_or: [python, pyi]
-
       - id: basedpyright
         name: basedpyright
         entry: uv run --no-sync basedpyright

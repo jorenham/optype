@@ -24,7 +24,7 @@ jobs:
           plugins: sp-repo-review
 
       - name: markdownlint
-        uses: DavidAnson/markdownlint-cli2-action@v18
+        uses: DavidAnson/markdownlint-cli2-action@v19
         with:
           config: ".markdownlint.yaml"
           globs: "**/*.md"
@@ -55,7 +55,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        np: ["1.23", "1.25", "2.0", "2.1", "2.2"]
+        np: ["1.23", "1.24", "1.25", "1.26", "2.0", "2.1", "2.2"]
 
     steps:
       - uses: actions/checkout@v4
