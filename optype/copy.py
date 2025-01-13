@@ -3,8 +3,6 @@ Runtime-protocols for the `copy` standard library.
 https://docs.python.org/3/library/copy.html
 """
 
-from __future__ import annotations
-
 import sys
 from typing import Protocol
 
@@ -16,10 +14,13 @@ else:
 
 
 __all__ = (
-    "CanCopy", "CanCopySelf",
-    "CanDeepcopy", "CanDeepcopySelf",
-    "CanReplace", "CanReplaceSelf",
-)  # fmt: skip
+    "CanCopy",
+    "CanCopySelf",
+    "CanDeepcopy",
+    "CanDeepcopySelf",
+    "CanReplace",
+    "CanReplaceSelf",
+)
 
 
 def __dir__() -> tuple[str, ...]:

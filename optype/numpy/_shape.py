@@ -18,10 +18,20 @@ __all__ = [
 ]  # fmt: skip
 
 
+def __dir__() -> list[str]:
+    return __all__
+
+
+###
+
+
 _N0 = TypeVar("_N0", bound=int, default=int)
 _N1 = TypeVar("_N1", bound=int, default=int)
 _N2 = TypeVar("_N2", bound=int, default=int)
 _Ns = TypeVar("_Ns", bound=int, default=int)
+
+
+###
 
 
 # 0D (scalar)

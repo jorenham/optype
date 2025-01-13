@@ -6,13 +6,9 @@ from __future__ import annotations
 import sys
 from typing import TYPE_CHECKING, Any, Protocol, TypeAlias
 
-import numpy as np
 
-import optype.numpy._compat as _x
-import optype.numpy._scalar as _sc
-import optype.typing as opt
-from optype._core._can import CanBuffer
-from optype._core._utils import set_module
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 if sys.version_info >= (3, 13):
@@ -20,8 +16,14 @@ if sys.version_info >= (3, 13):
 else:
     from typing_extensions import Never, TypeAliasType, TypeVar
 
-if TYPE_CHECKING:
-    from collections.abc import Iterator
+
+import numpy as np
+
+import optype.numpy._compat as _x
+import optype.numpy._scalar as _sc
+import optype.typing as opt
+from optype._core._can import CanBuffer
+from optype._core._utils import set_module
 
 
 # ruff: noqa: RUF022
@@ -68,10 +70,17 @@ __all__ = [
 ]  # fmt: skip
 
 
-_T_co = TypeVar("_T_co", covariant=True)
+def __dir__() -> list[str]:
+    return __all__
+
+
+###
+
+
 _T = TypeVar("_T")
-_ST_co = TypeVar("_ST_co", bound=np.generic, covariant=True)
+_T_co = TypeVar("_T_co", covariant=True)
 _ST = TypeVar("_ST", bound=np.generic, default=np.generic)
+_ST_co = TypeVar("_ST_co", bound=np.generic, covariant=True)
 _VT = TypeVar("_VT", default=_ST)
 
 

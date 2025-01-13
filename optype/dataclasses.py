@@ -9,29 +9,33 @@ import sys
 from typing import TYPE_CHECKING, Protocol
 
 
+if TYPE_CHECKING:
+    import dataclasses
+    from collections.abc import Mapping
+
 if sys.version_info >= (3, 13):
     from typing import TypeVar, runtime_checkable
 else:
     from typing_extensions import TypeVar, runtime_checkable
 
 
-if TYPE_CHECKING:
-    import dataclasses
-    from collections.abc import Mapping
-
-
 __all__ = ("HasDataclassFields",)
 
 
-def __dir__() -> tuple[str, ...]:
+def __dir__() -> tuple[str]:
     return __all__
 
+
+###
 
 _FieldsT = TypeVar(
     "_FieldsT",
     bound="Mapping[str, dataclasses.Field[object]]",
     default=dict[str, "dataclasses.Field[object]"],
 )
+
+
+###
 
 
 @runtime_checkable

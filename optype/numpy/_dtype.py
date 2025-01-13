@@ -1,16 +1,17 @@
 # mypy: disable-error-code="no-any-explicit, no-any-decorated"
 import sys
-from typing import TypeAlias
+from typing import Protocol, TypeAlias
+
+
+if sys.version_info >= (3, 13):
+    from typing import TypeVar, runtime_checkable
+else:
+    from typing_extensions import TypeVar, runtime_checkable
+
 
 import numpy as np
 
 from optype._core._utils import set_module
-
-
-if sys.version_info >= (3, 13):
-    from typing import Protocol, TypeVar, runtime_checkable
-else:
-    from typing_extensions import Protocol, TypeVar, runtime_checkable
 
 
 __all__ = ["DType", "HasDType"]
@@ -21,7 +22,7 @@ DType: TypeAlias = np.dtype[_ST]
 """Alias for `numpy.dtype[T: numpy.generic = np.generic]`."""
 
 
-_DT_co = TypeVar("_DT_co", bound=DType, covariant=True, default=DType)
+_DT_co = TypeVar("_DT_co", bound=DType, default=DType, covariant=True)
 
 
 @runtime_checkable

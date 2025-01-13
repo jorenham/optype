@@ -1,9 +1,13 @@
-# mypy: disable-error-code="override"
+# mypy: disable-error-code="no-any-explicit, override"
 from __future__ import annotations
 
 import sys
 from typing import TYPE_CHECKING, Protocol, TypeAlias
 
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+    from types import TracebackType
 
 if sys.version_info >= (3, 13):
     from typing import (
@@ -24,43 +28,58 @@ else:
         runtime_checkable,
     )
 
-if TYPE_CHECKING:
-    from collections.abc import Generator
-    from types import TracebackType
 
 from ._utils import set_module
 
 
-# return type that is usually `None`, but can be anything, as it is ignored at runtime
-_Ignored: TypeAlias = object | None
+###
 
+
+# this should (but can't) be contravariant
+_Tss = ParamSpec("_Tss", default=...)
 
 _T = TypeVar("_T")
 _T_contra = TypeVar("_T_contra", contravariant=True)
 _T_co = TypeVar("_T_co", covariant=True)
 
 _K_contra = TypeVar("_K_contra", contravariant=True)
-
 _V_contra = TypeVar("_V_contra", contravariant=True)
 _V_co = TypeVar("_V_co", covariant=True)
-_VV_co = TypeVar("_VV_co", covariant=True, default=_V_co)
+_VV_co = TypeVar("_VV_co", default=_V_co, covariant=True)
 
 _BoolT_co = TypeVar("_BoolT_co", bound=bool, default=bool, covariant=True)
-_IntT_contra = TypeVar("_IntT_contra", bound=int, contravariant=True, default=int)
-_IntT_co = TypeVar("_IntT_co", bound=int, covariant=True, default=int)
-_BytesT_co = TypeVar("_BytesT_co", bound=bytes, covariant=True, default=bytes)
-_StrT_contra = TypeVar("_StrT_contra", bound=str, contravariant=True, default=str)
-_StrT_co = TypeVar("_StrT_co", bound=str, covariant=True, default=str)
+_IntT_contra = TypeVar("_IntT_contra", bound=int, default=int, contravariant=True)
+_IntT_co = TypeVar("_IntT_co", bound=int, default=int, covariant=True)
+_BytesT_co = TypeVar("_BytesT_co", bound=bytes, default=bytes, covariant=True)
+_StrT_contra = TypeVar("_StrT_contra", bound=str, default=str, contravariant=True)
+_StrT_co = TypeVar("_StrT_co", bound=str, default=str, covariant=True)
+_ExcT = TypeVar("_ExcT", bound=BaseException)
 
 _AnyT_contra = TypeVar("_AnyT_contra", contravariant=True, default=object)
 _AnyT_co = TypeVar("_AnyT_co", covariant=True, default=object)
 _ObjectT_contra = TypeVar("_ObjectT_contra", contravariant=True, default=object)
 # can be anything, but defaults to `bool`
-_AnyBoolT_co = TypeVar("_AnyBoolT_co", covariant=True, default=bool)
-_AnyIntT_contra = TypeVar("_AnyIntT_contra", contravariant=True, default=int)
-_AnyIntT_co = TypeVar("_AnyIntT_co", covariant=True, default=int)
-_AnyFloatT_co = TypeVar("_AnyFloatT_co", covariant=True, default=float)
-_AnyNoneT_co = TypeVar("_AnyNoneT_co", covariant=True, default=None)
+_AnyBoolT_co = TypeVar("_AnyBoolT_co", default=bool, covariant=True)
+_AnyIntT_contra = TypeVar("_AnyIntT_contra", default=int, contravariant=True)
+_AnyIntT_co = TypeVar("_AnyIntT_co", default=int, covariant=True)
+_AnyFloatT_co = TypeVar("_AnyFloatT_co", default=float, covariant=True)
+_AnyNoneT_co = TypeVar("_AnyNoneT_co", default=None, covariant=True)
+
+# https://github.com/KotlinIsland/basedmypy/issues/861
+_IndexT_contra = TypeVar("_IndexT_contra", bound="CanIndex | slice", contravariant=True)
+
+# return type that is usually `None`, but can be anything, as it is ignored at runtime
+_Ignored: TypeAlias = object | None
+
+
+# This should be `asyncio.Future[typing.Any] | None`. But that would make this
+# incompatible with `collections.abc.Awaitable` -- it (annoyingly) uses `Any`:
+# https://github.com/python/typeshed/blob/587ad6/stdlib/asyncio/futures.pyi#L51
+_FutureOrNone: TypeAlias = object
+_AsyncGen: TypeAlias = "Generator[_FutureOrNone, None, _T]"
+
+
+###
 
 # Type conversion
 
@@ -280,14 +299,11 @@ class CanGe(Protocol[_AnyT_contra, _AnyBoolT_co]):
 
 # Callables
 
-# this should (but can't) be contravariant
-_P = ParamSpec("_P", default=...)
-
 
 @set_module("optype")
 @runtime_checkable
-class CanCall(Protocol[_P, _AnyT_co]):
-    def __call__(self, /, *args: _P.args, **kwargs: _P.kwargs) -> _AnyT_co: ...  # type: ignore[no-any-explicit]
+class CanCall(Protocol[_Tss, _AnyT_co]):
+    def __call__(self, /, *args: _Tss.args, **kwargs: _Tss.kwargs) -> _AnyT_co: ...
 
 
 # Dynamic attribute access
@@ -433,14 +449,10 @@ class CanGetMissing(
 ): ...
 
 
-# https://github.com/KotlinIsland/basedmypy/issues/861
-_IndexT_contra = TypeVar("_IndexT_contra", bound=CanIndex | slice, contravariant=True)  # type: ignore[no-any-explicit]
-
-
 @set_module("optype")
 @runtime_checkable
 class CanSequence(
-    CanGetitem[_IndexT_contra, _V_co],  # type: ignore[no-any-explicit]  # huh?
+    CanGetitem[_IndexT_contra, _V_co],
     CanLen[_IntT_co],
     Protocol[_IndexT_contra, _V_co, _IntT_co],
 ):
@@ -968,9 +980,6 @@ class CanEnterSelf(CanEnter["CanEnterSelf"], Protocol):
     def __enter__(self, /) -> Self: ...  # pyright: ignore[reportMissingSuperCall]
 
 
-_ExcT = TypeVar("_ExcT", bound=BaseException)
-
-
 @set_module("optype")
 @runtime_checkable
 class CanExit(Protocol[_AnyNoneT_co]):
@@ -1065,12 +1074,6 @@ class CanReleaseBuffer(Protocol):
 
 
 # Awaitables
-
-# This should be `asyncio.Future[typing.Any] | None`. But that would make this
-# incompatible with `collections.abc.Awaitable` -- it (annoyingly) uses `Any`:
-# https://github.com/python/typeshed/blob/587ad6/stdlib/asyncio/futures.pyi#L51
-_FutureOrNone: TypeAlias = object
-_AsyncGen: TypeAlias = "Generator[_FutureOrNone, None, _T]"
 
 
 @set_module("optype")

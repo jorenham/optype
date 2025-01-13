@@ -1,4 +1,6 @@
-# mypy: disable-error-code="no-any-explicit,no-any-decorated"
+# mypy: disable-error-code="no-any-explicit, no-any-decorated"
+# pyright: reportAny=false, reportExplicitAny=false
+
 from __future__ import annotations
 
 import inspect
@@ -6,6 +8,13 @@ import sys
 from types import GenericAlias, UnionType
 from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, get_args as _get_args
 
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+    from types import MappingProxyType, ModuleType
+
+    from .types import WrappedFinalType
+    from .typing import AnyIterable
 
 if sys.version_info >= (3, 13):
     from typing import TypeAliasType, TypeIs, _get_protocol_attrs, is_protocol, overload
@@ -17,14 +26,6 @@ else:
         is_protocol,
         overload,
     )
-
-
-if TYPE_CHECKING:
-    from collections.abc import Callable as CanCall
-    from types import MappingProxyType, ModuleType
-
-    from .types import WrappedFinalType
-    from .typing import AnyIterable
 
 
 from ._core import _can as _c
@@ -46,6 +47,9 @@ __all__ = (
 
 def __dir__() -> tuple[str, ...]:
     return __all__
+
+
+###
 
 
 def is_iterable(obj: object, /) -> TypeIs[AnyIterable]:
@@ -91,7 +95,7 @@ def is_iterable(obj: object, /) -> TypeIs[AnyIterable]:
     return False
 
 
-_AnyClassMethod: TypeAlias = "classmethod[Any, ..., object]"  # pyright: ignore[reportExplicitAny]
+_StaticMethod: TypeAlias = "staticmethod[..., object] | classmethod[Any, ..., object]"
 
 
 @overload
@@ -99,25 +103,12 @@ def is_final(final_cls_or_method: WrappedFinalType, /) -> Literal[True]: ...
 @overload
 def is_final(cls: type, /) -> bool: ...
 @overload
-def is_final(fn: CanCall[..., object], /) -> bool: ...
+def is_final(fn: Callable[..., object], /) -> bool: ...
 @overload
 def is_final(prop: property, /) -> bool: ...
 @overload
-def is_final(
-    clsmethod: _AnyClassMethod | staticmethod[..., object],
-    /,
-) -> bool: ...
-def is_final(
-    arg: (
-        WrappedFinalType
-        | type
-        | CanCall[..., object]
-        | property
-        | _AnyClassMethod
-        | staticmethod[..., object]
-    ),
-    /,
-) -> bool:
+def is_final(clsmethod: _StaticMethod | staticmethod[..., object], /) -> bool: ...
+def is_final(arg: object, /) -> bool:
     """
     Check if the type, method, classmethod, staticmethod, or property, is
     decorated with `@typing.final` or `@typing_extensions.final`.
@@ -163,7 +154,8 @@ def is_final(
     if isinstance(arg, property) and arg.fget is not None:
         return is_final(arg.fget)
     if isinstance(arg, classmethod):
-        return bool(getattr(arg, "__final__", False)) or is_final(arg.__wrapped__)
+        arg_: _StaticMethod = arg
+        return bool(getattr(arg_, "__final__", False)) or is_final(arg_.__wrapped__)
 
     return False
 

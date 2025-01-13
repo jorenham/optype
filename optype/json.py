@@ -3,8 +3,6 @@ Type aliases for `json` standard library.
 This assumes that the default encoder and decoder are used.
 """
 
-from __future__ import annotations
-
 import sys
 from types import MappingProxyType
 from typing import TypeAlias
@@ -23,11 +21,13 @@ def __dir__() -> tuple[str, ...]:
     return __all__
 
 
+_VT = TypeVar("_VT", bound="_Value", default="_Value")
+_AVT = TypeVar("_AVT", bound="_AnyValue", default="_AnyValue")
+
 _Primitive: TypeAlias = bool | int | float | str | None
 
 # Return types of `json.load[s]`
 _Value: TypeAlias = _Primitive | dict[str, "_Value"] | list["_Value"]
-_VT = TypeVar("_VT", bound=_Value, default=_Value)
 Array: TypeAlias = list[_VT]
 Object: TypeAlias = dict[str, _VT]
 # ensure that `Value | Array | Object` is equivalent to `Value`
@@ -44,7 +44,6 @@ _AnyValue: TypeAlias = (
     | list["_AnyValue"]
     | tuple["_AnyValue", ...]
 )
-_AVT = TypeVar("_AVT", bound=_AnyValue, default=_AnyValue)
 AnyArray: TypeAlias = list[_AVT] | tuple[_AVT, ...]
 AnyObject: TypeAlias = dict[str, _AVT]
 AnyValue: TypeAlias = _AnyValue | AnyArray | AnyObject | Value

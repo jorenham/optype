@@ -4,20 +4,12 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias
-
-import numpy as np
-import numpy.typing as npt
-
-from optype._core._utils import set_module
-
-from ._compat import NP20
+from typing import TYPE_CHECKING, Any, Literal, Protocol, TypeAlias
 
 
 if sys.version_info >= (3, 13):
     from types import CapsuleType
     from typing import (
-        Protocol,
         Self,
         TypeAliasType,
         TypeVar,
@@ -28,7 +20,6 @@ if sys.version_info >= (3, 13):
 else:
     from typing_extensions import (
         CapsuleType,
-        Protocol,
         Self,
         TypeAliasType,
         TypeVar,
@@ -36,6 +27,15 @@ else:
         override,
         runtime_checkable,
     )
+
+
+import numpy as np
+import numpy.typing as npt
+
+from optype._core._utils import set_module
+
+from ._compat import NP20
+
 
 if TYPE_CHECKING:
     if NP20:

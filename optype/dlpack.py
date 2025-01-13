@@ -20,8 +20,16 @@ else:
 __all__ = "CanDLPack", "CanDLPackCompat", "CanDLPackDevice"
 
 
-def __dir__() -> tuple[str, ...]:
+def __dir__() -> tuple[str, str, str]:
     return __all__
+
+
+###
+
+_TypeT_co = TypeVar("_TypeT_co", bound=enum.Enum | int, default=int, covariant=True)
+_DeviceT_co = TypeVar("_DeviceT_co", bound=int, default=int, covariant=True)
+
+###
 
 
 class DLDeviceType(enum.IntEnum):
@@ -66,14 +74,9 @@ class DLDataTypeCode(enum.IntEnum):
     BOOL = 6
 
 
-_TypeT_co = TypeVar("_TypeT_co", covariant=True, bound=enum.Enum | int, default=int)
-_DeviceT_co = TypeVar("_DeviceT_co", covariant=True, bound=int, default=int)
-
-
 # NOTE: Because `__dlpack__` doesn't mutate the type, and the type parameters bind to
 # the *co*variant `tuple`, they should be *co*variant; NOT *contra*variant!
-# NOTE NOTE: This shows that PEP 695 claim, i.e. that variance can always be inferred,
-# is utter nonsense.
+# (This shows that PEP 695 claim -- variance can always be inferred -- is nonsense.)
 
 
 # requires numpy>=2.1
