@@ -9,24 +9,21 @@ The names are analogous to those in `numpy.dtypes`.
 from __future__ import annotations
 
 import sys
-from typing import (
-    Literal as L,  # noqa: N817
-    TypeAlias as Alias,
-)
+from typing import Literal as L, Protocol, TypeAlias as Alias  # noqa: N817
+
+
+if sys.version_info >= (3, 13):
+    from typing import LiteralString, Never, TypeAliasType, TypeVar
+else:
+    from typing_extensions import LiteralString, Never, TypeAliasType, TypeVar
+
 
 import numpy as np
-from typing_extensions import TypeAliasType
 
 import optype.numpy._compat as _x
 import optype.numpy._dtype as _dt
 import optype.numpy._scalar as _sc
 import optype.typing as opt
-
-
-if sys.version_info >= (3, 13):
-    from typing import LiteralString, Never, Protocol, TypeVar
-else:
-    from typing_extensions import LiteralString, Never, Protocol, TypeVar
 
 
 # ruff: noqa: RUF022
@@ -92,6 +89,13 @@ __all__ = [
 ]  # fmt: skip
 
 
+def __dir__() -> list[str]:
+    return __all__
+
+
+###
+
+
 _SCT = TypeVar("_SCT", bound=np.generic)
 _SCT_co = TypeVar("_SCT_co", covariant=True, bound=np.generic)
 
@@ -110,6 +114,8 @@ class _HasScalarType(Protocol[_SCT_co]):
 
 _ToDType: Alias = type[_SCT] | np.dtype[_SCT] | _HasScalarType[_SCT]
 
+
+###
 
 # bool
 

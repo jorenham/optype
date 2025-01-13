@@ -57,9 +57,14 @@ def __dir__() -> tuple[str, ...]:
     return __all__
 
 
+###
+
 _T = TypeVar("_T")
 _IntT = TypeVar("_IntT", bound=int, default=int)
 _ValueT = TypeVar("_ValueT", default=object)
+
+
+###
 
 
 # "Just" types
@@ -71,7 +76,7 @@ class Just(Protocol[_T]):
     but not `bool` (or any other `int` subtypes).
 
     Important:
-        This requires `pyright>=1.390` to work.
+        This requires `pyright>=1.390` / `basedpyright>=1.22.1` to work.
 
     Warning:
         In mypy this doesn't work with the special-cased `float` and `complex`,

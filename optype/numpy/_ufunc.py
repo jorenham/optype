@@ -7,19 +7,9 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Literal as L,  # noqa: N817
+    Protocol,
     TypeAlias as Alias,
 )
-
-import numpy as np
-
-import optype.numpy._compat as _x
-from optype._core._utils import set_module
-
-
-if sys.version_info >= (3, 13):
-    from typing import LiteralString, Protocol, TypeVar, runtime_checkable
-else:
-    from typing_extensions import LiteralString, Protocol, TypeVar, runtime_checkable
 
 
 if TYPE_CHECKING:
@@ -27,7 +17,26 @@ if TYPE_CHECKING:
     from types import NotImplementedType
 
 
+if sys.version_info >= (3, 13):
+    from typing import LiteralString, TypeVar, runtime_checkable
+else:
+    from typing_extensions import LiteralString, TypeVar, runtime_checkable
+
+
+import numpy as np
+
+import optype.numpy._compat as _x
+from optype._core._utils import set_module
+
+
 __all__ = ["CanArrayFunction", "CanArrayUFunc", "UFunc"]
+
+
+def __dir__() -> list[str]:
+    return __all__
+
+
+###
 
 
 _AnyFunc: Alias = Callable[..., object]
@@ -50,6 +59,9 @@ _IdT_co = TypeVar(
     bound=complex | bytes | str | None,
     default=float | None,
 )
+
+
+###
 
 
 if _x.NP21:

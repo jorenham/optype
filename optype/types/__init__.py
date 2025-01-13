@@ -1,13 +1,12 @@
-from __future__ import annotations
-
 import sys
-from typing import Literal
+from typing import Literal, Protocol
 
 
 if sys.version_info >= (3, 13):
-    from typing import LiteralString, Protocol, runtime_checkable
+    from typing import LiteralString, runtime_checkable
 else:
-    from typing_extensions import LiteralString, Protocol, runtime_checkable
+    from typing_extensions import LiteralString, runtime_checkable
+
 
 from ._typeforms import AnnotatedAlias, GenericType, LiteralAlias, UnionAlias
 

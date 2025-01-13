@@ -2,20 +2,20 @@ import sys
 from collections.abc import Sequence as Seq
 from typing import Literal, TypeAlias
 
+
+if sys.version_info >= (3, 13):
+    from typing import TypeAliasType, TypeVar
+else:
+    from typing_extensions import TypeAliasType, TypeVar
+
+
 import numpy as np
-from typing_extensions import TypeVar
 
 import optype.numpy.compat as npc
 import optype.typing as opt
 
 from ._array import CanArray0D, CanArray1D, CanArray2D, CanArray3D, CanArrayND, Matrix
 from ._sequence_nd import SequenceND as SeqND
-
-
-if sys.version_info >= (3, 13):
-    from typing import TypeAliasType
-else:
-    from typing_extensions import TypeAliasType
 
 
 __all__ = [  # noqa: RUF022
@@ -66,6 +66,13 @@ __all__ = [  # noqa: RUF022
 ]  # fmt: skip
 
 
+def __dir__() -> list[str]:
+    return __all__
+
+
+###
+
+
 _PyBool: TypeAlias = bool | Literal[0, 1]  # 0 and 1 are sometimes used as bool values
 _PyScalar: TypeAlias = complex | bytes | str  # `complex` equivs `complex | float | int`
 
@@ -113,6 +120,10 @@ _ToStrict3D = TypeAliasType(
     type_params=(T, SCT),
 )
 
+
+###
+
+
 # TODO: Export and document.
 integer_co = TypeAliasType("integer_co", npc.integer | np.bool_)
 float64_co = TypeAliasType(
@@ -125,6 +136,10 @@ complex128_co = TypeAliasType(
     np.complex128 | np.complex64 | float64_co,
 )
 complexfloating_co = TypeAliasType("complexfloating_co", npc.number | np.bool_)
+
+
+###
+
 
 # scalar- and array-likes, with "coercible" shape-types
 

@@ -4,16 +4,20 @@ import sys
 from typing import TYPE_CHECKING, Protocol
 
 
+if TYPE_CHECKING:
+    from types import ModuleType
+
 if sys.version_info >= (3, 13):
     from typing import LiteralString, TypeVar, is_protocol
 else:
     from typing_extensions import LiteralString, TypeVar, is_protocol
 
-if TYPE_CHECKING:
-    from types import ModuleType
-
 
 __all__ = "get_callables", "set_module"
+
+
+def __dir__() -> tuple[str, str]:
+    return __all__
 
 
 def get_callables(

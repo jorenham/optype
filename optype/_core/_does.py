@@ -1,22 +1,25 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Literal, Protocol, TypeAlias
+from typing import TYPE_CHECKING, Literal, Protocol, TypeAlias, TypeVar
 
-
-if sys.version_info >= (3, 13):
-    from typing import ParamSpec, TypeVar, overload
-else:
-    from typing_extensions import ParamSpec, TypeVar, overload
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import AsyncIterator as AIterator, Callable, Iterable, Iterator
 
     from . import _can as _c
 
 
+if sys.version_info >= (3, 13):
+    from typing import ParamSpec, overload
+else:
+    from typing_extensions import ParamSpec, overload
+
+
 from ._utils import set_module
 
+
+###
 
 _JustFalse: TypeAlias = Literal[False]
 _JustTrue: TypeAlias = Literal[True]
@@ -40,15 +43,19 @@ _NDigitsT = TypeVar("_NDigitsT")
 _OutT = TypeVar("_OutT")
 _DefaultT = TypeVar("_DefaultT")
 _SentinelT = TypeVar("_SentinelT")
-_IteratorT = TypeVar("_IteratorT", bound="_c.CanNext[object]")
-_AIteratorT = TypeVar("_AIteratorT", bound="_c.CanANext[object]")
-_IterT = TypeVar("_IterT", bound="_c.CanIter[_c.CanNext[object]]")
-_BoolT = TypeVar("_BoolT", _JustTrue, _JustFalse, bool)
+_IteratorT = TypeVar("_IteratorT", bound="Iterator[object] | _c.CanNext[object]")
+_AIteratorT = TypeVar("_AIteratorT", bound="AIterator[object] | _c.CanANext[object]")
+_IterT = TypeVar("_IterT", bound="Iterable[object]")
+_BoolT = TypeVar("_BoolT", _JustFalse, _JustTrue, bool)
 _IntT = TypeVar("_IntT", bound=int)
 _StrT = TypeVar("_StrT", bound=str)
 _FormatT = TypeVar("_FormatT", bound=str)
 _BytesT = TypeVar("_BytesT", bound=bytes)
 _ParamsT = ParamSpec("_ParamsT")
+
+
+###
+
 
 # iteration
 

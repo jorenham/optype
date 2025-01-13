@@ -2,27 +2,22 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol
+
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+if sys.version_info >= (3, 13):
+    from typing import Self, TypeAliasType, TypeVar, runtime_checkable
+else:
+    from typing_extensions import Self, TypeAliasType, TypeVar, runtime_checkable
+
 
 import numpy as np
 
 import optype.numpy._compat as _x
 from optype._core._utils import set_module
-
-
-if sys.version_info >= (3, 13):
-    from typing import Protocol, Self, TypeAliasType, TypeVar, runtime_checkable
-else:
-    from typing_extensions import (
-        Protocol,
-        Self,
-        TypeAliasType,
-        TypeVar,
-        runtime_checkable,
-    )
-
-if TYPE_CHECKING:
-    from collections.abc import Mapping
 
 
 __all__ = [
@@ -52,6 +47,12 @@ __all__ = [
     "Matrix",
 ]
 
+
+def __dir__() -> list[str]:
+    return __all__
+
+
+###
 
 _NDT = TypeVar("_NDT", bound=tuple[int, ...], default=tuple[int, ...])
 _NDT_any = TypeVar(  # for numpy < 2.1
