@@ -1,0 +1,72 @@
+# This file contains globs for automatically adding labels based on changed files,
+# for use with https://github.com/actions/labeler.
+
+optype.Can*:
+- changed-files:
+  - any-glob-to-any-file:
+    - optype/_core/_can.py
+
+optype.Has*:
+- changed-files:
+  - any-glob-to-any-file:
+    - optype/_core/_has.py
+
+optype.Does*:
+- changed-files:
+  - any-glob-to-any-file:
+    - optype/_core/_does.py
+
+optype.do_*:
+- changed-files:
+  - any-glob-to-any-file:
+    - optype/_core/_do.py
+
+optype.numpy:
+- changed-files:
+  - any-glob-to-any-file:
+    - optype/numpy/**
+
+optype.types:
+- changed-files:
+  - any-glob-to-any-file:
+    - optype/types/**
+
+optype.copy:
+- changed-files:
+  - any-glob-to-any-file:
+    - optype/copy.py
+
+optype.dataclasses:
+- changed-files:
+  - any-glob-to-any-file:
+    - optype/dataclasses.py
+
+optype.dlpack:
+- changed-files:
+  - any-glob-to-any-file:
+    - optype/dlpack.py
+
+optype.inspect:
+- changed-files:
+  - any-glob-to-any-file:
+    - optype/inspect.py
+
+optype.json:
+- changed-files:
+  - any-glob-to-any-file:
+    - optype/json.py
+
+optype.pickle:
+- changed-files:
+  - any-glob-to-any-file:
+    - optype/pickle.py
+
+optype.string:
+- changed-files:
+  - any-glob-to-any-file:
+    - optype/string.py
+
+optype.typing:
+- changed-files:
+  - any-glob-to-any-file:
+    - optype/typing.py
