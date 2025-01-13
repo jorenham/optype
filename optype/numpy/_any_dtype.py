@@ -95,6 +95,7 @@ __all__ = [
 _SCT = TypeVar("_SCT", bound=np.generic)
 _SCT_co = TypeVar("_SCT_co", covariant=True, bound=np.generic)
 
+_IsInt: Alias = type[opt.JustInt]
 _IsFloat: Alias = type[opt.JustFloat]
 _IsComplex: Alias = type[opt.JustComplex]
 _IsObject: Alias = type[opt.Just[object]]
@@ -443,10 +444,7 @@ if _x.NP20:
     _Name_i0: Alias = L["intp", _Name_i0_common]
     _Char_i0: Alias = L["n", "<n", ">n"]
     _Code_i0: Alias = L[_Name_i0, _Char_i0]
-    AnyIntPDType = TypeAliasType(
-        "AnyIntPDType",
-        type[opt.JustInt] | _ToDType[np.intp] | _Code_i0,
-    )
+    AnyIntPDType = TypeAliasType("AnyIntPDType", _IsInt | _ToDType[np.intp] | _Code_i0)
     AnyIntDType: Alias = AnyIntPDType
 
     _Name_l: Alias = L["long"]
@@ -464,16 +462,22 @@ if _x.NP20:
     _Code_ix: Alias = L[_Name_ix, _Char_ix]
     AnySignedIntegerDType = TypeAliasType(
         "AnySignedIntegerDType",
-        _ToDType[_sc.sinteger] | _Code_ix,
+        _IsInt | _ToDType[_sc.sinteger] | _Code_ix,
     )
 
     _Code_ui: Alias = L[_Code_ux, _Code_ix]
-    AnyIntegerDType = TypeAliasType("AnyIntegerDType", _ToDType[_sc.integer] | _Code_ui)
+    AnyIntegerDType = TypeAliasType(
+        "AnyIntegerDType",
+        _IsInt | _ToDType[_sc.integer] | _Code_ui,
+    )
 
     _Code_uifc: Alias = L[_Code_ui, _Code_fc]
     # NOTE: this doesn't include `int` or `float` or `complex`, since that
     # would automatically include `bool`.
-    AnyNumberDType = TypeAliasType("AnyNumberDType", _ToDType[_sc.number] | _Code_uifc)
+    AnyNumberDType = TypeAliasType(
+        "AnyNumberDType",
+        _IsInt | _IsFloat | _IsComplex | _ToDType[_sc.number] | _Code_uifc,
+    )
 
     # NOTE: `np.dtypes.StringDType` didn't exist in the stubs prior to 2.1 (so
     # I (@jorenham) added them, see https://github.com/numpy/numpy/pull/27008).
@@ -507,7 +511,7 @@ else:
 
     _Name_l: Alias = L["long", _Name_i0_common]
     _Code_l: Alias = L[_Name_l, _Char_l]
-    AnyLongDType = TypeAliasType("AnyLongDType", _ToDType[_x.Long] | _Code_l)
+    AnyLongDType = TypeAliasType("AnyLongDType", _IsInt | _ToDType[_x.Long] | _Code_l)
     AnyIntDType: Alias = AnyLongDType
 
     _Char_ux: Alias = L[_Char_ux_common, _Char_u0]
@@ -521,14 +525,20 @@ else:
     _Code_ix: Alias = L[_Name_ix, _Char_ix]
     AnySignedIntegerDType = TypeAliasType(
         "AnySignedIntegerDType",
-        _ToDType[_sc.sinteger] | _Code_ix,
+        _IsInt | _ToDType[_sc.sinteger] | _Code_ix,
     )
 
     _Code_ui: Alias = L[_Code_ux, _Code_ix]
-    AnyIntegerDType = TypeAliasType("AnyIntegerDType", _ToDType[_sc.integer] | _Code_ui)
+    AnyIntegerDType = TypeAliasType(
+        "AnyIntegerDType",
+        _IsInt | _ToDType[_sc.integer] | _Code_ui,
+    )
 
     _Code_uifc: Alias = L[_Code_ui, _Code_fc]
-    AnyNumberDType = TypeAliasType("AnyNumberDType", _ToDType[_sc.number] | _Code_uifc)
+    AnyNumberDType = TypeAliasType(
+        "AnyNumberDType",
+        _IsInt | _IsFloat | _IsComplex | _ToDType[_sc.number] | _Code_uifc,
+    )
 
     AnyStringDType = TypeAliasType("AnyStringDType", Never)
 
