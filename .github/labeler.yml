@@ -51,6 +51,11 @@ optype.inspect:
   - any-glob-to-any-file:
     - optype/inspect.py
 
+optype.io:
+- changed-files:
+  - any-glob-to-any-file:
+    - optype/io.py
+
 optype.json:
 - changed-files:
   - any-glob-to-any-file:
