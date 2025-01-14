@@ -636,6 +636,7 @@ _submodules = {
     "dataclasses": "dataclasses",
     "dlpack": "dlpack",
     "inspect": "inspect",
+    "io": "io",
     "json": "json",
     "numpy": "numpy",
     "pickle": "pickle",
