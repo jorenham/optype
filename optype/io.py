@@ -8,7 +8,18 @@ else:
     from typing_extensions import TypeVar, runtime_checkable
 
 
-__all__ = ("CanFSPath", "CanFileno", "ToFileno", "ToPath")
+__all__ = (
+    "CanFSPath",
+    "CanFileno",
+    "CanFlush",
+    "CanRead",
+    "CanReadN",
+    "CanReadline",
+    "CanReadlineN",
+    "CanWrite",
+    "ToFileno",
+    "ToPath",
+)
 
 
 def __dir__() -> tuple[str, ...]:
@@ -20,13 +31,16 @@ def __dir__() -> tuple[str, ...]:
 # not a type parameter
 _StrOrBytes = TypeVar("_StrOrBytes", str, bytes, str | bytes, default=str | bytes)
 
+_T_co = TypeVar("_T_co", covariant=True)
+_T_contra = TypeVar("_T_contra", contravariant=True)
+_RT_co = TypeVar("_RT_co", default=object, covariant=True)
+
 _StrOrBytesT_co = TypeVar(
     "_StrOrBytesT_co",
     bound=str | bytes,
     default=str | bytes,
     covariant=True,
 )
-
 
 ###
 
@@ -47,6 +61,60 @@ class CanFileno(Protocol):
     """Runtime-checkable equivalent of `_typeshed.HasFileno`."""
 
     def fileno(self, /) -> int: ...
+
+
+@runtime_checkable
+class CanRead(Protocol[_T_co]):
+    """
+    Like `_typeshed.SupportsRead`, but without the required positional `int` argument,
+    and is runtime-checkable.
+    """
+
+    def read(self, /) -> _T_co: ...
+
+
+@runtime_checkable
+class CanReadN(Protocol[_T_co]):
+    """Runtime-checkable equivalent of `_typeshed.SupportsRead`."""
+
+    def read(self, n: int = ..., /) -> _T_co: ...
+
+
+@runtime_checkable
+class CanReadline(Protocol[_T_co]):
+    """
+    Runtime-checkable equivalent of `_typeshed.SupportsNoArgReadline`, that
+    additionally allows `self` to be positional-only.
+    """
+
+    def readline(self, /) -> _T_co: ...
+
+
+@runtime_checkable
+class CanReadlineN(Protocol[_T_co]):
+    """Runtime-checkable equivalent of `_typeshed.SupportsReadline`."""
+
+    def readline(self, n: int = ..., /) -> _T_co: ...
+
+
+@runtime_checkable
+class CanWrite(Protocol[_T_contra, _RT_co]):
+    """
+    Runtime-checkable equivalent of `_typeshed.SupportsWrite`, with an additional
+    optional type parameter for the return type, that defaults to `object`.
+    """
+
+    def write(self, data: _T_contra, /) -> _RT_co: ...
+
+
+@runtime_checkable
+class CanFlush(Protocol[_RT_co]):
+    """
+    Runtime-checkable equivalent of `_typeshed.SupportsFlush`, with an additional
+    optional type parameter for the return type, that defaults to `object`.
+    """
+
+    def flush(self, /) -> _RT_co: ...
 
 
 # runtime-checkable `_typeshed.{Str,Bytes,StrOrBytes,Generic}Path` alternative
