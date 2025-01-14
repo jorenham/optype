@@ -35,25 +35,20 @@ _T_co = TypeVar("_T_co", covariant=True)
 _T_contra = TypeVar("_T_contra", contravariant=True)
 _RT_co = TypeVar("_RT_co", default=object, covariant=True)
 
-_StrOrBytesT_co = TypeVar(
-    "_StrOrBytesT_co",
-    bound=str | bytes,
-    default=str | bytes,
-    covariant=True,
-)
+_PathT_co = TypeVar("_PathT_co", bound=str | bytes, default=str | bytes, covariant=True)
 
 ###
 
 
 @runtime_checkable
-class CanFSPath(Protocol[_StrOrBytesT_co]):
+class CanFSPath(Protocol[_PathT_co]):
     """
     Similar to `os.PathLike`, but is is actually a protocol, doesn't incorrectly use a
     `TypeVar` with constraints", and therefore doesn't force type-unsafe usage of `Any`
     to express `str | bytes`.
     """
 
-    def __fspath__(self, /) -> _StrOrBytesT_co: ...
+    def __fspath__(self, /) -> _PathT_co: ...
 
 
 @runtime_checkable
