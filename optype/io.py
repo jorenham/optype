@@ -8,10 +8,10 @@ else:
     from typing_extensions import TypeVar, runtime_checkable
 
 
-__all__ = ("CanFSPath", "ToPath")
+__all__ = ("CanFSPath", "CanFileno", "ToFileno", "ToPath")
 
 
-def __dir__() -> tuple[str, str]:
+def __dir__() -> tuple[str, ...]:
     return __all__
 
 
@@ -42,5 +42,15 @@ class CanFSPath(Protocol[_StrOrBytesT_co]):
     def __fspath__(self, /) -> _StrOrBytesT_co: ...
 
 
-# A runtime-accessible alternative to `_typeshed.{Str,Bytes,StrOrBytes,Generic}Path`
+@runtime_checkable
+class CanFileno(Protocol):
+    """Runtime-checkable equivalent of `_typeshed.HasFileno`."""
+
+    def fileno(self, /) -> int: ...
+
+
+# runtime-checkable `_typeshed.{Str,Bytes,StrOrBytes,Generic}Path` alternative
 ToPath: TypeAlias = _StrOrBytes | CanFSPath[_StrOrBytes]
+
+# runtime-checkable `_typeshed.FileDescriptorLike` equivalent
+ToFileno: TypeAlias = int | CanFileno
