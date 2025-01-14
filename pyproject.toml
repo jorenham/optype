@@ -357,4 +357,9 @@ env_list = ["repo-review", "pre-commit", "3.10", "3.11", "3.12", "3.13"]
 
 
 [tool.typos.default]
-extend-ignore-identifiers-re = ["ND|nd", "(N|n)in"]
+extend-ignore-identifiers-re = [
+    "ND|nd",
+    "(N|n)in",
+    "Mode(R|W|X|A|O|_)(B|T|_)(U|_)?",
+    "ba",  # file mode string
+]
