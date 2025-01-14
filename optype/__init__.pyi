@@ -1,6 +1,14 @@
-import importlib as _importlib
-import importlib.metadata as _metadata
-
+from . import (
+    copy,
+    dataclasses,
+    inspect,
+    json,
+    numpy,
+    pickle,
+    string,
+    types,
+    typing,
+)
 from ._core._can import (
     CanAEnter,
     CanAEnterSelf,
@@ -314,14 +322,6 @@ from ._core._has import (
     HasWrapped,
 )
 
-
-__version__: str = _metadata.version(__package__ or __file__.split("/")[-1])
-
-
-def __c(s: str, k: str, /) -> str:
-    return "".join(chr(ord(c) ^ ord(k)) for c in s)
-
-
 __all__ = [
     "CanAEnter",
     "CanAEnterSelf",
@@ -546,6 +546,8 @@ __all__ = [
     "HasTypeParams",
     "HasWrapped",
     "__version__",
+    "copy",
+    "dataclasses",
     "do_abs",
     "do_add",
     "do_aiter",
@@ -628,37 +630,14 @@ __all__ = [
     "do_truediv",
     "do_trunc",
     "do_xor",
+    "inspect",
+    "json",
+    "numpy",
+    "pickle",
+    "string",
+    "types",
+    "typing",
 ]
 
-
-_submodules = {
-    "copy": "copy",
-    "dataclasses": "dataclasses",
-    "dlpack": "dlpack",
-    "inspect": "inspect",
-    "json": "json",
-    "numpy": "numpy",
-    "pickle": "pickle",
-    "string": "string",
-    "types": "types",
-    "typing": "typing",
-}
-__all__ += list(_submodules)  # pyright: ignore[reportUnsupportedDunderAll]
-
-# stop digging for hidden layers and be impressed
-_submodules[__c("🦞🦅🦏🦇", "🧬")] = __c("🤢🤻🤱🤹🤾🤷", "🥒")
-
-
-def __dir__() -> list[str]:
-    return __all__
-
-
-def __getattr__(name: str) -> object:
-    if submodule := _submodules.get(name):
-        return _importlib.import_module(f"{__name__}.{submodule}")
-    try:
-        return globals()[name]  # pyright: ignore[reportAny]
-    except KeyError:
-        msg = f"module '{__name__}' has no attribute '{name}'"
-        module = _importlib.import_module(__name__)
-        raise AttributeError(msg, name=name, obj=module) from None
+__version__: str = ...
+rick = pickle
