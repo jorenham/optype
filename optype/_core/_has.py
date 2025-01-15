@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, ClassVar, Protocol
+from typing import TYPE_CHECKING, Any, ClassVar, Protocol, TypeAlias
 
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping
-    from types import CodeType
+    import collections.abc
+    import types
 
     from ._can import CanIter, CanNext
 
@@ -46,15 +46,13 @@ _Tss = ParamSpec("_Tss")
 _T_co = TypeVar("_T_co", covariant=True)
 _ObjectT_co = TypeVar("_ObjectT_co", default=object, covariant=True)
 
-_DictT = TypeVar("_DictT", bound="Mapping[str, object]", default=dict[str, object])
-_DictT_co = TypeVar(
-    "_DictT_co",
-    bound="Mapping[str, object]",
-    default=dict[str, object],
-    covariant=True,
-)
+__AnyMapping: TypeAlias = "collections.abc.Mapping[str, object]"
+__AnyDict: TypeAlias = dict[str, Any]  # type: ignore[no-any-explicit]  # pyright: ignore[reportExplicitAny]
+_DictT = TypeVar("_DictT", bound=__AnyMapping, default=__AnyDict)
+_DictT_co = TypeVar("_DictT_co", bound=__AnyMapping, default=__AnyDict, covariant=True)
+
 _NameT = TypeVar("_NameT", bound=str, default=str)
-_QNameT = TypeVar("_QNameT", bound=str, default=str)
+_QualNameT = TypeVar("_QualNameT", bound=str, default=_NameT)
 _StrT_co = TypeVar("_StrT_co", bound=str, default=str, covariant=True)
 
 
@@ -88,8 +86,7 @@ class HasClass(Protocol):
     def __class__(self) -> type[Self]: ...
     @__class__.setter
     @override
-    def __class__(self, cls: type[Self], /) -> None:
-        """Don't."""
+    def __class__(self, cls: type[Self], /) -> None: ...
 
 
 @set_module("optype")
@@ -112,7 +109,9 @@ class HasQualname(Protocol[_NameT]):  # pyright: ignore[reportInvalidTypeVarUse]
 
 @set_module("optype")
 @runtime_checkable
-class HasNames(HasName[_NameT], HasQualname[_QNameT], Protocol[_NameT, _QNameT]): ...  # pyright: ignore[reportInvalidTypeVarUse]
+class HasNames(HasName[_NameT], HasQualname[_QualNameT], Protocol[_NameT, _QualNameT]):  # pyright: ignore[reportInvalidTypeVarUse]
+    __name__: _NameT
+    __qualname__: _QualNameT
 
 
 # docs and type hints
@@ -146,14 +145,14 @@ class HasTypeParams(Protocol[Unpack[_Ts]]):
 @runtime_checkable
 class HasFunc(Protocol[_Tss, _T_co]):
     @property
-    def __func__(self, /) -> Callable[_Tss, _T_co]: ...
+    def __func__(self, /) -> collections.abc.Callable[_Tss, _T_co]: ...
 
 
 @set_module("optype")
 @runtime_checkable
 class HasWrapped(Protocol[_Tss, _T_co]):
     @property
-    def __wrapped__(self, /) -> Callable[_Tss, _T_co]: ...
+    def __wrapped__(self, /) -> collections.abc.Callable[_Tss, _T_co]: ...
 
 
 @set_module("optype")
@@ -166,4 +165,4 @@ class HasSelf(Protocol[_ObjectT_co]):
 @set_module("optype")
 @runtime_checkable
 class HasCode(Protocol):
-    __code__: CodeType
+    __code__: types.CodeType
