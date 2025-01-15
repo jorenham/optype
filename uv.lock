@@ -43,14 +43,14 @@ faster-cache = [
 
 [[package]]
 name = "basedpyright"
-version = "1.23.2"
+version = "1.24.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "nodejs-wheel-binaries" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1c/1c/c97b40be662e8a49d1346b4e2f795c9de58e810852e67252547876c27e90/basedpyright-1.23.2.tar.gz", hash = "sha256:367c3bef9edff8d3ba35ccfc467f2e680a4b5936697eff3d42219e58febfe3c8", size = 21219958 }
+sdist = { url = "https://files.pythonhosted.org/packages/d9/9a/ddf789a403dcd27469f4e51f1e75d889cb3eb3034e87d198d01a1d7d3572/basedpyright-1.24.0.tar.gz", hash = "sha256:425919327db8662f1be718dafe06b1e168781f9728e59a9cf717cbb3380acec9", size = 21271171 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4a/e4/7227f13269138fca7b7f9cf98e75ce037f50c1afee3cb41db5668cd065d6/basedpyright-1.23.2-py3-none-any.whl", hash = "sha256:a859f035f031e6ce1d1bc43d73b4e364238c39811f9b6fcd31e886183097ea22", size = 11309233 },
+    { url = "https://files.pythonhosted.org/packages/80/8f/71e63c95eacaca491546d522812c214bc37bc8ec79a71229efbc56961e2d/basedpyright-1.24.0-py3-none-any.whl", hash = "sha256:32ae77b2334dc9737c9220bcbc1aee98f76884be033bd5f4f50e5940fa16391d", size = 11334150 },
 ]
 
 [[package]]
@@ -297,21 +297,19 @@ numpy = [
 ]
 
 [package.dev-dependencies]
-common = [
-    { name = "numpy" },
-    { name = "typing-extensions" },
-]
 dev = [
     { name = "basedmypy", extra = ["faster-cache"] },
     { name = "basedpyright" },
     { name = "beartype" },
-    { name = "numpy" },
+    { name = "optype", extra = ["numpy"] },
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "ruff" },
     { name = "sp-repo-review", extra = ["cli"] },
     { name = "tox" },
-    { name = "typing-extensions" },
+]
+extra = [
+    { name = "optype", extra = ["numpy"] },
 ]
 lint = [
     { name = "ruff" },
@@ -319,23 +317,11 @@ lint = [
 ]
 test = [
     { name = "beartype" },
-    { name = "numpy" },
     { name = "pytest" },
-    { name = "typing-extensions" },
 ]
 type = [
     { name = "basedmypy", extra = ["faster-cache"] },
     { name = "basedpyright" },
-    { name = "numpy" },
-    { name = "typing-extensions" },
-]
-typetest = [
-    { name = "basedmypy", extra = ["faster-cache"] },
-    { name = "basedpyright" },
-    { name = "beartype" },
-    { name = "numpy" },
-    { name = "pytest" },
-    { name = "typing-extensions" },
 ]
 
 [package.metadata]
@@ -345,45 +331,29 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-common = [
-    { name = "numpy", specifier = ">=1.23.5" },
-    { name = "typing-extensions", specifier = ">=4.10" },
-]
 dev = [
     { name = "basedmypy", extras = ["faster-cache"], specifier = ">=2.9.1" },
-    { name = "basedpyright", specifier = ">=1.23.2" },
+    { name = "basedpyright", specifier = ">=1.24.0" },
     { name = "beartype", specifier = ">=0.19.0" },
-    { name = "numpy", specifier = ">=1.23.5" },
+    { name = "optype", extras = ["numpy"] },
     { name = "pre-commit", specifier = ">=4.0.1" },
     { name = "pytest", specifier = ">=8.3.4" },
     { name = "ruff", specifier = ">=0.9.1" },
     { name = "sp-repo-review", extras = ["cli"], specifier = ">=2024.8.19" },
     { name = "tox", specifier = ">=4.23.2" },
-    { name = "typing-extensions", specifier = ">=4.10" },
 ]
+extra = [{ name = "optype", extras = ["numpy"] }]
 lint = [
     { name = "ruff", specifier = ">=0.9.1" },
     { name = "sp-repo-review", extras = ["cli"], specifier = ">=2024.8.19" },
 ]
 test = [
     { name = "beartype", specifier = ">=0.19.0" },
-    { name = "numpy", specifier = ">=1.23.5" },
     { name = "pytest", specifier = ">=8.3.4" },
-    { name = "typing-extensions", specifier = ">=4.10" },
 ]
 type = [
     { name = "basedmypy", extras = ["faster-cache"], specifier = ">=2.9.1" },
-    { name = "basedpyright", specifier = ">=1.23.2" },
-    { name = "numpy", specifier = ">=1.23.5" },
-    { name = "typing-extensions", specifier = ">=4.10" },
-]
-typetest = [
-    { name = "basedmypy", extras = ["faster-cache"], specifier = ">=2.9.1" },
-    { name = "basedpyright", specifier = ">=1.23.2" },
-    { name = "beartype", specifier = ">=0.19.0" },
-    { name = "numpy", specifier = ">=1.23.5" },
-    { name = "pytest", specifier = ">=8.3.4" },
-    { name = "typing-extensions", specifier = ">=4.10" },
+    { name = "basedpyright", specifier = ">=1.24.0" },
 ]
 
 [[package]]
@@ -734,14 +704,14 @@ wheels = [
 
 [[package]]
 name = "virtualenv"
-version = "20.28.1"
+version = "20.29.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "distlib" },
     { name = "filelock" },
     { name = "platformdirs" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/50/39/689abee4adc85aad2af8174bb195a819d0be064bf55fcc73b49d2b28ae77/virtualenv-20.28.1.tar.gz", hash = "sha256:5d34ab240fdb5d21549b76f9e8ff3af28252f5499fb6d6f031adac4e5a8c5329", size = 7650532 }
+sdist = { url = "https://files.pythonhosted.org/packages/5a/5d/8d625ebddf9d31c301f85125b78002d4e4401fe1c15c04dca58a54a3056a/virtualenv-20.29.0.tar.gz", hash = "sha256:6345e1ff19d4b1296954cee076baaf58ff2a12a84a338c62b02eda39f20aa982", size = 7658081 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/51/8f/dfb257ca6b4e27cb990f1631142361e4712badab8e3ca8dc134d96111515/virtualenv-20.28.1-py3-none-any.whl", hash = "sha256:412773c85d4dab0409b83ec36f7a6499e72eaf08c80e81e9576bca61831c71cb", size = 4276719 },
+    { url = "https://files.pythonhosted.org/packages/f0/d3/12687ab375bb0e077ea802a5128f7b45eb5de7a7c6cb576ccf9dd59ff80a/virtualenv-20.29.0-py3-none-any.whl", hash = "sha256:c12311863497992dc4b8644f8ea82d3b35bb7ef8ee82e6630d76d0197c39baf9", size = 4282443 },
 ]
