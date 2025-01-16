@@ -31,6 +31,29 @@ else:
 from ._utils import set_module
 
 
+__all__ = [
+    "HasAnnotations",
+    "HasClass",
+    "HasCode",
+    "HasDict",
+    "HasDoc",
+    "HasFunc",
+    "HasMatchArgs",
+    "HasModule",
+    "HasName",
+    "HasNames",
+    "HasQualname",
+    "HasSelf",
+    "HasSlots",
+    "HasTypeParams",
+    "HasWrapped",
+]
+
+
+def __dir__() -> list[str]:
+    return __all__
+
+
 ###
 
 
