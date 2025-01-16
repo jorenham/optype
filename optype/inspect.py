@@ -1,11 +1,10 @@
 # mypy: disable-error-code="no-any-explicit, no-any-decorated"
 # pyright: reportAny=false, reportExplicitAny=false
 
-import inspect
 import sys
 import types
 from collections.abc import Iterable
-from typing import TypeAlias, cast, get_args as _get_args
+from typing import Literal, TypeAlias, cast, get_args as _get_args, overload
 
 
 if sys.version_info >= (3, 13):
@@ -95,7 +94,11 @@ def is_iterable(obj: object, /) -> TypeIs[_ToIter]:
     return False
 
 
-def is_final(arg: object, /) -> TypeIs[WrappedFinalType]:
+@overload
+def is_final(final_cls_or_method: WrappedFinalType, /) -> Literal[True]: ...
+@overload
+def is_final(cls: object, /) -> bool: ...
+def is_final(arg: object, /) -> bool:
     """
     Check if the type, method, classmethod, staticmethod, or property, is
     decorated with `@typing.final` or `@typing_extensions.final`.
@@ -134,24 +137,19 @@ def is_final(arg: object, /) -> TypeIs[WrappedFinalType]:
     But unlike `@property`, it doesn't matter in which order you use the
     `@classmethod` and `@staticmethod` decorators and `@final`.
     """
-    if callable(arg):
-        if getattr(arg, "__final__", False):
-            return True
-        if (wrapped := getattr(arg, "__wrapped__", None)) is not None:
-            return is_final(wrapped)
+    if getattr(arg, "__final__", None) is True:
+        return True
 
     if isinstance(arg, type):
         try:
             _ = type("_", (arg,), {})
         except TypeError:
             return True
-        else:
-            return False
 
-    if isinstance(arg, property) and arg.fget is not None:
-        return is_final(arg.fget)
+    if (wrapped := getattr(arg, "__wrapped__", arg)) is not arg:
+        return is_final(wrapped)
 
-    return False
+    return isinstance(arg, property) and arg.fget is not None and is_final(arg.fget)
 
 
 def _get_alias(tp: type | object, /) -> type | object:
@@ -278,11 +276,13 @@ def get_protocol_members(cls: type, /) -> frozenset[str]:
 
     # sometimes __protocol_attrs__ hallicunates some non-existing dunders.
     # the `getattr_static` avoids potential descriptor magic
+    from inspect import getattr_static  # noqa: PLC0415
+
     members = {
         member
         for member in members
         if member in annotations
-        or inspect.getattr_static(cls, member) is not None
+        or getattr_static(cls, member) is not None
     }  # fmt: skip
 
     # also include any of the parents
