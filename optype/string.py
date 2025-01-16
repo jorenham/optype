@@ -5,8 +5,6 @@ See Also:
     - https://docs.python.org/3/library/string.html
 """
 
-from __future__ import annotations
-
 from typing import Final, Literal as L, TypeAlias  # noqa: N817
 
 

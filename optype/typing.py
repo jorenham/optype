@@ -1,8 +1,9 @@
-from __future__ import annotations
-
-import enum
 import sys
-from typing import Literal, NoReturn, Protocol, TypeAlias
+from typing import TYPE_CHECKING, Literal, NoReturn, Protocol, TypeAlias
+
+
+if TYPE_CHECKING:
+    import enum
 
 
 if sys.version_info >= (3, 13):
@@ -13,7 +14,6 @@ if sys.version_info >= (3, 13):
         TypeVar,
         TypedDict,
         Unpack,
-        final,
         override,
     )
 else:
@@ -24,7 +24,6 @@ else:
         TypeVar,
         TypedDict,
         Unpack,
-        final,
         override,
     )
 
@@ -163,7 +162,12 @@ class JustComplex(Just[complex], Protocol):
         special-cased "promotion rules" of `complex`).
     """
 
-    def __new__(cls, /, real: complex | AnyFloat, imag: complex | AnyFloat) -> Self: ...
+    def __new__(
+        cls,
+        /,
+        real: "complex | AnyFloat",
+        imag: "complex | AnyFloat",
+    ) -> Self: ...
 
 
 # Anything that can *always* be converted to an `int` / `float` / `complex`
@@ -182,13 +186,12 @@ AnyIterable: TypeAlias = _c.CanIter[_c.CanNext[_ValueT]] | _c.CanGetitem[int, _V
 
 # The closest supertype of a `Literal`, i.e. the allowed types that can be
 # passed to `typing.Literal`.
-AnyLiteral: TypeAlias = bool | JustInt | LiteralString | bytes | enum.Enum | None
+AnyLiteral: TypeAlias = "bool | JustInt | LiteralString | bytes | enum.Enum | None"
 
 
 # Empty collection type aliases
 
 
-@final
 class _EmptyTypedDict(TypedDict):
     pass
 

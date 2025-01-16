@@ -3,15 +3,11 @@ Runtime-protocols for the `dataclasses` standard library.
 https://docs.python.org/3/library/dataclasses.html
 """
 
-from __future__ import annotations
-
+import dataclasses
 import sys
-from typing import TYPE_CHECKING, Protocol
+from collections.abc import Mapping
+from typing import Any, Protocol, TypeAlias
 
-
-if TYPE_CHECKING:
-    import dataclasses
-    from collections.abc import Mapping
 
 if sys.version_info >= (3, 13):
     from typing import TypeVar, runtime_checkable
@@ -28,11 +24,8 @@ def __dir__() -> tuple[str]:
 
 ###
 
-_FieldsT = TypeVar(
-    "_FieldsT",
-    bound="Mapping[str, dataclasses.Field[object]]",
-    default=dict[str, "dataclasses.Field[object]"],
-)
+__Field: TypeAlias = dataclasses.Field[Any]  # type: ignore[no-any-explicit] # pyright: ignore[reportExplicitAny]
+_FieldsT = TypeVar("_FieldsT", bound=Mapping[str, __Field], default=dict[str, __Field])
 
 
 ###

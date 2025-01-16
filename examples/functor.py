@@ -1,20 +1,21 @@
 from __future__ import annotations
 
 import sys
-from typing import TYPE_CHECKING, Generic, TypeVar, final
 import optype as op
 
-if sys.version_info >= (3, 12):
-    from typing import override
-else:
-    from typing_extensions import override
+from typing import Generic
 
-if TYPE_CHECKING:
-    from collections.abc import Callable
-    from types import NotImplementedType
+if sys.version_info >= (3, 13):
+    from typing import final, override, overload, TypeVar
+else:
+    from typing_extensions import final, override, overload, TypeVar
+
+from collections.abc import Callable as CanCall
+from types import NotImplementedType
 
 
 _T_co = TypeVar("_T_co", covariant=True)
+_T = TypeVar("_T")
 _X = TypeVar("_X")
 _Y = TypeVar("_Y")
 
@@ -26,17 +27,31 @@ class Functor(Generic[_T_co]):
     def __init__(self, value: _T_co, /) -> None:
         self.value = value
 
-    def map1(self, f: Callable[[_T_co], _Y], /) -> Functor[_Y]:
+    def map1(self: Functor[_T], f: CanCall[[_T], _Y], /) -> Functor[_Y]:
         """
         Applies a unary operator `f` over the value of `self`,
         and return a new `Functor`.
         """
         return Functor(f(self.value))
 
+    @overload
     def map2(
-        self,
-        f: Callable[[_T_co, _X], _Y],
-        other: Functor[_X],
+        self: Functor[_T],
+        f: CanCall[[_T, _X], NotImplementedType],
+        x: Functor[_X],
+        /,
+    ) -> NotImplementedType: ...
+    @overload
+    def map2(
+        self: Functor[_T],
+        f: CanCall[[_T, _X], _Y],
+        x: Functor[_X],
+        /,
+    ) -> Functor[_Y]: ...
+    def map2(
+        self: Functor[_T],
+        f: CanCall[[_T, _X], _Y],
+        x: Functor[_X],
         /,
     ) -> Functor[_Y] | NotImplementedType:
         """
@@ -45,8 +60,7 @@ class Functor(Generic[_T_co]):
         is returned if `f` is not supported for the types, or if other is not
         a `Functor`.
         """
-        y = f(self.value, other.value)
-
+        y = f(self.value, x.value)
         return NotImplemented if y is NotImplemented else Functor(y)
 
     @override
@@ -82,11 +96,7 @@ class Functor(Generic[_T_co]):
 
     # rich comparison ops
 
-    def __lt__(
-        self: Functor[op.CanLt[_X, _Y]],
-        x: Functor[_X],
-        /,
-    ) -> Functor[_Y]:
+    def __lt__(self: Functor[op.CanLt[_X, _Y]], x: Functor[_X], /) -> Functor[_Y]:
         """
         >>> Functor({0}) < Functor({0, 1})
         Functor(True)
@@ -95,11 +105,7 @@ class Functor(Generic[_T_co]):
         """
         return self.map2(op.do_lt, x)
 
-    def __le__(
-        self: Functor[op.CanLe[_X, _Y]],
-        x: Functor[_X],
-        /,
-    ) -> Functor[_Y]:
+    def __le__(self: Functor[op.CanLe[_X, _Y]], x: Functor[_X], /) -> Functor[_Y]:
         """
         >>> Functor({0}) <= Functor({0, 1})
         Functor(True)
@@ -128,11 +134,7 @@ class Functor(Generic[_T_co]):
 
     # binary infix ops
 
-    def __add__(
-        self: Functor[op.CanAdd[_X, _Y]],
-        x: Functor[_X],
-        /,
-    ) -> Functor[_Y]:
+    def __add__(self: Functor[op.CanAdd[_X, _Y]], x: Functor[_X], /) -> Functor[_Y]:
         """
         >>> Functor(0) + Functor(1)
         Functor(1)
@@ -141,22 +143,14 @@ class Functor(Generic[_T_co]):
         """
         return self.map2(op.do_add, x)
 
-    def __sub__(
-        self: Functor[op.CanSub[_X, _Y]],
-        x: Functor[_X],
-        /,
-    ) -> Functor[_Y]:
+    def __sub__(self: Functor[op.CanSub[_X, _Y]], x: Functor[_X], /) -> Functor[_Y]:
         """
         >>> Functor(0) - Functor(1)
         Functor(-1)
         """
         return self.map2(op.do_sub, x)
 
-    def __mul__(
-        self: Functor[op.CanMul[_X, _Y]],
-        x: Functor[_X],
-        /,
-    ) -> Functor[_Y]:
+    def __mul__(self: Functor[op.CanMul[_X, _Y]], x: Functor[_X], /) -> Functor[_Y]:
         """
         >>> Functor(('Developers!',)) * Functor(4)
         Functor(('Developers!', 'Developers!', 'Developers!', 'Developers!'))
@@ -192,22 +186,14 @@ class Functor(Generic[_T_co]):
         """
         return self.map2(op.do_floordiv, x)
 
-    def __mod__(
-        self: Functor[op.CanMod[_X, _Y]],
-        x: Functor[_X],
-        /,
-    ) -> Functor[_Y]:
+    def __mod__(self: Functor[op.CanMod[_X, _Y]], x: Functor[_X], /) -> Functor[_Y]:
         """
         >>> Functor(10) % Functor(7)
         Functor(3)
         """
         return self.map2(op.do_mod, x)
 
-    def __pow__(
-        self: Functor[op.CanPow2[_X, _Y]],
-        x: Functor[_X],
-        /,
-    ) -> Functor[_Y]:
+    def __pow__(self: Functor[op.CanPow2[_X, _Y]], x: Functor[_X], /) -> Functor[_Y]:
         """
         >>> Functor(2) ** Functor(3)
         Functor(8)
@@ -236,11 +222,7 @@ class Functor(Generic[_T_co]):
         """
         return self.map2(op.do_rshift, x)
 
-    def __and__(
-        self: Functor[op.CanAnd[_X, _Y]],
-        x: Functor[_X],
-        /,
-    ) -> Functor[_Y]:
+    def __and__(self: Functor[op.CanAnd[_X, _Y]], x: Functor[_X], /) -> Functor[_Y]:
         """
         >>> Functor(True) & Functor(False)
         Functor(False)
@@ -249,11 +231,7 @@ class Functor(Generic[_T_co]):
         """
         return self.map2(op.do_and, x)
 
-    def __xor__(
-        self: Functor[op.CanXor[_X, _Y]],
-        x: Functor[_X],
-        /,
-    ) -> Functor[_Y]:
+    def __xor__(self: Functor[op.CanXor[_X, _Y]], x: Functor[_X], /) -> Functor[_Y]:
         """
         >>> Functor(True) ^ Functor(False)
         Functor(True)
@@ -262,11 +240,7 @@ class Functor(Generic[_T_co]):
         """
         return self.map2(op.do_xor, x)
 
-    def __or__(
-        self: Functor[op.CanOr[_X, _Y]],
-        x: Functor[_X],
-        /,
-    ) -> Functor[_Y]:
+    def __or__(self: Functor[op.CanOr[_X, _Y]], x: Functor[_X], /) -> Functor[_Y]:
         """
         >>> Functor(True) | Functor(False)
         Functor(True)

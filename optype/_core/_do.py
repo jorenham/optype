@@ -1,20 +1,23 @@
-# mypy: disable-error-code="assignment"
 # pyright: reportInvalidCast=false
-
-from __future__ import annotations
 
 import math
 import operator as _o
 import sys
-from typing import TYPE_CHECKING, Final, Literal, ParamSpec, TypeVar, cast, overload
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Final, Literal, cast
 
+
+if sys.version_info >= (3, 13):
+    from typing import ParamSpec, TypeVar, overload
+else:
+    from typing_extensions import ParamSpec, TypeVar, overload
+
+
+from . import _can as _c, _does as _d
 from ._utils import set_module
 
 
-if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from . import _can as _c, _does as _d
+###
 
 
 # type conversion
@@ -277,7 +280,7 @@ if TYPE_CHECKING:
     _do_setitem: _d.DoesSetitem = do_setitem
     _do_delitem: _d.DoesDelitem = do_delitem
     _do_missing: _d.DoesMissing = do_missing
-    _do_contains: _d.DoesContains = do_contains
+    _do_contains: _d.DoesContains = do_contains  # type: ignore[assignment]
 
     _do_radd: _d.DoesRAdd = do_radd
     _do_rsub: _d.DoesRSub = do_rsub

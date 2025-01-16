@@ -1,35 +1,32 @@
 # mypy: disable-error-code="no-any-explicit, no-any-decorated"
 # pyright: reportAny=false, reportExplicitAny=false
 
-from __future__ import annotations
-
 import inspect
 import sys
-from types import GenericAlias, UnionType
-from typing import TYPE_CHECKING, Any, Literal, TypeAlias, cast, get_args as _get_args
+import types
+from collections.abc import Iterable
+from typing import TypeAlias, cast, get_args as _get_args
 
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
-    from types import MappingProxyType, ModuleType
-
-    from .types import WrappedFinalType
-    from .typing import AnyIterable
 
 if sys.version_info >= (3, 13):
-    from typing import TypeAliasType, TypeIs, _get_protocol_attrs, is_protocol, overload
+    from typing import TypeAliasType, TypeIs, _get_protocol_attrs, is_protocol
 else:
     from typing_extensions import (  # type: ignore[attr-defined]
         TypeAliasType,
         TypeIs,
         _get_protocol_attrs,  # noqa: PLC2701  # pyright: ignore[reportAttributeAccessIssue, reportUnknownVariableType]
         is_protocol,
-        overload,
     )
 
 
 from ._core import _can as _c
-from .types import AnnotatedAlias, GenericType, LiteralAlias, UnionAlias
+from .types import (
+    AnnotatedAlias,
+    GenericType,
+    LiteralAlias,
+    UnionAlias,
+    WrappedFinalType,
+)
 
 
 __all__ = (
@@ -52,7 +49,10 @@ def __dir__() -> tuple[str, ...]:
 ###
 
 
-def is_iterable(obj: object, /) -> TypeIs[AnyIterable]:
+_ToIter: TypeAlias = Iterable[object] | _c.CanGetitem[int, object]
+
+
+def is_iterable(obj: object, /) -> TypeIs[_ToIter]:
     """
     Check whether the object can be iterated over, i.e. if it can be used in
     a `for` loop, or if it can be passed to `builtins.iter`.
@@ -60,7 +60,7 @@ def is_iterable(obj: object, /) -> TypeIs[AnyIterable]:
     Note:
         Contrary to popular *belief*, this isn't limited to objects that
         implement `__iter___`, as suggested by the name of
-        `collections.abc.Iterable`.
+        `Iterable`.
 
         Sequence-like objects that implement `__getitem__` for consecutive
         `int` keys that start at `0` (or raise `IndexEeror` if out of bounds),
@@ -95,20 +95,7 @@ def is_iterable(obj: object, /) -> TypeIs[AnyIterable]:
     return False
 
 
-_StaticMethod: TypeAlias = "staticmethod[..., object] | classmethod[Any, ..., object]"
-
-
-@overload
-def is_final(final_cls_or_method: WrappedFinalType, /) -> Literal[True]: ...
-@overload
-def is_final(cls: type, /) -> bool: ...
-@overload
-def is_final(fn: Callable[..., object], /) -> bool: ...
-@overload
-def is_final(prop: property, /) -> bool: ...
-@overload
-def is_final(clsmethod: _StaticMethod | staticmethod[..., object], /) -> bool: ...
-def is_final(arg: object, /) -> bool:
+def is_final(arg: object, /) -> TypeIs[WrappedFinalType]:
     """
     Check if the type, method, classmethod, staticmethod, or property, is
     decorated with `@typing.final` or `@typing_extensions.final`.
@@ -147,15 +134,22 @@ def is_final(arg: object, /) -> bool:
     But unlike `@property`, it doesn't matter in which order you use the
     `@classmethod` and `@staticmethod` decorators and `@final`.
     """
-    if callable(arg):  # classes are also callable
+    if callable(arg):
         if getattr(arg, "__final__", False):
             return True
-        return isinstance(arg, staticmethod) and is_final(arg.__wrapped__)
+        if (wrapped := getattr(arg, "__wrapped__", None)) is not None:
+            return is_final(wrapped)
+
+    if isinstance(arg, type):
+        try:
+            _ = type("_", (arg,), {})
+        except TypeError:
+            return True
+        else:
+            return False
+
     if isinstance(arg, property) and arg.fget is not None:
         return is_final(arg.fget)
-    if isinstance(arg, classmethod):
-        arg_: _StaticMethod = arg
-        return bool(getattr(arg_, "__final__", False)) or is_final(arg_.__wrapped__)
 
     return False
 
@@ -192,18 +186,21 @@ def is_runtime_protocol(type_expr: type | object, /) -> bool:
     )
 
 
-def is_union_type(type_expr: type | object, /) -> TypeIs[UnionType | UnionAlias]:
+def is_union_type(type_expr: type | object, /) -> TypeIs[types.UnionType | UnionAlias]:
     if isinstance(type_expr, AnnotatedAlias | TypeAliasType):
         type_expr = _get_alias(type_expr)
-    return isinstance(type_expr, UnionType | UnionAlias)
+    return isinstance(type_expr, types.UnionType | UnionAlias)
 
 
-def is_generic_alias(type_expr: type | object, /) -> TypeIs[GenericType | GenericAlias]:
+def is_generic_alias(
+    type_expr: type | object,
+    /,
+) -> TypeIs[GenericType | types.GenericAlias]:
     if isinstance(type_expr, AnnotatedAlias | TypeAliasType):
         type_expr = _get_alias(type_expr)
     return (
-        isinstance(type_expr, GenericType | GenericAlias)
-        and not isinstance(type_expr, UnionType | UnionAlias)
+        isinstance(type_expr, GenericType | types.GenericAlias)
+        and not isinstance(type_expr, types.UnionType | UnionAlias)
     )  # fmt: skip
 
 
@@ -223,13 +220,13 @@ def get_args(tp: type | object, /) -> tuple[type | object, ...]:
         tp = _get_alias(tp)
         should_raise = False
 
-    if isinstance(tp, UnionType | UnionAlias | LiteralAlias):
+    if isinstance(tp, types.UnionType | UnionAlias | LiteralAlias):
         arg: object
         args: list[object] = []
         for arg in tp.__args__:
             if isinstance(arg, TypeAliasType | AnnotatedAlias):
                 arg = _get_alias(arg)  # noqa: PLW2901
-            if isinstance(arg, UnionType | UnionAlias | LiteralAlias):
+            if isinstance(arg, types.UnionType | UnionAlias | LiteralAlias):
                 args.extend(get_args(arg))
             else:
                 args.append(arg)
@@ -258,7 +255,7 @@ def get_protocol_members(cls: type, /) -> frozenset[str]:
 
     annotations, module = cls.__annotations__, cls.__module__
 
-    member_dict: MappingProxyType[str, object] = vars(cls)
+    member_dict: types.MappingProxyType[str, object] = vars(cls)
     members = annotations.keys() | {
         name
         for name, v in member_dict.items()
@@ -296,7 +293,11 @@ def get_protocol_members(cls: type, /) -> frozenset[str]:
     return frozenset(members)
 
 
-def get_protocols(module: ModuleType, /, private: bool = False) -> frozenset[type]:
+def get_protocols(
+    module: types.ModuleType,
+    /,
+    private: bool = False,
+) -> frozenset[type]:
     """Return the protocol types within the given module."""
     members: list[str] | tuple[str, ...]
     if private:

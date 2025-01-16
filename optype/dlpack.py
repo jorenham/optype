@@ -3,8 +3,6 @@ Types and interfaces for DLPack, as used the Array API.
 https://github.com/dmlc/dlpack
 """
 
-from __future__ import annotations
-
 import enum
 import sys
 from typing import Any, Protocol

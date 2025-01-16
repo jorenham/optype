@@ -1,13 +1,9 @@
 # mypy: disable-error-code="no-any-explicit, override"
-from __future__ import annotations
-
 import sys
-from typing import TYPE_CHECKING, Protocol, TypeAlias
+import types
+from collections.abc import Generator
+from typing import Protocol, TypeAlias
 
-
-if TYPE_CHECKING:
-    from collections.abc import Generator
-    from types import TracebackType
 
 if sys.version_info >= (3, 13):
     from typing import (
@@ -69,14 +65,12 @@ _AnyNoneT_co = TypeVar("_AnyNoneT_co", default=None, covariant=True)
 _IndexT_contra = TypeVar("_IndexT_contra", bound="CanIndex | slice", contravariant=True)
 
 # return type that is usually `None`, but can be anything, as it is ignored at runtime
-_Ignored: TypeAlias = object | None
-
-
+_Ignored: TypeAlias = object
 # This should be `asyncio.Future[typing.Any] | None`. But that would make this
-# incompatible with `collections.abc.Awaitable` -- it (annoyingly) uses `Any`:
+# incompatible with `Awaitable` -- it (annoyingly) uses `Any`:
 # https://github.com/python/typeshed/blob/587ad6/stdlib/asyncio/futures.pyi#L51
 _FutureOrNone: TypeAlias = object
-_AsyncGen: TypeAlias = "Generator[_FutureOrNone, None, _T]"
+_AsyncGen: TypeAlias = Generator[_FutureOrNone, None, _T]
 
 
 ###
@@ -182,7 +176,7 @@ class CanFormat(Protocol[_StrT_contra, _StrT_co]):
 @runtime_checkable
 class CanNext(Protocol[_V_co]):
     """
-    Similar to `collections.abc.Iterator[V]`, but without the requirement to
+    Similar to `Iterator[V]`, but without the requirement to
     also have a `__iter__` method, which isn't needed in most cases (at least
     not in cpython).
     """
@@ -196,7 +190,7 @@ _CanNextT_co = TypeVar("_CanNextT_co", bound=CanNext[object], covariant=True)
 @set_module("optype")
 @runtime_checkable
 class CanIter(Protocol[_CanNextT_co]):
-    """Like `collections.abc.Iterable[V]`, but with a flexible return type."""
+    """Like `Iterable[V]`, but with a flexible return type."""
 
     def __iter__(self, /) -> _CanNextT_co: ...
 
@@ -204,7 +198,7 @@ class CanIter(Protocol[_CanNextT_co]):
 @set_module("optype")
 @runtime_checkable
 class CanIterSelf(CanNext[_V_co], CanIter[CanNext[_V_co]], Protocol[_V_co]):
-    """Like `collections.abc.Iterator[V]`, but without the `abc` nonsense."""
+    """Like `Iterator[V]`, but without the `abc` nonsense."""
 
     @override
     def __iter__(self, /) -> Self: ...
@@ -231,7 +225,7 @@ class CanAIter(Protocol[_CanANextT_co]):
 @set_module("optype")
 @runtime_checkable
 class CanAIterSelf(CanAIter["CanAIterSelf[_V_co]"], CanANext[_V_co], Protocol[_V_co]):
-    """Like `collections.abc.AsyncIterator[T]`, but without the `abc` nonsense."""
+    """Like `AsyncIterator[T]`, but without the `abc` nonsense."""
 
     @override
     def __aiter__(self, /) -> Self: ...
@@ -964,6 +958,25 @@ class CanCeil(Protocol[_AnyIntT_co]):
     def __ceil__(self, /) -> _AnyIntT_co: ...
 
 
+# Awaitables
+
+
+@set_module("optype")
+@runtime_checkable
+class CanAwait(Protocol[_T_co]):
+    # Technically speaking, this can return any
+    # `CanNext[None | asyncio.Future[object]]`. But in theory, the return value
+    # of generators are currently impossible to type, because the return value
+    # of a `yield from _` is # piggybacked using a `raise StopIteration(value)`
+    # from `__next__`. So that also makes `__await__` theoretically
+    # impossible to type. In practice, typecheckers work around that, by
+    # accepting the lie called `Generator`...
+    @overload
+    def __await__(self: "CanAwait[_T_co]", /) -> _AsyncGen[_T_co]: ...
+    @overload
+    def __await__(self: "CanAwait[None]", /) -> CanNext[_FutureOrNone]: ...
+
+
 # Context managers
 
 
@@ -990,7 +1003,7 @@ class CanExit(Protocol[_AnyNoneT_co]):
         self,
         exc_type: type[_ExcT],
         exc: _ExcT,
-        tb: TracebackType,
+        tb: types.TracebackType,
         /,
     ) -> _AnyNoneT_co: ...
 
@@ -1035,7 +1048,7 @@ class CanAExit(Protocol[_AnyNoneT_co]):
         self,
         exc_type: type[_ExcT],
         exc_: _ExcT,
-        tb: TracebackType,
+        tb: types.TracebackType,
         /,
     ) -> CanAwait[_AnyNoneT_co]: ...
 
@@ -1071,22 +1084,3 @@ class CanBuffer(Protocol[_IntT_contra]):
 @runtime_checkable
 class CanReleaseBuffer(Protocol):
     def __release_buffer__(self, buffer: memoryview, /) -> None: ...
-
-
-# Awaitables
-
-
-@set_module("optype")
-@runtime_checkable
-class CanAwait(Protocol[_T_co]):
-    # Technically speaking, this can return any
-    # `CanNext[None | asyncio.Future[object]]`. But in theory, the return value
-    # of generators are currently impossible to type, because the return value
-    # of a `yield from _` is # piggybacked using a `raise StopIteration(value)`
-    # from `__next__`. So that also makes `__await__` theoretically
-    # impossible to type. In practice, typecheckers work around that, by
-    # accepting the lie called `collections.abc.Generator`...
-    @overload
-    def __await__(self: CanAwait[_T_co], /) -> _AsyncGen[_T_co]: ...
-    @overload
-    def __await__(self: CanAwait[None], /) -> CanNext[_FutureOrNone]: ...

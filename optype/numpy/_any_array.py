@@ -1,14 +1,9 @@
 # mypy: disable-error-code="no-any-explicit"
 # pyright: reportExplicitAny=false
 
-from __future__ import annotations
-
 import sys
-from typing import TYPE_CHECKING, Any, Protocol, TypeAlias
-
-
-if TYPE_CHECKING:
-    from collections.abc import Iterator
+from collections.abc import Iterator
+from typing import Any, Protocol, TypeAlias
 
 
 if sys.version_info >= (3, 13):
@@ -100,8 +95,8 @@ class _AnyArrayNP(Protocol[_ST_co]):
 # NOTE: does not include tuple
 class _AnyArrayPY0(Protocol[_T_co]):
     def __len__(self, /) -> int: ...
-    def __getitem__(self, i: int, /) -> _T_co | _AnyArrayPY0[_T_co]: ...
-    def __reversed__(self, /) -> Iterator[_T_co | _AnyArrayPY0[_T_co]]: ...
+    def __getitem__(self, i: int, /) -> "_T_co | _AnyArrayPY0[_T_co]": ...
+    def __reversed__(self, /) -> Iterator["_T_co | _AnyArrayPY0[_T_co]"]: ...
     def index(self, x: Any, /) -> int: ...  # pyright: ignore[reportAny]
 
 
