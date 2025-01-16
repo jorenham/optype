@@ -274,12 +274,22 @@ force-exclude = true
         "datetime" = "dt"
         "numpy.typing" = "npt"
         "optype.numpy" = "onp"
+        "optype.typing" = "opt"
 
         [tool.ruff.lint.flake8-errmsg]
         max-string-length = 42  # this took a while to figure out
 
         [tool.ruff.lint.flake8-type-checking]
-        exempt-modules = ["typing", "typing_extensions"]
+        exempt-modules = [
+            "collections.abc",
+            "types",
+            "typing",
+            "typing_extensions",
+            "._can",
+            "._do",
+            "._does",
+            "._has",
+        ]
 
         [tool.ruff.lint.isort]
         case-sensitive = true

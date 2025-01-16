@@ -6,8 +6,6 @@ The allowed `np.dtype` arguments for specific scalar types.
 The names are analogous to those in `numpy.dtypes`.
 """
 
-from __future__ import annotations
-
 import sys
 from typing import Literal as L, Protocol, TypeAlias as Alias  # noqa: N817
 

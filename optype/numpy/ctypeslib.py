@@ -10,8 +10,6 @@ NOTE:
     https://github.com/jorenham/optype/issues
 """
 
-from __future__ import annotations
-
 import ctypes as ct
 import sys
 
@@ -153,7 +151,7 @@ if __is_dev():
     )  # fmt: skip
 
 
-CT = TypeVar("CT", bound=CType)
+CT = TypeVar("CT", bound="CType")
 _Array: TypeAlias = ct.Array[CT] | ct.Array["_Array[CT]"]
 Array = TypeAliasType("Array", _Array[CT], type_params=(CT,))
 

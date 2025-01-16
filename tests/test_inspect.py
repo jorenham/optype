@@ -1,7 +1,5 @@
 # mypy: disable-error-code="unreachable"
 # ruff: noqa: ANN205, ANN206
-from __future__ import annotations
-
 import sys
 import typing as tp
 from inspect import getattr_static

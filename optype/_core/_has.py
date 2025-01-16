@@ -1,14 +1,8 @@
-from __future__ import annotations
-
 import sys
-from typing import TYPE_CHECKING, Any, ClassVar, Protocol, TypeAlias
+import types
+from collections.abc import Callable, Iterable, Mapping
+from typing import Any, ClassVar, Protocol, TypeAlias
 
-
-if TYPE_CHECKING:
-    import collections.abc
-    import types
-
-    from ._can import CanIter, CanNext
 
 if sys.version_info >= (3, 13):
     from typing import (
@@ -37,6 +31,29 @@ else:
 from ._utils import set_module
 
 
+__all__ = [
+    "HasAnnotations",
+    "HasClass",
+    "HasCode",
+    "HasDict",
+    "HasDoc",
+    "HasFunc",
+    "HasMatchArgs",
+    "HasModule",
+    "HasName",
+    "HasNames",
+    "HasQualname",
+    "HasSelf",
+    "HasSlots",
+    "HasTypeParams",
+    "HasWrapped",
+]
+
+
+def __dir__() -> list[str]:
+    return __all__
+
+
 ###
 
 
@@ -46,7 +63,7 @@ _Tss = ParamSpec("_Tss")
 _T_co = TypeVar("_T_co", covariant=True)
 _ObjectT_co = TypeVar("_ObjectT_co", default=object, covariant=True)
 
-__AnyMapping: TypeAlias = "collections.abc.Mapping[str, object]"
+__AnyMapping: TypeAlias = "Mapping[str, object]"
 __AnyDict: TypeAlias = dict[str, Any]  # type: ignore[no-any-explicit]  # pyright: ignore[reportExplicitAny]
 _DictT = TypeVar("_DictT", bound=__AnyMapping, default=__AnyDict)
 _DictT_co = TypeVar("_DictT_co", bound=__AnyMapping, default=__AnyDict, covariant=True)
@@ -68,7 +85,7 @@ class HasMatchArgs(Protocol):
 @set_module("optype")
 @runtime_checkable
 class HasSlots(Protocol):
-    __slots__: ClassVar[LiteralString | CanIter[CanNext[LiteralString]]]  # type: ignore[assignment]
+    __slots__: ClassVar[LiteralString | Iterable[LiteralString]]
 
 
 @set_module("optype")
@@ -145,14 +162,14 @@ class HasTypeParams(Protocol[Unpack[_Ts]]):
 @runtime_checkable
 class HasFunc(Protocol[_Tss, _T_co]):
     @property
-    def __func__(self, /) -> collections.abc.Callable[_Tss, _T_co]: ...
+    def __func__(self, /) -> Callable[_Tss, _T_co]: ...
 
 
 @set_module("optype")
 @runtime_checkable
 class HasWrapped(Protocol[_Tss, _T_co]):
     @property
-    def __wrapped__(self, /) -> collections.abc.Callable[_Tss, _T_co]: ...
+    def __wrapped__(self, /) -> Callable[_Tss, _T_co]: ...
 
 
 @set_module("optype")

@@ -1,10 +1,8 @@
 # ruff: noqa: PLW1641
 # mypy: disable-error-code="no-any-explicit, no-any-decorated"
 
-from __future__ import annotations
-
 import sys
-from typing import TYPE_CHECKING, Any, Literal, Protocol, TypeAlias
+from typing import Any, Literal, Protocol, TypeAlias
 
 
 if sys.version_info >= (3, 13):
@@ -37,15 +35,16 @@ from optype._core._utils import set_module
 from ._compat import NP20
 
 
-if TYPE_CHECKING:
-    if NP20:
-        from numpy._core.multiarray import flagsobj
-    else:
-        from numpy.core.multiarray import flagsobj
+if NP20:
+    from numpy._core.multiarray import flagsobj
+else:
+    from numpy.core.multiarray import flagsobj
 
 
 __all__ = ["Scalar"]
 
+
+###
 
 _PT_co = TypeVar("_PT_co", covariant=True)
 _NB_co = TypeVar("_NB_co", bound=int, covariant=True, default=int)
@@ -54,6 +53,9 @@ _DT = TypeVar("_DT", bound=np.dtype[np.generic], default=np.dtype[np.generic])
 _L0: TypeAlias = Literal[0]
 _L1: TypeAlias = Literal[1]
 _Array0D: TypeAlias = np.ndarray[tuple[()], _DT]
+
+
+###
 
 
 @runtime_checkable

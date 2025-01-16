@@ -1,22 +1,106 @@
-from __future__ import annotations
-
 import sys
-from typing import TYPE_CHECKING, Literal, Protocol, TypeAlias, TypeVar
-
-
-if TYPE_CHECKING:
-    from collections.abc import AsyncIterator as AIterator, Callable, Iterable, Iterator
-
-    from . import _can as _c
+from collections.abc import AsyncIterator, Callable, Iterable, Iterator
+from typing import Literal, Protocol, TypeAlias
 
 
 if sys.version_info >= (3, 13):
-    from typing import ParamSpec, overload
+    from typing import ParamSpec, TypeVar, overload
 else:
-    from typing_extensions import ParamSpec, overload
+    from typing_extensions import ParamSpec, TypeVar, overload
 
 
+from . import _can as _c
 from ._utils import set_module
+
+
+__all__ = [
+    "DoesAIter",
+    "DoesANext",
+    "DoesAbs",
+    "DoesAdd",
+    "DoesAnd",
+    "DoesBool",
+    "DoesBytes",
+    "DoesCall",
+    "DoesCeil",
+    "DoesComplex",
+    "DoesContains",
+    "DoesDelattr",
+    "DoesDelitem",
+    "DoesDir",
+    "DoesDivmod",
+    "DoesEq",
+    "DoesFloat",
+    "DoesFloor",
+    "DoesFloordiv",
+    "DoesFormat",
+    "DoesGe",
+    "DoesGetattr",
+    "DoesGetitem",
+    "DoesGt",
+    "DoesHash",
+    "DoesIAdd",
+    "DoesIAnd",
+    "DoesIFloordiv",
+    "DoesILshift",
+    "DoesIMatmul",
+    "DoesIMod",
+    "DoesIMul",
+    "DoesIOr",
+    "DoesIPow",
+    "DoesIRshift",
+    "DoesISub",
+    "DoesITruediv",
+    "DoesIXor",
+    "DoesIndex",
+    "DoesInt",
+    "DoesInvert",
+    "DoesIter",
+    "DoesLe",
+    "DoesLen",
+    "DoesLengthHint",
+    "DoesLshift",
+    "DoesLt",
+    "DoesMatmul",
+    "DoesMissing",
+    "DoesMod",
+    "DoesMul",
+    "DoesNe",
+    "DoesNeg",
+    "DoesNext",
+    "DoesOr",
+    "DoesPos",
+    "DoesPow",
+    "DoesRAdd",
+    "DoesRAnd",
+    "DoesRDivmod",
+    "DoesRFloordiv",
+    "DoesRLshift",
+    "DoesRMatmul",
+    "DoesRMod",
+    "DoesRMul",
+    "DoesROr",
+    "DoesRPow",
+    "DoesRRshift",
+    "DoesRSub",
+    "DoesRTruediv",
+    "DoesRXor",
+    "DoesRepr",
+    "DoesReversed",
+    "DoesRound",
+    "DoesRshift",
+    "DoesSetattr",
+    "DoesSetitem",
+    "DoesStr",
+    "DoesSub",
+    "DoesTruediv",
+    "DoesTrunc",
+    "DoesXor",
+]
+
+
+def __dir__() -> list[str]:
+    return __all__
 
 
 ###
@@ -33,6 +117,7 @@ _PosInt: TypeAlias = Literal[
 ]  # fmt: skip
 
 
+_Tss = ParamSpec("_Tss")
 _KeyT = TypeVar("_KeyT")
 _ValT = TypeVar("_ValT")
 _AttrT = TypeVar("_AttrT")
@@ -43,15 +128,14 @@ _NDigitsT = TypeVar("_NDigitsT")
 _OutT = TypeVar("_OutT")
 _DefaultT = TypeVar("_DefaultT")
 _SentinelT = TypeVar("_SentinelT")
-_IteratorT = TypeVar("_IteratorT", bound="Iterator[object] | _c.CanNext[object]")
-_AIteratorT = TypeVar("_AIteratorT", bound="AIterator[object] | _c.CanANext[object]")
-_IterT = TypeVar("_IterT", bound="Iterable[object]")
-_BoolT = TypeVar("_BoolT", _JustFalse, _JustTrue, bool)
+_IteratorT = TypeVar("_IteratorT", bound=Iterator[object] | _c.CanNext[object])
+_AIteratorT = TypeVar("_AIteratorT", bound=AsyncIterator[object] | _c.CanANext[object])
+_IterT = TypeVar("_IterT", bound=Iterable[object])
+_BoolT = TypeVar("_BoolT", bound=bool)
 _IntT = TypeVar("_IntT", bound=int)
 _StrT = TypeVar("_StrT", bound=str)
 _FormatT = TypeVar("_FormatT", bound=str)
 _BytesT = TypeVar("_BytesT", bound=bytes)
-_ParamsT = ParamSpec("_ParamsT")
 
 
 ###
@@ -289,10 +373,10 @@ class DoesDir(Protocol):
 class DoesCall(Protocol):
     def __call__(
         self,
-        callable_: Callable[_ParamsT, _OutT],
+        callable_: Callable[_Tss, _OutT],
         /,
-        *args: _ParamsT.args,
-        **kwargs: _ParamsT.kwargs,
+        *args: _Tss.args,
+        **kwargs: _Tss.kwargs,
     ) -> _OutT: ...
 
 
@@ -366,7 +450,7 @@ class DoesReversed(Protocol):
         self,
         sequence: _c.CanSequence[_c.CanIndex, _ValT],
         /,
-    ) -> reversed[_ValT]: ...
+    ) -> "reversed[_ValT]": ...
 
 
 # binary infix operators

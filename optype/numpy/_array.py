@@ -1,12 +1,8 @@
 # mypy: disable-error-code="no-any-explicit"
-from __future__ import annotations
-
 import sys
-from typing import TYPE_CHECKING, Any, Protocol
+from collections.abc import Mapping
+from typing import Any, Protocol
 
-
-if TYPE_CHECKING:
-    from collections.abc import Mapping
 
 if sys.version_info >= (3, 13):
     from typing import Self, TypeAliasType, TypeVar, runtime_checkable
@@ -20,32 +16,14 @@ import optype.numpy._compat as _x
 from optype._core._utils import set_module
 
 
-__all__ = [
-    "Array",
-    "Array0D",
-    "Array1D",
-    "Array1D",
-    "Array2D",
-    "Array3D",
-    "ArrayND",
-    "CanArray",
-    "CanArray0D",
-    "CanArray1D",
-    "CanArray2D",
-    "CanArray3D",
-    "CanArrayFinalize",
-    "CanArrayND",
-    "CanArrayWrap",
-    "HasArrayInterface",
-    "HasArrayPriority",
-    "MArray",
-    "MArray0D",
-    "MArray1D",
-    "MArray1D",
-    "MArray2D",
-    "MArray3D",
+__all__ = [  # noqa: RUF022
+    "Array", "Array0D", "Array1D", "Array1D", "Array2D", "Array3D", "ArrayND",
+    "MArray", "MArray0D", "MArray1D", "MArray1D", "MArray2D", "MArray3D",
     "Matrix",
-]
+    "CanArray", "CanArray0D", "CanArray1D", "CanArray2D", "CanArray3D", "CanArrayND",
+    "CanArrayFinalize", "CanArrayWrap",
+    "HasArrayInterface", "HasArrayPriority",
+]  # fmt: skip
 
 
 def __dir__() -> list[str]:
@@ -323,7 +301,7 @@ class CanArrayWrap(Protocol):
 _ArrayInterfaceT_co = TypeVar(
     "_ArrayInterfaceT_co",
     covariant=True,
-    bound="Mapping[str, object]",
+    bound=Mapping[str, object],
     default=dict[str, object],
 )
 

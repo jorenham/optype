@@ -1,20 +1,113 @@
-# mypy: disable-error-code="assignment"
 # pyright: reportInvalidCast=false
-
-from __future__ import annotations
 
 import math
 import operator as _o
 import sys
-from typing import TYPE_CHECKING, Final, Literal, ParamSpec, TypeVar, cast, overload
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Final, Literal, cast
 
+
+if sys.version_info >= (3, 13):
+    from typing import ParamSpec, TypeVar, overload
+else:
+    from typing_extensions import ParamSpec, TypeVar, overload
+
+
+from . import _can as _c, _does as _d
 from ._utils import set_module
 
 
-if TYPE_CHECKING:
-    from collections.abc import Callable
+__all__ = [
+    "do_abs",
+    "do_add",
+    "do_aiter",
+    "do_and",
+    "do_anext",
+    "do_bool",
+    "do_bytes",
+    "do_call",
+    "do_ceil",
+    "do_complex",
+    "do_contains",
+    "do_delattr",
+    "do_delitem",
+    "do_dir",
+    "do_divmod",
+    "do_eq",
+    "do_float",
+    "do_floor",
+    "do_floordiv",
+    "do_format",
+    "do_ge",
+    "do_getattr",
+    "do_getitem",
+    "do_gt",
+    "do_hash",
+    "do_iadd",
+    "do_iand",
+    "do_ifloordiv",
+    "do_ilshift",
+    "do_imatmul",
+    "do_imod",
+    "do_imul",
+    "do_index",
+    "do_int",
+    "do_invert",
+    "do_ior",
+    "do_ipow",
+    "do_irshift",
+    "do_isub",
+    "do_iter",
+    "do_itruediv",
+    "do_ixor",
+    "do_le",
+    "do_len",
+    "do_length_hint",
+    "do_lshift",
+    "do_lt",
+    "do_matmul",
+    "do_missing",
+    "do_mod",
+    "do_mul",
+    "do_ne",
+    "do_neg",
+    "do_next",
+    "do_or",
+    "do_pos",
+    "do_pow",
+    "do_radd",
+    "do_rand",
+    "do_rdivmod",
+    "do_repr",
+    "do_reversed",
+    "do_rfloordiv",
+    "do_rlshift",
+    "do_rmatmul",
+    "do_rmod",
+    "do_rmul",
+    "do_ror",
+    "do_round",
+    "do_rpow",
+    "do_rrshift",
+    "do_rshift",
+    "do_rsub",
+    "do_rtruediv",
+    "do_rxor",
+    "do_setattr",
+    "do_setitem",
+    "do_str",
+    "do_sub",
+    "do_truediv",
+    "do_trunc",
+    "do_xor",
+]
 
-    from . import _can as _c, _does as _d
+
+def __dir__() -> list[str]:
+    return __all__
+
+
+###
 
 
 # type conversion
@@ -277,7 +370,7 @@ if TYPE_CHECKING:
     _do_setitem: _d.DoesSetitem = do_setitem
     _do_delitem: _d.DoesDelitem = do_delitem
     _do_missing: _d.DoesMissing = do_missing
-    _do_contains: _d.DoesContains = do_contains
+    _do_contains: _d.DoesContains = do_contains  # type: ignore[assignment]
 
     _do_radd: _d.DoesRAdd = do_radd
     _do_rsub: _d.DoesRSub = do_rsub

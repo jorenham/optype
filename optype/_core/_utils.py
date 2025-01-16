@@ -1,11 +1,7 @@
-from __future__ import annotations
-
 import sys
-from typing import TYPE_CHECKING, Protocol
+import types
+from typing import Protocol
 
-
-if TYPE_CHECKING:
-    from types import ModuleType
 
 if sys.version_info >= (3, 13):
     from typing import LiteralString, TypeVar, is_protocol
@@ -21,7 +17,7 @@ def __dir__() -> tuple[str, str]:
 
 
 def get_callables(
-    module: ModuleType,
+    module: types.ModuleType,
     /,
     *,
     protocols: bool = False,

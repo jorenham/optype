@@ -1,20 +1,10 @@
 # mypy: disable-error-code="no-any-explicit,no-any-decorated"
-from __future__ import annotations
+# pyright: reportAny=false, reportExplicitAny=false
 
 import sys
-from collections.abc import Callable, Iterable, Sequence
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Literal as L,  # noqa: N817
-    Protocol,
-    TypeAlias as Alias,
-)
-
-
-if TYPE_CHECKING:
-    from collections.abc import Mapping
-    from types import NotImplementedType
+import types
+from collections.abc import Callable, Iterable, Mapping, Sequence
+from typing import Any, Literal as L, Protocol, TypeAlias  # noqa: N817
 
 
 if sys.version_info >= (3, 13):
@@ -24,6 +14,7 @@ else:
 
 
 import numpy as np
+import numpy.typing as npt
 
 import optype.numpy._compat as _x
 from optype._core._utils import set_module
@@ -39,25 +30,25 @@ def __dir__() -> list[str]:
 ###
 
 
-_AnyFunc: Alias = Callable[..., object]
-_AnyArray: Alias = np.ndarray[tuple[int, ...], np.dtype[np.generic]]
+_AnyFunc: TypeAlias = Callable[..., object]
+_AnyArray: TypeAlias = npt.NDArray[np.generic]
 
-_FT_co = TypeVar("_FT_co", covariant=True, bound=_AnyFunc, default=_AnyFunc)
-_NInT_co = TypeVar("_NInT_co", covariant=True, bound=int, default=int)
-_NoutT_co = TypeVar("_NoutT_co", covariant=True, bound=int, default=int)
+_FT_co = TypeVar("_FT_co", bound=_AnyFunc, default=_AnyFunc, covariant=True)
+_NInT_co = TypeVar("_NInT_co", bound=int, default=int, covariant=True)
+_NoutT_co = TypeVar("_NoutT_co", bound=int, default=int, covariant=True)
 _SigT_co = TypeVar(
     "_SigT_co",
-    covariant=True,
     bound=LiteralString | None,
     default=LiteralString | None,
+    covariant=True,
 )
 # numpy < 2.1
-_SigT0_co = TypeVar("_SigT0_co", covariant=True, bound=str | None, default=str | None)
+_SigT0_co = TypeVar("_SigT0_co", bound=str | None, default=str | None, covariant=True)
 _IdT_co = TypeVar(
     "_IdT_co",
-    covariant=True,
     bound=complex | bytes | str | None,
     default=float | None,
+    covariant=True,
 )
 
 
@@ -192,15 +183,10 @@ else:
         def accumulate(self, /) -> Callable[..., _AnyArray] | None: ...
 
 
-_MethodCommon: Alias = L["__call__", "reduce", "reduceat", "accumulate", "outer"]
-if _x.NP20:
-    _Method: Alias = L[_MethodCommon, "at"]
-else:
-    _Method: Alias = L[_MethodCommon, "inner"]
+_UFT_contra = TypeVar("_UFT_contra", bound=UFunc, default=np.ufunc, contravariant=True)
+_T_co = TypeVar("_T_co", default=object, covariant=True)
 
-
-_UFT_contra = TypeVar("_UFT_contra", contravariant=True, bound=UFunc, default=np.ufunc)
-_T_co = TypeVar("_T_co", covariant=True, default=object)
+_MethodCommon: TypeAlias = L["__call__", "reduce", "reduceat", "accumulate", "outer"]
 
 
 @runtime_checkable
@@ -216,22 +202,31 @@ class CanArrayUFunc(Protocol[_UFT_contra, _T_co]):
     # NOTE: Mypy doesn't understand the Liskov substitution principle when
     # positional-only arguments are involved; so `ufunc` and `method` can't
     # be made positional-only.
-    def __array_ufunc__(
-        self,
-        /,
-        ufunc: _UFT_contra,
-        method: _Method,
-        *args: Any,  # pyright: ignore[reportAny, reportExplicitAny]
-        **kwargs: Any,  # pyright: ignore[reportAny, reportExplicitAny]
-    ) -> _T_co: ...
+
+    if _x.NP20:
+
+        def __array_ufunc__(
+            self,
+            /,
+            ufunc: _UFT_contra,
+            method: L[_MethodCommon, "at"],
+            *args: Any,
+            **kwargs: Any,
+        ) -> _T_co: ...
+
+    else:
+
+        def __array_ufunc__(
+            self,
+            /,
+            ufunc: _UFT_contra,
+            method: L[_MethodCommon, "inner"],
+            *args: Any,
+            **kwargs: Any,
+        ) -> _T_co: ...
 
 
-_FT_contra = TypeVar(
-    "_FT_contra",
-    contravariant=True,
-    bound=_AnyFunc,
-    default=_AnyFunc,
-)
+_FT_contra = TypeVar("_FT_contra", bound=_AnyFunc, default=_AnyFunc, contravariant=True)
 
 
 @runtime_checkable
@@ -242,8 +237,8 @@ class CanArrayFunction(Protocol[_FT_contra, _T_co]):
         /,
         func: _FT_contra,
         # although this could be tighter, this ensures numpy.typing compat
-        types: Iterable[type[CanArrayFunction]],
+        types: Iterable[type["CanArrayFunction"]],
         # ParamSpec can only be used on *args and **kwargs for some reason...
         args: tuple[object, ...],
         kwargs: Mapping[str, object],
-    ) -> NotImplementedType | _T_co: ...
+    ) -> types.NotImplementedType | _T_co: ...

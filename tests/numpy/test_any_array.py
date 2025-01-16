@@ -1,24 +1,19 @@
 # pyright: reportAny=false
 
-from __future__ import annotations
-
 import ctypes as ct
 import datetime as dt
 from collections import deque
-from typing import TYPE_CHECKING, Final
+from typing import Final
 
 import numpy as np
 import pytest
 
-from optype.numpy import _compat as _x
-
-
-if TYPE_CHECKING:
-    import optype.numpy as onp
-    from optype.numpy import (
-        _scalar as _sc,  # pyright: ignore[reportPrivateUsage]
-        ctypeslib as _ct,
-    )
+import optype.numpy as onp  # noqa: TC001
+from optype.numpy import (
+    _compat as _x,
+    _scalar as _sc,  # pyright: ignore[reportPrivateUsage]
+    ctypeslib as _ct,
+)
 
 
 # All allowed arguments that when passed to `np.array`, will result in an
