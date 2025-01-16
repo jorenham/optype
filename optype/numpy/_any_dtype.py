@@ -21,7 +21,7 @@ import numpy as np
 import optype.numpy._compat as _x
 import optype.numpy._dtype as _dt
 import optype.numpy._scalar as _sc
-import optype.typing as opt
+from optype._core._just import Just, JustComplex, JustFloat, JustInt
 
 
 # ruff: noqa: RUF022
@@ -95,12 +95,7 @@ def __dir__() -> list[str]:
 
 
 _SCT = TypeVar("_SCT", bound=np.generic)
-_SCT_co = TypeVar("_SCT_co", covariant=True, bound=np.generic)
-
-_IsInt: Alias = type[opt.JustInt]
-_IsFloat: Alias = type[opt.JustFloat]
-_IsComplex: Alias = type[opt.JustComplex]
-_IsObject: Alias = type[opt.Just[object]]
+_SCT_co = TypeVar("_SCT_co", bound=np.generic, covariant=True)
 
 
 # instead of using `HasDType[np.dtype[_SCT]]`, we use this (more specific) protocol
@@ -110,7 +105,14 @@ class _HasScalarType(Protocol[_SCT_co]):
     def dtype(self, /) -> np.dtype[_SCT_co]: ...
 
 
+# TODO(jorenham): Export this as `onp.ToDType` (and document).
 _ToDType: Alias = type[_SCT] | np.dtype[_SCT] | _HasScalarType[_SCT]
+
+
+_IsInt: Alias = type[JustInt]
+_IsFloat: Alias = type[JustFloat]
+_IsComplex: Alias = type[JustComplex]
+_IsObject: Alias = type[Just[object]]
 
 
 ###
