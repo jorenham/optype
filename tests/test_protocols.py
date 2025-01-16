@@ -5,7 +5,7 @@ from typing import cast
 import pytest
 
 import optype as op
-from optype._core import _can, _do, _does, _has, _utils
+from optype._core import _can, _do, _does, _has, _just, _utils
 from optype.inspect import (
     get_protocol_members,
     get_protocols,
@@ -53,15 +53,16 @@ def _pascamel_to_snake(
 
 def test_all_public() -> None:
     """
-    Ensure all of protocols from `_can`, `_has`, and
-    `_does` are in `optype.__all__`.
+    Verify that all of protocols from the private `_core.*` submodules are expected
+    in `optype.__all__`.
     """
-    protocols_all = get_protocols(op)
-    protocols_can = get_protocols(_can)
-    protocols_has = get_protocols(_has)
-    protocols_does = get_protocols(_does)
+    protos_all = get_protocols(op)
+    protos_can = get_protocols(_can)
+    protos_has = get_protocols(_has)
+    protos_does = get_protocols(_does)
+    protos_just = get_protocols(_just)
 
-    assert protocols_can | protocols_has | protocols_does == protocols_all
+    assert protos_can | protos_has | protos_does | protos_just == protos_all
 
 
 @pytest.mark.parametrize("cls", get_protocols(_can))
