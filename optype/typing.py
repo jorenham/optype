@@ -1,33 +1,19 @@
 import sys
 from typing import TYPE_CHECKING, Literal, NoReturn, Protocol, TypeAlias
 
+from typing_extensions import deprecated
+
 
 if TYPE_CHECKING:
     import enum
 
 
 if sys.version_info >= (3, 13):
-    from typing import (
-        LiteralString,
-        Never,
-        Self,
-        TypeVar,
-        TypedDict,
-        Unpack,
-        override,
-    )
+    from typing import LiteralString, Never, TypeVar, TypedDict, Unpack
 else:
-    from typing_extensions import (
-        LiteralString,
-        Never,
-        Self,
-        TypeVar,
-        TypedDict,
-        Unpack,
-        override,
-    )
+    from typing_extensions import LiteralString, Never, TypeVar, TypedDict, Unpack
 
-from ._core import _can as _c
+from ._core import _can as _c, _just
 
 
 __all__ = (
@@ -66,108 +52,40 @@ _ValueT = TypeVar("_ValueT", default=object)
 ###
 
 
-# "Just" types
+@deprecated(
+    "`optype.typing.Just` has been deprecated in favor of `optype.Just` "
+    "and will be removed in optype 0.10.0",
+)
+class Just(_just.Just[_T], Protocol[_T]): ...
 
 
-class Just(Protocol[_T]):
-    """
-    Experimental "invariant" wrapper type, so that `Invariant[int]` only accepts `int`
-    but not `bool` (or any other `int` subtypes).
-
-    Important:
-        This requires `pyright>=1.390` / `basedpyright>=1.22.1` to work.
-
-    Warning:
-        In mypy this doesn't work with the special-cased `float` and `complex`,
-        caused by (at least) one of the >1200 confirmed mypy bugs.
-
-    Note:
-        The only reason that this worked on mypy `1.13.0` and below, is because
-        of (yet another) bug, where mypy blindly aassumes that the setter of a property
-        has the same parameter type as the return type of the getter, even though that's
-        the main usecase of `@property`...
-    """
-
-    @property  # type: ignore[explicit-override]  # seriously..?
-    @override
-    def __class__(self, /) -> type[_T]: ...  # pyright: ignore[reportIncompatibleMethodOverride]
-    @__class__.setter
-    @override
-    def __class__(self, t: type[_T], /) -> None: ...
+@deprecated(
+    "`optype.typing.JustInt` has been deprecated in favor of `optype.JustInt` "
+    "and will be removed in optype 0.10.0",
+)
+class JustInt(_just.JustInt, Protocol): ...
 
 
-class JustInt(Just[int], Protocol):
-    """
-    A `pyright<1.390` compatible version of `Just[int]`.
-
-    Example:
-        This example shows a situation you want to accept instances of just `int`,
-        and reject and other instances, even they're subtypes of `int` such as `bool`,
-
-        ```python
-        def f(x: int, /) -> int:
-            assert type(x) is int
-            return x
+@deprecated(
+    "`optype.typing.JustFloat` has been deprecated in favor of `optype.JustFloat` "
+    "and will be removed in optype 0.10.0",
+)
+class JustFloat(_just.JustFloat, Protocol): ...
 
 
-        f(1337)  # accepted
-        f(True)  # accepted :(
-        ```
-
-        But because `bool <: int`, booleans are also assignable to `int`, which we
-        don't want to allow.
-
-        Previously, it was considered impossible to achieve this using just python
-        typing, and it was told that a PEP would be necessary to make it work.
-
-        But this is not the case at all, and `optype` provides a clean counter-example
-        that works with pyright and (even) mypy:
-
-        ```python
-        def f_fixed(x: JustInt, /) -> int:
-            assert type(x) is int
-            return x  # accepted
+@deprecated(
+    "`optype.typing.JustComplex` has been deprecated in favor of `optype.JustComplex` "
+    "and will be removed in optype 0.10.0",
+)
+class JustComplex(_just.JustComplex, Protocol): ...
 
 
-        f_fixed(1337)  # accepted
-        f_fixed(True)  # rejected :)
-        ```
+Just.__doc__ = _just.Just.__doc__  # pyright: ignore[reportDeprecated]
+JustInt.__doc__ = _just.JustInt.__doc__  # pyright: ignore[reportDeprecated]
+JustFloat.__doc__ = _just.JustFloat.__doc__  # pyright: ignore[reportDeprecated]
+JustComplex.__doc__ = _just.JustComplex.__doc__  # pyright: ignore[reportDeprecated]
 
-    Note:
-        On `mypy` this behaves in the same way as `Just[int]`, which accidentally
-        already works because of a mypy bug.
-    """
-
-    def __new__(cls, x: str | bytes | bytearray, /, base: _c.CanIndex) -> Self: ...
-
-
-class JustFloat(Just[float], Protocol):
-    """
-    Like `Just[float]`, but also works on `pyright<1.390`.
-
-    Warning:
-        Unlike `JustInt`, this DOES NOT WORK IN MYPY (due to a bug related to the
-        special-cased "promotion rules" of `float`)
-    """
-
-    def hex(self, /) -> str: ...
-
-
-class JustComplex(Just[complex], Protocol):
-    """
-    Like `Just[complex]`, but also works on `pyright<1.390`.
-
-    Warning:
-        Unlike `JustInt`, this DOES NOT WORK IN MYPY (due to a bug related to the
-        special-cased "promotion rules" of `complex`).
-    """
-
-    def __new__(
-        cls,
-        /,
-        real: "complex | AnyFloat",
-        imag: "complex | AnyFloat",
-    ) -> Self: ...
+###
 
 
 # Anything that can *always* be converted to an `int` / `float` / `complex`
@@ -186,7 +104,9 @@ AnyIterable: TypeAlias = _c.CanIter[_c.CanNext[_ValueT]] | _c.CanGetitem[int, _V
 
 # The closest supertype of a `Literal`, i.e. the allowed types that can be
 # passed to `typing.Literal`.
-AnyLiteral: TypeAlias = "bool | JustInt | LiteralString | bytes | enum.Enum | None"
+AnyLiteral: TypeAlias = (
+    "bool | _just.JustInt | LiteralString | bytes | enum.Enum | None"
+)
 
 
 # Empty collection type aliases
