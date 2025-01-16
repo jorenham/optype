@@ -31,21 +31,32 @@ _ToFloat: TypeAlias = CanFloat | CanIndex
 
 class Just(Protocol[_T]):
     """
-    Experimental "invariant" wrapper type, so that `Invariant[int]` only accepts `int`
-    but not `bool` (or any other `int` subtypes).
+    An invariant type "wrapper", where `Just[T]` only accepts instances of `T`, and
+    but rejects instances of any strict subtypes of `T`.
 
-    Important:
-        This requires `pyright>=1.390` / `basedpyright>=1.22.1` to work.
+    Note that e.g. `Literal[""]` and `LiteralString` are not a strict `str` subtypes,
+    and are therefore assignable to `Just[str]`, but instances of `class S(str): ...`
+    are **not** assignable to `Just[str]`.
 
-    Warning:
-        In mypy this doesn't work with the special-cased `float` and `complex`,
-        caused by (at least) one of the >1200 confirmed mypy bugs.
+    Warning (`pyright<1.390` and `basedpyright<1.22.1`):
+        On `pyright<1.390` and `basedpyright<1.22.1` this `Just[T]` type does not work,
+        due to a bug in the `typeshed` stubs for `object.__class__`, which was fixed in
+        https://github.com/python/typeshed/pull/13021.
+
+        However, you could use `JustInt`, `JustFloat`, and `JustComplex` types work
+        around this: These already work on `pyright<1.390` without problem.
+
+    Warning (`mypy<1.14.2` and `basedmypy<2.9.2`):
+        On `mypy<1.41.2` this does not work with promoted types, such as `float` and
+        `complex`, which was fixed in https://github.com/python/mypy/pull/18360.
+        For other ("unpromoted") types like `Just[int]`, this already works, even
+        before the `typeshed` fix above (mypy ignores `@property` setter types and
+        overwrites it with the getter's return type).
 
     Note:
-        The only reason that this worked on mypy `1.13.0` and below, is because
-        of (yet another) bug, where mypy blindly aassumes that the setter of a property
-        has the same parameter type as the return type of the getter, even though that's
-        the main usecase of `@property`...
+        This, and the other `Just` protocols, are not `@runtime_checkable`, because
+        using `isinstance` would then be `True` for any type or object, which is
+        maximally useless.
     """
 
     @property  # type: ignore[explicit-override]  # seriously..?
@@ -84,7 +95,10 @@ class JustInt(Just[int], Protocol):
         that works with pyright and (even) mypy:
 
         ```python
-        def f_fixed(x: JustInt, /) -> int:
+        import optype as op
+
+
+        def f_fixed(x: op.JustInt, /) -> int:
             assert type(x) is int
             return x  # accepted
 
@@ -98,6 +112,7 @@ class JustInt(Just[int], Protocol):
         already works because of a mypy bug.
     """
 
+    # workaround for `pyright<1.390` and `basedpyright<1.22.1`
     def __new__(cls, x: str | bytes | bytearray, /, base: CanIndex) -> Self: ...
 
 
@@ -109,6 +124,7 @@ class JustFloat(Just[float], Protocol):
         Unlike `JustInt`, this does not work on `mypy<1.41.2`.
     """
 
+    # workaround for `pyright<1.390` and `basedpyright<1.22.1`
     def hex(self, /) -> str: ...
 
 
@@ -120,4 +136,5 @@ class JustComplex(Just[complex], Protocol):
         Unlike `JustInt`, this does not work on `mypy<1.41.2`.
     """
 
+    # workaround for `pyright<1.390` and `basedpyright<1.22.1`
     def __new__(cls, /, real: _ToFloat, imag: _ToFloat) -> Self: ...
