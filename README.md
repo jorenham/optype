@@ -353,10 +353,10 @@ intmap(1, {1: 42})  # accepted
 intmap(1, "some object")  # rejected
 ```
 
-> [!NOTE]
-> This, and the other `Just` protocols, are not `@runtime_checkable`, because using
-> `isinstance` would then be `True` for any type or object, which would defeat its
-> purposes.
+> [!TIP]
+> The `JustInt`, `JustFloat` and `JustComplex` protocols are runtime-checkable,
+> so that `instance(42, JustInt) is True` and `instance(bool(), JustInt) is False`.
+> It's implemented through meta-classes, and type-checkers have no problem with it.
 
 ##### :warning: Compatibility: (based)pyright
 

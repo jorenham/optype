@@ -1,11 +1,21 @@
 import sys
-from typing import Protocol, TypeAlias
+from types import GenericAlias
+from typing import (
+    Any,
+    Generic,
+    Protocol,
+    TypeAlias,
+    _ProtocolMeta,  # noqa: PLC2701  # pyright: ignore[reportPrivateUsage]
+    cast,
+)
+
+from optype.types._typeforms import GenericType
 
 
 if sys.version_info >= (3, 13):
-    from typing import Self, TypeVar, override
+    from typing import Self, TypeIs, TypeVar, override, runtime_checkable
 else:
-    from typing_extensions import Self, TypeVar, override
+    from typing_extensions import Self, TypeIs, TypeVar, override, runtime_checkable
 
 
 from ._can import CanFloat, CanIndex
@@ -22,6 +32,7 @@ def __dir__() -> list[str]:
 
 
 _T = TypeVar("_T")
+_ObjectT = TypeVar("_ObjectT", default=object)
 
 _ToFloat: TypeAlias = CanFloat | CanIndex
 
@@ -29,10 +40,57 @@ _ToFloat: TypeAlias = CanFloat | CanIndex
 ###
 
 
+class _JustMeta(_ProtocolMeta, Generic[_ObjectT]):
+    def __just_type__(self, /) -> type[_ObjectT]:  # noqa: PLW3201
+        raise NotImplementedError
+
+    @override
+    def __instancecheck__(self, instance: object) -> TypeIs[_ObjectT]:
+        return self.__subclasscheck__(type(instance))
+
+    @override
+    def __subclasscheck__(self, subclass: type) -> TypeIs[type[_ObjectT]]:
+        try:
+            tp = self.__just_type__()
+        except NotImplementedError:
+            pass
+        else:
+            return subclass is tp
+
+        return super().__subclasscheck__(subclass)
+
+
+class _JustAlias(GenericType, Generic[_ObjectT], _root=True):
+    @override
+    def __instancecheck__(self, instance: object) -> TypeIs[_ObjectT]:
+        return self.__subclasscheck__(type(instance))
+
+    @override
+    def __subclasscheck__(self, subclass: type) -> TypeIs[type[_ObjectT]]:
+        assert len(self.__args__) == 1
+        arg: _JustMeta | _JustAlias | type = self.__args__[0]
+        if isinstance(arg, _JustMeta):
+            arg_: _JustMeta = arg
+            return arg_.__subclasscheck__(subclass)
+        if isinstance(arg, _JustAlias):
+            return arg.__subclasscheck__(subclass)
+        return subclass is arg
+
+    @override
+    def __repr__(self) -> str:
+        return super().__repr__().replace("typing.", "optype.")
+
+    @classmethod
+    def __class_getitem__(cls, arg: type, /) -> GenericAlias:
+        # not sure why, but subscripting crashes without this
+        return GenericAlias(cls, arg)
+
+
+@runtime_checkable
 class Just(Protocol[_T]):
     """
-    An invariant type "wrapper", where `Just[T]` only accepts instances of `T`, and
-    but rejects instances of any strict subtypes of `T`.
+    An runtime-checkable invariant type "wrapper", where `Just[T]` only accepts
+    instances of `T`, and but rejects instances of any strict subtypes of `T`.
 
     Note that e.g. `Literal[""]` and `LiteralString` are not a strict `str` subtypes,
     and are therefore assignable to `Just[str]`, but instances of `class S(str): ...`
@@ -59,17 +117,29 @@ class Just(Protocol[_T]):
         maximally useless.
     """
 
-    @property  # type: ignore[explicit-override]  # seriously..?
+    @property  # type: ignore[explicit-override]  # mypy bug?
     @override
     def __class__(self, /) -> type[_T]: ...  # pyright: ignore[reportIncompatibleMethodOverride]
     @__class__.setter
     @override
     def __class__(self, t: type[_T], /) -> None: ...
 
+    @classmethod
+    def __class_getitem__(cls, arg: type[_JustAlias], /) -> _JustAlias[_JustAlias]:
+        generic_alias: GenericType = cast("Any", super()).__class_getitem__(arg)  # type: ignore[no-any-explicit]  # pyright: ignore[reportAny, reportExplicitAny]
+        return _JustAlias(generic_alias.__origin__, generic_alias.__args__)
 
-class JustInt(Just[int], Protocol):
+
+class _JustIntMeta(_JustMeta[int]):
+    @override
+    def __just_type__(self, /) -> type[int]:
+        return int
+
+
+@runtime_checkable
+class JustInt(Just[int], Protocol, metaclass=_JustIntMeta):
     """
-    A `pyright<1.390` -compatible version of `Just[int]`.
+    A runtime-checkable `Just[int]` that's compatible with `pyright<1.390`.
 
     Example:
         This example shows a situation you want to accept instances of just `int`,
@@ -116,9 +186,15 @@ class JustInt(Just[int], Protocol):
     def __new__(cls, x: str | bytes | bytearray, /, base: CanIndex) -> Self: ...
 
 
-class JustFloat(Just[float], Protocol):
+class _JustFloatMeta(_JustMeta[float]):
+    @override
+    def __just_type__(self, /) -> type[float]:
+        return float
+
+
+class JustFloat(Just[float], Protocol, metaclass=_JustFloatMeta):
     """
-    Like `Just[float]`, but also works on `pyright<1.390`.
+    A runtime checkable `Just[float]` that also works on `pyright<1.390`.
 
     Warning:
         Unlike `JustInt`, this does not work on `mypy<1.41.2`.
@@ -128,9 +204,15 @@ class JustFloat(Just[float], Protocol):
     def hex(self, /) -> str: ...
 
 
-class JustComplex(Just[complex], Protocol):
+class _JustComplexMeta(_JustMeta[complex]):
+    @override
+    def __just_type__(self, /) -> type[complex]:
+        return complex
+
+
+class JustComplex(Just[complex], Protocol, metaclass=_JustComplexMeta):
     """
-    Like `Just[complex]`, but also works on `pyright<1.390`.
+    A runtime checkable `Just[complex]`, that also works on `pyright<1.390`.
 
     Warning:
         Unlike `JustInt`, this does not work on `mypy<1.41.2`.

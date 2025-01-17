@@ -1,3 +1,5 @@
+import pytest
+
 import optype as op
 
 
@@ -47,6 +49,32 @@ def test_just_int() -> None:
     def g() -> None:  # pyright: ignore[reportUnusedFunction]
         f(1337)  # accepted
         f(True)  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]
+
+
+def test_just_meta() -> None:
+    # unfortunately, both mypy and pyright don't support custom generic alias types
+
+    assert isinstance(object(), op.Just[object])  # type: ignore[misc]  # pyright: ignore[reportArgumentType]
+    assert not isinstance(object, op.Just[object])  # type: ignore[misc]  # pyright: ignore[reportArgumentType]
+    assert not isinstance(A(), op.Just[object])  # type: ignore[misc]  # pyright: ignore[reportArgumentType]
+
+    assert issubclass(object, op.Just[object])  # type: ignore[misc]  # pyright: ignore[reportArgumentType]
+    assert not issubclass(A, op.Just[object])  # type: ignore[misc]  # pyright: ignore[reportArgumentType]
+
+
+@pytest.mark.parametrize(
+    ("just_cls", "cls"),
+    [(op.JustInt, int), (op.JustFloat, float), (op.JustComplex, complex)],
+)
+def test_just_sub_meta(just_cls: type, cls: type) -> None:
+    assert isinstance(cls(), just_cls)
+    assert not isinstance(cls, just_cls)
+    assert not isinstance(False, just_cls)
+    assert not isinstance(object(), just_cls)
+
+    assert issubclass(cls, just_cls)
+    assert not issubclass(bool, just_cls)
+    assert not issubclass(object, just_cls)
 
 
 def test_just_float() -> None:
