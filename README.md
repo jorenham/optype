@@ -222,6 +222,7 @@ The API of `optype` is flat; a single `import optype as opt` is all you need
 <!-- TOC start (generated with https://github.com/derlin/bitdowntoc) -->
 
 - [`optype`](#optype)
+    - [`Just`](#just)
     - [Builtin type conversion](#builtin-type-conversion)
     - [Rich relations](#rich-relations)
     - [Binary operations](#binary-operations)
@@ -249,7 +250,6 @@ The API of `optype` is flat; a single `import optype as opt` is all you need
     - [`Any*` type aliases](#any-type-aliases)
     - [`Empty*` type aliases](#empty-type-aliases)
     - [Literal types](#literal-types)
-    - [`Just*` types](#just-types) (experimental)
 - [`optype.dlpack`](#optypedlpack)
 - [`optype.numpy`](#optypenumpy)
     - [Shape-typing](#shape-typing)
@@ -262,8 +262,14 @@ The API of `optype` is flat; a single `import optype as opt` is all you need
 
 ### `optype`
 
-There are four flavors of things that live within `optype`,
+There are five flavors of things that live within `optype`,
 
+-
+    The `optype.Just[T]` and its `optype.Just{Int,Float,Complex}` subtypes only accept
+    instances of the type itself, while rejecting instances of strict subtypes.
+    This can be be used to e.g. work around the `float` and `complex`
+    [type promotions][BAD], annotating `object()` sentinels with `Just[object]`,
+    rejecting `bool` in functions that accept `int`, etc.
 -
     `optype.Can{}` types describe *what can be done* with it.
     For instance, any `CanAbs[T]` type can be used as argument to the `abs()`
@@ -298,8 +304,77 @@ i.e. they don't extend `abc.ABC`, only `typing.Protocol`.
 This allows the `optype` protocols to be used as building blocks for `.pyi`
 type stubs.
 
+[BAD]: https://typing.readthedocs.io/en/latest/spec/special-types.html#special-cases-for-float-and-complex
 [PC]: https://typing.readthedocs.io/en/latest/spec/protocol.html
 [RC]: https://typing.readthedocs.io/en/latest/spec/protocol.html#runtime-checkable-decorator-and-narrowing-types-by-isinstance
+
+#### `Just`
+
+`Just` is in invariant type "wrapper", where `Just[T]` only accepts instances of `T`,
+and rejects instances of any strict subtypes of `T`.
+
+Note that e.g. `Literal[""]` and `LiteralString` are not a strict `str` subtypes,
+and are therefore assignable to `Just[str]`, but instances of `class S(str): ...`
+are **not** assignable to `Just[str]`.
+
+Disallow passing `bool` as `int`:
+
+```py
+import optype as op
+
+
+def assert_int(x: op.Just[int]) -> int:
+    assert type(x) is int
+    return x
+
+
+assert_int(42)  # accepted
+assert_int(False)  # rejected
+```
+
+Annotating a sentinel:
+
+```py
+import optype as op
+
+_DEFAULT = object()
+
+
+def intmap(
+    value: int,
+    mapping: dict[int, int] | op.Just[object] = _DEFAULT,
+    /,
+) -> int:
+    return value if mapping is _DEFAULT else mapping[value]
+
+
+intmap(1)  # accepted
+intmap(1, {1: 42})  # accepted
+intmap(1, "some object")  # rejected
+```
+
+> [!NOTE]
+> This, and the other `Just` protocols, are not `@runtime_checkable`, because using
+> `isinstance` would then be `True` for any type or object, which would defeat its
+> purposes.
+
+##### :warning: Compatibility: (based)pyright
+
+On `pyright<1.390` and `basedpyright<1.22.1` this `Just[T]` type does not work,
+due to a bug in the `typeshed` stubs for `object.__class__` (fixed in
+[python/typeshed#13021](https://github.com/python/typeshed/pull/13021)).
+
+However, you could use `JustInt`, `JustFloat`, and `JustComplex` types work
+around this: These already work on `pyright<1.390` without problem.
+
+##### :warning: Compatibility: (based)mypy
+
+On `mypy<1.41.2` this does not work with promoted types, such as `float` and
+`complex` (fixed in [python/mypy#18360](https://github.com/python/mypy/pull/18360)).
+
+For other ("unpromoted") types like `Just[int]`, this already works, even
+before the `typeshed` fix above (mypy ignores `@property` setter types and
+overwrites it with the getter's return type).
 
 #### Builtin type conversion
 
@@ -2201,38 +2276,6 @@ yield no elements.
     </tr>
 </table>
 
-#### `Just` types
-
-> [!WARNING]
-> This is experimental, and is likely to change in the future.
-
-The `JustInt` type can be used to *only* accept instances of type `int`. Subtypes
-like `bool` will be rejected. This works with recent versions of mypy and pyright.
-
-```pyi
-import optype.typing as opt
-
-def only_int_pls(x: opt.JustInt, /) -> None: ...
-
-f(42)  # accepted
-f(True)  # rejected
-```
-
-The `Just` type is a generic variant of `JustInt`. At the moment of writing, pyright
-doesn't support this yet, but it will soon (after the bundled typeshed is updated).
-
-```pyi
-import optype.typing as opt
-
-class A: ...
-class B(A): ...
-
-def must_have_type_a(a: opt.Just[A]) -> None: ...
-
-must_have_type_a(A())  # accepted
-must_have_type_a(B())  # rejected (at least with mypy)
-```
-
 ### `optype.dlpack`
 
 A collection of low-level types for working [DLPack](DOC-DLPACK).
@@ -2868,7 +2911,7 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
 > [!NOTE]
 > The `ToJust{Bool,Float,Complex}*` type aliases were added in `optype 0.8.0`.
 >
-> See [`optype.typing.Just`](#just-types) for more information.
+> See [`optype.Just`](#just) for more information.
 
 Source code: [`optype/numpy/_to.py`][CODE-NP-TO]
 
