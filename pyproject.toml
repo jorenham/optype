@@ -114,6 +114,7 @@ venv = ".venv"
 typeCheckingMode = "all"
 useLibraryCodeForTypes = false
 enableReachabilityAnalysis = false
+reportImplicitStringConcatenation = false  # not a linter
 reportShadowedImports = false  # buggy
 reportUnreachable = false  # nothing wrong with `if sys.version_info() >= ...`
 reportUnusedCallResult = false  # https://github.com/microsoft/pyright/issues/8650

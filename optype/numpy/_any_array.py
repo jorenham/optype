@@ -16,8 +16,8 @@ import numpy as np
 
 import optype.numpy._compat as _x
 import optype.numpy._scalar as _sc
-import optype.typing as opt
 from optype._core._can import CanBuffer
+from optype._core._just import Just, JustComplex, JustFloat, JustInt
 from optype._core._utils import set_module
 
 
@@ -113,14 +113,14 @@ AnyArray: TypeAlias = _AnyArray[_ST, object] | CanBuffer
 
 AnyNumberArray: TypeAlias = _AnyArray[
     _sc.number,
-    _sc.number | opt.JustInt | opt.JustFloat | opt.JustComplex,
+    _sc.number | JustInt | JustFloat | JustComplex,
 ]
-AnyIntegerArray: TypeAlias = _AnyArray[_sc.integer, _sc.integer | opt.JustInt]
-AnySignedIntegerArray: TypeAlias = _AnyArray[_sc.sinteger, _sc.sinteger | opt.JustInt]
+AnyIntegerArray: TypeAlias = _AnyArray[_sc.integer, _sc.integer | JustInt]
+AnySignedIntegerArray: TypeAlias = _AnyArray[_sc.sinteger, _sc.sinteger | JustInt]
 AnyUnsignedIntegerArray: TypeAlias = _AnyArray[_sc.uinteger]
 AnyInexactArray: TypeAlias = _AnyArray[
     _sc.inexact,
-    _sc.inexact | opt.JustFloat | opt.JustComplex,
+    _sc.inexact | JustFloat | JustComplex,
 ]
 
 AnyBoolArray: TypeAlias = _AnyArray[_x.Bool, _x.Bool | bool]
@@ -147,22 +147,20 @@ AnyIntCArray: TypeAlias = _AnyArray[np.intc]
 AnyLongLongArray: TypeAlias = _AnyArray[np.longlong]
 AnyLongArray: TypeAlias = _AnyArray[_x.Long]  # no int (numpy<=1)
 AnyIntPArray: TypeAlias = _AnyArray[np.intp]  # no int (numpy>=2)
-AnyIntArray: TypeAlias = _AnyArray[np.int_, np.int_ | opt.JustInt]
+AnyIntArray: TypeAlias = _AnyArray[np.int_, np.int_ | JustInt]
 
-AnyFloatingArray: TypeAlias = _AnyArray[_sc.floating, _sc.floating | opt.JustFloat]
+AnyFloatingArray: TypeAlias = _AnyArray[_sc.floating, _sc.floating | JustFloat]
 AnyFloat16Array: TypeAlias = _AnyArray[np.float16]
 AnyFloat32Array: TypeAlias = _AnyArray[np.float32]
-AnyFloat64Array: TypeAlias = _AnyArray[np.float64, np.float64 | opt.JustFloat]
+AnyFloat64Array: TypeAlias = _AnyArray[np.float64, np.float64 | JustFloat]
 AnyLongDoubleArray: TypeAlias = _AnyArray[np.longdouble]
 
 AnyComplexFloatingArray: TypeAlias = _AnyArray[
     _sc.cfloating,
-    _sc.cfloating | opt.JustComplex,
+    _sc.cfloating | JustComplex,
 ]
 AnyComplex64Array: TypeAlias = _AnyArray[np.complex64]
-AnyComplex128Array: TypeAlias = _AnyArray[
-    np.complex128, np.complex128 | opt.JustComplex
-]
+AnyComplex128Array: TypeAlias = _AnyArray[np.complex128, np.complex128 | JustComplex]
 AnyCLongDoubleArray: TypeAlias = _AnyArray[np.clongdouble]
 
 AnyCharacterArray: TypeAlias = _AnyArray[np.character, np.character | bytes | str]
@@ -174,7 +172,7 @@ AnyVoidArray: TypeAlias = _AnyArray[np.void]  # TODO: structural types
 
 AnyDateTime64Array: TypeAlias = _AnyArray[np.datetime64]
 AnyTimeDelta64Array: TypeAlias = _AnyArray[np.timedelta64]
-AnyObjectArray: TypeAlias = _AnyArray[np.object_, np.object_ | opt.Just[object]]
+AnyObjectArray: TypeAlias = _AnyArray[np.object_, np.object_ | Just[object]]
 
 
 if _x.NP20:

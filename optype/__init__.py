@@ -2,15 +2,17 @@
 import importlib as _importlib
 import importlib.metadata as _metadata
 
-from ._core import _can, _do, _does, _has
+from ._core import _can, _do, _does, _has, _just
 from ._core._can import *
 from ._core._do import *
 from ._core._does import *
 from ._core._has import *
+from ._core._just import *
 
 
 __version__: str = _metadata.version(__package__ or __file__.split("/")[-1])
 __all__ = ["__version__"]
+__all__ += _just.__all__
 __all__ += _can.__all__
 __all__ += _has.__all__
 __all__ += _does.__all__
