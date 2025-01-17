@@ -8,7 +8,6 @@ if sys.version_info >= (3, 13):
     from typing import (
         LiteralString,
         ParamSpec,
-        Self,
         TypeVar,
         TypeVarTuple,
         Unpack,
@@ -19,7 +18,6 @@ else:
     from typing_extensions import (
         LiteralString,
         ParamSpec,
-        Self,
         TypeVar,
         TypeVarTuple,
         Unpack,
@@ -59,6 +57,7 @@ def __dir__() -> list[str]:
 
 _Ts = TypeVarTuple("_Ts")
 _Tss = ParamSpec("_Tss")
+_TypeT = TypeVar("_TypeT", bound=type)
 
 _T_co = TypeVar("_T_co", covariant=True)
 _ObjectT_co = TypeVar("_ObjectT_co", default=object, covariant=True)
@@ -97,13 +96,51 @@ class HasDict(Protocol[_DictT]):  # type: ignore[misc]
 
 @set_module("optype")
 @runtime_checkable
-class HasClass(Protocol):
-    @property  # type: ignore[explicit-override]  # (basedmypy bug?)
+class HasClass(Protocol[_TypeT]):
+    """
+    Can be seen as the **invariant** inverse of `type[T]`, i.e. `HasClass[type[T]]`
+    represents (but is not equivalent to) `T`. However, `HasClass` is stricter, and
+    rejects types that aren't fully static, such as `int | str`.
+
+    It works best to annotate input types within `.pyi` stubs. If we, for example, have
+    `def typeof(obj, /): return type(obj)` at runtime, we can stub it like this:
+
+    ```pyi
+    def typeof[TypeT: type](obj: HasClass[TypeT], /) -> TypeT: ...
+    ```
+
+    It behaves the same as `type` if we use fully static types:
+
+    ```pyi
+    just_int: int
+
+    type(just_int)  # type[int]
+    typeof(just_int)  # type[int]
+    ```
+
+    but when we have a dynamic type, the `HasClass` will reject it, but `type` will
+    accept it:
+
+    ```pyi
+    int_or_str: int | str
+
+    type(int_or_str)  # type[int | str]
+    typeof(int_or_str)  # Error: misc (mypy), reportArgumentType (pyright)
+    ```
+
+    The inferred `type[int | str]` type by `type` does not represent a concrete type
+    that can exist at runtime. The (stricter) `typeof` function therefore doesn't
+    accept it, and both mypy and pyright will report it as an error. So `typeof` can
+    be seen as more "realistic", or "less abstract", in that way, and it better reflects
+    the possible runtime outcomes of `typeof`, than that `type` does of itself.
+    """
+
+    @property  # type: ignore[explicit-override]  # mypy bug
     @override
-    def __class__(self) -> type[Self]: ...
+    def __class__(self) -> _TypeT: ...
     @__class__.setter
     @override
-    def __class__(self, cls: type[Self], /) -> None: ...
+    def __class__(self, __class__: _TypeT, /) -> None: ...
 
 
 @set_module("optype")
