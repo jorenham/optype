@@ -2,12 +2,13 @@
 import sys
 import types
 from collections.abc import Generator
-from typing import Protocol, TypeAlias
+from typing import SupportsIndex, TypeAlias
 
 
 if sys.version_info >= (3, 13):
     from typing import (
         ParamSpec,
+        Protocol,
         Self,
         TypeVar,
         overload,
@@ -17,6 +18,7 @@ if sys.version_info >= (3, 13):
 else:
     from typing_extensions import (
         ParamSpec,
+        Protocol,
         Self,
         TypeVar,
         overload,
@@ -194,8 +196,12 @@ _AnyIntT_co = TypeVar("_AnyIntT_co", default=int, covariant=True)
 _AnyFloatT_co = TypeVar("_AnyFloatT_co", default=float, covariant=True)
 _AnyNoneT_co = TypeVar("_AnyNoneT_co", default=None, covariant=True)
 
-# https://github.com/KotlinIsland/basedmypy/issues/861
-_IndexT_contra = TypeVar("_IndexT_contra", bound="CanIndex | slice", contravariant=True)
+# we can't use `CanIndex` here, because of a recent regression in pyright 1.1.392
+_IndexT_contra = TypeVar(
+    "_IndexT_contra",
+    bound=SupportsIndex | slice,
+    contravariant=True,
+)
 
 # return type that is usually `None`, but can be anything, as it is ignored at runtime
 _Ignored: TypeAlias = object
