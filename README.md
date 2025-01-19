@@ -359,7 +359,7 @@ intmap(1, "some object")  # rejected
 ```
 
 > [!TIP]
-> The `JustInt`, `JustFloat` and `JustComplex` protocols are runtime-checkable,
+> The `Just{Bytes,Int,Float,Complex,Object}` protocols are runtime-checkable,
 > so that `instance(42, JustInt) is True` and `instance(bool(), JustInt) is False`.
 > It's implemented through meta-classes, and type-checkers have no problem with it.
 

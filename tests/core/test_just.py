@@ -56,6 +56,7 @@ def test_just_int() -> None:
 @pytest.mark.parametrize(
     ("just_cls", "cls"),
     [
+        (op.JustBytes, bytes),
         (op.JustInt, int),
         (op.JustFloat, float),
         (op.JustComplex, complex),
@@ -98,3 +99,15 @@ def test_just_complex() -> None:
     tn_complex_type: type[op.JustComplex] = complex
     tp_str_type: type[op.JustComplex] = str  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     tp_float_type: type[op.JustComplex] = float  # pyright: ignore[reportAssignmentType]
+
+
+def test_just_bytes() -> None:
+    tn_bytes: op.JustBytes = b"yes"
+    tp_str: op.JustBytes = "no"  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    tp_bytearray: op.JustBytes = bytearray(b"no")  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    tp_memoryview: op.JustBytes = memoryview(b"no")  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+
+    tn_bytes_type: type[op.JustBytes] = bytes
+    tp_str_type: type[op.JustBytes] = str  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    tp_bytearray_type: type[op.JustBytes] = bytearray  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    tp_memoryview_type: type[op.JustBytes] = memoryview  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]

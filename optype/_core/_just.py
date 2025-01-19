@@ -18,7 +18,7 @@ else:
 
 from ._can import CanFloat, CanIndex
 
-__all__ = ["Just", "JustComplex", "JustFloat", "JustInt", "JustObject"]
+__all__ = ["Just", "JustBytes", "JustComplex", "JustFloat", "JustInt", "JustObject"]
 
 
 def __dir__() -> list[str]:
@@ -108,6 +108,23 @@ class _JustMeta(_ProtocolMeta, Generic[_ObjectT]):
             raise TypeError("issubclass() arg 1 must be a class") from None
 
         return subclass is tp
+
+
+@final
+class _JustBytesMeta(_JustMeta[bytes]):
+    __just_class__ = bytes
+
+
+class JustBytes(Just[bytes], Protocol, metaclass=_JustBytesMeta):
+    """
+    A runtime checkable `Just[bytes]`, that also works on `pyright<1.390`.
+
+    Useful as workaround for `mypy`'s `bytes` promotion (which can be disabled with the
+    undocumented `--disable-bytearray-promotion` and  `--disable-memoryview-promotion`
+    flags). See https://github.com/python/mypy/issues/15313s for more info.
+    Note that this workaround requires `mypy >=1.14.2` or the `--disable-*-promotion`
+    flags to work.
+    """
 
 
 @final
@@ -208,9 +225,5 @@ class JustObject(Just[object], Protocol, metaclass=_JustObjectMeta):
     """
     A runtime checkable `Just[object]`, that also works on `pyright<1.390`.
 
-    Useful for typing `object()` sentinels, e.g.
-
-    ```
-    def divide(a: float, b: float, default: JustObject = ...) -> float:
-    ```
+    Useful for typing `object()` sentinels.
     """
