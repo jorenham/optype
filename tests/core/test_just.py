@@ -19,11 +19,15 @@ def test_just_custom() -> None:
 
 
 def test_just_object() -> None:
-    tn_object: op.Just[object] = object()
-    tp_custom: op.Just[object] = A()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    tn_object1: op.Just[object] = object()
+    tn_object2: op.JustObject = object()
+    tp_custom1: op.Just[object] = A()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    tp_custom2: op.JustObject = A()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
-    tn_object_type: type[op.Just[object]] = object
-    tp_custom_type: type[op.Just[object]] = A  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    tn_object_type1: type[op.Just[object]] = object
+    tn_object_type2: type[op.JustObject] = object
+    tp_custom_type1: type[op.Just[object]] = A  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    tp_custom_type2: type[op.JustObject] = A  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
 
 def test_just_int() -> None:
@@ -51,7 +55,12 @@ def test_just_int() -> None:
 
 @pytest.mark.parametrize(
     ("just_cls", "cls"),
-    [(op.JustInt, int), (op.JustFloat, float), (op.JustComplex, complex)],
+    [
+        (op.JustInt, int),
+        (op.JustFloat, float),
+        (op.JustComplex, complex),
+        (op.JustObject, object),
+    ],
 )
 def test_just_sub_meta(just_cls: type, cls: type) -> None:
     assert isinstance(cls(), just_cls)
