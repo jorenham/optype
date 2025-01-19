@@ -25,15 +25,15 @@ classifiers = [
 requires-python = ">=3.10"
 dependencies = ["typing-extensions>=4.10; python_version<'3.13'"]
 
-[project.optional-dependencies]
-numpy = ["numpy>=1.23.5"]
+    [project.optional-dependencies]
+    numpy = ["numpy>=1.23.5"]
 
-[project.urls]
-Repository = "https://github.com/jorenham/optype/"
-Documentation = "https://github.com/jorenham/optype/blob/master/README.md"
-Issues = "https://github.com/jorenham/optype/issues"
-Changelog = "https://github.com/jorenham/optype/releases"
-Funding = "https://github.com/sponsors/jorenham"
+    [project.urls]
+    Repository = "https://github.com/jorenham/optype/"
+    Documentation = "https://github.com/jorenham/optype/blob/master/README.md"
+    Issues = "https://github.com/jorenham/optype/issues"
+    Changelog = "https://github.com/jorenham/optype/releases"
+    Funding = "https://github.com/sponsors/jorenham"
 
 [dependency-groups]
 extra = ["optype[numpy]"]
@@ -100,7 +100,7 @@ warn_unused_ignores = true
 
     [[tool.mypy.overrides]]
     module = ["tests.*", "tests.numpy.*"]
-    disallow_any_decorated = false  # blame pytest
+    disallow_any_decorated = false                          # blame pytest
     disable_error_code = ["no-any-explicit", "unreachable"]
 
 [tool.basedpyright]
@@ -114,12 +114,12 @@ venv = ".venv"
 typeCheckingMode = "all"
 useLibraryCodeForTypes = false
 enableReachabilityAnalysis = false
-reportImplicitStringConcatenation = false  # not a linter
-reportShadowedImports = false  # buggy
-reportUnreachable = false  # nothing wrong with `if sys.version_info() >= ...`
-reportUnusedCallResult = false  # https://github.com/microsoft/pyright/issues/8650
-reportUnusedImport = false  # dupe of F401
-reportUnusedVariable = false  # dupe of F841
+reportImplicitStringConcatenation = false # not a linter
+reportShadowedImports = false             # buggy
+reportUnreachable = false                 # nothing wrong with `if sys.version_info() >= ...`
+reportUnusedCallResult = false            # https://github.com/microsoft/pyright/issues/8650
+reportUnusedImport = false                # dupe of F401
+reportUnusedVariable = false              # dupe of F841
 
     [tool.basedpyright.defineConstant]
     NP125 = true
@@ -139,11 +139,11 @@ xfail_strict = true
 
 [tool.repo-review]
 ignore = [
-    "PY004",    # no `docs/` (maybe later)
-    "PC140",    # basedmypy > mypy
-    "PC170",    # no sphinx
-    "PC180",    # no css or js
-    "RTD",      # no readthedocs
+    "PY004", # no `docs/` (maybe later)
+    "PC140", # basedmypy > mypy
+    "PC170", # no sphinx
+    "PC180", # no css or js
+    "RTD",   # no readthedocs
 ]
 
 [tool.ruff]
@@ -161,101 +161,86 @@ force-exclude = true
     [tool.ruff.lint]
     preview = true
     select = [
-        "F",        # pyflakes
-        "E",        # pycodestyle: error
-        "W",        # pycodestyle: warning
-        "C90",      # mccabe
-        "I",        # isort
-        "N",        # pep8-naming
-        "UP",       # pyupgrade
-        "YTT",      # flake8-2020
-        "ANN",      # flake8-annotations
-        "ASYNC",    # flake8-async
-        "BLE",      # flake8-blind-except
-        "B",        # flake8-bugbear
-        "A",        # flake8-builtins
-        "COM",      # flake8-commas
-        "C4",       # flake8-comprehensions
-        "DTZ",      # flake8-datetimez
-        "T10",      # flake8-debugger
-        "EXE",      # flake8-executable
-        "EM",       # flake8-errmsg
-        "FA",       # flake8-future-annotations
-        "ISC",      # flake8-implicit-str-concat
-        "ICN",      # flake8-import-conventions
-        "LOG",      # flake8-logging
-        "G",        # flake8-logging-format
-        "INP",      # flake8-no-pep420
-        "PIE",      # flake8-pie
-        "T20",      # flake8-print
-        "PYI",      # flake8-pyi
-        "PT",       # flake8-pytest-style
-        "Q",        # flake8-quotes
-        "RSE",      # flake8-raise
-        "RET",      # flake8-return
-        "SLF",      # flake8-self
-        "SLOT",     # flake8-slots
-        "SIM",      # flake8-simplify
-        "TID",      # flake8-tidy-imports
-        "TCH",      # flake8-type-checking
-        "ARG",      # flake8-unused-arguments
-        "PTH",      # flake8-use-pathlib
-        "ERA",      # eradicate
-        "PD",       # pandas-vet
-        "PGH",      # pygrep-hooks
-        "PL",       # pylint
-        "TRY",      # tryceratops
-        "FLY",      # flynt
-        "NPY",      # NumPy
-        "FAST",     # FastAPI
-        "AIR",      # airflow
-        "PERF",     # perflint,
-        "FURB",     # refurb
-        "RUF",      # ruff
+        "F",     # pyflakes
+        "E",     # pycodestyle: error
+        "W",     # pycodestyle: warning
+        "C90",   # mccabe
+        "I",     # isort
+        "N",     # pep8-naming
+        "UP",    # pyupgrade
+        "YTT",   # flake8-2020
+        "ANN",   # flake8-annotations
+        "ASYNC", # flake8-async
+        "BLE",   # flake8-blind-except
+        "B",     # flake8-bugbear
+        "A",     # flake8-builtins
+        "COM",   # flake8-commas
+        "C4",    # flake8-comprehensions
+        "DTZ",   # flake8-datetimez
+        "T10",   # flake8-debugger
+        "EXE",   # flake8-executable
+        "EM",    # flake8-errmsg
+        "FA",    # flake8-future-annotations
+        "ISC",   # flake8-implicit-str-concat
+        "ICN",   # flake8-import-conventions
+        "LOG",   # flake8-logging
+        "G",     # flake8-logging-format
+        "INP",   # flake8-no-pep420
+        "PIE",   # flake8-pie
+        "T20",   # flake8-print
+        "PYI",   # flake8-pyi
+        "PT",    # flake8-pytest-style
+        "Q",     # flake8-quotes
+        "RSE",   # flake8-raise
+        "RET",   # flake8-return
+        "SLF",   # flake8-self
+        "SLOT",  # flake8-slots
+        "SIM",   # flake8-simplify
+        "TID",   # flake8-tidy-imports
+        "TCH",   # flake8-type-checking
+        "ARG",   # flake8-unused-arguments
+        "PTH",   # flake8-use-pathlib
+        "ERA",   # eradicate
+        "PD",    # pandas-vet
+        "PGH",   # pygrep-hooks
+        "PL",    # pylint
+        "TRY",   # tryceratops
+        "FLY",   # flynt
+        "NPY",   # NumPy
+        "FAST",  # FastAPI
+        "AIR",   # airflow
+        "PERF",  # perflint,
+        "FURB",  # refurb
+        "RUF",   # ruff
     ]
     ignore = [
-        # flake8-annotations
-        "ANN001",   # missing-type-function-argument (deprecated)
-        "ANN002",   # missing-type-args (deprecated)
-        "ANN401",   # any-type
-        # flake8-commas
-        "COM812",   # missing-trailing-comma (ruff format)
-        # flake8-implicit-str-concat
-        "ISC001",   # single-line-implicit-string-concatenation (ruff format)
-        # flake8-pyi
-        "PYI034",   # non-self-return-type
-        "PYI036",   # bad-exit-annotation
-        # pylint
-        "PLR0904",  # too-many-public-methods
-        # tryceratops
-        "TRY003",   # raise-vanilla-args
-        # refurb
-        "FURB118",  # reimplemented-operator
+        "ANN001",  # flake8-annotations: missing-type-function-argument (deprecated)
+        "ANN002",  # flake8-annotations: missing-type-args (deprecated)
+        "ANN401",  # flake8-annotations: any-type
+        "COM812",  # flake8-commas: missing-trailing-comma (ruff format)
+        "ISC001",  # flake8-implicit-str-concat: single-line-implicit-string-concatenation (ruff format)
+        "PYI034",  # flake8-pyi: non-self-return-type
+        "PYI036",  # flake8-pyi: bad-exit-annotation
+        "PLR0904", # pylintLtoo-many-public-methods
+        "TRY003",  # tryceratops: raise-vanilla-args
+        "FURB118", # refurb: reimplemented-operator
     ]
 
-    [tool.ruff.lint.per-file-ignores]
-    "examples/*" = [
-        # isort
-        "I001",     # unsorted-imports
-        # flake8-no-pep420
-        "INP001",   # implicit-namespace-package
-        # pylint
-        "PLR2004",  # magic-value-comparison
-    ]
-    "tests/*" = [
-        #  pyflakes
-        "F841",     # unused-variable
-        # flake8-annotations
-        "ANN201",   # missing-return-type
-        # flake8-pyi
-        "PYI015",
-        # flake8-self
-        "SLF001",   # private-member-access
-        # pylint
-        "PLC2701",  # import-private-name
-        "PLR2004",  # magic-value-comparison
-        "PLR0914",  # too-many-locals
-    ]
+        [tool.ruff.lint.per-file-ignores]
+        "examples/*" = [
+            "I001",    # isort: unsorted-imports
+            "INP001",  # flake8-no-pep420: implicit-namespace-package
+            "PLR2004", # pylint: magic-value-comparison
+        ]
+        "tests/*" = [
+            "F841",    # pyflakes: unused-variable
+            "ANN201",  # flake8-annotations: missing-return-type
+            "PYI015",  # flake8-pyi
+            "SLF001",  # flake8-self: private-member-access
+            "PLC2701", # pylint: import-private-name
+            "PLR2004", # pylint: magic-value-comparison
+            "PLR0914", # pylint: too-many-locals
+        ]
 
         [tool.ruff.lint.flake8-builtins]
         builtins-allowed-modules = [
@@ -278,7 +263,7 @@ force-exclude = true
         "optype.typing" = "opt"
 
         [tool.ruff.lint.flake8-errmsg]
-        max-string-length = 42  # this took a while to figure out
+        max-string-length = 42 # this took a while to figure out
 
         [tool.ruff.lint.flake8-type-checking]
         exempt-modules = [
@@ -301,13 +286,13 @@ force-exclude = true
 
         [tool.ruff.lint.pylint]
         allow-dunder-method-names = [
-            "__name__",         # attr of e.g. `type` and `function`
-            "__qualname__",     # attr like `__name__`
-            "__replace__",      # method used by `copy.replace` (py313+)
-            "__self__",         # attr of a bound method
-            "__func__",         # attr of e.g. `classmethod`
-            "__wrapped__",      # attr of e.g. `classmethod`
-            "__type_params__",  # attr of e.g. `Generic` instances
+            "__name__",        # attr of e.g. `type` and `function`
+            "__qualname__",    # attr like `__name__`
+            "__replace__",     # method used by `copy.replace` (py313+)
+            "__self__",        # attr of a bound method
+            "__func__",        # attr of e.g. `classmethod`
+            "__wrapped__",     # attr of e.g. `classmethod`
+            "__type_params__", # attr of e.g. `Generic` instances
 
             # used within the `typing` standard library
             "__value__",
@@ -365,5 +350,5 @@ extend-ignore-identifiers-re = [
     "ND|nd",
     "(N|n)in",
     "Mode(R|W|X|A|O|_)(B|T|_)(U|_)?",
-    "ba",  # file mode string
+    "ba",                             # file mode string
 ]
