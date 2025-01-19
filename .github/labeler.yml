@@ -1,6 +1,13 @@
 # This file contains globs for automatically adding labels based on changed files,
 # for use with https://github.com/actions/labeler.
 
+# _core
+
+optype.Just*:
+- changed-files:
+  - any-glob-to-any-file:
+    - optype/_core/_just.py
+
 optype.Can*:
 - changed-files:
   - any-glob-to-any-file:
@@ -21,6 +28,8 @@ optype.do_*:
   - any-glob-to-any-file:
     - optype/_core/_do.py
 
+# subpackages
+
 optype.numpy:
 - changed-files:
   - any-glob-to-any-file:
@@ -30,6 +39,8 @@ optype.types:
 - changed-files:
   - any-glob-to-any-file:
     - optype/types/**
+
+# submodules
 
 optype.copy:
 - changed-files:
