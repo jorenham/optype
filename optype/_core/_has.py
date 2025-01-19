@@ -56,12 +56,7 @@ _TypeParams: TypeAlias = tuple[TypeVar | ParamSpec | TypeVarTuple, ...]
 _TypeT = TypeVar("_TypeT", bound=type)
 _ObjectT_co = TypeVar("_ObjectT_co", default=object, covariant=True)
 _FuncT_co = TypeVar("_FuncT_co", bound=Callable[..., object], covariant=True)
-_TypeParamsT_co = TypeVar(
-    "_TypeParamsT_co",
-    bound=_TypeParams,
-    default=_TypeParams,
-    covariant=True,
-)
+_TypeParamsT = TypeVar("_TypeParamsT", bound=_TypeParams, default=_TypeParams)
 
 __AnyMapping: TypeAlias = "Mapping[str, object]"
 __AnyDict: TypeAlias = dict[str, Any]  # pyright: ignore[reportExplicitAny]
@@ -176,9 +171,8 @@ class HasAnnotations(Protocol[_DictT_co]):  # pyright: ignore[reportInvalidTypeV
 
 
 @runtime_checkable
-class HasTypeParams(Protocol[_TypeParamsT_co]):
-    @property
-    def __type_params__(self, /) -> _TypeParamsT_co: ...
+class HasTypeParams(Protocol[_TypeParamsT]):
+    __type_params__: _TypeParamsT
 
 
 # functions and methods
