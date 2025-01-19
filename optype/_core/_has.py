@@ -1,3 +1,5 @@
+# mypy: disable-error-code="no-any-explicit, no-any-decorated"
+
 import sys
 import types
 from collections.abc import Callable, Iterable, Mapping
@@ -6,7 +8,6 @@ from typing import Any, ClassVar, Protocol, TypeAlias
 if sys.version_info >= (3, 13):
     from typing import (
         LiteralString,
-        ParamSpec,
         TypeVar,
         TypeVarTuple,
         Unpack,
@@ -16,7 +17,6 @@ if sys.version_info >= (3, 13):
 else:
     from typing_extensions import (
         LiteralString,
-        ParamSpec,
         TypeVar,
         TypeVarTuple,
         Unpack,
@@ -51,14 +51,12 @@ def __dir__() -> list[str]:
 
 
 _Ts = TypeVarTuple("_Ts")
-_Tss = ParamSpec("_Tss")
 _TypeT = TypeVar("_TypeT", bound=type)
-
-_T_co = TypeVar("_T_co", covariant=True)
 _ObjectT_co = TypeVar("_ObjectT_co", default=object, covariant=True)
+_FuncT_co = TypeVar("_FuncT_co", bound=Callable[..., object], covariant=True)
 
 __AnyMapping: TypeAlias = "Mapping[str, object]"
-__AnyDict: TypeAlias = dict[str, Any]  # type: ignore[no-any-explicit]  # pyright: ignore[reportExplicitAny]
+__AnyDict: TypeAlias = dict[str, Any]  # pyright: ignore[reportExplicitAny]
 _DictT = TypeVar("_DictT", bound=__AnyMapping, default=__AnyDict)
 _DictT_co = TypeVar("_DictT_co", bound=__AnyMapping, default=__AnyDict, covariant=True)
 
@@ -180,15 +178,15 @@ class HasTypeParams(Protocol[Unpack[_Ts]]):
 
 
 @runtime_checkable
-class HasFunc(Protocol[_Tss, _T_co]):
+class HasFunc(Protocol[_FuncT_co]):
     @property
-    def __func__(self, /) -> Callable[_Tss, _T_co]: ...
+    def __func__(self, /) -> _FuncT_co: ...
 
 
 @runtime_checkable
-class HasWrapped(Protocol[_Tss, _T_co]):
+class HasWrapped(Protocol[_FuncT_co]):
     @property
-    def __wrapped__(self, /) -> Callable[_Tss, _T_co]: ...
+    def __wrapped__(self, /) -> _FuncT_co: ...
 
 
 @runtime_checkable

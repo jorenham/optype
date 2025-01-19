@@ -40,7 +40,7 @@ def get_callables(
     Return the public callables (types are callables too) in the given module,
     except for `typing.Protocol`.
     """
-    exclude = frozenset({"typing", "typing_extensions", "optype._core._utils"})
+    exclude = frozenset({"typing", "typing_extensions", __name__})
     return frozenset({
         name
         for name in dir(module)
