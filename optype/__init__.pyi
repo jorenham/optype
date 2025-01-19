@@ -313,6 +313,7 @@ from ._core._has import (
 )
 from ._core._just import (
     Just,
+    JustBytes,
     JustComplex,
     JustFloat,
     JustInt,
@@ -543,6 +544,7 @@ __all__ = [
     "HasTypeParams",
     "HasWrapped",
     "Just",
+    "JustBytes",
     "JustComplex",
     "JustFloat",
     "JustInt",
