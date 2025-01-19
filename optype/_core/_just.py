@@ -46,16 +46,16 @@ class Just(Protocol[_T]):
     and are therefore assignable to `Just[str]`, but instances of `class S(str): ...`
     are **not** assignable to `Just[str]`.
 
-    Warning (`pyright<1.390` and `basedpyright<1.22.1`):
-        On `pyright<1.390` and `basedpyright<1.22.1` this `Just[T]` type does not work,
-        due to a bug in the `typeshed` stubs for `object.__class__`, which was fixed in
-        https://github.com/python/typeshed/pull/13021.
+    Warning (`pyright<1.1.390` and `basedpyright<1.22.1`):
+        On `pyright<1.1.390` and `basedpyright<1.22.1` this `Just[T]` type does not
+        work, due to a bug in the `typeshed` stubs for `object.__class__`, which was
+        fixed in https://github.com/python/typeshed/pull/13021.
 
         However, you could use `JustInt`, `JustFloat`, and `JustComplex` types work
-        around this: These already work on `pyright<1.390` without problem.
+        around this: These already work on `pyright<1.1.390` without problem.
 
-    Warning (`mypy<1.14.2` and `basedmypy<2.9.2`):
-        On `mypy<1.41.2` this does not work with promoted types, such as `float` and
+    Warning (`mypy<1.15` and `basedmypy<2.10`):
+        On `mypy<1.15` this does not work with promoted types, such as `float` and
         `complex`, which was fixed in https://github.com/python/mypy/pull/18360.
         For other ("unpromoted") types like `Just[int]`, this already works, even
         before the `typeshed` fix above (mypy ignores `@property` setter types and
@@ -117,12 +117,12 @@ class _JustBytesMeta(_JustMeta[bytes]):
 
 class JustBytes(Just[bytes], Protocol, metaclass=_JustBytesMeta):
     """
-    A runtime checkable `Just[bytes]`, that also works on `pyright<1.390`.
+    A runtime checkable `Just[bytes]`, that also works on `pyright<1.1.390`.
 
     Useful as workaround for `mypy`'s `bytes` promotion (which can be disabled with the
     undocumented `--disable-bytearray-promotion` and  `--disable-memoryview-promotion`
     flags). See https://github.com/python/mypy/issues/15313s for more info.
-    Note that this workaround requires `mypy >=1.14.2` or the `--disable-*-promotion`
+    Note that this workaround requires `mypy >=1.15` or the `--disable-*-promotion`
     flags to work.
     """
 
@@ -135,7 +135,7 @@ class _JustIntMeta(_JustMeta[int]):
 @runtime_checkable
 class JustInt(Just[int], Protocol, metaclass=_JustIntMeta):
     """
-    A runtime-checkable `Just[int]` that's compatible with `pyright<1.390`.
+    A runtime-checkable `Just[int]` that's compatible with `pyright<1.1.390`.
 
     Example:
         This example shows a situation you want to accept instances of just `int`,
@@ -178,7 +178,7 @@ class JustInt(Just[int], Protocol, metaclass=_JustIntMeta):
         already works because of a mypy bug.
     """
 
-    # workaround for `pyright<1.390` and `basedpyright<1.22.1`
+    # workaround for `pyright<1.1.390` and `basedpyright<1.22.1`
     def __new__(cls, x: str | bytes | bytearray, /, base: CanIndex) -> Self: ...
 
 
@@ -189,13 +189,13 @@ class _JustFloatMeta(_JustMeta[float]):
 
 class JustFloat(Just[float], Protocol, metaclass=_JustFloatMeta):
     """
-    A runtime checkable `Just[float]` that also works on `pyright<1.390`.
+    A runtime checkable `Just[float]` that also works on `pyright<1.1.390`.
 
     Warning:
         Unlike `JustInt`, this does not work on `mypy<1.41.2`.
     """
 
-    # workaround for `pyright<1.390` and `basedpyright<1.22.1`
+    # workaround for `pyright<1.1.390` and `basedpyright<1.22.1`
     def hex(self, /) -> str: ...
 
 
@@ -206,13 +206,13 @@ class _JustComplexMeta(_JustMeta[complex]):
 
 class JustComplex(Just[complex], Protocol, metaclass=_JustComplexMeta):
     """
-    A runtime checkable `Just[complex]`, that also works on `pyright<1.390`.
+    A runtime checkable `Just[complex]`, that also works on `pyright<1.1.390`.
 
     Warning:
         Unlike `JustInt`, this does not work on `mypy<1.41.2`.
     """
 
-    # workaround for `pyright<1.390` and `basedpyright<1.22.1`
+    # workaround for `pyright<1.1.390` and `basedpyright<1.22.1`
     def __new__(cls, /, real: _ToFloat, imag: _ToFloat) -> Self: ...
 
 
@@ -223,7 +223,7 @@ class _JustObjectMeta(_JustMeta[object]):
 
 class JustObject(Just[object], Protocol, metaclass=_JustObjectMeta):
     """
-    A runtime checkable `Just[object]`, that also works on `pyright<1.390`.
+    A runtime checkable `Just[object]`, that also works on `pyright<1.1.390`.
 
     Useful for typing `object()` sentinels.
     """
