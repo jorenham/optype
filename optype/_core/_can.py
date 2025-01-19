@@ -4,7 +4,6 @@ import types
 from collections.abc import Generator
 from typing import SupportsIndex, TypeAlias
 
-
 if sys.version_info >= (3, 13):
     from typing import (
         ParamSpec,
@@ -26,9 +25,7 @@ else:
         runtime_checkable,
     )
 
-
 from ._utils import set_module
-
 
 __all__ = [
     "CanAEnter",

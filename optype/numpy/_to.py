@@ -2,21 +2,17 @@ import sys
 from collections.abc import Sequence as Seq
 from typing import Literal, TypeAlias
 
-
 if sys.version_info >= (3, 13):
     from typing import TypeAliasType, TypeVar
 else:
     from typing_extensions import TypeAliasType, TypeVar
 
-
 import numpy as np
 
 import optype.numpy.compat as npc
-from optype._core._just import JustComplex, JustFloat, JustInt
-
 from ._array import CanArray0D, CanArray1D, CanArray2D, CanArray3D, CanArrayND, Matrix
 from ._sequence_nd import SequenceND as SeqND
-
+from optype._core._just import JustComplex, JustFloat, JustInt
 
 __all__ = [  # noqa: RUF022
     "ToScalar",

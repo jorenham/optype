@@ -7,13 +7,11 @@ import enum
 import sys
 from typing import Any, Protocol
 
-
 if sys.version_info >= (3, 13):
     from types import CapsuleType
     from typing import TypeVar, runtime_checkable
 else:
     from typing_extensions import CapsuleType, TypeVar, runtime_checkable
-
 
 __all__ = "CanDLPack", "CanDLPackCompat", "CanDLPackDevice"
 

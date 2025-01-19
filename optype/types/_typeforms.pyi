@@ -8,7 +8,6 @@ from typing import (
     _SpecialForm,  # pyright: ignore[reportPrivateUsage]
     type_check_only,
 )
-
 from typing_extensions import (
     ParamSpec,
     Self,

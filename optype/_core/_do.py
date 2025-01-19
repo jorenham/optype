@@ -6,16 +6,13 @@ import sys
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Final, Literal, cast
 
-
 if sys.version_info >= (3, 13):
     from typing import ParamSpec, TypeVar, overload
 else:
     from typing_extensions import ParamSpec, TypeVar, overload
 
-
 from . import _can as _c, _does as _d
 from ._utils import set_module
-
 
 __all__ = [
     "do_abs",

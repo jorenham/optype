@@ -6,19 +6,16 @@ import types
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from typing import Any, Literal as L, Protocol, TypeAlias  # noqa: N817
 
-
 if sys.version_info >= (3, 13):
     from typing import LiteralString, TypeVar, runtime_checkable
 else:
     from typing_extensions import LiteralString, TypeVar, runtime_checkable
-
 
 import numpy as np
 import numpy.typing as npt
 
 import optype.numpy._compat as _x
 from optype._core._utils import set_module
-
 
 __all__ = ["CanArrayFunction", "CanArrayUFunc", "UFunc"]
 

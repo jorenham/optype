@@ -27,15 +27,14 @@ from optype import (
     CanIOrSelf,
     CanISub,
     CanISubSelf,
-    CanIXor,
-    CanIXorSelf,
     CanIter,
     CanIterSelf,
+    CanIXor,
+    CanIXorSelf,
     CanLen,
     CanNext,
     CanSequence,
 )
-
 
 _T_ReIter = TypeVar("_T_ReIter")
 CanReIter: TypeAlias = CanIter[CanIterSelf[_T_ReIter]]

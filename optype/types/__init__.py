@@ -1,15 +1,12 @@
 import sys
 from typing import Literal, Protocol
 
-
 if sys.version_info >= (3, 13):
     from typing import LiteralString, runtime_checkable
 else:
     from typing_extensions import LiteralString, runtime_checkable
 
-
 from ._typeforms import AnnotatedAlias, GenericType, LiteralAlias, UnionAlias
-
 
 __all__ = (
     "AnnotatedAlias",

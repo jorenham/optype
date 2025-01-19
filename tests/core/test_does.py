@@ -3,7 +3,6 @@ from typing import final
 
 from optype import do_iadd
 
-
 if sys.version_info >= (3, 13):
     from typing import assert_type
 else:

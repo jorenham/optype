@@ -5,9 +5,7 @@
 import subprocess
 import sys
 from typing import Final, TypeAlias
-
 from typing_extensions import Generator
-
 
 _Version: TypeAlias = tuple[int, int]
 

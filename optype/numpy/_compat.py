@@ -2,7 +2,6 @@ from typing import Final, TypeAlias
 
 import numpy as np
 
-
 __all__ = ["Bool", "Long", "ULong"]
 
 

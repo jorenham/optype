@@ -2,16 +2,13 @@ import sys
 from collections.abc import AsyncIterator, Callable, Iterable, Iterator
 from typing import Literal, Protocol, TypeAlias
 
-
 if sys.version_info >= (3, 13):
     from typing import ParamSpec, TypeVar, overload
 else:
     from typing_extensions import ParamSpec, TypeVar, overload
 
-
 from . import _can as _c
 from ._utils import set_module
-
 
 __all__ = [
     "DoesAIter",

@@ -5,12 +5,10 @@ import sys
 from collections.abc import Iterator
 from typing import Any, Protocol, TypeAlias
 
-
 if sys.version_info >= (3, 13):
     from typing import Never, TypeAliasType, TypeVar
 else:
     from typing_extensions import Never, TypeAliasType, TypeVar
-
 
 import numpy as np
 
@@ -19,7 +17,6 @@ import optype.numpy._scalar as _sc
 from optype._core._can import CanBuffer
 from optype._core._just import Just, JustComplex, JustFloat, JustInt
 from optype._core._utils import set_module
-
 
 # ruff: noqa: RUF022
 __all__ = [

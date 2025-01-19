@@ -1,12 +1,10 @@
 import sys
 from typing import Literal, Protocol, TypeAlias as Alias
 
-
 if sys.version_info >= (3, 13):
     from typing import TypeVar, runtime_checkable
 else:
     from typing_extensions import TypeVar, runtime_checkable
-
 
 __all__ = (
     "CanFSPath", "CanFileno",

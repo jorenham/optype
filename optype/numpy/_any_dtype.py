@@ -9,12 +9,10 @@ The names are analogous to those in `numpy.dtypes`.
 import sys
 from typing import Literal as L, Protocol, TypeAlias as Alias  # noqa: N817
 
-
 if sys.version_info >= (3, 13):
     from typing import LiteralString, Never, TypeAliasType, TypeVar
 else:
     from typing_extensions import LiteralString, Never, TypeAliasType, TypeVar
-
 
 import numpy as np
 
@@ -22,7 +20,6 @@ import optype.numpy._compat as _x
 import optype.numpy._dtype as _dt
 import optype.numpy._scalar as _sc
 from optype._core._just import Just, JustComplex, JustFloat, JustInt
-
 
 # ruff: noqa: RUF022
 __all__ = [

@@ -7,12 +7,10 @@ import sys
 from types import MappingProxyType
 from typing import TypeAlias
 
-
 if sys.version_info >= (3, 13):
     from typing import TypeVar
 else:
     from typing_extensions import TypeVar
-
 
 __all__ = "AnyArray", "AnyObject", "AnyValue", "Array", "Object", "_Value"
 

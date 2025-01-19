@@ -11,14 +11,12 @@ from typing import (
     final,
 )
 
-
 if sys.version_info >= (3, 13):
     from typing import Self, TypeIs, TypeVar, override, runtime_checkable
 else:
     from typing_extensions import Self, TypeIs, TypeVar, override, runtime_checkable
 
 from ._can import CanFloat, CanIndex
-
 
 __all__ = ["Just", "JustComplex", "JustFloat", "JustInt"]
 

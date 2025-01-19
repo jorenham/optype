@@ -7,15 +7,12 @@ import sys
 from collections.abc import Callable, Iterable
 from typing import Literal, Protocol, TypeAlias
 
-
 if sys.version_info >= (3, 13):
     from typing import ParamSpec, Self, TypeVar, override, runtime_checkable
 else:
     from typing_extensions import ParamSpec, Self, TypeVar, override, runtime_checkable
 
-
 from ._core._can import CanIndex
-
 
 __all__ = (
     "CanGetnewargs",

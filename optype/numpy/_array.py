@@ -3,18 +3,15 @@ import sys
 from collections.abc import Mapping
 from typing import Any, Protocol
 
-
 if sys.version_info >= (3, 13):
     from typing import Self, TypeAliasType, TypeVar, runtime_checkable
 else:
     from typing_extensions import Self, TypeAliasType, TypeVar, runtime_checkable
 
-
 import numpy as np
 
 import optype.numpy._compat as _x
 from optype._core._utils import set_module
-
 
 __all__ = [  # noqa: RUF022
     "Array", "Array0D", "Array1D", "Array1D", "Array2D", "Array3D", "ArrayND",

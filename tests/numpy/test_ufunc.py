@@ -6,16 +6,14 @@ import sys
 from collections.abc import Callable as Fn
 from typing import Any, Literal, TypeAlias, TypeVar, cast
 
-import numpy as np
-
-from optype.numpy import CanArrayUFunc, UFunc
-
-
 if sys.version_info >= (3, 13):
     from typing import LiteralString
 else:
     from typing_extensions import LiteralString
 
+import numpy as np
+
+from optype.numpy import CanArrayUFunc, UFunc
 
 _SCT = TypeVar("_SCT", bound=np.generic)
 _ScalarOrArray: TypeAlias = np.ndarray[Any, np.dtype[_SCT]] | _SCT

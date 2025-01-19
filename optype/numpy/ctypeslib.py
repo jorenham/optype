@@ -44,12 +44,10 @@ from ctypes import (
 )
 from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
 
-
 if sys.version_info >= (3, 12):
     from typing import Never, TypeAliasType, TypeVar
 else:
     from typing_extensions import Never, TypeAliasType, TypeVar
-
 
 if sys.version_info >= (3, 14):
     from ctypes import (
@@ -62,9 +60,7 @@ else:
     Complex128 = Never
     CLongDouble = Never
 
-
 from ._ctypeslib import CScalar, CType  # type: ignore[type-check-only]
-
 
 # ruff: noqa: RUF022
 __all__ = [

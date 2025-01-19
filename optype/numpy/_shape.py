@@ -1,15 +1,12 @@
 import sys
 from typing import Literal, TypeAlias
 
-
 if sys.version_info >= (3, 13):
     from typing import TypeAliasType, TypeVar, Unpack
 else:
     from typing_extensions import TypeAliasType, TypeVar, Unpack
 
-
 from ._compat import NP20
-
 
 __all__ = [
     "AtLeast0D", "AtLeast1D", "AtLeast2D", "AtLeast3D",

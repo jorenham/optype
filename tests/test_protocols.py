@@ -2,6 +2,11 @@
 import sys
 from typing import cast
 
+if sys.version_info >= (3, 13):
+    from typing import is_protocol
+else:
+    from typing_extensions import is_protocol
+
 import pytest
 
 import optype as op
@@ -12,12 +17,6 @@ from optype.inspect import (
     is_protocol,
     is_runtime_protocol,
 )
-
-
-if sys.version_info >= (3, 13):
-    from typing import is_protocol
-else:
-    from typing_extensions import is_protocol
 
 
 def _is_dunder(name: str, /) -> bool:

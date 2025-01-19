@@ -1,15 +1,14 @@
 from typing import TYPE_CHECKING, Literal, TypeAlias
 
-
 if TYPE_CHECKING:
     import sys
-
-    import optype.numpy as onp
 
     if sys.version_info >= (3, 13):
         from typing import Never
     else:
         from typing_extensions import Never
+
+    import optype.numpy as onp
 
 
 Neg1: TypeAlias = Literal[-1]

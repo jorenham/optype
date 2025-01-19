@@ -2,20 +2,17 @@
 # ruff: noqa: ANN205, ANN206
 import sys
 import typing as tp
-from inspect import getattr_static
-
-import pytest
 import typing_extensions as tpx
-
+from inspect import getattr_static
 
 if sys.version_info >= (3, 12):
     from typing import TypeAliasType
 else:
     from typing_extensions import TypeAliasType
 
+import pytest
 
 import optype as op
-
 
 FalsyBool = tp.Literal[False]
 FalsyInt: tp.TypeAlias = tp.Annotated[tp.Literal[0], (int, False)]

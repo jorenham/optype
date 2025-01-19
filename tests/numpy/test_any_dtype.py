@@ -2,7 +2,6 @@
 import sys
 from typing import Any, Final
 
-
 if sys.version_info >= (3, 13):
     from typing import Never
 else:

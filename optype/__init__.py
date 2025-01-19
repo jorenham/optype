@@ -9,7 +9,6 @@ from ._core._does import *
 from ._core._has import *
 from ._core._just import *
 
-
 __version__: str = _metadata.version(__package__ or __file__.split("/")[-1])
 __all__ = ["__version__"]
 __all__ += _just.__all__
