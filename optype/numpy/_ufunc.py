@@ -15,7 +15,7 @@ import numpy as np
 import numpy.typing as npt
 
 import optype.numpy._compat as _x
-from optype._core._utils import set_module
+from optype._utils import set_module
 
 __all__ = ["CanArrayFunction", "CanArrayUFunc", "UFunc"]
 

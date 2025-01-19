@@ -11,8 +11,8 @@ if sys.version_info >= (3, 13):
 else:
     from typing_extensions import ParamSpec, TypeVar, overload
 
-from . import _can as _c, _does as _d
-from ._utils import set_module
+import optype._core._can as _c
+import optype._core._does as _d
 
 __all__ = [
     "do_abs",
@@ -149,7 +149,6 @@ else:
     _Pss = ParamSpec("_Pss")
     _R = TypeVar("_R")
 
-    @set_module("optype")
     def do_call(f: Callable[_Pss, _R], /, *args: _Pss.args, **kw: _Pss.kwargs) -> _R:
         return f(*args, **kw)
 
@@ -169,12 +168,9 @@ _DT = TypeVar("_DT")
 
 
 @overload
-@set_module("optype")
 def do_getitem(obj: _c.CanGetMissing[_KT, _VT, _DT], key: _KT, /) -> _VT | _DT: ...
 @overload
-@set_module("optype")
 def do_getitem(obj: _c.CanGetitem[_KT, _VT], key: _KT, /) -> _VT: ...
-@set_module("optype")
 def do_getitem(
     obj: _c.CanGetitem[_KT, _VT] | _c.CanGetMissing[_KT, _VT, _DT],
     key: _KT,
@@ -184,19 +180,16 @@ def do_getitem(
     return obj[key]
 
 
-@set_module("optype")
 def do_setitem(obj: _c.CanSetitem[_KT, _VT], key: _KT, value: _VT, /) -> None:
     """Same as `obj[key] = value`."""
     obj[key] = value
 
 
-@set_module("optype")
 def do_delitem(obj: _c.CanDelitem[_KT], key: _KT, /) -> None:
     """Same as `del obj[key]`."""
     del obj[key]
 
 
-@set_module("optype")
 def do_missing(obj: _c.CanMissing[_KT, _DT], key: _KT, /) -> _DT:
     return obj.__missing__(key)
 
@@ -206,7 +199,6 @@ _BoolT = TypeVar("_BoolT", Literal[False], Literal[True], bool)
 
 # `operator.contains` cannot be used, as it incorrectly requires `key`
 # to be exactly of type `object`, so that it only accepts `object()`...
-@set_module("optype")
 def do_contains(obj: _c.CanContains[_KT, _BoolT], key: _KT, /) -> _BoolT:
     """Same as `key in obj`."""
     return cast("_BoolT", key in obj)  # type: ignore[redundant-cast]
@@ -243,85 +235,71 @@ _LeftT = TypeVar("_LeftT")
 _OutT = TypeVar("_OutT")
 
 
-@set_module("optype")
 def do_radd(a: _c.CanRAdd[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `b + a`."""
     return b + a
 
 
-@set_module("optype")
 def do_rsub(a: _c.CanRSub[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `b - a`."""
     return b - a
 
 
-@set_module("optype")
 def do_rmul(a: _c.CanRMul[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `b * a`."""
     return b * a
 
 
-@set_module("optype")
 def do_rmatmul(a: _c.CanRMatmul[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `b @ a`."""
     return b @ a
 
 
-@set_module("optype")
 def do_rtruediv(a: _c.CanRTruediv[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `b / a`."""
     return b / a
 
 
-@set_module("optype")
 def do_rfloordiv(a: _c.CanRFloordiv[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `b // a`."""
     return b // a
 
 
-@set_module("optype")
 def do_rmod(a: _c.CanRMod[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `b % a`."""
     return b % a
 
 
-@set_module("optype")
 def do_rdivmod(a: _c.CanRDivmod[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `divmod(b, a)`."""
     return divmod(b, a)
 
 
-@set_module("optype")
 def do_rpow(a: _c.CanRPow[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `b ** a`."""
     return b**a
 
 
-@set_module("optype")
 def do_rlshift(a: _c.CanRLshift[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `b << a`."""
     return b << a
 
 
-@set_module("optype")
 def do_rrshift(a: _c.CanRRshift[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `b >> a`."""
     return b >> a
 
 
-@set_module("optype")
 def do_rand(a: _c.CanRAnd[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `b & a`."""
     return b & a
 
 
-@set_module("optype")
 def do_rxor(a: _c.CanRXor[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `b ^ a`."""
     return b ^ a
 
 
-@set_module("optype")
 def do_ror(a: _c.CanROr[_LeftT, _OutT], b: _LeftT, /) -> _OutT:
     """Same as `b | a`."""
     return b | a

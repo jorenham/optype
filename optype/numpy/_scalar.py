@@ -29,7 +29,7 @@ import numpy as np
 import numpy.typing as npt
 
 from ._compat import NP20
-from optype._core._utils import set_module
+from optype._utils import set_module
 
 if NP20:
     from numpy._core.multiarray import flagsobj

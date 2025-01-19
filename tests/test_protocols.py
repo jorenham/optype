@@ -10,7 +10,8 @@ else:
 import pytest
 
 import optype as op
-from optype._core import _can, _do, _does, _has, _just, _utils
+from optype import _utils
+from optype._core import _can, _do, _does, _has, _just
 from optype.inspect import (
     get_protocol_members,
     get_protocols,

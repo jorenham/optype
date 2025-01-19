@@ -7,8 +7,7 @@ if sys.version_info >= (3, 13):
 else:
     from typing_extensions import ParamSpec, TypeVar, overload
 
-from . import _can as _c
-from ._utils import set_module
+import optype._core._can as _c
 
 __all__ = [
     "DoesAIter",
@@ -141,7 +140,6 @@ _BytesT = TypeVar("_BytesT", bound=bytes)
 # iteration
 
 
-@set_module("optype")
 class DoesNext(Protocol):
     @overload
     def __call__(self, iterator: _c.CanNext[_ValT], /) -> _ValT: ...
@@ -154,7 +152,6 @@ class DoesNext(Protocol):
     ) -> _ValT | _DefaultT: ...
 
 
-@set_module("optype")
 class DoesANext(Protocol):
     @overload
     def __call__(self, aiterator: _c.CanANext[_ValT], /) -> _ValT: ...
@@ -167,7 +164,6 @@ class DoesANext(Protocol):
     ) -> _ValT | _DefaultT: ...
 
 
-@set_module("optype")
 class DoesIter(Protocol):
     @overload
     def __call__(self, iterable: _c.CanIter[_IteratorT], /) -> _IteratorT: ...
@@ -193,7 +189,6 @@ class DoesIter(Protocol):
     ) -> _c.CanIterSelf[_ValT]: ...
 
 
-@set_module("optype")
 class DoesAIter(Protocol):
     def __call__(self, aiterable: _c.CanAIter[_AIteratorT], /) -> _AIteratorT: ...
 
@@ -201,22 +196,18 @@ class DoesAIter(Protocol):
 # type conversion
 
 
-@set_module("optype")
 class DoesComplex(Protocol):
     def __call__(self, obj: _c.CanComplex, /) -> complex: ...
 
 
-@set_module("optype")
 class DoesFloat(Protocol):
     def __call__(self, obj: _c.CanFloat, /) -> float: ...
 
 
-@set_module("optype")
 class DoesInt(Protocol):
     def __call__(self, obj: _c.CanInt[_IntT], /) -> _IntT: ...
 
 
-@set_module("optype")
 class DoesBool(Protocol):
     @overload
     def __call__(self, obj: _c.CanBool[_BoolT], /) -> _BoolT: ...
@@ -228,12 +219,10 @@ class DoesBool(Protocol):
     def __call__(self, obj: object, /) -> bool: ...
 
 
-@set_module("optype")
 class DoesStr(Protocol):
     def __call__(self, obj: _c.CanStr[_StrT], /) -> _StrT: ...
 
 
-@set_module("optype")
 class DoesBytes(Protocol):
     def __call__(self, obj: _c.CanBytes[_BytesT], /) -> _BytesT: ...
 
@@ -241,12 +230,10 @@ class DoesBytes(Protocol):
 # formatting
 
 
-@set_module("optype")
 class DoesRepr(Protocol):
     def __call__(self, obj: _c.CanRepr[_StrT], /) -> _StrT: ...
 
 
-@set_module("optype")
 class DoesFormat(Protocol):
     def __call__(
         self,
@@ -259,7 +246,6 @@ class DoesFormat(Protocol):
 # rich comparison
 
 
-@set_module("optype")
 class DoesLt(Protocol):
     @overload
     def __call__(self, lhs: _c.CanLt[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
@@ -267,7 +253,6 @@ class DoesLt(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanGt[_LeftT, _OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesLe(Protocol):
     @overload
     def __call__(self, lhs: _c.CanLe[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
@@ -275,7 +260,6 @@ class DoesLe(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanGe[_LeftT, _OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesEq(Protocol):
     @overload
     def __call__(self, lhs: _c.CanEq[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
@@ -283,7 +267,6 @@ class DoesEq(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanEq[_LeftT, _OutT], /) -> _OutT: ...  # type: ignore[overload-cannot-match]  # pyright: ignore[reportOverlappingOverload]
 
 
-@set_module("optype")
 class DoesNe(Protocol):
     @overload
     def __call__(self, lhs: _c.CanNe[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
@@ -291,7 +274,6 @@ class DoesNe(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanNe[_LeftT, _OutT], /) -> _OutT: ...  # type: ignore[overload-cannot-match]  # pyright: ignore[reportOverlappingOverload]
 
 
-@set_module("optype")
 class DoesGt(Protocol):
     @overload
     def __call__(self, lhs: _c.CanGt[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
@@ -299,7 +281,6 @@ class DoesGt(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanLt[_LeftT, _OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesGe(Protocol):
     @overload
     def __call__(self, lhs: _c.CanGe[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
@@ -310,7 +291,6 @@ class DoesGe(Protocol):
 # dynamic attribute access
 
 
-@set_module("optype")
 class DoesGetattr(Protocol):
     @overload
     def __call__(self, obj: _c.CanGetattr[_StrT, _AttrT], name: _StrT, /) -> _AttrT: ...
@@ -339,7 +319,6 @@ class DoesGetattr(Protocol):
     ) -> _AttrT | _DefaultT: ...
 
 
-@set_module("optype")
 class DoesSetattr(Protocol):
     def __call__(
         self,
@@ -350,12 +329,10 @@ class DoesSetattr(Protocol):
     ) -> None: ...
 
 
-@set_module("optype")
 class DoesDelattr(Protocol):
     def __call__(self, obj: _c.CanDelattr[_StrT], name: _StrT, /) -> None: ...
 
 
-@set_module("optype")
 class DoesDir(Protocol):
     @overload
     def __call__(self, /) -> list[str]: ...
@@ -366,7 +343,6 @@ class DoesDir(Protocol):
 # callables
 
 
-@set_module("optype")
 class DoesCall(Protocol):
     def __call__(
         self,
@@ -380,17 +356,14 @@ class DoesCall(Protocol):
 # containers and subscriptable types
 
 
-@set_module("optype")
 class DoesLen(Protocol):
     def __call__(self, obj: _c.CanLen[_IntT], /) -> _IntT: ...
 
 
-@set_module("optype")
 class DoesLengthHint(Protocol):
     def __call__(self, obj: _c.CanLengthHint[_IntT], /) -> _IntT: ...
 
 
-@set_module("optype")
 class DoesGetitem(Protocol):
     def __call__(
         self,
@@ -400,7 +373,6 @@ class DoesGetitem(Protocol):
     ) -> _ValT | _DefaultT: ...
 
 
-@set_module("optype")
 class DoesSetitem(Protocol):
     def __call__(
         self,
@@ -411,12 +383,10 @@ class DoesSetitem(Protocol):
     ) -> None: ...
 
 
-@set_module("optype")
 class DoesDelitem(Protocol):
     def __call__(self, obj: _c.CanDelitem[_KeyT], key: _KeyT, /) -> None: ...
 
 
-@set_module("optype")
 class DoesMissing(Protocol):
     def __call__(
         self,
@@ -426,12 +396,10 @@ class DoesMissing(Protocol):
     ) -> _DefaultT: ...
 
 
-@set_module("optype")
 class DoesContains(Protocol):
     def __call__(self, obj: _c.CanContains[_KeyT, _BoolT], key: _KeyT, /) -> _BoolT: ...
 
 
-@set_module("optype")
 class DoesReversed(Protocol):
     """
     This is correct type of `builtins.reversed`.
@@ -453,7 +421,6 @@ class DoesReversed(Protocol):
 # binary infix operators
 
 
-@set_module("optype")
 class DoesAdd(Protocol):
     @overload
     def __call__(self, lhs: _c.CanAdd[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
@@ -461,7 +428,6 @@ class DoesAdd(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanRAdd[_LeftT, _OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesSub(Protocol):
     @overload
     def __call__(self, lhs: _c.CanSub[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
@@ -469,7 +435,6 @@ class DoesSub(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanRSub[_LeftT, _OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesMul(Protocol):
     @overload
     def __call__(self, lhs: _c.CanMul[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
@@ -477,7 +442,6 @@ class DoesMul(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanRMul[_LeftT, _OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesMatmul(Protocol):
     @overload
     def __call__(self, lhs: _c.CanMatmul[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
@@ -485,7 +449,6 @@ class DoesMatmul(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanRMatmul[_LeftT, _OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesTruediv(Protocol):
     @overload
     def __call__(
@@ -498,7 +461,6 @@ class DoesTruediv(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanRTruediv[_LeftT, _OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesFloordiv(Protocol):
     @overload
     def __call__(
@@ -516,7 +478,6 @@ class DoesFloordiv(Protocol):
     ) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesMod(Protocol):
     @overload
     def __call__(self, lhs: _c.CanMod[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
@@ -524,7 +485,6 @@ class DoesMod(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanRMod[_LeftT, _OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesDivmod(Protocol):
     @overload
     def __call__(self, lhs: _c.CanDivmod[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
@@ -532,7 +492,6 @@ class DoesDivmod(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanRDivmod[_LeftT, _OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesPow(Protocol):
     @overload
     def __call__(self, base: _c.CanPow2[_RightT, _OutT], exp: _RightT, /) -> _OutT: ...
@@ -548,7 +507,6 @@ class DoesPow(Protocol):
     def __call__(self, base: _LeftT, exp: _c.CanRPow[_LeftT, _OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesLshift(Protocol):
     @overload
     def __call__(self, lhs: _c.CanLshift[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
@@ -556,7 +514,6 @@ class DoesLshift(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanRLshift[_LeftT, _OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesRshift(Protocol):
     @overload
     def __call__(self, lhs: _c.CanRshift[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
@@ -564,7 +521,6 @@ class DoesRshift(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanRRshift[_LeftT, _OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesAnd(Protocol):
     @overload
     def __call__(self, lhs: _c.CanAnd[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
@@ -572,7 +528,6 @@ class DoesAnd(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanRAnd[_LeftT, _OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesXor(Protocol):
     @overload
     def __call__(self, lhs: _c.CanXor[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
@@ -580,7 +535,6 @@ class DoesXor(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanRXor[_LeftT, _OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesOr(Protocol):
     @overload
     def __call__(self, lhs: _c.CanOr[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
@@ -591,32 +545,26 @@ class DoesOr(Protocol):
 # binary reflected operators
 
 
-@set_module("optype")
 class DoesRAdd(Protocol):
     def __call__(self, rhs: _c.CanRAdd[_LeftT, _OutT], lhs: _LeftT, /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesRSub(Protocol):
     def __call__(self, rhs: _c.CanRSub[_LeftT, _OutT], lhs: _LeftT, /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesRMul(Protocol):
     def __call__(self, rhs: _c.CanRMul[_LeftT, _OutT], lhs: _LeftT, /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesRMatmul(Protocol):
     def __call__(self, rhs: _c.CanRMatmul[_LeftT, _OutT], lhs: _LeftT, /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesRTruediv(Protocol):
     def __call__(self, rhs: _c.CanRTruediv[_LeftT, _OutT], lhs: _LeftT, /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesRFloordiv(Protocol):
     def __call__(
         self,
@@ -626,7 +574,6 @@ class DoesRFloordiv(Protocol):
     ) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesRMod(Protocol):
     def __call__(self, rhs: _c.CanRMod[_LeftT, _OutT], lhs: _LeftT, /) -> _OutT: ...
 
@@ -635,32 +582,26 @@ class DoesRDivmod(Protocol):
     def __call__(self, rhs: _c.CanRDivmod[_LeftT, _OutT], lhs: _LeftT, /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesRPow(Protocol):
     def __call__(self, rhs: _c.CanRPow[_LeftT, _OutT], lhs: _LeftT, /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesRLshift(Protocol):
     def __call__(self, rhs: _c.CanRLshift[_LeftT, _OutT], lhs: _LeftT, /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesRRshift(Protocol):
     def __call__(self, rhs: _c.CanRRshift[_LeftT, _OutT], lhs: _LeftT, /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesRAnd(Protocol):
     def __call__(self, rhs: _c.CanRAnd[_LeftT, _OutT], lhs: _LeftT, /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesRXor(Protocol):
     def __call__(self, rhs: _c.CanRXor[_LeftT, _OutT], lhs: _LeftT, /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesROr(Protocol):
     def __call__(self, rhs: _c.CanROr[_LeftT, _OutT], lhs: _LeftT, /) -> _OutT: ...
 
@@ -668,7 +609,6 @@ class DoesROr(Protocol):
 # augmented / in-place operators
 
 
-@set_module("optype")
 class DoesIAdd(Protocol):
     @overload
     def __call__(self, lhs: _c.CanIAdd[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
@@ -678,7 +618,6 @@ class DoesIAdd(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanRAdd[_LeftT, _OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesISub(Protocol):
     @overload
     def __call__(self, lhs: _c.CanISub[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
@@ -688,7 +627,6 @@ class DoesISub(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanRSub[_LeftT, _OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesIMul(Protocol):
     @overload
     def __call__(self, lhs: _c.CanIMul[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
@@ -698,7 +636,6 @@ class DoesIMul(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanRMul[_LeftT, _OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesIMatmul(Protocol):
     @overload
     def __call__(
@@ -713,7 +650,6 @@ class DoesIMatmul(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanRMatmul[_LeftT, _OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesITruediv(Protocol):
     @overload
     def __call__(
@@ -733,7 +669,6 @@ class DoesITruediv(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanRTruediv[_LeftT, _OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesIFloordiv(Protocol):
     @overload
     def __call__(
@@ -758,7 +693,6 @@ class DoesIFloordiv(Protocol):
     ) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesIMod(Protocol):
     @overload
     def __call__(self, lhs: _c.CanIMod[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
@@ -768,7 +702,6 @@ class DoesIMod(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanRMod[_LeftT, _OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesIPow(Protocol):
     @overload
     def __call__(self, lhs: _c.CanIPow[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
@@ -778,7 +711,6 @@ class DoesIPow(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanRPow[_LeftT, _OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesILshift(Protocol):
     @overload
     def __call__(
@@ -793,7 +725,6 @@ class DoesILshift(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanRLshift[_LeftT, _OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesIRshift(Protocol):
     @overload
     def __call__(
@@ -808,7 +739,6 @@ class DoesIRshift(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanRRshift[_LeftT, _OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesIAnd(Protocol):
     @overload
     def __call__(self, lhs: _c.CanIAnd[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
@@ -818,7 +748,6 @@ class DoesIAnd(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanRAnd[_LeftT, _OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesIXor(Protocol):
     @overload
     def __call__(self, lhs: _c.CanIXor[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
@@ -828,7 +757,6 @@ class DoesIXor(Protocol):
     def __call__(self, lhs: _LeftT, rhs: _c.CanRXor[_LeftT, _OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesIOr(Protocol):
     @overload
     def __call__(self, lhs: _c.CanIOr[_RightT, _OutT], rhs: _RightT, /) -> _OutT: ...
@@ -841,22 +769,18 @@ class DoesIOr(Protocol):
 # unary arithmetic
 
 
-@set_module("optype")
 class DoesNeg(Protocol):
     def __call__(self, obj: _c.CanNeg[_OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesPos(Protocol):
     def __call__(self, obj: _c.CanPos[_OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesAbs(Protocol):
     def __call__(self, obj: _c.CanAbs[_OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesInvert(Protocol):
     def __call__(self, obj: _c.CanInvert[_OutT], /) -> _OutT: ...
 
@@ -864,12 +788,10 @@ class DoesInvert(Protocol):
 # object identification
 
 
-@set_module("optype")
 class DoesIndex(Protocol):
     def __call__(self, obj: _c.CanIndex[_IntT], /) -> _IntT: ...
 
 
-@set_module("optype")
 class DoesHash(Protocol):
     def __call__(self, obj: _c.CanHash, /) -> int: ...
 
@@ -877,7 +799,6 @@ class DoesHash(Protocol):
 # rounding
 
 
-@set_module("optype")
 class DoesRound(Protocol):
     @overload
     def __call__(self, obj: _c.CanRound1[_OutT], /) -> _OutT: ...
@@ -892,16 +813,13 @@ class DoesRound(Protocol):
     ) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesTrunc(Protocol):
     def __call__(self, obj: _c.CanTrunc[_OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesFloor(Protocol):
     def __call__(self, obj: _c.CanFloor[_OutT], /) -> _OutT: ...
 
 
-@set_module("optype")
 class DoesCeil(Protocol):
     def __call__(self, obj: _c.CanCeil[_OutT], /) -> _OutT: ...
