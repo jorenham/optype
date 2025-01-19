@@ -2,12 +2,10 @@ import sys
 import types
 from typing import Protocol
 
-
 if sys.version_info >= (3, 13):
     from typing import LiteralString, TypeVar, is_protocol
 else:
     from typing_extensions import LiteralString, TypeVar, is_protocol
-
 
 __all__ = "get_callables", "set_module"
 

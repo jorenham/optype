@@ -3,7 +3,6 @@ import types
 from collections.abc import Callable, Iterable, Mapping
 from typing import Any, ClassVar, Protocol, TypeAlias
 
-
 if sys.version_info >= (3, 13):
     from typing import (
         LiteralString,
@@ -25,9 +24,7 @@ else:
         runtime_checkable,
     )
 
-
 from ._utils import set_module
-
 
 __all__ = [
     "HasAnnotations",

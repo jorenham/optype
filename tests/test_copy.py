@@ -8,7 +8,6 @@ import pytest
 import optype as op
 from optype.inspect import get_protocol_members, is_runtime_protocol
 
-
 require_py313: Final = pytest.mark.skipif(
     sys.version_info < (3, 13),
     reason="requires python>=3.13",

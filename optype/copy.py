@@ -6,12 +6,10 @@ https://docs.python.org/3/library/copy.html
 import sys
 from typing import Protocol
 
-
 if sys.version_info >= (3, 13):
     from typing import Self, TypeVar, override, runtime_checkable
 else:
     from typing_extensions import Self, TypeVar, override, runtime_checkable
-
 
 __all__ = (
     "CanCopy",

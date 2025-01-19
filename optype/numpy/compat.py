@@ -1,6 +1,4 @@
-"""
-Compatibility with older numpy versions.
-"""
+"""Compatibility with older numpy versions."""
 
 from ._compat import NP125, Long as long, ULong as ulong  # noqa: N813
 from ._scalar import (
@@ -12,25 +10,6 @@ from ._scalar import (
     sinteger as signedinteger,
     uinteger as unsignedinteger,
 )
-
-
-__all__ = [
-    "AxisError",
-    "ComplexWarning",
-    "DTypePromotionError",
-    "ModuleDeprecationWarning",
-    "TooHardError",
-    "VisibleDeprecationWarning",
-    "complexfloating",
-    "floating",
-    "inexact",
-    "integer",
-    "long",
-    "number",
-    "signedinteger",
-    "ulong",
-    "unsignedinteger",
-]
 
 if NP125:
     from numpy.exceptions import (
@@ -51,3 +30,22 @@ else:
     )
 
     class DTypePromotionError(TypeError): ...
+
+
+__all__ = [
+    "AxisError",
+    "ComplexWarning",
+    "DTypePromotionError",
+    "ModuleDeprecationWarning",
+    "TooHardError",
+    "VisibleDeprecationWarning",
+    "complexfloating",
+    "floating",
+    "inexact",
+    "integer",
+    "long",
+    "number",
+    "signedinteger",
+    "ulong",
+    "unsignedinteger",
+]

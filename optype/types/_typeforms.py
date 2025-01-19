@@ -1,6 +1,5 @@
 from typing import Annotated, Generic, Literal, TypeVar
 
-
 __all__ = "AnnotatedAlias", "GenericType", "LiteralAlias", "UnionAlias"
 
 

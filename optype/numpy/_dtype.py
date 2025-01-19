@@ -2,17 +2,14 @@
 import sys
 from typing import Protocol, TypeAlias
 
-
 if sys.version_info >= (3, 13):
     from typing import TypeVar, runtime_checkable
 else:
     from typing_extensions import TypeVar, runtime_checkable
 
-
 import numpy as np
 
 from optype._core._utils import set_module
-
 
 __all__ = ["DType", "HasDType"]
 

@@ -7,7 +7,6 @@ See Also:
 
 from typing import Final, Literal as L, TypeAlias  # noqa: N817
 
-
 __all__ = (
     "DIGITS",
     "DIGITS_BIN",

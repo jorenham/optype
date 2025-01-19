@@ -294,12 +294,10 @@ force-exclude = true
         ]
 
         [tool.ruff.lint.isort]
-        case-sensitive = true
         combine-as-imports = true
-        known-first-party = ["optype"]
+        known-local-folder = ["optype"]
+        extra-standard-library = ["_typeshed", "typing_extensions"]
         known-third-party = ["beartype", "numpy", "pytest"]
-        lines-after-imports = 2
-        lines-between-types = 0
 
         [tool.ruff.lint.pylint]
         allow-dunder-method-names = [

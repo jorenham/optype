@@ -1,6 +1,5 @@
 import ctypes as ct
 
-
 __all__ = "CScalar", "CType"
 
 

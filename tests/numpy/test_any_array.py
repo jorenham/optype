@@ -15,7 +15,6 @@ from optype.numpy import (
     ctypeslib as _ct,
 )
 
-
 # All allowed arguments that when passed to `np.array`, will result in an
 # array of the specified scalar type(s).
 

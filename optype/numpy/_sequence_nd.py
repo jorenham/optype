@@ -1,6 +1,5 @@
 from typing import Any, Protocol, TypeVar
 
-
 __all__ = ["SequenceND"]
 
 

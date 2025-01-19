@@ -5,15 +5,12 @@ from typing import Literal
 import numpy as np
 import pytest
 
-
 if sys.version_info >= (3, 13):
     from typing import assert_type
 else:
     from typing_extensions import assert_type
 
-
 from optype.numpy import Scalar, _scalar as _sc  # pyright: ignore[reportPrivateUsage]
-
 
 NP2 = np.__version__.startswith("2.")
 

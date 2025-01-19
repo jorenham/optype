@@ -1,20 +1,16 @@
 import sys
 from typing import TYPE_CHECKING, Literal, NoReturn, Protocol, TypeAlias
-
 from typing_extensions import deprecated
-
 
 if TYPE_CHECKING:
     import enum
 
-
 if sys.version_info >= (3, 13):
-    from typing import LiteralString, Never, TypeVar, TypedDict, Unpack
+    from typing import LiteralString, Never, TypedDict, TypeVar, Unpack
 else:
-    from typing_extensions import LiteralString, Never, TypeVar, TypedDict, Unpack
+    from typing_extensions import LiteralString, Never, TypedDict, TypeVar, Unpack
 
 from ._core import _can as _c, _just
-
 
 __all__ = (
     "AnyComplex",

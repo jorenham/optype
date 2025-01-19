@@ -22,7 +22,6 @@ from ._shape import *
 from ._to import *
 from ._ufunc import *
 
-
 __all__ = ["compat", "ctypeslib"]
 __all__ += _any_array.__all__
 __all__ += _any_dtype.__all__

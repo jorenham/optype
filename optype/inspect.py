@@ -6,7 +6,6 @@ import types
 from collections.abc import Iterable
 from typing import Literal, TypeAlias, cast, get_args as _get_args, overload
 
-
 if sys.version_info >= (3, 13):
     from typing import TypeAliasType, TypeIs, _get_protocol_attrs, is_protocol
 else:
@@ -17,7 +16,6 @@ else:
         is_protocol,
     )
 
-
 from ._core import _can as _c
 from .types import (
     AnnotatedAlias,
@@ -26,7 +24,6 @@ from .types import (
     UnionAlias,
     WrappedFinalType,
 )
-
 
 __all__ = (
     "get_args",

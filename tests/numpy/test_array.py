@@ -6,7 +6,6 @@ import pytest
 
 import optype.numpy as onp
 
-
 _Shape0D: TypeAlias = tuple[()]
 _Shape1D: TypeAlias = tuple[int]
 _Shape2D: TypeAlias = tuple[int, int]

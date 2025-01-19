@@ -4,7 +4,6 @@
 import sys
 from typing import Any, Literal, Protocol, TypeAlias
 
-
 if sys.version_info >= (3, 13):
     from types import CapsuleType
     from typing import (
@@ -26,14 +25,11 @@ else:
         runtime_checkable,
     )
 
-
 import numpy as np
 import numpy.typing as npt
 
-from optype._core._utils import set_module
-
 from ._compat import NP20
-
+from optype._core._utils import set_module
 
 if NP20:
     from numpy._core.multiarray import flagsobj
