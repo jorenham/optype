@@ -1,22 +1,21 @@
+# mypy: disable-error-code="no-any-explicit, no-any-decorated"
+# pyright: reportAny=false, reportExplicitAny=false
 import sys
-from types import GenericAlias
 from typing import (
     Any,
+    ClassVar,
     Generic,
     Protocol,
     TypeAlias,
     _ProtocolMeta,  # noqa: PLC2701  # pyright: ignore[reportPrivateUsage]
-    cast,
+    final,
 )
-
-from optype.types._typeforms import GenericType
 
 
 if sys.version_info >= (3, 13):
     from typing import Self, TypeIs, TypeVar, override, runtime_checkable
 else:
     from typing_extensions import Self, TypeIs, TypeVar, override, runtime_checkable
-
 
 from ._can import CanFloat, CanIndex
 
@@ -40,53 +39,6 @@ _ToFloat: TypeAlias = CanFloat | CanIndex
 ###
 
 
-class _JustMeta(_ProtocolMeta, Generic[_ObjectT]):
-    def __just_type__(self, /) -> type[_ObjectT]:  # noqa: PLW3201
-        raise NotImplementedError
-
-    @override
-    def __instancecheck__(self, instance: object) -> TypeIs[_ObjectT]:
-        return self.__subclasscheck__(type(instance))
-
-    @override
-    def __subclasscheck__(self, subclass: type) -> TypeIs[type[_ObjectT]]:
-        try:
-            tp = self.__just_type__()
-        except NotImplementedError:
-            pass
-        else:
-            return subclass is tp
-
-        return super().__subclasscheck__(subclass)
-
-
-class _JustAlias(GenericType, Generic[_ObjectT], _root=True):
-    @override
-    def __instancecheck__(self, instance: object) -> TypeIs[_ObjectT]:
-        return self.__subclasscheck__(type(instance))
-
-    @override
-    def __subclasscheck__(self, subclass: type) -> TypeIs[type[_ObjectT]]:
-        assert len(self.__args__) == 1
-        arg: _JustMeta | _JustAlias | type = self.__args__[0]
-        if isinstance(arg, _JustMeta):
-            arg_: _JustMeta = arg
-            return arg_.__subclasscheck__(subclass)
-        if isinstance(arg, _JustAlias):
-            return arg.__subclasscheck__(subclass)
-        return subclass is arg
-
-    @override
-    def __repr__(self) -> str:
-        return super().__repr__().replace("typing.", "optype.")
-
-    @classmethod
-    def __class_getitem__(cls, arg: type, /) -> GenericAlias:
-        # not sure why, but subscripting crashes without this
-        return GenericAlias(cls, arg)
-
-
-@runtime_checkable
 class Just(Protocol[_T]):
     """
     An runtime-checkable invariant type "wrapper", where `Just[T]` only accepts
@@ -112,9 +64,9 @@ class Just(Protocol[_T]):
         overwrites it with the getter's return type).
 
     Note:
-        This, and the other `Just` protocols, are not `@runtime_checkable`, because
-        using `isinstance` would then be `True` for any type or object, which is
-        maximally useless.
+        This protocol is not marked with `@runtime_checkable`, because using
+        `isinstance(value, Just)` would be `True` for any type or object, and has no
+        semantic meaning.
     """
 
     @property  # type: ignore[explicit-override]  # mypy bug?
@@ -124,16 +76,45 @@ class Just(Protocol[_T]):
     @override
     def __class__(self, t: type[_T], /) -> None: ...
 
-    @classmethod
-    def __class_getitem__(cls, arg: type[_JustAlias], /) -> _JustAlias[_JustAlias]:
-        generic_alias: GenericType = cast("Any", super()).__class_getitem__(arg)  # type: ignore[no-any-explicit]  # pyright: ignore[reportAny, reportExplicitAny]
-        return _JustAlias(generic_alias.__origin__, generic_alias.__args__)
 
+class _JustMeta(_ProtocolMeta, Generic[_ObjectT]):
+    # There's nothing wrong with the following parametrized `ClassVar`, and the typing
+    # spec should have never disallowed it.
+    __just_class__: ClassVar[type[_ObjectT]]  # type: ignore[misc]  # pyright: ignore[reportGeneralTypeIssues]
 
-class _JustIntMeta(_JustMeta[int]):
     @override
-    def __just_type__(self, /) -> type[int]:
-        return int
+    def __instancecheck__(self, instance: object) -> TypeIs[_ObjectT]:
+        return self.__subclasscheck__(type(instance))
+
+    @override
+    def __subclasscheck__(self, subclass: Any) -> TypeIs[type[_ObjectT]]:
+        tp = self.__just_class__
+
+        if isinstance(subclass, int):
+            # basedmypy "bare" bool and int literals
+            subclass = type(subclass)
+
+        if not isinstance(subclass, type):
+            # unwrap subscripted generics, with special-casing for `Just[...]`
+            from types import GenericAlias  # noqa: I001, PLC0415
+            from optype.types._typeforms import GenericType  # noqa: PLC0415
+
+            while type(subclass) in {GenericType, GenericAlias}:
+                origin = subclass.__origin__
+                if origin is Just:
+                    (subclass,) = subclass.__args__
+                else:
+                    subclass = origin
+
+        if not isinstance(subclass, type):
+            raise TypeError("issubclass() arg 1 must be a class") from None
+
+        return subclass is tp
+
+
+@final
+class _JustIntMeta(_JustMeta[int]):
+    __just_class__ = int
 
 
 @runtime_checkable
@@ -186,10 +167,9 @@ class JustInt(Just[int], Protocol, metaclass=_JustIntMeta):
     def __new__(cls, x: str | bytes | bytearray, /, base: CanIndex) -> Self: ...
 
 
+@final
 class _JustFloatMeta(_JustMeta[float]):
-    @override
-    def __just_type__(self, /) -> type[float]:
-        return float
+    __just_class__ = float
 
 
 class JustFloat(Just[float], Protocol, metaclass=_JustFloatMeta):
@@ -204,10 +184,9 @@ class JustFloat(Just[float], Protocol, metaclass=_JustFloatMeta):
     def hex(self, /) -> str: ...
 
 
+@final
 class _JustComplexMeta(_JustMeta[complex]):
-    @override
-    def __just_type__(self, /) -> type[complex]:
-        return complex
+    __just_class__ = complex
 
 
 class JustComplex(Just[complex], Protocol, metaclass=_JustComplexMeta):

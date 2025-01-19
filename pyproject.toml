@@ -290,6 +290,7 @@ force-exclude = true
             "._do",
             "._does",
             "._has",
+            "._just",
         ]
 
         [tool.ruff.lint.isort]

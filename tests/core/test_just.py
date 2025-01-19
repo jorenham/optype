@@ -3,13 +3,11 @@ import pytest
 import optype as op
 
 
+# fmt: off
 class A: ...
-
-
-class B(A): ...
-
-
-class C(B): ...
+class B(A): ...  # noqa: E302
+class C(B): ...  # noqa: E302
+# fmt: on
 
 
 def test_just_custom() -> None:
@@ -51,30 +49,22 @@ def test_just_int() -> None:
         f(True)  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]
 
 
-def test_just_meta() -> None:
-    # unfortunately, both mypy and pyright don't support custom generic alias types
-
-    assert isinstance(object(), op.Just[object])  # type: ignore[misc]  # pyright: ignore[reportArgumentType]
-    assert not isinstance(object, op.Just[object])  # type: ignore[misc]  # pyright: ignore[reportArgumentType]
-    assert not isinstance(A(), op.Just[object])  # type: ignore[misc]  # pyright: ignore[reportArgumentType]
-
-    assert issubclass(object, op.Just[object])  # type: ignore[misc]  # pyright: ignore[reportArgumentType]
-    assert not issubclass(A, op.Just[object])  # type: ignore[misc]  # pyright: ignore[reportArgumentType]
-
-
 @pytest.mark.parametrize(
     ("just_cls", "cls"),
     [(op.JustInt, int), (op.JustFloat, float), (op.JustComplex, complex)],
 )
 def test_just_sub_meta(just_cls: type, cls: type) -> None:
     assert isinstance(cls(), just_cls)
+    assert not isinstance(bool(), just_cls)  # noqa: UP018
     assert not isinstance(cls, just_cls)
-    assert not isinstance(False, just_cls)
-    assert not isinstance(object(), just_cls)
 
     assert issubclass(cls, just_cls)
     assert not issubclass(bool, just_cls)
-    assert not issubclass(object, just_cls)
+    assert not issubclass(type, just_cls)
+
+    assert issubclass(op.Just[cls], just_cls)  # type: ignore[valid-type]
+    assert not issubclass(op.Just[bool], just_cls)
+    assert not issubclass(op.Just[type], just_cls)
 
 
 def test_just_float() -> None:
