@@ -328,7 +328,7 @@ def assert_int(x: op.Just[int]) -> int:
     return x
 
 
-assert_int(42)  # accepted
+assert_int(42)  # ok
 assert_int(False)  # rejected
 ```
 
@@ -342,14 +342,19 @@ _DEFAULT = object()
 
 def intmap(
     value: int,
-    mapping: dict[int, int] | op.Just[object] = _DEFAULT,
+    # same as `dict[int, int] | op.Just[object]`
+    mapping: dict[int, int] | op.JustObject = _DEFAULT,
     /,
 ) -> int:
-    return value if mapping is _DEFAULT else mapping[value]
+    # same as `type(mapping) is object`
+    if isinstance(mapping, op.JustObject):
+        return value
+
+    return mapping[value]
 
 
-intmap(1)  # accepted
-intmap(1, {1: 42})  # accepted
+intmap(1)  # ok
+intmap(1, {1: 42})  # ok
 intmap(1, "some object")  # rejected
 ```
 

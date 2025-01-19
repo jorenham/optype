@@ -18,7 +18,7 @@ else:
 
 from ._can import CanFloat, CanIndex
 
-__all__ = ["Just", "JustComplex", "JustFloat", "JustInt"]
+__all__ = ["Just", "JustComplex", "JustFloat", "JustInt", "JustObject"]
 
 
 def __dir__() -> list[str]:
@@ -197,3 +197,20 @@ class JustComplex(Just[complex], Protocol, metaclass=_JustComplexMeta):
 
     # workaround for `pyright<1.390` and `basedpyright<1.22.1`
     def __new__(cls, /, real: _ToFloat, imag: _ToFloat) -> Self: ...
+
+
+@final
+class _JustObjectMeta(_JustMeta[object]):
+    __just_class__ = object
+
+
+class JustObject(Just[object], Protocol, metaclass=_JustObjectMeta):
+    """
+    A runtime checkable `Just[object]`, that also works on `pyright<1.390`.
+
+    Useful for typing `object()` sentinels, e.g.
+
+    ```
+    def divide(a: float, b: float, default: JustObject = ...) -> float:
+    ```
+    """

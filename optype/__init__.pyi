@@ -311,7 +311,13 @@ from ._core._has import (
     HasTypeParams,
     HasWrapped,
 )
-from ._core._just import Just, JustComplex, JustFloat, JustInt
+from ._core._just import (
+    Just,
+    JustComplex,
+    JustFloat,
+    JustInt,
+    JustObject,
+)
 
 __all__ = [
     "CanAEnter",
@@ -540,6 +546,7 @@ __all__ = [
     "JustComplex",
     "JustFloat",
     "JustInt",
+    "JustObject",
     "__version__",
     "copy",
     "dataclasses",
