@@ -1,3 +1,5 @@
+# mypy: disable-error-code="no-any-explicit, no-any-decorated"
+
 import sys
 import types
 from collections.abc import Callable, Iterable, Mapping
@@ -53,12 +55,13 @@ def __dir__() -> list[str]:
 _Ts = TypeVarTuple("_Ts")
 _Tss = ParamSpec("_Tss")
 _TypeT = TypeVar("_TypeT", bound=type)
+_FT_co = TypeVar("_FT_co", bound=Callable[..., object], covariant=True)
 
 _T_co = TypeVar("_T_co", covariant=True)
 _ObjectT_co = TypeVar("_ObjectT_co", default=object, covariant=True)
 
 __AnyMapping: TypeAlias = "Mapping[str, object]"
-__AnyDict: TypeAlias = dict[str, Any]  # type: ignore[no-any-explicit]  # pyright: ignore[reportExplicitAny]
+__AnyDict: TypeAlias = dict[str, Any]  # pyright: ignore[reportExplicitAny]
 _DictT = TypeVar("_DictT", bound=__AnyMapping, default=__AnyDict)
 _DictT_co = TypeVar("_DictT_co", bound=__AnyMapping, default=__AnyDict, covariant=True)
 
@@ -180,9 +183,9 @@ class HasTypeParams(Protocol[Unpack[_Ts]]):
 
 
 @runtime_checkable
-class HasFunc(Protocol[_Tss, _T_co]):
+class HasFunc(Protocol[_FT_co]):
     @property
-    def __func__(self, /) -> Callable[_Tss, _T_co]: ...
+    def __func__(self, /) -> _FT_co: ...
 
 
 @runtime_checkable
