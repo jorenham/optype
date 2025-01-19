@@ -1,5 +1,6 @@
 import optype as op
-from optype._core import _do, _utils
+from optype import _utils
+from optype._core import _do
 
 
 def test_all_public() -> None:

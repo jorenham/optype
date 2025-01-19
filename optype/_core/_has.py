@@ -24,8 +24,6 @@ else:
         runtime_checkable,
     )
 
-from ._utils import set_module
-
 __all__ = [
     "HasAnnotations",
     "HasClass",
@@ -72,26 +70,22 @@ _StrT_co = TypeVar("_StrT_co", bound=str, default=str, covariant=True)
 ###
 
 
-@set_module("optype")
 @runtime_checkable
 class HasMatchArgs(Protocol):
     __match_args__: ClassVar[tuple[LiteralString, ...] | list[LiteralString]]
 
 
-@set_module("optype")
 @runtime_checkable
 class HasSlots(Protocol):
     __slots__: ClassVar[LiteralString | Iterable[LiteralString]]
 
 
-@set_module("optype")
 @runtime_checkable
 class HasDict(Protocol[_DictT]):  # type: ignore[misc]
     # the typeshed annotations for `builtins.object.__dict__` too narrow
     __dict__: _DictT  # type: ignore[assignment]  # pyright: ignore[reportIncompatibleVariableOverride]
 
 
-@set_module("optype")
 @runtime_checkable
 class HasClass(Protocol[_TypeT]):
     """
@@ -140,25 +134,21 @@ class HasClass(Protocol[_TypeT]):
     def __class__(self, __class__: _TypeT, /) -> None: ...
 
 
-@set_module("optype")
 @runtime_checkable
 class HasModule(Protocol[_StrT_co]):
     __module__: _StrT_co
 
 
-@set_module("optype")
 @runtime_checkable
 class HasName(Protocol[_NameT]):
     __name__: _NameT
 
 
-@set_module("optype")
 @runtime_checkable
 class HasQualname(Protocol[_NameT]):  # pyright: ignore[reportInvalidTypeVarUse]
     __qualname__: _NameT
 
 
-@set_module("optype")
 @runtime_checkable
 class HasNames(HasName[_NameT], HasQualname[_QualNameT], Protocol[_NameT, _QualNameT]):  # pyright: ignore[reportInvalidTypeVarUse]
     __name__: _NameT
@@ -168,21 +158,18 @@ class HasNames(HasName[_NameT], HasQualname[_QualNameT], Protocol[_NameT, _QualN
 # docs and type hints
 
 
-@set_module("optype")
 @runtime_checkable
 class HasDoc(Protocol[_StrT_co]):
     # note that docstrings are stripped if ran with e.g. `python -OO`
     __doc__: _StrT_co | None
 
 
-@set_module("optype")
 @runtime_checkable
 class HasAnnotations(Protocol[_DictT_co]):  # pyright: ignore[reportInvalidTypeVarUse]
     __annotations__: _DictT_co  # type: ignore[assignment]  # pyright: ignore[reportIncompatibleVariableOverride]
 
 
 # TODO(jorenham): https://github.com/jorenham/optype/issues/244
-@set_module("optype")
 @runtime_checkable
 class HasTypeParams(Protocol[Unpack[_Ts]]):
     # Note that `*Ps: (TypeVar, ParamSpec, TypeVarTuple)` should hold
@@ -192,28 +179,24 @@ class HasTypeParams(Protocol[Unpack[_Ts]]):
 # functions and methods
 
 
-@set_module("optype")
 @runtime_checkable
 class HasFunc(Protocol[_Tss, _T_co]):
     @property
     def __func__(self, /) -> Callable[_Tss, _T_co]: ...
 
 
-@set_module("optype")
 @runtime_checkable
 class HasWrapped(Protocol[_Tss, _T_co]):
     @property
     def __wrapped__(self, /) -> Callable[_Tss, _T_co]: ...
 
 
-@set_module("optype")
 @runtime_checkable
 class HasSelf(Protocol[_ObjectT_co]):
     @property
     def __self__(self, /) -> _ObjectT_co: ...
 
 
-@set_module("optype")
 @runtime_checkable
 class HasCode(Protocol):
     __code__: types.CodeType

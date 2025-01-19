@@ -11,7 +11,7 @@ else:
 import numpy as np
 
 import optype.numpy._compat as _x
-from optype._core._utils import set_module
+from optype._utils import set_module
 
 __all__ = [  # noqa: RUF022
     "Array", "Array0D", "Array1D", "Array1D", "Array2D", "Array3D", "ArrayND",

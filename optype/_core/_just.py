@@ -8,13 +8,19 @@ from typing import (
     Protocol,
     TypeAlias,
     _ProtocolMeta,  # noqa: PLC2701  # pyright: ignore[reportPrivateUsage]
-    final,
 )
 
 if sys.version_info >= (3, 13):
-    from typing import Self, TypeIs, TypeVar, override, runtime_checkable
+    from typing import Self, TypeIs, TypeVar, final, override, runtime_checkable
 else:
-    from typing_extensions import Self, TypeIs, TypeVar, override, runtime_checkable
+    from typing_extensions import (
+        Self,
+        TypeIs,
+        TypeVar,
+        final,
+        override,
+        runtime_checkable,
+    )
 
 from ._can import CanFloat, CanIndex
 

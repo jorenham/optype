@@ -14,9 +14,8 @@ import numpy as np
 
 import optype.numpy._compat as _x
 import optype.numpy._scalar as _sc
-from optype._core._can import CanBuffer
-from optype._core._just import Just, JustComplex, JustFloat, JustInt
-from optype._core._utils import set_module
+from optype._core import CanBuffer, Just, JustComplex, JustFloat, JustInt
+from optype._utils import set_module
 
 # ruff: noqa: RUF022
 __all__ = [

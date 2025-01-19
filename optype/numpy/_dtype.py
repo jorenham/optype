@@ -9,7 +9,7 @@ else:
 
 import numpy as np
 
-from optype._core._utils import set_module
+from optype._utils import set_module
 
 __all__ = ["DType", "HasDType"]
 
