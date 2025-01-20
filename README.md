@@ -2519,6 +2519,67 @@ type Matrix[
 For masked arrays with specific `ndim`, you could also use one of the four
 `MArray{0,1,2,3}D` aliases.
 
+##### Array typeguards
+
+To check whether a given object is an instance of `Array{0,1,2,3,N}D`, while also
+narrow static type accordingly, the following [PEP 742][PEP742] (`typing.TypeIs`)
+typeguards can be used:
+
+<table>
+    <tr>
+        <th>typeguard</th>
+        <th>narrows to</th>
+        <th>shape type</th>
+    </tr>
+    <tr>
+        <th colspan="2"><code>optype.numpy._</code></th>
+        <th><code>builtins._</code></th>
+    </tr>
+    <tr>
+        <td><code>is_array_nd</code></td>
+        <td><code>ArrayND[ST]</code></td>
+        <td><code>tuple[int, ...]</code></td>
+    </tr>
+    <tr>
+        <td><code>is_array_0d</code></td>
+        <td><code>Array0D[ST]</code></td>
+        <td><code>tuple[()]</code></td>
+    </tr>
+    <tr>
+        <td><code>is_array_1d</code></td>
+        <td><code>Array1D[ST]</code></td>
+        <td><code>tuple[int]</code></td>
+    </tr>
+    <tr>
+        <td><code>is_array_2d</code></td>
+        <td><code>Array2D[ST]</code></td>
+        <td><code>tuple[int, int]</code></td>
+    </tr>
+    <tr>
+        <td><code>is_array_3d</code></td>
+        <td><code>Array3D[ST]</code></td>
+        <td><code>tuple[int, int, int]</code></td>
+    </tr>
+</table>
+
+These functions additionally accept an optional `dtype` argument, that accepts either
+a `np.dtype[ST]` instance, a `type[ST]`, or something that has a `dtype: np.dtype[ST]`
+attribute, for type parameter `ST: np.generic`.
+
+Their signatures are almost identical, and look something like
+
+```py
+def is_array_�d[
+    ST: np.generic = np.generic
+](
+    a: object,
+    /,
+    dtype: type[ST] | np.dtype[ST] | HasDType[np.dtype[ST]],
+) -> TypeIs[
+    Array�D[ST]
+]: ...
+```
+
 ##### Shape aliases
 
 A *shape* is nothing more than a tuple of (non-negative) integers, i.e.
@@ -3787,3 +3848,4 @@ dtype: DT
 
 [PEP695]: https://peps.python.org/pep-0695/
 [PEP696]: https://peps.python.org/pep-0696/
+[PEP742]: https://peps.python.org/pep-0742/
