@@ -2519,6 +2519,63 @@ type Matrix[
 For masked arrays with specific `ndim`, you could also use one of the four
 `MArray{0,1,2,3}D` aliases.
 
+##### Array typeguards
+
+To check whether a given object is an instance of `Array{0,1,2,3,N}D`, in a way that
+static type-checkers also understand it, the following [PEP 742][PEP742] typeguards can
+be used:
+
+<table>
+    <tr>
+        <th>typeguard</th>
+        <th>narrows to</th>
+        <th>shape type</th>
+    </tr>
+    <tr>
+        <th colspan="2"><code>optype.numpy._</code></th>
+        <th><code>builtins._</code></th>
+    </tr>
+    <tr>
+        <td><code>is_array_nd</code></td>
+        <td><code>ArrayND[ST]</code></td>
+        <td><code>tuple[int, ...]</code></td>
+    </tr>
+    <tr>
+        <td><code>is_array_0d</code></td>
+        <td><code>Array0D[ST]</code></td>
+        <td><code>tuple[()]</code></td>
+    </tr>
+    <tr>
+        <td><code>is_array_1d</code></td>
+        <td><code>Array1D[ST]</code></td>
+        <td><code>tuple[int]</code></td>
+    </tr>
+    <tr>
+        <td><code>is_array_2d</code></td>
+        <td><code>Array2D[ST]</code></td>
+        <td><code>tuple[int, int]</code></td>
+    </tr>
+    <tr>
+        <td><code>is_array_3d</code></td>
+        <td><code>Array3D[ST]</code></td>
+        <td><code>tuple[int, int, int]</code></td>
+    </tr>
+</table>
+
+These functions additionally accept an optional `dtype` argument, that can either be
+a `np.dtype[ST]` instance, a `type[ST]`, or something that has a `dtype: np.dtype[ST]`
+attribute.
+The signatures are almost identical to each other, and in the `0d` case it roughly
+looks like this:
+
+```py
+ST = TypeVar("ST", bound=np.generic, default=np.generic)
+_ToDType: TypeAlias = type[ST] | np.dtype[ST] | HasDType[np.dtype[ST]]
+
+
+def is_array_0d(a, /, dtype: _ToDType[ST] | None = None) -> TypeIs[Array0D[ST]]: ...
+```
+
 ##### Shape aliases
 
 A *shape* is nothing more than a tuple of (non-negative) integers, i.e.
@@ -3787,3 +3844,4 @@ dtype: DT
 
 [PEP695]: https://peps.python.org/pep-0695/
 [PEP696]: https://peps.python.org/pep-0696/
+[PEP742]: https://peps.python.org/pep-0742/
