@@ -86,17 +86,30 @@ exclude = [
 python_version = "3.10"
 packages = ["optype", "examples", "tests"]
 strict = true
+show_traceback = true
+
 disable_bytearray_promotion = true
 disable_memoryview_promotion = true
 
 allow_redefinition = true
 disallow_any_expr = false
+disallow_any_decorated = false
+disallow_any_explicit = false # https://github.com/KotlinIsland/basedmypy/issues/861
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
-enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+enable_error_code = [
+    "ignore-without-code",
+    "redundant-expr",
+    "truthy-bool",
+]
 warn_redundant_casts = true
 warn_unreachable = true
 warn_unused_ignores = true
+warn_incomplete_stub = true
+
+# incompatible basedmypy features
+default_return = false
+bare_literals = false
 
     [[tool.mypy.overrides]]
     module = ["tests.*", "tests.numpy.*"]
@@ -114,7 +127,10 @@ venv = ".venv"
 typeCheckingMode = "all"
 useLibraryCodeForTypes = false
 enableReachabilityAnalysis = false
+reportAny = false
+reportExplicitAny = false                 # sometimes there's no way around it
 reportImplicitStringConcatenation = false # not a linter
+reportPrivateUsage = false                # dupe of PLC2701
 reportShadowedImports = false             # buggy
 reportUnreachable = false                 # nothing wrong with `if sys.version_info() >= ...`
 reportUnusedCallResult = false            # https://github.com/microsoft/pyright/issues/8650
@@ -122,10 +138,14 @@ reportUnusedImport = false                # dupe of F401
 reportUnusedVariable = false              # dupe of F841
 
     [tool.basedpyright.defineConstant]
+    NP123 = true
+    NP124 = true
     NP125 = true
+    NP126 = true
     NP20 = true
     NP21 = true
     NP22 = true
+    NP23 = false
     NP30 = false
 
 [tool.pytest.ini_options]
