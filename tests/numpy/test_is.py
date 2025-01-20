@@ -10,7 +10,11 @@ import pytest
 
 import optype.numpy as onp
 
-CHARS = "?BbHhIiLlQqNnPpefdgFDGSUVOMm"
+if np.__version__ >= "2":
+    CHARS = "?BbHhIiLlQqNnPpefdgFDGSUVOMm"
+else:
+    CHARS = "?BbHhIiLlQqPpefdgFDGSUVOMm"  # pyright: ignore[reportConstantRedefinition]
+
 DTYPES = {np.dtype(char) for char in CHARS}
 SCTYPES = {dtype.type for dtype in DTYPES if issubclass(dtype.type, np.generic)}
 NDARRAY_TYPES = np.ndarray, np.ma.MaskedArray
