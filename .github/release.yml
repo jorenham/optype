@@ -2,43 +2,50 @@ changelog:
   categories:
     - title: "`optype`"
       labels:
-        - "component: optype"
+        - "optype.Can*"
+        - "optype.Has*"
+        - "optype.Does*"
+        - "optype.Just*"
+        - "optype.do_*"
     - title: "`optype.numpy`"
       labels:
-        - "component: optype.numpy"
+        - "optype.numpy"
     - title: "`optype.copy`"
       labels:
-        - "component: optype.copy"
+        - "optype.copy"
     - title: "`optype.dataclasses`"
       labels:
-        - "component: optype.dataclasses"
+        - "optype.dataclasses"
     - title: "`optype.dlpack`"
       labels:
-        - "component: optype.dlpack"
+        - "optype.dlpack"
     - title: "`optype.inspect`"
       labels:
-        - "component: optype.inspect"
+        - "optype.inspect"
     - title: "`optype.pickle`"
       labels:
-        - "component: optype.pickle"
+        - "optype.pickle"
     - title: "`optype.string`"
       labels:
-        - "component: optype.string"
+        - "optype.string"
     - title: "`optype.types`"
       labels:
-        - "component: optype.types"
+        - "optype.types"
     - title: "`optype.typing`"
       labels:
-        - "component: optype.typing"
+        - "optype.typing"
     - title: Documentation
       labels:
-        - "04 - Documentation"
+        - "topic: documentation"
     - title: Dependencies
       labels:
-        - "component: Dependencies"
+        - "topic: dependencies"
+    - title: Testing
+      labels:
+        - "topic: testing"
     - title: Continuous integration
       labels:
-        - "component: Github actions"
+        - "topic: github actions"
     - title: Other Changes
       labels:
         - "*"
