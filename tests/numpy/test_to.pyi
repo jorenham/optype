@@ -1,11 +1,10 @@
 # ruff: noqa: PYI048
-# pyright: reportExplicitAny=false
 
 from collections.abc import Sequence as Seq
 from typing import Any, TypeAlias
 
 import numpy as np
-from numpy._typing import _64Bit, _96Bit, _128Bit  # pyright: ignore[reportPrivateUsage]
+from numpy._typing import _64Bit, _96Bit, _128Bit
 
 import optype.numpy as onp
 

@@ -1,4 +1,3 @@
-# pyright: reportPrivateUsage=false
 import ctypes as ct
 from ctypes import _CData as CType  # noqa: PLC2701
 from typing import TypeAlias

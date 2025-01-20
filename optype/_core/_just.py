@@ -1,5 +1,3 @@
-# mypy: disable-error-code="no-any-explicit, no-any-decorated"
-# pyright: reportAny=false, reportExplicitAny=false
 import sys
 from typing import (
     Any,
@@ -7,7 +5,7 @@ from typing import (
     Generic,
     Protocol,
     TypeAlias,
-    _ProtocolMeta,  # noqa: PLC2701  # pyright: ignore[reportPrivateUsage]
+    _ProtocolMeta,  # noqa: PLC2701
 )
 
 if sys.version_info >= (3, 13):

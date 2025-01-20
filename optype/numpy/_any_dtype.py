@@ -1,10 +1,9 @@
-# mypy: disable-error-code="no-any-explicit, no-any-decorated"
-# pyright: reportInvalidTypeArguments=false
-
 """
 The allowed `np.dtype` arguments for specific scalar types.
 The names are analogous to those in `numpy.dtypes`.
 """
+
+# pyright: reportInvalidTypeArguments=false
 
 import sys
 from typing import Literal as L, Protocol, TypeAlias as Alias  # noqa: N817

@@ -22,7 +22,7 @@ def __dir__() -> tuple[str]:
 
 ###
 
-__Field: TypeAlias = dataclasses.Field[Any]  # type: ignore[no-any-explicit] # pyright: ignore[reportExplicitAny]
+__Field: TypeAlias = dataclasses.Field[Any]
 _FieldsT = TypeVar("_FieldsT", bound=Mapping[str, __Field], default=dict[str, __Field])
 
 

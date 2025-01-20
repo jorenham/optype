@@ -1,13 +1,7 @@
 import sys
 import types as _types
 from collections.abc import Iterator
-from typing import (
-    Any,
-    Generic,
-    TypeAlias,
-    _SpecialForm,  # pyright: ignore[reportPrivateUsage]
-    type_check_only,
-)
+from typing import Any, Generic, TypeAlias, _SpecialForm, type_check_only
 from typing_extensions import (
     ParamSpec,
     Self,
@@ -34,7 +28,7 @@ class GenericType:
     @property
     def __origin__(self, /) -> _TypeExpr | _SpecialForm: ...
     @property
-    def __args__(self, /) -> tuple[Any, ...]: ...  # type: ignore[no-any-explicit]  # pyright: ignore[reportExplicitAny]
+    def __args__(self, /) -> tuple[Any, ...]: ...
     @property
     def __parameters__(self, /) -> tuple[_TypeParam, ...]: ...
     @override

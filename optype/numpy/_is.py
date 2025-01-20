@@ -1,6 +1,3 @@
-# mypy: disable-error-code="no-any-explicit, no-any-decorated"
-# pyright: reportPrivateUsage=false, reportExplicitAny=false
-
 import sys
 from typing import Any, TypeAlias
 

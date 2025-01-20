@@ -1,5 +1,3 @@
-# pyright: reportAny=false
-
 import ctypes as ct
 import datetime as dt
 from collections import deque
@@ -9,11 +7,7 @@ import numpy as np
 import pytest
 
 import optype.numpy as onp  # noqa: TC001
-from optype.numpy import (
-    _compat as _x,
-    _scalar as _sc,  # pyright: ignore[reportPrivateUsage]
-    ctypeslib as _ct,
-)
+from optype.numpy import _compat as _x, _scalar as _sc, ctypeslib as _ct
 
 # All allowed arguments that when passed to `np.array`, will result in an
 # array of the specified scalar type(s).
@@ -56,10 +50,6 @@ VOID: Final = (np.void,)  # TODO: structured
 FLEXIBLE: Final = *VOID, *CHARACTER
 BOOL: Final = _x.Bool, ct.c_bool, bool
 OBJECT: Final = np.object_, ct.py_object
-
-
-# workaround for `numpy==2.1.*` where shape can be `Any`
-# mypy: disable-error-code="no-any-return"
 
 
 def _shape(a: object, /) -> tuple[int, ...]:

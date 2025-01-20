@@ -1,6 +1,3 @@
-# mypy: disable-error-code="no-any-explicit"
-# pyright: reportExplicitAny=false
-
 import sys
 from collections.abc import Iterator
 from typing import Any, Protocol, TypeAlias
@@ -93,7 +90,7 @@ class _AnyArrayPY0(Protocol[_T_co]):
     def __len__(self, /) -> int: ...
     def __getitem__(self, i: int, /) -> "_T_co | _AnyArrayPY0[_T_co]": ...
     def __reversed__(self, /) -> Iterator["_T_co | _AnyArrayPY0[_T_co]"]: ...
-    def index(self, x: Any, /) -> int: ...  # pyright: ignore[reportAny]
+    def index(self, x: Any, /) -> int: ...
 
 
 _AnyArrayPY: TypeAlias = tuple[_T, ...] | _AnyArrayPY0[_T]

@@ -1,4 +1,3 @@
-# pyright: reportAny=false
 import sys
 from typing import Any, Final
 
@@ -10,11 +9,11 @@ else:
 import numpy as np
 import pytest
 
-from optype.numpy import _any_dtype  # pyright: ignore[reportPrivateUsage]
+from optype.numpy import _any_dtype
 
 
 # basedmypy 2.9.1 workaround
-def _getattr(obj: object, attr: str, /) -> Any:  # pyright: ignore[reportExplicitAny]
+def _getattr(obj: object, attr: str, /) -> Any:
     return getattr(obj, attr)
 
 

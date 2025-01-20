@@ -44,7 +44,7 @@ def get_callables(
     return frozenset({
         name
         for name in dir(module)
-        if callable(cls := getattr(module, name))  # pyright: ignore[reportAny]
+        if callable(cls := getattr(module, name))
         and (private or not name.startswith("_"))
         and (protocols or not (isinstance(cls, type) and is_protocol(cls)))
         and cls.__module__ not in exclude

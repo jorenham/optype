@@ -1,6 +1,4 @@
 # ruff: noqa: PLW1641
-# mypy: disable-error-code="no-any-explicit, no-any-decorated"
-
 import sys
 from typing import Any, Literal, Protocol, TypeAlias
 
@@ -90,7 +88,7 @@ class Scalar(Protocol[_PT_co, _NB_co]):
     @property
     def __array_priority__(self, /) -> float: ...  # -1000000.0
     @property
-    def __array_interface__(self, /) -> dict[str, Any]: ...  # pyright: ignore[reportExplicitAny]
+    def __array_interface__(self, /) -> dict[str, Any]: ...
     @property
     def __array_struct__(self, /) -> CapsuleType: ...
 
@@ -123,8 +121,8 @@ class Scalar(Protocol[_PT_co, _NB_co]):
 
 
 # `NBitBase` invariant and doesn't actually do anything, so the default should be `Any`
-_N = TypeVar("_N", bound=npt.NBitBase, default=Any)  # pyright: ignore[reportExplicitAny]
-_N1 = TypeVar("_N1", bound=npt.NBitBase, default=Any)  # pyright: ignore[reportExplicitAny]
+_N = TypeVar("_N", bound=npt.NBitBase, default=Any)
+_N1 = TypeVar("_N1", bound=npt.NBitBase, default=Any)
 _N2 = TypeVar("_N2", bound=npt.NBitBase, default=_N1)
 
 generic = np.generic

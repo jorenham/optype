@@ -1,4 +1,4 @@
-# mypy: disable-error-code="no-any-explicit, override"
+# mypy: disable-error-code="override"
 import sys
 import types
 from collections.abc import Generator

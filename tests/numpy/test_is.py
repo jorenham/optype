@@ -1,4 +1,3 @@
-# pyright: reportAny=false
 # pyright: reportUnknownArgumentType=false
 # pyright: reportUnknownLambdaType=false
 # pyright: reportUnknownMemberType=false
@@ -53,7 +52,7 @@ def test_is_array(
     ndtype: type[onp.Array],
     dtype: onp.DType,
     dtype_map: Callable[[onp.DType], onp.DType | type[np.generic]],
-):
+) -> None:
     arr = [np.empty(tuple(range(ndim)), dtype).view(ndtype) for ndim in range(5)]
 
     assert onp.is_array_nd(arr[0])
