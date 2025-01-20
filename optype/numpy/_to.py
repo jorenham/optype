@@ -75,7 +75,6 @@ _PyScalar: TypeAlias = complex | bytes | str  # `complex` equivs `complex | floa
 T = TypeVar("T", default=_PyScalar)
 
 # https://github.com/KotlinIsland/basedmypy/issues/861
-# mypy: disable-error-code="no-any-explicit"
 SCT = TypeVar("SCT", bound=np.generic, default=np.generic)
 
 _To0D = TypeAliasType("_To0D", T | SCT | CanArray0D[SCT], type_params=(T, SCT))

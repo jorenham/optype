@@ -1,5 +1,3 @@
-# mypy: disable-error-code="no-any-explicit, no-any-decorated"
-
 import sys
 import types
 from collections.abc import Callable, Iterable, Mapping
@@ -59,7 +57,7 @@ _FuncT_co = TypeVar("_FuncT_co", bound=Callable[..., object], covariant=True)
 _TypeParamsT = TypeVar("_TypeParamsT", bound=_TypeParams, default=_TypeParams)
 
 __AnyMapping: TypeAlias = "Mapping[str, object]"
-__AnyDict: TypeAlias = dict[str, Any]  # pyright: ignore[reportExplicitAny]
+__AnyDict: TypeAlias = dict[str, Any]
 _DictT = TypeVar("_DictT", bound=__AnyMapping, default=__AnyDict)
 _DictT_co = TypeVar("_DictT_co", bound=__AnyMapping, default=__AnyDict, covariant=True)
 

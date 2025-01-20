@@ -1,6 +1,3 @@
-# mypy: disable-error-code="no-any-explicit,no-any-decorated"
-# pyright: reportAny=false, reportExplicitAny=false
-
 import sys
 import types
 from collections.abc import Callable, Iterable, Mapping, Sequence

@@ -1,7 +1,6 @@
-# mypy: disable-error-code="no-any-explicit"
 import sys
 from collections.abc import Mapping
-from typing import Any, Protocol
+from typing import Any, Protocol, TypeAlias
 
 if sys.version_info >= (3, 13):
     from typing import Self, TypeAliasType, TypeVar, runtime_checkable
@@ -29,16 +28,14 @@ def __dir__() -> list[str]:
 
 ###
 
-_NDT = TypeVar("_NDT", bound=tuple[int, ...], default=tuple[int, ...])
-_NDT_any = TypeVar(  # for numpy < 2.1
-    "_NDT_any",
-    bound=tuple[int, ...],
-    default=Any,  # pyright: ignore[reportExplicitAny]
-)
+_ND: TypeAlias = tuple[int, ...]
+
+_NDT = TypeVar("_NDT", bound=_ND, default=_ND)
+_NDT_any = TypeVar("_NDT_any", bound=_ND, default=Any)  # for numpy < 2.1
 _NDT_co = TypeVar(
     "_NDT_co",
-    bound=tuple[int, ...],
-    default=tuple[int, ...],
+    bound=_ND,
+    default=_ND,
     covariant=True,
 )
 _DTT = TypeVar("_DTT", bound=np.dtype[np.generic], default=np.dtype[np.generic])

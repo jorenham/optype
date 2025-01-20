@@ -1,6 +1,3 @@
-# mypy: disable-error-code="no-any-explicit"
-# pyright: reportExplicitAny=false
-
 import math
 import sys
 from collections.abc import Callable as Fn

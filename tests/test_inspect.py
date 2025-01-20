@@ -239,13 +239,13 @@ def test_classmethod_is_final() -> None:
         assert op.inspect.is_final(getattr_static(FinalMembers, "cf_final2"))
 
     assert op.inspect.is_final(
-        tp.cast(  # type: ignore[no-any-explicit]
+        tp.cast(
             "classmethod[FinalMembers, ..., object]",
             getattr_static(FinalMembers, "cf_final1_x"),
         ),
     )
     assert op.inspect.is_final(
-        tp.cast(  # type: ignore[no-any-explicit]
+        tp.cast(
             "classmethod[FinalMembers, ..., object]",
             getattr_static(FinalMembers, "cf_final2_x"),
         ),
@@ -259,13 +259,13 @@ def test_staticmethod_is_final() -> None:
         assert op.inspect.is_final(getattr_static(FinalMembers, "sf_final2"))
 
     assert op.inspect.is_final(
-        tp.cast(  # type: ignore[no-any-explicit]
+        tp.cast(
             "staticmethod[..., object]",
             getattr_static(FinalMembers, "sf_final1_x"),
         ),
     )
     assert op.inspect.is_final(
-        tp.cast(  # type: ignore[no-any-explicit]
+        tp.cast(
             "staticmethod[..., object]",
             getattr_static(FinalMembers, "sf_final2_x"),
         ),

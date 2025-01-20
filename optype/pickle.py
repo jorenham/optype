@@ -5,14 +5,13 @@ https://docs.python.org/3/library/pickle.html
 
 import sys
 from collections.abc import Callable, Iterable
-from typing import Literal, Protocol, TypeAlias
+from typing import Protocol, SupportsIndex, TypeAlias
 
 if sys.version_info >= (3, 13):
     from typing import ParamSpec, Self, TypeVar, override, runtime_checkable
 else:
     from typing_extensions import ParamSpec, Self, TypeVar, override, runtime_checkable
 
-from ._core._can import CanIndex
 
 __all__ = (
     "CanGetnewargs",
@@ -42,8 +41,7 @@ _Iter1: TypeAlias = Iterable[object]
 _Iter2: TypeAlias = Iterable[tuple[object, object]]
 _Callable: TypeAlias = Callable[_Tss, object]
 
-_ProtocolVersion: TypeAlias = Literal[0, 1, 2, 3, 4, 5]
-_ReduceValue: TypeAlias = (  # type: ignore[no-any-explicit]
+_ReduceValue: TypeAlias = (
     str
     | tuple[_Callable, _Tuple]
     | tuple[_Callable, _Tuple, object]
@@ -77,7 +75,7 @@ class CanReduceEx(Protocol[_RT_co]):
     """https://docs.python.org/3/library/pickle.html#object.__reduce_ex__"""
 
     @override
-    def __reduce_ex__(self, v: CanIndex[_ProtocolVersion], /) -> _RT_co: ...  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
+    def __reduce_ex__(self, v: SupportsIndex, /) -> _RT_co: ...
 
 
 @runtime_checkable

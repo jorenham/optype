@@ -10,7 +10,7 @@ if sys.version_info >= (3, 13):
 else:
     from typing_extensions import assert_type
 
-from optype.numpy import Scalar, _scalar as _sc  # pyright: ignore[reportPrivateUsage]
+from optype.numpy import Scalar, _scalar as _sc
 
 NP2 = np.__version__.startswith("2.")
 

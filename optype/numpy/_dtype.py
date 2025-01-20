@@ -1,4 +1,3 @@
-# mypy: disable-error-code="no-any-explicit, no-any-decorated"
 import sys
 from typing import Protocol, TypeAlias
 

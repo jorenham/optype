@@ -102,6 +102,7 @@ enable_error_code = [
     "redundant-expr",
     "truthy-bool",
 ]
+warn_return_any = false
 warn_redundant_casts = true
 warn_unreachable = true
 warn_unused_ignores = true
@@ -113,8 +114,7 @@ bare_literals = false
 
     [[tool.mypy.overrides]]
     module = ["tests.*", "tests.numpy.*"]
-    disallow_any_decorated = false                          # blame pytest
-    disable_error_code = ["no-any-explicit", "unreachable"]
+    disable_error_code = ["unreachable"]
 
 [tool.basedpyright]
 pythonVersion = "3.10"

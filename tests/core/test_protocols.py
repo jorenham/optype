@@ -1,4 +1,3 @@
-# mypy: disable-error-code="no-any-explicit"
 import sys
 from typing import cast
 
@@ -137,8 +136,7 @@ def test_name_matches_dunder(cls: type) -> None:
         overridden = {
             member
             for member in members
-            if callable(f := getattr(cls, member))  # pyright: ignore[reportAny])
-            and getattr(f, "__override__", False)
+            if callable(f := getattr(cls, member)) and getattr(f, "__override__", False)
         }
         own_members = members - overridden
     else:

@@ -78,7 +78,7 @@ class DLDataTypeCode(enum.IntEnum):
 # requires numpy>=2.1
 @runtime_checkable
 class CanDLPack(Protocol[_TypeT_co, _DeviceT_co]):  # type: ignore[misc] # pyright: ignore[reportInvalidTypeVarUse]
-    def __dlpack__(  # type: ignore[no-any-explicit]
+    def __dlpack__(
         self,
         /,
         *,
@@ -87,7 +87,7 @@ class CanDLPack(Protocol[_TypeT_co, _DeviceT_co]):  # type: ignore[misc] # pyrig
         dl_device: tuple[_TypeT_co, _DeviceT_co] | None = None,
         # NOTE: This should be `bool | None`, but because of an incorrect annotation in
         # `numpy.ndarray.__dlpack__` on `numpy < 2.2.0`, this is not possible.
-        copy: bool | Any | None = None,  # pyright: ignore[reportExplicitAny]
+        copy: bool | Any | None = None,
     ) -> CapsuleType: ...
 
 
