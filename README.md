@@ -2521,9 +2521,9 @@ For masked arrays with specific `ndim`, you could also use one of the four
 
 ##### Array typeguards
 
-To check whether a given object is an instance of `Array{0,1,2,3,N}D`, while also
-narrow static type accordingly, the following [PEP 742][PEP742] (`typing.TypeIs`)
-typeguards can be used:
+To check whether a given object is an instance of `Array{0,1,2,3,N}D`, in a way that
+static type-checkers also understand it, the following [PEP 742][PEP742] typeguards can
+be used:
 
 <table>
     <tr>
@@ -2562,22 +2562,18 @@ typeguards can be used:
     </tr>
 </table>
 
-These functions additionally accept an optional `dtype` argument, that accepts either
+These functions additionally accept an optional `dtype` argument, that can either be
 a `np.dtype[ST]` instance, a `type[ST]`, or something that has a `dtype: np.dtype[ST]`
-attribute, for type parameter `ST: np.generic`.
-
-Their signatures are almost identical, and look something like
+attribute.
+The signatures are almost identical to each other, and in the `0d` case it roughly
+looks like this:
 
 ```py
-def is_array_�d[
-    ST: np.generic = np.generic
-](
-    a: object,
-    /,
-    dtype: type[ST] | np.dtype[ST] | HasDType[np.dtype[ST]],
-) -> TypeIs[
-    Array�D[ST]
-]: ...
+ST = TypeVar("ST", bound=np.generic, default=np.generic)
+_ToDType: TypeAlias = type[ST] | np.dtype[ST] | HasDType[np.dtype[ST]]
+
+
+def is_array_0d(a, /, dtype: _ToDType[ST] | None = None) -> TypeIs[Array0D[ST]]: ...
 ```
 
 ##### Shape aliases
