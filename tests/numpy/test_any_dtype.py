@@ -1,7 +1,8 @@
 import sys
+import types
 from typing import Any, Final
 
-if sys.version_info >= (3, 13):
+if sys.version_info >= (3, 11):
     from typing import Never
 else:
     from typing_extensions import Never
@@ -9,29 +10,7 @@ else:
 import numpy as np
 import pytest
 
-from optype.numpy import _any_dtype
-
-
-# basedmypy 2.9.1 workaround
-def _getattr(obj: object, attr: str, /) -> Any:
-    return getattr(obj, attr)
-
-
-def _get_dtype_codes(
-    dtype: np.dtype[np.generic],
-) -> tuple[frozenset[str], frozenset[str]]:
-    try:
-        strcode = dtype.str[1:]
-        literal_name = _getattr(_any_dtype, f"_Name_{strcode}")
-        literal_char = _getattr(_any_dtype, f"_Char_{strcode}")
-    except AttributeError:
-        literal_name = _getattr(_any_dtype, f"_Name_{dtype.char}")
-        literal_char = _getattr(_any_dtype, f"_Char_{dtype.char}")
-
-    names = frozenset(() if literal_name is Never else literal_name.__args__)
-    chars = frozenset(() if literal_char is Never else literal_char.__args__)
-    return names, chars
-
+from optype.numpy import _dtype_attr
 
 _DTYPES: Final = (
     np.dtype(np.bool_),
@@ -69,12 +48,27 @@ _DTYPES: Final = (
 )
 _TIME_UNITS: Final = "as", "fs", "ps", "ns", "us", "s", "m", "h", "D", "W", "M", "Y"
 
-_NAME_MAP: Final = {
-    "float96": "longdouble",
-    "float128": "longdouble",
-    "complex192": "clongdouble",
-    "complex256": "clongdouble",
-}
+
+# basedmypy 2.9.1 workaround
+def _getattr(obj: object, attr: str, /) -> Any:
+    return getattr(obj, attr)
+
+
+def _get_dtype_codes(
+    dtype: np.dtype[np.generic],
+    module: types.ModuleType = _dtype_attr,
+) -> tuple[frozenset[str], frozenset[str]]:
+    try:
+        strcode = dtype.str[1:]
+        literal_name = _getattr(module, f"{strcode}_name")
+        literal_char = _getattr(module, f"{strcode}_char")
+    except AttributeError:
+        literal_name = _getattr(module, f"{dtype.char}_name")
+        literal_char = _getattr(module, f"{dtype.char}_char")
+
+    names = frozenset(() if literal_name is Never else literal_name.__args__)
+    chars = frozenset(() if literal_char is Never else literal_char.__args__)
+    return names, chars
 
 
 def _normalized_dtype_name(dtype: np.dtype[np.generic]) -> str:
@@ -90,7 +84,7 @@ def test_dtype_has_codes(
     names: frozenset[str],
     chars: frozenset[str],
 ) -> None:
-    name = _NAME_MAP.get(dtype.name, dtype.name)
+    name = dtype.name
 
     assert name in names, (name, names)
     assert dtype.str in chars, (dtype.str, chars)
