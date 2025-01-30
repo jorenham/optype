@@ -615,10 +615,8 @@ class CanPow(
     @override
     def __pow__(self, exp: _T_contra, /) -> _T_co: ...
     @overload
-    @override
     def __pow__(self, exp: _T_contra, mod: None = ..., /) -> _T_co: ...
     @overload
-    @override
     def __pow__(self, exp: _T_contra, mod: _V_contra, /) -> _AnyIntT_co: ...
 
 
@@ -956,10 +954,8 @@ class CanRound(
     @override
     def __round__(self, /) -> _AnyIntT_co: ...
     @overload
-    @override
     def __round__(self, /, ndigits: None = ...) -> _AnyIntT_co: ...
     @overload
-    @override
     def __round__(self, /, ndigits: _AnyIntT_contra) -> _AnyFloatT_co: ...
 
 
