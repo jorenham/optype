@@ -47,12 +47,12 @@ repos:
       - id: markdownlint
 
   - repo: https://github.com/crate-ci/typos
-    rev: v1.29.4
+    rev: typos-dict-v0.12.4
     hooks:
       - id: typos
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.3
+    rev: v0.9.4
     hooks:
       - id: ruff
         args: [--fix, --show-fixes]
