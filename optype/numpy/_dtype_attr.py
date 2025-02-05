@@ -154,7 +154,7 @@ c32_name: Alias = L["complex256"]
 c32_char: Alias = L["c32", "<c32", ">c32"]
 c32_code: Alias = L[c32_name, c32_char]
 
-G_name: Alias = L[c20_name, c24_code, c32_name, "clongdouble"]
+G_name: Alias = L[c20_name, c24_name, c32_name, "clongdouble"]
 G_char: Alias = L[c20_char, c24_code, c32_code, "G"]
 G_code: Alias = L[G_name, G_char]
 
