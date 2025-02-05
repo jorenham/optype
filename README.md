@@ -3020,6 +3020,12 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
 
 Source code: [`optype/numpy/_to.py`][CODE-NP-TO]
 
+> [!NOTE]
+> The `ToArrayStrict{1,2,3}D` types are generic since `optype 0.9.1`, analogous to
+> their non-strict dual type, `ToArray{1,2,3}D`.
+
+Source code: [`optype/numpy/_to.py`][CODE-NP-TO]
+
 #### `compat` module
 
 Compatibility module for supporting a wide (currently `1.23` - `2.2`) range of numpy
