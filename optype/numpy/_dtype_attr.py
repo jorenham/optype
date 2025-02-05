@@ -116,10 +116,6 @@ f8_name: Alias = L["float64", "double", "float"]
 f8_char: Alias = L["f8", "<f8", ">f8", "d"]
 f8_code: Alias = L[f8_name, f8_char]
 
-f10_name: Alias = L["float80"]
-f10_char: Alias = L["f10", "<f10", ">f10"]
-f10_code: Alias = L[f10_name, f10_char]
-
 f12_name: Alias = L["float96"]
 f12_char: Alias = L["f12", "<f12", ">f12"]
 f12_code: Alias = L[f12_name, f12_char]
@@ -128,8 +124,8 @@ f16_name: Alias = L["float128"]
 f16_char: Alias = L["f16", "<f16", ">f16"]
 f16_code: Alias = L[f16_name, f16_char]
 
-g_name: Alias = L[f10_name, f12_name, f16_name, "longdouble"]
-g_char: Alias = L[f10_char, f12_char, f16_char, "g"]
+g_name: Alias = L[f12_name, f16_name, "longdouble"]
+g_char: Alias = L[f12_char, f16_char, "g"]
 g_code: Alias = L[g_name, g_char]
 
 # complex
@@ -142,10 +138,6 @@ c16_name: Alias = L["complex", "complex128", "cdouble"]
 c16_char: Alias = L["c16", "<c16", ">c16", "D"]
 c16_code: Alias = L[c16_name, c16_char]
 
-c20_name: Alias = L["complex160"]
-c20_char: Alias = L["c20", "<c20", ">c20"]
-c20_code: Alias = L[c20_name, c20_char]
-
 c24_name: Alias = L["complex192"]
 c24_char: Alias = L["c24", "<c24", ">c24"]
 c24_code: Alias = L[c24_name, c24_char]
@@ -154,8 +146,8 @@ c32_name: Alias = L["complex256"]
 c32_char: Alias = L["c32", "<c32", ">c32"]
 c32_code: Alias = L[c32_name, c32_char]
 
-G_name: Alias = L[c20_name, c24_name, c32_name, "clongdouble"]
-G_char: Alias = L[c20_char, c24_code, c32_code, "G"]
+G_name: Alias = L[c24_name, c32_name, "clongdouble"]
+G_char: Alias = L[c24_code, c32_code, "G"]
 G_code: Alias = L[G_name, G_char]
 
 # object
