@@ -240,9 +240,9 @@ ToJustComplex128_ND: TypeAlias = _ToND[JustComplex, np.complex128]
 
 # array-likes, with "coercible" shape-types, and "strict" shape-types
 
-ToArrayStrict1D: TypeAlias = _ToStrict1D[_PyScalar, np.generic]
-ToArrayStrict2D: TypeAlias = _ToStrict2D[_PyScalar, np.generic]
-ToArrayStrict3D: TypeAlias = _ToStrict3D[_PyScalar, np.generic]
+ToArrayStrict1D: TypeAlias = _ToStrict1D[T, SCT]
+ToArrayStrict2D: TypeAlias = _ToStrict2D[T, SCT]
+ToArrayStrict3D: TypeAlias = _ToStrict3D[T, SCT]
 
 ToBoolStrict1D: TypeAlias = _ToStrict1D[_PyBool, np.bool_]
 ToBoolStrict2D: TypeAlias = _ToStrict2D[_PyBool, np.bool_]
