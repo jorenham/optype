@@ -11,6 +11,7 @@ import numpy as np
 
 import optype.numpy.compat as npc
 from ._array import CanArray0D, CanArray1D, CanArray2D, CanArray3D, CanArrayND, Matrix
+from ._compat import NP22
 from ._sequence_nd import SequenceND as SeqND
 from optype._core._just import JustComplex, JustFloat, JustInt
 
@@ -20,6 +21,9 @@ __all__ = [  # noqa: RUF022
     "ToArray2D", "ToArrayStrict2D",
     "ToArray3D", "ToArrayStrict3D",
     "ToArrayND",
+
+    "ToFalse", "ToTrue",
+    "ToJustFalse", "ToJustTrue",
 
     "ToBool", "ToJustBool",
     "ToBool1D", "ToJustBool1D", "ToBoolStrict1D", "ToJustBoolStrict1D",
@@ -143,6 +147,22 @@ ToArray1D: TypeAlias = _To1D[T, SCT]
 ToArray2D: TypeAlias = _To2D[T, SCT]
 ToArray3D: TypeAlias = _To3D[T, SCT]
 ToArrayND: TypeAlias = _ToND[T, SCT]
+
+if NP22:
+    ToFalse = TypeAliasType("ToFalse", "Literal[False, 0] | np.bool[Literal[False]]")
+    ToTrue = TypeAliasType("ToTrue", "Literal[True, 1] | np.bool[Literal[True]]")
+
+    ToJustFalse = TypeAliasType(
+        "ToJustFalse",
+        "Literal[False] | np.bool[Literal[False]]",
+    )
+    ToJustTrue = TypeAliasType("ToJustTrue", "Literal[True] | np.bool[Literal[True]]")
+else:
+    ToFalse = TypeAliasType("ToFalse", Literal[False, 0])
+    ToTrue = TypeAliasType("ToTrue", Literal[True, 1])
+
+    ToJustFalse = TypeAliasType("ToJustFalse", Literal[False])
+    ToJustTrue = TypeAliasType("ToJustTrue", Literal[True])
 
 ToBool: TypeAlias = _PyBool | np.bool_
 ToBool1D: TypeAlias = _To1D[_PyBool, np.bool_]

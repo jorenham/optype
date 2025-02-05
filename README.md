@@ -2810,6 +2810,40 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
     <th align="center">strict <code>{1,2,3}</code>-d array-like</th>
 </tr>
 <tr>
+    <td align="left"><code>False</code></td>
+    <td align="left"><code>False_</code></td>
+    <td align="left"><code>ToJustFalse</code></td>
+    <td align="left"></td>
+    <td align="left"></td>
+</tr>
+<tr>
+    <td align="left">
+        <code>False</code><br>
+        <code>| 0</code>
+    </td>
+    <td align="left"><code>False_</code></td>
+    <td align="left"><code>ToFalse</code></td>
+    <td align="left"></td>
+    <td align="left"></td>
+</tr>
+<tr>
+    <td align="left"><code>True</code></td>
+    <td align="left"><code>True_</code></td>
+    <td align="left"><code>ToJustTrue</code></td>
+    <td align="left"></td>
+    <td align="left"></td>
+</tr>
+<tr>
+    <td align="left">
+        <code>True</code><br>
+        <code>| 1</code>
+    </td>
+    <td align="left"><code>True_</code></td>
+    <td align="left"><code>ToTrue</code></td>
+    <td align="left"></td>
+    <td align="left"></td>
+</tr>
+<tr>
     <td align="left"><code>bool</code></td>
     <td align="left"><code>bool_</code></td>
     <td align="left"><code>ToJustBool</code></td>
@@ -2974,6 +3008,15 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
 > The `ToJust{Bool,Float,Complex}*` type aliases were added in `optype 0.8.0`.
 >
 > See [`optype.Just`](#just) for more information.
+
+<!-- markdownlint want this here -->
+
+> [!NOTE]
+> The `To[Just]{False,True}` type aliases were added in `optype 0.9.1`.
+>
+> These only include the `np.bool` types on `numpy>=2.2`. Before that, `np.bool`
+> wasn't generic, making it impossible to distinguish between `np.False_` and `np.True_`
+> using static typing.
 
 Source code: [`optype/numpy/_to.py`][CODE-NP-TO]
 
