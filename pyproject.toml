@@ -56,7 +56,6 @@ dev = [
     {include-group = "lint"},
     {include-group = "type"},
     {include-group = "test"},
-    "pre-commit>=4.1.0",
     "tox>=4.24.1",
 ]
 
@@ -78,7 +77,6 @@ exclude = [
     ".editorconfig",
     ".gitignore",
     ".markdownlint.yaml",
-    ".pre-commit-config.yaml",
     "CODE_OF_CONDUCT.md",
     "CONTRIBUTING.md",
     "SECURITY.md",
@@ -167,6 +165,7 @@ xfail_strict = true
 [tool.repo-review]
 ignore = [
     "PY004", # no `docs/` (maybe later)
+    "PY006", # no pre-commit
     "PC140", # basedmypy > mypy
     "PC170", # no sphinx
     "PC180", # no css or js
@@ -350,7 +349,7 @@ force-exclude = true
 
 [tool.tox]
 isolated_build = true
-env_list = ["repo-review", "pre-commit", "3.10", "3.11", "3.12", "3.13"]
+env_list = ["repo-review", "3.10", "3.11", "3.12", "3.13"]
 
     [tool.tox.env_run_base]
     description = "test with {base_python}"
@@ -358,13 +357,6 @@ env_list = ["repo-review", "pre-commit", "3.10", "3.11", "3.12", "3.13"]
     allowlist_externals = ["uv"]
     commands_pre = [["uv", "sync", "--frozen"]]
     commands = [["uv", "run", "pytest"]]
-
-    [tool.tox.env.pre-commit]
-    description = "pre-commit"
-    skip_install = true
-    allowlist_externals = ["uv"]
-    commands_pre = [["uv", "sync", "--frozen"]]
-    commands = [["uv", "run", "pre-commit", "run", "--all-files"]]
 
     [tool.tox.env.repo-review]
     description = "repo-review"

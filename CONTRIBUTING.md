@@ -183,35 +183,12 @@ Now you can install the dev dependencies:
 uv sync
 ```
 
-### pre-commit
-
-Optype uses [pre-commit](https://pre-commit.com/) to ensure that the code is
-formatted and typed correctly when committing the changes.
-
-```bash
-uv run pre-commit install
-```
-
-> [!NOTE]
-> Pre-commit doesn't run the (unit-) tests. This will be run by github actions
-> when submitting a pull request. See the next section for more details.
-
-### Testing
-
-Optype uses [pytest](https://docs.pytest.org/en/stable/) for unit testing.
-These tests can be run with
-
-```bash
-uv run pytest
-```
-
 ### Tox
 
-The pre-commit hooks and the tests can easily be run with
-[tox](https://github.com/tox-dev/tox):
+The linters and tests can easily be run with [tox](https://github.com/tox-dev/tox):
 
 ```bash
-uv run tox -p all
+uvx tox p
 ```
 
 This will run the tests in parallel on all supported Python versions.
