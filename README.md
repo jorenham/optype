@@ -43,12 +43,6 @@
             src="https://github.com/jorenham/optype/workflows/CI/badge.svg"
         />
     </a>
-    <a href="https://github.com/pre-commit/pre-commit">
-        <img
-            alt="optype - pre-commit"
-            src="https://img.shields.io/badge/pre--commit-enabled-orange?logo=pre-commit"
-        />
-    </a>
     <a href="https://github.com/KotlinIsland/basedmypy">
         <img
             alt="optype - basedmypy"
