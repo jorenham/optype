@@ -78,27 +78,25 @@ def test_just_sub_meta(just_cls: type, cls: type) -> None:
 
 
 def test_just_float() -> None:
-    # NOTE: this currently doesn't work on mypy==1.14.1, but the next release fixes this
     tn_float: op.JustFloat = float("inf")
-    tp_int: op.JustFloat = int("42")  # pyright: ignore[reportAssignmentType]
-    tp_int_literal: op.JustFloat = 42  # pyright: ignore[reportAssignmentType]
-    tp_bool: op.JustFloat = bool([])  # pyright: ignore[reportAssignmentType]
-    tp_bool_literal: op.JustFloat = True  # pyright: ignore[reportAssignmentType]
+    tp_int: op.JustFloat = int("42")  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    tp_int_literal: op.JustFloat = 42  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    tp_bool: op.JustFloat = bool([])  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    tp_bool_literal: op.JustFloat = True  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
     tn_float_type: type[op.JustFloat] = float
     tp_str_type: type[op.JustFloat] = str  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
-    tp_int_type: type[op.JustFloat] = int  # pyright: ignore[reportAssignmentType]
-    tp_bool_type: type[op.JustFloat] = bool  # pyright: ignore[reportAssignmentType]
+    tp_int_type: type[op.JustFloat] = int  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    tp_bool_type: type[op.JustFloat] = bool  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
 
 def test_just_complex() -> None:
-    # NOTE: this currently doesn't work on mypy==1.14.1, but the next release fixes this
     tn_complex: op.JustComplex = complex("inf")
-    tp_float: op.JustComplex = float("inf")  # pyright: ignore[reportAssignmentType]
+    tp_float: op.JustComplex = float("inf")  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
     tn_complex_type: type[op.JustComplex] = complex
     tp_str_type: type[op.JustComplex] = str  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
-    tp_float_type: type[op.JustComplex] = float  # pyright: ignore[reportAssignmentType]
+    tp_float_type: type[op.JustComplex] = float  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
 
 def test_just_bytes() -> None:
