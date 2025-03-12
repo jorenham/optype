@@ -248,7 +248,8 @@ The API of `optype` is flat; a single `import optype as opt` is all you need
 - [`optype.numpy`](#optypenumpy)
     - [Shape-typing](#shape-typing)
     - [Array-likes](#array-likes)
-    - [`compat` module](#compat-module)
+    - [`compat` submodule](#compat-submodule)
+    - [`random` submodule](#random-submodule)
     - [`Any*Array` and `Any*DType`](#anyarray-and-anydtype)
     - [Low-level interfaces](#low-level-interfaces)
 
@@ -3030,7 +3031,7 @@ Source code: [`optype/numpy/_to.py`][CODE-NP-TO]
 
 Source code: [`optype/numpy/_to.py`][CODE-NP-TO]
 
-#### `compat` module
+#### `compat` submodule
 
 Compatibility module for supporting a wide (currently `1.23` - `2.2`) range of numpy
 versions. It contains two kinds of things:
@@ -3042,6 +3043,22 @@ I explained in the [`release notes`][NP-REL22].
 
 [NP-EXC]: https://numpy.org/doc/stable/reference/routines.exceptions.html
 [NP-REL22]: https://numpy.org/doc/stable/release/2.2.0-notes.html#new-features
+
+#### `random` submodule
+
+[SPEC 7](https://scientific-python.org/specs/spec-0007/) -compatible type aliases.
+The `optype.numpy.random` module provides three type aliases: `RNG`, `ToRNG`, and
+`ToSeed`.
+
+In general, the most useful one is `ToRNG`, which describes what can be
+passed to `numpy.random.default_rng`. It is defined as the union of `RNG`, `ToSeed`,
+and `numpy.random.BitGenerator`.
+
+The `RNG` is the union type of `numpy.random.Generator` and its legacy dual type,
+`numpy.random.RandomState`.
+
+`ToSeed` accepts integer-like scalars, sequences, and arrays, as well as instances of
+`numpy.random.SeedSequence`.
 
 #### `DType`
 
