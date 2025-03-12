@@ -155,23 +155,23 @@ else:
 
 
 # f2
-AnyFloat16DType = TypeAliasType("AnyFloat16DType", To[np.float16] | a.f2_code)
+AnyFloat16DType = TypeAliasType("AnyFloat16DType", To[_sc.floating16] | a.f2_code)
 # f4
-AnyFloat32DType = TypeAliasType("AnyFloat32DType", To[np.float32] | a.f4_code)
+AnyFloat32DType = TypeAliasType("AnyFloat32DType", To[_sc.floating32] | a.f4_code)
 # f8
 AnyFloat64DType = TypeAliasType(
     "AnyFloat64DType",
-    f_cls | To[np.float64] | a.f8_code | None,
+    f_cls | To[_sc.floating64] | a.f8_code | None,
 )
 # f12 | f16
 AnyLongDoubleDType = TypeAliasType("AnyLongDoubleDType", To[np.longdouble] | a.g_code)
 
 # c8
-AnyComplex64DType = TypeAliasType("AnyComplex64DType", To[np.complex64] | a.c8_code)
+AnyComplex64DType = TypeAliasType("AnyComplex64DType", To[_sc.cfloating32] | a.c8_code)
 # c16
 AnyComplex128DType = TypeAliasType(
     "AnyComplex128DType",
-    c_cls | To[np.complex128] | a.c16_code,
+    c_cls | To[_sc.cfloating64] | a.c16_code,
 )
 # c24 | c32
 AnyCLongDoubleDType = TypeAliasType(

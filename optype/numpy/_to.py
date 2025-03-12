@@ -124,17 +124,18 @@ _ToStrict3D = TypeAliasType(
 
 
 # TODO: Export and document.
+
 integer_co = TypeAliasType("integer_co", npc.integer | np.bool_)
+floating_co = TypeAliasType("floating_co", npc.floating | integer_co)
+complexfloating_co = TypeAliasType("complexfloating_co", npc.number | np.bool_)
 float64_co = TypeAliasType(
     "float64_co",
-    np.float64 | np.float32 | np.float16 | integer_co,
+    npc.floating64 | npc.floating32 | npc.floating16 | integer_co,
 )
-floating_co = TypeAliasType("floating_co", npc.floating | integer_co)
 complex128_co = TypeAliasType(
     "complex128_co",
-    np.complex128 | np.complex64 | float64_co,
+    npc.number64 | npc.number32 | npc.number16 | integer_co,
 )
-complexfloating_co = TypeAliasType("complexfloating_co", npc.number | np.bool_)
 
 
 ###
@@ -214,11 +215,11 @@ ToJustInt2D: TypeAlias = _To2D[JustInt, npc.integer]
 ToJustInt3D: TypeAlias = _To3D[JustInt, npc.integer]
 ToJustIntND: TypeAlias = _ToND[JustInt, npc.integer]
 
-ToJustFloat64: TypeAlias = JustFloat | np.float64
-ToJustFloat64_1D: TypeAlias = _To1D[JustFloat, np.float64]
-ToJustFloat64_2D: TypeAlias = _To2D[JustFloat, np.float64]
-ToJustFloat64_3D: TypeAlias = _To3D[JustFloat, np.float64]
-ToJustFloat64_ND: TypeAlias = _ToND[JustFloat, np.float64]
+ToJustFloat64: TypeAlias = JustFloat | npc.floating64
+ToJustFloat64_1D: TypeAlias = _To1D[JustFloat, npc.floating64]
+ToJustFloat64_2D: TypeAlias = _To2D[JustFloat, npc.floating64]
+ToJustFloat64_3D: TypeAlias = _To3D[JustFloat, npc.floating64]
+ToJustFloat64_ND: TypeAlias = _ToND[JustFloat, npc.floating64]
 
 ToJustFloat: TypeAlias = JustFloat | npc.floating
 ToJustFloat1D: TypeAlias = _To1D[JustFloat, npc.floating]
@@ -232,11 +233,11 @@ ToJustComplex2D: TypeAlias = _To2D[JustComplex, npc.complexfloating]
 ToJustComplex3D: TypeAlias = _To3D[JustComplex, npc.complexfloating]
 ToJustComplexND: TypeAlias = _ToND[JustComplex, npc.complexfloating]
 
-ToJustComplex128: TypeAlias = JustComplex | np.complex128
-ToJustComplex128_1D: TypeAlias = _To1D[JustComplex, np.complex128]
-ToJustComplex128_2D: TypeAlias = _To2D[JustComplex, np.complex128]
-ToJustComplex128_3D: TypeAlias = _To3D[JustComplex, np.complex128]
-ToJustComplex128_ND: TypeAlias = _ToND[JustComplex, np.complex128]
+ToJustComplex128: TypeAlias = JustComplex | npc.complexfloating128
+ToJustComplex128_1D: TypeAlias = _To1D[JustComplex, npc.complexfloating128]
+ToJustComplex128_2D: TypeAlias = _To2D[JustComplex, npc.complexfloating128]
+ToJustComplex128_3D: TypeAlias = _To3D[JustComplex, npc.complexfloating128]
+ToJustComplex128_ND: TypeAlias = _ToND[JustComplex, npc.complexfloating128]
 
 # array-likes, with "coercible" shape-types, and "strict" shape-types
 
@@ -275,21 +276,21 @@ ToJustBoolStrict2D: TypeAlias = _ToStrict2D[bool, np.bool_]
 ToJustBoolStrict3D: TypeAlias = _ToStrict3D[bool, np.bool_]
 
 ToJustIntStrict1D: TypeAlias = _ToStrict1D[JustInt, npc.integer]
-ToJustIntStrict3D: TypeAlias = _ToStrict3D[JustInt, npc.integer]
 ToJustIntStrict2D: TypeAlias = _ToStrict2D[JustInt, npc.integer]
+ToJustIntStrict3D: TypeAlias = _ToStrict3D[JustInt, npc.integer]
 
-ToJustFloat64Strict1D: TypeAlias = _ToStrict1D[JustFloat, np.float64]
-ToJustFloat64Strict3D: TypeAlias = _ToStrict3D[JustFloat, np.float64]
-ToJustFloat64Strict2D: TypeAlias = _ToStrict2D[JustFloat, np.float64]
+ToJustFloat64Strict1D: TypeAlias = _ToStrict1D[JustFloat, npc.floating64]
+ToJustFloat64Strict2D: TypeAlias = _ToStrict2D[JustFloat, npc.floating64]
+ToJustFloat64Strict3D: TypeAlias = _ToStrict3D[JustFloat, npc.floating64]
 
 ToJustFloatStrict1D: TypeAlias = _ToStrict1D[JustFloat, npc.floating]
-ToJustFloatStrict3D: TypeAlias = _ToStrict3D[JustFloat, npc.floating]
 ToJustFloatStrict2D: TypeAlias = _ToStrict2D[JustFloat, npc.floating]
+ToJustFloatStrict3D: TypeAlias = _ToStrict3D[JustFloat, npc.floating]
 
-ToJustComplex128Strict1D: TypeAlias = _ToStrict1D[JustComplex, np.complex128]
-ToJustComplex128Strict3D: TypeAlias = _ToStrict3D[JustComplex, np.complex128]
-ToJustComplex128Strict2D: TypeAlias = _ToStrict2D[JustComplex, np.complex128]
+ToJustComplex128Strict1D: TypeAlias = _ToStrict1D[JustComplex, npc.complexfloating128]
+ToJustComplex128Strict2D: TypeAlias = _ToStrict2D[JustComplex, npc.complexfloating128]
+ToJustComplex128Strict3D: TypeAlias = _ToStrict3D[JustComplex, npc.complexfloating128]
 
 ToJustComplexStrict1D: TypeAlias = _ToStrict1D[JustComplex, npc.complexfloating]
-ToJustComplexStrict3D: TypeAlias = _ToStrict3D[JustComplex, npc.complexfloating]
 ToJustComplexStrict2D: TypeAlias = _ToStrict2D[JustComplex, npc.complexfloating]
+ToJustComplexStrict3D: TypeAlias = _ToStrict3D[JustComplex, npc.complexfloating]
