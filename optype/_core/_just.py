@@ -39,7 +39,7 @@ _CanFloatOrIndex: TypeAlias = CanFloat | CanIndex
 # NOTE: Both mypy and pyright incorrectly report LSP violations in `@final` protocols,
 # even though these are purely structural, and therefore the LSP does not apply.
 
-# mypy: disable-error-code="override"
+# mypy: disable-error-code="override, explicit-override"
 # pyright: reportIncompatibleMethodOverride=false
 
 
