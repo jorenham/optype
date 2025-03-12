@@ -1,20 +1,14 @@
 import sys
-from typing import (
-    Any,
-    ClassVar,
-    Generic,
-    Protocol,
-    TypeAlias,
-    _ProtocolMeta,  # noqa: PLC2701
-)
+from typing import Any, Generic, Protocol, TypeAlias, _ProtocolMeta  # noqa: PLC2701
 
 if sys.version_info >= (3, 13):
-    from typing import Self, TypeIs, TypeVar, final, override, runtime_checkable
+    from typing import Self, TypeIs, TypeVar, Unpack, final, override, runtime_checkable
 else:
     from typing_extensions import (
         Self,
         TypeIs,
         TypeVar,
+        Unpack,
         final,
         override,
         runtime_checkable,
@@ -33,15 +27,24 @@ def __dir__() -> list[str]:
 
 
 _T = TypeVar("_T")
+_TypeT = TypeVar("_TypeT", bound=type)
 _ObjectT = TypeVar("_ObjectT", default=object)
 
-_ToFloat: TypeAlias = CanFloat | CanIndex
+_CanFloatOrIndex: TypeAlias = CanFloat | CanIndex
 
 
 ###
 
 
-class Just(Protocol[_T]):
+# NOTE: Both mypy and pyright incorrectly report LSP violations in `@final` protocols,
+# even though these are purely structural, and therefore the LSP does not apply.
+
+# mypy: disable-error-code="override"
+# pyright: reportIncompatibleMethodOverride=false
+
+
+@final  # https://github.com/python/mypy/issues/17288
+class Just(Protocol[_T]):  # type: ignore[misc]
     """
     An runtime-checkable invariant type "wrapper", where `Just[T]` only accepts
     instances of `T`, and but rejects instances of any strict subtypes of `T`.
@@ -71,18 +74,26 @@ class Just(Protocol[_T]):
         semantic meaning.
     """
 
-    @property  # type: ignore[explicit-override]  # mypy bug?
+    @property
     @override
-    def __class__(self, /) -> type[_T]: ...  # pyright: ignore[reportIncompatibleMethodOverride]
+    def __class__(self, /) -> type[_T]: ...
     @__class__.setter
-    @override
     def __class__(self, t: type[_T], /) -> None: ...
 
 
+@final
 class _JustMeta(_ProtocolMeta, Generic[_ObjectT]):
-    # There's nothing wrong with the following parametrized `ClassVar`, and the typing
-    # spec should have never disallowed it.
-    __just_class__: ClassVar[type[_ObjectT]]  # type: ignore[misc]  # pyright: ignore[reportGeneralTypeIssues]
+    __just_class__: type[_ObjectT]  # pyright: ignore[reportUninitializedInstanceVariable]
+
+    def __new__(  # noqa: PYI019
+        mcls: type[_TypeT],
+        /,
+        *args: Unpack[tuple[str, tuple[type, ...], dict[str, Any]]],
+        just: type[_ObjectT],
+    ) -> _TypeT:
+        self = super().__new__(mcls, *args)  # type: ignore[misc]
+        self.__just_class__ = just
+        return self
 
     @override
     def __instancecheck__(self, instance: object) -> TypeIs[_ObjectT]:
@@ -114,12 +125,9 @@ class _JustMeta(_ProtocolMeta, Generic[_ObjectT]):
         return subclass is tp
 
 
-@final
-class _JustBytesMeta(_JustMeta[bytes]):
-    __just_class__ = bytes
-
-
-class JustBytes(Just[bytes], Protocol, metaclass=_JustBytesMeta):
+@runtime_checkable
+@final  # https://github.com/python/mypy/issues/17288
+class JustBytes(Protocol, metaclass=_JustMeta, just=bytes):  # type: ignore[misc]  # pyright: ignore[reportGeneralTypeIssues]
     """
     A runtime checkable `Just[bytes]`, that also works on `pyright<1.1.390`.
 
@@ -130,14 +138,16 @@ class JustBytes(Just[bytes], Protocol, metaclass=_JustBytesMeta):
     flags to work.
     """
 
-
-@final
-class _JustIntMeta(_JustMeta[int]):
-    __just_class__ = int
+    @property
+    @override
+    def __class__(self, /) -> type[bytes]: ...
+    @__class__.setter
+    def __class__(self, t: type[bytes], /) -> None: ...
 
 
 @runtime_checkable
-class JustInt(Just[int], Protocol, metaclass=_JustIntMeta):
+@final  # https://github.com/python/mypy/issues/17288
+class JustInt(Protocol, metaclass=_JustMeta, just=int):  # type: ignore[misc]  # pyright: ignore[reportGeneralTypeIssues]
     """
     A runtime-checkable `Just[int]` that's compatible with `pyright<1.1.390`.
 
@@ -182,16 +192,19 @@ class JustInt(Just[int], Protocol, metaclass=_JustIntMeta):
         already works because of a mypy bug.
     """
 
+    @property
+    @override
+    def __class__(self, /) -> type[int]: ...
+    @__class__.setter
+    def __class__(self, t: type[int], /) -> None: ...
+
     # workaround for `pyright<1.1.390` and `basedpyright<1.22.1`
     def __new__(cls, x: str | bytes | bytearray, /, base: CanIndex) -> Self: ...
 
 
-@final
-class _JustFloatMeta(_JustMeta[float]):
-    __just_class__ = float
-
-
-class JustFloat(Just[float], Protocol, metaclass=_JustFloatMeta):
+@runtime_checkable
+@final  # https://github.com/python/mypy/issues/17288
+class JustFloat(Protocol, metaclass=_JustMeta, just=float):  # type: ignore[misc]  # pyright: ignore[reportGeneralTypeIssues]
     """
     A runtime checkable `Just[float]` that also works on `pyright<1.1.390`.
 
@@ -199,16 +212,19 @@ class JustFloat(Just[float], Protocol, metaclass=_JustFloatMeta):
         Unlike `JustInt`, this does not work on `mypy<1.41.2`.
     """
 
+    @property
+    @override
+    def __class__(self, /) -> type[float]: ...
+    @__class__.setter
+    def __class__(self, t: type[float], /) -> None: ...
+
     # workaround for `pyright<1.1.390` and `basedpyright<1.22.1`
     def hex(self, /) -> str: ...
 
 
-@final
-class _JustComplexMeta(_JustMeta[complex]):
-    __just_class__ = complex
-
-
-class JustComplex(Just[complex], Protocol, metaclass=_JustComplexMeta):
+@runtime_checkable
+@final  # https://github.com/python/mypy/issues/17288
+class JustComplex(Protocol, metaclass=_JustMeta, just=complex):  # type: ignore[misc]  # pyright: ignore[reportGeneralTypeIssues]
     """
     A runtime checkable `Just[complex]`, that also works on `pyright<1.1.390`.
 
@@ -216,18 +232,27 @@ class JustComplex(Just[complex], Protocol, metaclass=_JustComplexMeta):
         Unlike `JustInt`, this does not work on `mypy<1.41.2`.
     """
 
+    @property
+    @override
+    def __class__(self, /) -> type[complex]: ...
+    @__class__.setter
+    def __class__(self, t: type[complex], /) -> None: ...
+
     # workaround for `pyright<1.1.390` and `basedpyright<1.22.1`
-    def __new__(cls, /, real: _ToFloat, imag: _ToFloat) -> Self: ...
+    def __new__(cls, /, real: _CanFloatOrIndex, imag: _CanFloatOrIndex) -> Self: ...
 
 
-@final
-class _JustObjectMeta(_JustMeta[object]):
-    __just_class__ = object
-
-
-class JustObject(Just[object], Protocol, metaclass=_JustObjectMeta):
+@runtime_checkable
+@final  # https://github.com/python/mypy/issues/17288
+class JustObject(Protocol, metaclass=_JustMeta, just=object):  # type: ignore[misc]  # pyright: ignore[reportGeneralTypeIssues]
     """
     A runtime checkable `Just[object]`, that also works on `pyright<1.1.390`.
 
     Useful for typing `object()` sentinels.
     """
+
+    @property
+    @override
+    def __class__(self, /) -> type[object]: ...
+    @__class__.setter
+    def __class__(self, t: type[object], /) -> None: ...

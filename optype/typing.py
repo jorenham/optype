@@ -1,5 +1,12 @@
 import sys
-from typing import TYPE_CHECKING, Literal, NoReturn, Protocol, TypeAlias
+from typing import (
+    TYPE_CHECKING,
+    Literal,
+    NoReturn,
+    Protocol,
+    TypeAlias,
+    runtime_checkable,
+)
 from typing_extensions import deprecated
 
 if TYPE_CHECKING:
@@ -52,28 +59,34 @@ _ValueT = TypeVar("_ValueT", default=object)
     "`optype.typing.Just` has been deprecated in favor of `optype.Just` "
     "and will be removed in optype 0.10.0",
 )
-class Just(_just.Just[_T], Protocol[_T]): ...
+class Just(  # type: ignore[misc]
+    _just.Just[_T],  # pyright: ignore[reportGeneralTypeIssues]
+    Protocol[_T],
+): ...
 
 
 @deprecated(
     "`optype.typing.JustInt` has been deprecated in favor of `optype.JustInt` "
     "and will be removed in optype 0.10.0",
 )
-class JustInt(_just.JustInt, Protocol): ...
+@runtime_checkable
+class JustInt(_just.JustInt, Protocol, just=int): ...  # type: ignore[misc]  # pyright: ignore[reportGeneralTypeIssues]
 
 
 @deprecated(
     "`optype.typing.JustFloat` has been deprecated in favor of `optype.JustFloat` "
     "and will be removed in optype 0.10.0",
 )
-class JustFloat(_just.JustFloat, Protocol): ...
+@runtime_checkable
+class JustFloat(_just.JustFloat, Protocol, just=float): ...  # type: ignore[misc]  # pyright: ignore[reportGeneralTypeIssues]
 
 
 @deprecated(
     "`optype.typing.JustComplex` has been deprecated in favor of `optype.JustComplex` "
     "and will be removed in optype 0.10.0",
 )
-class JustComplex(_just.JustComplex, Protocol): ...
+@runtime_checkable
+class JustComplex(_just.JustComplex, Protocol, just=complex): ...  # type: ignore[misc]  # pyright: ignore[reportGeneralTypeIssues]
 
 
 Just.__doc__ = _just.Just.__doc__  # pyright: ignore[reportDeprecated]
