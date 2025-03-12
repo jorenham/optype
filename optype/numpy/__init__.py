@@ -12,6 +12,7 @@ from . import (
     _ufunc,
     compat,
     ctypeslib,
+    random,
 )
 from ._any_array import *
 from ._any_dtype import *
@@ -24,7 +25,7 @@ from ._shape import *
 from ._to import *
 from ._ufunc import *
 
-__all__ = ["compat", "ctypeslib"]
+__all__ = ["compat", "ctypeslib", "random"]
 __all__ += _array.__all__
 __all__ += _any_array.__all__
 __all__ += _sequence_nd.__all__
