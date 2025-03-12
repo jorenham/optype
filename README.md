@@ -353,9 +353,19 @@ intmap(1, "some object")  # rejected
 ```
 
 > [!TIP]
-> The `Just{Bytes,Int,Float,Complex,Object}` protocols are runtime-checkable,
+> The `Just{Bytes,Int,Float,Complex,Date,Object}` protocols are runtime-checkable,
 > so that `instance(42, JustInt) is True` and `instance(bool(), JustInt) is False`.
 > It's implemented through meta-classes, and type-checkers have no problem with it.
+
+| `optype` type | accepts instances of |
+| ------------- | -------------------- |
+| `Just[T]`     | `T`                  |
+| `JustInt`     | `builtins.int`       |
+| `JustFloat`   | `builtins.float`     |
+| `JustComplex` | `builtins.complex`   |
+| `JustBytes`   | `builtins.bytes`     |
+| `JustObject`  | `builtins.object`    |
+| `JustDate`    | `datetime.date`      |
 
 ##### :warning: Compatibility: (based)pyright
 

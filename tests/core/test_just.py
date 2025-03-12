@@ -1,3 +1,7 @@
+# ruff: noqa: DTZ005, DTZ011
+
+import datetime as dt
+
 import pytest
 
 import optype as op
@@ -8,6 +12,32 @@ class A: ...
 class B(A): ...  # noqa: E302
 class C(B): ...  # noqa: E302
 # fmt: on
+
+
+@pytest.mark.parametrize(
+    ("just_cls", "cls"),
+    [
+        (op.JustBytes, bytes),
+        (op.JustInt, int),
+        (op.JustFloat, float),
+        (op.JustComplex, complex),
+        (op.JustObject, object),
+        (op.JustDate, dt.date),
+    ],
+)
+def test_just_sub_meta(just_cls: type, cls: type) -> None:
+    obj = cls.today() if cls is dt.date else cls()  # type: ignore[attr-defined]
+    assert isinstance(obj, just_cls)
+    assert not isinstance(bool(), just_cls)  # noqa: UP018
+    assert not isinstance(cls, just_cls)
+
+    assert issubclass(cls, just_cls)
+    assert not issubclass(bool, just_cls)
+    assert not issubclass(type, just_cls)
+
+    assert issubclass(op.Just[cls], just_cls)  # type: ignore[valid-type]
+    assert not issubclass(op.Just[bool], just_cls)
+    assert not issubclass(op.Just[type], just_cls)
 
 
 def test_just_custom() -> None:
@@ -53,30 +83,6 @@ def test_just_int() -> None:
         f(True)  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]
 
 
-@pytest.mark.parametrize(
-    ("just_cls", "cls"),
-    [
-        (op.JustBytes, bytes),
-        (op.JustInt, int),
-        (op.JustFloat, float),
-        (op.JustComplex, complex),
-        (op.JustObject, object),
-    ],
-)
-def test_just_sub_meta(just_cls: type, cls: type) -> None:
-    assert isinstance(cls(), just_cls)
-    assert not isinstance(bool(), just_cls)  # noqa: UP018
-    assert not isinstance(cls, just_cls)
-
-    assert issubclass(cls, just_cls)
-    assert not issubclass(bool, just_cls)
-    assert not issubclass(type, just_cls)
-
-    assert issubclass(op.Just[cls], just_cls)  # type: ignore[valid-type]
-    assert not issubclass(op.Just[bool], just_cls)
-    assert not issubclass(op.Just[type], just_cls)
-
-
 def test_just_float() -> None:
     tn_float: op.JustFloat = float("inf")
     tp_int: op.JustFloat = int("42")  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
@@ -109,3 +115,11 @@ def test_just_bytes() -> None:
     tp_str_type: type[op.JustBytes] = str  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     tp_bytearray_type: type[op.JustBytes] = bytearray  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     tp_memoryview_type: type[op.JustBytes] = memoryview  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+
+
+def test_just_date() -> None:
+    tn_date: op.JustDate = dt.date.today()
+    tp_datetime: op.JustDate = dt.datetime.now()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+
+    tn_date_type: type[op.JustDate] = dt.date
+    tp_datetime_type: type[op.JustDate] = dt.datetime  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
