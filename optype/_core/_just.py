@@ -1,3 +1,4 @@
+import datetime as dt
 import sys
 from typing import Any, Generic, Protocol, TypeAlias, _ProtocolMeta  # noqa: PLC2701
 
@@ -16,7 +17,15 @@ else:
 
 from ._can import CanFloat, CanIndex
 
-__all__ = ["Just", "JustBytes", "JustComplex", "JustFloat", "JustInt", "JustObject"]
+__all__ = [
+    "Just",
+    "JustBytes",
+    "JustComplex",
+    "JustDate",
+    "JustFloat",
+    "JustInt",
+    "JustObject",
+]
 
 
 def __dir__() -> list[str]:
@@ -240,6 +249,20 @@ class JustComplex(Protocol, metaclass=_JustMeta, just=complex):  # type: ignore[
 
     # workaround for `pyright<1.1.390` and `basedpyright<1.22.1`
     def __new__(cls, /, real: _CanFloatOrIndex, imag: _CanFloatOrIndex) -> Self: ...
+
+
+@runtime_checkable
+@final  # https://github.com/python/mypy/issues/17288
+class JustDate(Protocol, metaclass=_JustMeta, just=dt.date):  # type: ignore[misc]  # pyright: ignore[reportGeneralTypeIssues]
+    """
+    A runtime checkable `Just[datetime.Date]`, that rejects `datetime.datetime`.
+    """
+
+    @property
+    @override
+    def __class__(self, /) -> type[dt.date]: ...
+    @__class__.setter
+    def __class__(self, t: type[dt.date], /) -> None: ...
 
 
 @runtime_checkable
