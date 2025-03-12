@@ -248,6 +248,7 @@ The API of `optype` is flat; a single `import optype as opt` is all you need
 - [`optype.numpy`](#optypenumpy)
     - [Shape-typing](#shape-typing)
     - [Array-likes](#array-likes)
+    - [Literals](#literals)
     - [`compat` submodule](#compat-submodule)
     - [`random` submodule](#random-submodule)
     - [`Any*Array` and `Any*DType`](#anyarray-and-anydtype)
@@ -3030,6 +3031,26 @@ Source code: [`optype/numpy/_to.py`][CODE-NP-TO]
 > their non-strict dual type, `ToArray{1,2,3}D`.
 
 Source code: [`optype/numpy/_to.py`][CODE-NP-TO]
+
+#### Literals
+
+| Type Alias      | String values                                                      |
+| --------------- | ------------------------------------------------------------------ |
+| `ByteOrder`     | `ByteOrderChar \| ByteOrderName \| {L, B, N, I, S}`                |
+| `ByteOrderChar` | `{<, >, =, \|}`                                                    |
+| `ByteOrderName` | `{little, big, native, ignore, swap}`                              |
+| `Casting`       | `CastingUnsafe \| CastingSafe`                                     |
+| `CastingUnsafe` | `{unsafe}`                                                         |
+| `CastingSafe`   | `{no, equiv, safe, same_kind}`                                     |
+| `ConvolveMode`  | `{full, same, valid}`                                              |
+| `Device`        | `{cpu}`                                                            |
+| `IndexMode`     | `{raise, wrap, clip}`                                              |
+| `OrderCF`       | `{C, F}`                                                           |
+| `OrderACF`      | `{A, C, F}`                                                        |
+| `OrderKACF`     | `{K, A, C, F}`                                                     |
+| `PartitionKind` | `{introselect}`                                                    |
+| `SortKind`      | `{Q, quick[sort], M, merge[sort], H, heap[sort], S, stable[sort]}` |
+| `SortSide`      | `{left, right}`                                                    |
 
 #### `compat` submodule
 
