@@ -40,15 +40,15 @@ dependencies = ["typing-extensions>=4.10; python_version<'3.13'"]
 [dependency-groups]
 extra = ["optype[numpy]"]
 lint = [
-    "ruff>=0.11.0",
+    "ruff>=0.11.2",
     "sp-repo-review[cli]>=2025.1.22",
 ]
 type = [
     "basedmypy[faster-cache]>=2.10.0",
-    "basedpyright>=1.28.1",
+    "basedpyright>=1.28.4",
 ]
 test = [
-    "beartype>=0.20.0",
+    "beartype>=0.20.2",
     "pytest>=8.3.5",
 ]
 dev = [
@@ -56,7 +56,7 @@ dev = [
     {include-group = "lint"},
     {include-group = "type"},
     {include-group = "test"},
-    "tox>=4.24.2",
+    "tox>=4.25.0",
 ]
 
 
@@ -117,13 +117,10 @@ bare_literals = false
 
 
 [tool.basedpyright]
-pythonVersion = "3.10"
 pythonPlatform = "All"
 include = ["optype", "examples", "tests"]
 ignore = [".venv"]
 stubPath = "."
-venvPath = "."
-venv = ".venv"
 typeCheckingMode = "all"
 useLibraryCodeForTypes = false
 enableReachabilityAnalysis = false
