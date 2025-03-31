@@ -1,3 +1,5 @@
+# pyright: reportUnnecessaryCast=false
+
 from collections.abc import Callable
 from typing import TypeAlias, TypeVar, cast
 
