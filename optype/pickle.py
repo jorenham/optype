@@ -84,6 +84,7 @@ class CanGetstate(Protocol[_StateT_co]):
     https://docs.python.org/3/library/pickle.html#object.__getstate__
     """
 
+    @override
     def __getstate__(self, /) -> _StateT_co: ...
 
 
