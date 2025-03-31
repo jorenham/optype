@@ -26,12 +26,7 @@ else:
 
 import numpy as np
 import numpy.typing as npt
-from numpy._typing import (
-    _8Bit,  # noqa: PLC2701  # pyright: ignore[reportPrivateImportUsage]
-    _16Bit,  # noqa: PLC2701  # pyright: ignore[reportPrivateImportUsage]
-    _32Bit,  # noqa: PLC2701  # pyright: ignore[reportPrivateImportUsage]
-    _64Bit,  # noqa: PLC2701  # pyright: ignore[reportPrivateImportUsage]
-)
+from numpy._typing import _8Bit, _16Bit, _32Bit, _64Bit  # noqa: PLC2701
 
 from ._compat import NP20
 from optype._utils import set_module
