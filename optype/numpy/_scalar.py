@@ -3,12 +3,10 @@
 import sys
 from typing import Any, Literal, Protocol, TypeAlias
 
-if sys.version_info >= (3, 13):
-    from types import CapsuleType
+if sys.version_info >= (3, 12):
     from typing import (
         Self,
         TypeAliasType,
-        TypeVar,
         overload,
         override,
         runtime_checkable,
@@ -18,11 +16,15 @@ else:
         CapsuleType,
         Self,
         TypeAliasType,
-        TypeVar,
         overload,
         override,
         runtime_checkable,
     )
+if sys.version_info >= (3, 13):
+    from types import CapsuleType
+    from typing import TypeVar
+else:
+    from typing_extensions import CapsuleType, TypeVar
 
 import numpy as np
 import numpy.typing as npt

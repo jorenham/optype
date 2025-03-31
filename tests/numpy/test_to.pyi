@@ -348,3 +348,100 @@ def s3d_a3d() -> None:
     c16_co__c16: onp.ToComplex128Strict3D = c16_co_3d
     f8_co__f: onp.ToFloat64Strict3D = f_co_3d  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     c16_co__c: onp.ToComplex128Strict3D = c_co_3d  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+
+# n-d
+
+def nd_sca() -> None:
+    x__x: onp.ToArrayND = x_  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    b__b: onp.ToBoolND = b_  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    i__i: onp.ToJustIntND = i_  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    f__f: onp.ToJustFloatND = f_  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    c__c: onp.ToJustComplexND = c_  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    f8__f8: onp.ToJustFloat64_ND = f8  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    c16__c16: onp.ToJustComplex128_ND = c16  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    i_co__i_co: onp.ToIntND = i_co  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    f_co__f_co: onp.ToFloatND = f_co  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    c_co__c_co: onp.ToComplexND = c_co  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    f8_co__f8_co: onp.ToFloat64_ND = f8_co  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    c16_co__c16_co: onp.ToComplex128_ND = c16_co  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+
+def nd_1d() -> None:
+    to_x_1d: onp.ToArray1D
+    to_b_1d: onp.ToBool1D
+    to_i_1d: onp.ToJustInt1D
+    to_f_1d: onp.ToJustFloat1D
+    to_c_1d: onp.ToJustComplex1D
+    to_f8_1d: onp.ToJustFloat64_1D
+    to_c16_1d: onp.ToJustComplex128_1D
+    to_i_co_1d: onp.ToInt1D
+    to_f_co_1d: onp.ToFloat1D
+    to_c_co_1d: onp.ToComplex1D
+    to_f8_co_1d: onp.ToFloat64_1D
+    to_c16_co_1d: onp.ToComplex128_1D
+
+    x__x: onp.ToArrayND = to_x_1d
+    b__b: onp.ToBoolND = to_b_1d
+    i__i: onp.ToJustIntND = to_i_1d
+    f__f: onp.ToJustFloatND = to_f_1d
+    c__c: onp.ToJustComplexND = to_c_1d
+    f8__f8: onp.ToJustFloat64_ND = to_f8_1d
+    c16__c16: onp.ToJustComplex128_ND = to_c16_1d
+    i_co__i: onp.ToIntND = to_i_co_1d
+    f_co__f: onp.ToFloatND = to_f_co_1d
+    c_co__c: onp.ToComplexND = to_c_co_1d
+    f8_co__f8: onp.ToFloat64_ND = to_f8_co_1d
+    c16_co__c16: onp.ToComplex128_ND = to_c16_co_1d
+
+def nd_2d() -> None:
+    to_x_2d: onp.ToArray2D
+    to_b_2d: onp.ToBool2D
+    to_i_2d: onp.ToJustInt2D
+    to_f_2d: onp.ToJustFloat2D
+    to_c_2d: onp.ToJustComplex2D
+    to_f8_2d: onp.ToJustFloat64_2D
+    to_c16_2d: onp.ToJustComplex128_2D
+    to_i_co_2d: onp.ToInt2D
+    to_f_co_2d: onp.ToFloat2D
+    to_c_co_2d: onp.ToComplex2D
+    to_f8_co_2d: onp.ToFloat64_2D
+    to_c16_co_2d: onp.ToComplex128_2D
+
+    x__x: onp.ToArrayND = to_x_2d
+    b__b: onp.ToBoolND = to_b_2d
+    i__i: onp.ToJustIntND = to_i_2d
+    f__f: onp.ToJustFloatND = to_f_2d
+    c__c: onp.ToJustComplexND = to_c_2d
+    f8__f8: onp.ToJustFloat64_ND = to_f8_2d
+    c16__c16: onp.ToJustComplex128_ND = to_c16_2d
+    i_co__i: onp.ToIntND = to_i_co_2d
+    f_co__f: onp.ToFloatND = to_f_co_2d
+    c_co__c: onp.ToComplexND = to_c_co_2d
+    f8_co__f8: onp.ToFloat64_ND = to_f8_co_2d
+    c16_co__c16: onp.ToComplex128_ND = to_c16_co_2d
+
+def nd_3d() -> None:
+    to_x_3d: onp.ToArray3D
+    to_b_3d: onp.ToBool3D
+    to_i_3d: onp.ToJustInt3D
+    to_f_3d: onp.ToJustFloat3D
+    to_c_3d: onp.ToJustComplex3D
+    to_f8_3d: onp.ToJustFloat64_3D
+    to_c16_3d: onp.ToJustComplex128_3D
+    to_i_co_3d: onp.ToInt3D
+    to_f_co_3d: onp.ToFloat3D
+    to_c_co_3d: onp.ToComplex3D
+    to_f8_co_3d: onp.ToFloat64_3D
+    to_c16_co_3d: onp.ToComplex128_3D
+
+    x__x: onp.ToArrayND = to_x_3d
+    b__b: onp.ToBoolND = to_b_3d
+    i__i: onp.ToJustIntND = to_i_3d
+    f__f: onp.ToJustFloatND = to_f_3d
+    c__c: onp.ToJustComplexND = to_c_3d
+    f8__f8: onp.ToJustFloat64_ND = to_f8_3d
+    c16__c16: onp.ToJustComplex128_ND = to_c16_3d
+    i_co__i: onp.ToIntND = to_i_co_3d
+    f_co__f: onp.ToFloatND = to_f_co_3d
+    c_co__c: onp.ToComplexND = to_c_co_3d
+    f8_co__f8: onp.ToFloat64_ND = to_f8_co_3d
+    c16_co__c16: onp.ToComplex128_ND = to_c16_co_3d
