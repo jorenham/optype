@@ -2,10 +2,15 @@ import sys
 from collections.abc import Sequence as Seq
 from typing import Literal, TypeAlias
 
-if sys.version_info >= (3, 13):
-    from typing import TypeAliasType, TypeVar
+if sys.version_info >= (3, 12):
+    from typing import TypeAliasType
 else:
-    from typing_extensions import TypeAliasType, TypeVar
+    from typing_extensions import TypeAliasType
+
+if sys.version_info >= (3, 13):
+    from typing import TypeVar
+else:
+    from typing_extensions import TypeVar
 
 import numpy as np
 
@@ -99,7 +104,7 @@ _To3D = TypeAliasType(
 )
 _ToND = TypeAliasType(
     "_ToND",
-    CanArrayND[SCT] | SeqND[CanArrayND[SCT]] | SeqND[_To0D[T, SCT]],
+    CanArrayND[SCT] | SeqND[CanArrayND[SCT] | _To0D[T, SCT]],
     type_params=(T, SCT),
 )
 
