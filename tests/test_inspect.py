@@ -1,5 +1,4 @@
 # mypy: disable-error-code="unreachable"
-# ruff: noqa: ANN205, ANN206
 import sys
 import typing as tp
 import typing_extensions as tpx

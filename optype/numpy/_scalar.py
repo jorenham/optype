@@ -1,4 +1,4 @@
-# ruff: noqa: PLW1641, PYI042
+# ruff: noqa: PYI042
 
 import sys
 from typing import Any, Literal, Protocol, TypeAlias
