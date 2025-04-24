@@ -40,12 +40,12 @@ dependencies = ["typing-extensions>=4.10; python_version<'3.13'"]
 [dependency-groups]
 extra = ["optype[numpy]"]
 lint = [
-    "ruff>=0.11.4",
+    "ruff>=0.11.6",
     "sp-repo-review[cli]>=2025.1.22",
 ]
 type = [
     "basedmypy[faster-cache]>=2.10.0",
-    "basedpyright>=1.28.4",
+    "basedpyright>=1.29.1",
 ]
 test = [
     "beartype>=0.20.2",

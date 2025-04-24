@@ -149,9 +149,11 @@ class HasQualname(Protocol[_NameT]):  # pyright: ignore[reportInvalidTypeVarUse]
 
 
 @runtime_checkable
-class HasNames(HasName[_NameT], HasQualname[_QualNameT], Protocol[_NameT, _QualNameT]):  # pyright: ignore[reportInvalidTypeVarUse]
-    __name__: _NameT
-    __qualname__: _QualNameT
+class HasNames(  # pyright: ignore[reportIncompatibleVariableOverride, reportInvalidTypeVarUse]
+    HasName[_NameT],
+    HasQualname[_QualNameT],
+    Protocol[_NameT, _QualNameT],
+): ...
 
 
 # docs and type hints
