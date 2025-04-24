@@ -72,7 +72,7 @@ def test_any_array() -> None:
     v_int: onp.AnyArray = 0  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     v_float: onp.AnyArray = 0.0  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     v_complex: onp.AnyArray = 0j  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
-    v_empty_set: onp.AnyArray = set()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    v_empty_set: onp.AnyArray = set()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType, reportUnknownVariableType]
     v_dict: onp.AnyArray = {}  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
     # NumPy scalar
