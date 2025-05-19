@@ -2612,188 +2612,93 @@ The names `AtLeast{N}D` and `AtMost{N}D` are pretty much as self-explanatory:
 The shape aliases are roughly defined as:
 
 <table>
-<tr>
-<th align="center" colspan="2"><code>AtLeast{N}D</code></th>
-<th align="center" colspan="2"><code>AtMost{N}D</code></th>
-</tr>
-<tr>
-<th>type signature</th>
-<th>alias type</th>
-<th>type signature</th>
-<th>type alias</th>
-</tr>
-<tr>
-<td colspan="4"></td>
-</tr>
-<tr>
-<td>
+<tr><th>
+    <code>N</code>
+</th><th>
+    <code>ndim >= N</code>
+</th><th>
+    <code>ndim <= N</code>
+</th></tr>
+<tr><td>
+0
+</td><td>
 
 ```python
-type AtLeast0D[
-    Ds: int = int,
-] = _
+type AtLeast0D = (int, ...)
 ```
 
-</td>
-<td>
+</td><td>
 
 ```python
-tuple[Ds, ...]
+type AtMost0D = ()
 ```
 
-</td>
-<td>
-
-```python
-type AtMost0D = _
-```
-
-</td>
-<td>
-
-```python
-tuple[()]
-```
-
-</td>
-</tr>
+</td></tr>
 <tr><td colspan="4"></td></tr>
-<tr>
-<td>
+<tr><td>
+1
+</td><td>
 
 ```python
-type AtLeast1D[
-    D0: int = int,
-    Ds: int = int,
-] = _
+type AtLeast1D = (int, *AtLeast0D)
 ```
 
-</td>
-<td>
+</td><td>
 
 ```python
-tuple[
-    D0,
-    *tuple[Ds, ...],
-]
+type AtMost1D = AtMost0D | (int,)
 ```
 
-</td>
-<td>
-
-```python
-type AtMost1D[
-    D0: int = int,
-] = _
-```
-
-</td>
-<td>
-
-```python
-tuple[D0] | AtMost0D
-```
-
-</td>
-</tr>
+</td></tr>
 <tr><td colspan="4"></td></tr>
-<tr>
-<td>
+<tr><td>
+2
+</td><td>
 
 ```python
-type AtLeast2D[
-    D0: int = int,
-    D1: int = int,
-    Ds: int = int,
-] = _
-```
-
-</td>
-<td>
-
-```python
-tuple[
-    D0,
-    D1,
-    *tuple[Ds, ...],
-]
-```
-
-</td>
-<td>
-
-```python
-type AtMost2D[
-    D0: int = int,
-    D1: int = int,
-] = _
-```
-
-</td>
-<td>
-
-<!-- blacken-docs:off -->
-```python
-(
-    tuple[D0, D1]
-    | AtMost1D[D0]
+type AtLeast2D = (
+    tuple[int, int]
+    | AtLeast3D[int]
 )
 ```
-<!-- blacken-docs:on -->
 
-</td>
-</tr>
+</td><td>
+
+```python
+type AtMost2D = AtMost1D | (int, int)
+```
+
+</td></tr>
 <tr><td colspan="4"></td></tr>
-<tr>
-<td>
+<tr><td>
+3
+</td><td>
 
 ```python
-type AtLeast3D[
-    D0: int = int,
-    D1: int = int,
-    D2: int = int,
-    Ds: int = int,
-] = _
-```
-
-</td>
-<td>
-
-```python
-tuple[
-    D0,
-    D1,
-    D2,
-    *tuple[Ds, ...],
-]
-```
-
-</td>
-<td>
-
-```python
-type AtMost3D[
-    D0: int = int,
-    D1: int = int,
-    D2: int = int,
-] = _
-```
-
-</td>
-<td>
-
-<!-- blacken-docs:off -->
-```python
-(
-    tuple[D0, D1, D2]
-    | AtMost2D[D0, D1]
+type AtLeast3D = (
+    tuple[int, int, int]
+    | tuple[int, int, int, int]
+    | tuple[int, int, int, int, int]
+    # etc...
 )
 ```
-<!-- blacken-docs:on -->
 
-</td>
-</tr>
+</td><td>
+
+```python
+type AtMost3D = AtMost2D | (int, int, int)
+```
+
+</td></tr>
 </table>
+
+The `AtLeast{}D` optionally accepts a type argument that can either be `int` (default),
+or `Any`. Passing `Any` turns it from a *gradual tuple type*, so that they can also be
+assigned to compatible bounded shape-types. So `AtLeast1D[Any]` is assignable to
+`tuple[int]`, whereas `AtLeast1D` (equiv. `AtLeast1D[int]`) is not.
+
+However, mypy currently has a [bug](https://github.com/python/mypy/issues/19109),
+causing it to falsely reject such gradual shape-type assignment for N=1 or up.
 
 #### Array-likes
 
