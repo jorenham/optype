@@ -39,14 +39,11 @@ _DTT_co = TypeVar("_DTT_co", bound=np.dtype[Any], default=np.dtype[Any], covaria
 _SCT = TypeVar("_SCT", bound=np.generic, default=Any)
 _SCT_co = TypeVar("_SCT_co", bound=np.generic, default=Any, covariant=True)
 
-_MT = TypeVar("_MT", bound=int, default=int)
-_NT = TypeVar("_NT", bound=int, default=_MT)
-
 
 Matrix = TypeAliasType(
     "Matrix",
-    np.matrix[tuple[_MT, _NT], np.dtype[_SCT]],
-    type_params=(_SCT, _MT, _NT),
+    np.matrix[tuple[int, int], np.dtype[_SCT]],
+    type_params=(_SCT,),
 )
 """
 Alias of `np.matrix` that is similar to `ArrayND`:
