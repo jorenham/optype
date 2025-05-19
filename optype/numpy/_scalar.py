@@ -45,8 +45,8 @@ __all__ = ["Scalar"]
 ###
 
 _PT_co = TypeVar("_PT_co", covariant=True)
-_NB_co = TypeVar("_NB_co", bound=int, covariant=True, default=int)
-_DT = TypeVar("_DT", bound=np.dtype[np.generic], default=np.dtype[np.generic])
+_NB_co = TypeVar("_NB_co", bound=int, default=int, covariant=True)
+_DT = TypeVar("_DT", bound=np.dtype[Any], default=np.dtype[Any])
 
 _L0: TypeAlias = Literal[0]
 _L1: TypeAlias = Literal[1]
