@@ -28,25 +28,16 @@ def __dir__() -> list[str]:
 
 ###
 
-_ND: TypeAlias = tuple[int, ...]
+_Shape: TypeAlias = tuple[int, ...]
+_AnyShape: TypeAlias = tuple[Any, ...]
 
-_NDT = TypeVar("_NDT", bound=_ND, default=_ND)
-_NDT_any = TypeVar("_NDT_any", bound=_ND, default=Any)  # for numpy < 2.1
-_NDT_co = TypeVar(
-    "_NDT_co",
-    bound=_ND,
-    default=_ND,
-    covariant=True,
-)
-_DTT = TypeVar("_DTT", bound=np.dtype[np.generic], default=np.dtype[np.generic])
-_DTT_co = TypeVar(
-    "_DTT_co",
-    bound=np.dtype[np.generic],
-    default=np.dtype[np.generic],
-    covariant=True,
-)
-_SCT = TypeVar("_SCT", bound=np.generic, default=np.generic)
-_SCT_co = TypeVar("_SCT_co", bound=np.generic, default=np.generic, covariant=True)
+_NDT = TypeVar("_NDT", bound=_Shape, default=_AnyShape)
+_NDT_any = TypeVar("_NDT_any", bound=_Shape, default=Any)  # for numpy < 2.1
+_NDT_co = TypeVar("_NDT_co", bound=_Shape, default=_AnyShape, covariant=True)
+_DTT = TypeVar("_DTT", bound=np.dtype[Any], default=np.dtype[Any])
+_DTT_co = TypeVar("_DTT_co", bound=np.dtype[Any], default=np.dtype[Any], covariant=True)
+_SCT = TypeVar("_SCT", bound=np.generic, default=Any)
+_SCT_co = TypeVar("_SCT_co", bound=np.generic, default=Any, covariant=True)
 
 _MT = TypeVar("_MT", bound=int, default=int)
 _NT = TypeVar("_NT", bound=int, default=_MT)
@@ -296,7 +287,7 @@ _ArrayInterfaceT_co = TypeVar(
     "_ArrayInterfaceT_co",
     covariant=True,
     bound=Mapping[str, object],
-    default=dict[str, object],
+    default=dict[str, Any],
 )
 
 

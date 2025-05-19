@@ -66,10 +66,10 @@ def __dir__() -> list[str]:
 
 
 _T = TypeVar("_T")
-_T_co = TypeVar("_T_co", covariant=True)
-_ST = TypeVar("_ST", bound=np.generic, default=np.generic)
-_ST_co = TypeVar("_ST_co", bound=np.generic, covariant=True)
+_ST = TypeVar("_ST", bound=np.generic, default=Any)
 _VT = TypeVar("_VT", default=_ST)
+_T_co = TypeVar("_T_co", covariant=True)
+_ST_co = TypeVar("_ST_co", bound=np.generic, covariant=True)
 
 
 # NOTE: Does not include scalar types

@@ -27,9 +27,12 @@ def __dir__() -> list[str]:
 
 
 Shape: TypeAlias = tuple[int, ...]
-ShapeT = TypeVar("ShapeT", bound=Shape, default=Shape)
+AnyShape: TypeAlias = tuple[Any, ...]
+
+
+ShapeT = TypeVar("ShapeT", bound=Shape, default=AnyShape)
 DTypeT = TypeVar("DTypeT", bound=np.dtype[Any])
-ScalarT = TypeVar("ScalarT", bound=np.generic, default=np.generic)
+ScalarT = TypeVar("ScalarT", bound=np.generic, default=Any)
 
 
 def is_dtype(

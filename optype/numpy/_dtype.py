@@ -21,13 +21,8 @@ def __dir__() -> list[str]:
 
 ###
 
-ST = TypeVar("ST", bound=np.generic, default=np.generic)
-DT_co = TypeVar(
-    "DT_co",
-    bound=np.dtype[Any],  # required for `StringDType`
-    default=np.dtype[np.generic],
-    covariant=True,
-)
+ST = TypeVar("ST", bound=np.generic, default=Any)
+DT_co = TypeVar("DT_co", bound=np.dtype[Any], default=np.dtype[Any], covariant=True)
 
 
 @runtime_checkable
