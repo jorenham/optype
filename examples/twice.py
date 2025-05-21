@@ -1,15 +1,5 @@
 # %%
-import sys
-from typing import (
-    Literal,
-    TypeAlias,
-    TypeVar,
-)
-
-if sys.version_info >= (3, 12):
-    from typing import assert_type
-else:
-    from typing_extensions import assert_type
+from typing import Literal, TypeAlias, TypeVar, assert_type
 
 import optype as op
 

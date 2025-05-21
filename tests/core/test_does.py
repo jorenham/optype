@@ -1,12 +1,6 @@
-import sys
-from typing import final
+from typing import assert_type, final
 
 from optype import do_iadd
-
-if sys.version_info >= (3, 13):
-    from typing import assert_type
-else:
-    from typing_extensions import assert_type
 
 
 def test_iadd_iadd() -> None:

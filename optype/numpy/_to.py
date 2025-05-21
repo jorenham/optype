@@ -2,15 +2,10 @@ import sys
 from collections.abc import Sequence as Seq
 from typing import Literal, TypeAlias
 
-if sys.version_info >= (3, 12):
-    from typing import TypeAliasType
-else:
-    from typing_extensions import TypeAliasType
-
 if sys.version_info >= (3, 13):
-    from typing import TypeVar
+    from typing import TypeAliasType, TypeVar
 else:
-    from typing_extensions import TypeVar
+    from typing_extensions import TypeAliasType, TypeVar
 
 import numpy as np
 

@@ -1,10 +1,10 @@
 import sys
-from typing import Literal, Protocol
+from typing import Literal, LiteralString, Protocol
 
 if sys.version_info >= (3, 13):
-    from typing import LiteralString, runtime_checkable
+    from typing import runtime_checkable
 else:
-    from typing_extensions import LiteralString, runtime_checkable
+    from typing_extensions import runtime_checkable
 
 from ._typeforms import AnnotatedAlias, GenericType, LiteralAlias, UnionAlias
 

@@ -1,11 +1,5 @@
 import string
-import sys
-from typing import Final, Protocol, TypeVar
-
-if sys.version_info >= (3, 13):
-    from typing import LiteralString
-else:
-    from typing_extensions import LiteralString
+from typing import Final, LiteralString, Protocol, TypeVar
 
 import pytest
 

@@ -5,12 +5,12 @@ The names are analogous to those in `numpy.dtypes`.
 
 import sys
 from collections.abc import Sequence
-from typing import Any, TypeAlias
+from typing import Any, Never, TypeAlias
 
 if sys.version_info >= (3, 13):
-    from typing import Never, TypeAliasType
+    from typing import TypeAliasType
 else:
-    from typing_extensions import Never, TypeAliasType
+    from typing_extensions import TypeAliasType
 
 import numpy as np
 

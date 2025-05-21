@@ -5,12 +5,12 @@ https://docs.python.org/3/library/pickle.html
 
 import sys
 from collections.abc import Callable, Iterable
-from typing import Protocol, SupportsIndex, TypeAlias
+from typing import Protocol, Self, SupportsIndex, TypeAlias
 
 if sys.version_info >= (3, 13):
-    from typing import ParamSpec, Self, TypeVar, override, runtime_checkable
+    from typing import ParamSpec, TypeVar, override, runtime_checkable
 else:
-    from typing_extensions import ParamSpec, Self, TypeVar, override, runtime_checkable
+    from typing_extensions import ParamSpec, TypeVar, override, runtime_checkable
 
 
 __all__ = (
@@ -84,14 +84,8 @@ class CanGetstate(Protocol[_StateT_co]):
     https://docs.python.org/3/library/pickle.html#object.__getstate__
     """
 
-    if sys.version_info >= (3, 11):
-
-        @override
-        def __getstate__(self, /) -> _StateT_co: ...
-
-    else:
-
-        def __getstate__(self, /) -> _StateT_co: ...
+    @override
+    def __getstate__(self, /) -> _StateT_co: ...
 
 
 @runtime_checkable

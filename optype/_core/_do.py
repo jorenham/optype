@@ -3,13 +3,12 @@
 import math
 import operator as _o
 import sys
-from collections.abc import Callable
-from typing import TYPE_CHECKING, Final, Literal, cast
+from typing import TYPE_CHECKING, Final, Literal, cast, overload
 
 if sys.version_info >= (3, 13):
-    from typing import ParamSpec, TypeVar, overload
+    from typing import TypeVar
 else:
-    from typing_extensions import ParamSpec, TypeVar, overload
+    from typing_extensions import TypeVar
 
 import optype._core._can as _c
 import optype._core._does as _d
@@ -143,14 +142,8 @@ do_dir: Final = cast("_d.DoesDir", dir)
 
 # callables
 
-if sys.version_info >= (3, 11):
-    do_call: Final = cast("_d.DoesCall", _o.call)
-else:
-    _Pss = ParamSpec("_Pss")
-    _R = TypeVar("_R")
 
-    def do_call(f: Callable[_Pss, _R], /, *args: _Pss.args, **kw: _Pss.kwargs) -> _R:
-        return f(*args, **kw)
+do_call: Final = cast("_d.DoesCall", _o.call)
 
 # containers and sequences
 

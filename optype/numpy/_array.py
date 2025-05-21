@@ -1,11 +1,11 @@
 import sys
 from collections.abc import Mapping
-from typing import Any, Protocol, TypeAlias
+from typing import Any, Protocol, Self, TypeAlias
 
 if sys.version_info >= (3, 13):
-    from typing import Self, TypeAliasType, TypeVar, runtime_checkable
+    from typing import TypeAliasType, TypeVar, runtime_checkable
 else:
-    from typing_extensions import Self, TypeAliasType, TypeVar, runtime_checkable
+    from typing_extensions import TypeAliasType, TypeVar, runtime_checkable
 
 import numpy as np
 

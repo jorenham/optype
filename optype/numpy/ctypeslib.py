@@ -42,12 +42,12 @@ from ctypes import (
     c_ulonglong as ULongLong,
     c_ushort as UShort,
 )
-from typing import TYPE_CHECKING, Final, Literal, TypeAlias, cast
+from typing import TYPE_CHECKING, Final, Literal, Never, TypeAlias, cast
 
 if sys.version_info >= (3, 12):
-    from typing import Never, TypeAliasType, TypeVar
+    from typing import TypeAliasType, TypeVar
 else:
-    from typing_extensions import Never, TypeAliasType, TypeVar
+    from typing_extensions import TypeAliasType, TypeVar
 
 if sys.version_info >= (3, 14):
     from ctypes import (

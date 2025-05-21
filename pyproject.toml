@@ -15,13 +15,12 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Typing :: Typed",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = ["typing-extensions>=4.10; python_version<'3.13'"]
 
     [project.optional-dependencies]
@@ -338,7 +337,7 @@ force-exclude = true
 
 [tool.tox]
 isolated_build = true
-env_list = ["repo-review", "3.10", "3.11", "3.12", "3.13"]
+env_list = ["repo-review", "3.11", "3.12", "3.13"]
 
     [tool.tox.env_run_base]
     description = "test with {base_python}"

@@ -2,26 +2,12 @@
 import sys
 import types
 from collections.abc import Generator
-from typing import Protocol, SupportsIndex, TypeAlias
+from typing import Protocol, Self, SupportsIndex, TypeAlias, overload
 
 if sys.version_info >= (3, 13):
-    from typing import (
-        ParamSpec,
-        Self,
-        TypeVar,
-        overload,
-        override,
-        runtime_checkable,
-    )
+    from typing import ParamSpec, TypeVar, override, runtime_checkable
 else:
-    from typing_extensions import (
-        ParamSpec,
-        Self,
-        TypeVar,
-        overload,
-        override,
-        runtime_checkable,
-    )
+    from typing_extensions import ParamSpec, TypeVar, override, runtime_checkable
 
 __all__ = [
     "CanAEnter",

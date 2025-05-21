@@ -2,6 +2,8 @@ import sys
 from typing import (
     TYPE_CHECKING,
     Literal,
+    LiteralString,
+    Never,
     NoReturn,
     Protocol,
     TypeAlias,
@@ -13,9 +15,9 @@ if TYPE_CHECKING:
     import enum
 
 if sys.version_info >= (3, 13):
-    from typing import LiteralString, Never, TypedDict, TypeVar, Unpack
+    from typing import TypedDict, TypeVar
 else:
-    from typing_extensions import LiteralString, Never, TypedDict, TypeVar, Unpack
+    from typing_extensions import TypedDict, TypeVar
 
 from ._core import _can as _c, _just
 
@@ -101,11 +103,7 @@ JustComplex.__doc__ = _just.JustComplex.__doc__  # pyright: ignore[reportDepreca
 AnyInt: TypeAlias = _IntT | _c.CanInt[_IntT] | _c.CanIndex[_IntT]
 
 AnyFloat: TypeAlias = _c.CanFloat | _c.CanIndex
-if sys.version_info >= (3, 11):
-    AnyComplex: TypeAlias = _c.CanComplex | _c.CanFloat | _c.CanIndex
-else:
-    # `complex.__complex__` didn't exists before Python 3.11
-    AnyComplex: TypeAlias = complex | _c.CanComplex | _c.CanFloat | _c.CanIndex
+AnyComplex: TypeAlias = _c.CanComplex | _c.CanFloat | _c.CanIndex
 
 # Anything that can be iterated over, e.g. in a `for` loop,`builtins.iter`,
 # `builtins.enumerate`, or `numpy.array`.
@@ -138,7 +136,7 @@ EmptyTuple: TypeAlias = (
     # in pyright `NoReturn` and `Never` aren't identical, only equivalent
     | tuple[NoReturn, ...]
     # this is what infers the result of `tuple[Never, ...] + tuple[()]` as...
-    | tuple[Unpack[tuple[Never, ...]]]
+    | tuple[*tuple[Never, ...]]
 )
 EmptyList: TypeAlias = list[Never]
 EmptySet: TypeAlias = set[Never]

@@ -1,30 +1,19 @@
 # ruff: noqa: PYI042
 
 import sys
-from typing import Any, Literal, Protocol, TypeAlias
+from typing import Any, Literal, Protocol, Self, TypeAlias, overload
 
-if sys.version_info >= (3, 12):
-    from typing import (
-        Self,
-        TypeAliasType,
-        overload,
-        override,
-        runtime_checkable,
-    )
+if sys.version_info >= (3, 13):
+    from types import CapsuleType
+    from typing import TypeAliasType, TypeVar, override, runtime_checkable
 else:
     from typing_extensions import (
         CapsuleType,
-        Self,
         TypeAliasType,
-        overload,
+        TypeVar,
         override,
         runtime_checkable,
     )
-if sys.version_info >= (3, 13):
-    from types import CapsuleType
-    from typing import TypeVar
-else:
-    from typing_extensions import CapsuleType, TypeVar
 
 import numpy as np
 import numpy.typing as npt

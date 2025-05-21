@@ -119,7 +119,7 @@ With this, the `twice` function can written as:
 
 <table>
 <tr>
-<th width="415px">Python 3.10</th>
+<th width="415px">Python 3.11</th>
 <th width="415px">Python 3.12+</th>
 </tr>
 <tr>
@@ -165,7 +165,7 @@ Because the `optype.Can*` protocols are runtime-checkable, the revised
 
 <table>
 <tr>
-<th width="415px">Python 3.10</th>
+<th width="415px">Python 3.11</th>
 <th width="415px">Python 3.12+</th>
 </tr>
 <tr>

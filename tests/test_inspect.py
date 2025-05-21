@@ -4,7 +4,7 @@ import typing as tp
 import typing_extensions as tpx
 from inspect import getattr_static
 
-if sys.version_info >= (3, 12):
+if sys.version_info >= (3, 13):
     from typing import TypeAliasType
 else:
     from typing_extensions import TypeAliasType
@@ -35,7 +35,6 @@ class GenericTPX(tp.Generic[_T_tpx]): ...
 
 @tpx.runtime_checkable
 class CanInit(tpx.Protocol[_Pss]):
-    # on Python 3.10 this requires `typing_extensions.Protocol` to work
     def __init__(self, *args: _Pss.args, **kwargs: _Pss.kwargs) -> None: ...
 
 
@@ -212,30 +211,26 @@ def test_type_is_final() -> None:
     assert not op.inspect.is_final(Proto)
     assert not op.inspect.is_final(ProtoX)
     assert not op.inspect.is_final(ProtoRuntime)
-    if sys.version_info >= (3, 11):
-        assert op.inspect.is_final(ProtoFinal)
+    assert op.inspect.is_final(ProtoFinal)
     assert op.inspect.is_final(ProtoFinalX)
 
 
 def test_property_is_final() -> None:
     assert not op.inspect.is_final(FinalMembers.p)
-    if sys.version_info >= (3, 11):
-        assert op.inspect.is_final(FinalMembers.p_final)
+    assert op.inspect.is_final(FinalMembers.p_final)
     assert op.inspect.is_final(FinalMembers.p_final_x)
 
 
 def test_method_is_final() -> None:
     assert not op.inspect.is_final(FinalMembers.f)
-    if sys.version_info >= (3, 11):
-        assert op.inspect.is_final(FinalMembers.f_final)
+    assert op.inspect.is_final(FinalMembers.f_final)
     assert op.inspect.is_final(FinalMembers.f_final_x)
 
 
 def test_classmethod_is_final() -> None:
     assert not op.inspect.is_final(FinalMembers.cf)
-    if sys.version_info >= (3, 11):
-        assert op.inspect.is_final(getattr_static(FinalMembers, "cf_final1"))
-        assert op.inspect.is_final(getattr_static(FinalMembers, "cf_final2"))
+    assert op.inspect.is_final(getattr_static(FinalMembers, "cf_final1"))
+    assert op.inspect.is_final(getattr_static(FinalMembers, "cf_final2"))
 
     assert op.inspect.is_final(
         tp.cast(
@@ -253,9 +248,8 @@ def test_classmethod_is_final() -> None:
 
 def test_staticmethod_is_final() -> None:
     assert not op.inspect.is_final(FinalMembers.sf)
-    if sys.version_info >= (3, 11):
-        assert op.inspect.is_final(getattr_static(FinalMembers, "sf_final1"))
-        assert op.inspect.is_final(getattr_static(FinalMembers, "sf_final2"))
+    assert op.inspect.is_final(getattr_static(FinalMembers, "sf_final1"))
+    assert op.inspect.is_final(getattr_static(FinalMembers, "sf_final2"))
 
     assert op.inspect.is_final(
         tp.cast(

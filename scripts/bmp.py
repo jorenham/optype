@@ -14,6 +14,7 @@ _NP1_MIN: Final = 1, 25
 _NP1_MAX: Final = 1, 26
 _NP2_MIN: Final = 2, 0
 _NP2_MAX: Final = 2, 3
+_NP_SKIP: Final = frozenset({(1, 26)})
 
 
 def _np_version() -> _Version:
@@ -43,14 +44,16 @@ def _np_version_range(
             v0, v1 = _NP2_MIN
             break
 
-        yield v0, v1
+        if (v0, v1) not in _NP_SKIP:
+            yield v0, v1
         v1 += 1
 
     assert v0 == last[0]
     assert v1 <= last[1]
 
     for v in range(v1, last[1] + 1):
-        yield v0, v
+        if (v0, v) not in _NP_SKIP:
+            yield v0, v
 
 
 def main(*args: str) -> int:

@@ -2,9 +2,9 @@ import sys
 from typing import Any, Literal, TypeAlias
 
 if sys.version_info >= (3, 13):
-    from typing import TypeAliasType, TypeVar, Unpack
+    from typing import TypeAliasType, TypeVar
 else:
-    from typing_extensions import TypeAliasType, TypeVar, Unpack
+    from typing_extensions import TypeAliasType, TypeVar
 
 
 __all__ = [
@@ -32,25 +32,13 @@ AxT = TypeVar("AxT", int, Any, default=int)
 ###
 # Shape types with at least N dimensions. They're fully static by default, but can be
 # turned "gradual" by passing `Any` as type argument.
-AtLeast0D = TypeAliasType(
-    "AtLeast0D",
-    tuple[AxT, ...],
-    type_params=(AxT,),
-)
-AtLeast1D = TypeAliasType(
-    "AtLeast1D",
-    tuple[int, Unpack[tuple[AxT, ...]]],
-    type_params=(AxT,),
-)
+AtLeast0D = TypeAliasType("AtLeast0D", tuple[AxT, ...], type_params=(AxT,))
+AtLeast1D = TypeAliasType("AtLeast1D", tuple[int, *tuple[AxT, ...]], type_params=(AxT,))
 AtLeast2D = TypeAliasType(
-    "AtLeast2D",
-    tuple[int, int, Unpack[tuple[AxT, ...]]],
-    type_params=(AxT,),
+    "AtLeast2D", tuple[int, int, *tuple[AxT, ...]], type_params=(AxT,)
 )
 AtLeast3D = TypeAliasType(
-    "AtLeast3D",
-    tuple[int, int, int, Unpack[tuple[AxT, ...]]],
-    type_params=(AxT,),
+    "AtLeast3D", tuple[int, int, int, *tuple[AxT, ...]], type_params=(AxT,)
 )
 
 ###

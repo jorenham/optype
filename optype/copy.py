@@ -4,12 +4,12 @@ https://docs.python.org/3/library/copy.html
 """
 
 import sys
-from typing import Protocol
+from typing import Protocol, Self
 
 if sys.version_info >= (3, 13):
-    from typing import Self, TypeVar, override, runtime_checkable
+    from typing import TypeVar, override, runtime_checkable
 else:
-    from typing_extensions import Self, TypeVar, override, runtime_checkable
+    from typing_extensions import TypeVar, override, runtime_checkable
 
 __all__ = (
     "CanCopy",

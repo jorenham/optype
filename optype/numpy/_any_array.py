@@ -1,11 +1,11 @@
 import sys
 from collections.abc import Iterator
-from typing import Any, Protocol, TypeAlias
+from typing import Any, Never, Protocol, TypeAlias
 
 if sys.version_info >= (3, 13):
-    from typing import Never, TypeAliasType, TypeVar
+    from typing import TypeAliasType, TypeVar
 else:
-    from typing_extensions import Never, TypeAliasType, TypeVar
+    from typing_extensions import TypeAliasType, TypeVar
 
 import numpy as np
 
