@@ -65,7 +65,7 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           activate-environment: true
-          python-version: "3.10"
+          python-version: "3.11"
       - run: uv sync
 
       - name: Install numpy ${{ matrix.np }}
@@ -87,10 +87,10 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        py: ["3.10", "3.13"]
+        py: ["3.11", "3.12", "3.13"]
         include:
           - os: ubuntu-latest
-            py: "3.10"
+            py: "3.11"
             np: "1.25"
 
     steps:
