@@ -44,14 +44,14 @@ faster-cache = [
 
 [[package]]
 name = "basedpyright"
-version = "1.29.1"
+version = "1.29.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "nodejs-wheel-binaries" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b9/18/f5e488eac4960ad9a2e71b95f0d91cf93a982c7f68aa90e4e0554f0bc37e/basedpyright-1.29.1.tar.gz", hash = "sha256:06bbe6c3b50ab4af20f80e154049477a50d8b81d2522eadbc9f472f2f92cd44b", size = 21773469, upload-time = "2025-04-23T13:29:42.47Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0c/db/fcfced6e89a49b52694d51078c2cf626b3fe9d097c1145bb8424337d7ae6/basedpyright-1.29.2.tar.gz", hash = "sha256:12c49186003b9f69a028615da883ef97035ea2119a9e3f93a00091b3a27088a6", size = 21966851, upload-time = "2025-05-21T11:45:43.03Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/95/1b/1bb837bbb7e259928f33d3c105dfef4f5349ef08b3ef45576801256e3234/basedpyright-1.29.1-py3-none-any.whl", hash = "sha256:b7eb65b9d4aaeeea29a349ac494252032a75a364942d0ac466d7f07ddeacc786", size = 11397959, upload-time = "2025-04-23T13:29:38.106Z" },
+    { url = "https://files.pythonhosted.org/packages/98/b7/8307208ab517ac6e5d0331ad7347624fe8b250fb6e659ba3bd081d82c890/basedpyright-1.29.2-py3-none-any.whl", hash = "sha256:f389e2997de33d038c5065fd85bff351fbdc62fa6d6371c7b947fc3bce8d437d", size = 11472099, upload-time = "2025-05-21T11:45:38.785Z" },
 ]
 
 [[package]]
@@ -95,14 +95,14 @@ wheels = [
 
 [[package]]
 name = "click"
-version = "8.2.0"
+version = "8.2.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorama", marker = "sys_platform == 'win32'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cd/0f/62ca20172d4f87d93cf89665fbaedcd560ac48b465bd1d92bfc7ea6b0a41/click-8.2.0.tar.gz", hash = "sha256:f5452aeddd9988eefa20f90f05ab66f17fce1ee2a36907fd30b05bbb5953814d", size = 235857, upload-time = "2025-05-10T22:21:03.111Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/60/6c/8ca2efa64cf75a977a0d7fac081354553ebe483345c734fb6b6515d96bbc/click-8.2.1.tar.gz", hash = "sha256:27c491cc05d968d271d5a1db13e3b5a184636d9d930f148c50b038f0d0646202", size = 286342, upload-time = "2025-05-20T23:19:49.832Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a2/58/1f37bf81e3c689cc74ffa42102fa8915b59085f54a6e4a80bc6265c0f6bf/click-8.2.0-py3-none-any.whl", hash = "sha256:6b303f0b2aa85f1cb4e5303078fadcbcd4e476f114fab9b5007005711839325c", size = 102156, upload-time = "2025-05-10T22:21:01.352Z" },
+    { url = "https://files.pythonhosted.org/packages/85/32/10bb5764d90a8eee674e9dc6f4db6a0ab47c8c4d0d83c27f7c39ac415a4d/click-8.2.1-py3-none-any.whl", hash = "sha256:61a3265b914e850b85317d0b3109c7f8cd35a670f963866005d6ef1d5175a12b", size = 102215, upload-time = "2025-05-20T23:19:47.796Z" },
 ]
 
 [[package]]
@@ -311,7 +311,7 @@ provides-extras = ["numpy"]
 [package.metadata.requires-dev]
 dev = [
     { name = "basedmypy", extras = ["faster-cache"], specifier = ">=2.10.0" },
-    { name = "basedpyright", specifier = ">=1.29.1" },
+    { name = "basedpyright", specifier = ">=1.29.2" },
     { name = "beartype", specifier = ">=0.20.2" },
     { name = "optype", extras = ["numpy"] },
     { name = "pytest", specifier = ">=8.3.5" },
@@ -330,7 +330,7 @@ test = [
 ]
 type = [
     { name = "basedmypy", extras = ["faster-cache"], specifier = ">=2.10.0" },
-    { name = "basedpyright", specifier = ">=1.29.1" },
+    { name = "basedpyright", specifier = ">=1.29.2" },
 ]
 
 [[package]]
@@ -511,7 +511,7 @@ wheels = [
 
 [[package]]
 name = "repo-review"
-version = "0.12.1"
+version = "0.12.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "markdown-it-py" },
@@ -519,9 +519,9 @@ dependencies = [
     { name = "tomli", marker = "python_full_version < '3.11'" },
     { name = "typing-extensions", marker = "python_full_version < '3.11'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a8/ec/9c3c2e25b546cf788478edee5a8a4c15c4fb48144c65157898007c1af384/repo_review-0.12.1.tar.gz", hash = "sha256:57e1738fb0d127ba448109c012f16211ed6877434845905c748b170f721c7060", size = 45128, upload-time = "2025-02-05T03:28:06.23Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6f/a2/44609412bcb7666c20868f027e6bfaf81c37030572574bca8a64a1ed788a/repo_review-0.12.2.tar.gz", hash = "sha256:24393ac48132ae2b50c1208bc54b6126ccb30e5932d123deb12d74f805d91422", size = 46642, upload-time = "2025-05-21T16:47:33.605Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4b/47/8dfe2cee47cb734f74fa50eeaf7d4156c67051e59a4c705024f8c979917b/repo_review-0.12.1-py3-none-any.whl", hash = "sha256:0a9381b0a458a074a0a7e8b15b3e9c17c42f489af879ce55594947b7e63bdad9", size = 26350, upload-time = "2025-02-05T03:28:04.456Z" },
+    { url = "https://files.pythonhosted.org/packages/c5/cf/f93c4654ccc4ab1f219b0e29fcc5a1fc47630633ac0521ef4980cafec49b/repo_review-0.12.2-py3-none-any.whl", hash = "sha256:241f690e32aca12807d36aee4eac63559774664e09b824bfbd760758ea4a8265", size = 26462, upload-time = "2025-05-21T16:47:31.932Z" },
 ]
 
 [package.optional-dependencies]
@@ -547,16 +547,16 @@ wheels = [
 
 [[package]]
 name = "rich-click"
-version = "1.8.8"
+version = "1.8.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
     { name = "rich" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a6/7a/4b78c5997f2a799a8c5c07f3b2145bbcda40115c4d35c76fbadd418a3c89/rich_click-1.8.8.tar.gz", hash = "sha256:547c618dea916620af05d4a6456da797fbde904c97901f44d2f32f89d85d6c84", size = 39066, upload-time = "2025-03-09T23:20:31.174Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b7/a8/dcc0a8ec9e91d76ecad9413a84b6d3a3310c6111cfe012d75ed385c78d96/rich_click-1.8.9.tar.gz", hash = "sha256:fd98c0ab9ddc1cf9c0b7463f68daf28b4d0033a74214ceb02f761b3ff2af3136", size = 39378, upload-time = "2025-05-19T21:33:05.569Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/fa/69/963f0bf44a654f6465bdb66fb5a91051b0d7af9f742b5bd7202607165036/rich_click-1.8.8-py3-none-any.whl", hash = "sha256:205aabd5a98e64ab2c105dee9e368be27480ba004c7dfa2accd0ed44f9f1550e", size = 35747, upload-time = "2025-03-09T23:20:29.831Z" },
+    { url = "https://files.pythonhosted.org/packages/b6/c2/9fce4c8a9587c4e90500114d742fe8ef0fd92d7bad29d136bb9941add271/rich_click-1.8.9-py3-none-any.whl", hash = "sha256:c3fa81ed8a671a10de65a9e20abf642cfdac6fdb882db1ef465ee33919fbcfe2", size = 36082, upload-time = "2025-05-19T21:33:04.195Z" },
 ]
 
 [[package]]
