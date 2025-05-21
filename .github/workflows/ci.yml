@@ -27,7 +27,7 @@ jobs:
           plugins: sp-repo-review
 
       - name: markdownlint
-        uses: DavidAnson/markdownlint-cli2-action@v19
+        uses: DavidAnson/markdownlint-cli2-action@v20
         with:
           config: ".markdownlint.yaml"
           globs: "**/*.md"
@@ -56,7 +56,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        np: ["1.23", "1.24", "1.25", "1.26", "2.0", "2.1", "2.2"]
+        np: ["1.25", "1.26", "2.0", "2.1", "2.2"]
 
     steps:
       - uses: actions/checkout@v4
@@ -91,7 +91,7 @@ jobs:
         include:
           - os: ubuntu-latest
             py: "3.10"
-            np: "1.23"
+            np: "1.25"
 
     steps:
       - uses: actions/checkout@v4
@@ -106,7 +106,7 @@ jobs:
         run: uv sync
 
       - name: Install old numpy
-        if: ${{ matrix.np == '1.23' }}
+        if: ${{ matrix.np == '1.25' }}
         run: uv pip install "numpy==${{ matrix.np }}.*"
 
       - name: pytest

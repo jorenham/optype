@@ -303,7 +303,7 @@ type = [
 
 [package.metadata]
 requires-dist = [
-    { name = "numpy", marker = "extra == 'numpy'", specifier = ">=1.23.5" },
+    { name = "numpy", marker = "extra == 'numpy'", specifier = ">=1.25.2" },
     { name = "typing-extensions", marker = "python_full_version < '3.13'", specifier = ">=4.10" },
 ]
 provides-extras = ["numpy"]

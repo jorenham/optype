@@ -4,13 +4,13 @@
 
 import subprocess
 import sys
+from collections.abc import Generator
 from typing import Final, TypeAlias
-from typing_extensions import Generator
 
 _Version: TypeAlias = tuple[int, int]
 
 # TODO: figure these out dynamically, e.g. with `distutils` or from `pyproject.toml`
-_NP1_MIN: Final = 1, 23
+_NP1_MIN: Final = 1, 25
 _NP1_MAX: Final = 1, 26
 _NP2_MIN: Final = 2, 0
 _NP2_MAX: Final = 2, 3

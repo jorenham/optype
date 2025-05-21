@@ -21,12 +21,11 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Typing :: Typed",
 ]
-# https://scientific-python.org/specs/spec-0000/
 requires-python = ">=3.10"
 dependencies = ["typing-extensions>=4.10; python_version<'3.13'"]
 
     [project.optional-dependencies]
-    numpy = ["numpy>=1.23.5"]
+    numpy = ["numpy>=1.25.2"]
 
     [project.urls]
     Repository = "https://github.com/jorenham/optype/"
@@ -135,15 +134,11 @@ reportUnusedImport = false                # dupe of F401
 reportUnusedVariable = false              # dupe of F841
 
     [tool.basedpyright.defineConstant]
-    NP123 = true
-    NP124 = true
     NP125 = true
-    NP126 = true
     NP20 = true
     NP21 = true
     NP22 = true
     NP23 = false
-    NP30 = false
 
 
 [tool.pytest.ini_options]

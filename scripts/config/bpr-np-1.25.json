@@ -1,4 +1,10 @@
 {
-  "extends": "./bpr-np-1.24.json",
-  "defineConstant": { "NP125": true }
+  "extends": "../../pyproject.toml",
+  "defineConstant": {
+    "NP125": true,
+    "NP20": false,
+    "NP21": false,
+    "NP22": false,
+    "NP23": false
+  }
 }
