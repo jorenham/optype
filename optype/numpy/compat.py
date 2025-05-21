@@ -1,6 +1,15 @@
 """Compatibility with older numpy versions."""
 
-from ._compat import NP125, Long as long, ULong as ulong  # noqa: N813
+from numpy.exceptions import (
+    AxisError,
+    ComplexWarning,
+    DTypePromotionError,
+    ModuleDeprecationWarning,
+    TooHardError,
+    VisibleDeprecationWarning,
+)
+
+from ._compat import Long as long, ULong as ulong  # noqa: N813
 from ._scalar import (
     cfloating as complexfloating,
     cfloating32 as complexfloating64,
@@ -25,27 +34,6 @@ from ._scalar import (
     sinteger as signedinteger,
     uinteger as unsignedinteger,
 )
-
-if NP125:
-    from numpy.exceptions import (
-        AxisError,
-        ComplexWarning,
-        DTypePromotionError,
-        ModuleDeprecationWarning,
-        TooHardError,
-        VisibleDeprecationWarning,
-    )
-else:
-    from numpy import (
-        AxisError,
-        ComplexWarning,
-        ModuleDeprecationWarning,
-        TooHardError,
-        VisibleDeprecationWarning,
-    )
-
-    class DTypePromotionError(TypeError): ...
-
 
 __all__ = [
     "AxisError",

@@ -2959,15 +2959,10 @@ Source code: [`optype/numpy/_to.py`][CODE-NP-TO]
 
 #### `compat` submodule
 
-Compatibility module for supporting a wide (currently `1.23` - `2.2`) range of numpy
-versions. It contains two kinds of things:
+Compatibility module for supporting a wide (currently `1.25` - `2.3`) range of numpy
+versions. It contains the abstract numeric scalar types, with `numpy>=2.2`
+type-parameter defaults, which I explained in the [`release notes`][NP-REL22].
 
-- All [`numpy.exceptions`][NP-EXC], which didn't exist before `<1.25`, making it very
-difficult to use if you need to support those versions, especially within stubs.
-- The abstract numeric scalar types, with `numpy>=2.2` type-parameter defaults, which
-I explained in the [`release notes`][NP-REL22].
-
-[NP-EXC]: https://numpy.org/doc/stable/reference/routines.exceptions.html
 [NP-REL22]: https://numpy.org/doc/stable/release/2.2.0-notes.html#new-features
 
 #### `random` submodule
