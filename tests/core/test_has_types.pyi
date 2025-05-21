@@ -1,7 +1,6 @@
 # pyright: reportInvalidStubStatement=false
 
-from typing import TypedDict, TypeVar
-from typing_extensions import LiteralString, assert_type
+from typing import LiteralString, TypedDict, TypeVar, assert_type
 
 import optype as op
 

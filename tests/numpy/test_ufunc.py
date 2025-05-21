@@ -1,12 +1,6 @@
 import math
-import sys
 from collections.abc import Callable as Fn
-from typing import Any, Literal, TypeAlias, TypeVar, cast
-
-if sys.version_info >= (3, 13):
-    from typing import LiteralString
-else:
-    from typing_extensions import LiteralString
+from typing import Any, Literal, LiteralString, TypeAlias, TypeVar, cast
 
 import numpy as np
 

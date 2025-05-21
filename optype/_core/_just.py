@@ -1,19 +1,19 @@
 import datetime as dt
 import sys
-from typing import Any, Generic, Protocol, TypeAlias, _ProtocolMeta  # noqa: PLC2701
+from typing import (
+    Any,
+    Generic,
+    Protocol,
+    Self,
+    TypeAlias,
+    _ProtocolMeta,  # noqa: PLC2701
+    final,
+)
 
 if sys.version_info >= (3, 13):
-    from typing import Self, TypeIs, TypeVar, Unpack, final, override, runtime_checkable
+    from typing import TypeIs, TypeVar, override, runtime_checkable
 else:
-    from typing_extensions import (
-        Self,
-        TypeIs,
-        TypeVar,
-        Unpack,
-        final,
-        override,
-        runtime_checkable,
-    )
+    from typing_extensions import TypeIs, TypeVar, override, runtime_checkable
 
 from ._can import CanFloat, CanIndex
 
@@ -97,7 +97,7 @@ class _JustMeta(_ProtocolMeta, Generic[_ObjectT]):
     def __new__(  # noqa: PYI019
         mcls: type[_TypeT],
         /,
-        *args: Unpack[tuple[str, tuple[type, ...], dict[str, Any]]],
+        *args: *tuple[str, tuple[type, ...], dict[str, Any]],
         just: type[_ObjectT],
     ) -> _TypeT:
         self = super().__new__(mcls, *args)  # type: ignore[misc]

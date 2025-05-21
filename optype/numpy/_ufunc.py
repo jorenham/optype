@@ -1,12 +1,12 @@
 import sys
 import types
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from typing import Any, Literal as L, Protocol, TypeAlias  # noqa: N817
+from typing import Any, Literal as L, LiteralString, Protocol, TypeAlias  # noqa: N817
 
 if sys.version_info >= (3, 13):
-    from typing import LiteralString, TypeVar, runtime_checkable
+    from typing import TypeVar, runtime_checkable
 else:
-    from typing_extensions import LiteralString, TypeVar, runtime_checkable
+    from typing_extensions import TypeVar, runtime_checkable
 
 import numpy as np
 import numpy.typing as npt

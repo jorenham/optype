@@ -1,11 +1,11 @@
 import sys
 from collections.abc import AsyncIterator, Callable, Iterable, Iterator
-from typing import Literal, Protocol, TypeAlias
+from typing import Literal, Protocol, TypeAlias, overload
 
 if sys.version_info >= (3, 13):
-    from typing import ParamSpec, TypeVar, overload
+    from typing import ParamSpec, TypeVar
 else:
-    from typing_extensions import ParamSpec, TypeVar, overload
+    from typing_extensions import ParamSpec, TypeVar
 
 import optype._core._can as _c
 

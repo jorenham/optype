@@ -1,17 +1,7 @@
-import sys
 import types as _types
 from collections.abc import Iterator
-from typing import Any, Generic, TypeAlias, _SpecialForm, type_check_only
-from typing_extensions import (
-    ParamSpec,
-    Self,
-    TypeAliasType,
-    TypeVar,
-    TypeVarTuple,
-    Unpack,
-    final,
-    override,
-)
+from typing import Any, Generic, Self, TypeAlias, _SpecialForm, final, type_check_only
+from typing_extensions import ParamSpec, TypeAliasType, TypeVar, TypeVarTuple, override
 
 __all__ = "AnnotatedAlias", "GenericType", "LiteralAlias", "UnionAlias"
 
@@ -45,10 +35,7 @@ class GenericType:
     def __ror__(self, lhs: type | object, /) -> UnionAlias: ...
     def __getitem__(self, args: type | object, /) -> GenericType: ...
     def copy_with(self, params: object, /) -> GenericType: ...
-
-    if sys.version_info >= (3, 11):
-        def __iter__(self, /) -> Iterator[UnpackAlias[Self]]: ...
-
+    def __iter__(self, /) -> Iterator[UnpackAlias[Self]]: ...
     def __call__(self, /, *args: object, **kwargs: object) -> _SpecialForm | object: ...
     def __instancecheck__(self, obj: object, /) -> bool: ...
     def __subclasscheck__(self, obj: type, /) -> bool: ...
@@ -66,7 +53,7 @@ class AnnotatedAlias(GenericType):
     @override
     def __origin__(self, /) -> _TypeExpr: ...
     @property
-    def __metadata__(self, /) -> tuple[object, Unpack[tuple[object, ...]]]: ...
+    def __metadata__(self, /) -> tuple[object, *tuple[object, ...]]: ...
 
 @type_check_only
 class UnpackAlias(GenericType, Generic[_Ts_co]):

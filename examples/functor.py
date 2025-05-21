@@ -3,12 +3,12 @@ from __future__ import annotations
 import sys
 import optype as op
 
-from typing import Generic
+from typing import Generic, final, overload
 
 if sys.version_info >= (3, 13):
-    from typing import final, override, overload, TypeVar
+    from typing import override, TypeVar
 else:
-    from typing_extensions import final, override, overload, TypeVar
+    from typing_extensions import override, TypeVar
 
 from collections.abc import Callable as CanCall
 from types import NotImplementedType

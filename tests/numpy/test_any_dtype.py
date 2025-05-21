@@ -1,11 +1,5 @@
-import sys
 import types
-from typing import Any, Final
-
-if sys.version_info >= (3, 11):
-    from typing import Never
-else:
-    from typing_extensions import Never
+from typing import Any, Final, Never
 
 import numpy as np
 import pytest
