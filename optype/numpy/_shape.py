@@ -26,6 +26,11 @@ def __dir__() -> list[str]:
 
 
 ###
+Shape: TypeAlias = tuple[int, ...]  # undocumented
+AnyShape: TypeAlias = tuple[Any, ...]  # undocumented
+
+
+###
 
 AxT = TypeVar("AxT", int, Any, default=int)
 

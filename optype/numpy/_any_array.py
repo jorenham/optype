@@ -11,6 +11,7 @@ import numpy as np
 
 import optype.numpy._compat as _x
 import optype.numpy._scalar as _sc
+from ._shape import AnyShape
 from optype._core import CanBuffer, JustComplex, JustFloat, JustInt, JustObject
 from optype._utils import set_module
 
@@ -75,14 +76,7 @@ _ST_co = TypeVar("_ST_co", bound=np.generic, covariant=True)
 # NOTE: Does not include scalar types
 class _AnyArrayNP(Protocol[_ST_co]):
     def __len__(self, /) -> int: ...
-
-    if _x.NP21:
-
-        def __array__(self, /) -> np.ndarray[tuple[int, ...], np.dtype[_ST_co]]: ...
-
-    else:
-
-        def __array__(self, /) -> np.ndarray[Any, np.dtype[_ST_co]]: ...
+    def __array__(self, /) -> np.ndarray[AnyShape, np.dtype[_ST_co]]: ...
 
 
 # NOTE: does not include tuple
@@ -176,16 +170,7 @@ if _x.NP20:
     @set_module("optype.numpy")
     class AnyStringArray(Protocol):
         def __len__(self, /) -> int: ...
-
-        if _x.NP21:
-            # `numpy>=2.1`
-            def __array__(
-                self, /
-            ) -> np.ndarray[tuple[int, ...], np.dtypes.StringDType]: ...
-
-        elif _x.NP20:
-            # `numpy>=2,<2.1`
-            def __array__(self, /) -> np.ndarray[Any, np.dtype[Never]]: ...
+        def __array__(self, /) -> np.ndarray[AnyShape, np.dtypes.StringDType]: ...
 
 else:  # `numpy<2`
     AnyStringArray: TypeAlias = Never
