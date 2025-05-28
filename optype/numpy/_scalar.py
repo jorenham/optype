@@ -1,5 +1,3 @@
-# ruff: noqa: PYI042
-
 import sys
 from typing import Any, Literal, Protocol, Self, TypeAlias, overload
 
@@ -16,7 +14,6 @@ else:
     )
 
 import numpy as np
-import numpy.typing as npt
 from numpy._typing import _8Bit, _16Bit, _32Bit, _64Bit  # noqa: PLC2701
 
 from ._compat import NP20
@@ -113,43 +110,34 @@ class Scalar(Protocol[_PT_co, _NB_co]):
     def __array__(self, dtype: _DT, /) -> _Array0D[_DT]: ...
 
 
-# `NBitBase` invariant and doesn't actually do anything, so the default should be `Any`
-_N = TypeVar("_N", bound=npt.NBitBase, default=Any)
-_N1 = TypeVar("_N1", bound=npt.NBitBase, default=Any)
-_N2 = TypeVar("_N2", bound=npt.NBitBase, default=_N1)
-
 generic = np.generic
 flexible = np.flexible
 character = np.character
 
-number = TypeAliasType("number", np.number[_N], type_params=(_N,))
-integer = TypeAliasType("integer", np.integer[_N], type_params=(_N,))
-uinteger = TypeAliasType("uinteger", np.unsignedinteger[_N], type_params=(_N,))
-sinteger = TypeAliasType("sinteger", np.signedinteger[_N], type_params=(_N,))
-inexact = TypeAliasType("inexact", np.inexact[_N], type_params=(_N,))
-floating = TypeAliasType("floating", np.floating[_N], type_params=(_N,))
-cfloating = TypeAliasType(
-    "cfloating",
-    np.complexfloating[_N1, _N2],
-    type_params=(_N1, _N2),
-)
+number = TypeAliasType("number", np.number[Any])
+integer = TypeAliasType("integer", np.integer[Any])
+uinteger = TypeAliasType("uinteger", np.unsignedinteger[Any])
+sinteger = TypeAliasType("sinteger", np.signedinteger[Any])
+inexact = TypeAliasType("inexact", np.inexact[Any])
+floating = TypeAliasType("floating", np.floating[Any])
+cfloating = TypeAliasType("cfloating", np.complexfloating[Any, Any])
 
-integer8: TypeAlias = np.integer[_8Bit]
-integer16: TypeAlias = np.integer[_16Bit]
-integer32: TypeAlias = np.integer[_32Bit]
-integer64: TypeAlias = np.integer[_64Bit]
+integer8 = TypeAliasType("integer8", np.integer[_8Bit])
+integer16 = TypeAliasType("integer16", np.integer[_16Bit])
+integer32 = TypeAliasType("integer32", np.integer[_32Bit])
+integer64 = TypeAliasType("integer64", np.integer[_64Bit])
 
-floating16: TypeAlias = np.floating[_16Bit]
-floating32: TypeAlias = np.floating[_32Bit]
-floating64: TypeAlias = np.floating[_64Bit]
+floating16 = TypeAliasType("floating16", np.floating[_16Bit])
+floating32 = TypeAliasType("floating32", np.floating[_32Bit])
+floating64 = TypeAliasType("floating64", np.floating[_64Bit])
 
-cfloating32: TypeAlias = np.complexfloating[_32Bit, _32Bit]
-cfloating64: TypeAlias = np.complexfloating[_64Bit, _64Bit]
+cfloating32 = TypeAliasType("cfloating32", np.complexfloating[_32Bit, _32Bit])
+cfloating64 = TypeAliasType("cfloating64", np.complexfloating[_64Bit, _64Bit])
 
-inexact32: TypeAlias = np.inexact[_32Bit]
-inexact64: TypeAlias = np.inexact[_64Bit]
+inexact32 = TypeAliasType("inexact32", np.inexact[_32Bit])
+inexact64 = TypeAliasType("inexact64", np.inexact[_64Bit])
 
-number8: TypeAlias = np.number[_8Bit]
-number16: TypeAlias = np.number[_16Bit]
-number32: TypeAlias = np.number[_32Bit]
-number64: TypeAlias = np.number[_64Bit]
+number8 = TypeAliasType("number8", np.number[_8Bit])
+number16 = TypeAliasType("number16", np.number[_16Bit])
+number32 = TypeAliasType("number32", np.number[_32Bit])
+number64 = TypeAliasType("number64", np.number[_64Bit])
