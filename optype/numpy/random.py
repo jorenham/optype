@@ -6,7 +6,7 @@ import sys
 from collections.abc import Sequence
 from typing import Any, TypeAlias
 
-if sys.version_info >= (3, 12):
+if sys.version_info >= (3, 13):
     from typing import TypeAliasType
 else:
     from typing_extensions import TypeAliasType

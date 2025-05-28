@@ -44,7 +44,7 @@ from ctypes import (
 )
 from typing import TYPE_CHECKING, Final, Literal, Never, TypeAlias, cast
 
-if sys.version_info >= (3, 12):
+if sys.version_info >= (3, 13):
     from typing import TypeAliasType, TypeVar
 else:
     from typing_extensions import TypeAliasType, TypeVar
