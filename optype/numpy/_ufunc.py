@@ -24,7 +24,7 @@ def __dir__() -> list[str]:
 ###
 
 
-_AnyFunc: TypeAlias = Callable[..., object]  # TODO(jorenham): default to `Any`
+_AnyFunc: TypeAlias = Callable[..., Any]
 _AnyArray: TypeAlias = np.ndarray[AnyShape, np.dtype[Any]]
 
 _FT_co = TypeVar("_FT_co", bound=_AnyFunc, default=_AnyFunc, covariant=True)
@@ -174,7 +174,7 @@ else:
 
 
 _UFT_contra = TypeVar("_UFT_contra", bound=UFunc, default=np.ufunc, contravariant=True)
-_T_co = TypeVar("_T_co", default=object, covariant=True)
+_T_co = TypeVar("_T_co", default=Any, covariant=True)
 
 _MethodCommon: TypeAlias = L["__call__", "reduce", "reduceat", "accumulate", "outer"]
 
@@ -229,6 +229,6 @@ class CanArrayFunction(Protocol[_FT_contra, _T_co]):
         # although this could be tighter, this ensures numpy.typing compat
         types: Iterable[type["CanArrayFunction"]],
         # ParamSpec can only be used on *args and **kwargs for some reason...
-        args: tuple[object, ...],  # TODO(jorenham): use `Any`, not object
-        kwargs: Mapping[str, object],  # TODO(jorenham): use `Any`, not object
+        args: tuple[Any, ...],
+        kwargs: Mapping[str, Any],
     ) -> types.NotImplementedType | _T_co: ...
