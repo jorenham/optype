@@ -165,12 +165,19 @@ AnyTimeDelta64Array: TypeAlias = _AnyArray[np.timedelta64]
 AnyObjectArray: TypeAlias = _AnyArray[np.object_, np.object_ | JustObject]
 
 
-if _x.NP20:
+if _x.NP20:  # `numpy>=2.0`
 
     @set_module("optype.numpy")
     class AnyStringArray(Protocol):
         def __len__(self, /) -> int: ...
-        def __array__(self, /) -> np.ndarray[AnyShape, np.dtypes.StringDType]: ...
 
-else:  # `numpy<2`
+        if _x.NP21:  # numpy>=2.1
+
+            def __array__(self, /) -> np.ndarray[AnyShape, np.dtypes.StringDType]: ...
+
+        else:  # numpy==2.0.*
+
+            def __array__(self, /) -> np.ndarray[AnyShape, np.dtype[Never]]: ...
+
+else:  # `numpy<2.0`
     AnyStringArray: TypeAlias = Never
