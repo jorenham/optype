@@ -2575,11 +2575,11 @@ The signatures are almost identical to each other, and in the `0d` case it rough
 looks like this:
 
 ```py
-ST = TypeVar("ST", bound=np.generic, default=np.generic)
-_ToDType: TypeAlias = type[ST] | np.dtype[ST] | HasDType[np.dtype[ST]]
+_T = TypeVar("_T", bound=np.generic, default=Any)
+_ToDType: TypeAlias = type[_T] | np.dtype[_T] | HasDType[np.dtype[_T]]
 
 
-def is_array_0d(a, /, dtype: _ToDType[ST] | None = None) -> TypeIs[Array0D[ST]]: ...
+def is_array_0d(a, /, dtype: _ToDType[_T] | None = None) -> TypeIs[Array0D[_T]]: ...
 ```
 
 ##### Shape aliases
@@ -2773,13 +2773,7 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
     <td align="left"><code>ToBoolStrict{}D</code></td>
 </tr>
 <tr>
-    <td align="left" rowspan="2"><code>~int</code></td>
-    <td align="left"><code>int64</code></td>
-    <td align="left"><code>ToJustInt64</code></td>
-    <td align="left"><code>ToJustInt64_{}D</code></td>
-    <td align="left"><code>ToJustInt64Strict{}D</code></td>
-</tr>
-<tr>
+    <td align="left"><code>~int</code></td>
     <td align="left"><code>integer</code></td>
     <td align="left"><code>ToJustInt</code></td>
     <td align="left"><code>ToJustInt{}D</code></td>

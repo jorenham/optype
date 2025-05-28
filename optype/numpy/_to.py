@@ -1,6 +1,6 @@
 import sys
 from collections.abc import Sequence as Seq
-from typing import Literal, TypeAlias
+from typing import Any, Literal, TypeAlias
 
 if sys.version_info >= (3, 13):
     from typing import TypeAliasType, TypeVar
@@ -83,9 +83,7 @@ _PyBool: TypeAlias = bool | Literal[0, 1]  # 0 and 1 are sometimes used as bool 
 _PyScalar: TypeAlias = complex | bytes | str  # `complex` equivs `complex | float | int`
 
 T = TypeVar("T", default=_PyScalar)
-
-# TODO(jorenham): change default to `Any`
-SCT = TypeVar("SCT", bound=np.generic, default=np.generic)
+SCT = TypeVar("SCT", bound=np.generic, default=Any)
 
 _To0D = TypeAliasType("_To0D", T | SCT | CanArray0D[SCT], type_params=(T, SCT))
 _To1D = TypeAliasType(
