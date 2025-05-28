@@ -2773,7 +2773,13 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
     <td align="left"><code>ToBoolStrict{}D</code></td>
 </tr>
 <tr>
-    <td align="left"><code>~int</code></td>
+    <td align="left" rowspan="2"><code>~int</code></td>
+    <td align="left"><code>int64</code></td>
+    <td align="left"><code>ToJustInt64</code></td>
+    <td align="left"><code>ToJustInt64_{}D</code></td>
+    <td align="left"><code>ToJustInt64Strict{}D</code></td>
+</tr>
+<tr>
     <td align="left"><code>integer</code></td>
     <td align="left"><code>ToJustInt</code></td>
     <td align="left"><code>ToJustInt{}D</code></td>
