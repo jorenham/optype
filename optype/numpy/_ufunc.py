@@ -9,9 +9,9 @@ else:
     from typing_extensions import TypeVar, runtime_checkable
 
 import numpy as np
-import numpy.typing as npt
 
 import optype.numpy._compat as _x
+from ._shape import AnyShape
 from optype._utils import set_module
 
 __all__ = ["CanArrayFunction", "CanArrayUFunc", "UFunc"]
@@ -24,8 +24,8 @@ def __dir__() -> list[str]:
 ###
 
 
-_AnyFunc: TypeAlias = Callable[..., object]
-_AnyArray: TypeAlias = npt.NDArray[np.generic]
+_AnyFunc: TypeAlias = Callable[..., object]  # TODO(jorenham): default to `Any`
+_AnyArray: TypeAlias = np.ndarray[AnyShape, np.dtype[Any]]
 
 _FT_co = TypeVar("_FT_co", bound=_AnyFunc, default=_AnyFunc, covariant=True)
 _NInT_co = TypeVar("_NInT_co", bound=int, default=int, covariant=True)
@@ -229,6 +229,6 @@ class CanArrayFunction(Protocol[_FT_contra, _T_co]):
         # although this could be tighter, this ensures numpy.typing compat
         types: Iterable[type["CanArrayFunction"]],
         # ParamSpec can only be used on *args and **kwargs for some reason...
-        args: tuple[object, ...],
-        kwargs: Mapping[str, object],
+        args: tuple[object, ...],  # TODO(jorenham): use `Any`, not object
+        kwargs: Mapping[str, object],  # TODO(jorenham): use `Any`, not object
     ) -> types.NotImplementedType | _T_co: ...

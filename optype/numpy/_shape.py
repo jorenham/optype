@@ -26,8 +26,10 @@ def __dir__() -> list[str]:
 
 
 ###
-Shape: TypeAlias = tuple[int, ...]  # undocumented
-AnyShape: TypeAlias = tuple[Any, ...]  # undocumented
+# undocumented aliases for internal use
+
+Shape: TypeAlias = tuple[int, ...]
+AnyShape: TypeAlias = tuple[Any, ...]
 
 
 ###
