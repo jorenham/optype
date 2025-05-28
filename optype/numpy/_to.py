@@ -84,7 +84,7 @@ _PyScalar: TypeAlias = complex | bytes | str  # `complex` equivs `complex | floa
 
 T = TypeVar("T", default=_PyScalar)
 
-# TODO(jorenham): changge default to `Any`
+# TODO(jorenham): change default to `Any`
 SCT = TypeVar("SCT", bound=np.generic, default=np.generic)
 
 _To0D = TypeAliasType("_To0D", T | SCT | CanArray0D[SCT], type_params=(T, SCT))
