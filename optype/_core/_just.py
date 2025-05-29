@@ -113,7 +113,7 @@ class _JustMeta(_ProtocolMeta, Generic[_ObjectT]):
         tp = self.__just_class__
 
         if isinstance(subclass, int):
-            # basedmypy "bare" bool and int literals
+            # "bare" bool and int literals
             subclass = type(subclass)
 
         if not isinstance(subclass, type):

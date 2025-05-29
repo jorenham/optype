@@ -1,5 +1,5 @@
 import types
-from typing import Any, Final, Never
+from typing import Final, Never
 
 import numpy as np
 import pytest
@@ -43,22 +43,17 @@ _DTYPES: Final = (
 _TIME_UNITS: Final = "as", "fs", "ps", "ns", "us", "s", "m", "h", "D", "W", "M", "Y"
 
 
-# basedmypy 2.9.1 workaround
-def _getattr(obj: object, attr: str, /) -> Any:
-    return getattr(obj, attr)
-
-
 def _get_dtype_codes(
     dtype: np.dtype[np.generic],
     module: types.ModuleType = _dtype_attr,
 ) -> tuple[frozenset[str], frozenset[str]]:
     try:
         strcode = dtype.str[1:]
-        literal_name = _getattr(module, f"{strcode}_name")
-        literal_char = _getattr(module, f"{strcode}_char")
+        literal_name = getattr(module, f"{strcode}_name")
+        literal_char = getattr(module, f"{strcode}_char")
     except AttributeError:
-        literal_name = _getattr(module, f"{dtype.char}_name")
-        literal_char = _getattr(module, f"{dtype.char}_char")
+        literal_name = getattr(module, f"{dtype.char}_name")
+        literal_char = getattr(module, f"{dtype.char}_char")
 
     names = frozenset(() if literal_name is Never else literal_name.__args__)
     chars = frozenset(() if literal_char is Never else literal_char.__args__)

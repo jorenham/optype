@@ -119,7 +119,7 @@ do_repr: Final = cast("_d.DoesRepr", repr)
 do_format: Final = cast("_d.DoesFormat", format)
 
 # iteration
-do_next: Final = cast("_d.DoesNext", next)
+do_next: Final = next
 do_iter: Final = cast("_d.DoesIter", iter)
 
 # async iteration
@@ -137,13 +137,13 @@ do_ge: Final = cast("_d.DoesGe", _o.ge)
 # attributes
 do_getattr: Final = cast("_d.DoesGetattr", getattr)
 do_setattr: Final = cast("_d.DoesSetattr", setattr)
-do_delattr: Final = cast("_d.DoesDelattr", delattr)
+do_delattr: Final = delattr
 do_dir: Final = cast("_d.DoesDir", dir)
 
 # callables
 
 
-do_call: Final = cast("_d.DoesCall", _o.call)
+do_call: Final = _o.call
 
 # containers and sequences
 
@@ -210,7 +210,7 @@ do_matmul: Final = cast("_d.DoesMatmul", _o.matmul)
 do_truediv: Final = cast("_d.DoesTruediv", _o.truediv)
 do_floordiv: Final = cast("_d.DoesFloordiv", _o.floordiv)
 do_mod: Final = cast("_d.DoesMod", _o.mod)
-do_divmod: Final = cast("_d.DoesDivmod", divmod)
+do_divmod: Final = divmod
 do_pow: Final = cast("_d.DoesPow", pow)
 do_lshift: Final = cast("_d.DoesLshift", _o.lshift)
 do_rshift: Final = cast("_d.DoesRshift", _o.rshift)
@@ -314,19 +314,19 @@ do_ixor: Final = cast("_d.DoesIXor", _o.ixor)
 do_ior: Final = cast("_d.DoesIOr", _o.ior)
 
 # unary ops
-do_neg: Final = cast("_d.DoesNeg", _o.neg)
-do_pos: Final = cast("_d.DoesPos", _o.pos)
-do_abs: Final = cast("_d.DoesAbs", abs)
-do_invert: Final = cast("_d.DoesInvert", _o.invert)
+do_neg: Final = _o.neg
+do_pos: Final = _o.pos
+do_abs: Final = abs
+do_invert: Final = _o.invert
 
 # fingerprinting
-do_hash: Final = cast("_d.DoesHash", hash)
+do_hash: Final = hash
 do_index: Final = cast("_d.DoesIndex", _o.index)
 
 # rounding
 # (the typeshed stubs for `round` are unnecessarily strict)
 do_round: Final = cast("_d.DoesRound", round)
-do_trunc: Final = cast("_d.DoesTrunc", math.trunc)
+do_trunc: Final = math.trunc
 do_floor: Final = cast("_d.DoesFloor", math.floor)
 do_ceil: Final = cast("_d.DoesCeil", math.ceil)
 

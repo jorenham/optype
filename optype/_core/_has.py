@@ -123,7 +123,7 @@ class HasClass(Protocol[_TypeT]):
     the possible runtime outcomes of `typeof`, than that `type` does of itself.
     """
 
-    @property  # type: ignore[explicit-override]  # mypy bug
+    @property  # type: ignore[override]  # mypy bug
     @override
     def __class__(self) -> _TypeT: ...
     @__class__.setter

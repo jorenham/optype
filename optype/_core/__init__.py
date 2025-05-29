@@ -26,7 +26,7 @@ def __rewrite_module_names() -> None:
 
     for module in [_can, _do, _does, _has, _just]:
         for name in module.__all__:
-            member: type = getattr(module, name)  # type: ignore[assignment]
+            member: type = getattr(module, name)
             if member.__module__.startswith(name_self):
                 member.__module__ = name_base
 

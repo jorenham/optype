@@ -274,7 +274,7 @@ class CanFormat(Protocol[_StrT_contra, _StrT_co]):
     """
 
     @override
-    def __format__(self, fmt: _StrT_contra, /) -> _StrT_co: ...  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
+    def __format__(self, fmt: _StrT_contra, /) -> _StrT_co: ...  # pyright: ignore[reportIncompatibleMethodOverride]
 
 
 # Iteration
