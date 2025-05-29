@@ -43,10 +43,10 @@
             src="https://github.com/jorenham/optype/workflows/CI/badge.svg"
         />
     </a>
-    <a href="https://github.com/KotlinIsland/basedmypy">
+    <a href="https://github.com/python/mypy">
         <img
-            alt="optype - basedmypy"
-            src="https://img.shields.io/badge/basedmypy-checked-fd9002"
+            alt="scipy-stubs - mypy"
+            src="https://www.mypy-lang.org/static/mypy_badge.svg"
         />
     </a>
     <a href="https://detachhead.github.io/basedpyright">
