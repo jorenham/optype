@@ -37,11 +37,11 @@ dependencies = ["typing-extensions>=4.10; python_version<'3.13'"]
 [dependency-groups]
 extra = ["optype[numpy]"]
 lint = [
-    "ruff>=0.11.11",
+    "ruff>=0.11.12",
     "sp-repo-review[cli]>=2025.5.2",
 ]
 type = [
-    "basedmypy[faster-cache]>=2.10.0",
+    "mypy[faster-cache]>=1.16.0",
     "basedpyright>=1.29.2",
 ]
 test = [
@@ -88,14 +88,10 @@ strict = true
 allow_redefinition = true
 disallow_any_expr = false
 disallow_any_decorated = false
-disallow_any_explicit = false # https://github.com/KotlinIsland/basedmypy/issues/861
+disallow_any_explicit = false
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
-enable_error_code = [
-    "ignore-without-code",
-    "redundant-expr",
-    "truthy-bool",
-]
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
 local_partial_types = true
 strict_bytes = true
 warn_return_any = false
@@ -103,10 +99,6 @@ warn_redundant_casts = true
 warn_unreachable = true
 warn_unused_ignores = true
 warn_incomplete_stub = true
-
-# incompatible basedmypy features
-default_return = false
-bare_literals = false
 
     [[tool.mypy.overrides]]
     module = ["tests.*", "tests.numpy.*"]
@@ -154,7 +146,6 @@ xfail_strict = true
 ignore = [
     "PY004", # no `docs/` (maybe later)
     "PY006", # no pre-commit
-    "PC140", # basedmypy > mypy
     "PC170", # no sphinx
     "PC180", # no css or js
     "RTD",   # no readthedocs
