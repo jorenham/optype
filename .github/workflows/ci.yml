@@ -77,8 +77,8 @@ jobs:
           uv run --no-sync
           basedpyright -p scripts/config/bpr-np-${{ matrix.np }}.json
 
-      - name: basedmypy
-        run: uv run --no-sync scripts/bmp.py
+      - name: mypy
+        run: uv run --no-sync scripts/my.py
 
   test:
     timeout-minutes: 5

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Run as `uv run scripts/bmp.py` from the repo root."""
+"""Run as `uv run scripts/my.py` from the repo root."""
 
 import subprocess
 import sys
