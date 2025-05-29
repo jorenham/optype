@@ -12,10 +12,11 @@
     "editor.rulers": [88],
     "git.branchProtection": ["master"],
     "mypy-type-checker.args": [
-      "--ide",
       "--config-file=${workspaceFolder}/pyproject.toml"
     ],
     "mypy-type-checker.cwd": ".",
-    "mypy-type-checker.path": ["${workspaceFolder}/scripts/bmp.py"],
+    "mypy-type-checker.path": [
+      "${workspaceFolder}/scripts/my.py"
+    ],
     "python.testing.pytestEnabled": true
   }

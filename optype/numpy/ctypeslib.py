@@ -60,7 +60,7 @@ else:
     Complex128 = Never
     CLongDouble = Never
 
-from ._ctypeslib import CScalar, CType  # type: ignore[type-check-only]
+from ._ctypeslib import CScalar, CType
 
 # ruff: noqa: RUF022
 __all__ = [

@@ -242,7 +242,7 @@ def test_anyufunc_custom_py() -> None:
     # purposefully wrong
     fn = beta_py
 
-    assert isinstance(fn, Fn)
+    assert isinstance(fn, Fn)  # type: ignore[arg-type]  # https://github.com/python/mypy/issues/18796
     assert callable(fn)
 
     not_a_ufunc: UFunc = fn  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
