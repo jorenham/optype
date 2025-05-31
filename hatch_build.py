@@ -135,7 +135,7 @@ class CustomBuildHook(BuildHookInterface[WheelBuilderConfig]):
             IS_32BIT=sizeof_ssize_t == 4,
             IS_64BIT=sizeof_ssize_t == 8,
             # build info
-            BUILD_ROOT=self.root,
+            BUILD_ROOT=Path(self.root).as_posix(),
             IS_WHEEL=self.target_name == "wheel",
             IS_SDIST=self.target_name == "sdist",
             IS_EDITABLE=version == "editable",
