@@ -10,6 +10,13 @@
       "editor.formatOnType": true
     },
     "editor.rulers": [88],
+    "files.readonlyInclude": {
+      "*.lock": true,
+      ".mypy_cache": true,
+      ".pytest_cache": true,
+      ".ruff_cache": true,
+      "optype/_constants.py": true,
+    },
     "git.branchProtection": ["master"],
     "mypy-type-checker.args": [
       "--config-file=${workspaceFolder}/pyproject.toml"
