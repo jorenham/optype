@@ -23,3 +23,6 @@ venv/
 # IntelliJ
 .idea/
 .run/
+
+# generated at build-time
+optype/_constants.py

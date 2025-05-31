@@ -54,6 +54,7 @@ dev = [
     {include-group = "type"},
     {include-group = "test"},
     "tox>=4.26.0",
+    "hatchling>=1.27.0",
 ]
 
 
@@ -80,6 +81,7 @@ exclude = [
     "uv.lock",
 ]
 
+[tool.hatch.build.hooks.custom]
 
 [tool.mypy]
 packages = ["optype", "examples", "tests"]
@@ -351,4 +353,9 @@ extend-ignore-identifiers-re = [
     "(N|n)in",
     "Mode(R|W|X|A|O|_)(B|T|_)(U|_)?",
     "ba",                             # file mode string
+]
+
+[tool.uv.workspace]
+members = [
+    "demo_project",
 ]
