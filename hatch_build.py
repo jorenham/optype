@@ -1,7 +1,4 @@
-# pyright: reportImplicitOverride=none
-# pyright: reportUnknownArgumentType=none
-# pyright: reportUnknownMemberType=none
-# pyright: reportUnknownVariableType=none
+# mypy: disable-error-code=redundant-cast
 # ruff: noqa: PLR2004, PLR6301
 
 import ctypes as ct
@@ -11,7 +8,8 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from textwrap import indent
-from typing import Any, Literal, Protocol, TypeAlias
+from typing import Any, Protocol, cast
+from typing_extensions import override
 
 from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 from hatchling.builders.wheel import WheelBuilderConfig
@@ -34,6 +32,7 @@ def _pyfmt(v: Any, /) -> str:  # noqa: C901, PLR0911, PLR0912
     if isinstance(v, tuple):
         if not v:
             return "()"
+        v = cast("tuple[Any, ...]", v)
         str_items = [_pyfmt(item) for item in v]
         out_inline = ", ".join(str_items)
         if len(v) == 1:
@@ -44,6 +43,7 @@ def _pyfmt(v: Any, /) -> str:  # noqa: C901, PLR0911, PLR0912
     if isinstance(v, list):
         if not v:
             return "[]"
+        v = cast("list[Any]", v)
         str_items = [_pyfmt(item) for item in v]
         out_inline = "[" + ", ".join(str_items) + "]"
         if len(out_inline) < MAX_INLINE_LENGTH and NEWLINE not in out_inline:
@@ -52,6 +52,7 @@ def _pyfmt(v: Any, /) -> str:  # noqa: C901, PLR0911, PLR0912
     if isinstance(v, dict):
         if not v:
             return "{}"
+        v = cast("dict[Any, Any]", v)
         str_items = [f"{_pyfmt(k)}: {_pyfmt(v)}" for k, v in v.items()]
         out_inline = "{" + ", ".join(str_items) + "}"
         if len(out_inline) < MAX_INLINE_LENGTH and NEWLINE not in out_inline:
@@ -60,17 +61,7 @@ def _pyfmt(v: Any, /) -> str:  # noqa: C901, PLR0911, PLR0912
     raise TypeError(type(v).__name__)
 
 
-_TimeSpec: TypeAlias = Literal[
-    "auto",
-    "hours",
-    "minutes",
-    "seconds",
-    "milliseconds",
-    "microseconds",
-]
-
-
-def _zulu_now(unit: _TimeSpec = "seconds", /) -> str:
+def _zulu_now(unit: str = "seconds", /) -> str:
     # ISO 8601 timestamp in Zulu (a.k.a. UTC and GMT+00:00) format
     # https://wikipedia.org/wiki/Military_time_zone
     return dt.datetime.now(tz=dt.UTC).isoformat("T", unit).replace("+00:00", "Z")
@@ -127,7 +118,7 @@ class _Const:
 def _build_consts_module(generator: str, /, expressions: Iterable[_Expr]) -> str:
     now = _zulu_now()
 
-    exports = set()
+    exports: set[str] = set()
     for expr in expressions:
         exports |= expr.get_exports()
 
@@ -152,10 +143,12 @@ class CustomBuildHook(BuildHookInterface[WheelBuilderConfig]):
         assert path.parent.is_dir(), path.parent
         return path
 
+    @override
     def clean(self, versions: list[str]) -> None:
         self._out_path.unlink(missing_ok=True)
         return super().clean(versions)
 
+    @override
     def initialize(self, /, version: str, build_data: dict[str, Any]) -> None:
         self.generated = []
 
@@ -166,7 +159,7 @@ class CustomBuildHook(BuildHookInterface[WheelBuilderConfig]):
         for path in self.generated:
             build_data["artifacts"].append(str(path.relative_to(self.root)))
 
-        metadata = self.metadata.core_raw_metadata
+        metadata = self.metadata.core_raw_metadata  # pyright: ignore[reportUnknownMemberType]
         package_name = metadata["name"]
         package_version = metadata["version"]
 
