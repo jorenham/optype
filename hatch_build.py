@@ -8,8 +8,15 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from textwrap import indent
-from typing import Any, Protocol, cast
-from typing_extensions import override
+from typing import TYPE_CHECKING, Any, Protocol, cast
+
+if TYPE_CHECKING:
+    from typing_extensions import override
+else:
+
+    def override(func, /) -> Any:
+        return func
+
 
 from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 from hatchling.builders.wheel import WheelBuilderConfig
