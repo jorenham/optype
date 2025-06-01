@@ -1,11 +1,12 @@
 # ruff: noqa: F403
 import importlib as _importlib
-import importlib.metadata as _metadata
+from typing import Final
 
-from optype import _core
+from optype import _constants, _core
 from optype._core import *
 
-__version__: str = _metadata.version(__package__ or __file__.split("/")[-1])
+__version__: Final = _constants.VERSION
+
 __all__ = ["__version__"]
 __all__ += _core.__all__
 
