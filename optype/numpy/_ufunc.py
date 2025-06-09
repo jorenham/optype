@@ -61,8 +61,9 @@ if _x.NP21:
         This also includes gufunc's (generalized universion functions), which
         have a specified `signature`, and aren't necessarily element-wise
         functions (which "regular" ufuncs are).
-        At the moment (`numpy>=2.0,<2.2`), the only GUFuncs within numpy are
-        `matmul`, and `vecdot`.
+        At the moment (`numpy>=2.2,<2.4`), the only `GUFuncs` in the public numpy API
+        are `matmul`, `matvec`, `vecdot`, and `vecmat`, and all four have `nin == 2`
+        and `nout == 1`.
         """
 
         @property
@@ -134,11 +135,12 @@ else:
         A generic interface for `numpy.ufunc` "universal function" instances,
         e.g. `numpy.exp`, `numpy.add`, `numpy.frexp`, `numpy.divmod`.
 
-        This also includes gufunc's (generalized universion functions), which
-        have a specified `signature`, and aren't necessarily element-wise
-        functions (which "regular" ufuncs are).
-        At the moment (`numpy>=2.0,<2.2`), the only GUFuncs within numpy are
-        `matmul`, and `vecdot`.
+        This also includes gufunc's (generalized universion functions), which have a
+        specified `signature`, and aren't necessarily element-wise functions
+        (which "regular" ufuncs are).
+        At the moment (`numpy>=2.2,<2.4`), the only `GUFuncs` in the public numpy API
+        are `matmul`, `matvec`, `vecdot`, and `vecmat`, and all four have `nin == 2`
+        and `nout == 1`.
         """
 
         @property
@@ -189,31 +191,14 @@ class CanArrayUFunc(Protocol[_UFT_contra, _T_co]):
         - https://numpy.org/devdocs/reference/arrays.classes.html
     """
 
-    # NOTE: Mypy doesn't understand the Liskov substitution principle when
-    # positional-only arguments are involved; so `ufunc` and `method` can't
-    # be made positional-only.
-
-    if _x.NP20:
-
-        def __array_ufunc__(
-            self,
-            /,
-            ufunc: _UFT_contra,
-            method: L[_MethodCommon, "at"],
-            *args: Any,
-            **kwargs: Any,
-        ) -> _T_co: ...
-
-    else:
-
-        def __array_ufunc__(
-            self,
-            /,
-            ufunc: _UFT_contra,
-            method: L[_MethodCommon, "inner"],
-            *args: Any,
-            **kwargs: Any,
-        ) -> _T_co: ...
+    def __array_ufunc__(
+        self,
+        ufunc: _UFT_contra,
+        method: L[_MethodCommon],
+        /,
+        *args: Any,
+        **kwargs: Any,
+    ) -> _T_co: ...
 
 
 _FT_contra = TypeVar("_FT_contra", bound=_AnyFunc, default=_AnyFunc, contravariant=True)
