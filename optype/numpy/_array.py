@@ -107,38 +107,30 @@ type MArray[
 ] = np.ma.MaskedArray[NDT, np.dtype[SCT]]
 """
 
-if _x.NP21:
-    # numpy >= 2.1: shape is covariant
 
-    @runtime_checkable
-    @set_module("optype.numpy")
-    class CanArray(Protocol[_NDT_co, _DTT_co]):
-        def __array__(self, /) -> np.ndarray[_NDT_co, _DTT_co]: ...
+# NOTE: Before NumPy 2.1 the shape type parameter of `numpy.ndarray` was invariant. This
+# lead to various issues, so we ignore that, and suppress two pyright errors that are
+# reported when `numpy<2.1` is installed (inline `# pyright: ignore` won't work).
 
-    @runtime_checkable
-    @set_module("optype.numpy")
-    class CanArrayND(Protocol[_SCT_co, _NDT_co]):
-        """
-        Similar to `onp.CanArray`, but must be sized (i.e. excludes scalars), and is
-        parameterized by only the scalar type (instead of the shape and dtype).
-        """
+# pyright: reportInvalidTypeVarUse=false
 
-        def __len__(self, /) -> int: ...
-        def __array__(self, /) -> np.ndarray[_NDT_co, np.dtype[_SCT_co]]: ...
 
-else:
-    # numpy < 2.1: shape is invariant
+@runtime_checkable
+@set_module("optype.numpy")
+class CanArray(Protocol[_NDT_co, _DTT_co]):
+    def __array__(self, /) -> np.ndarray[_NDT_co, _DTT_co]: ...
 
-    @runtime_checkable
-    @set_module("optype.numpy")
-    class CanArray(Protocol[_NDT, _DTT_co]):
-        def __array__(self, /) -> np.ndarray[_NDT, _DTT_co]: ...
 
-    @runtime_checkable
-    @set_module("optype.numpy")
-    class CanArrayND(Protocol[_SCT_co, _NDT]):
-        def __len__(self, /) -> int: ...
-        def __array__(self, /) -> np.ndarray[_NDT, np.dtype[_SCT_co]]: ...
+@runtime_checkable
+@set_module("optype.numpy")
+class CanArrayND(Protocol[_SCT_co, _NDT_co]):
+    """
+    Similar to `onp.CanArray`, but must be sized (i.e. excludes scalars), and is
+    parameterized by only the scalar type (instead of the shape and dtype).
+    """
+
+    def __len__(self, /) -> int: ...
+    def __array__(self, /) -> np.ndarray[_NDT_co, np.dtype[_SCT_co]]: ...
 
 
 Array0D = TypeAliasType(
