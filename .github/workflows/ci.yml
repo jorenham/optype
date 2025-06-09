@@ -2,10 +2,9 @@ name: CI
 permissions: read-all
 
 on:
-  push:
-    branches:
-      - master
   pull_request:
+  push:
+    branches: [master]
   workflow_dispatch:
 
 concurrency:
@@ -23,7 +22,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: scientific-python/repo-review@v0.12.2
+      - name: repo review
+        uses: scientific-python/repo-review@v0.12.2
         with:
           plugins: sp-repo-review
 
@@ -36,14 +36,12 @@ jobs:
       - name: typos
         uses: crate-ci/typos@master
 
-      - name: install uv
-        uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v6
         with:
           python-version: "3.13"
 
       - name: ruff check
         run: uv run ruff check --output-format=github
-
       - name: ruff format
         run: uv run ruff format --check
 
@@ -52,38 +50,29 @@ jobs:
 
   typecheck:
     timeout-minutes: 5
-    runs-on: ubuntu-latest
-
     strategy:
       fail-fast: false
       matrix:
-        np: ["1.25", "1.26", "2.0", "2.1", "2.2"]
-
+        os: [ubuntu-latest]
+        np: ["1.25", "1.26", "2.0", "2.1", "2.2", "2.3"]
+        py: ["3.11"]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: setup uv
-        uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v6
         with:
-          activate-environment: true
-          python-version: "3.11"
-      - run: uv sync
-
-      - name: Install numpy ${{ matrix.np }}
-        run: uv pip install "numpy==${{ matrix.np }}.*"
-
+          python-version: ${{ matrix.py }}
       - name: basedpyright
         run: >
-          uv run --no-sync
+          uv run --with="numpy==${{ matrix.np }}.*"
           basedpyright -p scripts/config/bpr-np-${{ matrix.np }}.json
-
       - name: mypy
-        run: uv run --no-sync scripts/my.py
+        run: >
+          uv run --with="numpy==${{ matrix.np }}.*"
+          scripts/my.py
 
   test:
     timeout-minutes: 5
-    runs-on: ${{ matrix.os }}
-
     strategy:
       fail-fast: false
       matrix:
@@ -93,22 +82,13 @@ jobs:
           - os: ubuntu-latest
             py: "3.11"
             np: "1.25"
-
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: setup uv
-        uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v6
         with:
-          activate-environment: true
           python-version: ${{ matrix.py }}
-
-      - name: uv sync
-        run: uv sync
-
-      - name: Install old numpy
-        if: ${{ matrix.np == '1.25' }}
-        run: uv pip install "numpy==${{ matrix.np }}.*"
-
       - name: pytest
-        run: uv run --no-sync pytest
+        run: >
+          uv run --with="numpy==${{ matrix.np }}.*"
+          pytest
