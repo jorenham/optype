@@ -41,7 +41,7 @@ lint = [
     "sp-repo-review[cli]>=2025.5.2",
 ]
 type = [
-    "mypy[faster-cache]>=1.16.0",
+    "mypy[faster-cache]>=1.16.1",
     "basedpyright>=1.29.2",
 ]
 test = [
