@@ -42,7 +42,7 @@ lint = [
 ]
 type = [
     "mypy[faster-cache]>=1.16.1",
-    "basedpyright>=1.29.2",
+    "basedpyright>=1.30.0",
 ]
 test = [
     "beartype>=0.21.0",
