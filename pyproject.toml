@@ -53,7 +53,7 @@ dev = [
     {include-group = "lint"},
     {include-group = "type"},
     {include-group = "test"},
-    "tox>=4.26.0",
+    "tox>=4.27.0",
 ]
 
 
