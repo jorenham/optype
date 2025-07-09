@@ -89,12 +89,8 @@ def __dir__() -> list[str]:
 
 ###
 
-b_cls: TypeAlias = type[bool]  # noqa: PYI042  # final
-i_cls: TypeAlias = type[JustInt]  # noqa: PYI042
-f_cls: TypeAlias = type[JustFloat]  # noqa: PYI042
-c_cls: TypeAlias = type[JustComplex]  # noqa: PYI042
-fc_cls: TypeAlias = f_cls | c_cls  # noqa: PYI042
-ifc_cls: TypeAlias = i_cls | fc_cls  # noqa: PYI042
+fc_cls: TypeAlias = type[JustFloat | JustComplex]  # noqa: PYI042
+ifc_cls: TypeAlias = type[JustInt | JustFloat | JustComplex]  # noqa: PYI042
 
 O_cls: TypeAlias = type[Just[object]]
 S_cls: TypeAlias = type[Just[bytes]]
@@ -103,12 +99,10 @@ V_cls: TypeAlias = type[memoryview]  # final
 SU_cls: TypeAlias = S_cls | U_cls
 SUV_cls: TypeAlias = SU_cls | V_cls
 
-
 ###
 
-
 # b1
-AnyBoolDType = TypeAliasType("AnyBoolDType", b_cls | To[_x.Bool] | a.b1_code)
+AnyBoolDType = TypeAliasType("AnyBoolDType", type[bool] | To[_x.Bool] | a.b1_code)
 
 # i1
 AnyInt8DType = TypeAliasType("AnyInt8DType", To[np.int8] | a.i1_code)
@@ -136,12 +130,15 @@ AnyUInt64DType = TypeAliasType("AnyUInt64DType", To[np.uint64] | a.u8_code)
 AnyULongLongDType = AnyUInt64DType  # deprecated
 # int_ / intp / long
 if _x.NP20:
-    AnyIntPDType = TypeAliasType("AnyIntPDType", i_cls | To[np.intp] | a.i0_code)
+    AnyIntPDType = TypeAliasType(
+        "AnyIntPDType",
+        type[JustInt] | To[np.intp] | a.i0_code,
+    )
     AnyIntDType = AnyIntPDType
     AnyLongDType = TypeAliasType("AnyLongDType", To[np.long] | a.l_code)
 else:
     AnyIntPDType = TypeAliasType("AnyIntPDType", To[np.intp] | a.i0_code)
-    AnyIntDType = TypeAliasType("AnyIntDType", i_cls | To[np.int_] | a.l_code)
+    AnyIntDType = TypeAliasType("AnyIntDType", type[JustInt] | To[np.int_] | a.l_code)
     AnyLongDType = AnyIntDType
 
 # uint / uintp / ulong
@@ -161,7 +158,7 @@ AnyFloat32DType = TypeAliasType("AnyFloat32DType", To[_sc.floating32] | a.f4_cod
 # f8
 AnyFloat64DType = TypeAliasType(
     "AnyFloat64DType",
-    f_cls | To[_sc.floating64] | a.f8_code | None,
+    type[JustFloat] | To[_sc.floating64] | a.f8_code,
 )
 # f12 | f16
 AnyLongDoubleDType = TypeAliasType("AnyLongDoubleDType", To[np.longdouble] | a.g_code)
@@ -171,7 +168,7 @@ AnyComplex64DType = TypeAliasType("AnyComplex64DType", To[_sc.cfloating32] | a.c
 # c16
 AnyComplex128DType = TypeAliasType(
     "AnyComplex128DType",
-    c_cls | To[_sc.cfloating64] | a.c16_code,
+    type[JustComplex] | To[_sc.cfloating64] | a.c16_code,
 )
 # c24 | c32
 AnyCLongDoubleDType = TypeAliasType(
@@ -214,7 +211,7 @@ AnyDType = TypeAliasType("AnyDType", _ToDType | _ToStructured)
 
 AnySignedIntegerDType = TypeAliasType(
     "AnySignedIntegerDType",
-    i_cls | To[_sc.sinteger] | a.ix_code,
+    type[JustInt] | To[_sc.sinteger] | a.ix_code,
 )
 AnyUnsignedIntegerDType = TypeAliasType(
     "AnyUnsignedIntegerDType",
@@ -222,14 +219,17 @@ AnyUnsignedIntegerDType = TypeAliasType(
 )
 AnyFloatingDType = TypeAliasType(
     "AnyFloatingDType",
-    f_cls | To[_sc.floating] | a.fx_code,
+    type[JustFloat] | To[_sc.floating] | a.fx_code,
 )
 AnyComplexFloatingDType = TypeAliasType(
     "AnyComplexFloatingDType",
-    c_cls | To[_sc.cfloating] | a.cx_code,
+    type[JustComplex] | To[_sc.cfloating] | a.cx_code,
 )
 
-AnyIntegerDType = TypeAliasType("AnyIntegerDType", i_cls | To[_sc.integer] | a.iu_code)
+AnyIntegerDType = TypeAliasType(
+    "AnyIntegerDType",
+    type[JustInt] | To[_sc.integer] | a.iu_code,
+)
 AnyInexactDType = TypeAliasType("AnyInexactDType", fc_cls | To[_sc.inexact] | a.fc_code)
 AnyNumberDType = TypeAliasType("AnyNumberDType", ifc_cls | To[_sc.number] | a.iufc_code)
 
