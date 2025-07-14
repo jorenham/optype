@@ -37,7 +37,7 @@ dependencies = ["typing-extensions>=4.10; python_version<'3.13'"]
 [dependency-groups]
 extra = ["optype[numpy]"]
 lint = [
-    "ruff>=0.12.2",
+    "ruff>=0.12.3",
     "sp-repo-review[cli]>=2025.5.2",
 ]
 type = [
