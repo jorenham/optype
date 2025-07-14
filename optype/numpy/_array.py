@@ -35,8 +35,7 @@ _NDT_co = TypeVar("_NDT_co", bound=Shape, default=AnyShape, covariant=True)
 _DTT = TypeVar("_DTT", bound=np.dtype[Any])
 _DTT_co = TypeVar("_DTT_co", bound=np.dtype[Any], default=np.dtype[Any], covariant=True)
 _SCT = TypeVar("_SCT", bound=np.generic, default=Any)
-_SCT_co = TypeVar("_SCT_co", bound=np.generic, default=Any, covariant=True)
-_SCT0_co = TypeVar("_SCT0_co", bound=np.generic, covariant=True)
+_SCT_co = TypeVar("_SCT_co", bound=np.generic, covariant=True)
 
 
 Matrix = TypeAliasType(
@@ -115,14 +114,14 @@ class CanArray(Protocol[_NDT_co, _DTT_co]):
 
 @runtime_checkable
 @set_module("optype.numpy")
-class CanArrayND(Protocol[_SCT0_co, _NDT_co]):
+class CanArrayND(Protocol[_SCT_co, _NDT_co]):
     """
     Similar to `onp.CanArray`, but must be sized (i.e. excludes scalars), and is
     parameterized by only the scalar type (instead of the shape and dtype).
     """
 
     def __len__(self, /) -> int: ...
-    def __array__(self, /) -> np.ndarray[_NDT_co, np.dtype[_SCT0_co]]: ...
+    def __array__(self, /) -> np.ndarray[_NDT_co, np.dtype[_SCT_co]]: ...
 
 
 Array0D = TypeAliasType(
@@ -174,13 +173,8 @@ MArray3D = TypeAliasType(
 @runtime_checkable
 @set_module("optype.numpy")
 class CanArray0D(Protocol[_SCT_co]):
-    """
-    The 0-d variant of `optype.numpy.CanArrayND`.
+    """The 0-d variant of `optype.numpy.CanArrayND`."""
 
-    This accepts e.g. `np.array(3.14)`, but rejects `np.float64(3.14)`.
-    """
-
-    def __len__(self, /) -> int: ...  # always 0
     def __array__(self, /) -> np.ndarray[tuple[()], np.dtype[_SCT_co]]: ...
 
 
@@ -205,7 +199,7 @@ class CanArray2D(Protocol[_SCT_co]):
 @runtime_checkable
 @set_module("optype.numpy")
 class CanArray3D(Protocol[_SCT_co]):
-    """The 2-d variant of `optype.numpy.CanArrayND`."""
+    """The 3-d variant of `optype.numpy.CanArrayND`."""
 
     def __len__(self, /) -> int: ...
     def __array__(self, /) -> np.ndarray[tuple[int, int, int], np.dtype[_SCT_co]]: ...
