@@ -126,12 +126,7 @@ def test_name_matches_dunder(cls: type) -> None:
     assert members
 
     own_members: frozenset[str]
-    parents = [
-        parent
-        for parent in cls.mro()[1:]
-        if not parent.__name__.endswith("Self")
-        and is_protocol(parent)
-    ]  # fmt: skip
+    parents = [parent for parent in cls.mro()[1:] if is_protocol(parent)]
     if parents:
         overridden = {
             member
@@ -149,7 +144,7 @@ def test_name_matches_dunder(cls: type) -> None:
 
     if member_count > min(1, own_member_count):
         # ensure len(parent protocols) == len(members) (including inherited)
-        assert member_count == len(parents), own_members
+        assert member_count == len(parents), (own_members, parents)
 
         members_concrete = set(members)
         for parent in parents:
@@ -163,6 +158,10 @@ def test_name_matches_dunder(cls: type) -> None:
         if stem[-1].isdigit():
             stem = stem[:-1]
             assert stem[-1].isalpha()
+
+        if prefix == "Can":
+            for _ in range(2):
+                stem = stem.removesuffix("Self")
 
         # the `1` arg ensures that any potential leading `A`, `I` or `R` chars
         # won't have a `_` directly after (i.e. considers `stem[:2].lower()`).

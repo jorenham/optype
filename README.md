@@ -424,28 +424,28 @@ This is why these `optype` interfaces don't accept generic type arguments.
         <td><code>do_int</code></td>
         <td><code>DoesInt</code></td>
         <td><code>__int__</code></td>
-        <td><code>CanInt[R: int = int]</code></td>
+        <td><code>CanInt[+R: int = int]</code></td>
     </tr>
     <tr>
         <td><code>bool(_)</code></td>
         <td><code>do_bool</code></td>
         <td><code>DoesBool</code></td>
         <td><code>__bool__</code></td>
-        <td><code>CanBool[R: bool = bool]</code></td>
+        <td><code>CanBool[+R: bool = bool]</code></td>
     </tr>
     <tr>
         <td><code>bytes(_)</code></td>
         <td><code>do_bytes</code></td>
         <td><code>DoesBytes</code></td>
         <td><code>__bytes__</code></td>
-        <td><code>CanBytes[R: bytes = bytes]</code></td>
+        <td><code>CanBytes[+R: bytes = bytes]</code></td>
     </tr>
     <tr>
         <td><code>str(_)</code></td>
         <td><code>do_str</code></td>
         <td><code>DoesStr</code></td>
         <td><code>__str__</code></td>
-        <td><code>CanStr[R: str = str]</code></td>
+        <td><code>CanStr[+R: str = str]</code></td>
     </tr>
 </table>
 
@@ -479,14 +479,14 @@ if your type hints are spot-on; `optype` is you friend.
         <td><code>do_repr</code></td>
         <td><code>DoesRepr</code></td>
         <td><code>__repr__</code></td>
-        <td><code>CanRepr[R: str = str]</code></td>
+        <td><code>CanRepr[+R:str = str]</code></td>
     </tr>
     <tr>
         <td><code>format(_, x)</code></td>
         <td><code>do_format</code></td>
         <td><code>DoesFormat</code></td>
         <td><code>__format__</code></td>
-        <td><code>CanFormat[T: str = str, R: str = str]</code></td>
+        <td><code>CanFormat[-T:str = str, +R:str = str]</code></td>
     </tr>
 </table>
 
@@ -520,7 +520,7 @@ Additionally, `optype` provides protocols for types with (custom) *hash* or
         <td><code>do_index</code></td>
         <td><code>DoesIndex</code></td>
         <td><code>__index__</code></td>
-        <td><code>CanIndex[R: int = int]</code></td>
+        <td><code>CanIndex[+R: int = int]</code></td>
     </tr>
 </table>
 
@@ -552,7 +552,7 @@ right-hand side operand, denoted here as `x`.
         <td><code>do_eq</code></td>
         <td><code>DoesEq</code></td>
         <td><code>__eq__</code></td>
-        <td><code>CanEq[T = object, R = bool]</code></td>
+        <td><code>CanEq[-T = object, +R = bool]</code></td>
     </tr>
     <tr>
         <td><code>_ != x</code></td>
@@ -560,7 +560,7 @@ right-hand side operand, denoted here as `x`.
         <td><code>do_ne</code></td>
         <td><code>DoesNe</code></td>
         <td><code>__ne__</code></td>
-        <td><code>CanNe[T = object, R = bool]</code></td>
+        <td><code>CanNe[-T = object, +R = bool]</code></td>
     </tr>
     <tr>
         <td><code>_ < x</code></td>
@@ -568,7 +568,7 @@ right-hand side operand, denoted here as `x`.
         <td><code>do_lt</code></td>
         <td><code>DoesLt</code></td>
         <td><code>__lt__</code></td>
-        <td><code>CanLt[T, R = bool]</code></td>
+        <td><code>CanLt[-T, +R = bool]</code></td>
     </tr>
     <tr>
         <td><code>_ <= x</code></td>
@@ -576,7 +576,7 @@ right-hand side operand, denoted here as `x`.
         <td><code>do_le</code></td>
         <td><code>DoesLe</code></td>
         <td><code>__le__</code></td>
-        <td><code>CanLe[T, R = bool]</code></td>
+        <td><code>CanLe[-T, +R = bool]</code></td>
     </tr>
     <tr>
         <td><code>_ > x</code></td>
@@ -584,7 +584,7 @@ right-hand side operand, denoted here as `x`.
         <td><code>do_gt</code></td>
         <td><code>DoesGt</code></td>
         <td><code>__gt__</code></td>
-        <td><code>CanGt[T, R = bool]</code></td>
+        <td><code>CanGt[-T, +R = bool]</code></td>
     </tr>
     <tr>
         <td><code>_ >= x</code></td>
@@ -592,7 +592,7 @@ right-hand side operand, denoted here as `x`.
         <td><code>do_ge</code></td>
         <td><code>DoesGe</code></td>
         <td><code>__ge__</code></td>
-        <td><code>CanGe[T, R = bool]</code></td>
+        <td><code>CanGe[-T, +R = bool]</code></td>
     </tr>
 </table>
 
@@ -621,56 +621,77 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>do_add</code></td>
         <td><code>DoesAdd</code></td>
         <td><code>__add__</code></td>
-        <td><code>CanAdd[T, R]</code></td>
+        <td>
+            <code>CanAdd[-T, +R]</code><br>
+            <code>CanAddSelf[-T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>_ - x</code></td>
         <td><code>do_sub</code></td>
         <td><code>DoesSub</code></td>
         <td><code>__sub__</code></td>
-        <td><code>CanSub[T, R]</code></td>
+        <td>
+            <code>CanSub[-T, +R]</code><br>
+            <code>CanSubSelf[-T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>_ * x</code></td>
         <td><code>do_mul</code></td>
         <td><code>DoesMul</code></td>
         <td><code>__mul__</code></td>
-        <td><code>CanMul[T, R]</code></td>
+        <td>
+            <code>CanMul[-T, +R]</code><br>
+            <code>CanMulSelf[-T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>_ @ x</code></td>
         <td><code>do_matmul</code></td>
         <td><code>DoesMatmul</code></td>
         <td><code>__matmul__</code></td>
-        <td><code>CanMatmul[T, R]</code></td>
+        <td>
+            <code>CanMatmul[-T, +R]</code><br>
+            <code>CanMatmulSelf[-T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>_ / x</code></td>
         <td><code>do_truediv</code></td>
         <td><code>DoesTruediv</code></td>
         <td><code>__truediv__</code></td>
-        <td><code>CanTruediv[T, R]</code></td>
+        <td>
+            <code>CanTruediv[-T, +R]</code><br>
+            <code>CanTruedivSelf[-T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>_ // x</code></td>
         <td><code>do_floordiv</code></td>
         <td><code>DoesFloordiv</code></td>
         <td><code>__floordiv__</code></td>
-        <td><code>CanFloordiv[T, R]</code></td>
+        <td>
+            <code>CanFloordiv[-T, +R]</code><br>
+            <code>CanFloordivSelf[-T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>_ % x</code></td>
         <td><code>do_mod</code></td>
         <td><code>DoesMod</code></td>
         <td><code>__mod__</code></td>
-        <td><code>CanMod[T, R]</code></td>
+        <td>
+            <code>CanMod[-T, +R]</code><br>
+            <code>CanModSelf[-T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>divmod(_, x)</code></td>
         <td><code>do_divmod</code></td>
         <td><code>DoesDivmod</code></td>
         <td><code>__divmod__</code></td>
-        <td><code>CanDivmod[T, R]</code></td>
+        <td><code>CanDivmod[-T, +R]</code></td>
     </tr>
     <tr>
         <td>
@@ -681,8 +702,9 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesPow</code></td>
         <td><code>__pow__</code></td>
         <td>
-            <code>CanPow2[T, R]</code><br/>
-            <code>CanPow[T, None, R, Never]</code>
+            <code>CanPow2[-T, +R]</code><br>
+            <code>CanPowSelf[-T]</code><br>
+            <code>CanPow[-T, None, +R, Never]</code>
         </td>
     </tr>
     <tr>
@@ -691,8 +713,8 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesPow</code></td>
         <td><code>__pow__</code></td>
         <td>
-            <code>CanPow3[T, M, R]</code><br/>
-            <code>CanPow[T, M, Never, R]</code>
+            <code>CanPow3[-T, -M, +R]</code><br>
+            <code>CanPow[-T, -M, Never, +R]</code>
         </td>
     </tr>
     <tr>
@@ -700,35 +722,50 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>do_lshift</code></td>
         <td><code>DoesLshift</code></td>
         <td><code>__lshift__</code></td>
-        <td><code>CanLshift[T, R]</code></td>
+        <td>
+            <code>CanLshift[-T, +R]</code><br>
+            <code>CanLshiftSelf[-T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>_ >> x</code></td>
         <td><code>do_rshift</code></td>
         <td><code>DoesRshift</code></td>
         <td><code>__rshift__</code></td>
-        <td><code>CanRshift[T, R]</code></td>
+        <td>
+            <code>CanRshift[-T, +R]</code><br>
+            <code>CanRshiftSelf[-T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>_ & x</code></td>
         <td><code>do_and</code></td>
         <td><code>DoesAnd</code></td>
         <td><code>__and__</code></td>
-        <td><code>CanAnd[T, R]</code></td>
+        <td>
+            <code>CanAnd[-T, +R]</code><br>
+            <code>CanAndSelf[-T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>_ ^ x</code></td>
         <td><code>do_xor</code></td>
         <td><code>DoesXor</code></td>
         <td><code>__xor__</code></td>
-        <td><code>CanXor[T, R]</code></td>
+        <td>
+            <code>CanXor[-T, +R]</code><br>
+            <code>CanXorSelf[-T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>_ | x</code></td>
         <td><code>do_or</code></td>
         <td><code>DoesOr</code></td>
         <td><code>__or__</code></td>
-        <td><code>CanOr[T, R]</code></td>
+        <td>
+            <code>CanOr[-T, +R]</code><br>
+            <code>CanOrSelf[-T]</code>
+        </td>
     </tr>
 </table>
 
@@ -736,7 +773,7 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
 > Because `pow()` can take an optional third argument, `optype`
 > provides separate interfaces for `pow()` with two and three arguments.
 > Additionally, there is the overloaded intersection type
-> `CanPow[T, M, R, RM] =: CanPow2[T, R] & CanPow3[T, M, RM]`, as interface
+> `type CanPow[-T, -M, +R, +RM] = CanPow2[T, R] & CanPow3[T, M, RM]`, as interface
 > for types that can take an optional third argument.
 
 #### Reflected operations
@@ -764,56 +801,77 @@ They are named like the original, but prefixed with `CanR` prefix, i.e.
         <td><code>do_radd</code></td>
         <td><code>DoesRAdd</code></td>
         <td><code>__radd__</code></td>
-        <td><code>CanRAdd[T, R]</code></td>
+        <td>
+            <code>CanRAdd[-T, +R]</code><br>
+            <code>CanRAddSelf[-T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>x - _</code></td>
         <td><code>do_rsub</code></td>
         <td><code>DoesRSub</code></td>
         <td><code>__rsub__</code></td>
-        <td><code>CanRSub[T, R]</code></td>
+        <td>
+            <code>CanRSub[-T, +R]</code><br>
+            <code>CanRSubSelf[-T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>x * _</code></td>
         <td><code>do_rmul</code></td>
         <td><code>DoesRMul</code></td>
         <td><code>__rmul__</code></td>
-        <td><code>CanRMul[T, R]</code></td>
+        <td>
+            <code>CanRMul[-T, +R]</code><br>
+            <code>CanRMulSelf[-T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>x @ _</code></td>
         <td><code>do_rmatmul</code></td>
         <td><code>DoesRMatmul</code></td>
         <td><code>__rmatmul__</code></td>
-        <td><code>CanRMatmul[T, R]</code></td>
+        <td>
+            <code>CanRMatmul[-T, +R]</code><br>
+            <code>CanRMatmulSelf[-T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>x / _</code></td>
         <td><code>do_rtruediv</code></td>
         <td><code>DoesRTruediv</code></td>
         <td><code>__rtruediv__</code></td>
-        <td><code>CanRTruediv[T, R]</code></td>
+        <td>
+            <code>CanRTruediv[-T, +R]</code><br>
+            <code>CanRTruedivSelf[-T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>x // _</code></td>
         <td><code>do_rfloordiv</code></td>
         <td><code>DoesRFloordiv</code></td>
         <td><code>__rfloordiv__</code></td>
-        <td><code>CanRFloordiv[T, R]</code></td>
+        <td>
+            <code>CanRFloordiv[-T, +R]</code><br>
+            <code>CanRFloordivSelf[-T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>x % _</code></td>
         <td><code>do_rmod</code></td>
         <td><code>DoesRMod</code></td>
         <td><code>__rmod__</code></td>
-        <td><code>CanRMod[T, R]</code></td>
+        <td>
+            <code>CanRMod[-T, +R]</code><br>
+            <code>CanRModSelf[-T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>divmod(x, _)</code></td>
         <td><code>do_rdivmod</code></td>
         <td><code>DoesRDivmod</code></td>
         <td><code>__rdivmod__</code></td>
-        <td><code>CanRDivmod[T, R]</code></td>
+        <td><code>CanRDivmod[-T, +R]</code></td>
     </tr>
     <tr>
         <td>
@@ -823,42 +881,60 @@ They are named like the original, but prefixed with `CanR` prefix, i.e.
         <td><code>do_rpow</code></td>
         <td><code>DoesRPow</code></td>
         <td><code>__rpow__</code></td>
-        <td><code>CanRPow[T, R]</code></td>
+        <td>
+            <code>CanRPow[-T, +R]</code><br>
+            <code>CanRPowSelf[-T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>x << _</code></td>
         <td><code>do_rlshift</code></td>
         <td><code>DoesRLshift</code></td>
         <td><code>__rlshift__</code></td>
-        <td><code>CanRLshift[T, R]</code></td>
+        <td>
+            <code>CanRLshift[-T, +R]</code><br>
+            <code>CanRLshiftSelf[-T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>x >> _</code></td>
         <td><code>do_rrshift</code></td>
         <td><code>DoesRRshift</code></td>
         <td><code>__rrshift__</code></td>
-        <td><code>CanRRshift[T, R]</code></td>
+        <td>
+            <code>CanRRshift[-T, +R]</code><br>
+            <code>CanRRshiftSelf[-T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>x & _</code></td>
         <td><code>do_rand</code></td>
         <td><code>DoesRAnd</code></td>
         <td><code>__rand__</code></td>
-        <td><code>CanRAnd[T, R]</code></td>
+        <td>
+            <code>CanRAnd[-T, +R]</code><br>
+            <code>CanRAndSelf[-T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>x ^ _</code></td>
         <td><code>do_rxor</code></td>
         <td><code>DoesRXor</code></td>
         <td><code>__rxor__</code></td>
-        <td><code>CanRXor[T, R]</code></td>
+        <td>
+            <code>CanRXor[-T, +R]</code><br>
+            <code>CanRXorSelf[-T]</code>
+        </td>
     </tr>
     <tr>
         <td><code>x | _</code></td>
         <td><code>do_ror</code></td>
         <td><code>DoesROr</code></td>
         <td><code>__ror__</code></td>
-        <td><code>CanROr[T, R]</code></td>
+        <td>
+            <code>CanROr[-T, +R]</code><br>
+            <code>CanROrSelf[-T]</code>
+        </td>
     </tr>
 </table>
 
@@ -895,8 +971,8 @@ Similar to the reflected ops, the inplace/augmented ops are prefixed with
         <td><code>DoesIAdd</code></td>
         <td><code>__iadd__</code></td>
         <td>
-            <code>CanIAdd[T, R]</code><br>
-            <code>CanIAddSelf[T]</code>
+            <code>CanIAdd[-T, +R]</code><br>
+            <code>CanIAddSelf[-T]</code>
         </td>
     </tr>
     <tr>
@@ -905,8 +981,8 @@ Similar to the reflected ops, the inplace/augmented ops are prefixed with
         <td><code>DoesISub</code></td>
         <td><code>__isub__</code></td>
         <td>
-            <code>CanISub[T, R]</code><br>
-            <code>CanISubSelf[T]</code>
+            <code>CanISub[-T, +R]</code><br>
+            <code>CanISubSelf[-T]</code>
         </td>
     </tr>
     <tr>
@@ -915,8 +991,8 @@ Similar to the reflected ops, the inplace/augmented ops are prefixed with
         <td><code>DoesIMul</code></td>
         <td><code>__imul__</code></td>
         <td>
-            <code>CanIMul[T, R]</code><br>
-            <code>CanIMulSelf[T]</code>
+            <code>CanIMul[-T, +R]</code><br>
+            <code>CanIMulSelf[-T]</code>
         </td>
     </tr>
     <tr>
@@ -925,8 +1001,8 @@ Similar to the reflected ops, the inplace/augmented ops are prefixed with
         <td><code>DoesIMatmul</code></td>
         <td><code>__imatmul__</code></td>
         <td>
-            <code>CanIMatmul[T, R]</code><br>
-            <code>CanIMatmulSelf[T]</code>
+            <code>CanIMatmul[-T, +R]</code><br>
+            <code>CanIMatmulSelf[-T]</code>
         </td>
     </tr>
     <tr>
@@ -935,8 +1011,8 @@ Similar to the reflected ops, the inplace/augmented ops are prefixed with
         <td><code>DoesITruediv</code></td>
         <td><code>__itruediv__</code></td>
         <td>
-            <code>CanITruediv[T, R]</code><br>
-            <code>CanITruedivSelf[T]</code>
+            <code>CanITruediv[-T, +R]</code><br>
+            <code>CanITruedivSelf[-T]</code>
         </td>
     </tr>
     <tr>
@@ -945,8 +1021,8 @@ Similar to the reflected ops, the inplace/augmented ops are prefixed with
         <td><code>DoesIFloordiv</code></td>
         <td><code>__ifloordiv__</code></td>
         <td>
-            <code>CanIFloordiv[T, R]</code><br>
-            <code>CanIFloordivSelf[T]</code>
+            <code>CanIFloordiv[-T, +R]</code><br>
+            <code>CanIFloordivSelf[-T]</code>
         </td>
     </tr>
     <tr>
@@ -955,8 +1031,8 @@ Similar to the reflected ops, the inplace/augmented ops are prefixed with
         <td><code>DoesIMod</code></td>
         <td><code>__imod__</code></td>
         <td>
-            <code>CanIMod[T, R]</code><br>
-            <code>CanIModSelf[T]</code>
+            <code>CanIMod[-T, +R]</code><br>
+            <code>CanIModSelf[-T]</code>
         </td>
     </tr>
     <tr>
@@ -965,8 +1041,8 @@ Similar to the reflected ops, the inplace/augmented ops are prefixed with
         <td><code>DoesIPow</code></td>
         <td><code>__ipow__</code></td>
         <td>
-            <code>CanIPow[T, R]</code><br>
-            <code>CanIPowSelf[T]</code>
+            <code>CanIPow[-T, +R]</code><br>
+            <code>CanIPowSelf[-T]</code>
         </td>
     </tr>
     <tr>
@@ -975,8 +1051,8 @@ Similar to the reflected ops, the inplace/augmented ops are prefixed with
         <td><code>DoesILshift</code></td>
         <td><code>__ilshift__</code></td>
         <td>
-            <code>CanILshift[T, R]</code><br>
-            <code>CanILshiftSelf[T]</code>
+            <code>CanILshift[-T, +R]</code><br>
+            <code>CanILshiftSelf[-T]</code>
         </td>
     </tr>
     <tr>
@@ -985,8 +1061,8 @@ Similar to the reflected ops, the inplace/augmented ops are prefixed with
         <td><code>DoesIRshift</code></td>
         <td><code>__irshift__</code></td>
         <td>
-            <code>CanIRshift[T, R]</code><br>
-            <code>CanIRshiftSelf[T]</code>
+            <code>CanIRshift[-T, +R]</code><br>
+            <code>CanIRshiftSelf[-T]</code>
         </td>
     </tr>
     <tr>
@@ -995,8 +1071,8 @@ Similar to the reflected ops, the inplace/augmented ops are prefixed with
         <td><code>DoesIAnd</code></td>
         <td><code>__iand__</code></td>
         <td>
-            <code>CanIAnd[T, R]</code><br>
-            <code>CanIAndSelf[T]</code>
+            <code>CanIAnd[-T, +R]</code><br>
+            <code>CanIAndSelf[-T]</code>
         </td>
     </tr>
     <tr>
@@ -1005,8 +1081,8 @@ Similar to the reflected ops, the inplace/augmented ops are prefixed with
         <td><code>DoesIXor</code></td>
         <td><code>__ixor__</code></td>
         <td>
-            <code>CanIXor[T, R]</code><br>
-            <code>CanIXorSelf[T]</code>
+            <code>CanIXor[-T, +R]</code><br>
+            <code>CanIXorSelf[-T]</code>
         </td>
     </tr>
     <tr>
@@ -1015,8 +1091,8 @@ Similar to the reflected ops, the inplace/augmented ops are prefixed with
         <td><code>DoesIOr</code></td>
         <td><code>__ior__</code></td>
         <td>
-            <code>CanIOr[T, R]</code><br>
-            <code>CanIOrSelf[T]</code>
+            <code>CanIOr[-T, +R]</code><br>
+            <code>CanIOrSelf[-T]</code>
         </td>
     </tr>
 </table>
@@ -1048,7 +1124,7 @@ suffix, e.g. `optype.CanIAddSelf[T]`.
         <td><code>DoesPos</code></td>
         <td><code>__pos__</code></td>
         <td>
-            <code>CanPos[R]</code><br>
+            <code>CanPos[+R]</code><br>
             <code>CanPosSelf</code>
         </td>
     </tr>
@@ -1058,7 +1134,7 @@ suffix, e.g. `optype.CanIAddSelf[T]`.
         <td><code>DoesNeg</code></td>
         <td><code>__neg__</code></td>
         <td>
-            <code>CanNeg[R]</code><br>
+            <code>CanNeg[+R]</code><br>
             <code>CanNegSelf</code>
         </td>
     </tr>
@@ -1068,7 +1144,7 @@ suffix, e.g. `optype.CanIAddSelf[T]`.
         <td><code>DoesInvert</code></td>
         <td><code>__invert__</code></td>
         <td>
-            <code>CanInvert[R]</code><br>
+            <code>CanInvert[+R]</code><br>
             <code>CanInvertSelf</code>
         </td>
     </tr>
@@ -1078,7 +1154,7 @@ suffix, e.g. `optype.CanIAddSelf[T]`.
         <td><code>DoesAbs</code></td>
         <td><code>__abs__</code></td>
         <td>
-            <code>CanAbs[R]</code><br>
+            <code>CanAbs[+R]</code><br>
             <code>CanAbsSelf</code>
         </td>
     </tr>
@@ -1092,7 +1168,7 @@ and one with two.
 For both overloads, `optype` provides separate operand interfaces:
 `CanRound1[R]` and `CanRound2[T, RT]`.
 Additionally, `optype` also provides their (overloaded) intersection type:
-`CanRound[T, R, RT] = CanRound1[R] & CanRound2[T, RT]`.
+`CanRound[-T, +R1, +R2] = CanRound1[R1] & CanRound2[T, R2]`.
 
 <table>
     <tr>
@@ -1111,21 +1187,21 @@ Additionally, `optype` also provides their (overloaded) intersection type:
         <td><code>do_round/1</code></td>
         <td><code>DoesRound</code></td>
         <td><code>__round__/1</code></td>
-        <td><code>CanRound1[T = int]</code><br/></td>
+        <td><code>CanRound1[+R=int]</code><br/></td>
     </tr>
     <tr>
         <td><code>round(_, n)</code></td>
         <td><code>do_round/2</code></td>
         <td><code>DoesRound</code></td>
         <td><code>__round__/2</code></td>
-        <td><code>CanRound2[T = int, RT = float]</code><br/></td>
+        <td><code>CanRound2[-T=int, +R=float]</code><br/></td>
     </tr>
     <tr>
         <td><code>round(_, n=...)</code></td>
         <td><code>do_round</code></td>
         <td><code>DoesRound</code></td>
         <td><code>__round__</code></td>
-        <td><code>CanRound[T = int, R = int, RT = float]</code></td>
+        <td><code>CanRound[-T=int, +R1=int, +R2=float]</code></td>
     </tr>
 </table>
 
@@ -1159,21 +1235,21 @@ Furthermore, there are the alternative rounding functions from the
         <td><code>do_trunc</code></td>
         <td><code>DoesTrunc</code></td>
         <td><code>__trunc__</code></td>
-        <td><code>CanTrunc[R = int]</code></td>
+        <td><code>CanTrunc[+R=int]</code></td>
     </tr>
     <tr>
         <td><code>math.floor(_)</code></td>
         <td><code>do_floor</code></td>
         <td><code>DoesFloor</code></td>
         <td><code>__floor__</code></td>
-        <td><code>CanFloor[R = int]</code></td>
+        <td><code>CanFloor[+R=int]</code></td>
     </tr>
     <tr>
         <td><code>math.ceil(_)</code></td>
         <td><code>do_ceil</code></td>
         <td><code>DoesCeil</code></td>
         <td><code>__ceil__</code></td>
-        <td><code>CanCeil[R = int]</code></td>
+        <td><code>CanCeil[+R=int]</code></td>
     </tr>
 </table>
 
@@ -1209,7 +1285,7 @@ and doesn't use esoteric hacks.
         <td><code>do_call</code></td>
         <td><code>DoesCall</code></td>
         <td><code>__call__</code></td>
-        <td><code>CanCall[**Pss, R]</code></td>
+        <td><code>CanCall[**Tss, +R]</code></td>
     </tr>
 </table>
 
@@ -1267,14 +1343,14 @@ from the abracadabra collections. This is how they are defined:
         <td><code>do_next</code></td>
         <td><code>DoesNext</code></td>
         <td><code>__next__</code></td>
-        <td><code>CanNext[V]</code></td>
+        <td><code>CanNext[+V]</code></td>
     </tr>
     <tr>
         <td><code>iter(_)</code></td>
         <td><code>do_iter</code></td>
         <td><code>DoesIter</code></td>
         <td><code>__iter__</code></td>
-        <td><code>CanIter[R: CanNext[object]]</code></td>
+        <td><code>CanIter[+R: CanNext[object]]</code></td>
     </tr>
 </table>
 
@@ -1303,7 +1379,7 @@ also an abstract base class (making it absolutely useless when writing stubs).
     <tr>
         <td><code>await _</code></td>
         <td><code>__await__</code></td>
-        <td><code>CanAwait[R]</code></td>
+        <td><code>CanAwait[+R]</code></td>
     </tr>
 </table>
 
@@ -1331,14 +1407,14 @@ But fret not; the `optype` alternatives are right here:
         <td><code>do_anext</code></td>
         <td><code>DoesANext</code></td>
         <td><code>__anext__</code></td>
-        <td><code>CanANext[V]</code></td>
+        <td><code>CanANext[+V]</code></td>
     </tr>
     <tr>
         <td><code>aiter(_)</code></td>
         <td><code>do_aiter</code></td>
         <td><code>DoesAIter</code></td>
         <td><code>__aiter__</code></td>
-        <td><code>CanAIter[R: CanAnext[object]]</code></td>
+        <td><code>CanAIter[+R: CanAnext[object]]</code></td>
     </tr>
 </table>
 
@@ -1374,7 +1450,7 @@ Additionally, there is `optype.CanAIterSelf[R]`, with both the
         <td><code>do_len</code></td>
         <td><code>DoesLen</code></td>
         <td><code>__len__</code></td>
-        <td><code>CanLen[R: int = int]</code></td>
+        <td><code>CanLen[+R:int=int]</code></td>
     </tr>
     <tr>
         <td>
@@ -1384,14 +1460,14 @@ Additionally, there is `optype.CanAIterSelf[R]`, with both the
         <td><code>do_length_hint</code></td>
         <td><code>DoesLengthHint</code></td>
         <td><code>__length_hint__</code></td>
-        <td><code>CanLengthHint[R: int = int]</code></td>
+        <td><code>CanLengthHint[+R:int=int]</code></td>
     </tr>
     <tr>
         <td><code>_[k]</code></td>
         <td><code>do_getitem</code></td>
         <td><code>DoesGetitem</code></td>
         <td><code>__getitem__</code></td>
-        <td><code>CanGetitem[K, V]</code></td>
+        <td><code>CanGetitem[-K, +V]</code></td>
     </tr>
     <tr>
         <td>
@@ -1401,28 +1477,28 @@ Additionally, there is `optype.CanAIterSelf[R]`, with both the
         <td><code>do_missing</code></td>
         <td><code>DoesMissing</code></td>
         <td><code>__missing__</code></td>
-        <td><code>CanMissing[K, D]</code></td>
+        <td><code>CanMissing[-K, +D]</code></td>
     </tr>
     <tr>
         <td><code>_[k] = v</code></td>
         <td><code>do_setitem</code></td>
         <td><code>DoesSetitem</code></td>
         <td><code>__setitem__</code></td>
-        <td><code>CanSetitem[K, V]</code></td>
+        <td><code>CanSetitem[-K, -V]</code></td>
     </tr>
     <tr>
         <td><code>del _[k]</code></td>
         <td><code>do_delitem</code></td>
         <td><code>DoesDelitem</code></td>
         <td><code>__delitem__</code></td>
-        <td><code>CanDelitem[K]</code></td>
+        <td><code>CanDelitem[-K]</code></td>
     </tr>
     <tr>
         <td><code>k in _</code></td>
         <td><code>do_contains</code></td>
         <td><code>DoesContains</code></td>
         <td><code>__contains__</code></td>
-        <td><code>CanContains[K = object]</code></td>
+        <td><code>CanContains[-K=object]</code></td>
     </tr>
     <tr>
         <td><code>reversed(_)</code></td>
@@ -1430,8 +1506,8 @@ Additionally, there is `optype.CanAIterSelf[R]`, with both the
         <td><code>DoesReversed</code></td>
         <td><code>__reversed__</code></td>
         <td>
-            <code>CanReversed[R]</code>, or<br>
-            <code>CanSequence[I, V, N = int]</code>
+            <code>CanReversed[+R]</code>, or<br>
+            <code>CanSequence[-I, +V, +N=int]</code>
         </td>
     </tr>
 </table>
@@ -1466,7 +1542,7 @@ specific and flexible `collections.abc.Sequence[V]`.
         <td><code>do_getattr</code></td>
         <td><code>DoesGetattr</code></td>
         <td><code>__getattr__</code></td>
-        <td><code>CanGetattr[K: str = str, V = object]</code></td>
+        <td><code>CanGetattr[-K:str=str, +V=object]</code></td>
     </tr>
     <tr>
         <td>
@@ -1476,7 +1552,7 @@ specific and flexible `collections.abc.Sequence[V]`.
         <td><code>do_setattr</code></td>
         <td><code>DoesSetattr</code></td>
         <td><code>__setattr__</code></td>
-        <td><code>CanSetattr[K: str = str, V = object]</code></td>
+        <td><code>CanSetattr[-K:str=str, -V=object]</code></td>
     </tr>
     <tr>
         <td>
@@ -1486,14 +1562,14 @@ specific and flexible `collections.abc.Sequence[V]`.
         <td><code>do_delattr</code></td>
         <td><code>DoesDelattr</code></td>
         <td><code>__delattr__</code></td>
-        <td><code>CanDelattr[K: str = str]</code></td>
+        <td><code>CanDelattr[-K:str=str]</code></td>
     </tr>
     <tr>
         <td><code>dir(_)</code></td>
         <td><code>do_dir</code></td>
         <td><code>DoesDir</code></td>
         <td><code>__dir__</code></td>
-        <td><code>CanDir[R: CanIter[CanIterSelf[str]]]</code></td>
+        <td><code>CanDir[+R:CanIter[CanIterSelf[str]]]</code></td>
     </tr>
 </table>
 
@@ -1515,7 +1591,7 @@ Support for the `with` statement.
         <td></td>
         <td><code>__enter__</code></td>
         <td>
-            <code>CanEnter[C]</code>, or
+            <code>CanEnter[+C]</code>, or
             <code>CanEnterSelf</code>
         </td>
     </tr>
@@ -1523,7 +1599,7 @@ Support for the `with` statement.
         <td></td>
         <td><code>__exit__</code></td>
         <td>
-            <code>CanExit[R = None]</code>
+            <code>CanExit[+R = None]</code>
         </td>
     </tr>
     <tr>
@@ -1533,8 +1609,8 @@ Support for the `with` statement.
             <code>__exit__</code>
         </td>
         <td>
-            <code>CanWith[C, R=None]</code>, or<br>
-            <code>CanWithSelf[R=None]</code>
+            <code>CanWith[+C, +R = None]</code>, or<br>
+            <code>CanWithSelf[+R = None]</code>
         </td>
     </tr>
 </table>
@@ -1558,14 +1634,14 @@ For the `async with` statement the interfaces look very similar:
         <td></td>
         <td><code>__aenter__</code></td>
         <td>
-            <code>CanAEnter[C]</code>, or<br>
+            <code>CanAEnter[+C]</code>, or<br>
             <code>CanAEnterSelf</code>
         </td>
     </tr>
     <tr>
         <td></td>
         <td><code>__aexit__</code></td>
-        <td><code>CanAExit[R=None]</code></td>
+        <td><code>CanAExit[+R = None]</code></td>
     </tr>
     <tr>
         <td><code>async with _ as c:</code></td>
@@ -1574,8 +1650,8 @@ For the `async with` statement the interfaces look very similar:
             <code>__aexit__</code>
         </td>
         <td>
-            <code>CanAsyncWith[C, R=None]</code>, or<br>
-            <code>CanAsyncWithSelf[R=None]</code>
+            <code>CanAsyncWith[+C, +R = None]</code>, or<br>
+            <code>CanAsyncWithSelf[+R = None]</code>
         </td>
     </tr>
 </table>
@@ -1600,22 +1676,22 @@ Interfaces for [descriptors](https://docs.python.org/3/howto/descriptor.html).
             <code>vt: VT = T.d</code>
         </td>
         <td><code>__get__</code></td>
-        <td><code>CanGet[T: object, V, VT = V]</code></td>
+        <td><code>CanGet[-T, +V, +VT = V]</code></td>
     </tr>
     <tr>
         <td><code>T().k = v</code></td>
         <td><code>__set__</code></td>
-        <td><code>CanSet[T: object, V]</code></td>
+        <td><code>CanSet[-T, -V]</code></td>
     </tr>
     <tr>
         <td><code>del T().k</code></td>
         <td><code>__delete__</code></td>
-        <td><code>CanDelete[T: object]</code></td>
+        <td><code>CanDelete[-T]</code></td>
     </tr>
     <tr>
         <td><code>class T: d = _</code></td>
         <td><code>__set_name__</code></td>
-        <td><code>CanSetName[T: object, N: str = str]</code></td>
+        <td><code>CanSetName[-T, -N: str = str]</code></td>
     </tr>
 </table>
 
@@ -1636,7 +1712,7 @@ Interfaces for emulating buffer types using the [buffer protocol][BP].
     <tr>
         <td><code>v = memoryview(_)</code></td>
         <td><code>__buffer__</code></td>
-        <td><code>CanBuffer[T: int = int]</code></td>
+        <td><code>CanBuffer[-T: int = int]</code></td>
     </tr>
     <tr>
         <td><code>del v</code></td>
@@ -1665,12 +1741,12 @@ runtime-checkable interfaces:
     <tr>
         <td><code>copy.copy(_) -> R</code></td>
         <td><code>__copy__() -> R</code></td>
-        <td><code>CanCopy[R]</code></td>
+        <td><code>CanCopy[+R]</code></td>
     </tr>
     <tr>
         <td><code>copy.deepcopy(_, memo={}) -> R</code></td>
         <td><code>__deepcopy__(memo, /) -> R</code></td>
-        <td><code>CanDeepcopy[R]</code></td>
+        <td><code>CanDeepcopy[+R]</code></td>
     </tr>
     <tr>
         <td>
@@ -1678,7 +1754,7 @@ runtime-checkable interfaces:
             <sup>[1]</sup>
         </td>
         <td><code>__replace__(**changes: V) -> R</code></td>
-        <td><code>CanReplace[V, R]</code></td>
+        <td><code>CanReplace[-V, +R]</code></td>
     </tr>
 </table>
 
@@ -1905,9 +1981,9 @@ are accessible at runtime, and use a consistent naming scheme.
         <th>replaces</th>
     </tr>
     <tr>
-        <td><code>CanFSPath[+T: str | bytes = ...]</code></td>
+        <td><code>CanFSPath[+T: str | bytes =]</code></td>
         <td><code>__fspath__: () -> T</code></td>
-        <td><code>os.PathLike[AnyStr]</code></td>
+        <td><code>os.PathLike[AnyStr: (str, bytes)]</code></td>
     </tr>
     <tr>
         <td><code>CanRead[+T]</code></td>
@@ -1917,7 +1993,7 @@ are accessible at runtime, and use a consistent naming scheme.
     <tr>
         <td><code>CanReadN[+T]</code></td>
         <td><code>read: (int) -> T</code></td>
-        <td><code>_typeshed.SupportsRead[T]</code></td>
+        <td><code>_typeshed.SupportsRead[+T]</code></td>
     </tr>
     <tr>
         <td><code>CanReadline[+T]</code></td>
@@ -1953,7 +2029,7 @@ are accessible at runtime, and use a consistent naming scheme.
         <th>replaces</th>
     </tr>
     <tr>
-        <td><code>ToPath[+T: str | bytes = ...]</code></td>
+        <td><code>ToPath[+T: str | bytes =]</code></td>
         <td><code>T | CanFSPath[T]</code></td>
         <td>
             <code>_typeshed.StrPath</code><br>
@@ -1984,11 +2060,11 @@ Type aliases for the `json` standard library:
     </tr>
     <tr>
         <td><code>Array[V: Value = Value]</code></td>
-        <td><code>AnyArray[V: AnyValue = AnyValue]</code></td>
+        <td><code>AnyArray[~V: AnyValue = AnyValue]</code></td>
     </tr>
     <tr>
         <td><code>Object[V: Value = Value]</code></td>
-        <td><code>AnyObject[V: AnyValue = AnyValue]</code></td>
+        <td><code>AnyObject[~V: AnyValue = AnyValue]</code></td>
     </tr>
 </table>
 
@@ -2013,22 +2089,22 @@ interfaces:
     <tr>
         <td><code>__reduce__</code></td>
         <td><code>() -> R</code></td>
-        <td><code>CanReduce[R: str | tuple = ...]</code></td>
+        <td><code>CanReduce[+R: str | tuple =]</code></td>
     </tr>
     <tr>
         <td><code>__reduce_ex__</code></td>
         <td><code>(CanIndex) -> R</code></td>
-        <td><code>CanReduceEx[R: str | tuple = ...]</code></td>
+        <td><code>CanReduceEx[+R: str | tuple =]</code></td>
     </tr>
     <tr>
         <td><code>__getstate__</code></td>
         <td><code>() -> S</code></td>
-        <td><code>CanGetstate[S]</code></td>
+        <td><code>CanGetstate[+S]</code></td>
     </tr>
     <tr>
         <td><code>__setstate__</code></td>
         <td><code>(S) -> None</code></td>
-        <td><code>CanSetstate[S]</code></td>
+        <td><code>CanSetstate[-S]</code></td>
     </tr>
     <tr>
         <td>
@@ -2039,7 +2115,7 @@ interfaces:
             <code>() -> tuple[V, ...]</code><br>
             <code>(V) -> Self</code><br>
         </td>
-        <td><code>CanGetnewargs[V]</code></td>
+        <td><code>CanGetnewargs[+V]</code></td>
     </tr>
     <tr>
         <td>
@@ -2050,7 +2126,7 @@ interfaces:
             <code>() -> tuple[tuple[V, ...], dict[str, KV]]</code><br>
             <code>(*tuple[V, ...], **dict[str, KV]) -> Self</code><br>
         </td>
-        <td><code>CanGetnewargsEx[V, KV]</code></td>
+        <td><code>CanGetnewargsEx[+V, ~KV]</code></td>
     </tr>
 </table>
 
