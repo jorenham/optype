@@ -107,13 +107,11 @@ type MArray[
 
 
 @runtime_checkable
-@set_module("optype.numpy")
 class CanArray(Protocol[_NDT_co, _DTT_co]):
     def __array__(self, /) -> np.ndarray[_NDT_co, _DTT_co]: ...
 
 
 @runtime_checkable
-@set_module("optype.numpy")
 class CanArrayND(Protocol[_SCT_co, _NDT_co]):
     """
     Similar to `onp.CanArray`, but must be sized (i.e. excludes scalars), and is
@@ -171,7 +169,6 @@ MArray3D = TypeAliasType(
 
 
 @runtime_checkable
-@set_module("optype.numpy")
 class CanArray0D(Protocol[_SCT_co]):
     """The 0-d variant of `optype.numpy.CanArrayND`."""
 
@@ -179,7 +176,6 @@ class CanArray0D(Protocol[_SCT_co]):
 
 
 @runtime_checkable
-@set_module("optype.numpy")
 class CanArray1D(Protocol[_SCT_co]):
     """The 1-d variant of `optype.numpy.CanArrayND`."""
 
@@ -188,7 +184,6 @@ class CanArray1D(Protocol[_SCT_co]):
 
 
 @runtime_checkable
-@set_module("optype.numpy")
 class CanArray2D(Protocol[_SCT_co]):
     """The 2-d variant of `optype.numpy.CanArrayND`."""
 
@@ -197,7 +192,6 @@ class CanArray2D(Protocol[_SCT_co]):
 
 
 @runtime_checkable
-@set_module("optype.numpy")
 class CanArray3D(Protocol[_SCT_co]):
     """The 3-d variant of `optype.numpy.CanArrayND`."""
 
