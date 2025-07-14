@@ -41,7 +41,7 @@ lint = [
     "sp-repo-review[cli]>=2025.5.2",
 ]
 type = [
-    "mypy[faster-cache]>=1.16.1",
+    "mypy[faster-cache]>=1.17.0",
     "basedpyright>=1.30.0",
 ]
 test = [
@@ -83,26 +83,21 @@ exclude = [
 
 [tool.mypy]
 packages = ["optype", "examples", "tests"]
-strict = true
+local_partial_types = true
+allow_redefinition_new = true
 
-allow_redefinition = true
+strict = true
 disallow_any_expr = false
 disallow_any_decorated = false
 disallow_any_explicit = false
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
-local_partial_types = true
-strict_bytes = true
+enable_error_code = [
+    "exhaustive-match",
+    "ignore-without-code",
+    "redundant-expr",
+    "truthy-bool",
+]
 warn_return_any = false
-warn_redundant_casts = true
-warn_unreachable = true
-warn_unused_ignores = true
-warn_incomplete_stub = true
-
-    [[tool.mypy.overrides]]
-    module = ["tests.*", "tests.numpy.*"]
-    disable_error_code = ["unreachable"]
+warn_unreachable = false
 
 
 [tool.basedpyright]
