@@ -191,15 +191,13 @@ _StrT_contra = TypeVar("_StrT_contra", bound=str, default=str, contravariant=Tru
 _StrT_co = TypeVar("_StrT_co", bound=str, default=str, covariant=True)
 _ExcT = TypeVar("_ExcT", bound=BaseException)
 
-_AnyT_contra = TypeVar("_AnyT_contra", contravariant=True, default=object)
-_AnyT_co = TypeVar("_AnyT_co", covariant=True, default=object)
-_ObjectT_contra = TypeVar("_ObjectT_contra", contravariant=True, default=object)
-# can be anything, but defaults to `bool`
-_AnyBoolT_co = TypeVar("_AnyBoolT_co", default=bool, covariant=True)
-_AnyIntT_contra = TypeVar("_AnyIntT_contra", default=int, contravariant=True)
-_AnyIntT_co = TypeVar("_AnyIntT_co", default=int, covariant=True)
-_AnyFloatT_co = TypeVar("_AnyFloatT_co", default=float, covariant=True)
-_AnyNoneT_co = TypeVar("_AnyNoneT_co", default=None, covariant=True)
+_T_object_contra = TypeVar("_T_object_contra", contravariant=True, default=object)
+_T_object_co = TypeVar("_T_object_co", covariant=True, default=object)
+_T_bool_co = TypeVar("_T_bool_co", default=bool, covariant=True)
+_T_int_contra = TypeVar("_T_int_contra", default=int, contravariant=True)
+_T_int_co = TypeVar("_T_int_co", default=int, covariant=True)
+_T_float_co = TypeVar("_T_float_co", default=float, covariant=True)
+_T_None_co = TypeVar("_T_None_co", default=None, covariant=True)
 
 # we can't use `CanIndex` here, because of a recent regression in pyright 1.1.392
 _IndexT_contra = TypeVar(
@@ -363,7 +361,7 @@ class CanAIterSelf(CanAIter["CanAIterSelf[_V_co]"], CanANext[_V_co], Protocol[_V
 
 
 @runtime_checkable
-class CanEq(Protocol[_ObjectT_contra, _AnyBoolT_co]):  # noqa: PLW1641
+class CanEq(Protocol[_T_object_contra, _T_bool_co]):  # noqa: PLW1641
     """
     Unfortunately, `typeshed` (incorrectly) annotates `object.__eq__` as
     `(Self, object) -> bool`.
@@ -379,70 +377,72 @@ class CanEq(Protocol[_ObjectT_contra, _AnyBoolT_co]):  # noqa: PLW1641
     """
 
     @override
-    def __eq__(self, rhs: _ObjectT_contra, /) -> _AnyBoolT_co: ...  # pyright:ignore[reportIncompatibleMethodOverride]
+    def __eq__(self, rhs: _T_object_contra, /) -> _T_bool_co: ...  # pyright:ignore[reportIncompatibleMethodOverride]
 
 
 @runtime_checkable
-class CanNe(Protocol[_ObjectT_contra, _AnyBoolT_co]):
+class CanNe(Protocol[_T_object_contra, _T_bool_co]):
     """
     Just like `__eq__`, the `__ne__` method is incorrectly annotated in
     typeshed. Refer to `CanEq` for why this is.
     """
 
     @override
-    def __ne__(self, rhs: _ObjectT_contra, /) -> _AnyBoolT_co: ...  # pyright:ignore[reportIncompatibleMethodOverride]
+    def __ne__(self, rhs: _T_object_contra, /) -> _T_bool_co: ...  # pyright:ignore[reportIncompatibleMethodOverride]
 
 
 @runtime_checkable
-class CanLt(Protocol[_AnyT_contra, _AnyBoolT_co]):
-    def __lt__(self, rhs: _AnyT_contra, /) -> _AnyBoolT_co: ...
+class CanLt(Protocol[_T_object_contra, _T_bool_co]):
+    def __lt__(self, rhs: _T_object_contra, /) -> _T_bool_co: ...
 
 
 @runtime_checkable
-class CanLe(Protocol[_AnyT_contra, _AnyBoolT_co]):
-    def __le__(self, rhs: _AnyT_contra, /) -> _AnyBoolT_co: ...
+class CanLe(Protocol[_T_object_contra, _T_bool_co]):
+    def __le__(self, rhs: _T_object_contra, /) -> _T_bool_co: ...
 
 
 @runtime_checkable
-class CanGt(Protocol[_AnyT_contra, _AnyBoolT_co]):
-    def __gt__(self, rhs: _AnyT_contra, /) -> _AnyBoolT_co: ...
+class CanGt(Protocol[_T_object_contra, _T_bool_co]):
+    def __gt__(self, rhs: _T_object_contra, /) -> _T_bool_co: ...
 
 
 @runtime_checkable
-class CanGe(Protocol[_AnyT_contra, _AnyBoolT_co]):
-    def __ge__(self, rhs: _AnyT_contra, /) -> _AnyBoolT_co: ...
+class CanGe(Protocol[_T_object_contra, _T_bool_co]):
+    def __ge__(self, rhs: _T_object_contra, /) -> _T_bool_co: ...
 
 
 # Callables
 
 
 @runtime_checkable
-class CanCall(Protocol[_Tss, _AnyT_co]):
-    def __call__(self, /, *args: _Tss.args, **kwargs: _Tss.kwargs) -> _AnyT_co: ...
+class CanCall(Protocol[_Tss, _T_object_co]):
+    def __call__(self, /, *args: _Tss.args, **kwargs: _Tss.kwargs) -> _T_object_co: ...
 
 
 # Dynamic attribute access
 
 
 @runtime_checkable
-class CanGetattr(Protocol[_StrT_contra, _AnyT_co]):
-    def __getattr__(self, name: _StrT_contra, /) -> _AnyT_co: ...  # type: ignore[misc]
+class CanGetattr(Protocol[_StrT_contra, _T_object_co]):
+    def __getattr__(self, name: _StrT_contra, /) -> _T_object_co: ...  # type: ignore[misc]
 
 
 @runtime_checkable
-class CanGetattribute(Protocol[_StrT_contra, _AnyT_co]):
+class CanGetattribute(Protocol[_StrT_contra, _T_object_co]):
     """Note that `isinstance(x, CanGetattribute)` is always `True`."""
 
     @override
-    def __getattribute__(self, name: _StrT_contra, /) -> _AnyT_co: ...  # type: ignore[misc]  # pyright: ignore[reportIncompatibleMethodOverride]
+    def __getattribute__(self, name: _StrT_contra, /) -> _T_object_co: ...  # type: ignore[misc]  # pyright: ignore[reportIncompatibleMethodOverride]
 
 
 @runtime_checkable
-class CanSetattr(Protocol[_StrT_contra, _AnyT_contra]):
+class CanSetattr(Protocol[_StrT_contra, _T_object_contra]):
     """Note that `isinstance(x, CanSetattr)` is always true."""
 
     @override
-    def __setattr__(self, name: _StrT_contra, value: _AnyT_contra, /) -> _Ignored: ...  # type: ignore[misc]  # pyright: ignore[reportIncompatibleMethodOverride]
+    def __setattr__(  # type: ignore[misc]  # pyright: ignore[reportIncompatibleMethodOverride]
+        self, name: _StrT_contra, value: _T_object_contra, /
+    ) -> _Ignored: ...
 
 
 @runtime_checkable
@@ -527,10 +527,10 @@ class CanReversed(Protocol[_T_co]):
 
 
 @runtime_checkable
-class CanContains(Protocol[_ObjectT_contra, _BoolT_co]):
+class CanContains(Protocol[_T_object_contra, _BoolT_co]):
     # usually the key is required to also be a hashable object, but this
     # isn't strictly required
-    def __contains__(self, key: _ObjectT_contra, /) -> _BoolT_co: ...
+    def __contains__(self, key: _T_object_contra, /) -> _BoolT_co: ...
 
 
 @runtime_checkable
@@ -686,21 +686,21 @@ class CanPow2(Protocol[_T_contra, _TT_co]):
 
 
 @runtime_checkable
-class CanPow3(Protocol[_T_contra, _V_contra, _AnyIntT_co]):
-    def __pow__(self, exp: _T_contra, mod: _V_contra, /) -> _AnyIntT_co: ...
+class CanPow3(Protocol[_T_contra, _V_contra, _T_int_co]):
+    def __pow__(self, exp: _T_contra, mod: _V_contra, /) -> _T_int_co: ...
 
 
 @runtime_checkable
 class CanPow(
     CanPow2[_T_contra, _TT_co],
-    CanPow3[_T_contra, _V_contra, _AnyIntT_co],
-    Protocol[_T_contra, _V_contra, _TT_co, _AnyIntT_co],
+    CanPow3[_T_contra, _V_contra, _T_int_co],
+    Protocol[_T_contra, _V_contra, _TT_co, _T_int_co],
 ):
     @overload
     @override
     def __pow__(self, exp: _T_contra, /) -> _TT_co: ...
     @overload
-    def __pow__(self, exp: _T_contra, mod: _V_contra, /) -> _AnyIntT_co: ...
+    def __pow__(self, exp: _T_contra, mod: _V_contra, /) -> _T_int_co: ...
 
 
 @runtime_checkable
@@ -1259,41 +1259,41 @@ class CanInvertSelf(Protocol):
 
 
 @runtime_checkable
-class CanRound1(Protocol[_AnyIntT_co]):
-    def __round__(self, /) -> _AnyIntT_co: ...
+class CanRound1(Protocol[_T_int_co]):
+    def __round__(self, /) -> _T_int_co: ...
 
 
 @runtime_checkable
-class CanRound2(Protocol[_AnyIntT_contra, _AnyFloatT_co]):
-    def __round__(self, /, ndigits: _AnyIntT_contra) -> _AnyFloatT_co: ...
+class CanRound2(Protocol[_T_int_contra, _T_float_co]):
+    def __round__(self, /, ndigits: _T_int_contra) -> _T_float_co: ...
 
 
 @runtime_checkable
 class CanRound(
-    CanRound1[_AnyIntT_co],
-    CanRound2[_AnyIntT_contra, _AnyFloatT_co],
-    Protocol[_AnyIntT_contra, _AnyIntT_co, _AnyFloatT_co],
+    CanRound1[_T_int_co],
+    CanRound2[_T_int_contra, _T_float_co],
+    Protocol[_T_int_contra, _T_int_co, _T_float_co],
 ):
     @overload
     @override
-    def __round__(self, /) -> _AnyIntT_co: ...
+    def __round__(self, /) -> _T_int_co: ...
     @overload
-    def __round__(self, /, ndigits: _AnyIntT_contra) -> _AnyFloatT_co: ...
+    def __round__(self, /, ndigits: _T_int_contra) -> _T_float_co: ...
 
 
 @runtime_checkable
-class CanTrunc(Protocol[_AnyIntT_co]):
-    def __trunc__(self, /) -> _AnyIntT_co: ...
+class CanTrunc(Protocol[_T_int_co]):
+    def __trunc__(self, /) -> _T_int_co: ...
 
 
 @runtime_checkable
-class CanFloor(Protocol[_AnyIntT_co]):
-    def __floor__(self, /) -> _AnyIntT_co: ...
+class CanFloor(Protocol[_T_int_co]):
+    def __floor__(self, /) -> _T_int_co: ...
 
 
 @runtime_checkable
-class CanCeil(Protocol[_AnyIntT_co]):
-    def __ceil__(self, /) -> _AnyIntT_co: ...
+class CanCeil(Protocol[_T_int_co]):
+    def __ceil__(self, /) -> _T_int_co: ...
 
 
 # Awaitables
@@ -1332,7 +1332,7 @@ class CanEnterSelf(Protocol):
 
 
 @runtime_checkable
-class CanExit(Protocol[_AnyNoneT_co]):
+class CanExit(Protocol[_T_None_co]):
     @overload
     def __exit__(self, exc_type: None, exc: None, tb: None, /) -> None: ...
     @overload
@@ -1342,19 +1342,19 @@ class CanExit(Protocol[_AnyNoneT_co]):
         exc: _ExcT,
         tb: types.TracebackType,
         /,
-    ) -> _AnyNoneT_co: ...
+    ) -> _T_None_co: ...
 
 
 @runtime_checkable
 class CanWith(
     CanEnter[_T_co],
-    CanExit[_AnyNoneT_co],
-    Protocol[_T_co, _AnyNoneT_co],
+    CanExit[_T_None_co],
+    Protocol[_T_co, _T_None_co],
 ): ...
 
 
 @runtime_checkable
-class CanWithSelf(CanEnterSelf, CanExit[_AnyNoneT_co], Protocol[_AnyNoneT_co]):
+class CanWithSelf(CanEnterSelf, CanExit[_T_None_co], Protocol[_T_None_co]):
     """CanWithSelf[+R = None] = CanWith[Self, R]"""
 
 
@@ -1374,7 +1374,7 @@ class CanAEnterSelf(Protocol):
 
 
 @runtime_checkable
-class CanAExit(Protocol[_AnyNoneT_co]):
+class CanAExit(Protocol[_T_None_co]):
     @overload
     def __aexit__(self, exc_type: None, exc: None, tb: None, /) -> CanAwait[None]: ...
     @overload
@@ -1384,19 +1384,19 @@ class CanAExit(Protocol[_AnyNoneT_co]):
         exc_: _ExcT,
         tb: types.TracebackType,
         /,
-    ) -> CanAwait[_AnyNoneT_co]: ...
+    ) -> CanAwait[_T_None_co]: ...
 
 
 @runtime_checkable
 class CanAsyncWith(
     CanAEnter[_T_co],
-    CanAExit[_AnyNoneT_co],
-    Protocol[_T_co, _AnyNoneT_co],
+    CanAExit[_T_None_co],
+    Protocol[_T_co, _T_None_co],
 ): ...
 
 
 @runtime_checkable
-class CanAsyncWithSelf(CanAEnterSelf, CanAExit[_AnyNoneT_co], Protocol[_AnyNoneT_co]):
+class CanAsyncWithSelf(CanAEnterSelf, CanAExit[_T_None_co], Protocol[_T_None_co]):
     """CanAsyncWithSelf[+R = None] = CanAsyncWith[Self, R]"""
 
 
