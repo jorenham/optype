@@ -622,7 +622,7 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesAdd</code></td>
         <td><code>__add__</code></td>
         <td>
-            <code>CanAdd[-T, +R]</code><br>
+            <code>CanAdd[-T, +R=T]</code><br>
             <code>CanAddSelf[-T]</code>
         </td>
     </tr>
@@ -632,7 +632,7 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesSub</code></td>
         <td><code>__sub__</code></td>
         <td>
-            <code>CanSub[-T, +R]</code><br>
+            <code>CanSub[-T, +R=T]</code><br>
             <code>CanSubSelf[-T]</code>
         </td>
     </tr>
@@ -642,7 +642,7 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesMul</code></td>
         <td><code>__mul__</code></td>
         <td>
-            <code>CanMul[-T, +R]</code><br>
+            <code>CanMul[-T, +R=T]</code><br>
             <code>CanMulSelf[-T]</code>
         </td>
     </tr>
@@ -652,7 +652,7 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesMatmul</code></td>
         <td><code>__matmul__</code></td>
         <td>
-            <code>CanMatmul[-T, +R]</code><br>
+            <code>CanMatmul[-T, +R=T]</code><br>
             <code>CanMatmulSelf[-T]</code>
         </td>
     </tr>
@@ -662,7 +662,7 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesTruediv</code></td>
         <td><code>__truediv__</code></td>
         <td>
-            <code>CanTruediv[-T, +R]</code><br>
+            <code>CanTruediv[-T, +R=T]</code><br>
             <code>CanTruedivSelf[-T]</code>
         </td>
     </tr>
@@ -672,7 +672,7 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesFloordiv</code></td>
         <td><code>__floordiv__</code></td>
         <td>
-            <code>CanFloordiv[-T, +R]</code><br>
+            <code>CanFloordiv[-T, +R=T]</code><br>
             <code>CanFloordivSelf[-T]</code>
         </td>
     </tr>
@@ -682,7 +682,7 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesMod</code></td>
         <td><code>__mod__</code></td>
         <td>
-            <code>CanMod[-T, +R]</code><br>
+            <code>CanMod[-T, +R=T]</code><br>
             <code>CanModSelf[-T]</code>
         </td>
     </tr>
@@ -702,7 +702,7 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesPow</code></td>
         <td><code>__pow__</code></td>
         <td>
-            <code>CanPow2[-T, +R]</code><br>
+            <code>CanPow2[-T, +R=T]</code><br>
             <code>CanPowSelf[-T]</code><br>
             <code>CanPow[-T, None, +R, Never]</code>
         </td>
@@ -713,7 +713,7 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesPow</code></td>
         <td><code>__pow__</code></td>
         <td>
-            <code>CanPow3[-T, -M, +R]</code><br>
+            <code>CanPow3[-T, -M, +R=int]</code><br>
             <code>CanPow[-T, -M, Never, +R]</code>
         </td>
     </tr>
@@ -723,7 +723,7 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesLshift</code></td>
         <td><code>__lshift__</code></td>
         <td>
-            <code>CanLshift[-T, +R]</code><br>
+            <code>CanLshift[-T, +R=T]</code><br>
             <code>CanLshiftSelf[-T]</code>
         </td>
     </tr>
@@ -733,7 +733,7 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesRshift</code></td>
         <td><code>__rshift__</code></td>
         <td>
-            <code>CanRshift[-T, +R]</code><br>
+            <code>CanRshift[-T, +R=T]</code><br>
             <code>CanRshiftSelf[-T]</code>
         </td>
     </tr>
@@ -743,7 +743,7 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesAnd</code></td>
         <td><code>__and__</code></td>
         <td>
-            <code>CanAnd[-T, +R]</code><br>
+            <code>CanAnd[-T, +R=T]</code><br>
             <code>CanAndSelf[-T]</code>
         </td>
     </tr>
@@ -753,7 +753,7 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesXor</code></td>
         <td><code>__xor__</code></td>
         <td>
-            <code>CanXor[-T, +R]</code><br>
+            <code>CanXor[-T, +R=T]</code><br>
             <code>CanXorSelf[-T]</code>
         </td>
     </tr>
@@ -763,7 +763,7 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesOr</code></td>
         <td><code>__or__</code></td>
         <td>
-            <code>CanOr[-T, +R]</code><br>
+            <code>CanOr[-T, +R=T]</code><br>
             <code>CanOrSelf[-T]</code>
         </td>
     </tr>
@@ -802,7 +802,7 @@ They are named like the original, but prefixed with `CanR` prefix, i.e.
         <td><code>DoesRAdd</code></td>
         <td><code>__radd__</code></td>
         <td>
-            <code>CanRAdd[-T, +R]</code><br>
+            <code>CanRAdd[-T, +R=T]</code><br>
             <code>CanRAddSelf[-T]</code>
         </td>
     </tr>
@@ -812,7 +812,7 @@ They are named like the original, but prefixed with `CanR` prefix, i.e.
         <td><code>DoesRSub</code></td>
         <td><code>__rsub__</code></td>
         <td>
-            <code>CanRSub[-T, +R]</code><br>
+            <code>CanRSub[-T, +R=T]</code><br>
             <code>CanRSubSelf[-T]</code>
         </td>
     </tr>
@@ -822,7 +822,7 @@ They are named like the original, but prefixed with `CanR` prefix, i.e.
         <td><code>DoesRMul</code></td>
         <td><code>__rmul__</code></td>
         <td>
-            <code>CanRMul[-T, +R]</code><br>
+            <code>CanRMul[-T, +R=T]</code><br>
             <code>CanRMulSelf[-T]</code>
         </td>
     </tr>
@@ -832,7 +832,7 @@ They are named like the original, but prefixed with `CanR` prefix, i.e.
         <td><code>DoesRMatmul</code></td>
         <td><code>__rmatmul__</code></td>
         <td>
-            <code>CanRMatmul[-T, +R]</code><br>
+            <code>CanRMatmul[-T, +R=T]</code><br>
             <code>CanRMatmulSelf[-T]</code>
         </td>
     </tr>
@@ -842,7 +842,7 @@ They are named like the original, but prefixed with `CanR` prefix, i.e.
         <td><code>DoesRTruediv</code></td>
         <td><code>__rtruediv__</code></td>
         <td>
-            <code>CanRTruediv[-T, +R]</code><br>
+            <code>CanRTruediv[-T, +R=T]</code><br>
             <code>CanRTruedivSelf[-T]</code>
         </td>
     </tr>
@@ -852,7 +852,7 @@ They are named like the original, but prefixed with `CanR` prefix, i.e.
         <td><code>DoesRFloordiv</code></td>
         <td><code>__rfloordiv__</code></td>
         <td>
-            <code>CanRFloordiv[-T, +R]</code><br>
+            <code>CanRFloordiv[-T, +R=T]</code><br>
             <code>CanRFloordivSelf[-T]</code>
         </td>
     </tr>
@@ -862,7 +862,7 @@ They are named like the original, but prefixed with `CanR` prefix, i.e.
         <td><code>DoesRMod</code></td>
         <td><code>__rmod__</code></td>
         <td>
-            <code>CanRMod[-T, +R]</code><br>
+            <code>CanRMod[-T, +R=T]</code><br>
             <code>CanRModSelf[-T]</code>
         </td>
     </tr>
@@ -882,7 +882,7 @@ They are named like the original, but prefixed with `CanR` prefix, i.e.
         <td><code>DoesRPow</code></td>
         <td><code>__rpow__</code></td>
         <td>
-            <code>CanRPow[-T, +R]</code><br>
+            <code>CanRPow[-T, +R=T]</code><br>
             <code>CanRPowSelf[-T]</code>
         </td>
     </tr>
@@ -892,7 +892,7 @@ They are named like the original, but prefixed with `CanR` prefix, i.e.
         <td><code>DoesRLshift</code></td>
         <td><code>__rlshift__</code></td>
         <td>
-            <code>CanRLshift[-T, +R]</code><br>
+            <code>CanRLshift[-T, +R=T]</code><br>
             <code>CanRLshiftSelf[-T]</code>
         </td>
     </tr>
@@ -902,7 +902,7 @@ They are named like the original, but prefixed with `CanR` prefix, i.e.
         <td><code>DoesRRshift</code></td>
         <td><code>__rrshift__</code></td>
         <td>
-            <code>CanRRshift[-T, +R]</code><br>
+            <code>CanRRshift[-T, +R=T]</code><br>
             <code>CanRRshiftSelf[-T]</code>
         </td>
     </tr>
@@ -912,7 +912,7 @@ They are named like the original, but prefixed with `CanR` prefix, i.e.
         <td><code>DoesRAnd</code></td>
         <td><code>__rand__</code></td>
         <td>
-            <code>CanRAnd[-T, +R]</code><br>
+            <code>CanRAnd[-T, +R=T]</code><br>
             <code>CanRAndSelf[-T]</code>
         </td>
     </tr>
@@ -922,7 +922,7 @@ They are named like the original, but prefixed with `CanR` prefix, i.e.
         <td><code>DoesRXor</code></td>
         <td><code>__rxor__</code></td>
         <td>
-            <code>CanRXor[-T, +R]</code><br>
+            <code>CanRXor[-T, +R=T]</code><br>
             <code>CanRXorSelf[-T]</code>
         </td>
     </tr>
@@ -932,7 +932,7 @@ They are named like the original, but prefixed with `CanR` prefix, i.e.
         <td><code>DoesROr</code></td>
         <td><code>__ror__</code></td>
         <td>
-            <code>CanROr[-T, +R]</code><br>
+            <code>CanROr[-T, +R=T]</code><br>
             <code>CanROrSelf[-T]</code>
         </td>
     </tr>
