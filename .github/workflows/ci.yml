@@ -54,7 +54,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        np: ["1.25", "2.0", "2.1", "2.2", "2.3"]
+        np: ["1.25", "1.26", "2.0", "2.1", "2.2", "2.3"]
         py: ["3.11"]
     runs-on: ${{ matrix.os }}
     steps:
