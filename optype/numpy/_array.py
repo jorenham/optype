@@ -35,6 +35,7 @@ _DTT = TypeVar("_DTT", bound=np.dtype[Any], default=np.dtype[Any])
 _DTT_co = TypeVar("_DTT_co", bound=np.dtype[Any], default=np.dtype[Any], covariant=True)
 _SCT = TypeVar("_SCT", bound=np.generic, default=Any)
 _SCT_co = TypeVar("_SCT_co", bound=np.generic, default=Any, covariant=True)
+_SCT0_co = TypeVar("_SCT0_co", bound=np.generic, covariant=True)
 
 
 Matrix = TypeAliasType(
@@ -115,14 +116,14 @@ class CanArray(Protocol[_NDT_co, _DTT_co]):
 
 @runtime_checkable
 @set_module("optype.numpy")
-class CanArrayND(Protocol[_SCT_co, _NDT_co]):
+class CanArrayND(Protocol[_SCT0_co, _NDT_co]):
     """
     Similar to `onp.CanArray`, but must be sized (i.e. excludes scalars), and is
     parameterized by only the scalar type (instead of the shape and dtype).
     """
 
     def __len__(self, /) -> int: ...
-    def __array__(self, /) -> np.ndarray[_NDT_co, np.dtype[_SCT_co]]: ...
+    def __array__(self, /) -> np.ndarray[_NDT_co, np.dtype[_SCT0_co]]: ...
 
 
 Array0D = TypeAliasType(
