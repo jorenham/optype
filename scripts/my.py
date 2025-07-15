@@ -13,7 +13,7 @@ _Version: TypeAlias = tuple[int, int]
 _NP1_MIN: Final = 1, 25
 _NP1_MAX: Final = 1, 26
 _NP2_MIN: Final = 2, 0
-_NP2_MAX: Final = 2, 3
+_NP2_MAX: Final = 2, 4
 _NP_SKIP: Final = frozenset({(1, 26)})
 
 
