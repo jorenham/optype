@@ -62,21 +62,6 @@ class Just(Protocol[_T]):  # type: ignore[misc]
     and are therefore assignable to `Just[str]`, but instances of `class S(str): ...`
     are **not** assignable to `Just[str]`.
 
-    Warning (`pyright<1.1.390` and `basedpyright<1.22.1`):
-        On `pyright<1.1.390` and `basedpyright<1.22.1` this `Just[T]` type does not
-        work, due to a bug in the `typeshed` stubs for `object.__class__`, which was
-        fixed in https://github.com/python/typeshed/pull/13021.
-
-        However, you could use `JustInt`, `JustFloat`, and `JustComplex` types work
-        around this: These already work on `pyright<1.1.390` without problem.
-
-    Warning (`mypy<1.15` and `basedmypy<2.10`):
-        On `mypy<1.15` this does not work with promoted types, such as `float` and
-        `complex`, which was fixed in https://github.com/python/mypy/pull/18360.
-        For other ("unpromoted") types like `Just[int]`, this already works, even
-        before the `typeshed` fix above (mypy ignores `@property` setter types and
-        overwrites it with the getter's return type).
-
     Note:
         This protocol is not marked with `@runtime_checkable`, because using
         `isinstance(value, Just)` would be `True` for any type or object, and has no

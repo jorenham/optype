@@ -369,24 +369,6 @@ intmap(1, "some object")  # rejected
 | `JustObject`  | `builtins.object`    |
 | `JustDate`    | `datetime.date`      |
 
-##### :warning: Compatibility: (based)pyright
-
-On `pyright<1.1.390` and `basedpyright<1.22.1` this `Just[T]` type does not work,
-due to a bug in the `typeshed` stubs for `object.__class__` (fixed in
-[python/typeshed#13021](https://github.com/python/typeshed/pull/13021)).
-
-However, you could use `JustInt`, `JustFloat`, and `JustComplex` types work
-around this: These already work on `pyright<1.390` without problem.
-
-##### :warning: Compatibility: (based)mypy
-
-On `mypy<1.15` this does not work with promoted types, such as `float` and `bytes`
-(fixed in [python/mypy#18360](https://github.com/python/mypy/pull/18360)).
-
-For other ("unpromoted") types like `Just[int]`, this already works, even
-before the `typeshed` fix above (mypy ignores `@property` setter types and
-overwrites it with the getter's return type).
-
 #### Builtin type conversion
 
 The return type of these special methods is *invariant*. Python will raise an
