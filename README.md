@@ -770,9 +770,9 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
 <!-- markdownlints needs this -->
 
 > [!NOTE]
-> The `Can*Self` protocols have use `typing.Self` as return type, and accept `T` as
-> as method argument. The `Can*Same` protocols also return `Self`, but accept
-> `Self | T`, with `T` optional.
+> The `Can*Self` protocols method return `typing.Self` and accept `T`. The
+> `Can*Same` protocols also return `Self`, but instead accept `Self | T`, with `T` an
+> optional generic contravariant type parameter.
 > To illustrate, `CanAddSelf[T]` implements `__add__` as `(self, rhs: T, /) -> Self`,
 > while `CanAddSame[T]` implements it as `(self, rhs: Self | T, /) -> Self`, and
 > `CanAddSame` (without `T`) as `(self, rhs: Self, /) -> Self`.
