@@ -103,8 +103,10 @@ type MArray[
 
 # NOTE: Before NumPy 2.1 the shape type parameter of `numpy.ndarray` was invariant. This
 # lead to various issues, so we ignore that, and suppress two pyright errors that are
-# reported when `numpy<2.1` is installed (inline `# pyright: ignore` won't work).
+# reported when `numpy<2.1` is installed (but inline `# pyright: ignore` and
+# `# type: ignore[misc]` will be reported as unused ignores on other versions).
 
+# mypy: disable-error-code=misc
 # pyright: reportInvalidTypeVarUse=false
 
 
