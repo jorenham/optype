@@ -1,5 +1,6 @@
 import sys
-from typing import cast
+import types
+from typing import Any, cast
 
 if sys.version_info >= (3, 13):
     from typing import is_protocol
@@ -31,11 +32,7 @@ def _is_dunder(name: str, /) -> bool:
     )
 
 
-def _pascamel_to_snake(
-    pascamel: str,
-    start: op.CanLt[int, op.CanBool] = 0,
-    /,
-) -> str:
+def _pascamel_to_snake(pascamel: str, start: op.CanLt[int, op.CanBool] = 0, /) -> str:
     """Converts 'CamelCase' or 'pascalCase' to 'snake_case'."""
     assert pascamel.isidentifier()
 
@@ -48,6 +45,18 @@ def _pascamel_to_snake(
     assert snake[-1] != "_"
 
     return snake
+
+
+def _get_protocols_with_suffix(
+    module: types.ModuleType,
+    suffix: str,
+    /,
+    private: bool = False,
+) -> frozenset[type]:
+    """Get all protocols in a module with a specific suffix."""
+    return frozenset(
+        cls for cls in get_protocols(module, private) if cls.__name__.endswith(suffix)
+    )
 
 
 def test_all_public() -> None:
@@ -68,6 +77,55 @@ def test_all_public() -> None:
 def test_can_runtime_checkable(cls: type) -> None:
     """Ensure that all `Can*` protocols are `@runtime_checkable`."""
     assert is_runtime_protocol(cls)
+
+
+@pytest.mark.parametrize("cls", _get_protocols_with_suffix(_can, "Same"))
+def test_can_same_self(cls: type) -> None:
+    """
+    Ensure that for each `Can{}Same` protocol there also exist the `Can{}Self`, `Can{}`,
+    `CanR{}Self`, `CanR{}`, `CanI{}Self`, and `CanI{}` protocols, where `{}` is the
+    camelcase operation name.
+    The `Can{}Same`, `Can{}Self`, and `Can{}` protocols should also have the same single
+    member method.
+    """
+    name = cls.__name__
+    assert name.startswith("Can")
+    assert name.endswith("Same")
+
+    stem = name.removeprefix("Can").removesuffix("Same")
+    assert hasattr(op, f"Can{stem}")
+    assert hasattr(op, f"CanR{stem}")
+    assert hasattr(op, f"CanI{stem}")
+    assert hasattr(op, f"Can{stem}Self")
+    assert hasattr(op, f"CanR{stem}Self")
+    assert hasattr(op, f"CanI{stem}Self")
+    assert hasattr(op, f"Can{stem}Same")
+    assert not hasattr(op, f"CanR{stem}Same")
+    assert not hasattr(op, f"CanI{stem}Same")
+
+    members_same = get_protocol_members(cls)
+    assert len(members_same) == 1, members_same
+
+    members_base = get_protocol_members(getattr(op, f"Can{stem}"))
+    members_self = get_protocol_members(getattr(op, f"Can{stem}Self"))
+
+    assert members_same == members_self
+    assert members_same == members_base
+
+
+def test_can_add_same_int() -> None:
+    """Ensure that `builtins.int` is assignable to `CanAddSame`."""
+    assert issubclass(int, op.CanAddSame)
+
+    x: int = 42
+    assert isinstance(x, op.CanAddSame)
+
+    y0: op.CanAddSame = x
+    y1: op.CanAddSame[Any] = x
+    y2: op.CanAddSame[int] = x
+
+    z1: op.CanAddSelf[Any] = x
+    z2: op.CanAddSelf[int] = x
 
 
 @pytest.mark.parametrize("cls", get_protocols(_has))
@@ -160,8 +218,8 @@ def test_name_matches_dunder(cls: type) -> None:
             assert stem[-1].isalpha()
 
         if prefix == "Can":
-            for _ in range(2):
-                stem = stem.removesuffix("Self")
+            # strip the `Self` or `Same` suffix
+            stem = stem.removesuffix("Self").removesuffix("Same")
 
         # the `1` arg ensures that any potential leading `A`, `I` or `R` chars
         # won't have a `_` directly after (i.e. considers `stem[:2].lower()`).
