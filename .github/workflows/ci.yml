@@ -50,32 +50,38 @@ jobs:
 
   typecheck:
     timeout-minutes: 5
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
         np: ["1.25", "1.26", "2.0", "2.1", "2.2", "2.3"]
         py: ["3.11"]
-    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.py }}
 
-      - name: basedpyright
-        run: >
-          uv run --with="numpy==${{ matrix.np }}"
-          basedpyright -p scripts/config/bpr-np-${{ matrix.np }}.json
+      - name: install deps
+        run: |
+          uv sync --no-editable
+          uv pip install numpy==${{ matrix.np }}
 
       # NOTE: mypy ignores `uv run --with=...` (and `--isolated` does not help)
       - name: mypy
-        run: |
-          uv pip install numpy==${{ matrix.np }}
-          uv run --active --no-sync scripts/my.py --no-incremental --cache-dir=/dev/null
+        run: >
+          uv run --active --no-sync
+          scripts/my.py --no-incremental --cache-dir=/dev/null
+
+      - name: basedpyright
+        run: >
+          uv run --active --no-sync
+          basedpyright -p scripts/config/bpr-np-${{ matrix.np }}.json
 
   test:
     timeout-minutes: 5
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -85,7 +91,6 @@ jobs:
         exclude:
           - py: "3.13"
             np: "1.25"
-    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
