@@ -10,7 +10,6 @@ import numpy as np
 
 from ._array import Array0D, Array1D, Array2D, Array3D, ArrayND
 from ._dtype import ToDType
-from ._shape import AnyShape, Shape
 
 __all__ = [
     "is_array_0d",
@@ -27,9 +26,20 @@ def __dir__() -> list[str]:
     return __all__
 
 
-ShapeT = TypeVar("ShapeT", bound=Shape, default=AnyShape)
 DTypeT = TypeVar("DTypeT", bound=np.dtype[Any])
 ScalarT = TypeVar("ScalarT", bound=np.generic, default=Any)
+
+
+def _issubdtype(
+    x: type[ScalarT] | np.dtype[ScalarT],
+    /,
+    dtype: ToDType[Any] | None,
+) -> TypeIs[np.dtype[ScalarT]]:
+    """Checks if `x` is a subdtype of `dtype`, or if `dtype` is None."""
+
+    # NOTE(jorenham): The `bool()` works around an the awkward return type annotation
+    # of `numpy.issubdtype` on `numpy==2.2.*` (mea culpa).
+    return dtype is None or bool(np.issubdtype(x, dtype))
 
 
 def is_dtype(
@@ -37,7 +47,7 @@ def is_dtype(
     /,
     dtype: ToDType[ScalarT] | None = None,
 ) -> TypeIs[np.dtype[ScalarT]]:
-    return isinstance(x, np.dtype) and (dtype is None or np.issubdtype(x, dtype))
+    return isinstance(x, np.dtype) and _issubdtype(x, dtype)
 
 
 def is_sctype(
@@ -45,22 +55,16 @@ def is_sctype(
     /,
     dtype: ToDType[ScalarT] | None = None,
 ) -> TypeIs[type[ScalarT]]:
-    return (
-        isinstance(x, type)
-        and issubclass(x, np.generic)
-        and (dtype is None or np.issubdtype(x, dtype))
-    )
+    return isinstance(x, type) and issubclass(x, np.generic) and _issubdtype(x, dtype)
 
 
 def is_array_nd(
     a: object,
     /,
     dtype: ToDType[ScalarT] | None = None,
-) -> TypeIs[ArrayND[ScalarT, ShapeT]]:
+) -> TypeIs[ArrayND[ScalarT]]:
     """Checks if `a` is a `ndarray` of the given dtype (defaults to `generic`)."""
-    return isinstance(a, np.ndarray) and (
-        dtype is None or np.issubdtype(a.dtype, dtype)
-    )
+    return isinstance(a, np.ndarray) and _issubdtype(a.dtype, dtype)
 
 
 def is_array_0d(
