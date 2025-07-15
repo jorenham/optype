@@ -54,7 +54,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        np: ["1.25", "1.26", "2.0", "2.1", "2.2", "2.3"]
+        np: ["1.25", "2.0", "2.1", "2.2", "2.3"]
         py: ["3.11"]
     runs-on: ${{ matrix.os }}
     steps:
@@ -62,14 +62,17 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.py }}
+
       - name: basedpyright
         run: >
-          uv run --with="numpy==${{ matrix.np }}.*"
+          uv run --with="numpy==${{ matrix.np }}"
           basedpyright -p scripts/config/bpr-np-${{ matrix.np }}.json
+
+      # NOTE: mypy ignores `uv run --with=...` (and `--isolated` does not help)
       - name: mypy
-        run: >
-          uv run --with="numpy==${{ matrix.np }}.*"
-          scripts/my.py
+        run: |
+          uv pip install numpy==${{ matrix.np }}
+          uv run --active --no-sync scripts/my.py --no-incremental --cache-dir=/dev/null
 
   test:
     timeout-minutes: 5
@@ -80,11 +83,7 @@ jobs:
         py: ["3.11", "3.13"]
         np: ["1.25", "2.3"]
         exclude:
-          - os: ubuntu-latest
-            py: "3.13"
-            np: "1.25"
-          - os: windows-latest
-            py: "3.13"
+          - py: "3.13"
             np: "1.25"
     runs-on: ${{ matrix.os }}
     steps:
@@ -92,7 +91,6 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.py }}
+
       - name: pytest
-        run: >
-          uv run --with="numpy==${{ matrix.np }}.*"
-          pytest
+        run: uv run --with="numpy==${{ matrix.np }}" pytest
