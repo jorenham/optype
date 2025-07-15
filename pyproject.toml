@@ -125,6 +125,7 @@ reportUnusedVariable = false              # dupe of F841
     NP21 = true
     NP22 = true
     NP23 = true
+    NP24 = false
 
 
 [tool.pytest.ini_options]
