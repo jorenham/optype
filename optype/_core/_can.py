@@ -176,6 +176,7 @@ _Tss = ParamSpec("_Tss", default=...)
 _T = TypeVar("_T")
 _T_contra = TypeVar("_T_contra", contravariant=True)
 _T_co = TypeVar("_T_co", covariant=True)
+_TT_co = TypeVar("_TT_co", covariant=True, default=_T_contra)
 
 _K_contra = TypeVar("_K_contra", contravariant=True)
 _V_contra = TypeVar("_V_contra", contravariant=True)
@@ -567,8 +568,8 @@ class CanSequence(
 
 
 @runtime_checkable
-class CanAdd(Protocol[_T_contra, _T_co]):
-    def __add__(self, rhs: _T_contra, /) -> _T_co: ...
+class CanAdd(Protocol[_T_contra, _TT_co]):
+    def __add__(self, rhs: _T_contra, /) -> _TT_co: ...
 
 
 @runtime_checkable
@@ -582,8 +583,8 @@ class CanAddSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanSub(Protocol[_T_contra, _T_co]):
-    def __sub__(self, rhs: _T_contra, /) -> _T_co: ...
+class CanSub(Protocol[_T_contra, _TT_co]):
+    def __sub__(self, rhs: _T_contra, /) -> _TT_co: ...
 
 
 @runtime_checkable
@@ -597,8 +598,8 @@ class CanSubSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanMul(Protocol[_T_contra, _T_co]):
-    def __mul__(self, rhs: _T_contra, /) -> _T_co: ...
+class CanMul(Protocol[_T_contra, _TT_co]):
+    def __mul__(self, rhs: _T_contra, /) -> _TT_co: ...
 
 
 @runtime_checkable
@@ -612,8 +613,8 @@ class CanMulSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanMatmul(Protocol[_T_contra, _T_co]):
-    def __matmul__(self, rhs: _T_contra, /) -> _T_co: ...
+class CanMatmul(Protocol[_T_contra, _TT_co]):
+    def __matmul__(self, rhs: _T_contra, /) -> _TT_co: ...
 
 
 @runtime_checkable
@@ -627,8 +628,8 @@ class CanMatmulSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanTruediv(Protocol[_T_contra, _T_co]):
-    def __truediv__(self, rhs: _T_contra, /) -> _T_co: ...
+class CanTruediv(Protocol[_T_contra, _TT_co]):
+    def __truediv__(self, rhs: _T_contra, /) -> _TT_co: ...
 
 
 @runtime_checkable
@@ -642,8 +643,8 @@ class CanTruedivSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanFloordiv(Protocol[_T_contra, _T_co]):
-    def __floordiv__(self, rhs: _T_contra, /) -> _T_co: ...
+class CanFloordiv(Protocol[_T_contra, _TT_co]):
+    def __floordiv__(self, rhs: _T_contra, /) -> _TT_co: ...
 
 
 @runtime_checkable
@@ -657,8 +658,8 @@ class CanFloordivSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanMod(Protocol[_T_contra, _T_co]):
-    def __mod__(self, rhs: _T_contra, /) -> _T_co: ...
+class CanMod(Protocol[_T_contra, _TT_co]):
+    def __mod__(self, rhs: _T_contra, /) -> _TT_co: ...
 
 
 @runtime_checkable
@@ -680,8 +681,8 @@ class CanDivmod(Protocol[_T_contra, _T_co]):
 
 
 @runtime_checkable
-class CanPow2(Protocol[_T_contra, _T_co]):
-    def __pow__(self, rhs: _T_contra, /) -> _T_co: ...
+class CanPow2(Protocol[_T_contra, _TT_co]):
+    def __pow__(self, rhs: _T_contra, /) -> _TT_co: ...
 
 
 @runtime_checkable
@@ -691,13 +692,13 @@ class CanPow3(Protocol[_T_contra, _V_contra, _AnyIntT_co]):
 
 @runtime_checkable
 class CanPow(
-    CanPow2[_T_contra, _T_co],
+    CanPow2[_T_contra, _TT_co],
     CanPow3[_T_contra, _V_contra, _AnyIntT_co],
-    Protocol[_T_contra, _V_contra, _T_co, _AnyIntT_co],
+    Protocol[_T_contra, _V_contra, _TT_co, _AnyIntT_co],
 ):
     @overload
     @override
-    def __pow__(self, exp: _T_contra, /) -> _T_co: ...
+    def __pow__(self, exp: _T_contra, /) -> _TT_co: ...
     @overload
     def __pow__(self, exp: _T_contra, mod: _V_contra, /) -> _AnyIntT_co: ...
 
@@ -713,8 +714,8 @@ class CanPowSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanLshift(Protocol[_T_contra, _T_co]):
-    def __lshift__(self, rhs: _T_contra, /) -> _T_co: ...
+class CanLshift(Protocol[_T_contra, _TT_co]):
+    def __lshift__(self, rhs: _T_contra, /) -> _TT_co: ...
 
 
 @runtime_checkable
@@ -728,8 +729,8 @@ class CanLshiftSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanRshift(Protocol[_T_contra, _T_co]):
-    def __rshift__(self, rhs: _T_contra, /) -> _T_co: ...
+class CanRshift(Protocol[_T_contra, _TT_co]):
+    def __rshift__(self, rhs: _T_contra, /) -> _TT_co: ...
 
 
 @runtime_checkable
@@ -743,8 +744,8 @@ class CanRshiftSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanAnd(Protocol[_T_contra, _T_co]):
-    def __and__(self, rhs: _T_contra, /) -> _T_co: ...
+class CanAnd(Protocol[_T_contra, _TT_co]):
+    def __and__(self, rhs: _T_contra, /) -> _TT_co: ...
 
 
 @runtime_checkable
@@ -758,8 +759,8 @@ class CanAndSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanXor(Protocol[_T_contra, _T_co]):
-    def __xor__(self, rhs: _T_contra, /) -> _T_co: ...
+class CanXor(Protocol[_T_contra, _TT_co]):
+    def __xor__(self, rhs: _T_contra, /) -> _TT_co: ...
 
 
 @runtime_checkable
@@ -773,8 +774,8 @@ class CanXorSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanOr(Protocol[_T_contra, _T_co]):
-    def __or__(self, rhs: _T_contra, /) -> _T_co: ...
+class CanOr(Protocol[_T_contra, _TT_co]):
+    def __or__(self, rhs: _T_contra, /) -> _TT_co: ...
 
 
 @runtime_checkable
@@ -791,8 +792,8 @@ class CanOrSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanRAdd(Protocol[_T_contra, _T_co]):
-    def __radd__(self, lhs: _T_contra, /) -> _T_co: ...
+class CanRAdd(Protocol[_T_contra, _TT_co]):
+    def __radd__(self, lhs: _T_contra, /) -> _TT_co: ...
 
 
 @runtime_checkable
@@ -806,8 +807,8 @@ class CanRAddSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanRSub(Protocol[_T_contra, _T_co]):
-    def __rsub__(self, lhs: _T_contra, /) -> _T_co: ...
+class CanRSub(Protocol[_T_contra, _TT_co]):
+    def __rsub__(self, lhs: _T_contra, /) -> _TT_co: ...
 
 
 @runtime_checkable
@@ -821,8 +822,8 @@ class CanRSubSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanRMul(Protocol[_T_contra, _T_co]):
-    def __rmul__(self, lhs: _T_contra, /) -> _T_co: ...
+class CanRMul(Protocol[_T_contra, _TT_co]):
+    def __rmul__(self, lhs: _T_contra, /) -> _TT_co: ...
 
 
 @runtime_checkable
@@ -836,8 +837,8 @@ class CanRMulSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanRMatmul(Protocol[_T_contra, _T_co]):
-    def __rmatmul__(self, lhs: _T_contra, /) -> _T_co: ...
+class CanRMatmul(Protocol[_T_contra, _TT_co]):
+    def __rmatmul__(self, lhs: _T_contra, /) -> _TT_co: ...
 
 
 @runtime_checkable
@@ -851,8 +852,8 @@ class CanRMatmulSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanRTruediv(Protocol[_T_contra, _T_co]):
-    def __rtruediv__(self, lhs: _T_contra, /) -> _T_co: ...
+class CanRTruediv(Protocol[_T_contra, _TT_co]):
+    def __rtruediv__(self, lhs: _T_contra, /) -> _TT_co: ...
 
 
 @runtime_checkable
@@ -866,8 +867,8 @@ class CanRTruedivSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanRFloordiv(Protocol[_T_contra, _T_co]):
-    def __rfloordiv__(self, lhs: _T_contra, /) -> _T_co: ...
+class CanRFloordiv(Protocol[_T_contra, _TT_co]):
+    def __rfloordiv__(self, lhs: _T_contra, /) -> _TT_co: ...
 
 
 @runtime_checkable
@@ -881,8 +882,8 @@ class CanRFloordivSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanRMod(Protocol[_T_contra, _T_co]):
-    def __rmod__(self, lhs: _T_contra, /) -> _T_co: ...
+class CanRMod(Protocol[_T_contra, _TT_co]):
+    def __rmod__(self, lhs: _T_contra, /) -> _TT_co: ...
 
 
 @runtime_checkable
@@ -905,8 +906,8 @@ class CanRDivmod(Protocol[_T_contra, _T_co]):
 
 
 @runtime_checkable
-class CanRPow(Protocol[_T_contra, _T_co]):
-    def __rpow__(self, lhs: _T_contra, /) -> _T_co: ...
+class CanRPow(Protocol[_T_contra, _TT_co]):
+    def __rpow__(self, lhs: _T_contra, /) -> _TT_co: ...
 
 
 @runtime_checkable
@@ -920,8 +921,8 @@ class CanRPowSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanRLshift(Protocol[_T_contra, _T_co]):
-    def __rlshift__(self, lhs: _T_contra, /) -> _T_co: ...
+class CanRLshift(Protocol[_T_contra, _TT_co]):
+    def __rlshift__(self, lhs: _T_contra, /) -> _TT_co: ...
 
 
 @runtime_checkable
@@ -935,8 +936,8 @@ class CanRLshiftSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanRRshift(Protocol[_T_contra, _T_co]):
-    def __rrshift__(self, lhs: _T_contra, /) -> _T_co: ...
+class CanRRshift(Protocol[_T_contra, _TT_co]):
+    def __rrshift__(self, lhs: _T_contra, /) -> _TT_co: ...
 
 
 @runtime_checkable
@@ -950,8 +951,8 @@ class CanRRshiftSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanRAnd(Protocol[_T_contra, _T_co]):
-    def __rand__(self, lhs: _T_contra, /) -> _T_co: ...
+class CanRAnd(Protocol[_T_contra, _TT_co]):
+    def __rand__(self, lhs: _T_contra, /) -> _TT_co: ...
 
 
 @runtime_checkable
@@ -965,8 +966,8 @@ class CanRAndSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanRXor(Protocol[_T_contra, _T_co]):
-    def __rxor__(self, lhs: _T_contra, /) -> _T_co: ...
+class CanRXor(Protocol[_T_contra, _TT_co]):
+    def __rxor__(self, lhs: _T_contra, /) -> _TT_co: ...
 
 
 @runtime_checkable
@@ -980,8 +981,8 @@ class CanRXorSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanROr(Protocol[_T_contra, _T_co]):
-    def __ror__(self, lhs: _T_contra, /) -> _T_co: ...
+class CanROr(Protocol[_T_contra, _TT_co]):
+    def __ror__(self, lhs: _T_contra, /) -> _TT_co: ...
 
 
 @runtime_checkable
