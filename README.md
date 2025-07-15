@@ -767,6 +767,8 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
 > `type CanPow[-T, -M, +R, +RM] = CanPow2[T, R] & CanPow3[T, M, RM]`, as interface
 > for types that can take an optional third argument.
 
+<!-- markdownlints needs this -->
+
 > [!NOTE]
 > The `Can*Self` protocols have use `typing.Self` as return type, and accept `T` as
 > as method argument. The `Can*Same` protocols also return `Self`, but accept
