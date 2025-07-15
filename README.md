@@ -1654,11 +1654,19 @@ Interfaces for [descriptors](https://docs.python.org/3/howto/descriptor.html).
     </tr>
     <tr>
         <td>
-            <code>v: V = T().d</code><br/>
+            <code>v: V = T().d</code><br>
             <code>vt: VT = T.d</code>
         </td>
         <td><code>__get__</code></td>
-        <td><code>CanGet[-T, +V, +VT = V]</code></td>
+        <td><code>CanGet[-T, +V, +VT=V]</code></td>
+    </tr>
+    <tr>
+        <td>
+            <code>v: V = T().d</code><br>
+            <code>vt: Self = T.d</code>
+        </td>
+        <td><code>__get__</code></td>
+        <td><code>CanGetSelf[-T, +V]</code></td>
     </tr>
     <tr>
         <td><code>T().k = v</code></td>

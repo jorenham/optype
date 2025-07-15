@@ -477,6 +477,16 @@ class CanGet(Protocol[_T_contra, _V_co, _VV_co]):
 
 
 @runtime_checkable
+class CanGetSelf(Protocol[_T_contra, _V_co]):
+    """CanGetSelf[-T, +V] = CanGet[T, V, Self]"""
+
+    @overload
+    def __get__(self, obj: _T_contra, cls: type | None = ..., /) -> _V_co: ...
+    @overload
+    def __get__(self, obj: None, cls: type[_T_contra], /) -> Self: ...
+
+
+@runtime_checkable
 class CanSet(Protocol[_T_contra, _V_contra]):
     def __set__(self, owner: _T_contra, value: _V_contra, /) -> _Ignored: ...
 
