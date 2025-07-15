@@ -47,17 +47,9 @@ Alias of `np.matrix` that is similar to `ArrayND`:
 
 ```py
 type Matrix[
-    SCT: np.generic = np.generic,
-    M: int = int,
-    N: int = M,
-] = np.matrix[tuple[M, N], np.dtype[SCT]]
+    SCT: np.generic = Any,
+] = np.matrix[tuple[int, int], np.dtype[SCT]]
 ```
-
-Only a "base" `int` type, or `Literal` or positive integers should be used as type
-arguments to `MT` and `NT`. Be careful not to pass it a `bool` or any other `int`
-subtype such as `Never`. There's also no need to use `Any` for `MT` or `NT`, as
-the (variadic) type parameters of `tuple` are covariant (even though that's
-supposed to be illegal for variadic type params, which makes no fucking sense).
 """
 
 Array = TypeAliasType(
@@ -70,8 +62,8 @@ Shape-typed array alias, defined as:
 
 ```py
 type Array[
-    NDT: (int, ...) = (int, ...),
-    SCT: np.generic = np.generic,
+    NDT: tuple[int, ...] = tuple[Any, ...],
+    SCT: np.generic = Any,
 ] = np.ndarray[NDT, np.dtype[SCT]]
 ```
 """
@@ -85,8 +77,8 @@ ArrayND = TypeAliasType(
 Like `Array`, but with flipped type-parameters, i.e.:
 
 type ArrayND[
-    SCT: np.generic = np.generic,
-    NDT: (int, ...) = (int, ...),
+    SCT: np.generic = Any,
+    NDT: tuple[int, ...] = tuple[Any, ...],
 ] = np.ndarray[NDT, np.dtype[SCT]]
 
 Because the optional shape-type parameter comes *after* the scalar-type, `ArrayND`
@@ -102,8 +94,8 @@ MArray = TypeAliasType(
 Just like `ArrayND`, but for `np.ma.MaskedArray` instead of `np.ndarray`.
 
 type MArray[
-    SCT: np.generic = np.generic,
-    NDT: (int, ...) = (int, ...),
+    SCT: np.generic = Any,
+    NDT: (int, ...) = (Any, ...),
 ] = np.ma.MaskedArray[NDT, np.dtype[SCT]]
 """
 
