@@ -3077,11 +3077,16 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
 > wasn't generic, making it impossible to distinguish between `np.False_` and `np.True_`
 > using static typing.
 
-Source code: [`optype/numpy/_to.py`][CODE-NP-TO]
+<!-- markdownlint want this here -->
 
 > [!NOTE]
 > The `ToArrayStrict{1,2,3}D` types are generic since `optype 0.9.1`, analogous to
 > their non-strict dual type, `ToArray{1,2,3}D`.
+
+<!-- markdownlint want this here -->
+
+> [!NOTE]
+> The `To[Just]{Float16,Float32,Complex64}*` type aliases were added in `optype 0.12.0`.
 
 Source code: [`optype/numpy/_to.py`][CODE-NP-TO]
 
