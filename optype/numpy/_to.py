@@ -1,6 +1,6 @@
 import sys
 from collections.abc import Sequence as Seq
-from typing import Any, Literal, TypeAlias
+from typing import Any, Literal, Protocol, TypeAlias
 
 if sys.version_info >= (3, 13):
     from typing import TypeAliasType, TypeVar
@@ -10,7 +10,7 @@ else:
 import numpy as np
 
 import optype.numpy.compat as npc
-from ._array import CanArray0D, CanArray1D, CanArray2D, CanArray3D, CanArrayND, Matrix
+from ._array import CanArray1D, CanArray2D, CanArray3D, CanArrayND
 from ._compat import NP22
 from ._sequence_nd import SequenceND as SeqND
 from optype._core._just import JustComplex, JustFloat, JustInt
@@ -82,13 +82,28 @@ def __dir__() -> list[str]:
 _PyBool: TypeAlias = bool | Literal[0, 1]  # 0 and 1 are sometimes used as bool values
 _PyScalar: TypeAlias = complex | bytes | str  # `complex` equivs `complex | float | int`
 
+
 T = TypeVar("T", default=_PyScalar)
 SCT = TypeVar("SCT", bound=np.generic, default=Any)
+SCT_co = TypeVar("SCT_co", bound=np.generic, covariant=True)
 
-_To0D = TypeAliasType("_To0D", T | SCT | CanArray0D[SCT], type_params=(T, SCT))
+
+# unlike `optype.numpy.CanArray0D` and `CanArrayND`, these one also accepts scalar types
+# (and aren't runtime checkable)
+
+
+class _CanArray0D(Protocol[SCT_co]):
+    def __array__(self, /) -> np.ndarray[tuple[()], np.dtype[SCT_co]]: ...
+
+
+class _CanArrayND(Protocol[SCT_co]):
+    def __array__(self, /) -> np.ndarray[Any, np.dtype[SCT_co]]: ...
+
+
+_To0D = TypeAliasType("_To0D", T | _CanArray0D[SCT], type_params=(T, SCT))
 _To1D = TypeAliasType(
     "_To1D",
-    CanArrayND[SCT] | Seq[_To0D[T, SCT]],
+    CanArrayND[SCT] | Seq[T | _CanArray0D[SCT]],
     type_params=(T, SCT),
 )
 _To2D = TypeAliasType(
@@ -103,18 +118,18 @@ _To3D = TypeAliasType(
 )
 _ToND = TypeAliasType(
     "_ToND",
-    CanArrayND[SCT] | SeqND[CanArrayND[SCT] | _To0D[T, SCT]],
+    CanArrayND[SCT] | SeqND[T | _CanArrayND[SCT]],
     type_params=(T, SCT),
 )
 
 _ToStrict1D = TypeAliasType(
     "_ToStrict1D",
-    CanArray1D[SCT] | Seq[_To0D[T, SCT]],
+    CanArray1D[SCT] | Seq[T | _CanArray0D[SCT]],
     type_params=(T, SCT),
 )
 _ToStrict2D = TypeAliasType(
     "_ToStrict2D",
-    CanArray2D[SCT] | Seq[_ToStrict1D[T, SCT]] | Matrix[SCT],
+    CanArray2D[SCT] | Seq[_ToStrict1D[T, SCT]],
     type_params=(T, SCT),
 )
 _ToStrict3D = TypeAliasType(
