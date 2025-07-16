@@ -2878,6 +2878,47 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
     <td align="left"><code>ToIntStrict{}D</code></td>
 </tr>
 <tr>
+    <td align="left"></td>
+    <td align="left"><code>float16</code></td>
+    <td align="left"><code>ToJustFloat16</code></td>
+    <td align="left"><code>ToJustFloat16_{}D</code></td>
+    <td align="left"><code>ToJustFloat16Strict{}D</code></td>
+</tr>
+<tr>
+    <td align="left"></td>
+    <td align="left">
+        <code>| float16</code><br>
+        <code>| int8</code><br>
+        <code>| uint8</code><br>
+        <code>| bool_</code>
+    </td>
+    <td align="left"><code>ToFloat32</code></td>
+    <td align="left"><code>ToFloat32_{}D</code></td>
+    <td align="left"><code>ToFloat32Strict{}D</code></td>
+</tr>
+<tr>
+    <td align="left"></td>
+    <td align="left"><code>float32</code></td>
+    <td align="left"><code>ToJustFloat32</code></td>
+    <td align="left"><code>ToJustFloat32_{}D</code></td>
+    <td align="left"><code>ToJustFloat32Strict{}D</code></td>
+</tr>
+<tr>
+    <td align="left"></td>
+    <td align="left">
+        <code>| float32</code><br>
+        <code>| float16</code><br>
+        <code>| int16</code><br>
+        <code>| uint16</code><br>
+        <code>| int8</code><br>
+        <code>| uint8</code><br>
+        <code>| bool_</code>
+    </td>
+    <td align="left"><code>ToFloat32</code></td>
+    <td align="left"><code>ToFloat32_{}D</code></td>
+    <td align="left"><code>ToFloat32Strict{}D</code></td>
+</tr>
+<tr>
     <td align="left"><code>~float</code></td>
     <td align="left"><code>float64</code></td>
     <td align="left"><code>ToJustFloat64</code></td>
@@ -2924,6 +2965,29 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
     <td align="left"><code>ToFloatStrict{}D</code></td>
 </tr>
 <tr>
+    <td align="left"></td>
+    <td align="left"><code>complex64</code></td>
+    <td align="left"><code>ToJustComplex64</code></td>
+    <td align="left"><code>ToJustComplex64_{}D</code></td>
+    <td align="left"><code>ToJustComplex64Strict{}D</code></td>
+</tr>
+<tr>
+    <td align="left"></td>
+    <td align="left">
+        <code>| complex64</code><br>
+        <code>| float32</code><br>
+        <code>| float16</code><br>
+        <code>| int16</code><br>
+        <code>| uint16</code><br>
+        <code>| int8</code><br>
+        <code>| uint8</code><br>
+        <code>| bool_</code>
+    </td>
+    <td align="left"><code>ToComplex64</code></td>
+    <td align="left"><code>ToComplex64_{}D</code></td>
+    <td align="left"><code>ToComplex64Strict{}D</code></td>
+</tr>
+<tr>
     <td align="left"><code>~complex</code></td>
     <td align="left"><code>complex128</code></td>
     <td align="left"><code>ToJustComplex128</code></td>
@@ -2940,7 +3004,6 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
     <td align="left">
         <code>complex128</code><br>
         <code>| complex64</code><br>
-        <code>| float64</code><br>
         <code>| float64</code><br>
         <code>| float32</code><br>
         <code>| float16</code><br>
@@ -2975,12 +3038,12 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
 </tr>
 <tr>
     <td align="left">
-        <code>bytes</code><br>
-        <code>| str</code><br>
-        <code>| complex</code><br>
+        <code>complex</code><br>
         <code>| float</code><br>
         <code>| int</code><br>
         <code>| bool</code>
+        <code>| bytes</code><br>
+        <code>| str</code><br>
     </td>
     <td align="left"><code>generic</code></td>
     <td align="left"><code>ToScalar</code></td>
@@ -3014,11 +3077,16 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
 > wasn't generic, making it impossible to distinguish between `np.False_` and `np.True_`
 > using static typing.
 
-Source code: [`optype/numpy/_to.py`][CODE-NP-TO]
+<!-- markdownlint want this here -->
 
 > [!NOTE]
 > The `ToArrayStrict{1,2,3}D` types are generic since `optype 0.9.1`, analogous to
 > their non-strict dual type, `ToArray{1,2,3}D`.
+
+<!-- markdownlint want this here -->
+
+> [!NOTE]
+> The `To[Just]{Float16,Float32,Complex64}*` type aliases were added in `optype 0.12.0`.
 
 Source code: [`optype/numpy/_to.py`][CODE-NP-TO]
 
