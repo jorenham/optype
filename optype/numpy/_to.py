@@ -61,6 +61,12 @@ __all__ = [  # noqa: RUF022
     "ToFloat64_3D", "ToJustFloat64_3D", "ToFloat64Strict3D", "ToJustFloat64Strict3D",
     "ToFloat64_ND", "ToJustFloat64_ND",
 
+    "ToJustLongDouble",
+    "ToJustLongDouble1D", "ToJustLongDoubleStrict1D",
+    "ToJustLongDouble2D", "ToJustLongDoubleStrict2D",
+    "ToJustLongDouble3D", "ToJustLongDoubleStrict3D",
+    "ToJustLongDoubleND",
+
     "ToFloat", "ToJustFloat",
     "ToFloat1D", "ToJustFloat1D", "ToFloatStrict1D", "ToJustFloatStrict1D",
     "ToFloat2D", "ToJustFloat2D", "ToFloatStrict2D", "ToJustFloatStrict2D",
@@ -84,6 +90,12 @@ __all__ = [  # noqa: RUF022
     "ToComplex128Strict1D", "ToJustComplex128Strict1D",
     "ToComplex128Strict2D", "ToJustComplex128Strict2D",
     "ToComplex128Strict3D", "ToJustComplex128Strict3D",
+
+    "ToJustCLongDouble",
+    "ToJustCLongDouble1D", "ToJustCLongDoubleStrict1D",
+    "ToJustCLongDouble2D", "ToJustCLongDoubleStrict2D",
+    "ToJustCLongDouble3D", "ToJustCLongDoubleStrict3D",
+    "ToJustCLongDoubleND",
 
     "ToComplex", "ToJustComplex",
     "ToComplex1D", "ToJustComplex1D", "ToComplexStrict1D", "ToJustComplexStrict1D",
@@ -350,6 +362,12 @@ ToJustFloat64_2D: TypeAlias = _To2D2[JustFloat, npc.floating64]
 ToJustFloat64_3D: TypeAlias = _To3D2[JustFloat, npc.floating64]
 ToJustFloat64_ND: TypeAlias = _ToND2[JustFloat, npc.floating64]
 
+ToJustLongDouble: TypeAlias = npc.floating80
+ToJustLongDouble1D: TypeAlias = _To1D1[npc.floating80]
+ToJustLongDouble2D: TypeAlias = _To2D1[npc.floating80]
+ToJustLongDouble3D: TypeAlias = _To3D1[npc.floating80]
+ToJustLongDoubleND: TypeAlias = _ToND1[npc.floating80]
+
 ToJustFloat: TypeAlias = JustFloat | npc.floating
 ToJustFloat1D: TypeAlias = _To1D2[JustFloat, npc.floating]
 ToJustFloat2D: TypeAlias = _To2D2[JustFloat, npc.floating]
@@ -367,6 +385,12 @@ ToJustComplex128_1D: TypeAlias = _To1D2[JustComplex, npc.complexfloating128]
 ToJustComplex128_2D: TypeAlias = _To2D2[JustComplex, npc.complexfloating128]
 ToJustComplex128_3D: TypeAlias = _To3D2[JustComplex, npc.complexfloating128]
 ToJustComplex128_ND: TypeAlias = _ToND2[JustComplex, npc.complexfloating128]
+
+ToJustCLongDouble: TypeAlias = npc.complexfloating160
+ToJustCLongDouble1D: TypeAlias = _To1D1[npc.complexfloating160]
+ToJustCLongDouble2D: TypeAlias = _To2D1[npc.complexfloating160]
+ToJustCLongDouble3D: TypeAlias = _To3D1[npc.complexfloating160]
+ToJustCLongDoubleND: TypeAlias = _ToND1[npc.complexfloating160]
 
 ToJustComplex: TypeAlias = JustComplex | npc.complexfloating
 ToJustComplex1D: TypeAlias = _To1D2[JustComplex, npc.complexfloating]
@@ -442,6 +466,10 @@ ToJustFloat64Strict1D: TypeAlias = _ToStrict1D2[JustFloat, npc.floating64]
 ToJustFloat64Strict2D: TypeAlias = _ToStrict2D2[JustFloat, npc.floating64]
 ToJustFloat64Strict3D: TypeAlias = _ToStrict3D2[JustFloat, npc.floating64]
 
+ToJustLongDoubleStrict1D: TypeAlias = _ToStrict1D1[npc.floating80]
+ToJustLongDoubleStrict2D: TypeAlias = _ToStrict2D1[npc.floating80]
+ToJustLongDoubleStrict3D: TypeAlias = _ToStrict3D1[npc.floating80]
+
 ToJustFloatStrict1D: TypeAlias = _ToStrict1D2[JustFloat, npc.floating]
 ToJustFloatStrict2D: TypeAlias = _ToStrict2D2[JustFloat, npc.floating]
 ToJustFloatStrict3D: TypeAlias = _ToStrict3D2[JustFloat, npc.floating]
@@ -453,6 +481,10 @@ ToJustComplex64Strict3D: TypeAlias = _ToStrict3D1[npc.complexfloating64]
 ToJustComplex128Strict1D: TypeAlias = _ToStrict1D2[JustComplex, npc.complexfloating128]
 ToJustComplex128Strict2D: TypeAlias = _ToStrict2D2[JustComplex, npc.complexfloating128]
 ToJustComplex128Strict3D: TypeAlias = _ToStrict3D2[JustComplex, npc.complexfloating128]
+
+ToJustCLongDoubleStrict1D: TypeAlias = _ToStrict1D1[npc.complexfloating160]
+ToJustCLongDoubleStrict2D: TypeAlias = _ToStrict2D1[npc.complexfloating160]
+ToJustCLongDoubleStrict3D: TypeAlias = _ToStrict3D1[npc.complexfloating160]
 
 ToJustComplexStrict1D: TypeAlias = _ToStrict1D2[JustComplex, npc.complexfloating]
 ToJustComplexStrict2D: TypeAlias = _ToStrict2D2[JustComplex, npc.complexfloating]
