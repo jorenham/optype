@@ -604,8 +604,9 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesAdd</code></td>
         <td><code>__add__</code></td>
         <td>
-            <code>CanAdd[-T, +R=T]</code><br>
-            <code>CanAddSelf[-T]</code>
+            <code>CanAdd[-T, +R = T]</code><br>
+            <code>CanAddSelf[-T]</code><br>
+            <code>CanAddSame[-T?]</code>
         </td>
     </tr>
     <tr>
@@ -614,8 +615,9 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesSub</code></td>
         <td><code>__sub__</code></td>
         <td>
-            <code>CanSub[-T, +R=T]</code><br>
-            <code>CanSubSelf[-T]</code>
+            <code>CanSub[-T, +R = T]</code><br>
+            <code>CanSubSelf[-T]</code><br>
+            <code>CanSubSame[-T?]</code>
         </td>
     </tr>
     <tr>
@@ -624,8 +626,9 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesMul</code></td>
         <td><code>__mul__</code></td>
         <td>
-            <code>CanMul[-T, +R=T]</code><br>
-            <code>CanMulSelf[-T]</code>
+            <code>CanMul[-T, +R = T]</code><br>
+            <code>CanMulSelf[-T]</code><br>
+            <code>CanMulSame[-T?]</code>
         </td>
     </tr>
     <tr>
@@ -634,8 +637,9 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesMatmul</code></td>
         <td><code>__matmul__</code></td>
         <td>
-            <code>CanMatmul[-T, +R=T]</code><br>
-            <code>CanMatmulSelf[-T]</code>
+            <code>CanMatmul[-T, +R = T]</code><br>
+            <code>CanMatmulSelf[-T]</code><br>
+            <code>CanMatmulSame[-T?]</code>
         </td>
     </tr>
     <tr>
@@ -644,8 +648,9 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesTruediv</code></td>
         <td><code>__truediv__</code></td>
         <td>
-            <code>CanTruediv[-T, +R=T]</code><br>
-            <code>CanTruedivSelf[-T]</code>
+            <code>CanTruediv[-T, +R = T]</code><br>
+            <code>CanTruedivSelf[-T]</code><br>
+            <code>CanTruedivSame[-T?]</code>
         </td>
     </tr>
     <tr>
@@ -654,8 +659,9 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesFloordiv</code></td>
         <td><code>__floordiv__</code></td>
         <td>
-            <code>CanFloordiv[-T, +R=T]</code><br>
-            <code>CanFloordivSelf[-T]</code>
+            <code>CanFloordiv[-T, +R = T]</code><br>
+            <code>CanFloordivSelf[-T]</code><br>
+            <code>CanFloordivSame[-T?]</code>
         </td>
     </tr>
     <tr>
@@ -664,8 +670,9 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesMod</code></td>
         <td><code>__mod__</code></td>
         <td>
-            <code>CanMod[-T, +R=T]</code><br>
-            <code>CanModSelf[-T]</code>
+            <code>CanMod[-T, +R = T]</code><br>
+            <code>CanModSelf[-T]</code><br>
+            <code>CanModSame[-T?]</code>
         </td>
     </tr>
     <tr>
@@ -684,9 +691,9 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesPow</code></td>
         <td><code>__pow__</code></td>
         <td>
-            <code>CanPow2[-T, +R=T]</code><br>
+            <code>CanPow2[-T, +R = T]</code><br>
             <code>CanPowSelf[-T]</code><br>
-            <code>CanPow[-T, None, +R, Never]</code>
+            <code>CanPowSame[-T?]</code>
         </td>
     </tr>
     <tr>
@@ -694,10 +701,7 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>do_pow/3</code></td>
         <td><code>DoesPow</code></td>
         <td><code>__pow__</code></td>
-        <td>
-            <code>CanPow3[-T, -M, +R=int]</code><br>
-            <code>CanPow[-T, -M, Never, +R]</code>
-        </td>
+        <td><code>CanPow3[-T, -M, +R = int]</code></td>
     </tr>
     <tr>
         <td><code>_ << x</code></td>
@@ -705,8 +709,9 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesLshift</code></td>
         <td><code>__lshift__</code></td>
         <td>
-            <code>CanLshift[-T, +R=T]</code><br>
-            <code>CanLshiftSelf[-T]</code>
+            <code>CanLshift[-T, +R = T]</code><br>
+            <code>CanLshiftSelf[-T]</code><br>
+            <code>CanLshiftSame[-T?]</code>
         </td>
     </tr>
     <tr>
@@ -715,8 +720,9 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesRshift</code></td>
         <td><code>__rshift__</code></td>
         <td>
-            <code>CanRshift[-T, +R=T]</code><br>
-            <code>CanRshiftSelf[-T]</code>
+            <code>CanRshift[-T, +R = T]</code><br>
+            <code>CanRshiftSelf[-T]</code><br>
+            <code>CanRshiftSame[-T?]</code>
         </td>
     </tr>
     <tr>
@@ -725,8 +731,9 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesAnd</code></td>
         <td><code>__and__</code></td>
         <td>
-            <code>CanAnd[-T, +R=T]</code><br>
-            <code>CanAndSelf[-T]</code>
+            <code>CanAnd[-T, +R = T]</code><br>
+            <code>CanAndSelf[-T]</code><br>
+            <code>CanAndSame[-T?]</code>
         </td>
     </tr>
     <tr>
@@ -735,8 +742,9 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesXor</code></td>
         <td><code>__xor__</code></td>
         <td>
-            <code>CanXor[-T, +R=T]</code><br>
-            <code>CanXorSelf[-T]</code>
+            <code>CanXor[-T, +R = T]</code><br>
+            <code>CanXorSelf[-T]</code><br>
+            <code>CanXorSame[-T?]</code>
         </td>
     </tr>
     <tr>
@@ -745,18 +753,29 @@ Classifying them "arithmetic" is, at the very least, a bit of a stretch.
         <td><code>DoesOr</code></td>
         <td><code>__or__</code></td>
         <td>
-            <code>CanOr[-T, +R=T]</code><br>
-            <code>CanOrSelf[-T]</code>
+            <code>CanOr[-T, +R = T]</code><br>
+            <code>CanOrSelf[-T]</code><br>
+            <code>CanOrSame[-T?]</code>
         </td>
     </tr>
 </table>
 
-> [!NOTE]
+> [!TIP]
 > Because `pow()` can take an optional third argument, `optype`
 > provides separate interfaces for `pow()` with two and three arguments.
 > Additionally, there is the overloaded intersection type
 > `type CanPow[-T, -M, +R, +RM] = CanPow2[T, R] & CanPow3[T, M, RM]`, as interface
 > for types that can take an optional third argument.
+
+<!-- markdownlints needs this -->
+
+> [!NOTE]
+> The `Can*Self` protocols method return `typing.Self` and accept `T`. The
+> `Can*Same` protocols also return `Self`, but instead accept `Self | T`, with `T` an
+> optional generic contravariant type parameter.
+> To illustrate, `CanAddSelf[T]` implements `__add__` as `(self, rhs: T, /) -> Self`,
+> while `CanAddSame[T]` implements it as `(self, rhs: Self | T, /) -> Self`, and
+> `CanAddSame` (without `T`) as `(self, rhs: Self, /) -> Self`.
 
 #### Reflected operations
 
