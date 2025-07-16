@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 [project]
 name = "optype"
 description = "Building blocks for precise & flexible type hints"
-version = "0.11.1.dev0"
+version = "0.12.0"
 authors = [{name = "Joren Hammudoglu", email = "jhammudoglu@gmail.com"}]
 license = "BSD-3-Clause"
 readme = "README.md"
@@ -24,7 +24,7 @@ requires-python = ">=3.11"
 dependencies = ["typing-extensions>=4.10; python_version<'3.13'"]
 
     [project.optional-dependencies]
-    numpy = ["numpy>=1.25.2"]
+    numpy = ["numpy>=1.25"]
 
     [project.urls]
     Repository = "https://github.com/jorenham/optype/"

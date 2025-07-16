@@ -232,7 +232,7 @@ wheels = [
 
 [[package]]
 name = "optype"
-version = "0.11.1.dev0"
+version = "0.12.0"
 source = { editable = "." }
 dependencies = [
     { name = "typing-extensions", marker = "python_full_version < '3.13'" },
@@ -272,7 +272,7 @@ type = [
 
 [package.metadata]
 requires-dist = [
-    { name = "numpy", marker = "extra == 'numpy'", specifier = ">=1.25.2" },
+    { name = "numpy", marker = "extra == 'numpy'", specifier = ">=1.25" },
     { name = "typing-extensions", marker = "python_full_version < '3.13'", specifier = ">=4.10" },
 ]
 provides-extras = ["numpy"]
