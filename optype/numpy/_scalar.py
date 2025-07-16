@@ -14,7 +14,14 @@ else:
     )
 
 import numpy as np
-from numpy._typing import _8Bit, _16Bit, _32Bit, _64Bit  # noqa: PLC2701
+from numpy._typing import (
+    _8Bit,  # noqa: PLC2701
+    _16Bit,  # noqa: PLC2701
+    _32Bit,  # noqa: PLC2701
+    _64Bit,  # noqa: PLC2701
+    _96Bit,  # noqa: PLC2701
+    _128Bit,  # noqa: PLC2701
+)
 
 from ._compat import NP20
 from optype._utils import set_module
@@ -130,12 +137,21 @@ integer64 = TypeAliasType("integer64", np.integer[_64Bit])
 floating16 = TypeAliasType("floating16", np.floating[_16Bit])
 floating32 = TypeAliasType("floating32", np.floating[_32Bit])
 floating64 = TypeAliasType("floating64", np.floating[_64Bit])
+# float96, float128, and longdouble
+floating80 = TypeAliasType("floating80", np.floating[_96Bit] | np.floating[_128Bit])
 
 cfloating32 = TypeAliasType("cfloating32", np.complexfloating[_32Bit, _32Bit])
 cfloating64 = TypeAliasType("cfloating64", np.complexfloating[_64Bit, _64Bit])
+# complex192, complex256, and clongdouble
+cfloating80 = TypeAliasType(
+    "cfloating80",
+    np.complexfloating[_96Bit, _96Bit] | np.complexfloating[_128Bit, _128Bit],
+)
 
 inexact32 = TypeAliasType("inexact32", np.inexact[_32Bit])
 inexact64 = TypeAliasType("inexact64", np.inexact[_64Bit])
+# float96, complex192, float128, complex256, longdouble, and clongdouble
+inexact80 = TypeAliasType("inexact80", np.inexact[_96Bit] | np.inexact[_128Bit])
 
 number8 = TypeAliasType("number8", np.number[_8Bit])
 number16 = TypeAliasType("number16", np.number[_16Bit])
