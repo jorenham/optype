@@ -3038,12 +3038,12 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
 </tr>
 <tr>
     <td align="left">
-        <code>bytes</code><br>
-        <code>| str</code><br>
-        <code>| complex</code><br>
+        <code>complex</code><br>
         <code>| float</code><br>
         <code>| int</code><br>
         <code>| bool</code>
+        <code>| bytes</code><br>
+        <code>| str</code><br>
     </td>
     <td align="left"><code>generic</code></td>
     <td align="left"><code>ToScalar</code></td>
