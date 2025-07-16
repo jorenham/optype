@@ -2878,7 +2878,7 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
     <td align="left"><code>ToIntStrict{}D</code></td>
 </tr>
 <tr>
-    <td align="left"><code></code></td>
+    <td align="left"></td>
     <td align="left"><code>float16</code></td>
     <td align="left"><code>ToJustFloat16</code></td>
     <td align="left"><code>ToJustFloat16_{}D</code></td>
@@ -2897,7 +2897,7 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
     <td align="left"><code>ToFloat32Strict{}D</code></td>
 </tr>
 <tr>
-    <td align="left"><code></code></td>
+    <td align="left"></td>
     <td align="left"><code>float32</code></td>
     <td align="left"><code>ToJustFloat32</code></td>
     <td align="left"><code>ToJustFloat32_{}D</code></td>
@@ -2965,7 +2965,7 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
     <td align="left"><code>ToFloatStrict{}D</code></td>
 </tr>
 <tr>
-    <td align="left"><code></code></td>
+    <td align="left"></td>
     <td align="left"><code>complex64</code></td>
     <td align="left"><code>ToJustComplex64</code></td>
     <td align="left"><code>ToJustComplex64_{}D</code></td>
