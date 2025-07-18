@@ -4,85 +4,85 @@
 # _core
 
 optype.Just*:
-- changed-files:
-  - any-glob-to-any-file:
-    - optype/_core/_just.py
+  - changed-files:
+      - any-glob-to-any-file:
+          - optype/_core/_just.py
 
 optype.Can*:
-- changed-files:
-  - any-glob-to-any-file:
-    - optype/_core/_can.py
+  - changed-files:
+      - any-glob-to-any-file:
+          - optype/_core/_can.py
 
 optype.Has*:
-- changed-files:
-  - any-glob-to-any-file:
-    - optype/_core/_has.py
+  - changed-files:
+      - any-glob-to-any-file:
+          - optype/_core/_has.py
 
 optype.Does*:
-- changed-files:
-  - any-glob-to-any-file:
-    - optype/_core/_does.py
+  - changed-files:
+      - any-glob-to-any-file:
+          - optype/_core/_does.py
 
 optype.do_*:
-- changed-files:
-  - any-glob-to-any-file:
-    - optype/_core/_do.py
+  - changed-files:
+      - any-glob-to-any-file:
+          - optype/_core/_do.py
 
-# subpackages
+  # subpackages
 
 optype.numpy:
-- changed-files:
-  - any-glob-to-any-file:
-    - optype/numpy/**
+  - changed-files:
+      - any-glob-to-any-file:
+          - optype/numpy/**
 
 optype.types:
-- changed-files:
-  - any-glob-to-any-file:
-    - optype/types/**
+  - changed-files:
+      - any-glob-to-any-file:
+          - optype/types/**
 
-# submodules
+  # submodules
 
 optype.copy:
-- changed-files:
-  - any-glob-to-any-file:
-    - optype/copy.py
+  - changed-files:
+      - any-glob-to-any-file:
+          - optype/copy.py
 
 optype.dataclasses:
-- changed-files:
-  - any-glob-to-any-file:
-    - optype/dataclasses.py
+  - changed-files:
+      - any-glob-to-any-file:
+          - optype/dataclasses.py
 
 optype.dlpack:
-- changed-files:
-  - any-glob-to-any-file:
-    - optype/dlpack.py
+  - changed-files:
+      - any-glob-to-any-file:
+          - optype/dlpack.py
 
 optype.inspect:
-- changed-files:
-  - any-glob-to-any-file:
-    - optype/inspect.py
+  - changed-files:
+      - any-glob-to-any-file:
+          - optype/inspect.py
 
 optype.io:
-- changed-files:
-  - any-glob-to-any-file:
-    - optype/io.py
+  - changed-files:
+      - any-glob-to-any-file:
+          - optype/io.py
 
 optype.json:
-- changed-files:
-  - any-glob-to-any-file:
-    - optype/json.py
+  - changed-files:
+      - any-glob-to-any-file:
+          - optype/json.py
 
 optype.pickle:
-- changed-files:
-  - any-glob-to-any-file:
-    - optype/pickle.py
+  - changed-files:
+      - any-glob-to-any-file:
+          - optype/pickle.py
 
 optype.string:
-- changed-files:
-  - any-glob-to-any-file:
-    - optype/string.py
+  - changed-files:
+      - any-glob-to-any-file:
+          - optype/string.py
 
 optype.typing:
-- changed-files:
-  - any-glob-to-any-file:
-    - optype/typing.py
+  - changed-files:
+      - any-glob-to-any-file:
+          - optype/typing.py
