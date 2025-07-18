@@ -37,7 +37,7 @@ The community looks forward to your contributions. 🎉
 ## Code of Conduct
 
 This project and everyone participating in it is governed by the
-[optype Code of Conduct][COC].
+[optype Code of Conduct][OP_TENETS].
 By participating, you are expected to uphold this code.
 Please report unacceptable behavior to `jhammudoglu<at>gmail<dot>com`.
 
@@ -45,9 +45,9 @@ Please report unacceptable behavior to `jhammudoglu<at>gmail<dot>com`.
 
 > [!NOTE]
 > If you want to ask a question, we assume that you have read the
-> available [Documentation][DOC].
+> available [Documentation][OP-README].
 
-Before you ask a question, it is best to search for existing [Issues][BUG]
+Before you ask a question, it is best to search for existing [Issues][OP-ISSUES]
 that might help you.
 In case you have found a suitable issue and still need clarification,
 you can write your question in this issue.
@@ -56,7 +56,7 @@ It is also advisable to search the internet for answers first.
 If you then still feel the need to ask a question and need clarification, we
 recommend the following:
 
-- Open an [Issue][BUG].
+- Open an [Issue][OP-ISSUES].
 - Provide as much context as you can about what you're running into.
 - Provide project and platform versions (Python, mypy, pyright, ruff, etc),
   depending on what seems relevant.
@@ -88,12 +88,12 @@ bug as fast as possible.
 - Make sure that you are using the latest version.
 - Determine if your bug is really a bug and not an error on your side e.g.
   using incompatible environment components/versions
-  (Make sure that you have read the [documentation][DOC].
+  (Make sure that you have read the [documentation][OP-README].
   If you are looking for support, you might want to check
   [this section](#i-have-a-question)).
 - To see if other users have experienced (and potentially already solved)
   the same issue you are having, check if there is not already a bug report
-  existing for your bug or error in the [bug tracker][BUG].
+  existing for your bug or error in the [bug tracker][OP-ISSUES].
 - Also make sure to search the internet (including Stack Overflow) to see if
   users outside of the GitHub community have discussed the issue.
 - Collect information about the bug:
@@ -116,7 +116,7 @@ bug as fast as possible.
 We use GitHub issues to track bugs and errors.
 If you run into an issue with the project:
 
-- Open an [Issue][BUG].
+- Open an [Issue][OP-ISSUES].
   (Since we can't be sure at this point whether it is a bug or not,
   we ask you not to talk about a bug yet and not to label the issue.)
 - Explain the behavior you would expect and the actual behavior.
@@ -153,9 +153,9 @@ understand your suggestion and find related suggestions.
 #### Before Submitting an Enhancement
 
 - Make sure that you are using the latest version.
-- Read the [documentation][DOC] carefully and find out if the functionality is
+- Read the [documentation][OP-README] carefully and find out if the functionality is
   already covered, maybe by an individual configuration.
-- Perform a [search][BUG] to see if the enhancement has already been suggested.
+- Perform a [search][OP-ISSUES] to see if the enhancement has already been suggested.
   If it has, add a comment to the existing issue instead of opening a new one.
 - Find out whether your idea fits with the scope and aims of the project.
   It's up to you to make a strong case to convince the project's developers of
@@ -167,7 +167,7 @@ understand your suggestion and find related suggestions.
 
 #### How Do I Submit a Good Enhancement Suggestion?
 
-Enhancement suggestions are tracked as [GitHub issues][BUG].
+Enhancement suggestions are tracked as [GitHub issues][OP-ISSUES].
 
 - Use a **clear and descriptive title** for the issue to identify the
   suggestion.
@@ -182,16 +182,18 @@ Enhancement suggestions are tracked as [GitHub issues][BUG].
 
 ### Your First Code Contribution
 
-Ensure you have [uv](https://github.com/astral-sh/uv) installed.
-Now you can install the dev dependencies:
+Ensure you have [`uv`][GH-UV] installed. Now you can install the dev dependencies:
 
 ```bash
 uv sync
 ```
 
+This will install all the dependencies needed to run the linters, type-checkers,
+and unit tests.
+
 ### Tox
 
-The linters and tests can easily be run with [tox](https://github.com/tox-dev/tox):
+The linters, type-checkers, and unit tests can easily be run with [`tox`][GH-TOX]:
 
 ```bash
 uvx tox p
@@ -203,7 +205,7 @@ This will run the tests in parallel on all supported Python versions.
 
 All [documentation] lives in the `README.md`. Please read it carefully before
 proposing any changes. Ensure that the markdown is formatted correctly with
-[markdownlint](https://github.com/DavidAnson/markdownlint/tree/main).
+[`dprint`](https://dprint.dev/) by running `uv run dprint fmt`.
 
 <!-- omit in toc -->
 
@@ -212,6 +214,8 @@ proposing any changes. Ensure that the markdown is formatted correctly with
 This guide is based on the **contributing-gen**.
 [Make your own](https://github.com/bttger/contributing-gen)!
 
-[BUG]: https://github.com/jorenham/optype/issues
-[COC]: https://github.com/jorenham/optype/blob/master/CODE_OF_CONDUCT.md
-[DOC]: https://github.com/jorenham/optype?tab=readme-ov-file#optype
+[OP-ISSUES]: https://github.com/jorenham/optype/issues
+[OP-README]: https://github.com/jorenham/optype/blob/master/README.md#optype
+[OP_TENETS]: https://github.com/jorenham/optype/blob/master/CODE_OF_CONDUCT.md
+[GH-TOX]: https://github.com/tox-dev/tox
+[GH-UV]: https://github.com/astral-sh/uv
