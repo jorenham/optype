@@ -72,6 +72,18 @@ wheels = [
 ]
 
 [[package]]
+name = "dprint-py"
+version = "0.50.0.0"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/dd/93/d86ec5ffa5ce38382b2100c40338a1452ddbac3deee65a9f14237612312d/dprint_py-0.50.0.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:70e569d2971ba3c8863073b573dcb77f2bf187b1ca4b309ac608fb5a40672e0e", size = 21333922, upload-time = "2025-05-19T01:26:44.093Z" },
+    { url = "https://files.pythonhosted.org/packages/80/75/ba51567099ff5cd3ad38933c767c0c7e667b2bd5ec4c8b071d0dfa300471/dprint_py-0.50.0.0-py3-none-macosx_11_0_x86_64.whl", hash = "sha256:827a8ec8eca6b9ea88990a8848600c5c1b635717ef724ae531ccc5ba2e3b2022", size = 22516283, upload-time = "2025-05-19T01:26:46.989Z" },
+    { url = "https://files.pythonhosted.org/packages/8f/be/d4aef796fad5e4a34a621905c678d7fe0124795c1c8a65c96e71137c81b5/dprint_py-0.50.0.0-py3-none-manylinux_2_17_aarch64.whl", hash = "sha256:1dfe5b4d73aeadc10116f37341c4eac4651c85254a68e8693eb83e6928ae80de", size = 23866263, upload-time = "2025-05-19T01:26:50.035Z" },
+    { url = "https://files.pythonhosted.org/packages/7c/2e/a82a2de42d057a0e9713a497fdefe9729ce5d79d523a826c4a150e68ecc4/dprint_py-0.50.0.0-py3-none-manylinux_2_17_x86_64.whl", hash = "sha256:19cd159462841442f6d7431e36d29911f6fb63702163ad5fb5bb438ad04f6863", size = 24582934, upload-time = "2025-05-19T01:26:54.347Z" },
+    { url = "https://files.pythonhosted.org/packages/0c/3c/57941c239eef3fa74ff44fb1452e56b04cb08ae3af39669b8b7178ff80ad/dprint_py-0.50.0.0-py3-none-win_amd64.whl", hash = "sha256:90de7885d3c9d6b13949ed609f2f2256b4ea74bf1355adcdfda0c30f7e3f9d47", size = 20785813, upload-time = "2025-05-19T01:26:57.162Z" },
+]
+
+[[package]]
 name = "filelock"
 version = "3.18.0"
 source = { registry = "https://pypi.org/simple" }
@@ -247,6 +259,7 @@ numpy = [
 dev = [
     { name = "basedpyright" },
     { name = "beartype" },
+    { name = "dprint-py" },
     { name = "mypy", extra = ["faster-cache"] },
     { name = "optype", extra = ["numpy"] },
     { name = "pytest" },
@@ -258,6 +271,7 @@ extra = [
     { name = "optype", extra = ["numpy"] },
 ]
 lint = [
+    { name = "dprint-py" },
     { name = "ruff" },
     { name = "sp-repo-review", extra = ["cli"] },
 ]
@@ -281,6 +295,7 @@ provides-extras = ["numpy"]
 dev = [
     { name = "basedpyright", specifier = ">=1.31.0" },
     { name = "beartype", specifier = ">=0.21.0" },
+    { name = "dprint-py", specifier = ">=0.50.0.0" },
     { name = "mypy", extras = ["faster-cache"], specifier = ">=1.17.0" },
     { name = "optype", extras = ["numpy"] },
     { name = "pytest", specifier = ">=8.4.1" },
@@ -290,6 +305,7 @@ dev = [
 ]
 extra = [{ name = "optype", extras = ["numpy"] }]
 lint = [
+    { name = "dprint-py", specifier = ">=0.50.0.0" },
     { name = "ruff", specifier = ">=0.12.4" },
     { name = "sp-repo-review", extras = ["cli"], specifier = ">=2025.5.2" },
 ]
