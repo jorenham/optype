@@ -3,14 +3,14 @@
 root = true
 
 [*]
-end_of_line = lf
 charset = utf-8
-indent_style = space
+end_of_line = lf
 indent_size = 4
+indent_style = space
 insert_final_newline = true
-trim_trailing_whitespace = true
 max_line_length = 88
+trim_trailing_whitespace = true
 
 # 2 space indentation
-[{*.json,*.jsonc,*.yml,*.yaml}]
+[{*.json,*.jsonc,*.toml,*.yml,*.yaml}]
 indent_size = 2
