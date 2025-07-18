@@ -1,11 +1,10 @@
 {
   "recommendations": [
     "charliermarsh.ruff",
-    "davidanson.vscode-markdownlint",
     "detachhead.basedpyright",
+    "dprint.dprint",
     "ms-python.mypy-type-checker",
     "ms-python.python",
-    "tekumara.typos-vscode"
   ],
-  "unwantedRecommendations": ["ms-pyright.pyright", "ms-python.vscode-pylance"]
+  "unwantedRecommendations": ["ms-pyright.pyright", "ms-python.vscode-pylance"],
 }
