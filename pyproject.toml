@@ -33,26 +33,31 @@ Changelog = "https://github.com/jorenham/optype/releases"
 Funding = "https://github.com/sponsors/jorenham"
 
 [dependency-groups]
-extra = ["optype[numpy]"]
+extra = [
+  "optype[numpy]",
+]
 lint = [
   "dprint-py>=0.50.0.0",
   "ruff>=0.12.4",
   "sp-repo-review[cli]>=2025.5.2",
 ]
-type = [
-  "mypy[faster-cache]>=1.17.0",
-  "basedpyright>=1.31.0",
-]
 test = [
+  { include-group = "extra" },
   "beartype>=0.21.0",
   "pytest>=8.4.1",
+  "typing-extensions>=4.14.1",
+]
+type = [
+  { include-group = "extra" },
+  { include-group = "test" },
+  "mypy[faster-cache]>=1.17.0",
+  "basedpyright>=1.31.0",
 ]
 dev = [
   { include-group = "extra" },
   { include-group = "lint" },
-  { include-group = "type" },
   { include-group = "test" },
-  "tox>=4.27.0",
+  { include-group = "type" },
 ]
 
 [tool.hatch.build.targets.sdist]
@@ -69,9 +74,9 @@ exclude = [
   "/examples",
   "/scripts",
   "/tests",
+  ".dprint.jsonc",
   ".editorconfig",
   ".gitignore",
-  ".markdownlint.yaml",
   "CODE_OF_CONDUCT.md",
   "CONTRIBUTING.md",
   "SECURITY.md",
@@ -315,27 +320,94 @@ allow-dunder-method-names = [
 allow-magic-value-types = ["int"]
 
 [tool.tox]
-isolated_build = true
-env_list = ["repo-review", "3.11", "3.12", "3.13"]
+requires = ["tox-uv>=1"]
+env_list = [
+  "3.11",
+  "3.12",
+  "3.13",
+  "dprint",
+  "ruff",
+  "mypy",
+  "pyright",
+  "pyright-verify",
+  "repo-review",
+]
 
 [tool.tox.env_run_base]
 description = "test with {base_python}"
-skip_install = true
-allowlist_externals = ["uv"]
-commands_pre = [["uv", "sync", "--frozen"]]
-commands = [["uv", "run", "pytest"]]
+runner = "uv-venv-lock-runner"
+dependency_groups = ["test"]
+commands = [
+  [
+    "pytest",
+    { replace = "posargs", default = [], extend = true },
+  ],
+]
+
+[tool.tox.env.dprint]
+description = "dprint check"
+runner = "uv-venv-lock-runner"
+dependency_groups = ["lint"]
+commands = [
+  [
+    "dprint",
+    "check",
+    "--incremental=false",
+    { replace = "posargs", default = [], extend = true },
+  ],
+]
+
+[tool.tox.env.ruff]
+description = "ruff check"
+runner = "uv-venv-lock-runner"
+dependency_groups = ["lint"]
+commands = [
+  [
+    "ruff",
+    "check",
+    "--show-fixes",
+    { replace = "posargs", default = [], extend = true },
+  ],
+  [
+    "ruff",
+    "format",
+    "--check",
+    { replace = "posargs", default = [], extend = true },
+  ],
+]
+
+[tool.tox.env.mypy]
+description = "mypy"
+runner = "uv-venv-lock-runner"
+dependency_groups = ["type"]
+commands = [
+  [
+    "python",
+    "scripts/my.py",
+    "--no-incremental",
+    { replace = "posargs", default = ["."], extend = true },
+  ],
+]
+
+[tool.tox.env.pyright]
+description = "basedpyright"
+runner = "uv-venv-lock-runner"
+dependency_groups = ["type"]
+commands = [
+  [
+    "basedpyright",
+    { replace = "posargs", default = [], extend = true },
+  ],
+]
+
+[tool.tox.env.pyright-verify]
+description = "basedpyright --verifytypes"
+runner = "uv-venv-lock-runner"
+dependency_groups = ["type"]
+commands = [["basedpyright", "--ignoreexternal", "--verifytypes", "optype"]]
 
 [tool.tox.env.repo-review]
 description = "repo-review"
-skip_install = true
-allowlist_externals = ["uv"]
-commands_pre = [["uv", "sync", "--frozen"]]
-commands = [["uv", "run", "repo-review", "."]]
-
-[tool.typos.default]
-extend-ignore-identifiers-re = [
-  "ND|nd",
-  "(N|n)in",
-  "Mode(R|W|X|A|O|_)(B|T|_)(U|_)?",
-  "ba", # file mode string
-]
+runner = "uv-venv-lock-runner"
+dependency_groups = ["lint"]
+commands = [["repo-review", "."]]
