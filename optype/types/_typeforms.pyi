@@ -6,7 +6,9 @@ from typing_extensions import ParamSpec, TypeAliasType, TypeVar, TypeVarTuple, o
 __all__ = "AnnotatedAlias", "GenericType", "LiteralAlias", "UnionAlias"
 
 _Ts_co = TypeVar(
-    "_Ts_co", bound=tuple[object, ...] | TypeVarTuple | GenericType, covariant=True
+    "_Ts_co",
+    bound=tuple[object, ...] | TypeVarTuple | GenericType,
+    covariant=True,
 )
 
 _TypeExpr: TypeAlias = type | _types.GenericAlias | GenericType | TypeAliasType

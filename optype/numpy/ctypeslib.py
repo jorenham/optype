@@ -127,7 +127,7 @@ SIZE_LONGDOUBLE: Final = cast("Literal[8, 10, 12, 16]", ct.sizeof(ct.c_longdoubl
 def __is_dev() -> bool:
     from importlib import metadata  # noqa: PLC0415
 
-    return "dev" in metadata.version((__package__ or "optype").removesuffix(".numpy"))  # noqa: PLR2004
+    return "dev" in metadata.version((__package__ or "optype").removesuffix(".numpy"))
 
 
 if __is_dev():

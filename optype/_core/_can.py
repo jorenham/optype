@@ -1,4 +1,6 @@
 # mypy: disable-error-code="override"
+# ruff: noqa: PYI034
+
 import sys
 import types
 from collections.abc import Generator
@@ -456,7 +458,10 @@ class CanSetattr(Protocol[_StrT_contra, _T_object_contra]):
 
     @override
     def __setattr__(  # type: ignore[misc]  # pyright: ignore[reportIncompatibleMethodOverride]
-        self, name: _StrT_contra, value: _T_object_contra, /
+        self,
+        name: _StrT_contra,
+        value: _T_object_contra,
+        /,
     ) -> _Ignored: ...
 
 
@@ -1452,7 +1457,7 @@ class CanExit(Protocol[_T_None_co]):
     @overload
     def __exit__(self, exc_type: None, exc: None, tb: None, /) -> None: ...
     @overload
-    def __exit__(
+    def __exit__(  # noqa: PYI036
         self,
         exc_type: type[_ExcT],
         exc: _ExcT,

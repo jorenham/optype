@@ -201,6 +201,10 @@ def get_args(tp: type | object, /) -> tuple[type | object, ...]:
     - unpacks `Annotated` and `TypeAliasType`,
     - recursively flattens unions / nested `Literal`s, and
     - raises `TypeError` if `tp` if isn't a generic type (alias).
+
+    Raises:
+        NotImplementedError: If `tp` is a string.
+        TypeError: If `tp` is not a generic type or type-alias.
     """
     if isinstance(tp, str):
         raise NotImplementedError("str")
@@ -237,7 +241,10 @@ def get_protocol_members(cls: type, /) -> frozenset[str]:
 
     - doesn't hide `__annotations__`, `__dict__`, `__init__` or `__new__`,
     - doesn't add a `__hash__` if there's an `__eq__` method, and
-    - doesn't include methods of base types from different module.
+    - doesn't include methods of base types from different modules.
+
+    Raises:
+        TypeError: If `cls` is not a protocol type.
     """
     if not is_protocol(cls):
         msg = f"{cls!r} is not a protocol"

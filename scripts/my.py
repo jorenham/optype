@@ -4,12 +4,13 @@
 
 import subprocess
 import sys
-from collections.abc import Generator
-from typing import Final, TypeAlias
+from typing import TYPE_CHECKING, Final, TypeAlias
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 _Version: TypeAlias = tuple[int, int]
 
-# TODO: figure these out dynamically, e.g. with `distutils` or from `pyproject.toml`
 _NP1_MIN: Final = 1, 25
 _NP1_MAX: Final = 1, 26
 _NP2_MIN: Final = 2, 0
@@ -18,7 +19,7 @@ _NP_SKIP: Final = frozenset({(1, 26)})
 
 
 def _np_version() -> _Version:
-    import numpy as np  # noqa: PLC0415
+    import numpy as np
 
     major, minor = map(int, np.__version__.split(".", 3)[:2])
     version = major, minor
@@ -29,7 +30,7 @@ def _np_version() -> _Version:
 def _np_version_range(
     first: _Version = _NP1_MIN,
     last: _Version = _NP2_MAX,
-) -> Generator[_Version]:
+) -> "Generator[_Version]":
     assert _NP1_MIN <= first <= _NP2_MAX
     assert _NP1_MIN <= last <= _NP2_MAX
 
@@ -75,7 +76,7 @@ def main(*args: str) -> int:
     else:
         cmd.extend(args)
 
-    print(*cmd)  # noqa: T201
+    print(*cmd)
     return subprocess.call(cmd)
 
 
