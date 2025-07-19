@@ -1,0 +1,10 @@
+extend = "../pyproject.toml"
+
+[lint]
+extend-ignore = [
+  "PYI015", # flake8-pyi - assignment-default-in-stub
+  "PYI034", # flake8-pyi - non-self-return-type
+  "F841", # pyflakes - unused-variable
+  "PLR0914", # pylint/refactor - too-many-locals
+  "PLC2701", # pylint/convention - import-private-name
+]

@@ -331,9 +331,10 @@ do_floor: Final = cast("_d.DoesFloor", math.floor)
 do_ceil: Final = cast("_d.DoesCeil", math.ceil)
 
 
-# type-check the custom ops
-# TODO: move these to `tests/do.py`
+# TODO(jorenham): move these to `tests/do.py`
+# https://github.com/jorenham/optype/issues/372
 if TYPE_CHECKING:
+    # type-tests for the custom ops
     _do_getitem: _d.DoesGetitem = do_getitem
     _do_setitem: _d.DoesSetitem = do_setitem
     _do_delitem: _d.DoesDelitem = do_delitem

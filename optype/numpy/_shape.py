@@ -42,10 +42,14 @@ AxT = TypeVar("AxT", int, Any, default=int)
 AtLeast0D = TypeAliasType("AtLeast0D", tuple[AxT, ...], type_params=(AxT,))
 AtLeast1D = TypeAliasType("AtLeast1D", tuple[int, *tuple[AxT, ...]], type_params=(AxT,))
 AtLeast2D = TypeAliasType(
-    "AtLeast2D", tuple[int, int, *tuple[AxT, ...]], type_params=(AxT,)
+    "AtLeast2D",
+    tuple[int, int, *tuple[AxT, ...]],
+    type_params=(AxT,),
 )
 AtLeast3D = TypeAliasType(
-    "AtLeast3D", tuple[int, int, int, *tuple[AxT, ...]], type_params=(AxT,)
+    "AtLeast3D",
+    tuple[int, int, int, *tuple[AxT, ...]],
+    type_params=(AxT,),
 )
 
 ###

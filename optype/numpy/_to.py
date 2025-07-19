@@ -214,7 +214,8 @@ _ToStrict3D2 = TypeAliasType(
 ###
 
 
-# TODO: Export and document.
+# TODO(jorenham): export & document
+# https://github.com/jorenham/optype/issues/373
 
 integer_co = TypeAliasType("integer_co", npc.integer | np.bool_)
 floating_co = TypeAliasType("floating_co", npc.floating | integer_co)

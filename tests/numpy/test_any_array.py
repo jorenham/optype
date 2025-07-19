@@ -46,7 +46,9 @@ TIMEDELTA64: Final = np.timedelta64, dt.timedelta
 STR: Final = np.str_, str
 BYTES: Final = np.bytes_, ct.c_char, bytes
 CHARACTER: Final = *STR, *BYTES
-VOID: Final = (np.void,)  # TODO: structured
+# TODO(jorenham): structured dtype support
+# https://github.com/jorenham/optype/issues/371
+VOID: Final = (np.void,)
 FLEXIBLE: Final = *VOID, *CHARACTER
 BOOL: Final = _x.Bool, ct.c_bool, bool
 OBJECT: Final = np.object_, ct.py_object
