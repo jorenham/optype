@@ -1,0 +1,53 @@
+templates:
+  run: run --no-sync
+
+pre-commit:
+  parallel: true
+  skip:
+    - merge
+    - rebase
+  jobs:
+    - name: uv lock
+      glob: pyproject.toml
+      stage_fixed: true
+      run: uv lock
+
+    - name: dprint
+      glob: "*.{json,jsonc,md,toml,yaml,yml}"
+      stage_fixed: true
+      run: uv {run} dprint fmt --incremental=false
+
+    - name: ruff
+      glob: "*.{py,pyi}"
+      stage_fixed: true
+      group:
+        piped: true
+        jobs:
+          - name: check
+            run: uv {run} ruff check --fix {staged_files}
+          - name: format
+            run: uv {run} ruff format --quiet {staged_files}
+
+    - name: basedpyright
+      glob: "*.{py,pyi}"
+      run: uv {run} basedpyright {staged_files}
+
+    - name: mypy
+      glob: "*.{py,pyi}"
+      skip: true # too slow
+      run: uv {run} scripts/my.py
+
+    - name: pytest
+      glob: "*.{py,pyi}"
+      run: uv {run} pytest --quiet --no-summary
+
+post-checkout:
+  jobs:
+    - run: uv sync
+      glob: uv.lock
+
+post-merge:
+  files: "git diff-tree -r --name-only --no-commit-id ORIG_HEAD HEAD"
+  jobs:
+    - run: uv sync
+      glob: uv.lock
