@@ -1,0 +1,8 @@
+extend = "../pyproject.toml"
+
+[lint]
+extend-ignore = [
+  "INP001", # flake8-no-pep420 - implicit-namespace-package
+  "I001", # isort - unsorted-imports
+  "PLR0904", # pylint/refactor - too-many-public-methods
+]
