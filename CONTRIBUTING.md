@@ -191,7 +191,39 @@ uv sync
 This will install all the dependencies needed to run the linters, type-checkers,
 and unit tests.
 
-### Tox
+#### Lefthook
+
+[Lefthook](https://github.com/evilmartians/lefthook) is a modern Git hooks manager,
+which automatically lints and formats your code before committing it, which helps
+avoid CI failures.
+
+To install lefthook as a `uv` tool ([docs](https://docs.astral.sh/uv/concepts/tools/)),
+run:
+
+```bash
+$ uv tool install lefthook --upgrade
+Resolved 1 package in 139ms
+Audited 1 package in 0.00ms
+Installed 1 executable: lefthook
+```
+
+Now the git hooks can be installed by running:
+
+```bash
+$ uvx lefthook install
+sync hooks: ✔️ (post-checkout, post-merge, pre-commit)
+```
+
+To see if everything is set up correctly, you can run the validation command:
+
+```bash
+$ uvx lefthook validate
+All good
+```
+
+See <https://lefthook.dev/> for more information.
+
+#### Tox
 
 The linters, type-checkers, and unit tests can easily be run with [`tox`][GH-TOX]:
 
@@ -199,7 +231,9 @@ The linters, type-checkers, and unit tests can easily be run with [`tox`][GH-TOX
 uvx tox p
 ```
 
-This will run the tests in parallel on all supported Python versions.
+This will run `pytest` in parallel on all supported Python versions, as well as the
+linters (`dprint`, `ruff`, and `repo-review`) and the type-checkers (`mypy` and
+`basedpyright`).
 
 ### Improving The Documentation
 
