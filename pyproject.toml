@@ -159,9 +159,9 @@ select = ["ALL"]
 ignore = [
   "ANN401", # flake8-annotations - any-type
   "S101", # flake8-bandit - assert
-  "FBT",  # flake8-boolean-trap
-  "CPY",  # flake8-copyright
-  "FIX",  # flake8-fixme
+  "FBT", # flake8-boolean-trap
+  "CPY", # flake8-copyright
+  "FIX", # flake8-fixme
   "D", # pydocstyle
   "DOC201", # pydoclint - docstring-missing-returns
   "TRY003", # tryceratops - raise-vanilla-args
