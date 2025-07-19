@@ -1,22 +1,26 @@
-  {
-    "[markdown]": {
-      "editor.rulers": [88]
-    },
-    "[python]": {
-      "editor.defaultFormatter": "charliermarsh.ruff",
-      "editor.formatOnPaste": true,
-      "editor.formatOnSave": true,
-      "editor.formatOnSaveMode": "modificationsIfAvailable",
-      "editor.formatOnType": true
-    },
-    "editor.rulers": [88],
-    "git.branchProtection": ["master"],
-    "mypy-type-checker.args": [
-      "--config-file=${workspaceFolder}/pyproject.toml"
-    ],
-    "mypy-type-checker.cwd": ".",
-    "mypy-type-checker.path": [
-      "${workspaceFolder}/scripts/my.py"
-    ],
-    "python.testing.pytestEnabled": true
-  }
+{
+  "[json]": {
+    "editor.defaultFormatter": "dprint.dprint",
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "dprint.dprint",
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "dprint.dprint",
+  },
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "dprint.dprint",
+  },
+  "[yml]": {
+    "editor.defaultFormatter": "dprint.dprint",
+  },
+  "dprint.path": ".venv/bin/dprint",
+  "editor.rulers": [88],
+  "git.branchProtection": ["master"],
+  "mypy-type-checker.args": ["--config-file=${workspaceFolder}/pyproject.toml"],
+  "mypy-type-checker.cwd": ".",
+  "mypy-type-checker.path": ["${workspaceFolder}/scripts/my.py"],
+}

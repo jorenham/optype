@@ -1,0 +1,26 @@
+{
+  "json": {
+    "array.preferSingleLine": true,
+    "jsonTrailingCommaFiles": [".vscode/extensions.json", ".vscode/settings.json"],
+    "lineWidth": 88,
+  },
+  "markdown": {
+    "emphasisKind": "asterisks",
+    "lineWidth": 88,
+  },
+  "toml": {
+    "lineWidth": 88,
+  },
+  "yaml": {
+    "braceSpacing": false,
+    "formatComments": true,
+    "printWidth": 88,
+  },
+  "excludes": ["**/*.lock", "dist/"],
+  "plugins": [
+    "https://plugins.dprint.dev/g-plane/pretty_yaml-v0.5.1.wasm",
+    "https://plugins.dprint.dev/json-0.20.0.wasm",
+    "https://plugins.dprint.dev/markdown-0.19.0.wasm",
+    "https://plugins.dprint.dev/toml-0.7.0.wasm",
+  ],
+}

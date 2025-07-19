@@ -18,7 +18,7 @@ updates:
     schedule:
       interval: weekly
     labels:
-      - "is: chorew"
+      - "is: chore"
       - "topic: dependencies"
     groups:
       actions:

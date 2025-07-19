@@ -27,11 +27,8 @@ jobs:
         with:
           plugins: sp-repo-review
 
-      - name: markdownlint
-        uses: DavidAnson/markdownlint-cli2-action@v20
-        with:
-          config: ".markdownlint.yaml"
-          globs: "**/*.md"
+      - name: dprint
+        uses: dprint/check@v2.3
 
       - name: typos
         uses: crate-ci/typos@master
@@ -42,6 +39,7 @@ jobs:
 
       - name: ruff check
         run: uv run ruff check --output-format=github
+
       - name: ruff format
         run: uv run ruff format --check
 
@@ -59,6 +57,7 @@ jobs:
         py: ["3.11"]
     steps:
       - uses: actions/checkout@v4
+
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.py }}
@@ -93,6 +92,7 @@ jobs:
             np: "1.25"
     steps:
       - uses: actions/checkout@v4
+
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.py }}

@@ -2,84 +2,81 @@
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-
 [project]
 name = "optype"
 description = "Building blocks for precise & flexible type hints"
 version = "0.12.1.dev0"
-authors = [{name = "Joren Hammudoglu", email = "jhammudoglu@gmail.com"}]
+authors = [{ name = "Joren Hammudoglu", email = "jhammudoglu@gmail.com" }]
 license = "BSD-3-Clause"
 readme = "README.md"
 keywords = ["typing", "type hints", "numpy"]
 classifiers = [
-    "Development Status :: 4 - Beta",
-    "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Typing :: Typed",
+  "Development Status :: 4 - Beta",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Typing :: Typed",
 ]
 requires-python = ">=3.11"
 dependencies = ["typing-extensions>=4.10; python_version<'3.13'"]
 
-    [project.optional-dependencies]
-    numpy = ["numpy>=1.25"]
+[project.optional-dependencies]
+numpy = ["numpy>=1.25"]
 
-    [project.urls]
-    Repository = "https://github.com/jorenham/optype/"
-    Documentation = "https://github.com/jorenham/optype/blob/master/README.md"
-    Issues = "https://github.com/jorenham/optype/issues"
-    Changelog = "https://github.com/jorenham/optype/releases"
-    Funding = "https://github.com/sponsors/jorenham"
-
+[project.urls]
+Repository = "https://github.com/jorenham/optype/"
+Documentation = "https://github.com/jorenham/optype/blob/master/README.md"
+Issues = "https://github.com/jorenham/optype/issues"
+Changelog = "https://github.com/jorenham/optype/releases"
+Funding = "https://github.com/sponsors/jorenham"
 
 [dependency-groups]
 extra = ["optype[numpy]"]
 lint = [
-    "ruff>=0.12.4",
-    "sp-repo-review[cli]>=2025.5.2",
+  "dprint-py>=0.50.0.0",
+  "ruff>=0.12.4",
+  "sp-repo-review[cli]>=2025.5.2",
 ]
 type = [
-    "mypy[faster-cache]>=1.17.0",
-    "basedpyright>=1.31.0",
+  "mypy[faster-cache]>=1.17.0",
+  "basedpyright>=1.31.0",
 ]
 test = [
-    "beartype>=0.21.0",
-    "pytest>=8.4.1",
+  "beartype>=0.21.0",
+  "pytest>=8.4.1",
 ]
 dev = [
-    {include-group = "extra"},
-    {include-group = "lint"},
-    {include-group = "type"},
-    {include-group = "test"},
-    "tox>=4.27.0",
+  { include-group = "extra" },
+  { include-group = "lint" },
+  { include-group = "type" },
+  { include-group = "test" },
+  "tox>=4.27.0",
 ]
-
 
 [tool.hatch.build.targets.sdist]
 exclude = [
-    "/.cache",
-    "/.github",
-    "/.mypy_cache",
-    "/.pytest_cache",
-    "/.ruff_cache",
-    "/.tox",
-    "/.venv",
-    "/.vscode",
-    "/dist",
-    "/examples",
-    "/scripts",
-    "/tests",
-    ".editorconfig",
-    ".gitignore",
-    ".markdownlint.yaml",
-    "CODE_OF_CONDUCT.md",
-    "CONTRIBUTING.md",
-    "SECURITY.md",
-    "uv.lock",
+  "/.cache",
+  "/.github",
+  "/.mypy_cache",
+  "/.pytest_cache",
+  "/.ruff_cache",
+  "/.tox",
+  "/.venv",
+  "/.vscode",
+  "/dist",
+  "/examples",
+  "/scripts",
+  "/tests",
+  ".editorconfig",
+  ".gitignore",
+  ".markdownlint.yaml",
+  "CODE_OF_CONDUCT.md",
+  "CONTRIBUTING.md",
+  "SECURITY.md",
+  "uv.lock",
 ]
-
 
 [tool.mypy]
 packages = ["optype", "examples", "tests"]
@@ -91,14 +88,13 @@ disallow_any_expr = false
 disallow_any_decorated = false
 disallow_any_explicit = false
 enable_error_code = [
-    "exhaustive-match",
-    "ignore-without-code",
-    "redundant-expr",
-    "truthy-bool",
+  "exhaustive-match",
+  "ignore-without-code",
+  "redundant-expr",
+  "truthy-bool",
 ]
 warn_return_any = false
 warn_unreachable = false
-
 
 [tool.basedpyright]
 pythonPlatform = "All"
@@ -109,24 +105,23 @@ typeCheckingMode = "all"
 useLibraryCodeForTypes = false
 enableReachabilityAnalysis = false
 reportAny = false
-reportExplicitAny = false                 # sometimes there's no way around it
+reportExplicitAny = false # sometimes there's no way around it
 reportImplicitStringConcatenation = false # not a linter
-reportPrivateUsage = false                # dupe of PLC2701
-reportPrivateImportUsage = false          # dupe of PLC2701
-reportShadowedImports = false             # buggy
-reportUnreachable = false                 # nothing wrong with `if sys.version_info() >= ...`
-reportUnusedCallResult = false            # https://github.com/microsoft/pyright/issues/8650
-reportUnusedImport = false                # dupe of F401
-reportUnusedVariable = false              # dupe of F841
+reportPrivateUsage = false # dupe of PLC2701
+reportPrivateImportUsage = false # dupe of PLC2701
+reportShadowedImports = false # buggy
+reportUnreachable = false # nothing wrong with `if sys.version_info() >= ...`
+reportUnusedCallResult = false # https://github.com/microsoft/pyright/issues/8650
+reportUnusedImport = false # dupe of F401
+reportUnusedVariable = false # dupe of F841
 
-    [tool.basedpyright.defineConstant]
-    NP125 = true
-    NP20 = true
-    NP21 = true
-    NP22 = true
-    NP23 = true
-    NP24 = false
-
+[tool.basedpyright.defineConstant]
+NP125 = true
+NP20 = true
+NP21 = true
+NP22 = true
+NP23 = true
+NP24 = false
 
 [tool.pytest.ini_options]
 minversion = "8.0"
@@ -137,16 +132,14 @@ filterwarnings = ["error"]
 log_cli_level = "INFO"
 xfail_strict = true
 
-
 [tool.repo-review]
 ignore = [
-    "PY004", # no `docs/` (maybe later)
-    "PY006", # no pre-commit
-    "PC170", # no sphinx
-    "PC180", # no css or js
-    "RTD",   # no readthedocs
+  "PY004", # no `docs/` (maybe later)
+  "PY006", # no pre-commit
+  "PC170", # no sphinx
+  "PC180", # no css or js
+  "RTD", # no readthedocs
 ]
-
 
 [tool.ruff]
 src = ["optype", "examples", "tests"]
@@ -154,197 +147,195 @@ indent-width = 4
 show-fixes = true
 force-exclude = true
 
-    [tool.ruff.format]
-    # keep in sync with .editorconfig
-    indent-style = "space"
-    line-ending = "lf"
-    preview = true
+[tool.ruff.format]
+# keep in sync with .editorconfig
+indent-style = "space"
+line-ending = "lf"
+preview = true
 
-    [tool.ruff.lint]
-    preview = true
-    select = [
-        "F",     # pyflakes
-        "E",     # pycodestyle: error
-        "W",     # pycodestyle: warning
-        "C90",   # mccabe
-        "I",     # isort
-        "N",     # pep8-naming
-        "UP",    # pyupgrade
-        "YTT",   # flake8-2020
-        "ANN",   # flake8-annotations
-        "ASYNC", # flake8-async
-        "BLE",   # flake8-blind-except
-        "B",     # flake8-bugbear
-        "A",     # flake8-builtins
-        "COM",   # flake8-commas
-        "C4",    # flake8-comprehensions
-        "DTZ",   # flake8-datetimez
-        "T10",   # flake8-debugger
-        "EXE",   # flake8-executable
-        "EM",    # flake8-errmsg
-        "FA",    # flake8-future-annotations
-        "ISC",   # flake8-implicit-str-concat
-        "ICN",   # flake8-import-conventions
-        "LOG",   # flake8-logging
-        "G",     # flake8-logging-format
-        "INP",   # flake8-no-pep420
-        "PIE",   # flake8-pie
-        "T20",   # flake8-print
-        "PYI",   # flake8-pyi
-        "PT",    # flake8-pytest-style
-        "Q",     # flake8-quotes
-        "RSE",   # flake8-raise
-        "RET",   # flake8-return
-        "SLF",   # flake8-self
-        "SLOT",  # flake8-slots
-        "SIM",   # flake8-simplify
-        "TID",   # flake8-tidy-imports
-        "TCH",   # flake8-type-checking
-        "ARG",   # flake8-unused-arguments
-        "PTH",   # flake8-use-pathlib
-        "ERA",   # eradicate
-        "PD",    # pandas-vet
-        "PGH",   # pygrep-hooks
-        "PL",    # pylint
-        "TRY",   # tryceratops
-        "FLY",   # flynt
-        "NPY",   # NumPy
-        "FAST",  # FastAPI
-        "AIR",   # airflow
-        "PERF",  # perflint,
-        "FURB",  # refurb
-        "RUF",   # ruff
-    ]
-    ignore = [
-        "ANN001",  # flake8-annotations: missing-type-function-argument (deprecated)
-        "ANN002",  # flake8-annotations: missing-type-args (deprecated)
-        "ANN401",  # flake8-annotations: any-type
-        "COM812",  # flake8-commas: missing-trailing-comma (ruff format)
-        "ISC001",  # flake8-implicit-str-concat: single-line-implicit-string-concatenation (ruff format)
-        "PYI034",  # flake8-pyi: non-self-return-type
-        "PYI036",  # flake8-pyi: bad-exit-annotation
-        "PLR0904", # pylintLtoo-many-public-methods
-        "TRY003",  # tryceratops: raise-vanilla-args
-        "FURB118", # refurb: reimplemented-operator
-    ]
+[tool.ruff.lint]
+preview = true
+select = [
+  "F", # pyflakes
+  "E", # pycodestyle: error
+  "W", # pycodestyle: warning
+  "C90", # mccabe
+  "I", # isort
+  "N", # pep8-naming
+  "UP", # pyupgrade
+  "YTT", # flake8-2020
+  "ANN", # flake8-annotations
+  "ASYNC", # flake8-async
+  "BLE", # flake8-blind-except
+  "B", # flake8-bugbear
+  "A", # flake8-builtins
+  "COM", # flake8-commas
+  "C4", # flake8-comprehensions
+  "DTZ", # flake8-datetimez
+  "T10", # flake8-debugger
+  "EXE", # flake8-executable
+  "EM", # flake8-errmsg
+  "FA", # flake8-future-annotations
+  "ISC", # flake8-implicit-str-concat
+  "ICN", # flake8-import-conventions
+  "LOG", # flake8-logging
+  "G", # flake8-logging-format
+  "INP", # flake8-no-pep420
+  "PIE", # flake8-pie
+  "T20", # flake8-print
+  "PYI", # flake8-pyi
+  "PT", # flake8-pytest-style
+  "Q", # flake8-quotes
+  "RSE", # flake8-raise
+  "RET", # flake8-return
+  "SLF", # flake8-self
+  "SLOT", # flake8-slots
+  "SIM", # flake8-simplify
+  "TID", # flake8-tidy-imports
+  "TCH", # flake8-type-checking
+  "ARG", # flake8-unused-arguments
+  "PTH", # flake8-use-pathlib
+  "ERA", # eradicate
+  "PD", # pandas-vet
+  "PGH", # pygrep-hooks
+  "PL", # pylint
+  "TRY", # tryceratops
+  "FLY", # flynt
+  "NPY", # NumPy
+  "FAST", # FastAPI
+  "AIR", # airflow
+  "PERF", # perflint,
+  "FURB", # refurb
+  "RUF", # ruff
+]
+ignore = [
+  "ANN001", # flake8-annotations: missing-type-function-argument (deprecated)
+  "ANN002", # flake8-annotations: missing-type-args (deprecated)
+  "ANN401", # flake8-annotations: any-type
+  "COM812", # flake8-commas: missing-trailing-comma (ruff format)
+  "ISC001", # flake8-implicit-str-concat: single-line-implicit-string-concatenation (ruff format)
+  "PYI034", # flake8-pyi: non-self-return-type
+  "PYI036", # flake8-pyi: bad-exit-annotation
+  "PLR0904", # pylintLtoo-many-public-methods
+  "TRY003", # tryceratops: raise-vanilla-args
+  "FURB118", # refurb: reimplemented-operator
+]
 
-        [tool.ruff.lint.per-file-ignores]
-        "examples/*" = [
-            "I001",    # isort: unsorted-imports
-            "INP001",  # flake8-no-pep420: implicit-namespace-package
-            "PLR2004", # pylint: magic-value-comparison
-        ]
-        "tests/*" = [
-            "F841",    # pyflakes: unused-variable
-            "ANN201",  # flake8-annotations: missing-return-type
-            "PYI015",  # flake8-pyi
-            "SLF001",  # flake8-self: private-member-access
-            "PLC2701", # pylint: import-private-name
-            "PLR2004", # pylint: magic-value-comparison
-            "PLR0914", # pylint: too-many-locals
-        ]
+[tool.ruff.lint.per-file-ignores]
+"examples/*" = [
+  "I001", # isort: unsorted-imports
+  "INP001", # flake8-no-pep420: implicit-namespace-package
+  "PLR2004", # pylint: magic-value-comparison
+]
+"tests/*" = [
+  "F841", # pyflakes: unused-variable
+  "ANN201", # flake8-annotations: missing-return-type
+  "PYI015", # flake8-pyi
+  "SLF001", # flake8-self: private-member-access
+  "PLC2701", # pylint: import-private-name
+  "PLR2004", # pylint: magic-value-comparison
+  "PLR0914", # pylint: too-many-locals
+]
 
-        [tool.ruff.lint.flake8-builtins]
-        builtins-allowed-modules = [
-            "copy",
-            "dataclasses",
-            "inspect",
-            "io",
-            "json",
-            "pickle",
-            "string",
-            "types",
-            "typing",
-        ]
+[tool.ruff.lint.flake8-builtins]
+builtins-allowed-modules = [
+  "copy",
+  "dataclasses",
+  "inspect",
+  "io",
+  "json",
+  "pickle",
+  "string",
+  "types",
+  "typing",
+]
 
-        [tool.ruff.lint.flake8-import-conventions.extend-aliases]
-        "ctypes" = "ct"
-        "datetime" = "dt"
-        "numpy.typing" = "npt"
-        "optype.numpy" = "onp"
-        "optype.typing" = "opt"
+[tool.ruff.lint.flake8-import-conventions.extend-aliases]
+"ctypes" = "ct"
+"datetime" = "dt"
+"numpy.typing" = "npt"
+"optype.numpy" = "onp"
+"optype.typing" = "opt"
 
-        [tool.ruff.lint.flake8-errmsg]
-        max-string-length = 42 # this took a while to figure out
+[tool.ruff.lint.flake8-errmsg]
+max-string-length = 42 # this took a while to figure out
 
-        [tool.ruff.lint.flake8-type-checking]
-        exempt-modules = [
-            "collections.abc",
-            "types",
-            "typing",
-            "typing_extensions",
-            "._can",
-            "._do",
-            "._does",
-            "._has",
-            "._just",
-        ]
+[tool.ruff.lint.flake8-type-checking]
+exempt-modules = [
+  "collections.abc",
+  "types",
+  "typing",
+  "typing_extensions",
+  "._can",
+  "._do",
+  "._does",
+  "._has",
+  "._just",
+]
 
-        [tool.ruff.lint.isort]
-        combine-as-imports = true
-        known-local-folder = ["optype"]
-        extra-standard-library = ["_typeshed", "typing_extensions"]
-        known-third-party = ["beartype", "numpy", "pytest"]
+[tool.ruff.lint.isort]
+combine-as-imports = true
+known-local-folder = ["optype"]
+extra-standard-library = ["_typeshed", "typing_extensions"]
+known-third-party = ["beartype", "numpy", "pytest"]
 
-        [tool.ruff.lint.pylint]
-        allow-dunder-method-names = [
-            "__name__",        # attr of e.g. `type` and `function`
-            "__qualname__",    # attr like `__name__`
-            "__replace__",     # method used by `copy.replace` (py313+)
-            "__self__",        # attr of a bound method
-            "__func__",        # attr of e.g. `classmethod`
-            "__wrapped__",     # attr of e.g. `classmethod`
-            "__type_params__", # attr of e.g. `Generic` instances
+[tool.ruff.lint.pylint]
+allow-dunder-method-names = [
+  "__name__", # attr of e.g. `type` and `function`
+  "__qualname__", # attr like `__name__`
+  "__replace__", # method used by `copy.replace` (py313+)
+  "__self__", # attr of a bound method
+  "__func__", # attr of e.g. `classmethod`
+  "__wrapped__", # attr of e.g. `classmethod`
+  "__type_params__", # attr of e.g. `Generic` instances
 
-            # used within the `typing` standard library
-            "__value__",
-            "__origin__",
-            "__args__",
-            "__metadata__",
-            "__parameters__",
-            "__typing_unpacked_tuple_args__",
-            "__typing_is_unpacked_typevartuple__",
+  # used within the `typing` standard library
+  "__value__",
+  "__origin__",
+  "__args__",
+  "__metadata__",
+  "__parameters__",
+  "__typing_unpacked_tuple_args__",
+  "__typing_is_unpacked_typevartuple__",
 
-            # `dlpack`
-            "__dlpack__",
-            "__dlpack_device__",
+  # `dlpack`
+  "__dlpack__",
+  "__dlpack_device__",
 
-            # `numpy` special methods
-            "__array__",
-            "__array_finalize__",
-            "__array_function__",
-            "__array_priority__",
-            "__array_ufunc__",
-            "__array_wrap__",
-            "__array_interface__",
-            "__array_struct__",
-        ]
-        allow-magic-value-types = ["int"]
-
+  # `numpy` special methods
+  "__array__",
+  "__array_finalize__",
+  "__array_function__",
+  "__array_priority__",
+  "__array_ufunc__",
+  "__array_wrap__",
+  "__array_interface__",
+  "__array_struct__",
+]
+allow-magic-value-types = ["int"]
 
 [tool.tox]
 isolated_build = true
 env_list = ["repo-review", "3.11", "3.12", "3.13"]
 
-    [tool.tox.env_run_base]
-    description = "test with {base_python}"
-    skip_install = true
-    allowlist_externals = ["uv"]
-    commands_pre = [["uv", "sync", "--frozen"]]
-    commands = [["uv", "run", "pytest"]]
+[tool.tox.env_run_base]
+description = "test with {base_python}"
+skip_install = true
+allowlist_externals = ["uv"]
+commands_pre = [["uv", "sync", "--frozen"]]
+commands = [["uv", "run", "pytest"]]
 
-    [tool.tox.env.repo-review]
-    description = "repo-review"
-    skip_install = true
-    allowlist_externals = ["uv"]
-    commands_pre = [["uv", "sync", "--frozen"]]
-    commands = [["uv", "run", "repo-review", "."]]
-
+[tool.tox.env.repo-review]
+description = "repo-review"
+skip_install = true
+allowlist_externals = ["uv"]
+commands_pre = [["uv", "sync", "--frozen"]]
+commands = [["uv", "run", "repo-review", "."]]
 
 [tool.typos.default]
 extend-ignore-identifiers-re = [
-    "ND|nd",
-    "(N|n)in",
-    "Mode(R|W|X|A|O|_)(B|T|_)(U|_)?",
-    "ba",                             # file mode string
+  "ND|nd",
+  "(N|n)in",
+  "Mode(R|W|X|A|O|_)(B|T|_)(U|_)?",
+  "ba", # file mode string
 ]

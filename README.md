@@ -216,23 +216,23 @@ The API of `optype` is flat; a single `import optype as opt` is all you need
 <!-- TOC start (generated with https://github.com/derlin/bitdowntoc) -->
 
 - [`optype`](#optype)
-    - [`Just`](#just)
-    - [Builtin type conversion](#builtin-type-conversion)
-    - [Rich relations](#rich-relations)
-    - [Binary operations](#binary-operations)
-    - [Reflected operations](#reflected-operations)
-    - [Inplace operations](#inplace-operations)
-    - [Unary operations](#unary-operations)
-    - [Rounding](#rounding)
-    - [Callables](#callables)
-    - [Iteration](#iteration)
-    - [Awaitables](#awaitables)
-    - [Async Iteration](#async-iteration)
-    - [Containers](#containers)
-    - [Attributes](#attributes)
-    - [Context managers](#context-managers)
-    - [Descriptors](#descriptors)
-    - [Buffer types](#buffer-types)
+  - [`Just`](#just)
+  - [Builtin type conversion](#builtin-type-conversion)
+  - [Rich relations](#rich-relations)
+  - [Binary operations](#binary-operations)
+  - [Reflected operations](#reflected-operations)
+  - [Inplace operations](#inplace-operations)
+  - [Unary operations](#unary-operations)
+  - [Rounding](#rounding)
+  - [Callables](#callables)
+  - [Iteration](#iteration)
+  - [Awaitables](#awaitables)
+  - [Async Iteration](#async-iteration)
+  - [Containers](#containers)
+  - [Attributes](#attributes)
+  - [Context managers](#context-managers)
+  - [Descriptors](#descriptors)
+  - [Buffer types](#buffer-types)
 - [`optype.copy`](#optypecopy)
 - [`optype.dataclasses`](#optypedataclasses)
 - [`optype.inspect`](#optypeinspect)
@@ -241,18 +241,18 @@ The API of `optype` is flat; a single `import optype as opt` is all you need
 - [`optype.pickle`](#optypepickle)<!-- - - [`optype.rick`](#optyperick) -->
 - [`optype.string`](#optypestring)
 - [`optype.typing`](#optypetyping)
-    - [`Any*` type aliases](#any-type-aliases)
-    - [`Empty*` type aliases](#empty-type-aliases)
-    - [Literal types](#literal-types)
+  - [`Any*` type aliases](#any-type-aliases)
+  - [`Empty*` type aliases](#empty-type-aliases)
+  - [Literal types](#literal-types)
 - [`optype.dlpack`](#optypedlpack)
 - [`optype.numpy`](#optypenumpy)
-    - [Shape-typing](#shape-typing)
-    - [Array-likes](#array-likes)
-    - [Literals](#literals)
-    - [`compat` submodule](#compat-submodule)
-    - [`random` submodule](#random-submodule)
-    - [`Any*Array` and `Any*DType`](#anyarray-and-anydtype)
-    - [Low-level interfaces](#low-level-interfaces)
+  - [Shape-typing](#shape-typing)
+  - [Array-likes](#array-likes)
+  - [Literals](#literals)
+  - [`compat` submodule](#compat-submodule)
+  - [`random` submodule](#random-submodule)
+  - [`Any*Array` and `Any*DType`](#anyarray-and-anydtype)
+  - [Low-level interfaces](#low-level-interfaces)
 
 <!-- TOC end -->
 
@@ -260,33 +260,28 @@ The API of `optype` is flat; a single `import optype as opt` is all you need
 
 There are five flavors of things that live within `optype`,
 
--
-    The `optype.Just[T]` and its `optype.Just{Int,Float,Complex}` subtypes only accept
-    instances of the type itself, while rejecting instances of strict subtypes.
-    This can be be used to e.g. work around the `float` and `complex`
-    [type promotions][BAD], annotating `object()` sentinels with `Just[object]`,
-    rejecting `bool` in functions that accept `int`, etc.
--
-    `optype.Can{}` types describe *what can be done* with it.
-    For instance, any `CanAbs[T]` type can be used as argument to the `abs()`
-    builtin function with return type `T`. Most `Can{}` implement a single
-    special method, whose name directly matched that of the type. `CanAbs`
-    implements `__abs__`, `CanAdd` implements `__add__`, etc.
--
-    `optype.Has{}` is the analogue of `Can{}`, but for special *attributes*.
-    `HasName` has a `__name__` attribute, `HasDict` has a `__dict__`, etc.
--
-    `optype.Does{}` describe the *type of operators*.
-    So `DoesAbs` is the type of the `abs({})` builtin function,
-    and `DoesPos` the type of the `+{}` prefix operator.
--
-    `optype.do_{}` are the correctly-typed implementations of `Does{}`. For
-    each `do_{}` there is a `Does{}`, and vice-versa.
-    So `do_abs: DoesAbs` is the typed alias of `abs({})`,
-    and `do_pos: DoesPos` is a typed version of `operator.pos`.
-    The `optype.do_` operators are more complete than `operators`,
-    have runtime-accessible type annotations, and have names you don't
-    need to know by heart.
+- The `optype.Just[T]` and its `optype.Just{Int,Float,Complex}` subtypes only accept
+  instances of the type itself, while rejecting instances of strict subtypes.
+  This can be be used to e.g. work around the `float` and `complex`
+  [type promotions][BAD], annotating `object()` sentinels with `Just[object]`,
+  rejecting `bool` in functions that accept `int`, etc.
+- `optype.Can{}` types describe *what can be done* with it.
+  For instance, any `CanAbs[T]` type can be used as argument to the `abs()`
+  builtin function with return type `T`. Most `Can{}` implement a single
+  special method, whose name directly matched that of the type. `CanAbs`
+  implements `__abs__`, `CanAdd` implements `__add__`, etc.
+- `optype.Has{}` is the analogue of `Can{}`, but for special *attributes*.
+  `HasName` has a `__name__` attribute, `HasDict` has a `__dict__`, etc.
+- `optype.Does{}` describe the *type of operators*.
+  So `DoesAbs` is the type of the `abs({})` builtin function,
+  and `DoesPos` the type of the `+{}` prefix operator.
+- `optype.do_{}` are the correctly-typed implementations of `Does{}`. For
+  each `do_{}` there is a `Does{}`, and vice-versa.
+  So `do_abs: DoesAbs` is the typed alias of `abs({})`,
+  and `do_pos: DoesPos` is a typed version of `operator.pos`.
+  The `optype.do_` operators are more complete than `operators`,
+  have runtime-accessible type annotations, and have names you don't
+  need to know by heart.
 
 The reference docs are structured as follows:
 
@@ -944,8 +939,9 @@ They are named like the original, but prefixed with `CanR` prefix, i.e.
 > reflect in Python.
 >
 > According to the relevant [python docs][RPOW]:
-> > Note that ternary `pow()` will not try calling `__rpow__()` (the coercion
-> > rules would become too complicated).
+>
+>> Note that ternary `pow()` will not try calling `__rpow__()` (the coercion
+>> rules would become too complicated).
 
 [RPOW]: https://docs.python.org/3/reference/datamodel.html#object.__rpow__
 
@@ -3191,7 +3187,7 @@ denoted as [ufuncs][DOC-UFUNC], which are (callable) instances of
 > Custom ufuncs can be created using [`np.frompyfunc`][REF_FROMPY], but also
 > through a user-defined class that implements the required attributes and
 > methods (i.e., duck typing).
->
+
 But `np.ufunc` has a big issue; it accepts no type parameters.
 This makes it very difficult to properly annotate its callable signature and
 its literal attributes (e.g. `.nin` and `.identity`).
@@ -3341,7 +3337,7 @@ See the [docs][REF-SCT] for more info on the NumPy scalar type hierarchy.
     <tr>
 <td>
 
-`uint_` [^5]
+`uint_`[^5]
 
 </td>
         <td rowspan="9"><code>unsignedinteger</code></td>
@@ -3428,7 +3424,7 @@ See the [docs][REF-SCT] for more info on the NumPy scalar type hierarchy.
     <tr>
 <td>
 
-`int_` [^5]
+`int_`[^5]
 
 </td>
         <td rowspan="9"><code>signedinteger</code></td>
@@ -3498,7 +3494,9 @@ See the [docs][REF-SCT] for more info on the NumPy scalar type hierarchy.
 </table>
 
 [^5]: Since NumPy 2, `np.uint` and `np.int_` are aliases for `np.uintp` and `np.intp`, respectively.
+
 [^6]: On unix-based platforms `np.[u]intc` are aliases for `np.[u]int32`.
+
 [^7]: On NumPy 1 `np.uint` and `np.int_` are what in NumPy 2 are now the `np.ulong` and `np.long` types, respectively.
 
 ##### Real floats
@@ -3763,12 +3761,14 @@ class CanArray[
 <td>
 
 <!-- blacken-docs:off -->
+
 ```python
 def __array__[RT = ST](
     _,
     dtype: DType[RT] | None = ...,
 ) -> Array[ND, RT]
 ```
+
 <!-- blacken-docs:on -->
 
 </td>
@@ -3876,6 +3876,7 @@ class CanArrayWrap: ...
 <td>
 
 <!-- blacken-docs:off -->
+
 ```python
 def __array_wrap__[ND, ST](
     _,
@@ -3884,6 +3885,7 @@ def __array_wrap__[ND, ST](
     return_scalar: bool = ...,
 ) -> Self | Array[ND, ST]
 ```
+
 <!-- blacken-docs:on -->
 
 </td>
@@ -3970,22 +3972,17 @@ dtype: DT
 [DOC-UFUNC]: https://numpy.org/doc/stable/reference/ufuncs.html
 [DOC-ARRAY]: https://numpy.org/doc/stable/user/basics.interoperability.html#the-array-method
 [DOC-AFIN]: https://numpy.org/doc/stable/user/basics.subclassing.html#the-role-of-array-finalize
-
 [REF_UFUNC]: https://numpy.org/doc/stable/reference/generated/numpy.ufunc.html
 [REF_FROMPY]: https://numpy.org/doc/stable/reference/generated/numpy.frompyfunc.html
 [REF_ARRAY-WRAP]: https://numpy.org/doc/stable/reference/arrays.classes.html#numpy.class.__array_wrap__
 [REF_ARRAY-INTER]: https://numpy.org/doc/stable/reference/arrays.interface.html#python-side
 [REF_ARRAY-PRIO]: https://numpy.org/doc/stable/reference/arrays.classes.html#numpy.class.__array_priority__
 [REF_DTYPE]: https://numpy.org/doc/stable/reference/arrays.dtypes.html#specifying-and-constructing-data-types
-
 [CODE-NP-TO]: https://github.com/jorenham/optype/blob/master/optype/numpy/_to.py
-
 [NEP13]: https://numpy.org/neps/nep-0013-ufunc-overrides.html
 [NEP18]: https://numpy.org/neps/nep-0018-array-function-protocol.html
 [NEP29]: https://numpy.org/neps/nep-0029-deprecation_policy.html
-
 [SPEC0]: https://scientific-python.org/specs/spec-0000/
-
 [PEP695]: https://peps.python.org/pep-0695/
 [PEP696]: https://peps.python.org/pep-0696/
 [PEP742]: https://peps.python.org/pep-0742/
