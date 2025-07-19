@@ -3,6 +3,9 @@ templates:
 
 pre-commit:
   parallel: true
+  skip:
+    - merge
+    - rebase
   jobs:
     - name: uv lock
       glob: pyproject.toml
@@ -22,9 +25,8 @@ pre-commit:
         jobs:
           - name: check
             run: uv {run} ruff check --fix {staged_files}
-
           - name: format
-            run: uv {run} ruff format {staged_files}
+            run: uv {run} ruff format --quiet {staged_files}
 
     - name: basedpyright
       glob: "*.{py,pyi}"
@@ -32,7 +34,12 @@ pre-commit:
 
     - name: mypy
       glob: "*.{py,pyi}"
-      run: uv {run} scripts/my.py {staged_files}
+      skip: true # too slow
+      run: uv {run} scripts/my.py
+
+    - name: pytest
+      glob: "*.{py,pyi}"
+      run: uv {run} pytest --quiet --no-summary
 
 post-checkout:
   jobs:
