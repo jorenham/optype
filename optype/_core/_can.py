@@ -215,6 +215,7 @@ _T_int_co = TypeVar("_T_int_co", default=int, covariant=True)
 _T_float_co = TypeVar("_T_float_co", default=float, covariant=True)
 _T_None_co = TypeVar("_T_None_co", default=None, covariant=True)
 _T_Never_contra = TypeVar("_T_Never_contra", default=Never, contravariant=True)
+_T_Never_co = TypeVar("_T_Never_co", default=Never, covariant=True)
 
 # we can't use `CanIndex` here, because of a recent regression in pyright 1.1.392
 _IndexT_contra = TypeVar(
@@ -610,10 +611,10 @@ class CanAddSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanAddSame(Protocol[_T_Never_contra]):
-    """CanAddSame[-T = Never] = CanAdd[Self | T, Self]"""
+class CanAddSame(Protocol[_T_Never_contra, _T_Never_co]):
+    """CanAddSame[-T = Never, +R = Never] = CanAdd[Self | T, Self | R]"""
 
-    def __add__(self, rhs: Self | _T_Never_contra, /) -> Self: ...
+    def __add__(self, rhs: Self | _T_Never_contra, /) -> Self | _T_Never_co: ...
 
 
 # __sub__
@@ -632,10 +633,10 @@ class CanSubSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanSubSame(Protocol[_T_Never_contra]):
-    """CanSubSame[-T = Never] = CanSub[Self | T, Self]"""
+class CanSubSame(Protocol[_T_Never_contra, _T_Never_co]):
+    """CanSubSame[-T = Never, +R = Never] = CanSub[Self | T, Self | R]"""
 
-    def __sub__(self, rhs: Self | _T_Never_contra, /) -> Self: ...
+    def __sub__(self, rhs: Self | _T_Never_contra, /) -> Self | _T_Never_co: ...
 
 
 # __mul__
@@ -654,10 +655,10 @@ class CanMulSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanMulSame(Protocol[_T_Never_contra]):
-    """CanMulSame[-T = Never] = CanMul[Self | T, Self]"""
+class CanMulSame(Protocol[_T_Never_contra, _T_Never_co]):
+    """CanMulSame[-T = Never, +R = Never] = CanMul[Self | T, Self | R]"""
 
-    def __mul__(self, rhs: Self | _T_Never_contra, /) -> Self: ...
+    def __mul__(self, rhs: Self | _T_Never_contra, /) -> Self | _T_Never_co: ...
 
 
 # __matmul__
@@ -676,10 +677,10 @@ class CanMatmulSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanMatmulSame(Protocol[_T_Never_contra]):
-    """CanMatmulSame[-T = Never] = CanMatmul[Self | T, Self]"""
+class CanMatmulSame(Protocol[_T_Never_contra, _T_Never_co]):
+    """CanMatmulSame[-T = Never, +R = Never] = CanMatmul[Self | T, Self | R]"""
 
-    def __matmul__(self, rhs: Self | _T_Never_contra, /) -> Self: ...
+    def __matmul__(self, rhs: Self | _T_Never_contra, /) -> Self | _T_Never_co: ...
 
 
 # __truediv__
@@ -698,10 +699,10 @@ class CanTruedivSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanTruedivSame(Protocol[_T_Never_contra]):
-    """CanTruedivSame[-T = Never] = CanTruediv[Self | T, Self]"""
+class CanTruedivSame(Protocol[_T_Never_contra, _T_Never_co]):
+    """CanTruedivSame[-T = Never, +R = Never] = CanTruediv[Self | T, Self | R]"""
 
-    def __truediv__(self, rhs: Self | _T_Never_contra, /) -> Self: ...
+    def __truediv__(self, rhs: Self | _T_Never_contra, /) -> Self | _T_Never_co: ...
 
 
 # __floordiv__
@@ -720,10 +721,10 @@ class CanFloordivSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanFloordivSame(Protocol[_T_Never_contra]):
-    """CanFloordivSame[-T = Never] = CanFloordiv[Self | T, Self]"""
+class CanFloordivSame(Protocol[_T_Never_contra, _T_Never_co]):
+    """CanFloordivSame[-T = Never, +R = Never] = CanFloordiv[Self | T, Self | R]"""
 
-    def __floordiv__(self, rhs: Self | _T_Never_contra, /) -> Self: ...
+    def __floordiv__(self, rhs: Self | _T_Never_contra, /) -> Self | _T_Never_co: ...
 
 
 # __mod__
@@ -742,10 +743,10 @@ class CanModSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanModSame(Protocol[_T_Never_contra]):
-    """CanModSame[-T = Never] = CanMod[Self | T, Self]"""
+class CanModSame(Protocol[_T_Never_contra, _T_Never_co]):
+    """CanModSame[-T = Never, +R = Never] = CanMod[Self | T, Self | R]"""
 
-    def __mod__(self, rhs: Self | _T_Never_contra, /) -> Self: ...
+    def __mod__(self, rhs: Self | _T_Never_contra, /) -> Self | _T_Never_co: ...
 
 
 # __divmod__
@@ -790,10 +791,10 @@ class CanPowSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanPowSame(Protocol[_T_Never_contra]):
-    """CanPowSame[-T = Never] = CanPow2[Self | T, Self]"""
+class CanPowSame(Protocol[_T_Never_contra, _T_Never_co]):
+    """CanPowSame[-T = Never, +R = Never] = CanPow2[Self | T, Self | R]"""
 
-    def __pow__(self, rhs: Self | _T_Never_contra, /) -> Self: ...
+    def __pow__(self, rhs: Self | _T_Never_contra, /) -> Self | _T_Never_co: ...
 
 
 # __lshift__
@@ -812,10 +813,10 @@ class CanLshiftSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanLshiftSame(Protocol[_T_Never_contra]):
-    """CanLshiftSame[-T = Never] = CanLshift[Self | T, Self]"""
+class CanLshiftSame(Protocol[_T_Never_contra, _T_Never_co]):
+    """CanLshiftSame[-T = Never, +R = Never] = CanLshift[Self | T, Self | R]"""
 
-    def __lshift__(self, rhs: Self | _T_Never_contra, /) -> Self: ...
+    def __lshift__(self, rhs: Self | _T_Never_contra, /) -> Self | _T_Never_co: ...
 
 
 # __rshift__
@@ -834,10 +835,10 @@ class CanRshiftSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanRshiftSame(Protocol[_T_Never_contra]):
-    """CanRshiftSame[-T = Never] = CanRshift[Self | T, Self]"""
+class CanRshiftSame(Protocol[_T_Never_contra, _T_Never_co]):
+    """CanRshiftSame[-T = Never, +R = Never] = CanRshift[Self | T, Self | R]"""
 
-    def __rshift__(self, rhs: Self | _T_Never_contra, /) -> Self: ...
+    def __rshift__(self, rhs: Self | _T_Never_contra, /) -> Self | _T_Never_co: ...
 
 
 # __and__
@@ -856,10 +857,10 @@ class CanAndSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanAndSame(Protocol[_T_Never_contra]):
-    """CanAndSame[-T = Never] = CanAnd[Self | T, Self]"""
+class CanAndSame(Protocol[_T_Never_contra, _T_Never_co]):
+    """CanAndSame[-T = Never, +R = Never] = CanAnd[Self | T, Self | R]"""
 
-    def __and__(self, rhs: Self | _T_Never_contra, /) -> Self: ...
+    def __and__(self, rhs: Self | _T_Never_contra, /) -> Self | _T_Never_co: ...
 
 
 # __xor__
@@ -878,10 +879,10 @@ class CanXorSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanXorSame(Protocol[_T_Never_contra]):
-    """CanXorSame[-T = Never] = CanXor[Self | T, Self]"""
+class CanXorSame(Protocol[_T_Never_contra, _T_Never_co]):
+    """CanXorSame[-T = Never, +R = Never] = CanXor[Self | T, Self | R]"""
 
-    def __xor__(self, rhs: Self | _T_Never_contra, /) -> Self: ...
+    def __xor__(self, rhs: Self | _T_Never_contra, /) -> Self | _T_Never_co: ...
 
 
 # __or__
@@ -900,10 +901,10 @@ class CanOrSelf(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanOrSame(Protocol[_T_Never_contra]):
-    """CanOrSame[-T = Never] = CanOr[Self | T, Self]"""
+class CanOrSame(Protocol[_T_Never_contra, _T_Never_co]):
+    """CanOrSame[-T = Never, +R = Never] = CanOr[Self | T, Self | R]"""
 
-    def __or__(self, rhs: Self | _T_Never_contra, /) -> Self: ...
+    def __or__(self, rhs: Self | _T_Never_contra, /) -> Self | _T_Never_co: ...
 
 
 ###
