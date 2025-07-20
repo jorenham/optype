@@ -1143,7 +1143,7 @@ suffix, e.g. `optype.CanIAddSelf[T]`.
         <td><code>__pos__</code></td>
         <td>
             <code>CanPos[+R]</code><br>
-            <code>CanPosSelf</code>
+            <code>CanPosSelf[+R?]</code>
         </td>
     </tr>
     <tr>
@@ -1153,7 +1153,7 @@ suffix, e.g. `optype.CanIAddSelf[T]`.
         <td><code>__neg__</code></td>
         <td>
             <code>CanNeg[+R]</code><br>
-            <code>CanNegSelf</code>
+            <code>CanNegSelf[+R?]</code>
         </td>
     </tr>
     <tr>
@@ -1163,7 +1163,7 @@ suffix, e.g. `optype.CanIAddSelf[T]`.
         <td><code>__invert__</code></td>
         <td>
             <code>CanInvert[+R]</code><br>
-            <code>CanInvertSelf</code>
+            <code>CanInvertSelf[+R?]</code>
         </td>
     </tr>
     <tr>
@@ -1173,10 +1173,14 @@ suffix, e.g. `optype.CanIAddSelf[T]`.
         <td><code>__abs__</code></td>
         <td>
             <code>CanAbs[+R]</code><br>
-            <code>CanAbsSelf</code>
+            <code>CanAbsSelf[+R?]</code>
         </td>
     </tr>
 </table>
+
+The `Can*Self` variants return `-> Self` instead of `R`. Since optype 0.12.1 these
+also accept an optional `R` type parameter (with a default of `Never`), which, when
+provided, will result in a return type of `-> Self | R`.
 
 #### Rounding
 
