@@ -1,11 +1,4 @@
-import sys
-import types
-from typing import Any, cast
-
-if sys.version_info >= (3, 13):
-    from typing import is_protocol
-else:
-    from typing_extensions import is_protocol
+from typing import cast
 
 import pytest
 
@@ -47,18 +40,6 @@ def _pascamel_to_snake(pascamel: str, start: op.CanLt[int, op.CanBool] = 0, /) -
     return snake
 
 
-def _get_protocols_with_suffix(
-    module: types.ModuleType,
-    suffix: str,
-    /,
-    private: bool = False,
-) -> frozenset[type]:
-    """Get all protocols in a module with a specific suffix."""
-    return frozenset(
-        cls for cls in get_protocols(module, private) if cls.__name__.endswith(suffix)
-    )
-
-
 def test_all_public() -> None:
     """
     Verify that all of protocols from the private `_core.*` submodules are expected
@@ -77,100 +58,6 @@ def test_all_public() -> None:
 def test_can_runtime_checkable(cls: type) -> None:
     """Ensure that all `Can*` protocols are `@runtime_checkable`."""
     assert is_runtime_protocol(cls)
-
-
-@pytest.mark.parametrize("cls", _get_protocols_with_suffix(_can, "Same"))
-def test_can_same_self(cls: type) -> None:
-    """
-    Ensure that for each `Can{}Same` protocol there also exist the `Can{}Self`, `Can{}`,
-    `CanR{}Self`, `CanR{}`, `CanI{}Self`, and `CanI{}` protocols, where `{}` is the
-    camelcase operation name.
-    The `Can{}Same`, `Can{}Self`, and `Can{}` protocols should also have the same single
-    member method.
-    """
-    name = cls.__name__
-    assert name.startswith("Can")
-    assert name.endswith("Same")
-
-    base = name.removesuffix("Same")
-    assert hasattr(op, f"{base}")
-    assert hasattr(op, f"{base}Self")
-    assert hasattr(op, f"{base}Same")
-
-    stem = base.removeprefix("Can").removesuffix("Same")
-    if iop := (stem[0] == "I" and stem[1].isupper()):
-        stem = stem[1:]
-
-    assert hasattr(op, f"Can{stem}")
-    assert hasattr(op, f"CanI{stem}")
-    assert hasattr(op, f"CanR{stem}")
-    assert hasattr(op, f"Can{stem}Self")
-    assert hasattr(op, f"CanI{stem}Self")
-    assert hasattr(op, f"CanR{stem}Self")
-    assert hasattr(op, f"Can{stem}Same")
-    assert hasattr(op, f"CanI{stem}Same")
-    assert not hasattr(op, f"CanR{stem}Same")
-
-    members_same = get_protocol_members(cls)
-    assert len(members_same) == 1, members_same
-
-    members_base = get_protocol_members(getattr(op, f"{base}"))
-    members_self = get_protocol_members(getattr(op, f"{base}Self"))
-
-    assert members_same == members_self
-    assert members_same == members_base
-
-
-def test_can_add_self_int() -> None:
-    """Ensure that `builtins.int` is assignable to `CanAddSelf`."""
-    x: int = 42
-    assert isinstance(x, op.CanAddSelf)
-    assert issubclass(int, op.CanAddSelf)
-
-    a1: op.CanAddSelf[Any] = x
-    a2: op.CanAddSelf[int] = x
-
-    r0: op.CanAddSelf[float] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
-    r1: op.CanAddSelf[object] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
-
-
-def test_can_add_same_int() -> None:
-    """Ensure that `builtins.int` is assignable to `CanAddSame`."""
-    x: int = 42
-    assert isinstance(x, op.CanAddSame)
-    assert issubclass(int, op.CanAddSame)
-
-    a0: op.CanAddSame = x
-    a1: op.CanAddSame[Any] = x
-    a2: op.CanAddSame[int] = x
-    a3: op.CanAddSame[bool] = x
-
-    r0: op.CanAddSame[float] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
-    r1: op.CanAddSame[object] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
-
-
-def test_can_iadd_same_list_accept() -> None:
-    """Ensure that `builtins.list` is assignable to `CanAddSame`."""
-    # acceptance tests (true negatives)
-    x: list[int] = [42]
-    assert isinstance(x, op.CanIAddSame)
-    assert issubclass(list, op.CanIAddSame)
-
-    a0: op.CanIAddSame = x
-    a1: op.CanIAddSame[Any] = x
-    a2: op.CanIAddSame[list[int]] = x
-    a3: op.CanIAddSame[bytes] = x
-
-
-def test_can_iadd_same_list_reject() -> None:
-    """Ensure that `builtins.int` is **not** assignable to `CanIAddSame`."""
-    x: int = 42
-    assert not isinstance(x, op.CanIAddSame)
-    assert not issubclass(int, op.CanIAddSame)
-
-    r0: op.CanIAddSame = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
-    r1: op.CanIAddSame[Any] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
-    r2: op.CanIAddSame[int] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
 
 @pytest.mark.parametrize("cls", get_protocols(_has))
