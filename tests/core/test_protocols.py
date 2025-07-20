@@ -163,7 +163,7 @@ def test_can_iadd_same_list_accept() -> None:
 
 
 def test_can_iadd_same_list_reject() -> None:
-    """Ensure that `builtins.int` is **not** assignable to `CanAddSame`."""
+    """Ensure that `builtins.int` is **not** assignable to `CanIAddSame`."""
     x: int = 42
     assert not isinstance(x, op.CanIAddSame)
     assert not issubclass(int, op.CanIAddSame)
