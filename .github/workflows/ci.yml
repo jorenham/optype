@@ -65,7 +65,7 @@ jobs:
       - name: install deps
         run: |
           uv sync --no-editable
-          uv pip install numpy==${{ matrix.np }}
+          uv pip install numpy==${{ matrix.np }}.*
 
       # NOTE: mypy ignores `uv run --with=...` (and `--isolated` does not help)
       - name: mypy
@@ -100,4 +100,4 @@ jobs:
           python-version: ${{ matrix.py }}
 
       - name: pytest
-        run: uv run --with="numpy==${{ matrix.np }}" pytest
+        run: uv run --with="numpy==${{ matrix.np }}.*" pytest
