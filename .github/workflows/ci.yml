@@ -85,13 +85,12 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        py: ["3.11", "3.13"]
+        py: ["3.11", "3.13", "3.14"]
         np: ["1.25", "2.3"]
-        include:
-          - py: "3.14"
-            np: "2.3"
         exclude:
           - py: "3.13"
+            np: "1.25"
+          - py: "3.14"
             np: "1.25"
     steps:
       - uses: actions/checkout@v4
