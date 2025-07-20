@@ -61,7 +61,7 @@ import optype.numpy.compat as npc
   `Does*`, and `do_*`)
 - NumPy-specific types in `optype/numpy/`
 - Standard library types in appropriate modules (e.g., `optype/copy.py` and
-  `optype/picke.py`)
+  `optype/pickle.py`)
 - Tests mirror the package structure in `tests/`
 
 ## Development Workflow
