@@ -462,7 +462,6 @@ __all__ = [
     "CanIXor",
     "CanIXorSame",
     "CanIXorSelf",
-    "CanIXorSelf",
     "CanIndex",
     "CanInt",
     "CanInvert",
