@@ -51,8 +51,9 @@ test = [
 type = [
   { include-group = "extra" },
   { include-group = "test" },
-  "mypy[faster-cache]>=1.17.0",
   "basedpyright>=1.31.0",
+  "mypy>=1.17.0",
+  "orjson>=3.11.0; python_version<'3.14'", # used by mypy, but no 3.14 wheels yet
 ]
 dev = [
   { include-group = "extra" },

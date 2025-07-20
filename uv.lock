@@ -118,11 +118,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/e3/fc/ee058cc4316f219078464555873e99d170bde1d9569abd833300dbeb484a/mypy-1.17.0-py3-none-any.whl", hash = "sha256:15d9d0018237ab058e5de3d8fce61b6fa72cc59cc78fd91f1b474bce12abf496", size = 2283195, upload-time = "2025-07-14T20:31:54.753Z" },
 ]
 
-[package.optional-dependencies]
-faster-cache = [
-    { name = "orjson" },
-]
-
 [[package]]
 name = "mypy-extensions"
 version = "1.1.0"
@@ -224,8 +219,9 @@ dev = [
     { name = "basedpyright" },
     { name = "beartype" },
     { name = "dprint-py" },
-    { name = "mypy", extra = ["faster-cache"] },
+    { name = "mypy" },
     { name = "optype", extra = ["numpy"] },
+    { name = "orjson", marker = "python_full_version < '3.14'" },
     { name = "pytest" },
     { name = "ruff" },
     { name = "sp-repo-review", extra = ["cli"] },
@@ -248,8 +244,9 @@ test = [
 type = [
     { name = "basedpyright" },
     { name = "beartype" },
-    { name = "mypy", extra = ["faster-cache"] },
+    { name = "mypy" },
     { name = "optype", extra = ["numpy"] },
+    { name = "orjson", marker = "python_full_version < '3.14'" },
     { name = "pytest" },
     { name = "typing-extensions" },
 ]
@@ -266,8 +263,9 @@ dev = [
     { name = "basedpyright", specifier = ">=1.31.0" },
     { name = "beartype", specifier = ">=0.21.0" },
     { name = "dprint-py", specifier = ">=0.50.0.0" },
-    { name = "mypy", extras = ["faster-cache"], specifier = ">=1.17.0" },
+    { name = "mypy", specifier = ">=1.17.0" },
     { name = "optype", extras = ["numpy"] },
+    { name = "orjson", marker = "python_full_version < '3.14'", specifier = ">=3.11.0" },
     { name = "pytest", specifier = ">=8.4.1" },
     { name = "ruff", specifier = ">=0.12.4" },
     { name = "sp-repo-review", extras = ["cli"], specifier = ">=2025.5.2" },
@@ -288,8 +286,9 @@ test = [
 type = [
     { name = "basedpyright", specifier = ">=1.31.0" },
     { name = "beartype", specifier = ">=0.21.0" },
-    { name = "mypy", extras = ["faster-cache"], specifier = ">=1.17.0" },
+    { name = "mypy", specifier = ">=1.17.0" },
     { name = "optype", extras = ["numpy"] },
+    { name = "orjson", marker = "python_full_version < '3.14'", specifier = ">=3.11.0" },
     { name = "pytest", specifier = ">=8.4.1" },
     { name = "typing-extensions", specifier = ">=4.14.1" },
 ]
