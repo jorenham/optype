@@ -88,7 +88,7 @@ See the [`optype.numpy` docs](#optypenumpy) for more info.
 
 ### Conda
 
-Optype can also be installed as with `conda` from the [`conda-forge`][CONDA] channel:
+Optype can also be installed with `conda` from the [`conda-forge`][CONDA] channel:
 
 ```shell
 conda install conda-forge::optype
@@ -262,13 +262,13 @@ There are five flavors of things that live within `optype`,
 
 - The `optype.Just[T]` and its `optype.Just{Int,Float,Complex}` subtypes only accept
   instances of the type itself, while rejecting instances of strict subtypes.
-  This can be be used to e.g. work around the `float` and `complex`
+  This can be used to e.g. work around the `float` and `complex`
   [type promotions][BAD], annotating `object()` sentinels with `Just[object]`,
   rejecting `bool` in functions that accept `int`, etc.
 - `optype.Can{}` types describe *what can be done* with it.
   For instance, any `CanAbs[T]` type can be used as argument to the `abs()`
   builtin function with return type `T`. Most `Can{}` implement a single
-  special method, whose name directly matched that of the type. `CanAbs`
+  special method, whose name directly matches that of the type. `CanAbs`
   implements `__abs__`, `CanAdd` implements `__add__`, etc.
 - `optype.Has{}` is the analogue of `Can{}`, but for special *attributes*.
   `HasName` has a `__name__` attribute, `HasDict` has a `__dict__`, etc.
@@ -301,7 +301,7 @@ type stubs.
 
 #### `Just`
 
-`Just` is in invariant type "wrapper", where `Just[T]` only accepts instances of `T`,
+`Just` is an invariant type "wrapper", where `Just[T]` only accepts instances of `T`,
 and rejects instances of any strict subtypes of `T`.
 
 Note that e.g. `Literal[""]` and `LiteralString` are not a strict `str` subtypes,
@@ -1107,7 +1107,7 @@ Similar to the reflected ops, the inplace/augmented ops are prefixed with
     </tr>
 </table>
 
-These inplace operators usually return itself (after some in-place mutation).
+These inplace operators usually return themselves (after some in-place mutation).
 But unfortunately, it currently isn't possible to use `Self` for this (i.e.
 something like `type MyAlias[T] = optype.CanIAdd[T, Self]` isn't allowed).
 So to help ease this unbearable pain, `optype` comes equipped with ready-made
@@ -1277,14 +1277,14 @@ Furthermore, there are the alternative rounding functions from the
 
 Almost all implementations use `int` for `R`.
 In fact, if no type for `R` is specified, it will default in `int`.
-But technially speaking, these methods can be made to return anything.
+But technically speaking, these methods can be made to return anything.
 
 [MATH]: https://docs.python.org/3/library/math.html
 [NT]: https://docs.python.org/3/reference/datamodel.html#emulating-numeric-types
 
 #### Callables
 
-Unlike `operator`, `optype` provides the operator for callable objects:
+Unlike `operator`, `optype` provides an operator for callable objects:
 `optype.do_call(f, *args. **kwargs)`.
 
 `CanCall` is similar to `collections.abc.Callable`, but is runtime-checkable,
@@ -1345,7 +1345,7 @@ So even if the overhead of the inheritance and the `abc.ABC` usage is ignored,
 `collections.abc.Iterator` is twice as slow as it needs to be.
 
 That's one of the (many) reasons that `optype.CanNext[V]` and
-`optype.CanNext[V]` are the better alternatives to `Iterable` and `Iterator`
+`optype.CanIter[R]` are the better alternatives to `Iterable` and `Iterator`
 from the abracadabra collections. This is how they are defined:
 
 <table>
@@ -1384,7 +1384,7 @@ nonsense.
 
 #### Awaitables
 
-The `optype` is almost the same as `collections.abc.Awaitable[R]`, except
+The `optype.CanAwait[R]` is almost the same as `collections.abc.Awaitable[R]`, except
 that `optype.CanAwait[R]` is a pure interface, whereas `Awaitable` is
 also an abstract base class (making it absolutely useless when writing stubs).
 
@@ -1443,8 +1443,7 @@ But fret not; the `optype` alternatives are right here:
 But wait, shouldn't `V` be a `CanAwait`? Well, only if you don't want to get
 fired...
 Technically speaking, `__anext__` can return any type, and `anext` will pass
-it along without nagging (instance checks are slow, now stop bothering that
-liberal). For details, see the discussion at [python/typeshed#7491][AN].
+it along without nagging. For details, see the discussion at [python/typeshed#7491][AN].
 Just because something is legal, doesn't mean it's a good idea (don't eat the
 yellow snow).
 
@@ -1524,7 +1523,7 @@ Additionally, there is `optype.CanAIterSelf[R]`, with both the
     </tr>
     <tr>
         <td><code>reversed(_)</code></td>
-        <td><code>do_reversed</code></td></td>
+        <td><code>do_reversed</code></td>
         <td><code>DoesReversed</code></td>
         <td><code>__reversed__</code></td>
         <td>
@@ -1877,7 +1876,7 @@ therefore be treated equally:
 (<class 'str'>, <class 'bytes'>)
 ```
 
-Clearly, `typing.get_args` fails misarably here; it would have been better
+Clearly, `typing.get_args` fails miserably here; it would have been better
 if it would have raised an error, but it instead returns an empty tuple,
 hiding the fact that it doesn't support the new `type _ = ...` aliases.
 But luckily, `optype.inspect.get_args` doesn't have this problem, and treats
@@ -2042,8 +2041,8 @@ are accessible at runtime, and use a consistent naming scheme.
     </tr>
     <tr>
         <td><code>CanFlush[+RT = object]</code></td>
-        <td><code>write: (T) -> RT</code></td>
-        <td><code>_typeshed.SupportsWrite</code></td>
+        <td><code>flush: () -> RT</code></td>
+        <td><code>_typeshed.SupportsFlush</code></td>
     </tr>
     <tr>
         <td><code>CanFileno</code></td>
