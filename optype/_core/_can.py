@@ -1429,10 +1429,10 @@ class CanNeg(Protocol[_T_co]):
 
 
 @runtime_checkable
-class CanNegSelf(Protocol):
-    """CanNegSelf = CanNeg[Self]"""
+class CanNegSelf(Protocol[_T_Never_co]):
+    """CanNegSelf[+T = Never] = CanNeg[Self | T]"""
 
-    def __neg__(self, /) -> Self: ...
+    def __neg__(self, /) -> Self | _T_Never_co: ...
 
 
 # __pos__
@@ -1444,10 +1444,10 @@ class CanPos(Protocol[_T_co]):
 
 
 @runtime_checkable
-class CanPosSelf(Protocol):
-    """CanPosSelf = CanPos[Self]"""
+class CanPosSelf(Protocol[_T_Never_co]):
+    """CanPosSelf[+T = Never] = CanPos[Self | T]"""
 
-    def __pos__(self, /) -> Self: ...
+    def __pos__(self, /) -> Self | _T_Never_co: ...
 
 
 # __abs__
@@ -1459,10 +1459,10 @@ class CanAbs(Protocol[_T_co]):
 
 
 @runtime_checkable
-class CanAbsSelf(Protocol):
-    """CanAbsSelf = CanAbs[Self]"""
+class CanAbsSelf(Protocol[_T_Never_co]):
+    """CanAbsSelf[+T = Never] = CanAbs[Self | T]"""
 
-    def __abs__(self, /) -> Self: ...
+    def __abs__(self, /) -> Self | _T_Never_co: ...
 
 
 # __invert__
@@ -1474,10 +1474,10 @@ class CanInvert(Protocol[_T_co]):
 
 
 @runtime_checkable
-class CanInvertSelf(Protocol):
-    """CanInvertSelf = CanInvert[Self]"""
+class CanInvertSelf(Protocol[_T_Never_co]):
+    """CanInvertSelf[+T = Never] = CanInvert[Self | T]"""
 
-    def __invert__(self, /) -> Self: ...
+    def __invert__(self, /) -> Self | _T_Never_co: ...
 
 
 ###
