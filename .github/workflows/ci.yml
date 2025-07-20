@@ -79,7 +79,7 @@ jobs:
           basedpyright -p scripts/config/bpr-np-${{ matrix.np }}.json
 
   test:
-    timeout-minutes: 5
+    timeout-minutes: 10
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
