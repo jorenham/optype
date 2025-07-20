@@ -65,7 +65,7 @@ jobs:
       - name: install deps
         run: |
           uv sync --no-editable
-          uv pip install numpy==${{ matrix.np }}
+          uv pip install numpy==${{ matrix.np }}.*
 
       # NOTE: mypy ignores `uv run --with=...` (and `--isolated` does not help)
       - name: mypy
@@ -79,17 +79,21 @@ jobs:
           basedpyright -p scripts/config/bpr-np-${{ matrix.np }}.json
 
   test:
-    timeout-minutes: 5
+    timeout-minutes: 10
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        py: ["3.11", "3.13"]
+        py: ["3.11", "3.13", "3.14"]
         np: ["1.25", "2.3"]
         exclude:
           - py: "3.13"
             np: "1.25"
+          - py: "3.14"
+            np: "1.25"
+          - os: windows-latest
+            py: "3.14"
     steps:
       - uses: actions/checkout@v4
 
@@ -98,4 +102,4 @@ jobs:
           python-version: ${{ matrix.py }}
 
       - name: pytest
-        run: uv run --with="numpy==${{ matrix.np }}" pytest
+        run: uv run --with="numpy==${{ matrix.np }}.*" pytest
