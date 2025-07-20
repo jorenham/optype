@@ -92,40 +92,85 @@ def test_can_same_self(cls: type) -> None:
     assert name.startswith("Can")
     assert name.endswith("Same")
 
-    stem = name.removeprefix("Can").removesuffix("Same")
+    base = name.removesuffix("Same")
+    assert hasattr(op, f"{base}")
+    assert hasattr(op, f"{base}Self")
+    assert hasattr(op, f"{base}Same")
+
+    stem = base.removeprefix("Can").removesuffix("Same")
+    if iop := (stem[0] == "I" and stem[1].isupper()):
+        stem = stem[1:]
+
     assert hasattr(op, f"Can{stem}")
-    assert hasattr(op, f"CanR{stem}")
     assert hasattr(op, f"CanI{stem}")
+    assert hasattr(op, f"CanR{stem}")
     assert hasattr(op, f"Can{stem}Self")
-    assert hasattr(op, f"CanR{stem}Self")
     assert hasattr(op, f"CanI{stem}Self")
+    assert hasattr(op, f"CanR{stem}Self")
     assert hasattr(op, f"Can{stem}Same")
+    assert hasattr(op, f"CanI{stem}Same")
     assert not hasattr(op, f"CanR{stem}Same")
-    assert not hasattr(op, f"CanI{stem}Same")
 
     members_same = get_protocol_members(cls)
     assert len(members_same) == 1, members_same
 
-    members_base = get_protocol_members(getattr(op, f"Can{stem}"))
-    members_self = get_protocol_members(getattr(op, f"Can{stem}Self"))
+    members_base = get_protocol_members(getattr(op, f"{base}"))
+    members_self = get_protocol_members(getattr(op, f"{base}Self"))
 
     assert members_same == members_self
     assert members_same == members_base
 
 
+def test_can_add_self_int() -> None:
+    """Ensure that `builtins.int` is assignable to `CanAddSelf`."""
+    x: int = 42
+    assert isinstance(x, op.CanAddSelf)
+    assert issubclass(int, op.CanAddSelf)
+
+    a1: op.CanAddSelf[Any] = x
+    a2: op.CanAddSelf[int] = x
+
+    r0: op.CanAddSelf[float] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    r1: op.CanAddSelf[object] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+
+
 def test_can_add_same_int() -> None:
     """Ensure that `builtins.int` is assignable to `CanAddSame`."""
-    assert issubclass(int, op.CanAddSame)
-
     x: int = 42
     assert isinstance(x, op.CanAddSame)
+    assert issubclass(int, op.CanAddSame)
 
-    y0: op.CanAddSame = x
-    y1: op.CanAddSame[Any] = x
-    y2: op.CanAddSame[int] = x
+    a0: op.CanAddSame = x
+    a1: op.CanAddSame[Any] = x
+    a2: op.CanAddSame[int] = x
+    a3: op.CanAddSame[bool] = x
 
-    z1: op.CanAddSelf[Any] = x
-    z2: op.CanAddSelf[int] = x
+    r0: op.CanAddSame[float] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    r1: op.CanAddSame[object] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+
+
+def test_can_iadd_same_list_accept() -> None:
+    """Ensure that `builtins.list` is assignable to `CanAddSame`."""
+    # acceptance tests (true negatives)
+    x: list[int] = [42]
+    assert isinstance(x, op.CanIAddSame)
+    assert issubclass(list, op.CanIAddSame)
+
+    a0: op.CanIAddSame = x
+    a1: op.CanIAddSame[Any] = x
+    a2: op.CanIAddSame[list[int]] = x
+    a3: op.CanIAddSame[bytes] = x
+
+
+def test_can_iadd_same_list_reject() -> None:
+    """Ensure that `builtins.int` is **not** assignable to `CanIAddSame`."""
+    x: int = 42
+    assert not isinstance(x, op.CanIAddSame)
+    assert not issubclass(int, op.CanIAddSame)
+
+    r0: op.CanIAddSame = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    r1: op.CanIAddSame[Any] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    r2: op.CanIAddSame[int] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
 
 @pytest.mark.parametrize("cls", get_protocols(_has))

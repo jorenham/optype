@@ -60,30 +60,43 @@ __all__ = [
     "CanGt",
     "CanHash",
     "CanIAdd",
+    "CanIAddSame",
     "CanIAddSelf",
     "CanIAnd",
+    "CanIAndSame",
     "CanIAndSelf",
     "CanIFloordiv",
+    "CanIFloordivSame",
     "CanIFloordivSelf",
     "CanILshift",
+    "CanILshiftSame",
     "CanILshiftSelf",
     "CanIMatmul",
+    "CanIMatmulSame",
     "CanIMatmulSelf",
     "CanIMod",
+    "CanIModSame",
     "CanIModSelf",
     "CanIMul",
+    "CanIMulSame",
     "CanIMulSelf",
     "CanIOr",
+    "CanIOrSame",
     "CanIOrSelf",
     "CanIPow",
+    "CanIPowSame",
     "CanIPowSelf",
     "CanIRshift",
+    "CanIRshiftSame",
     "CanIRshiftSelf",
     "CanISub",
+    "CanISubSame",
     "CanISubSelf",
     "CanITruediv",
+    "CanITruedivSame",
     "CanITruedivSelf",
     "CanIXor",
+    "CanIXorSame",
     "CanIXorSelf",
     "CanIndex",
     "CanInt",
@@ -1132,6 +1145,13 @@ class CanIAddSelf(Protocol[_T_contra]):
     def __iadd__(self, rhs: _T_contra, /) -> Self: ...
 
 
+@runtime_checkable
+class CanIAddSame(Protocol[_T_Never_contra]):
+    """CanIAddSame[-T = Never] = CanIAdd[Self | T, Self]"""
+
+    def __iadd__(self, rhs: Self | _T_Never_contra, /) -> Self: ...
+
+
 # __isub__
 
 
@@ -1145,6 +1165,13 @@ class CanISubSelf(Protocol[_T_contra]):
     """CanISubSelf[-T] = CanISub[T, Self]"""
 
     def __isub__(self, rhs: _T_contra, /) -> Self: ...
+
+
+@runtime_checkable
+class CanISubSame(Protocol[_T_Never_contra]):
+    """CanISubSame[-T = Never] = CanISub[Self | T, Self]"""
+
+    def __isub__(self, rhs: Self | _T_Never_contra, /) -> Self: ...
 
 
 # __imul__
@@ -1162,6 +1189,13 @@ class CanIMulSelf(Protocol[_T_contra]):
     def __imul__(self, rhs: _T_contra, /) -> Self: ...
 
 
+@runtime_checkable
+class CanIMulSame(Protocol[_T_Never_contra]):
+    """CanIMulSame[-T = Never] = CanIMul[Self | T, Self]"""
+
+    def __imul__(self, rhs: Self | _T_Never_contra, /) -> Self: ...
+
+
 # __imatmul__
 
 
@@ -1175,6 +1209,13 @@ class CanIMatmulSelf(Protocol[_T_contra]):
     """CanIMatmulSelf[-T] = CanIMatmul[T, Self]"""
 
     def __imatmul__(self, rhs: _T_contra, /) -> Self: ...
+
+
+@runtime_checkable
+class CanIMatmulSame(Protocol[_T_Never_contra]):
+    """CanIMatmulSame[-T = Never] = CanIMatmul[Self | T, Self]"""
+
+    def __imatmul__(self, rhs: Self | _T_Never_contra, /) -> Self: ...
 
 
 # __itruediv__
@@ -1192,6 +1233,13 @@ class CanITruedivSelf(Protocol[_T_contra]):
     def __itruediv__(self, rhs: _T_contra, /) -> Self: ...
 
 
+@runtime_checkable
+class CanITruedivSame(Protocol[_T_Never_contra]):
+    """CanITruedivSame[-T = Never] = CanITruediv[Self | T, Self]"""
+
+    def __itruediv__(self, rhs: Self | _T_Never_contra, /) -> Self: ...
+
+
 # __ifloordiv__
 
 
@@ -1207,6 +1255,13 @@ class CanIFloordivSelf(Protocol[_T_contra]):
     def __ifloordiv__(self, rhs: _T_contra, /) -> Self: ...
 
 
+@runtime_checkable
+class CanIFloordivSame(Protocol[_T_Never_contra]):
+    """CanIFloordivSame[-T = Never] = CanIFloordiv[Self | T, Self]"""
+
+    def __ifloordiv__(self, rhs: Self | _T_Never_contra, /) -> Self: ...
+
+
 # __imod__
 
 
@@ -1220,6 +1275,13 @@ class CanIModSelf(Protocol[_T_contra]):
     """CanIModSelf[-T] = CanIMod[T, Self]"""
 
     def __imod__(self, rhs: _T_contra, /) -> Self: ...
+
+
+@runtime_checkable
+class CanIModSame(Protocol[_T_Never_contra]):
+    """CanIModSame[-T = Never] = CanIMod[Self | T, Self]"""
+
+    def __imod__(self, rhs: Self | _T_Never_contra, /) -> Self: ...
 
 
 # __ipow__
@@ -1238,6 +1300,13 @@ class CanIPowSelf(Protocol[_T_contra]):
     def __ipow__(self, rhs: _T_contra, /) -> Self: ...
 
 
+@runtime_checkable
+class CanIPowSame(Protocol[_T_Never_contra]):
+    """CanIPowSame[-T = Never] = CanIPow[Self | T, Self]"""
+
+    def __ipow__(self, rhs: Self | _T_Never_contra, /) -> Self: ...
+
+
 # __ilshift__
 
 
@@ -1251,6 +1320,13 @@ class CanILshiftSelf(Protocol[_T_contra]):
     """CanILshiftSelf[-T] = CanILshift[T, Self]"""
 
     def __ilshift__(self, rhs: _T_contra, /) -> Self: ...
+
+
+@runtime_checkable
+class CanILshiftSame(Protocol[_T_Never_contra]):
+    """CanILshiftSame[-T = Never] = CanILshift[Self | T, Self]"""
+
+    def __ilshift__(self, rhs: Self | _T_Never_contra, /) -> Self: ...
 
 
 # __irshift__
@@ -1268,6 +1344,13 @@ class CanIRshiftSelf(Protocol[_T_contra]):
     def __irshift__(self, rhs: _T_contra, /) -> Self: ...
 
 
+@runtime_checkable
+class CanIRshiftSame(Protocol[_T_Never_contra]):
+    """CanIRshiftSame[-T = Never] = CanIRshift[Self | T, Self]"""
+
+    def __irshift__(self, rhs: Self | _T_Never_contra, /) -> Self: ...
+
+
 # __iand__
 
 
@@ -1281,6 +1364,13 @@ class CanIAndSelf(Protocol[_T_contra]):
     """CanIAndSelf[-T] = CanIAnd[T, Self]"""
 
     def __iand__(self, rhs: _T_contra, /) -> Self: ...
+
+
+@runtime_checkable
+class CanIAndSame(Protocol[_T_Never_contra]):
+    """CanIAndSame[-T = Never] = CanIAnd[Self | T, Self]"""
+
+    def __iand__(self, rhs: Self | _T_Never_contra, /) -> Self: ...
 
 
 # __ixor__
@@ -1298,6 +1388,13 @@ class CanIXorSelf(Protocol[_T_contra]):
     def __ixor__(self, rhs: _T_contra, /) -> Self: ...
 
 
+@runtime_checkable
+class CanIXorSame(Protocol[_T_Never_contra]):
+    """CanIXorSame[-T = Never] = CanIXor[Self | T, Self]"""
+
+    def __ixor__(self, rhs: Self | _T_Never_contra, /) -> Self: ...
+
+
 # __ior__
 
 
@@ -1311,6 +1408,13 @@ class CanIOrSelf(Protocol[_T_contra]):
     """CanIOrSelf[-T] = CanIOr[T, Self]"""
 
     def __ior__(self, rhs: _T_contra, /) -> Self: ...
+
+
+@runtime_checkable
+class CanIOrSame(Protocol[_T_Never_contra]):
+    """CanIOrSame[-T = Never] = CanIOr[Self | T, Self]"""
+
+    def __ior__(self, rhs: Self | _T_Never_contra, /) -> Self: ...
 
 
 ###
