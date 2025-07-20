@@ -11,6 +11,7 @@ description = "Building blocks for precise & flexible type hints"
 version = "0.12.2.dev0"
 authors = [{ name = "Joren Hammudoglu", email = "jhammudoglu@gmail.com" }]
 license = "BSD-3-Clause"
+license-files = ["LICENSE"]
 readme = "README.md"
 keywords = ["typing", "type hints", "numpy"]
 classifiers = [
