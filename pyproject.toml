@@ -1,6 +1,9 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv_build>=0.8.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = ""
 
 [project]
 name = "optype"
@@ -62,28 +65,7 @@ dev = [
   { include-group = "type" },
 ]
 
-[tool.hatch.build.targets.sdist]
-exclude = [
-  "/.cache",
-  "/.github",
-  "/.mypy_cache",
-  "/.pytest_cache",
-  "/.ruff_cache",
-  "/.tox",
-  "/.venv",
-  "/.vscode",
-  "/dist",
-  "/examples",
-  "/scripts",
-  "/tests",
-  ".dprint.jsonc",
-  ".editorconfig",
-  ".gitignore",
-  "CODE_OF_CONDUCT.md",
-  "CONTRIBUTING.md",
-  "SECURITY.md",
-  "uv.lock",
-]
+# mypy
 
 [tool.mypy]
 packages = ["optype", "examples", "tests"]
@@ -103,7 +85,9 @@ enable_error_code = [
 warn_return_any = false
 warn_unreachable = false
 
-[tool.basedpyright]
+# [based]pyright
+
+[tool.pyright]
 pythonPlatform = "All"
 include = ["optype", "examples", "tests"]
 ignore = [".venv"]
@@ -122,13 +106,15 @@ reportUnusedCallResult = false # https://github.com/microsoft/pyright/issues/865
 reportUnusedImport = false # dupe of F401
 reportUnusedVariable = false # dupe of F841
 
-[tool.basedpyright.defineConstant]
+[tool.pyright.defineConstant]
 NP125 = true
 NP20 = true
 NP21 = true
 NP22 = true
 NP23 = true
 NP24 = false
+
+# pytest
 
 [tool.pytest.ini_options]
 minversion = "8.0"
@@ -139,12 +125,16 @@ filterwarnings = ["error"]
 log_cli_level = "INFO"
 xfail_strict = true
 
+# repo-review
+
 [tool.repo-review]
 ignore = [
   "PY004", # Has docs folder
   "PY006", # Has pre-commit-config
   "RTD100", # Uses ReadTheDocs
 ]
+
+# tox
 
 [tool.ruff]
 src = ["optype", "examples", "scripts", "tests"]
@@ -222,6 +212,8 @@ allow-dunder-method-names = [
   "__array_struct__",
 ]
 allow-magic-value-types = ["int", "str"]
+
+# tox
 
 [tool.tox]
 requires = ["tox-uv>=1"]
