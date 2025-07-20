@@ -2,13 +2,7 @@
 
 import math
 import operator as _o
-import sys
-from typing import TYPE_CHECKING, Final, Literal, cast, overload
-
-if sys.version_info >= (3, 13):
-    from typing import TypeVar
-else:
-    from typing_extensions import TypeVar
+from typing import Final, Literal, TypeVar, cast, overload
 
 import optype._core._can as _c
 import optype._core._does as _d
@@ -329,29 +323,3 @@ do_round: Final = cast("_d.DoesRound", round)
 do_trunc: Final = math.trunc
 do_floor: Final = cast("_d.DoesFloor", math.floor)
 do_ceil: Final = cast("_d.DoesCeil", math.ceil)
-
-
-# TODO(jorenham): move these to `tests/do.py`
-# https://github.com/jorenham/optype/issues/372
-if TYPE_CHECKING:
-    # type-tests for the custom ops
-    _do_getitem: _d.DoesGetitem = do_getitem
-    _do_setitem: _d.DoesSetitem = do_setitem
-    _do_delitem: _d.DoesDelitem = do_delitem
-    _do_missing: _d.DoesMissing = do_missing
-    _do_contains: _d.DoesContains = do_contains  # type: ignore[assignment]
-
-    _do_radd: _d.DoesRAdd = do_radd
-    _do_rsub: _d.DoesRSub = do_rsub
-    _do_rmul: _d.DoesRMul = do_rmul
-    _do_rmatmul: _d.DoesRMatmul = do_rmatmul
-    _do_rtruediv: _d.DoesRTruediv = do_rtruediv
-    _do_rfloordiv: _d.DoesRFloordiv = do_rfloordiv
-    _do_rmod: _d.DoesRMod = do_rmod
-    _do_rdivmod: _d.DoesRDivmod = do_rdivmod
-    _do_rpow: _d.DoesRPow = do_rpow
-    _do_rlshift: _d.DoesRLshift = do_rlshift
-    _do_rrshift: _d.DoesRRshift = do_rrshift
-    _do_rand: _d.DoesRAnd = do_rand
-    _do_rxor: _d.DoesRXor = do_rxor
-    _do_ror: _d.DoesROr = do_ror
