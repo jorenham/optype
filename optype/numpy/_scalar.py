@@ -3,15 +3,9 @@ from typing import Any, Literal, Protocol, Self, TypeAlias, overload
 
 if sys.version_info >= (3, 13):
     from types import CapsuleType
-    from typing import TypeAliasType, TypeVar, override, runtime_checkable
+    from typing import TypeAliasType, TypeVar, runtime_checkable
 else:
-    from typing_extensions import (
-        CapsuleType,
-        TypeAliasType,
-        TypeVar,
-        override,
-        runtime_checkable,
-    )
+    from typing_extensions import CapsuleType, TypeAliasType, TypeVar, runtime_checkable
 
 import numpy as np
 from numpy._typing import (
@@ -22,15 +16,8 @@ from numpy._typing import (
     _96Bit,  # noqa: PLC2701
     _128Bit,  # noqa: PLC2701
 )
-from numpy_typing_compat import NUMPY_GE_2_0
 
 from optype._utils import set_module
-
-if NUMPY_GE_2_0:
-    from numpy._core.multiarray import flagsobj
-else:
-    from numpy.core.multiarray import flagsobj  # type: ignore[no-redef]
-
 
 __all__ = ["Scalar"]
 
@@ -68,7 +55,7 @@ class Scalar(Protocol[_PT_co, _NB_co]):
     @property
     def dtype(self, /) -> np.dtype[Self]: ...  # type: ignore[type-var]  # pyright: ignore[reportInvalidTypeArguments]
     @property
-    def flags(self, /) -> flagsobj: ...
+    def flags(self, /) -> Any: ...
     @property
     def nbytes(self, /) -> int: ...
     @property
@@ -88,16 +75,6 @@ class Scalar(Protocol[_PT_co, _NB_co]):
     def __array_interface__(self, /) -> dict[str, Any]: ...
     @property
     def __array_struct__(self, /) -> CapsuleType: ...
-
-    if NUMPY_GE_2_0:
-
-        @override
-        def __hash__(self, /) -> int: ...
-
-    @override
-    def __eq__(self, other: object, /) -> np.bool_: ...  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
-    @override
-    def __ne__(self, other: object, /) -> np.bool_: ...  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
 
     def __bool__(self, /) -> bool: ...
 
