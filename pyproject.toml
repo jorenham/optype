@@ -87,7 +87,7 @@ enable_error_code = [
   "truthy-bool",
 ]
 warn_return_any = false
-warn_unreachable = false
+warn_unreachable = false # numpy-typing-compat compat
 
 # [based]pyright
 
@@ -133,7 +133,7 @@ ignore = [
 # tox
 
 [tool.ruff]
-src = ["optype", "examples", "scripts", "tests"]
+src = ["optype", "examples", "tests"]
 extend-exclude = [".git", ".mypy_cache", ".tox", ".venv"]
 force-exclude = true
 show-fixes = true
