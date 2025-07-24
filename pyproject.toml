@@ -8,7 +8,7 @@ module-root = ""
 [project]
 name = "optype"
 description = "Building blocks for precise & flexible type hints"
-version = "0.12.3.dev0"
+version = "0.13.0.dev0"
 authors = [{ name = "Joren Hammudoglu", email = "jhammudoglu@gmail.com" }]
 license = "BSD-3-Clause"
 license-files = ["LICENSE"]
@@ -28,7 +28,10 @@ requires-python = ">=3.11"
 dependencies = ["typing-extensions>=4.10; python_version<'3.13'"]
 
 [project.optional-dependencies]
-numpy = ["numpy>=1.25"]
+numpy = [
+  "numpy>=1.25",
+  "numpy-typing-compat>=1.25",
+]
 
 [project.urls]
 Repository = "https://github.com/jorenham/optype/"
@@ -106,14 +109,6 @@ reportUnreachable = false # nothing wrong with `if sys.version_info() >= ...`
 reportUnusedCallResult = false # https://github.com/microsoft/pyright/issues/8650
 reportUnusedImport = false # dupe of F401
 reportUnusedVariable = false # dupe of F841
-
-[tool.pyright.defineConstant]
-NP125 = true
-NP20 = true
-NP21 = true
-NP22 = true
-NP23 = true
-NP24 = false
 
 # pytest
 

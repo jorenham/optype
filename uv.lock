@@ -202,8 +202,20 @@ wheels = [
 ]
 
 [[package]]
+name = "numpy-typing-compat"
+version = "2.3.20250724"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/59/7f/de2a17e81f36ad01974207a7b325eb04a866405688045b849fb4e76e2670/numpy_typing_compat-2.3.20250724.tar.gz", hash = "sha256:076c0fa2865a43bf7c86a4f83ef33c0a4dcf1d6c4a1e70ba99dfe8930e501a59", size = 3367, upload-time = "2025-07-24T00:59:30.672Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e6/0a/ddf146cdbd09ce0aa27d789891cc2a7b2c9c5a1e2ae53055e6ddbd77d7e4/numpy_typing_compat-2.3.20250724-py3-none-any.whl", hash = "sha256:5b4ce1a3c9ba3650ff5ab99b7623c12ce790b4380558fc833fe908751b229de6", size = 4706, upload-time = "2025-07-24T00:59:25.137Z" },
+]
+
+[[package]]
 name = "optype"
-version = "0.12.3.dev0"
+version = "0.13.0.dev0"
 source = { editable = "." }
 dependencies = [
     { name = "typing-extensions", marker = "python_full_version < '3.13'" },
@@ -212,6 +224,7 @@ dependencies = [
 [package.optional-dependencies]
 numpy = [
     { name = "numpy" },
+    { name = "numpy-typing-compat" },
 ]
 
 [package.dev-dependencies]
@@ -254,6 +267,7 @@ type = [
 [package.metadata]
 requires-dist = [
     { name = "numpy", marker = "extra == 'numpy'", specifier = ">=1.25" },
+    { name = "numpy-typing-compat", marker = "extra == 'numpy'", specifier = ">=1.25" },
     { name = "typing-extensions", marker = "python_full_version < '3.13'", specifier = ">=4.10" },
 ]
 provides-extras = ["numpy"]
