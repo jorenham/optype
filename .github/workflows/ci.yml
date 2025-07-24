@@ -73,15 +73,11 @@ jobs:
           numpy-typing-compat==${{ matrix.np }}.*
 
       - name: basedpyright
-        run: >
-          uv run --active --no-sync
-          basedpyright
+        run: basedpyright
 
       # NOTE: mypy ignores `uv run --with=...` (and `--isolated` does not help)
       - name: mypy
-        run: >
-          uv run --active --no-sync
-          mypy --no-incremental --cache-dir=/dev/null .
+        run: mypy --no-incremental --cache-dir=/dev/null .
 
   test:
     timeout-minutes: 10
