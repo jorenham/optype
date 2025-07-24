@@ -98,7 +98,7 @@ ignore = [".venv"]
 stubPath = "."
 typeCheckingMode = "all"
 useLibraryCodeForTypes = false
-enableReachabilityAnalysis = false
+enableReachabilityAnalysis = true
 reportAny = false
 reportExplicitAny = false # sometimes there's no way around it
 reportImplicitStringConcatenation = false # not a linter
@@ -275,9 +275,7 @@ runner = "uv-venv-lock-runner"
 dependency_groups = ["type"]
 commands = [
   [
-    "python",
-    "scripts/my.py",
-    "--no-incremental",
+    "mypy",
     { replace = "posargs", default = ["."], extend = true },
   ],
 ]
