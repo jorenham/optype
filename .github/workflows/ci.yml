@@ -71,12 +71,12 @@ jobs:
       - name: mypy
         run: >
           uv run --active --no-sync
-          scripts/my.py --no-incremental --cache-dir=/dev/null
+          mypy --no-incremental --cache-dir=/dev/null .
 
       - name: basedpyright
         run: >
           uv run --active --no-sync
-          basedpyright -p scripts/config/bpr-np-${{ matrix.np }}.json
+          basedpyright
 
   test:
     timeout-minutes: 10
