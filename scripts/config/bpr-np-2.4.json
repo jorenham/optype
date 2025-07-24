@@ -1,4 +1,0 @@
-{
-  "extends": "./bpr-np-2.3.json",
-  "defineConstant": { "NP24": true }
-}
