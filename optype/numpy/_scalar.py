@@ -22,14 +22,14 @@ from numpy._typing import (
     _96Bit,  # noqa: PLC2701
     _128Bit,  # noqa: PLC2701
 )
+from numpy_typing_compat import NUMPY_GE_2_0
 
-from ._compat import NP20
 from optype._utils import set_module
 
-if NP20:
+if NUMPY_GE_2_0:
     from numpy._core.multiarray import flagsobj
 else:
-    from numpy.core.multiarray import flagsobj
+    from numpy.core.multiarray import flagsobj  # type: ignore[no-redef]
 
 
 __all__ = ["Scalar"]
@@ -89,7 +89,7 @@ class Scalar(Protocol[_PT_co, _NB_co]):
     @property
     def __array_struct__(self, /) -> CapsuleType: ...
 
-    if NP20:
+    if NUMPY_GE_2_0:
 
         @override
         def __hash__(self, /) -> int: ...

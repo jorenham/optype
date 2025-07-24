@@ -6,8 +6,6 @@ import pytest
 
 from optype.numpy import Scalar, _scalar as _sc
 
-NP2 = np.__version__.startswith("2.")
-
 
 def test_from_bool() -> None:
     x_py = True

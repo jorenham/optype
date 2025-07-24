@@ -8,8 +8,8 @@ else:
     from typing_extensions import TypeAliasType, TypeVar, runtime_checkable
 
 import numpy as np
+from numpy_typing_compat import NUMPY_GE_2_0
 
-import optype.numpy._compat as _x
 from ._shape import AnyShape, Shape
 from optype._utils import set_module
 
@@ -225,11 +225,11 @@ class CanArrayFinalize(Protocol[_T_contra]):
     def __array_finalize__(self, obj: _T_contra, /) -> None: ...
 
 
-@runtime_checkable
-@set_module("optype.numpy")
-class CanArrayWrap(Protocol):
-    if _x.NP20:
+if NUMPY_GE_2_0:
 
+    @runtime_checkable
+    @set_module("optype.numpy")
+    class CanArrayWrap(Protocol):  # pyright: ignore[reportRedeclaration]
         def __array_wrap__(
             self,
             array: np.ndarray[_NDT, _DTT],
@@ -238,8 +238,11 @@ class CanArrayWrap(Protocol):
             /,
         ) -> np.ndarray[_NDT, _DTT] | Self: ...
 
-    else:
+else:
 
+    @runtime_checkable
+    @set_module("optype.numpy")
+    class CanArrayWrap(Protocol):  # type: ignore[no-redef]
         def __array_wrap__(
             self,
             array: np.ndarray[_NDT, _DTT],

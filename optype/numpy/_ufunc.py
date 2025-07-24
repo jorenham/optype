@@ -9,8 +9,8 @@ else:
     from typing_extensions import TypeVar, runtime_checkable
 
 import numpy as np
+from numpy_typing_compat import NUMPY_GE_2_1
 
-import optype.numpy._compat as _x
 from ._shape import AnyShape
 from optype._utils import set_module
 
@@ -49,11 +49,11 @@ _IdT_co = TypeVar(
 ###
 
 
-if _x.NP21:
+if NUMPY_GE_2_1:
 
     @runtime_checkable
     @set_module("optype.numpy")
-    class UFunc(Protocol[_FT_co, _NInT_co, _NoutT_co, _SigT_co, _IdT_co]):
+    class UFunc(Protocol[_FT_co, _NInT_co, _NoutT_co, _SigT_co, _IdT_co]):  # pyright: ignore[reportRedeclaration]
         """
         A generic interface for `numpy.ufunc` "universal function" instances,
         e.g. `numpy.exp`, `numpy.add`, `numpy.frexp`, `numpy.divmod`.
@@ -130,7 +130,7 @@ else:
 
     @runtime_checkable
     @set_module("optype.numpy")
-    class UFunc(Protocol[_FT_co, _NInT_co, _NoutT_co, _SigT0_co, _IdT_co]):
+    class UFunc(Protocol[_FT_co, _NInT_co, _NoutT_co, _SigT0_co, _IdT_co]):  # type: ignore[no-redef]
         """
         A generic interface for `numpy.ufunc` "universal function" instances,
         e.g. `numpy.exp`, `numpy.add`, `numpy.frexp`, `numpy.divmod`.
