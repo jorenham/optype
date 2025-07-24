@@ -5,7 +5,7 @@ The names are analogous to those in `numpy.dtypes`.
 
 import sys
 from collections.abc import Sequence
-from typing import Any, Never, TypeAlias
+from typing import Any, Never, Protocol, TypeAlias
 
 if sys.version_info >= (3, 13):
     from typing import TypeAliasType
@@ -17,7 +17,7 @@ from numpy_typing_compat import NUMPY_GE_2_0, NUMPY_GE_2_1
 
 import optype.numpy._dtype_attr as a
 import optype.numpy._scalar as _sc
-from ._dtype import HasDType, ToDType as To
+from ._dtype import ToDType as To
 from optype._core._just import Just, JustComplex, JustFloat, JustInt
 
 # ruff: noqa: RUF022
@@ -246,11 +246,22 @@ AnyFlexibleDType = TypeAliasType(
 )
 
 
-if NUMPY_GE_2_1:
-    # `numpy>=2.1`
-    _HasStringDType: TypeAlias = HasDType[np.dtypes.StringDType]
-    AnyStringDType = TypeAliasType("AnyStringDType", _HasStringDType | a.T_code)
-elif NUMPY_GE_2_0:
-    AnyStringDType = TypeAliasType("AnyStringDType", np.dtype[Never] | a.T_code)  # type: ignore[misc]
+if NUMPY_GE_2_0:
+    if NUMPY_GE_2_1:
+
+        class _HasStringType(Protocol):
+            @property
+            def type(self) -> type[str]: ...
+
+        class _HasStringDType(Protocol):
+            @property
+            def dtype(self) -> _HasStringType: ...
+
+        AnyStringDType = TypeAliasType(
+            "AnyStringDType",
+            _HasStringType | _HasStringDType | a.T_code,
+        )
+    else:
+        AnyStringDType = TypeAliasType("AnyStringDType", a.T_code)  # type: ignore[misc]
 else:
     AnyStringDType = TypeAliasType("AnyStringDType", Never)  # type: ignore[misc]

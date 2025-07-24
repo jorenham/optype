@@ -14,7 +14,6 @@ import optype.numpy._compat as _x
 import optype.numpy._scalar as _sc
 from ._shape import AnyShape
 from optype._core import CanBuffer, JustComplex, JustFloat, JustInt, JustObject
-from optype._utils import set_module
 
 # ruff: noqa: RUF022
 __all__ = [
@@ -172,18 +171,19 @@ AnyObjectArray: TypeAlias = _AnyArray[np.object_, np.object_ | JustObject]
 # pyright: reportRedeclaration=false
 
 if NUMPY_GE_2_0:
+    if NUMPY_GE_2_1:
 
-    @set_module("optype.numpy")
-    class AnyStringArray(Protocol):
-        def __len__(self, /) -> int: ...
+        class AnyStringArray(Protocol):
+            def __len__(self, /) -> int: ...
+            def __array__(self, /) -> np.ndarray[AnyShape, np.dtype[str]]: ...  # type: ignore[type-var]  # pyright: ignore[reportInvalidTypeArguments]
 
-        if NUMPY_GE_2_1:  # numpy>=2.1
+    else:
 
-            def __array__(self, /) -> np.ndarray[AnyShape, np.dtypes.StringDType]: ...
-
-        else:  # numpy==2.0.*
-
+        class AnyStringArray(Protocol):
+            def __len__(self, /) -> int: ...
             def __array__(self, /) -> np.ndarray[AnyShape, np.dtype[Never]]: ...
 
-else:  # `numpy<2.0`
+    AnyStringArray.__module__ = "optype.numpy"
+
+else:
     AnyStringArray: TypeAlias = Never
