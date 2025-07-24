@@ -8,7 +8,6 @@ else:
     from typing_extensions import TypeAliasType, TypeVar
 
 import numpy as np
-from numpy_typing_compat import NUMPY_GE_2_2
 
 import optype.numpy.compat as npc
 from ._array import CanArray1D, CanArray2D, CanArray3D, CanArrayND
@@ -255,21 +254,11 @@ ToArray2D: TypeAlias = _To2D2[T, SCT]
 ToArray3D: TypeAlias = _To3D2[T, SCT]
 ToArrayND: TypeAlias = _ToND2[T, SCT]
 
-if NUMPY_GE_2_2:
-    ToFalse = TypeAliasType("ToFalse", "Literal[False, 0] | np.bool[Literal[False]]")
-    ToTrue = TypeAliasType("ToTrue", "Literal[True, 1] | np.bool[Literal[True]]")
+ToFalse = TypeAliasType("ToFalse", Literal[False, 0])
+ToTrue = TypeAliasType("ToTrue", Literal[True, 1])
 
-    ToJustFalse = TypeAliasType(
-        "ToJustFalse",
-        "Literal[False] | np.bool[Literal[False]]",
-    )
-    ToJustTrue = TypeAliasType("ToJustTrue", "Literal[True] | np.bool[Literal[True]]")
-else:
-    ToFalse = TypeAliasType("ToFalse", Literal[False, 0])  # type: ignore[misc]
-    ToTrue = TypeAliasType("ToTrue", Literal[True, 1])  # type: ignore[misc]
-
-    ToJustFalse = TypeAliasType("ToJustFalse", Literal[False])  # type: ignore[misc]
-    ToJustTrue = TypeAliasType("ToJustTrue", Literal[True])  # type: ignore[misc]
+ToJustFalse = TypeAliasType("ToJustFalse", Literal[False])
+ToJustTrue = TypeAliasType("ToJustTrue", Literal[True])
 
 ToBool: TypeAlias = _PyBool | np.bool_
 ToBool1D: TypeAlias = _To1D2[_PyBool, np.bool_]
