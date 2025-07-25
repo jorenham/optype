@@ -103,4 +103,8 @@ jobs:
           python-version: ${{ matrix.py }}
 
       - name: pytest
-        run: uv run --with="numpy==${{ matrix.np }}.*" pytest
+        run: >-
+          uv run
+          --with="numpy==${{ matrix.np }}.*"
+          --with="numpy-typing-compat==${{ matrix.np }}.*"
+          pytest
