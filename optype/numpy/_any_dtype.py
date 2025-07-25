@@ -13,7 +13,7 @@ else:
     from typing_extensions import TypeAliasType
 
 import numpy as np
-from numpy_typing_compat import NUMPY_GE_2_0, NUMPY_GE_2_1
+from numpy_typing_compat import NUMPY_GE_2_0, NUMPY_GE_2_1, long, ulong
 
 import optype.numpy._dtype_attr as a
 import optype.numpy._scalar as _sc
@@ -138,20 +138,16 @@ if NUMPY_GE_2_0:
         type[JustInt] | To[np.intp] | a.i0_code,
     )
     AnyIntDType = AnyIntPDType
-    AnyLongDType = TypeAliasType("AnyLongDType", To[np.long] | a.l_code)
+    AnyLongDType = TypeAliasType("AnyLongDType", To[long] | a.l_code)
 else:
     AnyIntPDType = TypeAliasType("AnyIntPDType", To[np.intp] | a.i0_code)  # type: ignore[misc]
-    AnyIntDType = TypeAliasType("AnyIntDType", type[JustInt] | To[np.int_] | a.l_code)  # type: ignore[misc]
+    AnyIntDType = TypeAliasType("AnyIntDType", type[JustInt] | To[long] | a.l_code)  # type: ignore[misc]
     AnyLongDType = AnyIntDType  # type: ignore[misc]
 
 # uint / uintp / ulong
 AnyUIntPDType = TypeAliasType("AnyUIntPDType", To[np.uintp] | a.u0_code)
-if NUMPY_GE_2_0:
-    AnyULongDType = TypeAliasType("AnyULongDType", To[np.ulong] | a.L_code)
-    AnyUIntDType = AnyULongDType
-else:
-    AnyULongDType = TypeAliasType("AnyULongDType", To[np.uint] | a.L_code)  # type: ignore[misc]
-    AnyUIntDType = AnyULongDType  # type: ignore[misc]
+AnyULongDType = TypeAliasType("AnyULongDType", To[ulong] | a.L_code)
+AnyUIntDType = AnyULongDType
 
 
 # f2
