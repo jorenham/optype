@@ -135,17 +135,17 @@ AnyULongLongDType = AnyUInt64DType  # deprecated
 if NUMPY_GE_2_0:
     AnyIntPDType = TypeAliasType(
         "AnyIntPDType",
-        type[JustInt] | To[np.intp] | a.i0_code,
+        type[JustInt] | To[np.int64] | a.i0_code,
     )
     AnyIntDType = TypeAliasType("AnyIntDType", AnyIntPDType)
     AnyLongDType = TypeAliasType("AnyLongDType", To[long] | a.l_code)
 else:
-    AnyIntPDType = TypeAliasType("AnyIntPDType", To[np.intp] | a.i0_code)  # type: ignore[misc]
+    AnyIntPDType = TypeAliasType("AnyIntPDType", To[np.int64] | a.i0_code)  # type: ignore[misc]
     AnyIntDType = TypeAliasType("AnyIntDType", type[JustInt] | To[long] | a.l_code)  # type: ignore[misc]
     AnyLongDType = AnyIntDType  # type: ignore[misc]
 
 # uint / uintp / ulong
-AnyUIntPDType = TypeAliasType("AnyUIntPDType", To[np.uintp] | a.u0_code)
+AnyUIntPDType = TypeAliasType("AnyUIntPDType", To[np.uint64] | a.u0_code)
 AnyULongDType = TypeAliasType("AnyULongDType", To[ulong] | a.L_code)
 AnyUIntDType = AnyULongDType
 
