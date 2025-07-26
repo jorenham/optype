@@ -5,16 +5,17 @@ from typing import Final
 
 import numpy as np
 import pytest
+from numpy_typing_compat import long, ulong
 
 import optype.numpy as onp  # noqa: TC001
-from optype.numpy import _compat as _x, _scalar as _sc, ctypeslib as _ct
+from optype.numpy import _scalar as _sc, ctypeslib as _ct
 
 # All allowed arguments that when passed to `np.array`, will result in an
 # array of the specified scalar type(s).
 
 _UNSIGNED_INTEGER_NP: Final = (
     np.uint8, np.uint16, np.uint32, np.uint64, np.uintp,
-    np.ubyte, np.ushort, np.uintc, _x.ULong, np.ulonglong,
+    np.ubyte, np.ushort, np.uintc, ulong, np.ulonglong,
 )  # fmt: skip
 _UNSIGNED_INTEGER_CT: Final = (
     ct.c_uint8, ct.c_uint16, ct.c_uint32, ct.c_uint64, ct.c_size_t,
@@ -23,7 +24,7 @@ _UNSIGNED_INTEGER_CT: Final = (
 UNSIGNED_INTEGER: Final = *_UNSIGNED_INTEGER_NP, *_UNSIGNED_INTEGER_CT
 _SIGNED_INTEGER_NP: Final = (
     np.int8, np.int16, np.int32, np.int64, np.intp,
-    np.byte, np.short, np.intc, _x.Long, np.longlong,
+    np.byte, np.short, np.intc, long, np.longlong,
 )  # fmt: skip
 _SIGNED_INTEGER_CT: Final = (
     ct.c_int8, ct.c_int16, ct.c_int32, ct.c_int64, ct.c_ssize_t,
@@ -50,7 +51,7 @@ CHARACTER: Final = *STR, *BYTES
 # https://github.com/jorenham/optype/issues/371
 VOID: Final = (np.void,)
 FLEXIBLE: Final = *VOID, *CHARACTER
-BOOL: Final = _x.Bool, ct.c_bool, bool
+BOOL: Final = np.bool_, ct.c_bool, bool
 OBJECT: Final = np.object_, ct.py_object
 
 
