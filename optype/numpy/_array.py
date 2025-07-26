@@ -9,7 +9,6 @@ else:
 
 import numpy as np
 
-import optype.numpy._compat as _x
 from ._shape import AnyShape, Shape
 from optype._utils import set_module
 
@@ -228,24 +227,12 @@ class CanArrayFinalize(Protocol[_T_contra]):
 @runtime_checkable
 @set_module("optype.numpy")
 class CanArrayWrap(Protocol):
-    if _x.NP20:
-
-        def __array_wrap__(
-            self,
-            array: np.ndarray[_NDT, _DTT],
-            context: tuple[np.ufunc, tuple[Any, ...], int] | None = ...,
-            return_scalar: bool = ...,
-            /,
-        ) -> np.ndarray[_NDT, _DTT] | Self: ...
-
-    else:
-
-        def __array_wrap__(
-            self,
-            array: np.ndarray[_NDT, _DTT],
-            context: tuple[np.ufunc, tuple[Any, ...], int] | None = ...,
-            /,
-        ) -> np.ndarray[_NDT, _DTT] | Self: ...
+    def __array_wrap__(
+        self,
+        array: np.ndarray[_NDT, _DTT],
+        context: tuple[np.ufunc, tuple[Any, ...], int] | None = ...,
+        /,
+    ) -> np.ndarray[_NDT, _DTT] | Self: ...
 
 
 _ArrayInterfaceT_co = TypeVar(

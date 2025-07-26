@@ -1,7 +1,7 @@
 # ruff: noqa: PYI042
 from typing import Literal as L, TypeAlias as Alias  # noqa: N817
 
-import optype.numpy._compat as _x
+from numpy_typing_compat import NUMPY_GE_2_0
 
 ###
 
@@ -56,7 +56,10 @@ n_char: Alias = L["n", "<n", ">n"]
 N_char: Alias = L["N", "<N", ">N"]
 
 
-if _x.NP20:
+# mypy: disable-error-code="no-redef"
+# pyright: reportRedeclaration=false
+
+if NUMPY_GE_2_0:
     i0_name: Alias = L["int_", "int", "intp"]
     i0_char: Alias = n_char
     i0_code: Alias = L[i0_name, i0_char]
@@ -79,27 +82,27 @@ if _x.NP20:
     L_name: Alias = L["ulong"]
     L_code: Alias = L[L_name, L_char]
 else:
-    i0_name: Alias = L["intp"]
-    i0_char: Alias = p_char
-    i0_code: Alias = L[i0_name, i0_char]
+    i0_name: Alias = L["intp"]  # type: ignore[misc]
+    i0_char: Alias = p_char  # type: ignore[misc]
+    i0_code: Alias = L[i0_name, i0_char]  # type: ignore[misc]
 
-    u0_name: Alias = L["uintp"]
-    u0_char: Alias = P_char
-    u0_code: Alias = L[u0_name, u0_char]
+    u0_name: Alias = L["uintp"]  # type: ignore[misc]
+    u0_char: Alias = P_char  # type: ignore[misc]
+    u0_code: Alias = L[u0_name, u0_char]  # type: ignore[misc]
 
-    i__name: Alias = L["int_", "int", "long"]
-    i__char: Alias = L[l_char]
-    i__code: Alias = L[i__name, i__char]
+    i__name: Alias = L["int_", "int", "long"]  # type: ignore[misc]
+    i__char: Alias = L[l_char]  # type: ignore[misc]
+    i__code: Alias = L[i__name, i__char]  # type: ignore[misc]
 
-    u__name: Alias = L["uint", "ulong"]
-    u__char: Alias = L[L_char]
-    u__code: Alias = L[u__name, u__char]
+    u__name: Alias = L["uint", "ulong"]  # type: ignore[misc]
+    u__char: Alias = L[L_char]  # type: ignore[misc]
+    u__code: Alias = L[u__name, u__char]  # type: ignore[misc]
 
-    l_name: Alias = i__name
-    l_code: Alias = i__code
+    l_name: Alias = i__name  # type: ignore[misc]
+    l_code: Alias = i__code  # type: ignore[misc]
 
-    L_name: Alias = u__name
-    L_code: Alias = u__code
+    L_name: Alias = u__name  # type: ignore[misc]
+    L_code: Alias = u__code  # type: ignore[misc]
 
 
 # float

@@ -15,7 +15,6 @@ type-checkers like beartype.
 - **Core package**: `optype/` - Main library code with type definitions and utilities
 - **Tests**: `tests/` - Comprehensive test suite using pytest
 - **Examples**: `examples/` - Usage examples and demonstrations
-- **Scripts**: `scripts/` - Development and utility scripts
 
 ## Key Technologies & Dependencies
 
@@ -92,7 +91,7 @@ uvx tox p  # Run all tests on multiple python versions in parallel
 
 Always use `uv run` to execute Python scripts and packages:
 
-- Type checking: `uv run basedpyright` and `uv run scripts/my.py` (for mypy)
+- Type checking: `uv run basedpyright` and `uv mypy .`
 - Testing: `uv run pytest`
 - Linting: `uv run ruff check --fix`
 - Formatting: `uv run ruff format`

@@ -30,12 +30,13 @@ pre-commit:
 
     - name: basedpyright
       glob: "*.{py,pyi}"
-      run: uv {run} basedpyright {staged_files}
+      run: uv {run} basedpyright --threads 3 {staged_files}
 
     - name: mypy
       glob: "*.{py,pyi}"
-      skip: true # too slow
-      run: uv {run} scripts/my.py
+      # passing staged files will confuse mypy, due to there both being a
+      # `__init__.py` and a `__init__.pyi`
+      run: uv {run} mypy .
 
     - name: pytest
       glob: "*.{py,pyi}"

@@ -1,9 +1,0 @@
-extend = "../pyproject.toml"
-
-[lint]
-extend-ignore = [
-  "S404", # flake8-bandit - suspicious-subprocess-import
-  "S603", # flake8-bandit - subprocess-without-shell-equals-true
-  "T201", # flake8-print - print
-  "PLC0415", # pylint/convention - import-outside-top-level
-]

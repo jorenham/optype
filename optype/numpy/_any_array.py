@@ -8,12 +8,12 @@ else:
     from typing_extensions import TypeAliasType, TypeVar
 
 import numpy as np
+from numpy_typing_compat import NUMPY_GE_2_0, NUMPY_GE_2_1
 
 import optype.numpy._compat as _x
 import optype.numpy._scalar as _sc
 from ._shape import AnyShape
 from optype._core import CanBuffer, JustComplex, JustFloat, JustInt, JustObject
-from optype._utils import set_module
 
 # ruff: noqa: RUF022
 __all__ = [
@@ -110,7 +110,7 @@ AnyInexactArray: TypeAlias = _AnyArray[
     _sc.inexact | JustFloat | JustComplex,
 ]
 
-AnyBoolArray: TypeAlias = _AnyArray[_x.Bool, _x.Bool | bool]
+AnyBoolArray: TypeAlias = _AnyArray[np.bool_, np.bool_ | bool]
 
 AnyUInt8Array: TypeAlias = _AnyArray[np.uint8, np.uint8 | CanBuffer] | CanBuffer
 AnyUByteArray = AnyUInt8Array
@@ -167,20 +167,23 @@ AnyDateTime64Array: TypeAlias = _AnyArray[np.datetime64]
 AnyTimeDelta64Array: TypeAlias = _AnyArray[np.timedelta64]
 AnyObjectArray: TypeAlias = _AnyArray[np.object_, np.object_ | JustObject]
 
+# mypy: disable-error-code="no-redef"
+# pyright: reportRedeclaration=false
 
-if _x.NP20:  # `numpy>=2.0`
+if NUMPY_GE_2_0:
+    if NUMPY_GE_2_1:
 
-    @set_module("optype.numpy")
-    class AnyStringArray(Protocol):
-        def __len__(self, /) -> int: ...
+        class AnyStringArray(Protocol):
+            def __len__(self, /) -> int: ...
+            def __array__(self, /) -> np.ndarray[AnyShape, np.dtype[str]]: ...  # type: ignore[type-var]  # pyright: ignore[reportInvalidTypeArguments]
 
-        if _x.NP21:  # numpy>=2.1
+    else:
 
-            def __array__(self, /) -> np.ndarray[AnyShape, np.dtypes.StringDType]: ...
-
-        else:  # numpy==2.0.*
-
+        class AnyStringArray(Protocol):
+            def __len__(self, /) -> int: ...
             def __array__(self, /) -> np.ndarray[AnyShape, np.dtype[Never]]: ...
 
-else:  # `numpy<2.0`
+    AnyStringArray.__module__ = "optype.numpy"
+
+else:
     AnyStringArray: TypeAlias = Never
