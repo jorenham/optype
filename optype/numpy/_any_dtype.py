@@ -137,7 +137,7 @@ if NUMPY_GE_2_0:
         "AnyIntPDType",
         type[JustInt] | To[np.intp] | a.i0_code,
     )
-    AnyIntDType = AnyIntPDType
+    AnyIntDType = TypeAliasType("AnyIntDType", AnyIntPDType)
     AnyLongDType = TypeAliasType("AnyLongDType", To[long] | a.l_code)
 else:
     AnyIntPDType = TypeAliasType("AnyIntPDType", To[np.intp] | a.i0_code)  # type: ignore[misc]
