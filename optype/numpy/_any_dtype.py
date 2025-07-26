@@ -160,7 +160,7 @@ AnyFloat64DType = TypeAliasType(
     type[JustFloat] | To[_sc.floating64] | a.f8_code,
 )
 # f12 | f16
-AnyLongDoubleDType = TypeAliasType("AnyLongDoubleDType", To[np.longdouble] | a.g_code)
+AnyLongDoubleDType = TypeAliasType("AnyLongDoubleDType", To[_sc.floating80] | a.g_code)
 
 # c8
 AnyComplex64DType = TypeAliasType("AnyComplex64DType", To[_sc.cfloating32] | a.c8_code)
@@ -172,7 +172,7 @@ AnyComplex128DType = TypeAliasType(
 # c24 | c32
 AnyCLongDoubleDType = TypeAliasType(
     "AnyCLongDoubleDType",
-    To[np.clongdouble] | a.G_code,
+    To[_sc.cfloating80] | a.G_code,
 )
 
 # M / N8
