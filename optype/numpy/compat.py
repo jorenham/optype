@@ -8,8 +8,8 @@ from numpy.exceptions import (
     TooHardError,
     VisibleDeprecationWarning,
 )
+from numpy_typing_compat import long, ulong
 
-from ._compat import Long as long, ULong as ulong  # noqa: N813
 from ._scalar import (
     cfloating as complexfloating,
     cfloating32 as complexfloating64,
