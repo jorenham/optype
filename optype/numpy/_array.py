@@ -8,7 +8,6 @@ else:
     from typing_extensions import TypeAliasType, TypeVar, runtime_checkable
 
 import numpy as np
-from numpy_typing_compat import NUMPY_GE_2_0
 
 from ._shape import AnyShape, Shape
 from optype._utils import set_module
@@ -225,30 +224,15 @@ class CanArrayFinalize(Protocol[_T_contra]):
     def __array_finalize__(self, obj: _T_contra, /) -> None: ...
 
 
-if NUMPY_GE_2_0:
-
-    @runtime_checkable
-    @set_module("optype.numpy")
-    class CanArrayWrap(Protocol):  # pyright: ignore[reportRedeclaration]
-        def __array_wrap__(
-            self,
-            array: np.ndarray[_NDT, _DTT],
-            context: tuple[np.ufunc, tuple[Any, ...], int] | None = ...,
-            return_scalar: bool = ...,
-            /,
-        ) -> np.ndarray[_NDT, _DTT] | Self: ...
-
-else:
-
-    @runtime_checkable
-    @set_module("optype.numpy")
-    class CanArrayWrap(Protocol):  # type: ignore[no-redef]
-        def __array_wrap__(
-            self,
-            array: np.ndarray[_NDT, _DTT],
-            context: tuple[np.ufunc, tuple[Any, ...], int] | None = ...,
-            /,
-        ) -> np.ndarray[_NDT, _DTT] | Self: ...
+@runtime_checkable
+@set_module("optype.numpy")
+class CanArrayWrap(Protocol):
+    def __array_wrap__(
+        self,
+        array: np.ndarray[_NDT, _DTT],
+        context: tuple[np.ufunc, tuple[Any, ...], int] | None = ...,
+        /,
+    ) -> np.ndarray[_NDT, _DTT] | Self: ...
 
 
 _ArrayInterfaceT_co = TypeVar(
