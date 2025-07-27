@@ -2464,7 +2464,7 @@ internal type-codes of the `DLPack` data types.
 ### `optype.numpy`
 
 Optype supports both NumPy 1 and 2.
-The current minimum supported version is `1.24`,
+The current minimum supported version is `1.25`,
 following [NEP 29][NEP29] and [SPEC 0][SPEC0].
 
 When using `optype.numpy`, it is recommended to install `optype` with the
