@@ -8,6 +8,7 @@ else:
     from typing_extensions import TypeAliasType, TypeVar
 
 import numpy as np
+import numpy_typing_compat
 
 import optype.numpy.compat as npc
 from ._array import CanArray1D, CanArray2D, CanArray3D, CanArrayND
@@ -254,11 +255,11 @@ ToArray2D: TypeAlias = _To2D2[T, SCT]
 ToArray3D: TypeAlias = _To3D2[T, SCT]
 ToArrayND: TypeAlias = _ToND2[T, SCT]
 
-ToFalse = TypeAliasType("ToFalse", Literal[False, 0])
-ToTrue = TypeAliasType("ToTrue", Literal[True, 1])
+ToFalse = TypeAliasType("ToFalse", numpy_typing_compat.LiteralFalse | Literal[0])
+ToTrue = TypeAliasType("ToTrue", numpy_typing_compat.LiteralTrue | Literal[1])
 
-ToJustFalse = TypeAliasType("ToJustFalse", Literal[False])
-ToJustTrue = TypeAliasType("ToJustTrue", Literal[True])
+ToJustFalse = TypeAliasType("ToJustFalse", numpy_typing_compat.LiteralFalse)
+ToJustTrue = TypeAliasType("ToJustTrue", numpy_typing_compat.LiteralTrue)
 
 ToBool: TypeAlias = _PyBool | np.bool_
 ToBool1D: TypeAlias = _To1D2[_PyBool, np.bool_]
