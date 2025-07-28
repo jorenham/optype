@@ -13,7 +13,7 @@ else:
     from typing_extensions import TypeAliasType
 
 import numpy as np
-from numpy_typing_compat import NUMPY_GE_2_0, NUMPY_GE_2_1, long, ulong
+import numpy_typing_compat
 
 import optype.numpy._dtype_attr as a
 import optype.numpy._scalar as _sc
@@ -132,21 +132,27 @@ AnyLongLongDType = AnyInt64DType  # deprecated
 AnyUInt64DType = TypeAliasType("AnyUInt64DType", To[np.uint64] | a.u8_code)
 AnyULongLongDType = AnyUInt64DType  # deprecated
 # int_ / intp / long
-if NUMPY_GE_2_0:
+if numpy_typing_compat.NUMPY_GE_2_0:
     AnyIntPDType = TypeAliasType(
         "AnyIntPDType",
         type[JustInt] | To[np.int64] | a.i0_code,
     )
     AnyIntDType = TypeAliasType("AnyIntDType", AnyIntPDType)
-    AnyLongDType = TypeAliasType("AnyLongDType", To[long] | a.l_code)
+    AnyLongDType = TypeAliasType(
+        "AnyLongDType",
+        To[numpy_typing_compat.long] | a.l_code,
+    )
 else:
     AnyIntPDType = TypeAliasType("AnyIntPDType", To[np.int64] | a.i0_code)  # type: ignore[misc]
-    AnyIntDType = TypeAliasType("AnyIntDType", type[JustInt] | To[long] | a.l_code)  # type: ignore[misc]
+    AnyIntDType = TypeAliasType(  # type: ignore[misc]
+        "AnyIntDType",
+        type[JustInt] | To[numpy_typing_compat.long] | a.l_code,
+    )
     AnyLongDType = AnyIntDType  # type: ignore[misc]
 
 # uint / uintp / ulong
 AnyUIntPDType = TypeAliasType("AnyUIntPDType", To[np.uint64] | a.u0_code)
-AnyULongDType = TypeAliasType("AnyULongDType", To[ulong] | a.L_code)
+AnyULongDType = TypeAliasType("AnyULongDType", To[numpy_typing_compat.ulong] | a.L_code)
 AnyUIntDType = AnyULongDType
 
 
@@ -241,23 +247,15 @@ AnyFlexibleDType = TypeAliasType(
     SUV_cls | To[np.flexible] | a.SUV_code,
 )
 
+if numpy_typing_compat.NUMPY_GE_2_0:
 
-if NUMPY_GE_2_0:
-    if NUMPY_GE_2_1:
+    class _HasStringDType(Protocol):
+        @property
+        def dtype(self) -> numpy_typing_compat.StringDType: ...
 
-        class _HasStringType(Protocol):
-            @property
-            def type(self) -> type[str]: ...
-
-        class _HasStringDType(Protocol):
-            @property
-            def dtype(self) -> _HasStringType: ...
-
-        AnyStringDType = TypeAliasType(
-            "AnyStringDType",
-            _HasStringType | _HasStringDType | a.T_code,
-        )
-    else:
-        AnyStringDType = TypeAliasType("AnyStringDType", a.T_code)  # type: ignore[misc]
+    AnyStringDType = TypeAliasType(
+        "AnyStringDType",
+        numpy_typing_compat.StringDType | _HasStringDType | a.T_code,
+    )
 else:
     AnyStringDType = TypeAliasType("AnyStringDType", Never)  # type: ignore[misc]
