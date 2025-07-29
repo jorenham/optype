@@ -203,14 +203,14 @@ wheels = [
 
 [[package]]
 name = "numpy-typing-compat"
-version = "2.3.20250728"
+version = "2.3.20250729"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/92/de/33207294a9995a757f01d68a82d69bcd34915ada259afc973f39eb1c618b/numpy_typing_compat-2.3.20250728.tar.gz", hash = "sha256:b2d3f5e3349af8f8de0e80db94f6557a2afc66b4a71a0d982f53c093117b74f8", size = 4733, upload-time = "2025-07-28T22:13:53.154Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/93/ae/0b1102aaed635316adee91d85d8fb1c44b78e658ec5892a5d41149d0111a/numpy_typing_compat-2.3.20250729.tar.gz", hash = "sha256:733a9535e94b2e4ff48385b6831d7fe5cd246250ca29533dfeb4e7f3b55f4b4d", size = 4734, upload-time = "2025-07-29T16:40:47.744Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/11/f0/0462140d7a5c6931312f5edb408f33e8217455c267be7ddf257804f67945/numpy_typing_compat-2.3.20250728-py3-none-any.whl", hash = "sha256:dbdbcd0b81f49f08f428711dc290372344857bdad0763702f4e94bbf3575b031", size = 6079, upload-time = "2025-07-28T22:13:44.857Z" },
+    { url = "https://files.pythonhosted.org/packages/0d/9e/8087ae22fc7aaa9a89fd26ddfe345ddeb905193afa894adabf7da50b645a/numpy_typing_compat-2.3.20250729-py3-none-any.whl", hash = "sha256:3fd75af4544e74f0d36989635c57a0e3443897367586e064483df024a8ddce04", size = 6079, upload-time = "2025-07-29T16:40:37.876Z" },
 ]
 
 [[package]]
