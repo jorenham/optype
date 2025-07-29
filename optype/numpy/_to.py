@@ -124,9 +124,21 @@ SCT_co = TypeVar("SCT_co", bound=np.generic, covariant=True)
 # (and aren't runtime checkable)
 
 
-_CanArrayStrict1D: TypeAlias = nptc.CanArray[tuple[int], np.dtype[SCT]]
-_CanArrayStrict2D: TypeAlias = nptc.CanArray[tuple[int, int], np.dtype[SCT]]
-_CanArrayStrict3D: TypeAlias = nptc.CanArray[tuple[int, int, int], np.dtype[SCT]]
+_CanArrayStrict1D = TypeAliasType(
+    "_CanArrayStrict1D",
+    "nptc.CanArray[tuple[int], np.dtype[SCT]]",
+    type_params=(SCT,),
+)
+_CanArrayStrict2D = TypeAliasType(
+    "_CanArrayStrict2D",
+    "nptc.CanArray[tuple[int, int], np.dtype[SCT]]",
+    type_params=(SCT,),
+)
+_CanArrayStrict3D = TypeAliasType(
+    "_CanArrayStrict3D",
+    "nptc.CanArray[tuple[int, int, int], np.dtype[SCT]]",
+    type_params=(SCT,),
+)
 
 
 class _CanArrayND(Protocol[SCT_co]):
