@@ -1,6 +1,8 @@
 import sys
 from collections.abc import Iterator
-from typing import Any, Never, Protocol, TypeAlias
+from typing import Any, Protocol, TypeAlias
+
+from optype._utils import set_module
 
 if sys.version_info >= (3, 13):
     from typing import TypeAliasType, TypeVar
@@ -8,7 +10,7 @@ else:
     from typing_extensions import TypeAliasType, TypeVar
 
 import numpy as np
-from numpy_typing_compat import NUMPY_GE_2_0, NUMPY_GE_2_1, long, ulong
+import numpy_typing_compat as nptc
 
 import optype.numpy._scalar as _sc
 from ._shape import AnyShape
@@ -119,7 +121,7 @@ AnyUInt32Array: TypeAlias = _AnyArray[np.uint32]
 AnyUInt64Array: TypeAlias = _AnyArray[np.uint64]
 AnyUIntCArray: TypeAlias = _AnyArray[np.uintc]
 AnyULongLongArray: TypeAlias = _AnyArray[np.ulonglong]
-AnyULongArray: TypeAlias = _AnyArray[ulong]
+AnyULongArray: TypeAlias = _AnyArray[nptc.ulong]
 AnyUIntPArray: TypeAlias = _AnyArray[np.uintp]
 AnyUIntArray: TypeAlias = _AnyArray[np.uint]
 
@@ -131,7 +133,7 @@ AnyInt32Array: TypeAlias = _AnyArray[np.int32]
 AnyInt64Array: TypeAlias = _AnyArray[np.int64]
 AnyIntCArray: TypeAlias = _AnyArray[np.intc]
 AnyLongLongArray: TypeAlias = _AnyArray[np.longlong]
-AnyLongArray: TypeAlias = _AnyArray[long]  # no int (numpy<=1)
+AnyLongArray: TypeAlias = _AnyArray[nptc.long]  # no int (numpy<=1)
 AnyIntPArray: TypeAlias = _AnyArray[np.intp]  # no int (numpy>=2)
 AnyIntArray: TypeAlias = _AnyArray[np.int_, np.int_ | JustInt]
 
@@ -166,23 +168,7 @@ AnyDateTime64Array: TypeAlias = _AnyArray[np.datetime64]
 AnyTimeDelta64Array: TypeAlias = _AnyArray[np.timedelta64]
 AnyObjectArray: TypeAlias = _AnyArray[np.object_, np.object_ | JustObject]
 
-# mypy: disable-error-code="no-redef"
-# pyright: reportRedeclaration=false
 
-if NUMPY_GE_2_0:
-    if NUMPY_GE_2_1:
-
-        class AnyStringArray(Protocol):
-            def __len__(self, /) -> int: ...
-            def __array__(self, /) -> np.ndarray[AnyShape, np.dtype[str]]: ...  # type: ignore[type-var]  # pyright: ignore[reportInvalidTypeArguments]
-
-    else:
-
-        class AnyStringArray(Protocol):
-            def __len__(self, /) -> int: ...
-            def __array__(self, /) -> np.ndarray[AnyShape, np.dtype[Never]]: ...
-
-    AnyStringArray.__module__ = "optype.numpy"
-
-else:
-    AnyStringArray: TypeAlias = Never
+@set_module("optype.numpy")
+class AnyStringArray(Protocol):
+    def __array__(self, /) -> np.ndarray[Any, "nptc.StringDType"]: ...
