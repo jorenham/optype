@@ -8,10 +8,9 @@ else:
     from typing_extensions import TypeAliasType, TypeVar
 
 import numpy as np
-import numpy_typing_compat
+import numpy_typing_compat as nptc
 
 import optype.numpy.compat as npc
-from ._array import CanArray1D, CanArray2D, CanArray3D, CanArrayND
 from ._sequence_nd import SequenceND as SeqND
 from optype._core._just import JustComplex, JustFloat, JustInt
 
@@ -125,88 +124,98 @@ SCT_co = TypeVar("SCT_co", bound=np.generic, covariant=True)
 # (and aren't runtime checkable)
 
 
-class _CanArray0D(Protocol[SCT_co]):
-    def __array__(self, /) -> np.ndarray[tuple[()], np.dtype[SCT_co]]: ...
+_CanArrayStrict1D = TypeAliasType(
+    "_CanArrayStrict1D",
+    "nptc.CanArray[tuple[int], np.dtype[SCT]]",
+    type_params=(SCT,),
+)
+_CanArrayStrict2D = TypeAliasType(
+    "_CanArrayStrict2D",
+    "nptc.CanArray[tuple[int, int], np.dtype[SCT]]",
+    type_params=(SCT,),
+)
+_CanArrayStrict3D = TypeAliasType(
+    "_CanArrayStrict3D",
+    "nptc.CanArray[tuple[int, int, int], np.dtype[SCT]]",
+    type_params=(SCT,),
+)
 
 
 class _CanArrayND(Protocol[SCT_co]):
+    def __len__(self, /) -> int: ...
     def __array__(self, /) -> np.ndarray[Any, np.dtype[SCT_co]]: ...
 
 
-_To1D1 = TypeAliasType(
-    "_To1D1",
-    CanArrayND[SCT] | Seq[_CanArray0D[SCT]],
-    type_params=(SCT,),
-)
-_To1D2 = TypeAliasType(
-    "_To1D2",
-    CanArrayND[SCT] | Seq[T | _CanArray0D[SCT]],
-    type_params=(T, SCT),
-)
+class _CanArray(Protocol[SCT_co]):
+    def __array__(self, /) -> np.ndarray[Any, np.dtype[SCT_co]]: ...
+
+
+_To1D1 = TypeAliasType("_To1D1", _CanArrayND[SCT] | Seq[SCT], type_params=(SCT,))
+_To1D2 = TypeAliasType("_To1D2", _CanArrayND[SCT] | Seq[T | SCT], type_params=(T, SCT))
 
 _To2D1 = TypeAliasType(
     "_To2D1",
-    CanArrayND[SCT] | Seq[_To1D1[SCT]],
+    _CanArrayND[SCT] | Seq[_To1D1[SCT]],
     type_params=(SCT,),
 )
 _To2D2 = TypeAliasType(
     "_To2D2",
-    CanArrayND[SCT] | Seq[_To1D2[T, SCT]],
+    _CanArrayND[SCT] | Seq[_To1D2[T, SCT]],
     type_params=(T, SCT),
 )
 
 _To3D1 = TypeAliasType(
     "_To3D1",
-    CanArrayND[SCT] | Seq[_To2D1[SCT]],
+    _CanArrayND[SCT] | Seq[_To2D1[SCT]],
     type_params=(SCT,),
 )
 _To3D2 = TypeAliasType(
     "_To3D2",
-    CanArrayND[SCT] | Seq[_To2D2[T, SCT]],
+    _CanArrayND[SCT] | Seq[_To2D2[T, SCT]],
     type_params=(T, SCT),
 )
 
 _ToND1 = TypeAliasType(
     "_ToND1",
-    CanArrayND[SCT] | SeqND[_CanArrayND[SCT]],
+    _CanArrayND[SCT] | SeqND[_CanArray[SCT]],
     type_params=(SCT,),
 )
 _ToND2 = TypeAliasType(
     "_ToND2",
-    CanArrayND[SCT] | SeqND[T | _CanArrayND[SCT]],
+    _CanArrayND[SCT] | SeqND[T | _CanArray[SCT]],
     type_params=(T, SCT),
 )
 
 _ToStrict1D1 = TypeAliasType(
     "_ToStrict1D1",
-    CanArray1D[SCT] | Seq[_CanArray0D[SCT]],
+    _CanArrayStrict1D[SCT] | Seq[SCT],
     type_params=(SCT,),
 )
 _ToStrict1D2 = TypeAliasType(
     "_ToStrict1D2",
-    CanArray1D[SCT] | Seq[T | _CanArray0D[SCT]],
+    _CanArrayStrict1D[SCT] | Seq[T | SCT],
     type_params=(T, SCT),
 )
 
 _ToStrict2D1 = TypeAliasType(
     "_ToStrict2D1",
-    CanArray2D[SCT] | Seq[_ToStrict1D1[SCT]],
+    _CanArrayStrict2D[SCT] | Seq[_ToStrict1D1[SCT]],
     type_params=(SCT,),
 )
 _ToStrict2D2 = TypeAliasType(
     "_ToStrict2D2",
-    CanArray2D[SCT] | Seq[_ToStrict1D2[T, SCT]],
+    _CanArrayStrict2D[SCT] | Seq[_ToStrict1D2[T, SCT]],
     type_params=(T, SCT),
 )
 
 _ToStrict3D1 = TypeAliasType(
     "_ToStrict3D1",
-    CanArray3D[SCT] | Seq[_ToStrict2D1[SCT]],
+    _CanArrayStrict3D[SCT] | Seq[_ToStrict2D1[SCT]],
     type_params=(SCT,),
 )
 _ToStrict3D2 = TypeAliasType(
     "_ToStrict3D2",
-    CanArray3D[SCT] | Seq[_ToStrict2D2[T, SCT]],
+    _CanArrayStrict3D[SCT] | Seq[_ToStrict2D2[T, SCT]],
     type_params=(T, SCT),
 )
 
@@ -218,7 +227,7 @@ _ToStrict3D2 = TypeAliasType(
 # https://github.com/jorenham/optype/issues/373
 
 integer_co = TypeAliasType("integer_co", npc.integer | np.bool_)
-floating_co = TypeAliasType("floating_co", npc.floating | integer_co)
+floating_co = TypeAliasType("floating_co", npc.floating | npc.integer | np.bool_)
 complexfloating_co = TypeAliasType("complexfloating_co", npc.number | np.bool_)
 
 # promotion rules with safe casting mode
@@ -236,11 +245,11 @@ c64_co = TypeAliasType(
 )
 f64_co = TypeAliasType(
     "f64_co",
-    npc.floating64 | npc.floating32 | npc.floating16 | integer_co,
+    npc.floating64 | npc.floating32 | npc.floating16 | npc.integer | np.bool_,
 )
 c128_co = TypeAliasType(
     "c128_co",
-    npc.number64 | npc.number32 | npc.number16 | integer_co,
+    npc.number64 | npc.number32 | npc.number16 | npc.integer | np.bool_,
 )
 
 
@@ -255,11 +264,11 @@ ToArray2D: TypeAlias = _To2D2[T, SCT]
 ToArray3D: TypeAlias = _To3D2[T, SCT]
 ToArrayND: TypeAlias = _ToND2[T, SCT]
 
-ToFalse = TypeAliasType("ToFalse", numpy_typing_compat.LiteralFalse | Literal[0])
-ToTrue = TypeAliasType("ToTrue", numpy_typing_compat.LiteralTrue | Literal[1])
+ToFalse = TypeAliasType("ToFalse", nptc.LiteralFalse | Literal[0])
+ToTrue = TypeAliasType("ToTrue", nptc.LiteralTrue | Literal[1])
 
-ToJustFalse = TypeAliasType("ToJustFalse", numpy_typing_compat.LiteralFalse)
-ToJustTrue = TypeAliasType("ToJustTrue", numpy_typing_compat.LiteralTrue)
+ToJustFalse = TypeAliasType("ToJustFalse", nptc.LiteralFalse)
+ToJustTrue = TypeAliasType("ToJustTrue", nptc.LiteralTrue)
 
 ToBool: TypeAlias = _PyBool | np.bool_
 ToBool1D: TypeAlias = _To1D2[_PyBool, np.bool_]
