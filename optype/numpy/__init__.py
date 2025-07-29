@@ -1,3 +1,39 @@
+# ruff: noqa: E402, PLC0415
+
+
+def _check_numpy_typing_compat() -> None:
+    try:
+        import numpy_typing_compat as nptc
+    except ImportError:
+        oh_no_an_import_error = (
+            "`optype.numpy` requires `numpy-typing-compat` to be installed, which is "
+            "available through the `optype[numpy]` extra. Please install it with "
+            "`uv install optype[numpy]`."
+        )
+        raise ImportError(oh_no_an_import_error) from None
+
+    if not nptc._check_version():  # noqa: SLF001
+        import warnings
+        from importlib.metadata import requires
+
+        import numpy as np
+
+        np_reqs = requires("numpy-typing-compat")
+        assert np_reqs
+        assert np_reqs[0].startswith("numpy")
+        np_req = np_reqs[0]
+
+        oh_no_an_import_warning = (
+            f"The installed version of `numpy-typing-compat` ({nptc.__version__}) "
+            f"requires {np_req!r}, but 'numpy=={np.__version__}' is installed. "
+            f"Please install the compatible version of `numpy-typing-compat`, e.g.:"
+            f"`uv pip install optype[numpy]`."
+        )
+        warnings.warn(oh_no_an_import_warning, ImportWarning, stacklevel=3)
+
+
+_check_numpy_typing_compat()
+
 # ruff: noqa: F403
 from . import (
     _any_array,
