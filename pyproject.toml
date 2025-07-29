@@ -30,7 +30,7 @@ dependencies = ["typing-extensions>=4.10; python_version<'3.13'"]
 [project.optional-dependencies]
 numpy = [
   "numpy>=1.25",
-  "numpy-typing-compat>=1.25",
+  "numpy-typing-compat>=1.25.20250729",
 ]
 
 [project.urls]
@@ -46,7 +46,7 @@ extra = [
 ]
 lint = [
   "dprint-py>=0.50.0.0",
-  "ruff>=0.12.4",
+  "ruff>=0.12.6",
   "sp-repo-review[cli]>=2025.5.2",
 ]
 test = [
@@ -60,7 +60,7 @@ type = [
   { include-group = "test" },
   "basedpyright>=1.31.0",
   "mypy>=1.17.0",
-  "orjson>=3.11.0; python_version<'3.14'", # used by mypy, but no 3.14 wheels yet
+  "orjson>=3.11.1; python_version<'3.14'", # used by mypy, but no 3.14 wheels yet
 ]
 dev = [
   { include-group = "extra" },
