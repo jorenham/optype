@@ -123,16 +123,10 @@ SCT_co = TypeVar("SCT_co", bound=np.generic, covariant=True)
 # unlike `optype.numpy.CanArray0D` and `CanArrayND`, these one also accepts scalar types
 # (and aren't runtime checkable)
 
-class _CanArray1D(Protocol[SCT_co]):
-    def __array__(self, /) -> np.ndarray[tuple[int], np.dtype[SCT_co]]: ...
 
-
-class _CanArray2D(Protocol[SCT_co]):
-    def __array__(self, /) -> np.ndarray[tuple[int, int], np.dtype[SCT_co]]: ...
-
-
-class _CanArray3D(Protocol[SCT_co]):
-    def __array__(self, /) -> np.ndarray[tuple[int, int, int], np.dtype[SCT_co]]: ...
+_CanArrayStrict1D: TypeAlias = nptc.CanArray[tuple[int], np.dtype[SCT]]
+_CanArrayStrict2D: TypeAlias = nptc.CanArray[tuple[int, int], np.dtype[SCT]]
+_CanArrayStrict3D: TypeAlias = nptc.CanArray[tuple[int, int, int], np.dtype[SCT]]
 
 
 class _CanArrayND(Protocol[SCT_co]):
@@ -182,34 +176,34 @@ _ToND2 = TypeAliasType(
 
 _ToStrict1D1 = TypeAliasType(
     "_ToStrict1D1",
-    _CanArray1D[SCT] | Seq[SCT],
+    _CanArrayStrict1D[SCT] | Seq[SCT],
     type_params=(SCT,),
 )
 _ToStrict1D2 = TypeAliasType(
     "_ToStrict1D2",
-    _CanArray1D[SCT] | Seq[T | SCT],
+    _CanArrayStrict1D[SCT] | Seq[T | SCT],
     type_params=(T, SCT),
 )
 
 _ToStrict2D1 = TypeAliasType(
     "_ToStrict2D1",
-    _CanArray2D[SCT] | Seq[_ToStrict1D1[SCT]],
+    _CanArrayStrict2D[SCT] | Seq[_ToStrict1D1[SCT]],
     type_params=(SCT,),
 )
 _ToStrict2D2 = TypeAliasType(
     "_ToStrict2D2",
-    _CanArray2D[SCT] | Seq[_ToStrict1D2[T, SCT]],
+    _CanArrayStrict2D[SCT] | Seq[_ToStrict1D2[T, SCT]],
     type_params=(T, SCT),
 )
 
 _ToStrict3D1 = TypeAliasType(
     "_ToStrict3D1",
-    _CanArray3D[SCT] | Seq[_ToStrict2D1[SCT]],
+    _CanArrayStrict3D[SCT] | Seq[_ToStrict2D1[SCT]],
     type_params=(SCT,),
 )
 _ToStrict3D2 = TypeAliasType(
     "_ToStrict3D2",
-    _CanArray3D[SCT] | Seq[_ToStrict2D2[T, SCT]],
+    _CanArrayStrict3D[SCT] | Seq[_ToStrict2D2[T, SCT]],
     type_params=(T, SCT),
 )
 
