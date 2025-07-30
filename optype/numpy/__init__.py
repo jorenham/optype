@@ -15,7 +15,6 @@ def _check_numpy_typing_compat() -> None:
         raise ImportError(oh_no_an_import_error) from None
 
     if not nptc._check_version():  # noqa: SLF001
-        import warnings
         from importlib.metadata import requires
 
         import numpy as np
@@ -25,25 +24,23 @@ def _check_numpy_typing_compat() -> None:
         assert np_reqs[0].startswith("numpy")
         np_req = np_reqs[0]
 
-        oh_no_an_import_warning = (
+        oh_no_an_import_error = (
             f"The installed version of 'numpy-typing-compat' ({nptc.__version__}) "
             f"requires {np_req!r}, but 'numpy=={np.__version__}' is installed. "
             f"Please install the compatible version of `numpy-typing-compat`, e.g.:"
             f"`uv pip install optype[numpy]`."
         )
-        warnings.warn(oh_no_an_import_warning, ImportWarning, stacklevel=3)
+        raise ImportError(oh_no_an_import_error)
 
     v_major, v_minor, v_patch = map(int, nptc.__version__.split(".", 2)[:3])
     if v_patch < _NPTC_BUILD:
-        import warnings
-
         v_req = f">={v_major}.{v_minor}.{_NPTC_BUILD}, <{v_major}.{v_minor + 1}"
 
-        oh_no_an_import_warning = (
+        oh_no_an_import_error = (
             f"The installed version of 'optype-numpy-compat' ({nptc.__version__}) is "
-            f"unsupported. Please upgrade to {v_req!r}."
+            f"unsupported. Please upgrade to {v_req}."
         )
-        warnings.warn(oh_no_an_import_warning, ImportWarning, stacklevel=3)
+        raise ImportError(oh_no_an_import_error)
 
 
 _check_numpy_typing_compat()
