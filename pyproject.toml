@@ -30,7 +30,7 @@ dependencies = ["typing-extensions>=4.10; python_version<'3.13'"]
 [project.optional-dependencies]
 numpy = [
   "numpy>=1.25",
-  "numpy-typing-compat>=1.25.20250729",
+  "numpy-typing-compat >=1.25.20250730",
 ]
 
 [project.urls]
@@ -46,7 +46,7 @@ extra = [
 ]
 lint = [
   "dprint-py>=0.50.0.0",
-  "ruff>=0.12.6",
+  "ruff>=0.12.7",
   "sp-repo-review[cli]>=2025.5.2",
 ]
 test = [
