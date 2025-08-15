@@ -1,5 +1,5 @@
 [build-system]
-requires = ["uv_build>=0.8"]
+requires = ["uv_build>=0.8.11"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
@@ -8,7 +8,7 @@ module-root = ""
 [project]
 name = "optype"
 description = "Building blocks for precise & flexible type hints"
-version = "0.13.1"
+version = "0.13.2.dev0"
 authors = [{ name = "Joren Hammudoglu", email = "jhammudoglu@gmail.com" }]
 license = "BSD-3-Clause"
 license-files = ["LICENSE"]
@@ -29,8 +29,7 @@ dependencies = ["typing-extensions>=4.10; python_version<'3.13'"]
 
 [project.optional-dependencies]
 numpy = [
-  "numpy>=1.25",
-  "numpy-typing-compat >=1.25.20250730",
+  "numpy-typing-compat >=1.25.20250814",
 ]
 
 [project.urls]
@@ -45,8 +44,8 @@ extra = [
   "optype[numpy]",
 ]
 lint = [
-  "dprint-py>=0.50.0.0",
-  "ruff>=0.12.7",
+  "dprint-py>=0.50.1.4",
+  "ruff>=0.12.9",
   "sp-repo-review[cli]>=2025.5.2",
 ]
 test = [
@@ -58,9 +57,8 @@ test = [
 type = [
   { include-group = "extra" },
   { include-group = "test" },
-  "basedpyright>=1.31.0",
-  "mypy>=1.17.0",
-  "orjson>=3.11.1; python_version<'3.14'", # used by mypy, but no 3.14 wheels yet
+  "basedpyright>=1.31.2",
+  "mypy[faster-cache]>=1.17.1",
 ]
 dev = [
   { include-group = "extra" },
