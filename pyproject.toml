@@ -29,7 +29,7 @@ dependencies = ["typing-extensions>=4.10; python_version<'3.13'"]
 
 [project.optional-dependencies]
 numpy = [
-  "numpy-typing-compat >=1.25.20250814",
+  "numpy-typing-compat >=1.25.20250814,<3",
 ]
 
 [project.urls]
