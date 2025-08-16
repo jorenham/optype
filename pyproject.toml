@@ -7,21 +7,43 @@ module-root = ""
 
 [project]
 name = "optype"
-description = "Building blocks for precise & flexible type hints"
+description = "Building Blocks for Precise & Flexible Type Hints"
 version = "0.13.3.dev0"
 authors = [{ name = "Joren Hammudoglu", email = "jhammudoglu@gmail.com" }]
 license = "BSD-3-Clause"
 license-files = ["LICENSE"]
 readme = "README.md"
-keywords = ["typing", "type hints", "numpy"]
+keywords = [
+  "annotations",
+  "basedpyright",
+  "checker",
+  "checking",
+  "hinting",
+  "hints",
+  "mypy",
+  "numpy",
+  "numpy-typing-compat",
+  "pyright",
+  "protocols",
+  "stubs",
+  "type",
+  "typechecking",
+  "typehinting",
+  "typehints",
+  "typing",
+]
 classifiers = [
   "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Software Development",
   "Typing :: Typed",
 ]
 requires-python = ">=3.11"
