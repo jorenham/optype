@@ -32,8 +32,15 @@ def _check_numpy_typing_compat() -> None:
         )
         raise ImportError(oh_no_an_import_error)
 
-    v_major, v_minor, v_patch = map(int, nptc.__version__.split(".", 2)[:3])
-    if v_patch < _NPTC_BUILD:
+    v_major, v_minor, v_build = map(int, nptc.__version__.split(".", 2)[:3])
+
+    if v_major > v_build:
+        # new versioning scheme
+        v_build, v_major, v_minor = v_major, v_minor, v_build
+        assert v_build > 2025_08_14, v_build
+
+    elif v_build < _NPTC_BUILD:
+        # old versioning scheme
         v_req = f">={v_major}.{v_minor}.{_NPTC_BUILD}, <{v_major}.{v_minor + 1}"
 
         oh_no_an_import_error = (
