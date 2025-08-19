@@ -75,10 +75,9 @@ Optype is available as [`optype`][PYPI] on PyPI:
 pip install optype
 ```
 
-For optional [NumPy][NUMPY] support, it is recommended to use the
-`numpy` extra.
-This ensures that the installed `numpy` version is compatible with
-`optype`, following [NEP 29][NEP29] and [SPEC 0][SPEC0].
+For optional [NumPy][NUMPY] support, ensure that you use the `optype[numpy]` extra.
+This ensures that the installed `numpy` and the required [`numpy-typing-compat`][NPTC]
+versions are compatible with each other.
 
 ```shell
 pip install "optype[numpy]"
@@ -94,9 +93,18 @@ Optype can also be installed with `conda` from the [`conda-forge`][CONDA] channe
 conda install conda-forge::optype
 ```
 
+If you want to use [`optype.numpy`](#optypenumpy), you should instead install
+[`optype-numpy`][CONDA-NP]:
+
+```shell
+conda install conda-forge::optype-numpy
+```
+
 [PYPI]: https://pypi.org/project/optype/
 [CONDA]: https://anaconda.org/conda-forge/optype
+[CONDA-NP]: https://anaconda.org/conda-forge/optype-numpy
 [NUMPY]: https://github.com/numpy/numpy
+[NPTC]: https://github.com/jorenham/numpy-typing-compat
 
 ## Example
 
@@ -2467,11 +2475,16 @@ Optype supports both NumPy 1 and 2.
 The current minimum supported version is `1.25`,
 following [NEP 29][NEP29] and [SPEC 0][SPEC0].
 
-When using `optype.numpy`, it is recommended to install `optype` with the
-`numpy` extra, ensuring version compatibility:
+When using `optype.numpy`, be sure to install `optype` with the `numpy` PyPI extra:
 
 ```shell
 pip install "optype[numpy]"
+```
+
+To install with `conda`, the [`optype-numpy`][CONDA-NP] package can be used:
+
+```shell
+conda install conda-forge::optype-numpy
 ```
 
 > [!NOTE]
