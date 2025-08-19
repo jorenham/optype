@@ -1,6 +1,6 @@
 # ruff: noqa: E402, PLC0415
 
-_NPTC_BUILD = 2025_07_30
+_NPTC_BUILD = 2025_08_18
 
 
 def _check_numpy_typing_compat() -> None:
@@ -27,21 +27,15 @@ def _check_numpy_typing_compat() -> None:
         oh_no_an_import_error = (
             f"The installed version of 'numpy-typing-compat' ({nptc.__version__}) "
             f"requires {np_req!r}, but 'numpy=={np.__version__}' is installed. "
-            f"Please install the compatible version of `numpy-typing-compat`, e.g.:"
-            f"`uv pip install optype[numpy]`."
+            f"Please install the compatible version of `numpy-typing-compat`, e.g. "
+            f"with `uv pip install optype[numpy]` or `pixi add optype-numpy`."
         )
         raise ImportError(oh_no_an_import_error)
 
-    v_major, v_minor, v_build = map(int, nptc.__version__.split(".", 2)[:3])
+    v_build, v_major, v_minor = map(int, nptc.__version__.split(".", 2)[:3])
 
-    if v_major > v_build:
-        # new versioning scheme
-        v_build, v_major, v_minor = v_major, v_minor, v_build
-        assert v_build > 2025_08_14, v_build
-
-    elif v_build < _NPTC_BUILD:
-        # old versioning scheme
-        v_req = f">={v_major}.{v_minor}.{_NPTC_BUILD}, <{v_major}.{v_minor + 1}"
+    if v_build < _NPTC_BUILD:
+        v_req = f"{_NPTC_BUILD}.{v_major}.{v_minor}"
 
         oh_no_an_import_error = (
             f"The installed version of 'optype-numpy-compat' ({nptc.__version__}) is "

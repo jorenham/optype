@@ -235,14 +235,14 @@ wheels = [
 
 [[package]]
 name = "numpy-typing-compat"
-version = "2.3.20250814"
+version = "20250818.2.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7c/d3/da1034868794b1c60eef891c5d123ab6008d9d10dd1a8371a2277201a15c/numpy_typing_compat-2.3.20250814.tar.gz", hash = "sha256:5b27cda3b05cf95eacb4296443ff9cd640d5adfed59067d4b7cbcfb22898916d", size = 4760, upload-time = "2025-08-14T21:22:12.677Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c9/e3/1a29f174c1e09a2bf111d37a41afceea1b501371abb39e73170ca31a7599/numpy_typing_compat-20250818.2.3.tar.gz", hash = "sha256:72e83d535b635d668ba7315e43ae80be1469a6faea6fc96d312516f39b3d8fa5", size = 4974, upload-time = "2025-08-18T23:46:42.968Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/39/92/7905fd41db8f2f4b4bdd22f3a106b27e8f83aaa40d9c58b594f671cca988/numpy_typing_compat-2.3.20250814-py3-none-any.whl", hash = "sha256:e94d188edc728a7720470a60bac9e193d77680998a614517793ca9fd0c19833a", size = 6102, upload-time = "2025-08-14T21:22:06.068Z" },
+    { url = "https://files.pythonhosted.org/packages/c9/4a/fa4c90a03d6a8ee1a7f0e0fb101887d9a8cdb9b07a5901af9ae831e9feea/numpy_typing_compat-20250818.2.3-py3-none-any.whl", hash = "sha256:930413d34dd9083c0bf418815576222f1c66ea2d68950f447fd27ea1a78b26b0", size = 6286, upload-time = "2025-08-18T23:46:35.681Z" },
 ]
 
 [[package]]
@@ -255,6 +255,7 @@ dependencies = [
 
 [package.optional-dependencies]
 numpy = [
+    { name = "numpy" },
     { name = "numpy-typing-compat" },
 ]
 
@@ -295,7 +296,8 @@ type = [
 
 [package.metadata]
 requires-dist = [
-    { name = "numpy-typing-compat", marker = "extra == 'numpy'", specifier = ">=1.25.20250814,<3" },
+    { name = "numpy", marker = "extra == 'numpy'", specifier = ">=1.25" },
+    { name = "numpy-typing-compat", marker = "extra == 'numpy'", specifier = ">=20250818.1.25,<20250819" },
     { name = "typing-extensions", marker = "python_full_version < '3.13'", specifier = ">=4.10" },
 ]
 provides-extras = ["numpy"]
