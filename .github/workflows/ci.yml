@@ -13,6 +13,7 @@ concurrency:
 
 env:
   UV_LOCKED: 1
+  NPTC_BUILD: 20250818
 
 jobs:
   lint:
@@ -31,7 +32,7 @@ jobs:
         uses: dprint/check@v2.3
 
       - name: typos
-        uses: crate-ci/typos@v1.35.4
+        uses: crate-ci/typos@v1.35.5
 
       - uses: astral-sh/setup-uv@v6.5.0
         with:
@@ -70,7 +71,7 @@ jobs:
         run: >
           uv pip install
           numpy==${{ matrix.np }}.*
-          numpy-typing-compat==${{ matrix.np }}.*
+          numpy-typing-compat==${{ env.NPTC_BUILD }}.${{ matrix.np }}
 
       - name: basedpyright
         run: basedpyright
@@ -110,5 +111,5 @@ jobs:
         run: >-
           uv run
           --with="numpy==${{ matrix.np }}.*"
-          --with="numpy-typing-compat==${{ matrix.np }}.*"
+          --with="numpy-typing-compat==${{ env.NPTC_BUILD }}.${{ matrix.np }}"
           pytest
