@@ -2471,17 +2471,19 @@ internal type-codes of the `DLPack` data types.
 
 ### `optype.numpy`
 
-Optype supports both NumPy 1 and 2.
-The current minimum supported version is `1.25`,
+Optype supports both NumPy 1 and 2. The current minimum supported version is `1.25`,
 following [NEP 29][NEP29] and [SPEC 0][SPEC0].
 
-When using `optype.numpy`, be sure to install `optype` with the `numpy` PyPI extra:
+`optype.numpy` uses [`numpy-typing-compat`][NPTC] package to ensure compatibility for
+older versions of NumPy. To ensure that the correct versions of `numpy` and
+`numpy-typing-compat` are installed, you should install `optype` with the `numpy` extra:
 
 ```shell
 pip install "optype[numpy]"
 ```
 
-To install with `conda`, the [`optype-numpy`][CONDA-NP] package can be used:
+If you're using `conda`, the [`optype-numpy`][CONDA-NP] package can be used, which
+will also install the required `numpy` and `numpy-typing-compat` versions:
 
 ```shell
 conda install conda-forge::optype-numpy
