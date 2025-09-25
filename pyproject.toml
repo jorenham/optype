@@ -248,6 +248,7 @@ env_list = [
   "dprint",
   "ruff",
   "mypy",
+  "pyrefly",
   "pyright",
   "pyright-verify",
   "repo-review",
@@ -314,6 +315,7 @@ dependency_groups = ["type"]
 commands = [
   [
     "pyrefly",
+    "check",
     { replace = "posargs", default = [], extend = true },
   ],
 ]
