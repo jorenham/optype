@@ -2,25 +2,28 @@ version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
-    target-branch: "master"
     schedule:
       interval: weekly
+    allow:
+      - dependency-type: all
     labels:
-      - "is: chore"
       - "topic: github actions"
     groups:
       actions:
-        patterns:
-          - "*"
+        patterns: ["*"]
+
   - package-ecosystem: uv
+    versioning-strategy: increase
     directory: /
-    target-branch: master
     schedule:
       interval: weekly
+    allow:
+      - dependency-type: all
+    ignore:
+      - dependency-name: numpy
+      - dependency-name: typing-extensions
     labels:
-      - "is: chore"
       - "topic: dependencies"
     groups:
       actions:
-        patterns:
-          - "*"
+        patterns: ["*"]
