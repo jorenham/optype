@@ -82,6 +82,7 @@ type = [
   { include-group = "test" },
   "basedpyright>=1.31.5",
   "mypy[faster-cache]>=1.18.2",
+  "pyrefly==0.34.0",
 ]
 dev = [
   { include-group = "extra" },
@@ -109,6 +110,11 @@ enable_error_code = [
 ]
 warn_return_any = false
 warn_unreachable = false # numpy-typing-compat compat
+
+# pyrefly
+
+[tool.pyrefly]
+project-includes = ["optype", "examples", "tests"]
 
 # [based]pyright
 
