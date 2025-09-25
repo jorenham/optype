@@ -374,20 +374,20 @@ def nd_sca() -> None:
     f8_co__f8_co: onp.ToFloat64_ND = f8_co  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     c16_co__c16_co: onp.ToComplex128_ND = c16_co  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
-def nd_1d(
-    to_x_1d: onp.ToArray1D,
-    to_b_1d: onp.ToBool1D,
-    to_i_1d: onp.ToJustInt1D,
-    to_f_1d: onp.ToJustFloat1D,
-    to_c_1d: onp.ToJustComplex1D,
-    to_f8_1d: onp.ToJustFloat64_1D,
-    to_c16_1d: onp.ToJustComplex128_1D,
-    to_i_co_1d: onp.ToInt1D,
-    to_f_co_1d: onp.ToFloat1D,
-    to_c_co_1d: onp.ToComplex1D,
-    to_f8_co_1d: onp.ToFloat64_1D,
-    to_c16_co_1d: onp.ToComplex128_1D,
-) -> None:
+def nd_1d() -> None:
+    to_x_1d: onp.ToArray1D
+    to_b_1d: onp.ToBool1D
+    to_i_1d: onp.ToJustInt1D
+    to_f_1d: onp.ToJustFloat1D
+    to_c_1d: onp.ToJustComplex1D
+    to_f8_1d: onp.ToJustFloat64_1D
+    to_c16_1d: onp.ToJustComplex128_1D
+    to_i_co_1d: onp.ToInt1D
+    to_f_co_1d: onp.ToFloat1D
+    to_c_co_1d: onp.ToComplex1D
+    to_f8_co_1d: onp.ToFloat64_1D
+    to_c16_co_1d: onp.ToComplex128_1D
+
     x__x: onp.ToArrayND = to_x_1d
     b__b: onp.ToBoolND = to_b_1d
     i__i: onp.ToJustIntND = to_i_1d
@@ -401,20 +401,20 @@ def nd_1d(
     f8_co__f8: onp.ToFloat64_ND = to_f8_co_1d
     c16_co__c16: onp.ToComplex128_ND = to_c16_co_1d
 
-def nd_2d(
-    to_x_2d: onp.ToArray2D,
-    to_b_2d: onp.ToBool2D,
-    to_i_2d: onp.ToJustInt2D,
-    to_f_2d: onp.ToJustFloat2D,
-    to_c_2d: onp.ToJustComplex2D,
-    to_f8_2d: onp.ToJustFloat64_2D,
-    to_c16_2d: onp.ToJustComplex128_2D,
-    to_i_co_2d: onp.ToInt2D,
-    to_f_co_2d: onp.ToFloat2D,
-    to_c_co_2d: onp.ToComplex2D,
-    to_f8_co_2d: onp.ToFloat64_2D,
-    to_c16_co_2d: onp.ToComplex128_2D,
-) -> None:
+def nd_2d() -> None:
+    to_x_2d: onp.ToArray2D
+    to_b_2d: onp.ToBool2D
+    to_i_2d: onp.ToJustInt2D
+    to_f_2d: onp.ToJustFloat2D
+    to_c_2d: onp.ToJustComplex2D
+    to_f8_2d: onp.ToJustFloat64_2D
+    to_c16_2d: onp.ToJustComplex128_2D
+    to_i_co_2d: onp.ToInt2D
+    to_f_co_2d: onp.ToFloat2D
+    to_c_co_2d: onp.ToComplex2D
+    to_f8_co_2d: onp.ToFloat64_2D
+    to_c16_co_2d: onp.ToComplex128_2D
+
     x__x: onp.ToArrayND = to_x_2d
     b__b: onp.ToBoolND = to_b_2d
     i__i: onp.ToJustIntND = to_i_2d
@@ -428,20 +428,20 @@ def nd_2d(
     f8_co__f8: onp.ToFloat64_ND = to_f8_co_2d
     c16_co__c16: onp.ToComplex128_ND = to_c16_co_2d
 
-def nd_3d(
-    to_x_3d: onp.ToArray3D,
-    to_b_3d: onp.ToBool3D,
-    to_i_3d: onp.ToJustInt3D,
-    to_f_3d: onp.ToJustFloat3D,
-    to_c_3d: onp.ToJustComplex3D,
-    to_f8_3d: onp.ToJustFloat64_3D,
-    to_c16_3d: onp.ToJustComplex128_3D,
-    to_i_co_3d: onp.ToInt3D,
-    to_f_co_3d: onp.ToFloat3D,
-    to_c_co_3d: onp.ToComplex3D,
-    to_f8_co_3d: onp.ToFloat64_3D,
-    to_c16_co_3d: onp.ToComplex128_3D,
-) -> None:
+def nd_3d() -> None:
+    to_x_3d: onp.ToArray3D
+    to_b_3d: onp.ToBool3D
+    to_i_3d: onp.ToJustInt3D
+    to_f_3d: onp.ToJustFloat3D
+    to_c_3d: onp.ToJustComplex3D
+    to_f8_3d: onp.ToJustFloat64_3D
+    to_c16_3d: onp.ToJustComplex128_3D
+    to_i_co_3d: onp.ToInt3D
+    to_f_co_3d: onp.ToFloat3D
+    to_c_co_3d: onp.ToComplex3D
+    to_f8_co_3d: onp.ToFloat64_3D
+    to_c16_co_3d: onp.ToComplex128_3D
+
     x__x: onp.ToArrayND = to_x_3d
     # J: I'm not sure what's going on here with pyrefly, and why it only occurs here.
     # It might be related facebook/pyrefly#778, so let's hope it'll resolve itself,
