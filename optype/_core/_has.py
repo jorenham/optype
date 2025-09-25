@@ -60,7 +60,11 @@ _DictT = TypeVar("_DictT", bound=__AnyMapping, default=__AnyDict)
 _DictT_co = TypeVar("_DictT_co", bound=__AnyMapping, default=__AnyDict, covariant=True)
 
 _NameT = TypeVar("_NameT", bound=str, default=str)
-_QualNameT = TypeVar("_QualNameT", bound=str, default=_NameT)
+_QualNameT = TypeVar(
+    "_QualNameT",
+    bound=str,
+    default=_NameT,  # pyrefly: ignore[invalid-type-var]
+)
 _StrT_co = TypeVar("_StrT_co", bound=str, default=str, covariant=True)
 
 

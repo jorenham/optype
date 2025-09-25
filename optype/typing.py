@@ -62,6 +62,7 @@ _ValueT = TypeVar("_ValueT", default=object)
     "and will be removed in optype 0.10.0",
 )
 class Just(  # type: ignore[misc]
+    # pyrefly: ignore[invalid-inheritance]
     _just.Just[_T],  # pyright: ignore[reportGeneralTypeIssues]
     Protocol[_T],
 ): ...

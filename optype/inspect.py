@@ -9,7 +9,7 @@ else:
     from typing_extensions import (  # type: ignore[attr-defined]
         TypeAliasType,
         TypeIs,
-        _get_protocol_attrs,  # noqa: PLC2701  # pyright: ignore[reportAttributeAccessIssue, reportUnknownVariableType]
+        _get_protocol_attrs,  # noqa: PLC2701  # pyrefly: ignore[missing-module-attribute]  # pyright: ignore[reportAttributeAccessIssue, reportUnknownVariableType]
         is_protocol,
     )
 

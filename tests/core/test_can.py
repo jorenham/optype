@@ -180,12 +180,14 @@ def test_can_iadd_same_list_accept() -> None:
     # acceptance tests (true negatives)
     x: list[int] = [42]
     assert isinstance(x, op.CanIAddSame)
-    assert issubclass(list, op.CanIAddSame)
 
     a0: op.CanIAddSame = x
     a1: op.CanIAddSame[Any] = x
     a2: op.CanIAddSame[list[int]] = x
     a3: op.CanIAddSame[bytes] = x
+
+    # https://github.com/facebook/pyrefly/issues/1164
+    assert issubclass(list, op.CanIAddSame)
 
 
 def test_can_iadd_same_list_reject() -> None:
