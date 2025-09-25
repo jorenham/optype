@@ -75,105 +75,31 @@ _Arr1_c_co: TypeAlias = onp.Array1D[_Sca_c_co] | Seq[_Val_c_co]
 _Arr1_f8_co: TypeAlias = onp.Array1D[_Sca_f8_co] | Seq[_Val_f8_co]
 _Arr1_c16_co: TypeAlias = onp.Array1D[_Sca_c16_co] | Seq[_Val_c16_co]
 
-_Arr2_x: TypeAlias = onp.Array2D[_Sca_x] | Seq[onp.Array1D[_Sca_x]] | Seq[Seq[_Val_x]]
-_Arr2_b: TypeAlias = onp.Array2D[_Sca_b] | Seq[onp.Array1D[_Sca_b]] | Seq[Seq[_Val_b]]
-_Arr2_i: TypeAlias = onp.Array2D[_Sca_i] | Seq[onp.Array1D[_Sca_i]] | Seq[Seq[_Val_i]]
-_Arr2_f: TypeAlias = onp.Array2D[_Sca_f] | Seq[onp.Array1D[_Sca_f]] | Seq[Seq[_Val_f]]
-_Arr2_c: TypeAlias = onp.Array2D[_Sca_c] | Seq[onp.Array1D[_Sca_c]] | Seq[Seq[_Val_c]]
-_Arr2_f8: TypeAlias = (
-    onp.Array2D[_Sca_f8] | Seq[onp.Array1D[_Sca_f8]] | Seq[Seq[_Val_f8]]
-)
-_Arr2_c16: TypeAlias = (
-    onp.Array2D[_Sca_c16] | Seq[onp.Array1D[_Sca_c16]] | Seq[Seq[_Val_c16]]
-)
-_Arr2_i_co: TypeAlias = (
-    onp.Array2D[_Sca_i_co] | Seq[onp.Array1D[_Sca_i_co]] | Seq[Seq[_Val_i_co]]
-)
-_Arr2_f_co: TypeAlias = (
-    onp.Array2D[_Sca_f_co] | Seq[onp.Array1D[_Sca_f_co]] | Seq[Seq[_Val_f_co]]
-)
-_Arr2_c_co: TypeAlias = (
-    onp.Array2D[_Sca_c_co] | Seq[onp.Array1D[_Sca_c_co]] | Seq[Seq[_Val_c_co]]
-)
-_Arr2_f8_co: TypeAlias = (
-    onp.Array2D[_Sca_f8_co] | Seq[onp.Array1D[_Sca_f8_co]] | Seq[Seq[_Val_f8_co]]
-)
-_Arr2_c16_co: TypeAlias = (
-    onp.Array2D[_Sca_c16_co] | Seq[onp.Array1D[_Sca_c16_co]] | Seq[Seq[_Val_c16_co]]
-)
+_Arr2_x: TypeAlias = onp.Array2D[_Sca_x] | Seq[_Arr1_x]
+_Arr2_b: TypeAlias = onp.Array2D[_Sca_b] | Seq[_Arr1_b]
+_Arr2_i: TypeAlias = onp.Array2D[_Sca_i] | Seq[_Arr1_i]
+_Arr2_f: TypeAlias = onp.Array2D[_Sca_f] | Seq[_Arr1_f]
+_Arr2_c: TypeAlias = onp.Array2D[_Sca_c] | Seq[_Arr1_c]
+_Arr2_f8: TypeAlias = onp.Array2D[_Sca_f8] | Seq[_Arr1_f8]
+_Arr2_c16: TypeAlias = onp.Array2D[_Sca_c16] | Seq[_Arr1_c16]
+_Arr2_i_co: TypeAlias = onp.Array2D[_Sca_i_co] | Seq[_Arr1_i_co]
+_Arr2_f_co: TypeAlias = onp.Array2D[_Sca_f_co] | Seq[_Arr1_f_co]
+_Arr2_c_co: TypeAlias = onp.Array2D[_Sca_c_co] | Seq[_Arr1_c_co]
+_Arr2_f8_co: TypeAlias = onp.Array2D[_Sca_f8_co] | Seq[_Arr1_f8_co]
+_Arr2_c16_co: TypeAlias = onp.Array2D[_Sca_c16_co] | Seq[_Arr1_c16_co]
 
-_Arr3_x: TypeAlias = (
-    onp.Array3D[_Sca_x]
-    | Seq[onp.Array2D[_Sca_x]]
-    | Seq[Seq[onp.Array1D[_Sca_x]]]
-    | Seq[Seq[Seq[_Val_x]]]
-)
-_Arr3_b: TypeAlias = (
-    onp.Array3D[_Sca_b]
-    | Seq[onp.Array2D[_Sca_b]]
-    | Seq[Seq[onp.Array1D[_Sca_b]]]
-    | Seq[Seq[Seq[_Val_b]]]
-)
-_Arr3_i: TypeAlias = (
-    onp.Array3D[_Sca_i]
-    | Seq[onp.Array2D[_Sca_i]]
-    | Seq[Seq[onp.Array1D[_Sca_i]]]
-    | Seq[Seq[Seq[_Val_i]]]
-)
-_Arr3_f: TypeAlias = (
-    onp.Array3D[_Sca_f]
-    | Seq[onp.Array2D[_Sca_f]]
-    | Seq[Seq[onp.Array1D[_Sca_f]]]
-    | Seq[Seq[Seq[_Val_f]]]
-)
-_Arr3_c: TypeAlias = (
-    onp.Array3D[_Sca_c]
-    | Seq[onp.Array2D[_Sca_c]]
-    | Seq[Seq[onp.Array1D[_Sca_c]]]
-    | Seq[Seq[Seq[_Val_c]]]
-)
-_Arr3_f8: TypeAlias = (
-    onp.Array3D[_Sca_f8]
-    | Seq[onp.Array2D[_Sca_f8]]
-    | Seq[Seq[onp.Array1D[_Sca_f8]]]
-    | Seq[Seq[Seq[_Val_f8]]]
-)
-_Arr3_c16: TypeAlias = (
-    onp.Array3D[_Sca_c16]
-    | Seq[onp.Array2D[_Sca_c16]]
-    | Seq[Seq[onp.Array1D[_Sca_c16]]]
-    | Seq[Seq[Seq[_Val_c16]]]
-)
-_Arr3_i_co: TypeAlias = (
-    onp.Array3D[_Sca_i_co]
-    | Seq[onp.Array2D[_Sca_i_co]]
-    | Seq[Seq[onp.Array1D[_Sca_i_co]]]
-    | Seq[Seq[Seq[_Val_i_co]]]
-)
-_Arr3_f_co: TypeAlias = (
-    onp.Array3D[_Sca_f_co]
-    | Seq[onp.Array2D[_Sca_f_co]]
-    | Seq[Seq[onp.Array1D[_Sca_f_co]]]
-    | Seq[Seq[Seq[_Val_f_co]]]
-)
-_Arr3_c_co: TypeAlias = (
-    onp.Array3D[_Sca_c_co]
-    | Seq[onp.Array2D[_Sca_c_co]]
-    | Seq[Seq[onp.Array1D[_Sca_c_co]]]
-    | Seq[Seq[Seq[_Val_c_co]]]
-)
-_Arr3_f8_co: TypeAlias = (
-    onp.Array3D[_Sca_f8_co]
-    | Seq[onp.Array2D[_Sca_f8_co]]
-    | Seq[Seq[onp.Array1D[_Sca_f8_co]]]
-    | Seq[Seq[Seq[_Val_f8_co]]]
-)
-_Arr3_c16_co: TypeAlias = (
-    onp.Array3D[_Sca_c16_co]
-    | Seq[onp.Array2D[_Sca_c16_co]]
-    | Seq[Seq[onp.Array1D[_Sca_c16_co]]]
-    | Seq[Seq[Seq[_Val_c16_co]]]
-)
+_Arr3_x: TypeAlias = onp.Array3D[_Sca_x] | Seq[_Arr2_x]
+_Arr3_b: TypeAlias = onp.Array3D[_Sca_b] | Seq[_Arr2_b]
+_Arr3_i: TypeAlias = onp.Array3D[_Sca_i] | Seq[_Arr2_i]
+_Arr3_f: TypeAlias = onp.Array3D[_Sca_f] | Seq[_Arr2_f]
+_Arr3_c: TypeAlias = onp.Array3D[_Sca_c] | Seq[_Arr2_c]
+_Arr3_f8: TypeAlias = onp.Array3D[_Sca_f8] | Seq[_Arr2_f8]
+_Arr3_c16: TypeAlias = onp.Array3D[_Sca_c16] | Seq[_Arr2_c16]
+_Arr3_i_co: TypeAlias = onp.Array3D[_Sca_i_co] | Seq[_Arr2_i_co]
+_Arr3_f_co: TypeAlias = onp.Array3D[_Sca_f_co] | Seq[_Arr2_f_co]
+_Arr3_c_co: TypeAlias = onp.Array3D[_Sca_c_co] | Seq[_Arr2_c_co]
+_Arr3_f8_co: TypeAlias = onp.Array3D[_Sca_f8_co] | Seq[_Arr2_f8_co]
+_Arr3_c16_co: TypeAlias = onp.Array3D[_Sca_c16_co] | Seq[_Arr2_c16_co]
 
 x_: _Val_x
 b_: _Val_b
