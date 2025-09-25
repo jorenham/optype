@@ -307,6 +307,17 @@ commands = [
   ],
 ]
 
+[tool.tox.env.pyrefly]
+description = "pyrefly"
+runner = "uv-venv-lock-runner"
+dependency_groups = ["type"]
+commands = [
+  [
+    "pyrefly",
+    { replace = "posargs", default = [], extend = true },
+  ],
+]
+
 [tool.tox.env.pyright]
 description = "basedpyright"
 runner = "uv-venv-lock-runner"
