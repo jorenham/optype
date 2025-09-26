@@ -1743,11 +1743,11 @@ runtime-checkable interfaces:
     </tr>
     <tr>
         <td>
-            <code>copy.replace(_, /, **changes: V) -> R</code>
+            <code>copy.replace(_, /, **changes) -> R</code>
             <sup>[1]</sup>
         </td>
-        <td><code>__replace__(**changes: V) -> R</code></td>
-        <td><code>CanReplace[-V, +R]</code></td>
+        <td><code>__replace__(**changes) -> R</code></td>
+        <td><code>CanReplace[+R]</code></td>
     </tr>
 </table>
 
@@ -1759,12 +1759,12 @@ original.
 But because `typing.Self` cannot be used as a type argument, this difficult
 to properly type.
 Instead, you can use the `optype.copy.Can{}Self` types, which are the
-runtime-checkable equivalents of the following (recursive) type aliases:
+runtime-checkable equivalents of the following (non-expressible) aliases:
 
 ```python
-type CanCopySelf = CanCopy[CanCopySelf]
-type CanDeepcopySelf = CanDeepcopy[CanDeepcopySelf]
-type CanReplaceSelf[V] = CanReplace[V, CanReplaceSelf[V]]
+type CanCopySelf = CanCopy[Self]
+type CanDeepcopySelf = CanDeepcopy[Self]
+type CanReplaceSelf = CanReplace[Self]
 ```
 
 [CP]: https://docs.python.org/3/library/copy.html
