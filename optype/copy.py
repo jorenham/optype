@@ -4,12 +4,12 @@ https://docs.python.org/3/library/copy.html
 """
 
 import sys
-from typing import Protocol, Self
+from typing import Any, Protocol, Self, TypeVar
 
 if sys.version_info >= (3, 13):
-    from typing import TypeVar, override, runtime_checkable
+    from typing import override, runtime_checkable
 else:
-    from typing_extensions import TypeVar, override, runtime_checkable
+    from typing_extensions import override, runtime_checkable
 
 __all__ = (
     "CanCopy",
@@ -26,8 +26,6 @@ def __dir__() -> tuple[str, ...]:
 
 
 _T_co = TypeVar("_T_co", covariant=True)
-_VT_contra = TypeVar("_VT_contra", contravariant=True)
-_VT0_contra = TypeVar("_VT0_contra", contravariant=True, default=object)
 
 
 @runtime_checkable
@@ -61,21 +59,29 @@ class CanDeepcopySelf(CanDeepcopy["CanDeepcopySelf"], Protocol):
 
 
 @runtime_checkable
-class CanReplace(Protocol[_VT_contra, _T_co]):
+class CanReplace(Protocol[_T_co]):
     """
-    Anything that can be used as `copy.replace(_: CanReplace[-V, +T]) -> T` (since
-    Python 3.13+).
+    Represents anything that will be accepted by the Python 3.13+ `copy.replace()`
+    stdlib function. If `x: CanReplace[T, *Ts]` and `y = copy.replace(x, **kwargs)`,
+    then `y: T` and `**kwargs: *_Ts`.
+
+    See https://docs.python.org/3/library/copy.html#copy.replace for details.
+
+    Note the documented `**kwargs` cannot be annotated, because typeshed does not
+    always include them in the `__replace__` signatures of e.g. `datetime.date`.
+    This LSP violation forces us to be definsive and use what in `Callable` is `...`,
+    but which looks like `*_: Any, **changes: Any` here.
     """
 
-    def __replace__(self, /, **changes: _VT_contra) -> _T_co: ...
+    def __replace__(self, /, *_: Any, **changes: Any) -> _T_co: ...
 
 
 @runtime_checkable
-class CanReplaceSelf(
-    CanReplace[_VT0_contra, "CanReplaceSelf[_VT0_contra]"],
-    Protocol[_VT0_contra],
-):
-    """Runtime-checkable alias `CanReplaceSelf[-V = object] = CanReplace[V, Self]`."""
+class CanReplaceSelf(CanReplace["CanReplaceSelf"], Protocol):
+    """
+    Runtime-checkable alias `CanReplaceSelf = CanReplace[Self]`, i.e.
+    `copy.replace: def[S <: CanReplaceSelf](_: S) -> S`.
+    """
 
     @override
-    def __replace__(self, /, **changes: _VT0_contra) -> Self: ...
+    def __replace__(self, /, *_: Any, **changes: Any) -> Self: ...
