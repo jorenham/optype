@@ -1,7 +1,8 @@
+import copy
 import sys
 from datetime import date
 from fractions import Fraction
-from typing import Final, cast
+from typing import Final, Self, cast
 
 import pytest
 
@@ -68,13 +69,38 @@ def test_can_deepcopy() -> None:
 
 
 @require_py313
-def test_can_replace() -> None:
+def test_can_replace_date() -> None:
     d = date(2024, 10, 1)
 
     # this seemingly redundant `if` statement prevents pyright errors
     if sys.version_info >= (3, 13):
-        d_replace: op.copy.CanReplace[op.CanIndex, date] = d
-        d_copy_self: op.copy.CanReplaceSelf[op.CanIndex] = d
+        d_replace: op.copy.CanReplace[date] = d
+        d_copy_self: op.copy.CanReplaceSelf = d
 
     assert isinstance(d, op.copy.CanReplace)
     assert isinstance(d, op.copy.CanReplaceSelf)
+
+
+@require_py313
+def test_can_replace_custom() -> None:
+    # based on typeshed/stdlib/@tests/test_cases/check_copy.py
+    class ReplaceableClass:
+        val: int
+
+        def __init__(self, val: int) -> None:
+            self.val = val
+
+        def __replace__(self, /, *, val: int) -> Self:
+            cpy = copy.copy(self)
+            cpy.val = val
+            return cpy
+
+    obj = ReplaceableClass(42)
+
+    # this seemingly redundant `if` statement prevents pyright errors
+    if sys.version_info >= (3, 13):
+        d_replace: op.copy.CanReplace[ReplaceableClass] = obj
+        d_copy_self: op.copy.CanReplaceSelf = obj
+
+    assert isinstance(obj, op.copy.CanReplace)
+    assert isinstance(obj, op.copy.CanReplaceSelf)
