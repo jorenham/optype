@@ -3,20 +3,19 @@
 <p align="center">Building blocks for precise & flexible type hints</p>
 
 <p align="center">
-<a href="https://github.com/jorenham/optype"><img alt="GitHub License" src="https://img.shields.io/github/license/jorenham/optype?style=flat-square&color=333"></a>
-<a href="https://pypi.org/project/optype"><img alt="PyPI Version" src="https://img.shields.io/pypi/v/optype?style=flat-square&color=333"></a>
-<a href="https://anaconda.org/conda-forge/optype"><img alt="Conda Version" src="https://img.shields.io/conda/vn/conda-forge/optype?style=flat-square&color=333"></a>
-<a href="https://github.com/jorenham/optype"><img alt="Python Versions" src="https://img.shields.io/pypi/pyversions/optype?style=flat-square&color=333"></a>
-<a href="https://pypi.org/project/optype"><img alt="PyPI Downloads" src="https://img.shields.io/pypi/dm/optype?style=flat-square&color=333"></a>
-<a href="https://github.com/jorenham/optype/actions/workflows/ci.yml"><img alt="CI Status" src="https://img.shields.io/github/actions/workflow/status/jorenham/optype/ci.yml?style=flat-square&label=CI&color=333"></a>
+<a href="https://github.com/jorenham/optype"><img alt="GitHub License" src="https://img.shields.io/github/license/jorenham/optype?style=flat-square&color=121d2f&labelColor=3d444d"></a>
+<a href="https://pypi.org/project/optype"><img alt="PyPI Version" src="https://img.shields.io/pypi/v/optype?style=flat-square&color=121d2f&labelColor=3d444d"></a>
+<a href="https://anaconda.org/conda-forge/optype"><img alt="Conda Version" src="https://img.shields.io/conda/vn/conda-forge/optype?style=flat-square&color=121d2f&labelColor=3d444d"></a>
+<a href="https://github.com/jorenham/optype"><img alt="Python Versions" src="https://img.shields.io/pypi/pyversions/optype?style=flat-square&color=121d2f&labelColor=3d444d"></a>
+<a href="https://pypi.org/project/optype"><img alt="PyPI Downloads" src="https://img.shields.io/pypi/dm/optype?style=flat-square&color=121d2f&labelColor=3d444d"></a>
 </p>
 
 <p align="center">
-<a href="https://github.com/numpy/numpy"><img alt="ruff" src="https://img.shields.io/badge/numpy-333?style=flat-square&logo=numpy"></a>
-<a href="https://detachhead.github.io/basedpyright"><img alt="basedpyright" src="https://img.shields.io/badge/basedpyright-333?style=flat-square&logoColor=fdc204"></a>
-<a href="https://github.com/python/mypy"><img alt="mypy" src="https://img.shields.io/badge/mypy-333?style=flat-square&logo=python"></a>
-<a href="https://github.com/facebook/pyrefly"><img alt="pyrefly" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/facebook/pyrefly/refs/heads/main/website/static/badge.json&style=flat-square&color=333&labelColor=333"></a>
-<a href="https://github.com/astral-sh/ruff"><img alt="ruff" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json&style=flat-square&color=333&labelColor=333"></a>
+<a href="https://github.com/numpy/numpy"><img alt="ruff" src="https://img.shields.io/badge/numpy-262c36?style=flat-square&logo=numpy"></a>
+<a href="https://detachhead.github.io/basedpyright"><img alt="basedpyright" src="https://img.shields.io/badge/basedpyright-262c36?style=flat-square&logoColor=fdc204"></a>
+<a href="https://github.com/python/mypy"><img alt="mypy" src="https://img.shields.io/badge/mypy-262c36?style=flat-square&logo=python"></a>
+<a href="https://github.com/facebook/pyrefly"><img alt="pyrefly" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/facebook/pyrefly/refs/heads/main/website/static/badge.json&style=flat-square&color=262c36&labelColor=262c36"></a>
+<a href="https://github.com/astral-sh/ruff"><img alt="ruff" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json&style=flat-square&color=262c36&labelColor=262c36"></a>
 </p>
 
 ---
