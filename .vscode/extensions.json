@@ -3,6 +3,7 @@
     "charliermarsh.ruff",
     "detachhead.basedpyright",
     "dprint.dprint",
+    "meta.pyrefly",
     "ms-python.mypy-type-checker",
     "ms-python.python",
   ],

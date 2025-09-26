@@ -86,7 +86,7 @@ class _JustMeta(_ProtocolMeta, Generic[_ObjectT]):
         just: type[_ObjectT],
     ) -> _TypeT:
         self = super().__new__(mcls, *args)  # type: ignore[misc]
-        self.__just_class__ = just
+        self.__just_class__ = just  # pyrefly: ignore[missing-attribute]
         return self
 
     @override

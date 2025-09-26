@@ -4,12 +4,17 @@ from collections.abc import Iterable
 from typing import Literal, TypeAlias, cast, get_args as _get_args, overload
 
 if sys.version_info >= (3, 13):
-    from typing import TypeAliasType, TypeIs, _get_protocol_attrs, is_protocol
+    from typing import (  # type: ignore[attr-defined]
+        TypeAliasType,
+        TypeIs,
+        _get_protocol_attrs,
+        is_protocol,
+    )
 else:
     from typing_extensions import (  # type: ignore[attr-defined]
         TypeAliasType,
         TypeIs,
-        _get_protocol_attrs,  # noqa: PLC2701  # pyright: ignore[reportAttributeAccessIssue, reportUnknownVariableType]
+        _get_protocol_attrs,  # noqa: PLC2701  # pyrefly: ignore[missing-module-attribute]  # pyright: ignore[reportAttributeAccessIssue, reportUnknownVariableType]
         is_protocol,
     )
 

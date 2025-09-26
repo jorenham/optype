@@ -62,18 +62,18 @@ _Arr0_c_co: TypeAlias = onp.CanArray0D[_Sca_c_co]
 _Arr0_f8_co: TypeAlias = onp.CanArray0D[_Sca_f8_co]
 _Arr0_c16_co: TypeAlias = onp.CanArray0D[_Sca_c16_co]
 
-_Arr1_x: TypeAlias = onp.Array1D[_Sca_x] | Seq[_Sca_x | _Val_x]
-_Arr1_b: TypeAlias = onp.Array1D[_Sca_b] | Seq[_Sca_b | _Val_b]
-_Arr1_i: TypeAlias = onp.Array1D[_Sca_i] | Seq[_Sca_i | _Val_i]
-_Arr1_f: TypeAlias = onp.Array1D[_Sca_f] | Seq[_Sca_f | _Val_f]
-_Arr1_c: TypeAlias = onp.Array1D[_Sca_c] | Seq[_Sca_c | _Val_c]
-_Arr1_f8: TypeAlias = onp.Array1D[_Sca_f8] | Seq[_Sca_f8 | _Val_f8]
-_Arr1_c16: TypeAlias = onp.Array1D[_Sca_c16] | Seq[_Sca_c16 | _Val_c16]
-_Arr1_i_co: TypeAlias = onp.Array1D[_Sca_i_co] | Seq[_Sca_i_co | _Val_i_co]
-_Arr1_f_co: TypeAlias = onp.Array1D[_Sca_f_co] | Seq[_Sca_f_co | _Val_f_co]
-_Arr1_c_co: TypeAlias = onp.Array1D[_Sca_c_co] | Seq[_Sca_c_co | _Val_c_co]
-_Arr1_f8_co: TypeAlias = onp.Array1D[_Sca_f8_co] | Seq[_Sca_f8_co | _Val_f8_co]
-_Arr1_c16_co: TypeAlias = onp.Array1D[_Sca_c16_co] | Seq[_Sca_c16_co | _Val_c16_co]
+_Arr1_x: TypeAlias = onp.Array1D[_Sca_x] | Seq[_Val_x]
+_Arr1_b: TypeAlias = onp.Array1D[_Sca_b] | Seq[_Val_b]
+_Arr1_i: TypeAlias = onp.Array1D[_Sca_i] | Seq[_Val_i]
+_Arr1_f: TypeAlias = onp.Array1D[_Sca_f] | Seq[_Val_f]
+_Arr1_c: TypeAlias = onp.Array1D[_Sca_c] | Seq[_Val_c]
+_Arr1_f8: TypeAlias = onp.Array1D[_Sca_f8] | Seq[_Val_f8]
+_Arr1_c16: TypeAlias = onp.Array1D[_Sca_c16] | Seq[_Val_c16]
+_Arr1_i_co: TypeAlias = onp.Array1D[_Sca_i_co] | Seq[_Val_i_co]
+_Arr1_f_co: TypeAlias = onp.Array1D[_Sca_f_co] | Seq[_Val_f_co]
+_Arr1_c_co: TypeAlias = onp.Array1D[_Sca_c_co] | Seq[_Val_c_co]
+_Arr1_f8_co: TypeAlias = onp.Array1D[_Sca_f8_co] | Seq[_Val_f8_co]
+_Arr1_c16_co: TypeAlias = onp.Array1D[_Sca_c16_co] | Seq[_Val_c16_co]
 
 _Arr2_x: TypeAlias = onp.Array2D[_Sca_x] | Seq[_Arr1_x]
 _Arr2_b: TypeAlias = onp.Array2D[_Sca_b] | Seq[_Arr1_b]
@@ -443,14 +443,17 @@ def nd_3d() -> None:
     to_c16_co_3d: onp.ToComplex128_3D
 
     x__x: onp.ToArrayND = to_x_3d
-    b__b: onp.ToBoolND = to_b_3d
-    i__i: onp.ToJustIntND = to_i_3d
-    f__f: onp.ToJustFloatND = to_f_3d
-    c__c: onp.ToJustComplexND = to_c_3d
-    f8__f8: onp.ToJustFloat64_ND = to_f8_3d
-    c16__c16: onp.ToJustComplex128_ND = to_c16_3d
-    i_co__i: onp.ToIntND = to_i_co_3d
-    f_co__f: onp.ToFloatND = to_f_co_3d
-    c_co__c: onp.ToComplexND = to_c_co_3d
-    f8_co__f8: onp.ToFloat64_ND = to_f8_co_3d
-    c16_co__c16: onp.ToComplex128_ND = to_c16_co_3d
+    # J: I'm not sure what's going on here with pyrefly, and why it only occurs here.
+    # It might be related facebook/pyrefly#778, so let's hope it'll resolve itself,
+    # since writing a minimal reproducer for this seems like a lot of effort.
+    b__b: onp.ToBoolND = to_b_3d  # pyrefly: ignore[bad-assignment]
+    i__i: onp.ToJustIntND = to_i_3d  # pyrefly: ignore[bad-assignment]
+    f__f: onp.ToJustFloatND = to_f_3d  # pyrefly: ignore[bad-assignment]
+    c__c: onp.ToJustComplexND = to_c_3d  # pyrefly: ignore[bad-assignment]
+    f8__f8: onp.ToJustFloat64_ND = to_f8_3d  # pyrefly: ignore[bad-assignment]
+    c16__c16: onp.ToJustComplex128_ND = to_c16_3d  # pyrefly: ignore[bad-assignment]
+    i_co__i: onp.ToIntND = to_i_co_3d  # pyrefly: ignore[bad-assignment]
+    f_co__f: onp.ToFloatND = to_f_co_3d  # pyrefly: ignore[bad-assignment]
+    c_co__c: onp.ToComplexND = to_c_co_3d  # pyrefly: ignore[bad-assignment]
+    f8_co__f8: onp.ToFloat64_ND = to_f8_co_3d  # pyrefly: ignore[bad-assignment]
+    c16_co__c16: onp.ToComplex128_ND = to_c16_co_3d  # pyrefly: ignore[bad-assignment]

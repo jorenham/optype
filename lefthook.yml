@@ -32,6 +32,10 @@ pre-commit:
       glob: "*.{py,pyi}"
       run: uv {run} basedpyright --threads 3 {staged_files}
 
+    - name: pyrefly
+      glob: "*.{py,pyi}"
+      run: uv {run} pyrefly check {staged_files}
+
     - name: mypy
       glob: "*.{py,pyi}"
       # passing staged files will confuse mypy, due to there both being a

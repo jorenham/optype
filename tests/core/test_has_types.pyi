@@ -37,7 +37,8 @@ assert_type(type(int_obj), type[int])
 assert_type(typeof(int_obj), type[int])
 
 int_str: int | str
-assert_type(type(int_str), type[int | str])
+# https://github.com/facebook/pyrefly/issues/1165
+assert_type(type(int_str), type[int] | type[str])
 typeof(int_str)  # type: ignore[misc]  # pyright: ignore[reportArgumentType]
 
 bool_or_int: bool | int
@@ -45,11 +46,13 @@ assert_type(type(bool_or_int), type[bool] | type[int])
 assert_type(typeof(bool_or_int), type[int])  # type: ignore[arg-type]  # mypy fail
 
 lit_str: LiteralString
-assert_type(type(lit_str), type[str])
+# https://github.com/facebook/pyrefly/issues/1166
+assert_type(type(lit_str), type[str])  # pyrefly: ignore[assert-type]
 assert_type(typeof(lit_str), type[str])
 
 class TDict(TypedDict): ...
 
 tdict: TDict
-assert_type(type(tdict), type[TDict])
-assert_type(typeof(tdict), type[TDict])  # type: ignore[arg-type]
+# https://github.com/facebook/pyrefly/issues/1167
+assert_type(type(tdict), type[TDict])  # pyrefly: ignore[assert-type]
+assert_type(typeof(tdict), type[TDict])  # type: ignore[arg-type]  # mypy fail

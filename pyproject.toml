@@ -82,6 +82,7 @@ type = [
   { include-group = "test" },
   "basedpyright>=1.31.5",
   "mypy[faster-cache]>=1.18.2",
+  "pyrefly==0.34.0",
 ]
 dev = [
   { include-group = "extra" },
@@ -109,6 +110,11 @@ enable_error_code = [
 ]
 warn_return_any = false
 warn_unreachable = false # numpy-typing-compat compat
+
+# pyrefly
+
+[tool.pyrefly]
+project-includes = ["optype", "examples", "tests"]
 
 # [based]pyright
 
@@ -242,6 +248,7 @@ env_list = [
   "dprint",
   "ruff",
   "mypy",
+  "pyrefly",
   "pyright",
   "pyright-verify",
   "repo-review",
@@ -298,6 +305,18 @@ commands = [
   [
     "mypy",
     { replace = "posargs", default = ["."], extend = true },
+  ],
+]
+
+[tool.tox.env.pyrefly]
+description = "pyrefly"
+runner = "uv-venv-lock-runner"
+dependency_groups = ["type"]
+commands = [
+  [
+    "pyrefly",
+    "check",
+    { replace = "posargs", default = [], extend = true },
   ],
 ]
 

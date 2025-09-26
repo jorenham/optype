@@ -29,6 +29,7 @@ def test_can_array() -> None:
     nd0_y: onp.CanArray[_Shape0D, np.dtype[np.int8]] = nd0_x
     assert isinstance(nd0_x, onp.CanArray)
 
+    # pyrefly: ignore[redundant-cast]
     nd1_x = cast("np.ndarray[_Shape1D, np.dtype[np.int8]]", np.empty((42,), dt))
     nd1_y: onp.CanArray[_Shape1D, np.dtype[np.int8]] = nd1_x
     assert isinstance(nd1_x, onp.CanArray)

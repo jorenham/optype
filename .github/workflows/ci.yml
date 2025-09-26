@@ -73,6 +73,9 @@ jobs:
           numpy==${{ matrix.np }}.*
           numpy-typing-compat==${{ env.NPTC_BUILD }}.${{ matrix.np }}
 
+      - name: pyrefly
+        run: pyrefly check
+
       - name: basedpyright
         run: basedpyright
 

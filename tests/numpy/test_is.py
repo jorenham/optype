@@ -99,8 +99,13 @@ def test_is_array(
     assert onp.is_array_nd(arr[4], dtype=dtype_is)
 
     dtype_not = np.dtype("?") if dtype.char != "?" else np.dtype("B")
+    # pyrefly: ignore[bad-argument-type]
     assert not onp.is_array_0d(arr[0], dtype=dtype_not)
+    # pyrefly: ignore[bad-argument-type]
     assert not onp.is_array_1d(arr[1], dtype=dtype_not)
+    # pyrefly: ignore[bad-argument-type]
     assert not onp.is_array_2d(arr[2], dtype=dtype_not)
+    # pyrefly: ignore[bad-argument-type]
     assert not onp.is_array_3d(arr[3], dtype=dtype_not)
+    # pyrefly: ignore[bad-argument-type]
     assert not onp.is_array_nd(arr[4], dtype=dtype_not)

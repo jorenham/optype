@@ -233,7 +233,7 @@ _T_Never_co = TypeVar("_T_Never_co", default=Never, covariant=True)
 # we can't use `CanIndex` here, because of a recent regression in pyright 1.1.392
 _IndexT_contra = TypeVar(
     "_IndexT_contra",
-    bound=SupportsIndex | slice,
+    bound=SupportsIndex | slice,  # pyrefly: ignore[invalid-annotation]
     contravariant=True,
 )
 

@@ -232,8 +232,8 @@ uvx tox p
 ```
 
 This will run `pytest` in parallel on all supported Python versions, as well as the
-linters (`dprint`, `ruff`, and `repo-review`) and the type-checkers (`mypy` and
-`basedpyright`).
+linters (`dprint`, `ruff`, and `repo-review`) and the type-checkers (`mypy`,
+`basedpyright`, and `pyrefly`).
 
 ### Improving The Documentation
 
