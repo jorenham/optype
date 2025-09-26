@@ -1,66 +1,44 @@
 <h1 align="center">optype</h1>
 
+<p align="center">Building blocks for precise & flexible type hints</p>
+
 <p align="center">
-    Building blocks for precise & flexible type hints.
+<a href="https://github.com/jorenham/optype">
+    <img alt="GitHub License" src="https://img.shields.io/github/license/jorenham/optype?style=flat-square&color=333">
+</a>
+<a href="https://pypi.org/project/optype">
+    <img alt="PyPI Version" src="https://img.shields.io/pypi/v/optype?style=flat-square&color=333">
+</a>
+<a href="https://anaconda.org/conda-forge/optype">
+    <img alt="Conda Version" src="https://img.shields.io/conda/vn/conda-forge/optype?style=flat-square&color=333">
+</a>
+<a href="https://github.com/jorenham/optype">
+    <img alt="Python Versions" src="https://img.shields.io/pypi/pyversions/optype?style=flat-square&color=333">
+</a>
+<a href="https://pypi.org/project/optype">
+    <img alt="PyPI Downloads" src="https://img.shields.io/pypi/dm/optype?style=flat-square&color=333">
+</a>
+<a href="https://github.com/jorenham/optype/actions/workflows/ci.yml">
+    <img alt="CI Status" src="https://img.shields.io/github/actions/workflow/status/jorenham/optype/ci.yml?style=flat-square&label=CI&color=333">
+</a>
 </p>
 
 <p align="center">
-    <a href="https://pypi.org/project/optype/">
-        <img
-            alt="optype - PyPI"
-            src="https://img.shields.io/pypi/v/optype?style=flat"
-        />
-    </a>
-    <a href="https://anaconda.org/conda-forge/optype">
-        <img
-            alt="optype - conda-forge"
-            src="https://anaconda.org/conda-forge/optype/badges/version.svg"
-        />
-    </a>
-    <a href="https://github.com/jorenham/optype">
-        <img
-            alt="optype - Python Versions"
-            src="https://img.shields.io/pypi/pyversions/optype?style=flat"
-        />
-    </a>
-    <a href="https://scientific-python.org/specs/spec-0000/">
-        <img
-            alt="optype - SPEC 0 — minimum supported dependencies"
-            src="https://img.shields.io/badge/SPEC-0-green?style=flat&labelColor=%23004811&color=%235CA038"
-        />
-    </a>
-    <a href="https://github.com/jorenham/optype">
-        <img
-            alt="optype - license"
-            src="https://img.shields.io/github/license/jorenham/optype?style=flat"
-        />
-    </a>
-</p>
-<p align="center">
-    <a href="https://github.com/jorenham/optype/actions?query=workflow%3ACI">
-        <img
-            alt="optype - CI"
-            src="https://github.com/jorenham/optype/workflows/CI/badge.svg"
-        />
-    </a>
-    <a href="https://github.com/python/mypy">
-        <img
-            alt="scipy-stubs - mypy"
-            src="https://www.mypy-lang.org/static/mypy_badge.svg"
-        />
-    </a>
-    <a href="https://detachhead.github.io/basedpyright">
-        <img
-            alt="optype - basedpyright"
-            src="https://img.shields.io/badge/basedpyright-checked-42b983"
-        />
-    </a>
-    <a href="https://github.com/astral-sh/ruff">
-        <img
-            alt="optype - code style: ruff"
-            src="https://img.shields.io/endpoint?style=flat&url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/format.json"
-        />
-    </a>
+<a href="https://github.com/numpy/numpy">
+    <img alt="ruff" src="https://img.shields.io/badge/numpy-333?style=flat-square&logo=numpy">
+</a>
+<a href="https://detachhead.github.io/basedpyright">
+    <img alt="basedpyright" src="https://img.shields.io/badge/basedpyright-333?style=flat-square&logoColor=fdc204">
+</a>
+<a href="https://github.com/python/mypy">
+    <img alt="mypy" src="https://img.shields.io/badge/mypy-333?style=flat-square&logo=python">
+</a>
+<a href="https://github.com/facebook/pyrefly">
+    <img alt="pyrefly" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/facebook/pyrefly/refs/heads/main/website/static/badge.json&style=flat-square&color=333&labelColor=333">
+</a>
+<a href="https://github.com/astral-sh/ruff">
+    <img alt="ruff" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json&style=flat-square&color=333&labelColor=333">
+</a>
 </p>
 
 ---
