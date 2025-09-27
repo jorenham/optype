@@ -41,6 +41,7 @@ from ctypes import (
     c_ulong as ULong,
     c_ulonglong as ULongLong,
     c_ushort as UShort,
+    py_object as Object,
 )
 from typing import Final, Literal, Never, TypeAlias, cast
 
@@ -49,10 +50,10 @@ if sys.version_info >= (3, 13):
 else:
     from typing_extensions import TypeAliasType, TypeVar
 
-if sys.version_info >= (3, 14):
-    from ctypes import (
-        c_double_complex as Complex128,
+if sys.version_info >= (3, 14) and sys.platform != "win32":
+    from ctypes import (  # noqa: I001
         c_float_complex as Complex64,
+        c_double_complex as Complex128,
         c_longdouble_complex as CLongDouble,
     )
 else:
@@ -164,14 +165,10 @@ SignedInteger = TypeAliasType("SignedInteger", _SignedInteger)
 Integer = TypeAliasType("Integer", _UnsignedInteger | _SignedInteger)
 Floating = TypeAliasType("Floating", _Floating)
 
-Object = TypeAliasType("Object", ct.py_object)
 Void = TypeAliasType("Void", ct.Structure | ct.Union)
 Flexible = TypeAliasType("Flexible", Bytes | Void)
 
 if sys.version_info >= (3, 14) and sys.platform != "win32":
-    Complex64 = TypeAliasType("Complex64", ct.c_float_complex)
-    Complex128 = TypeAliasType("Complex128", ct.c_double_complex)
-    CLongDouble = TypeAliasType("CLongDouble", ct.c_longdouble_complex)
     ComplexFloating = TypeAliasType(
         "ComplexFloating",
         Complex64 | Complex128 | CLongDouble,
