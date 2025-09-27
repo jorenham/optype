@@ -41,7 +41,10 @@ def test_reexports(name: str, ctype: type) -> None:
     assert getattr(onp.ctypeslib, name) is ctype
 
 
-@pytest.mark.skipif(not hasattr(ct, "c_float_complex"), "requires complex ctypes")
+@pytest.mark.skipif(
+    not hasattr(ct, "c_float_complex"),
+    reason="requires complex ctypes",
+)
 @pytest.mark.parametrize(
     ("name_export", "name_orig"),
     [
