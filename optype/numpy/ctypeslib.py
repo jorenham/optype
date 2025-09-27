@@ -42,7 +42,7 @@ from ctypes import (
     c_ulonglong as ULongLong,
     c_ushort as UShort,
 )
-from typing import TYPE_CHECKING, Final, Literal, Never, TypeAlias, cast
+from typing import Final, Literal, Never, TypeAlias, cast
 
 if sys.version_info >= (3, 13):
     from typing import TypeAliasType, TypeVar
@@ -164,29 +164,23 @@ SignedInteger = TypeAliasType("SignedInteger", _SignedInteger)
 Integer = TypeAliasType("Integer", _UnsignedInteger | _SignedInteger)
 Floating = TypeAliasType("Floating", _Floating)
 
-Void: TypeAlias = ct.Structure | ct.Union
-
-# subscripting at runtime will give an error, and no default is defined...
-if TYPE_CHECKING:
-    Object: TypeAlias = ct.py_object[object]
-else:
-    Object: TypeAlias = ct.py_object
-
+Object = TypeAliasType("Object", ct.py_object)
+Void = TypeAliasType("Void", ct.Structure | ct.Union)
 Flexible = TypeAliasType("Flexible", Bytes | Void)
 
 if sys.version_info >= (3, 14):
-    Complex64: TypeAlias = ct.c_float_complex
-    Complex128: TypeAlias = ct.c_double_complex
-    CLongDouble: TypeAlias = ct.c_longdouble_complex
+    Complex64 = TypeAliasType("Complex64", ct.c_float_complex)
+    Complex128 = TypeAliasType("Complex128", ct.c_double_complex)
+    CLongDouble = TypeAliasType("CLongDouble", ct.c_longdouble_complex)
     ComplexFloating = TypeAliasType(
         "ComplexFloating",
         Complex64 | Complex128 | CLongDouble,
     )
-    Inexact: TypeAlias = Floating | ComplexFloating
-    Number: TypeAlias = Integer | Inexact
+    Inexact = TypeAliasType("Inexact", Floating | ComplexFloating)
+    Number = TypeAliasType("Number", Integer | Inexact)
     Generic = TypeAliasType("Generic", Bool | Number | Flexible | Object)
 else:
     ComplexFloating = TypeAliasType("ComplexFloating", Never)
-    Inexact: TypeAlias = Floating
-    Number: TypeAlias = Integer | Floating
+    Inexact = TypeAliasType("Inexact", _Floating)
+    Number = TypeAliasType("Number", Integer | _Floating)
     Generic = TypeAliasType("Generic", Bool | Integer | Floating | Flexible | Object)
