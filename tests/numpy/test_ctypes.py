@@ -63,18 +63,21 @@ def test_complex_reexports(name_export: str, name_orig: str) -> None:
 
 def test_static_assignability_abstract() -> None:
     # signedinteger
+    i_b: onp.ctypeslib.SignedInteger = onp.ctypeslib.Bool()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     i_i8: onp.ctypeslib.SignedInteger = onp.ctypeslib.Int8()
     i_i16: onp.ctypeslib.SignedInteger = onp.ctypeslib.Int16()
     i_i32: onp.ctypeslib.SignedInteger = onp.ctypeslib.Int32()
     i_i64: onp.ctypeslib.SignedInteger = onp.ctypeslib.Int64()
 
     # unsignedinteger
+    u_b: onp.ctypeslib.UnsignedInteger = onp.ctypeslib.Bool()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     u_u8: onp.ctypeslib.UnsignedInteger = onp.ctypeslib.UInt8()
     u_u16: onp.ctypeslib.UnsignedInteger = onp.ctypeslib.UInt16()
     u_u32: onp.ctypeslib.UnsignedInteger = onp.ctypeslib.UInt32()
     u_u64: onp.ctypeslib.UnsignedInteger = onp.ctypeslib.UInt64()
 
     # integer
+    iu_b: onp.ctypeslib.Integer = onp.ctypeslib.Bool()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     iu_i8: onp.ctypeslib.Integer = onp.ctypeslib.Int8()
     iu_u8: onp.ctypeslib.Integer = onp.ctypeslib.UInt8()
     iu_i16: onp.ctypeslib.Integer = onp.ctypeslib.Int16()
@@ -85,11 +88,15 @@ def test_static_assignability_abstract() -> None:
     iu_u64: onp.ctypeslib.Integer = onp.ctypeslib.UInt64()
 
     # floating
+    f_b: onp.ctypeslib.Floating = onp.ctypeslib.Bool()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    f_i8: onp.ctypeslib.Floating = onp.ctypeslib.Int8()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     f_f32: onp.ctypeslib.Floating = onp.ctypeslib.Float32()
     f_f64: onp.ctypeslib.Floating = onp.ctypeslib.Float64()
     f_f80: onp.ctypeslib.Floating = onp.ctypeslib.LongDouble()
 
     # inexact
+    fc_b: onp.ctypeslib.Inexact = onp.ctypeslib.Bool()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    fc_i8: onp.ctypeslib.Inexact = onp.ctypeslib.Int8()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     fc_f32: onp.ctypeslib.Inexact = onp.ctypeslib.Float32()
     fc_f64: onp.ctypeslib.Inexact = onp.ctypeslib.Float64()
     fc_f80: onp.ctypeslib.Inexact = onp.ctypeslib.LongDouble()
