@@ -43,7 +43,7 @@ from ctypes import (
     c_ushort as UShort,
     py_object as Object,
 )
-from typing import Final, Literal, Never, TypeAlias, cast
+from typing import TYPE_CHECKING, Final, Literal, Never, TypeAlias, cast
 
 if sys.version_info >= (3, 13):
     from typing import TypeAliasType, TypeVar
@@ -153,31 +153,32 @@ _Array: TypeAlias = ct.Array[CT] | ct.Array["_Array[CT]"]
 Array = TypeAliasType("Array", _Array[CT], type_params=(CT,))
 
 # `c_(u)byte` is an alias for `c_(u)int8`
-_UnsignedInteger: TypeAlias = (
-    UInt8 | UInt16 | UInt32 | UInt64 | UShort | UIntC | UIntP | ULong | ULongLong
-)
 _SignedInteger: TypeAlias = (
     Int8 | Int16 | Int32 | Int64 | Short | IntC | IntP | Long | LongLong
 )
-_Floating: TypeAlias = ct.c_float | ct.c_double | ct.c_longdouble
-UnsignedInteger = TypeAliasType("UnsignedInteger", _UnsignedInteger)
+_UnsignedInteger: TypeAlias = (
+    UInt8 | UInt16 | UInt32 | UInt64 | UShort | UIntC | UIntP | ULong | ULongLong
+)
+
+if TYPE_CHECKING:
+    # exploit the fact that `ct._SimpleCData` is invariant in `T`
+    _Integer: TypeAlias = CScalar[int]
+    _Floating: TypeAlias = CScalar[float]
+    _ComplexFloating: TypeAlias = CScalar[complex]
+else:
+    _Integer = CScalar
+    _Floating = CScalar
+    _ComplexFloating = CScalar
+
 SignedInteger = TypeAliasType("SignedInteger", _SignedInteger)
-Integer = TypeAliasType("Integer", _UnsignedInteger | _SignedInteger)
+UnsignedInteger = TypeAliasType("UnsignedInteger", _UnsignedInteger)
+Integer = TypeAliasType("Integer", _Integer)
 Floating = TypeAliasType("Floating", _Floating)
+ComplexFloating = TypeAliasType("ComplexFloating", _ComplexFloating)
+Inexact = TypeAliasType("Inexact", _Floating | _ComplexFloating)
+Number = TypeAliasType("Number", _Integer | _Floating | _ComplexFloating)
 
 Void = TypeAliasType("Void", ct.Structure | ct.Union)
 Flexible = TypeAliasType("Flexible", Bytes | Void)
 
-if sys.version_info >= (3, 14) and sys.platform != "win32":
-    ComplexFloating = TypeAliasType(
-        "ComplexFloating",
-        Complex64 | Complex128 | CLongDouble,
-    )
-    Inexact = TypeAliasType("Inexact", Floating | ComplexFloating)
-    Number = TypeAliasType("Number", Integer | Inexact)
-    Generic = TypeAliasType("Generic", Bool | Number | Flexible | Object)
-else:
-    ComplexFloating = TypeAliasType("ComplexFloating", Never)
-    Inexact = TypeAliasType("Inexact", _Floating)
-    Number = TypeAliasType("Number", Integer | _Floating)
-    Generic = TypeAliasType("Generic", Bool | Integer | Floating | Flexible | Object)
+Generic = TypeAliasType("Generic", Bool | Number | Flexible | Object)
