@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-from typing import Any, Protocol, TypeAlias
+from typing import Any, Protocol
 
 if sys.version_info >= (3, 13):
     from typing import TypeAliasType, TypeVar, runtime_checkable
@@ -43,7 +43,7 @@ class HasDType(Protocol[DT_co]):
     def dtype(self, /) -> DT_co: ...
 
 
-DType: TypeAlias = np.dtype[ST]
+DType = TypeAliasType("DType", np.dtype[ST], type_params=(ST,))
 """Alias for `numpy.dtype[T: numpy.generic = np.generic]`."""
 
 
