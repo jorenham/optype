@@ -168,7 +168,7 @@ Object = TypeAliasType("Object", ct.py_object)
 Void = TypeAliasType("Void", ct.Structure | ct.Union)
 Flexible = TypeAliasType("Flexible", Bytes | Void)
 
-if sys.version_info >= (3, 14):
+if sys.version_info >= (3, 14) and sys.platform != "win32":
     Complex64 = TypeAliasType("Complex64", ct.c_float_complex)
     Complex128 = TypeAliasType("Complex128", ct.c_double_complex)
     CLongDouble = TypeAliasType("CLongDouble", ct.c_longdouble_complex)
