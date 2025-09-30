@@ -268,11 +268,14 @@ def test_staticmethod_is_final() -> None:
 @pytest.mark.parametrize("origin", [type, list, tuple, GenericTP, GenericTPX])
 def test_is_generic_alias(origin: op.types.GenericType) -> None:
     assert not op.inspect.is_generic_alias(origin)
-
     assert op.inspect.is_generic_alias(origin[None])
+
     Alias = TypeAliasType("Alias", origin[None])  # type: ignore[valid-type]  # noqa: N806
     assert op.inspect.is_generic_alias(Alias)
+
+    # pyrefly: ignore[not-a-type]
     assert op.inspect.is_generic_alias(tp.Annotated[origin[None], None])
+    # pyrefly: ignore[not-a-type]
     assert op.inspect.is_generic_alias(tpx.Annotated[origin[None], None])
 
     assert not op.inspect.is_generic_alias(origin[None] | None)
@@ -302,9 +305,13 @@ def test_is_runtime_protocol() -> None:
 @pytest.mark.parametrize("origin", [int, tp.Literal[True], Proto, ProtoX])
 def test_is_union_type(origin: type) -> None:
     assert op.inspect.is_union_type(origin | None)
+
     Alias: TypeAliasType = TypeAliasType("Alias", origin | None)  # noqa: N806  # pyright: ignore[reportGeneralTypeIssues]
     assert op.inspect.is_union_type(Alias)
+
+    # pyrefly: ignore[not-a-type]
     assert op.inspect.is_union_type(tp.Annotated[origin | None, None])
+    # pyrefly: ignore[not-a-type]
     assert op.inspect.is_union_type(tp.Annotated[origin, None] | None)
 
     assert not op.inspect.is_union_type(origin)
