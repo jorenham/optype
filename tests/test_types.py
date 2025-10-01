@@ -21,6 +21,7 @@ class New: ...
 
 
 def test_deprecated_callable() -> None:
+    # pyrefly: ignore[deprecated]
     assert isinstance(f_old, opts.Deprecated)  # pyright: ignore[reportDeprecated]
     assert not isinstance(f_new, opts.Deprecated)
 
