@@ -47,7 +47,7 @@ class DLDeviceType(enum.IntEnum):
     ROCM = 10
     # CUDA managed/unified memory allocated by `cudaMallocManaged`
     CUDA_MANAGED = 13
-    # Unified shared memory allocated on a oneAPI non-partititioned
+    # Unified shared memory allocated on a oneAPI non-partitioned
     # device. Call to oneAPI runtime is required to determine the device
     # type, the USM allocation type and the sycl context it is bound to.
     ONE_API = 14
