@@ -55,7 +55,12 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         np: ["1.25", "2.0", "2.1", "2.2", "2.3"]
-        py: ["3.11"]
+        py: ["3.11", "3.13"]
+        exclude:
+          - py: "3.13"
+            np: "1.25"
+          - py: "3.13"
+            np: "2.0"
     steps:
       - uses: actions/checkout@v5.0.0
 
@@ -101,8 +106,6 @@ jobs:
             np: "1.25"
           - py: "3.14"
             np: "2.0"
-          - os: windows-latest
-            py: "3.14"
     steps:
       - uses: actions/checkout@v5.0.0
 
