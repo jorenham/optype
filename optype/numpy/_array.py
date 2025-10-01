@@ -1,6 +1,6 @@
 import sys
 from collections.abc import Mapping
-from typing import Any, Protocol, Self
+from typing import Any, Protocol, Self, final
 
 if sys.version_info >= (3, 13):
     from typing import TypeAliasType, TypeVar, runtime_checkable
@@ -16,7 +16,8 @@ __all__ = [  # noqa: RUF022
     "Array", "Array0D", "Array1D", "Array1D", "Array2D", "Array3D", "ArrayND",
     "MArray", "MArray0D", "MArray1D", "MArray1D", "MArray2D", "MArray3D",
     "Matrix",
-    "CanArray", "CanArray0D", "CanArray1D", "CanArray2D", "CanArray3D", "CanArrayND",
+    "CanArray", "CanArray0",
+    "CanArrayND", "CanArray0D", "CanArray1D", "CanArray2D", "CanArray3D",
     "CanArrayFinalize", "CanArrayWrap",
     "HasArrayInterface", "HasArrayPriority",
 ]  # fmt: skip
@@ -173,13 +174,32 @@ MArray3D = TypeAliasType(
 ###########################
 
 
+@final
+@runtime_checkable
+@set_module("optype.numpy")
+class CanArray0(Protocol[_SCT_co]):
+    """
+    The 0-d variant of `optype.numpy.CanArray`.
+
+    This accepts e.g. `np.array(4)` and `np.int8(2)`, but rejects `np.array([4, 2])`.
+
+    Note that this is different from `optype.numpy.CanArray0D`, which would reject
+    "bare" scalars like `np.int8(2)`.
+    """
+
+    def __array__(self, /) -> np.ndarray[tuple[()], np.dtype[_SCT_co]]: ...
+
+
 @runtime_checkable
 @set_module("optype.numpy")
 class CanArray0D(Protocol[_SCT_co]):
     """
     The 0-d variant of `optype.numpy.CanArrayND`.
 
-    This accepts e.g. `np.asarray(3.14)`, but rejects `np.float64(3.14)`.
+    This accepts e.g. `np.array(3.14)`, but rejects `np.float64(3.14)` .
+
+    Note that this is different from `optype.numpy.CanArray0`, which would accept
+    "bare" scalars like `np.float64(3.14)`.
     """
 
     def __len__(self, /) -> int: ...  # always 0
