@@ -4,19 +4,9 @@ from collections.abc import Iterable
 from typing import Literal, TypeAlias, cast, get_args as _get_args, overload
 
 if sys.version_info >= (3, 13):
-    from typing import (  # type: ignore[attr-defined]
-        TypeAliasType,
-        TypeIs,
-        _get_protocol_attrs,
-        is_protocol,
-    )
+    from typing import TypeAliasType, TypeIs, is_protocol
 else:
-    from typing_extensions import (  # type: ignore[attr-defined]
-        TypeAliasType,
-        TypeIs,
-        _get_protocol_attrs,  # noqa: PLC2701  # pyrefly: ignore[missing-module-attribute]  # pyright: ignore[reportAttributeAccessIssue, reportUnknownVariableType]
-        is_protocol,
-    )
+    from typing_extensions import TypeAliasType, TypeIs, is_protocol
 
 
 from ._core import _can as _c
@@ -272,11 +262,13 @@ def get_protocol_members(cls: type, /) -> frozenset[str]:
     # `typing_extensions.get_protocol_members`.
     # Maybe the `typing.get_protocol_member`s` that's coming in 3.13 will
     # won't be as broken. I have little hope though...
-    if hasattr(cls, "__protocol_attrs__"):
-        members |= cast("set[str]", cls.__protocol_attrs__)
+    if (protocol_attrs := getattr(cls, "__protocol_attrs__", None)) is not None:
+        members |= protocol_attrs
     else:
-        # python <3.11
-        members |= cast("set[str]", _get_protocol_attrs(cls))
+        # python <3.12
+        from optype._inspect import _get_protocol_attrs  # noqa: PLC0415
+
+        members |= _get_protocol_attrs(cls)
 
     # sometimes __protocol_attrs__ hallicunates some non-existing dunders.
     # the `getattr_static` avoids potential descriptor magic
