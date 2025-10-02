@@ -7,7 +7,7 @@
 <a href="https://pypi.org/project/optype"><img alt="PyPI Version" src="https://img.shields.io/pypi/v/optype?style=flat-square&color=121d2f&labelColor=3d444d"></a>
 <a href="https://anaconda.org/conda-forge/optype"><img alt="Conda Version" src="https://img.shields.io/conda/vn/conda-forge/optype?style=flat-square&color=121d2f&labelColor=3d444d"></a>
 <a href="https://github.com/jorenham/optype"><img alt="Python Versions" src="https://img.shields.io/pypi/pyversions/optype?style=flat-square&color=121d2f&labelColor=3d444d"></a>
-<a href="https://pypi.org/project/optype"><img alt="PyPI Downloads" src="https://img.shields.io/pypi/dm/optype?style=flat-square&color=121d2f&labelColor=3d444d"></a>
+<a href="https://pypi.org/project/optype"><img alt="PyPI Downloads" src="https://img.shields.io/pypi/dm/optype?style=flat-square&color=121d2f&labelColor=3d444d&cacheSeconds=86400"></a>
 </p>
 
 <p align="center">
