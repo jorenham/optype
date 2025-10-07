@@ -70,7 +70,7 @@ class Just(Protocol[_T]):  # type: ignore[misc]
 
     @property
     @override
-    def __class__(self, /) -> type[_T]: ...
+    def __class__(self, /) -> type[_T]: ...  # pyrefly: ignore[bad-override]
     @__class__.setter
     def __class__(self, t: type[_T], /) -> None: ...
 
@@ -134,7 +134,7 @@ class JustBytes(Protocol, metaclass=_JustMeta, just=bytes):  # type: ignore[misc
 
     @property
     @override
-    def __class__(self, /) -> type[bytes]: ...
+    def __class__(self, /) -> type[bytes]: ...  # pyrefly: ignore[bad-override]
     @__class__.setter
     def __class__(self, t: type[bytes], /) -> None: ...
 
@@ -188,7 +188,7 @@ class JustInt(Protocol, metaclass=_JustMeta, just=int):  # type: ignore[misc]  #
 
     @property
     @override
-    def __class__(self, /) -> type[int]: ...
+    def __class__(self, /) -> type[int]: ...  # pyrefly: ignore[bad-override]
     @__class__.setter
     def __class__(self, t: type[int], /) -> None: ...
 
@@ -208,7 +208,7 @@ class JustFloat(Protocol, metaclass=_JustMeta, just=float):  # type: ignore[misc
 
     @property
     @override
-    def __class__(self, /) -> type[float]: ...
+    def __class__(self, /) -> type[float]: ...  # pyrefly: ignore[bad-override]
     @__class__.setter
     def __class__(self, t: type[float], /) -> None: ...
 
@@ -228,7 +228,7 @@ class JustComplex(Protocol, metaclass=_JustMeta, just=complex):  # type: ignore[
 
     @property
     @override
-    def __class__(self, /) -> type[complex]: ...
+    def __class__(self, /) -> type[complex]: ...  # pyrefly: ignore[bad-override]
     @__class__.setter
     def __class__(self, t: type[complex], /) -> None: ...
 
@@ -245,7 +245,7 @@ class JustDate(Protocol, metaclass=_JustMeta, just=dt.date):  # type: ignore[mis
 
     @property
     @override
-    def __class__(self, /) -> type[dt.date]: ...
+    def __class__(self, /) -> type[dt.date]: ...  # pyrefly: ignore[bad-override]
     @__class__.setter
     def __class__(self, t: type[dt.date], /) -> None: ...
 
