@@ -129,7 +129,7 @@ class HasClass(Protocol[_TypeT]):
 
     @property  # type: ignore[override]  # mypy bug
     @override
-    def __class__(self) -> _TypeT: ...
+    def __class__(self) -> _TypeT: ...  # pyrefly: ignore[bad-override]
     @__class__.setter
     @override
     def __class__(self, __class__: _TypeT, /) -> None: ...
@@ -137,7 +137,7 @@ class HasClass(Protocol[_TypeT]):
 
 @runtime_checkable
 class HasModule(Protocol[_StrT_co]):
-    __module__: _StrT_co
+    __module__: _StrT_co  # pyrefly: ignore[bad-override])
 
 
 @runtime_checkable
@@ -164,7 +164,7 @@ class HasNames(  # pyright: ignore[reportIncompatibleVariableOverride, reportInv
 @runtime_checkable
 class HasDoc(Protocol[_StrT_co]):
     # note that docstrings are stripped if ran with e.g. `python -OO`
-    __doc__: _StrT_co | None
+    __doc__: _StrT_co | None  # pyrefly: ignore[bad-override]
 
 
 @runtime_checkable

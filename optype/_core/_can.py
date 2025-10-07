@@ -329,7 +329,7 @@ class CanFormat(Protocol[_StrT_contra, _StrT_co]):
     """
 
     @override
-    def __format__(self, fmt: _StrT_contra, /) -> _StrT_co: ...  # pyright: ignore[reportIncompatibleMethodOverride]
+    def __format__(self, fmt: _StrT_contra, /) -> _StrT_co: ...  # pyright: ignore[reportIncompatibleMethodOverride]  # pyrefly: ignore[bad-override]
 
 
 # Iteration
@@ -408,7 +408,7 @@ class CanEq(Protocol[_T_object_contra, _T_bool_co]):  # noqa: PLW1641
     """
 
     @override
-    def __eq__(self, rhs: _T_object_contra, /) -> _T_bool_co: ...  # pyright:ignore[reportIncompatibleMethodOverride]
+    def __eq__(self, rhs: _T_object_contra, /) -> _T_bool_co: ...  # pyright:ignore[reportIncompatibleMethodOverride]  # pyrefly: ignore[bad-override]
 
 
 @runtime_checkable
@@ -419,7 +419,7 @@ class CanNe(Protocol[_T_object_contra, _T_bool_co]):
     """
 
     @override
-    def __ne__(self, rhs: _T_object_contra, /) -> _T_bool_co: ...  # pyright:ignore[reportIncompatibleMethodOverride]
+    def __ne__(self, rhs: _T_object_contra, /) -> _T_bool_co: ...  # pyright:ignore[reportIncompatibleMethodOverride]  # pyrefly: ignore[bad-override]
 
 
 @runtime_checkable
@@ -482,7 +482,7 @@ class CanSetattr(Protocol[_StrT_contra, _T_object_contra]):
 @runtime_checkable
 class CanDelattr(Protocol[_StrT_contra]):
     @override
-    def __delattr__(self, name: _StrT_contra, /) -> _Ignored: ...  # pyright: ignore[reportIncompatibleMethodOverride]
+    def __delattr__(self, name: _StrT_contra, /) -> _Ignored: ...  # pyright: ignore[reportIncompatibleMethodOverride]  # pyrefly: ignore[bad-override]
 
 
 _AnyStrIterT_co = TypeVar(

@@ -443,17 +443,14 @@ def nd_3d() -> None:
     to_c16_co_3d: onp.ToComplex128_3D
 
     x__x: onp.ToArrayND = to_x_3d
-    # J: I'm not sure what's going on here with pyrefly, and why it only occurs here.
-    # It might be related facebook/pyrefly#778, so let's hope it'll resolve itself,
-    # since writing a minimal reproducer for this seems like a lot of effort.
-    b__b: onp.ToBoolND = to_b_3d  # pyrefly: ignore[bad-assignment]
-    i__i: onp.ToJustIntND = to_i_3d  # pyrefly: ignore[bad-assignment]
-    f__f: onp.ToJustFloatND = to_f_3d  # pyrefly: ignore[bad-assignment]
-    c__c: onp.ToJustComplexND = to_c_3d  # pyrefly: ignore[bad-assignment]
-    f8__f8: onp.ToJustFloat64_ND = to_f8_3d  # pyrefly: ignore[bad-assignment]
-    c16__c16: onp.ToJustComplex128_ND = to_c16_3d  # pyrefly: ignore[bad-assignment]
-    i_co__i: onp.ToIntND = to_i_co_3d  # pyrefly: ignore[bad-assignment]
-    f_co__f: onp.ToFloatND = to_f_co_3d  # pyrefly: ignore[bad-assignment]
-    c_co__c: onp.ToComplexND = to_c_co_3d  # pyrefly: ignore[bad-assignment]
-    f8_co__f8: onp.ToFloat64_ND = to_f8_co_3d  # pyrefly: ignore[bad-assignment]
-    c16_co__c16: onp.ToComplex128_ND = to_c16_co_3d  # pyrefly: ignore[bad-assignment]
+    b__b: onp.ToBoolND = to_b_3d
+    i__i: onp.ToJustIntND = to_i_3d
+    f__f: onp.ToJustFloatND = to_f_3d
+    c__c: onp.ToJustComplexND = to_c_3d
+    f8__f8: onp.ToJustFloat64_ND = to_f8_3d
+    c16__c16: onp.ToJustComplex128_ND = to_c16_3d
+    i_co__i: onp.ToIntND = to_i_co_3d
+    f_co__f: onp.ToFloatND = to_f_co_3d
+    c_co__c: onp.ToComplexND = to_c_co_3d
+    f8_co__f8: onp.ToFloat64_ND = to_f8_co_3d
+    c16_co__c16: onp.ToComplex128_ND = to_c16_co_3d

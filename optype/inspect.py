@@ -255,7 +255,8 @@ def get_protocol_members(cls: type, /) -> frozenset[str]:
             callable(f := getattr(v, "__func__", v))
             or (isinstance(v, property) and (f := v.fget) is not None)
         )
-        and f.__module__ == module
+        # facebook/pyrefly#913
+        and f.__module__ == module  # pyrefly: ignore[unbound-name]
     }
 
     # this hack here is plagiarized from the (often incorrect)
