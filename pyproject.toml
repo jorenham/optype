@@ -68,21 +68,21 @@ extra = [
 ]
 lint = [
   "dprint-py>=0.50.2.0",
-  "ruff>=0.13.2",
-  "sp-repo-review[cli]>=2025.5.2",
+  "ruff>=0.13.3",
+  "sp-repo-review[cli]>=2025.10.1",
 ]
 test = [
   { include-group = "extra" },
-  "beartype>=0.21.0",
+  "beartype>=0.22.2",
   "pytest>=8.4.2",
   "typing-extensions>=4.15.0",
 ]
 type = [
   { include-group = "extra" },
   { include-group = "test" },
-  "basedpyright>=1.31.5",
+  "basedpyright>=1.31.6",
   "mypy[faster-cache]>=1.18.2",
-  "pyrefly==0.35.0",
+  "pyrefly==0.36.1",
 ]
 dev = [
   { include-group = "extra" },
