@@ -131,7 +131,6 @@ reportExplicitAny = false # sometimes there's no way around it
 reportImplicitStringConcatenation = false # not a linter
 reportPrivateUsage = false # dupe of PLC2701
 reportPrivateImportUsage = false # dupe of PLC2701
-reportShadowedImports = false # buggy
 reportUnreachable = false # nothing wrong with `if sys.version_info() >= ...`
 reportUnusedCallResult = false # https://github.com/microsoft/pyright/issues/8650
 reportUnusedImport = false # dupe of F401
