@@ -4,14 +4,14 @@ requires-python = ">=3.11"
 
 [[package]]
 name = "basedpyright"
-version = "1.31.6"
+version = "1.31.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "nodejs-wheel-binaries" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a9/f6/c5657b1e464d04757cde2db76922a88091fe16854bd3d12e470c23b0dcf1/basedpyright-1.31.6.tar.gz", hash = "sha256:07f3602ba1582218dfd1db25b8b69cd3493e1f4367f46a44fd57bb9034b52ea9", size = 22683901, upload-time = "2025-10-01T13:11:21.317Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c6/ba/ed69e8df732a09c8ca469f592c8e08707fe29149735b834c276d94d4a3da/basedpyright-1.31.7.tar.gz", hash = "sha256:394f334c742a19bcc5905b2455c9f5858182866b7679a6f057a70b44b049bceb", size = 22710948, upload-time = "2025-10-11T05:12:48.3Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4e/2b/34f338b4c04fe965fd209ed872d9fdd893dacc1a06feb6c9fec13ff535c1/basedpyright-1.31.6-py3-none-any.whl", hash = "sha256:620968ee69c14eee6682f29ffd6f813a30966afb1083ecfa4caf155c5d24f2d5", size = 11805295, upload-time = "2025-10-01T13:11:18.308Z" },
+    { url = "https://files.pythonhosted.org/packages/f8/90/ce01ad2d0afdc1b82b8b5aaba27e60d2e138e39d887e71c35c55d8f1bfcd/basedpyright-1.31.7-py3-none-any.whl", hash = "sha256:7c54beb7828c9ed0028630aaa6904f395c27e5a9f5a313aa9e91fc1d11170831", size = 11817571, upload-time = "2025-10-11T05:12:45.432Z" },
 ]
 
 [[package]]
@@ -308,7 +308,7 @@ provides-extras = ["numpy"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "basedpyright", specifier = ">=1.31.6" },
+    { name = "basedpyright", specifier = ">=1.31.7" },
     { name = "beartype", specifier = ">=0.22.2" },
     { name = "dprint-py", specifier = ">=0.50.2.0" },
     { name = "mypy", extras = ["faster-cache"], specifier = ">=1.18.2" },
@@ -332,7 +332,7 @@ test = [
     { name = "typing-extensions", specifier = ">=4.15.0" },
 ]
 type = [
-    { name = "basedpyright", specifier = ">=1.31.6" },
+    { name = "basedpyright", specifier = ">=1.31.7" },
     { name = "beartype", specifier = ">=0.22.2" },
     { name = "mypy", extras = ["faster-cache"], specifier = ">=1.18.2" },
     { name = "optype", extras = ["numpy"] },
