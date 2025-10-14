@@ -27,8 +27,6 @@ CanReIter: TypeAlias = op.CanIter[op.CanIterSelf[_T_ReIter]]
 def test_can_add_self_int() -> None:
     """Ensure that `builtins.int` is assignable to `CanAddSelf`."""
     x: int = 42
-    assert isinstance(x, op.CanAddSelf)
-    assert issubclass(int, op.CanAddSelf)
 
     a1: op.CanAddSelf[Any] = x
     a2: op.CanAddSelf[int] = x
@@ -36,12 +34,13 @@ def test_can_add_self_int() -> None:
     r0: op.CanAddSelf[float] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     r1: op.CanAddSelf[object] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
+    assert isinstance(x, op.CanAddSelf)
+    assert issubclass(int, op.CanAddSelf)
+
 
 def test_can_add_same_int() -> None:
     """Ensure that `builtins.int` is assignable to `CanAddSame`."""
     x: int = 42
-    assert isinstance(x, op.CanAddSame)
-    assert issubclass(int, op.CanAddSame)
 
     a0: op.CanAddSame = x
     a1: op.CanAddSame[Any] = x
@@ -50,6 +49,9 @@ def test_can_add_same_int() -> None:
 
     r0: op.CanAddSame[float] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     r1: op.CanAddSame[object] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+
+    assert isinstance(x, op.CanAddSame)
+    assert issubclass(int, op.CanAddSame)
 
 
 def test_iadd() -> None:
