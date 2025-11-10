@@ -308,36 +308,36 @@ provides-extras = ["numpy"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "basedpyright", specifier = ">=1.31.7" },
-    { name = "beartype", specifier = ">=0.22.2" },
+    { name = "basedpyright", specifier = ">=1.33.0" },
+    { name = "beartype", specifier = ">=0.22.5" },
     { name = "dprint-py", specifier = ">=0.50.2.0" },
     { name = "mypy", extras = ["faster-cache"], specifier = ">=1.18.2" },
     { name = "optype", extras = ["numpy"] },
     { name = "pyrefly", specifier = "==0.40.1" },
-    { name = "pytest", specifier = ">=8.4.2" },
-    { name = "ruff", specifier = ">=0.14.0" },
-    { name = "sp-repo-review", extras = ["cli"], specifier = ">=2025.10.1" },
+    { name = "pytest", specifier = ">=9.0.0" },
+    { name = "ruff", specifier = ">=0.14.4" },
+    { name = "sp-repo-review", extras = ["cli"], specifier = ">=2025.11.10" },
     { name = "typing-extensions", specifier = ">=4.15.0" },
 ]
 extra = [{ name = "optype", extras = ["numpy"] }]
 lint = [
     { name = "dprint-py", specifier = ">=0.50.2.0" },
-    { name = "ruff", specifier = ">=0.14.0" },
-    { name = "sp-repo-review", extras = ["cli"], specifier = ">=2025.10.1" },
+    { name = "ruff", specifier = ">=0.14.4" },
+    { name = "sp-repo-review", extras = ["cli"], specifier = ">=2025.11.10" },
 ]
 test = [
-    { name = "beartype", specifier = ">=0.22.2" },
+    { name = "beartype", specifier = ">=0.22.5" },
     { name = "optype", extras = ["numpy"] },
-    { name = "pytest", specifier = ">=8.4.2" },
+    { name = "pytest", specifier = ">=9.0.0" },
     { name = "typing-extensions", specifier = ">=4.15.0" },
 ]
 type = [
-    { name = "basedpyright", specifier = ">=1.31.7" },
-    { name = "beartype", specifier = ">=0.22.2" },
+    { name = "basedpyright", specifier = ">=1.33.0" },
+    { name = "beartype", specifier = ">=0.22.5" },
     { name = "mypy", extras = ["faster-cache"], specifier = ">=1.18.2" },
     { name = "optype", extras = ["numpy"] },
     { name = "pyrefly", specifier = "==0.40.1" },
-    { name = "pytest", specifier = ">=8.4.2" },
+    { name = "pytest", specifier = ">=9.0.0" },
     { name = "typing-extensions", specifier = ">=4.15.0" },
 ]
 
@@ -603,15 +603,15 @@ wheels = [
 
 [[package]]
 name = "sp-repo-review"
-version = "2025.10.1"
+version = "2025.11.10"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pyyaml" },
     { name = "repo-review" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/81/2c/b2e017b588114a8f4d9437d8ade805756bf479f429ad9fbbc05a34864264/sp_repo_review-2025.10.1.tar.gz", hash = "sha256:599e91e37a2d7fa6bd0446b1b434a2336f7dd3527162195cc5295af2b405c622", size = 169310, upload-time = "2025-10-01T16:29:40.075Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d5/d9/60315a38c7d8a5a67faaa9a0d6b3f67be155c8f463963ce318e1349a80ed/sp_repo_review-2025.11.10.tar.gz", hash = "sha256:9f1a2b534da70bec327e12cc7088499293dab78e7676436fcbf75be28401a6bc", size = 183103, upload-time = "2025-11-10T15:59:42.261Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/da/ca/c367c299c3e0c72270a13207e9b8dbb28ab8bc8e9cb42938aff93aece5f2/sp_repo_review-2025.10.1-py3-none-any.whl", hash = "sha256:6c2624ca47ed2a745fa4c00e6ead0ed44087bc6a1b0dbfe8d136bbbc0430f5b1", size = 22506, upload-time = "2025-10-01T16:29:38.499Z" },
+    { url = "https://files.pythonhosted.org/packages/06/e8/d3e1f1bde3653775751c250f966496c4c9ab0bfbc1f53631e35e6804b886/sp_repo_review-2025.11.10-py3-none-any.whl", hash = "sha256:a7d882890b6ce083d66dc65e185a5efe8b207e92a6bee86359c772064a86ad7a", size = 30463, upload-time = "2025-11-10T15:59:40.962Z" },
 ]
 
 [package.optional-dependencies]
