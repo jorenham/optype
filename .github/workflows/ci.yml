@@ -34,9 +34,9 @@ jobs:
       - name: typos
         uses: crate-ci/typos@v1.39.0
 
-      - uses: astral-sh/setup-uv@v7.1.2
+      - uses: astral-sh/setup-uv@v7.1.3
         with:
-          python-version: "3.13"
+          python-version: "3.14"
 
       - name: ruff check
         run: uv run ruff check --output-format=github
@@ -60,10 +60,13 @@ jobs:
             np: "1.25"
           - py: "3.13"
             np: "2.0"
+        include:
+          - py: "3.14"
+            np: "2.3"
     steps:
       - uses: actions/checkout@v5.0.0
 
-      - uses: astral-sh/setup-uv@v7.1.2
+      - uses: astral-sh/setup-uv@v7.1.3
         with:
           activate-environment: true
           python-version: ${{ matrix.py }}
@@ -108,7 +111,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5.0.0
 
-      - uses: astral-sh/setup-uv@v7.1.2
+      - uses: astral-sh/setup-uv@v7.1.3
         with:
           python-version: ${{ matrix.py }}
 
