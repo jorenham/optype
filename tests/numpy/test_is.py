@@ -14,7 +14,8 @@ if np.__version__ >= "2":
 else:
     CHARS = "?BbHhIiLlQqPpefdgFDGSUVOMm"  # pyright: ignore[reportConstantRedefinition]
 
-DTYPES = [np.dtype(char) for char in CHARS]
+# dtypes aren't hashable on numpy<2
+DTYPES = set({str(np.dtype(char)): np.dtype(char) for char in CHARS}.values())
 SCTYPES = {dtype.type for dtype in DTYPES if issubclass(dtype.type, np.generic)}
 NDARRAY_TYPES = np.ndarray, np.ma.MaskedArray
 

@@ -13,46 +13,46 @@ from optype.numpy import _scalar as _sc, ctypeslib as _ct
 # All allowed arguments that when passed to `np.array`, will result in an
 # array of the specified scalar type(s).
 
-_UNSIGNED_INTEGER_NP: Final = (
+_UNSIGNED_INTEGER_NP: Final = {
     np.uint8, np.uint16, np.uint32, np.uint64, np.uintp,
     np.ubyte, np.ushort, np.uintc, ulong, np.ulonglong,
-)  # fmt: skip
-_UNSIGNED_INTEGER_CT: Final = (
+}  # fmt: skip
+_UNSIGNED_INTEGER_CT: Final = {
     ct.c_uint8, ct.c_uint16, ct.c_uint32, ct.c_uint64, ct.c_size_t,
     ct.c_ubyte, ct.c_ushort, ct.c_uint, ct.c_ulong, ct.c_ulonglong,
-)  # fmt: skip
-UNSIGNED_INTEGER: Final = *_UNSIGNED_INTEGER_NP, *_UNSIGNED_INTEGER_CT
-_SIGNED_INTEGER_NP: Final = (
+}  # fmt: skip
+UNSIGNED_INTEGER: Final = _UNSIGNED_INTEGER_NP | _UNSIGNED_INTEGER_CT
+_SIGNED_INTEGER_NP: Final = {
     np.int8, np.int16, np.int32, np.int64, np.intp,
     np.byte, np.short, np.intc, long, np.longlong,
-)  # fmt: skip
-_SIGNED_INTEGER_CT: Final = (
+}  # fmt: skip
+_SIGNED_INTEGER_CT: Final = {
     ct.c_int8, ct.c_int16, ct.c_int32, ct.c_int64, ct.c_ssize_t,
     ct.c_byte, ct.c_short, ct.c_int, ct.c_long, ct.c_longlong,
-)  # fmt: skip
-SIGNED_INTEGER: Final = *_SIGNED_INTEGER_NP, *_SIGNED_INTEGER_CT
-INTEGER: Final = *UNSIGNED_INTEGER, *SIGNED_INTEGER
+}  # fmt: skip
+SIGNED_INTEGER: Final = _SIGNED_INTEGER_NP | _SIGNED_INTEGER_CT
+INTEGER: Final = UNSIGNED_INTEGER | SIGNED_INTEGER
 
-_FLOATING_NP: Final = (
+_FLOATING_NP: Final = {
     np.float16, np.float32, np.float64,
     np.half, np.single, np.double, np.longdouble,
-)  # fmt: skip
-_FLOATING_CT: Final = ct.c_float, ct.c_double
-FLOATING: Final = *_FLOATING_NP, *_FLOATING_CT
-COMPLEX_FLOATING: Final = (
+}  # fmt: skip
+_FLOATING_CT: Final = {ct.c_float, ct.c_double}
+FLOATING: Final = _FLOATING_NP | _FLOATING_CT
+COMPLEX_FLOATING: Final = {
     np.complex64, np.complex128, np.csingle, np.cdouble, np.clongdouble,
-)  # fmt: skip
-DATETIME64: Final = np.datetime64, dt.datetime
-TIMEDELTA64: Final = np.timedelta64, dt.timedelta
-STR: Final = np.str_, str
-BYTES: Final = np.bytes_, ct.c_char, bytes
-CHARACTER: Final = *STR, *BYTES
+}  # fmt: skip
+DATETIME64: Final = {np.datetime64, dt.datetime}
+TIMEDELTA64: Final = {np.timedelta64, dt.timedelta}
+STR: Final = {np.str_, str}
+BYTES: Final = {np.bytes_, ct.c_char, bytes}
+CHARACTER: Final = STR | BYTES
 # TODO(jorenham): structured dtype support
 # https://github.com/jorenham/optype/issues/371
-VOID: Final = (np.void,)
-FLEXIBLE: Final = *VOID, *CHARACTER
-BOOL: Final = np.bool_, ct.c_bool, bool
-OBJECT: Final = np.object_, ct.py_object
+VOID: Final = {np.void}
+FLEXIBLE: Final = VOID | CHARACTER
+BOOL: Final = {np.bool_, ct.c_bool, bool}
+OBJECT: Final = {np.object_, ct.py_object}
 
 
 def _shape(a: object, /) -> tuple[int, ...]:
@@ -223,7 +223,7 @@ def test_any_flexible_array(
     assert np.issubdtype(x.dtype, np.flexible)
 
 
-@pytest.mark.parametrize("sctype", BOOL)
+@pytest.mark.parametrize("sctype", BOOL, ids="{0.__module__}.{0.__qualname__}".format)
 def test_any_bool_array(sctype: type[bool | np.bool_ | _ct.Bool]) -> None:
     x = np.array(sctype(True))
     x_any: onp.AnyBoolArray = x
