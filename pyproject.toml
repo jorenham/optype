@@ -138,14 +138,14 @@ reportUnusedVariable = false # dupe of F841
 
 # pytest
 
-[tool.pytest.ini_options]
-minversion = "8.0"
+[tool.pytest]
+minversion = "9.0"
 testpaths = ["optype", "examples", "tests"]
-addopts = ["-ra", "--doctest-modules", "--strict-config", "--strict-markers"]
+addopts = ["-ra", "--doctest-modules"]
 doctest_optionflags = ["NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL", "ELLIPSIS"]
 filterwarnings = ["error"]
 log_cli_level = "INFO"
-xfail_strict = true
+strict = true
 
 # repo-review
 
