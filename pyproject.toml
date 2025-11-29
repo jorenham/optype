@@ -144,7 +144,7 @@ testpaths = ["optype", "examples", "tests"]
 addopts = ["-ra", "--doctest-modules"]
 doctest_optionflags = ["NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL", "ELLIPSIS"]
 filterwarnings = ["error"]
-log_cli_level = "INFO"
+log_level = "INFO"
 strict = true
 
 # repo-review
