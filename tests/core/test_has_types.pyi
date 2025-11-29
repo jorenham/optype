@@ -47,7 +47,7 @@ assert_type(typeof(bool_or_int), type[int])  # type: ignore[arg-type]  # mypy fa
 
 lit_str: LiteralString
 # https://github.com/facebook/pyrefly/issues/1166
-assert_type(type(lit_str), type[str])  # pyrefly: ignore[assert-type]
+assert_type(type(lit_str), type[str])
 assert_type(typeof(lit_str), type[str])  # pyrefly: ignore[bad-argument-type]  # pf fail
 
 class TDict(TypedDict): ...
