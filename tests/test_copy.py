@@ -79,7 +79,8 @@ def test_can_replace_date() -> None:
         # pyrefly: ignore[bad-assignment]
         d_copy_self: op.copy.CanReplaceSelf = d
 
-    assert isinstance(d, op.copy.CanReplace)
+    # https://github.com/facebook/pyrefly/issues/1783
+    assert isinstance(d, op.copy.CanReplace)  # pyrefly: ignore[invalid-argument]
     assert isinstance(d, op.copy.CanReplaceSelf)
 
 
@@ -106,5 +107,6 @@ def test_can_replace_custom() -> None:
         # pyrefly: ignore[bad-assignment]
         d_copy_self: op.copy.CanReplaceSelf = obj
 
-    assert isinstance(obj, op.copy.CanReplace)
+    # https://github.com/facebook/pyrefly/issues/1783
+    assert isinstance(obj, op.copy.CanReplace)  # pyrefly: ignore[invalid-argument]
     assert isinstance(obj, op.copy.CanReplaceSelf)

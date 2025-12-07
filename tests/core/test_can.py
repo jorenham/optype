@@ -50,8 +50,9 @@ def test_can_add_same_int() -> None:
     r0: op.CanAddSame[float] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     r1: op.CanAddSame[object] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
-    assert isinstance(x, op.CanAddSame)
-    assert issubclass(int, op.CanAddSame)
+    # https://github.com/facebook/pyrefly/issues/1783
+    assert isinstance(x, op.CanAddSame)  # pyrefly:ignore[invalid-argument]
+    assert issubclass(int, op.CanAddSame)  # pyrefly:ignore[invalid-argument]
 
 
 def test_iadd() -> None:
@@ -181,15 +182,15 @@ def test_can_iadd_same_list_accept() -> None:
     """Ensure that `builtins.list` is assignable to `CanAddSame`."""
     # acceptance tests (true negatives)
     x: list[int] = [42]
-    assert isinstance(x, op.CanIAddSame)
 
     a0: op.CanIAddSame = x
     a1: op.CanIAddSame[Any] = x
     a2: op.CanIAddSame[list[int]] = x
     a3: op.CanIAddSame[bytes] = x
 
-    # https://github.com/facebook/pyrefly/issues/1164
-    assert issubclass(list, op.CanIAddSame)
+    # https://github.com/facebook/pyrefly/issues/1783
+    assert isinstance(x, op.CanIAddSame)  # pyrefly:ignore[invalid-argument]
+    assert issubclass(list, op.CanIAddSame)  # pyrefly:ignore[invalid-argument]
 
 
 def test_can_iadd_same_list_reject() -> None:
@@ -228,8 +229,9 @@ def test_can_iter_int() -> None:
 def test_can_iter_collection_str(
     value: (str | tuple[str, ...] | list[str] | set[str] | dict[str, object]),
 ) -> None:
-    # sanity checks
-    assert isinstance(value, Collection)
+    # (in)sanity checks
+    # https://github.com/facebook/pyrefly/issues/1784
+    assert isinstance(value, Collection)  # pyrefly:ignore[invalid-argument]
     assert not isinstance(value, Iterator)
 
     value_iter_next: op.CanIter[op.CanNext[str]] = value
@@ -271,6 +273,9 @@ class UnsliceableSequence:
 def test_unsliceable_sequence() -> None:
     seq_int_str: op.CanSequence[int, str] = UnsliceableSequence()
     seq_wrong_str: op.CanSequence[slice, str] = UnsliceableSequence()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+
+    # https://github.com/facebook/pyrefly/issues/1783
+    # pyrefly:ignore[invalid-argument]
     assert isinstance(UnsliceableSequence, op.CanSequence)
 
 
