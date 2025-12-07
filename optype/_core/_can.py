@@ -1,10 +1,7 @@
-# mypy: disable-error-code="override"
-# ruff: noqa: PYI034
-
 import sys
 import types
-from collections.abc import Generator
-from typing import Never, Protocol, Self, SupportsIndex, TypeAlias, overload
+from collections.abc import Generator, Iterable
+from typing import Any, Never, Protocol, Self, SupportsIndex, TypeAlias, overload
 
 if sys.version_info >= (3, 13):
     from typing import ParamSpec, TypeVar, override, runtime_checkable
@@ -203,8 +200,8 @@ def __dir__() -> list[str]:
 _Tss = ParamSpec("_Tss", default=...)
 
 _T = TypeVar("_T")
-_T_contra = TypeVar("_T_contra", contravariant=True)
 _T_co = TypeVar("_T_co", covariant=True)
+_T_contra = TypeVar("_T_contra", contravariant=True)
 _TT_co = TypeVar("_TT_co", covariant=True, default=_T_contra)
 
 _K_contra = TypeVar("_K_contra", contravariant=True)
@@ -212,12 +209,7 @@ _V_contra = TypeVar("_V_contra", contravariant=True)
 _V_co = TypeVar("_V_co", covariant=True)
 _VV_co = TypeVar("_VV_co", default=_V_co, covariant=True)
 
-_BoolT_co = TypeVar("_BoolT_co", bound=bool, default=bool, covariant=True)
-_IntT_contra = TypeVar("_IntT_contra", bound=int, default=int, contravariant=True)
-_IntT_co = TypeVar("_IntT_co", bound=int, default=int, covariant=True)
-_BytesT_co = TypeVar("_BytesT_co", bound=bytes, default=bytes, covariant=True)
-_StrT_contra = TypeVar("_StrT_contra", bound=str, default=str, contravariant=True)
-_StrT_co = TypeVar("_StrT_co", bound=str, default=str, covariant=True)
+_BoolT_co = TypeVar("_BoolT_co", default=bool, covariant=True)
 _ExcT = TypeVar("_ExcT", bound=BaseException)
 
 _T_object_contra = TypeVar("_T_object_contra", contravariant=True, default=object)
@@ -229,6 +221,14 @@ _T_float_co = TypeVar("_T_float_co", default=float, covariant=True)
 _T_None_co = TypeVar("_T_None_co", default=None, covariant=True)
 _T_Never_contra = TypeVar("_T_Never_contra", default=Never, contravariant=True)
 _T_Never_co = TypeVar("_T_Never_co", default=Never, covariant=True)
+
+_IterT_str_co = TypeVar(
+    "_IterT_str_co",
+    # we use `Any` instead of `object` to side-step LSP errors in `CanDir`
+    bound=Iterable[Any],
+    default=Iterable[str],
+    covariant=True,
+)
 
 # we can't use `CanIndex` here, because of a recent regression in pyright 1.1.392
 _IndexT_contra = TypeVar(
@@ -257,8 +257,8 @@ class CanBool(Protocol[_BoolT_co]):
 
 
 @runtime_checkable
-class CanInt(Protocol[_IntT_co]):
-    def __int__(self, /) -> _IntT_co: ...
+class CanInt(Protocol):
+    def __int__(self, /) -> int: ...
 
 
 @runtime_checkable
@@ -272,26 +272,14 @@ class CanComplex(Protocol):
 
 
 @runtime_checkable
-class CanBytes(Protocol[_BytesT_co]):
-    """
-    The `__bytes__: (CanBytes[Y]) -> Y` method is *co*variant on `+Y`.
-    So if `__bytes__` returns an instance of a custom `bytes` subtype
-    `Y <: bytes`, then `bytes()` will also return `Y` (i.e. no upcasting).
-    """
-
-    def __bytes__(self, /) -> _BytesT_co: ...
+class CanBytes(Protocol):
+    def __bytes__(self, /) -> bytes: ...
 
 
 @runtime_checkable
-class CanStr(Protocol[_StrT_co]):
-    """
-    Each `object` has a *co*variant `__str__: (CanStr[Y=str]) -> Y` method on
-    `+Y`. That means that if `__str__()` returns an instance of a custom `str`
-    subtype `Y <: str`, then `str()` will also return `Y` (i.e. no upcasting).
-    """
-
+class CanStr(Protocol):
     @override
-    def __str__(self, /) -> _StrT_co: ...
+    def __str__(self, /) -> str: ...
 
 
 # Object representation
@@ -304,32 +292,20 @@ class CanHash(Protocol):
 
 
 @runtime_checkable
-class CanIndex(Protocol[_IntT_co]):
-    def __index__(self, /) -> _IntT_co: ...
+class CanIndex(Protocol):
+    def __index__(self, /) -> int: ...
 
 
 @runtime_checkable
-class CanRepr(Protocol[_StrT_co]):
-    """
-    Each `object` has a *co*variant `__repr__: (CanRepr[Y=str]) -> Y` method.
-    That means that if `__repr__` returns an instance of a custom `str`
-    subtype `Y <: str`, then `repr()` will also return `Y` (i.e. no upcasting).
-    """
-
+class CanRepr(Protocol):
     @override
-    def __repr__(self, /) -> _StrT_co: ...
+    def __repr__(self, /) -> str: ...
 
 
 @runtime_checkable
-class CanFormat(Protocol[_StrT_contra, _StrT_co]):
-    """
-    Each `object` has a `__format__: (CanFormat[X, Y], X) -> Y` method, with
-    `-X` *contra*variant, and `+Y` *co*variant. Both `X` and `Y` can be `str`
-    or `str` subtypes. Note that `format()` *does not* upcast `Y` to `str`.
-    """
-
+class CanFormat(Protocol):
     @override
-    def __format__(self, fmt: _StrT_contra, /) -> _StrT_co: ...  # pyright: ignore[reportIncompatibleMethodOverride]  # pyrefly: ignore[bad-override]
+    def __format__(self, format_spec: str, /) -> str: ...
 
 
 # Iteration
@@ -408,7 +384,7 @@ class CanEq(Protocol[_T_object_contra, _T_bool_co]):  # noqa: PLW1641
     """
 
     @override
-    def __eq__(self, rhs: _T_object_contra, /) -> _T_bool_co: ...  # pyright:ignore[reportIncompatibleMethodOverride]  # pyrefly: ignore[bad-override]
+    def __eq__(self, rhs: _T_object_contra, /) -> _T_bool_co: ...  # type: ignore[override]  # pyright:ignore[reportIncompatibleMethodOverride]  # pyrefly: ignore[bad-override]
 
 
 @runtime_checkable
@@ -419,7 +395,7 @@ class CanNe(Protocol[_T_object_contra, _T_bool_co]):
     """
 
     @override
-    def __ne__(self, rhs: _T_object_contra, /) -> _T_bool_co: ...  # pyright:ignore[reportIncompatibleMethodOverride]  # pyrefly: ignore[bad-override]
+    def __ne__(self, rhs: _T_object_contra, /) -> _T_bool_co: ...  # type: ignore[override]  # pyright:ignore[reportIncompatibleMethodOverride]  # pyrefly: ignore[bad-override]
 
 
 @runtime_checkable
@@ -447,6 +423,8 @@ class CanGe(Protocol[_T_object_contra, _T_bool_co]):
 
 @runtime_checkable
 class CanCall(Protocol[_Tss, _T_object_co]):
+    """Equivalent to `typing.Callable` in theory, but not always in practice."""
+
     def __call__(self, /, *args: _Tss.args, **kwargs: _Tss.kwargs) -> _T_object_co: ...
 
 
@@ -454,49 +432,36 @@ class CanCall(Protocol[_Tss, _T_object_co]):
 
 
 @runtime_checkable
-class CanGetattr(Protocol[_StrT_contra, _T_object_co]):
-    def __getattr__(self, name: _StrT_contra, /) -> _T_object_co: ...  # type: ignore[misc]
+class CanGetattr(Protocol[_T_object_co]):
+    def __getattr__(self, name: str, /) -> _T_object_co: ...
 
 
 @runtime_checkable
-class CanGetattribute(Protocol[_StrT_contra, _T_object_co]):
+class CanGetattribute(Protocol[_T_object_co]):
     """Note that `isinstance(x, CanGetattribute)` is always `True`."""
 
     @override
-    def __getattribute__(self, name: _StrT_contra, /) -> _T_object_co: ...  # type: ignore[misc]  # pyright: ignore[reportIncompatibleMethodOverride]
+    def __getattribute__(self, name: str, /) -> _T_object_co: ...
 
 
 @runtime_checkable
-class CanSetattr(Protocol[_StrT_contra, _T_object_contra]):
+class CanSetattr(Protocol[_T_object_contra]):
     """Note that `isinstance(x, CanSetattr)` is always true."""
 
     @override
-    def __setattr__(  # type: ignore[misc]  # pyright: ignore[reportIncompatibleMethodOverride]
-        self,
-        name: _StrT_contra,
-        value: _T_object_contra,
-        /,
-    ) -> _Ignored: ...
+    def __setattr__(self, name: str, value: _T_object_contra, /) -> _Ignored: ...  # type: ignore[misc, override]  # pyright: ignore[reportIncompatibleMethodOverride]
 
 
 @runtime_checkable
-class CanDelattr(Protocol[_StrT_contra]):
+class CanDelattr(Protocol):
     @override
-    def __delattr__(self, name: _StrT_contra, /) -> _Ignored: ...  # pyright: ignore[reportIncompatibleMethodOverride]  # pyrefly: ignore[bad-override]
-
-
-_AnyStrIterT_co = TypeVar(
-    "_AnyStrIterT_co",
-    bound=CanIter[CanNext[object]],
-    covariant=True,
-    default=CanIter[CanIterSelf[str]],
-)
+    def __delattr__(self, name: str, /) -> _Ignored: ...  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]  # pyrefly: ignore[bad-override]
 
 
 @runtime_checkable
-class CanDir(Protocol[_AnyStrIterT_co]):
+class CanDir(Protocol[_IterT_str_co]):
     @override
-    def __dir__(self, /) -> _AnyStrIterT_co: ...  # pyright: ignore[reportIncompatibleMethodOverride]
+    def __dir__(self, /) -> _IterT_str_co: ...
 
 
 # Descriptors
@@ -531,21 +496,21 @@ class CanDelete(Protocol[_T_contra]):
 
 
 @runtime_checkable
-class CanSetName(Protocol[_T_contra, _StrT_contra]):
-    def __set_name__(self, cls: type[_T_contra], name: _StrT_contra, /) -> _Ignored: ...
+class CanSetName(Protocol[_T_contra]):
+    def __set_name__(self, cls: type[_T_contra], name: str, /) -> _Ignored: ...
 
 
 # Collection type operands.
 
 
 @runtime_checkable
-class CanLen(Protocol[_IntT_co]):
-    def __len__(self, /) -> _IntT_co: ...
+class CanLen(Protocol):
+    def __len__(self, /) -> int: ...
 
 
 @runtime_checkable
-class CanLengthHint(Protocol[_IntT_co]):
-    def __length_hint__(self, /) -> _IntT_co: ...
+class CanLengthHint(Protocol):
+    def __length_hint__(self, /) -> int: ...
 
 
 @runtime_checkable
@@ -571,10 +536,10 @@ class CanReversed(Protocol[_T_co]):
 
 
 @runtime_checkable
-class CanContains(Protocol[_T_object_contra, _BoolT_co]):
+class CanContains(Protocol[_T_object_contra]):
     # usually the key is required to also be a hashable object, but this
     # isn't strictly required
-    def __contains__(self, key: _T_object_contra, /) -> _BoolT_co: ...
+    def __contains__(self, key: _T_object_contra, /) -> bool: ...
 
 
 @runtime_checkable
@@ -593,8 +558,8 @@ class CanGetMissing(
 @runtime_checkable
 class CanSequence(
     CanGetitem[_IndexT_contra, _V_co],
-    CanLen[_IntT_co],
-    Protocol[_IndexT_contra, _V_co, _IntT_co],
+    CanLen,
+    Protocol[_IndexT_contra, _V_co],
 ):
     """
     A sequence is an object with a __len__ method and a
@@ -1130,6 +1095,8 @@ class CanROrSelf(Protocol[_T_contra]):
 ###
 # Augmented arithmetic operands
 
+# ruff: noqa: PYI034
+
 # __iadd__
 
 
@@ -1572,11 +1539,7 @@ class CanExit(Protocol[_T_None_co]):
 
 
 @runtime_checkable
-class CanWith(
-    CanEnter[_T_co],
-    CanExit[_T_None_co],
-    Protocol[_T_co, _T_None_co],
-): ...
+class CanWith(CanEnter[_T_co], CanExit[_T_None_co], Protocol[_T_co, _T_None_co]): ...
 
 
 @runtime_checkable
@@ -1630,8 +1593,8 @@ class CanAsyncWithSelf(CanAEnterSelf, CanAExit[_T_None_co], Protocol[_T_None_co]
 
 
 @runtime_checkable
-class CanBuffer(Protocol[_IntT_contra]):
-    def __buffer__(self, buffer: _IntT_contra, /) -> memoryview: ...
+class CanBuffer(Protocol):
+    def __buffer__(self, buffer: int, /) -> memoryview: ...
 
 
 @runtime_checkable

@@ -1,6 +1,6 @@
 import enum
 import sys
-from typing import Generic, Literal, final
+from typing import Generic, final
 
 if sys.version_info >= (3, 13):
     from typing import TypeVar
@@ -73,9 +73,9 @@ class SequenceLike(Generic[_V_co]):
 
 def test_any_int() -> None:
     p_bool: opt.AnyInt = True
-    p_int: opt.AnyInt[Literal[2]] = 2
-    p_index: opt.AnyInt[Literal[3]] = SimpleIndex(3)
-    p_int_like: opt.AnyInt[Literal[4]] = SimpleInt(4)
+    p_int: opt.AnyInt = 2
+    p_index: opt.AnyInt = SimpleIndex(3)
+    p_int_like: opt.AnyInt = SimpleInt(4)
 
     n_complex: opt.AnyInt = 5j  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     n_str: opt.AnyInt = "6"  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
