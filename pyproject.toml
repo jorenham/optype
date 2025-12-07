@@ -267,8 +267,9 @@ env_list = [
   "3.14",
   "dprint",
   "ruff",
-  "mypy",
+  "ty",
   "pyrefly",
+  "mypy",
   "pyright",
   "pyright-verify",
   "repo-review",
@@ -317,14 +318,15 @@ commands = [
   ],
 ]
 
-[tool.tox.env.mypy]
-description = "mypy"
+[tool.tox.env.ty]
+description = "ty"
 runner = "uv-venv-lock-runner"
 dependency_groups = ["type"]
 commands = [
   [
-    "mypy",
-    { replace = "posargs", default = ["."], extend = true },
+    "ty",
+    "check",
+    { replace = "posargs", default = [], extend = true },
   ],
 ]
 
@@ -337,6 +339,17 @@ commands = [
     "pyrefly",
     "check",
     { replace = "posargs", default = [], extend = true },
+  ],
+]
+
+[tool.tox.env.mypy]
+description = "mypy"
+runner = "uv-venv-lock-runner"
+dependency_groups = ["type"]
+commands = [
+  [
+    "mypy",
+    { replace = "posargs", default = ["."], extend = true },
   ],
 ]
 
