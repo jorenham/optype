@@ -145,6 +145,14 @@ reportUnusedVariable = false # dupe of F841
 python-platform = "all"
 python-version = "3.11" # unlike mypy and pyright, this doesn't depend on the Python env
 
+[tool.ty.src]
+include = [
+  "optype",
+  # there are  too many false positives in these dirs for now
+  # "examples",
+  # "tests",
+]
+
 [tool.ty.rules]
 # unused-ignore-comment = "warn"  # will also complain about mypy `# type: ignore` comments
 possibly-unresolved-reference = "error"

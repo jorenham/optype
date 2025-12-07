@@ -31,9 +31,9 @@ ScalarT = TypeVar("ScalarT", bound=np.generic, default=Any)
 
 
 def _issubdtype(
-    x: type[ScalarT] | np.dtype[ScalarT],
+    x: ToDType[Any],
     /,
-    dtype: ToDType[Any] | None,
+    dtype: ToDType[ScalarT] | None,
 ) -> TypeIs[np.dtype[ScalarT]]:
     """Checks if `x` is a subdtype of `dtype`, or if `dtype` is None."""
 
@@ -59,7 +59,7 @@ def is_sctype(
 
 
 def is_array_nd(
-    a: object,
+    a: Any,
     /,
     dtype: ToDType[ScalarT] | None = None,
 ) -> TypeIs[ArrayND[ScalarT]]:
@@ -68,7 +68,7 @@ def is_array_nd(
 
 
 def is_array_0d(
-    a: object,
+    a: Any,
     /,
     dtype: ToDType[ScalarT] | None = None,
 ) -> TypeIs[Array0D[ScalarT]]:
@@ -77,7 +77,7 @@ def is_array_0d(
 
 
 def is_array_1d(
-    a: object,
+    a: Any,
     /,
     dtype: ToDType[ScalarT] | None = None,
 ) -> TypeIs[Array1D[ScalarT]]:
@@ -86,7 +86,7 @@ def is_array_1d(
 
 
 def is_array_2d(
-    a: object,
+    a: Any,
     /,
     dtype: ToDType[ScalarT] | None = None,
 ) -> TypeIs[Array2D[ScalarT]]:
@@ -95,7 +95,7 @@ def is_array_2d(
 
 
 def is_array_3d(
-    a: object,
+    a: Any,
     /,
     dtype: ToDType[ScalarT] | None = None,
 ) -> TypeIs[Array3D[ScalarT]]:
