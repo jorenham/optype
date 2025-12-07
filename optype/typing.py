@@ -50,7 +50,6 @@ def __dir__() -> tuple[str, ...]:
 ###
 
 _T = TypeVar("_T")
-_IntT = TypeVar("_IntT", bound=int, default=int)
 _ValueT = TypeVar("_ValueT", default=object)
 
 
@@ -101,7 +100,7 @@ JustComplex.__doc__ = _just.JustComplex.__doc__  # pyright: ignore[reportDepreca
 
 
 # Anything that can *always* be converted to an `int` / `float` / `complex`
-AnyInt: TypeAlias = _IntT | _c.CanInt[_IntT] | _c.CanIndex[_IntT]
+AnyInt: TypeAlias = int | _c.CanInt | _c.CanIndex
 
 AnyFloat: TypeAlias = _c.CanFloat | _c.CanIndex
 AnyComplex: TypeAlias = _c.CanComplex | _c.CanFloat | _c.CanIndex

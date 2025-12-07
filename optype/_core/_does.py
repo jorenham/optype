@@ -1,6 +1,6 @@
 import sys
 from collections.abc import AsyncIterator, Callable, Iterable, Iterator
-from typing import Literal, Protocol, TypeAlias, overload
+from typing import Protocol, overload
 
 if sys.version_info >= (3, 13):
     from typing import ParamSpec, TypeVar
@@ -101,17 +101,6 @@ def __dir__() -> list[str]:
 
 ###
 
-_JustFalse: TypeAlias = Literal[False]
-_JustTrue: TypeAlias = Literal[True]
-_Just0: TypeAlias = Literal[0]
-# cannot use `optype.typing.LiteralByte` here, as it starts at 0
-_PosInt: TypeAlias = Literal[
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
-    17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
-    33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
-    49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,
-]  # fmt: skip
-
 
 _Tss = ParamSpec("_Tss")
 _KeyT = TypeVar("_KeyT")
@@ -128,10 +117,6 @@ _IteratorT = TypeVar("_IteratorT", bound=Iterator[object] | _c.CanNext[object])
 _AIteratorT = TypeVar("_AIteratorT", bound=AsyncIterator[object] | _c.CanANext[object])
 _IterT = TypeVar("_IterT", bound=Iterable[object])
 _BoolT = TypeVar("_BoolT", bound=bool)
-_IntT = TypeVar("_IntT", bound=int)
-_StrT = TypeVar("_StrT", bound=str)
-_FormatT = TypeVar("_FormatT", bound=str)
-_BytesT = TypeVar("_BytesT", bound=bytes)
 
 
 ###
@@ -205,42 +190,35 @@ class DoesFloat(Protocol):
 
 
 class DoesInt(Protocol):
-    def __call__(self, obj: _c.CanInt[_IntT], /) -> _IntT: ...
+    def __call__(self, obj: _c.CanInt, /) -> int: ...
 
 
 class DoesBool(Protocol):
     @overload
     def __call__(self, obj: _c.CanBool[_BoolT], /) -> _BoolT: ...
     @overload
-    def __call__(self, obj: _c.CanLen[_Just0], /) -> _JustFalse: ...
-    @overload
-    def __call__(self, obj: _c.CanLen[_PosInt], /) -> _JustTrue: ...
+    def __call__(self, obj: _c.CanLen, /) -> bool: ...
     @overload
     def __call__(self, obj: object, /) -> bool: ...
 
 
 class DoesStr(Protocol):
-    def __call__(self, obj: _c.CanStr[_StrT], /) -> _StrT: ...
+    def __call__(self, obj: _c.CanStr, /) -> str: ...
 
 
 class DoesBytes(Protocol):
-    def __call__(self, obj: _c.CanBytes[_BytesT], /) -> _BytesT: ...
+    def __call__(self, obj: _c.CanBytes, /) -> bytes: ...
 
 
 # formatting
 
 
 class DoesRepr(Protocol):
-    def __call__(self, obj: _c.CanRepr[_StrT], /) -> _StrT: ...
+    def __call__(self, obj: _c.CanRepr, /) -> str: ...
 
 
 class DoesFormat(Protocol):
-    def __call__(
-        self,
-        obj: _c.CanFormat[_FormatT, _StrT],
-        format_spec: _FormatT = ...,
-        /,
-    ) -> _StrT: ...
+    def __call__(self, obj: _c.CanFormat, format_spec: str = ..., /) -> str: ...
 
 
 # rich comparison
@@ -293,27 +271,22 @@ class DoesGe(Protocol):
 
 class DoesGetattr(Protocol):
     @overload
-    def __call__(self, obj: _c.CanGetattr[_StrT, _AttrT], name: _StrT, /) -> _AttrT: ...
+    def __call__(self, obj: _c.CanGetattr[_AttrT], name: str, /) -> _AttrT: ...
+    @overload
+    def __call__(self, obj: _c.CanGetattribute[_AttrT], name: str, /) -> _AttrT: ...
     @overload
     def __call__(
         self,
-        obj: _c.CanGetattribute[_StrT, _AttrT],
-        name: _StrT,
-        /,
-    ) -> _AttrT: ...
-    @overload
-    def __call__(
-        self,
-        obj: _c.CanGetattr[_StrT, _AttrT],
-        name: _StrT,
+        obj: _c.CanGetattr[_AttrT],
+        name: str,
         default: _DefaultT,
         /,
     ) -> _AttrT | _DefaultT: ...
     @overload
     def __call__(
         self,
-        obj: _c.CanGetattribute[_StrT, _AttrT],
-        name: _StrT,
+        obj: _c.CanGetattribute[_AttrT],
+        name: str,
         default: _DefaultT,
         /,
     ) -> _AttrT | _DefaultT: ...
@@ -322,15 +295,15 @@ class DoesGetattr(Protocol):
 class DoesSetattr(Protocol):
     def __call__(
         self,
-        obj: _c.CanSetattr[_StrT, _AttrT],
-        name: _StrT,
+        obj: _c.CanSetattr[_AttrT],
+        name: str,
         value: _AttrT,
         /,
     ) -> None: ...
 
 
 class DoesDelattr(Protocol):
-    def __call__(self, obj: _c.CanDelattr[_StrT], name: _StrT, /) -> None: ...
+    def __call__(self, obj: _c.CanDelattr, name: str, /) -> None: ...
 
 
 class DoesDir(Protocol):
@@ -357,11 +330,11 @@ class DoesCall(Protocol):
 
 
 class DoesLen(Protocol):
-    def __call__(self, obj: _c.CanLen[_IntT], /) -> _IntT: ...
+    def __call__(self, obj: _c.CanLen, /) -> int: ...
 
 
 class DoesLengthHint(Protocol):
-    def __call__(self, obj: _c.CanLengthHint[_IntT], /) -> _IntT: ...
+    def __call__(self, obj: _c.CanLengthHint, /) -> int: ...
 
 
 class DoesGetitem(Protocol):
@@ -397,7 +370,7 @@ class DoesMissing(Protocol):
 
 
 class DoesContains(Protocol):
-    def __call__(self, obj: _c.CanContains[_KeyT, _BoolT], key: _KeyT, /) -> _BoolT: ...
+    def __call__(self, obj: _c.CanContains[_KeyT], key: _KeyT, /) -> bool: ...
 
 
 class DoesReversed(Protocol):
@@ -789,7 +762,7 @@ class DoesInvert(Protocol):
 
 
 class DoesIndex(Protocol):
-    def __call__(self, obj: _c.CanIndex[_IntT], /) -> _IntT: ...
+    def __call__(self, obj: _c.CanIndex, /) -> int: ...
 
 
 class DoesHash(Protocol):

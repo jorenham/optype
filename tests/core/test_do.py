@@ -16,7 +16,7 @@ def test_static() -> None:
     _do_setitem: _does.DoesSetitem = _do.do_setitem
     _do_delitem: _does.DoesDelitem = _do.do_delitem
     _do_missing: _does.DoesMissing = _do.do_missing
-    _do_contains: _does.DoesContains = _do.do_contains  # type: ignore[assignment]
+    _do_contains: _does.DoesContains = _do.do_contains
 
     _do_radd: _does.DoesRAdd = _do.do_radd
     _do_rsub: _does.DoesRSub = _do.do_rsub
