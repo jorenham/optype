@@ -39,7 +39,8 @@ def test_anyufunc_ufunc_type() -> None:
     # purposefully wrong
     tp_4_str: type[UFunc[Any, Any, Any, LiteralString]] = np.ufunc  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
-    assert isinstance(tp, UFunc)
+    # https://github.com/facebook/pyrefly/issues/1783
+    assert isinstance(tp, UFunc)  # pyrefly: ignore[invalid-argument]
 
 
 def test_anyufunc_ufunc_11() -> None:
@@ -199,7 +200,7 @@ def test_anyufunc_gufunc21() -> None:
     assert fn.nin == 2
     assert fn.nout == 1
     assert fn.nargs == 3
-    assert fn.signature is not None
+    assert fn.signature is not None  # pyrefly:ignore[unnecessary-comparison]
     assert fn.identity is None
 
     # accepts either 2 or 3 positional-only arguments

@@ -4,16 +4,12 @@ __all__ = ["_get_protocol_attrs"]
 
 
 # same as from `typing_extensions._EXCLUDED_ATTRS`
-_EXCLUDED_ATTRS: typing.Final = typing.cast(
-    "frozenset[str]",
-    frozenset(typing.EXCLUDED_ATTRIBUTES)  # type: ignore[attr-defined]  # pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType, reportAttributeAccessIssue]
-    | {
-        "__match_args__",
-        "__protocol_attrs__",
-        "__non_callable_proto_members__",
-        "__final__",
-    },
-)
+_EXCLUDED_ATTRS: typing.Final = frozenset(getattr(typing, "EXCLUDED_ATTRIBUTES")) | {  # noqa: B009
+    "__match_args__",
+    "__protocol_attrs__",
+    "__non_callable_proto_members__",
+    "__final__",
+}
 
 
 # same as `typing_extensions._get_protocol_attrs`
