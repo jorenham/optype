@@ -15,6 +15,7 @@
 <a href="https://detachhead.github.io/basedpyright"><img alt="basedpyright" src="https://img.shields.io/badge/basedpyright-262c36?style=flat-square&logoColor=fdc204"></a>
 <a href="https://github.com/python/mypy"><img alt="mypy" src="https://img.shields.io/badge/mypy-262c36?style=flat-square&logo=python"></a>
 <a href="https://github.com/facebook/pyrefly"><img alt="pyrefly" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/facebook/pyrefly/refs/heads/main/website/static/badge.json&style=flat-square&color=262c36&labelColor=262c36"></a>
+<a href="https://github.com/astral-sh/ty"><img alt="ruff" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ty/main/assets/badge/v0.json&style=flat-square&color=262c36&labelColor=262c36"></a>
 <a href="https://github.com/astral-sh/ruff"><img alt="ruff" src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json&style=flat-square&color=262c36&labelColor=262c36"></a>
 </p>
 
