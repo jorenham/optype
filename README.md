@@ -364,7 +364,7 @@ This is why these `optype` interfaces don't accept generic type arguments.
         <td><code>do_int</code></td>
         <td><code>DoesInt</code></td>
         <td><code>__int__</code></td>
-        <td><code>CanInt[+R: int = int]</code></td>
+        <td><code>CanInt</code></td>
     </tr>
     <tr>
         <td><code>bool(_)</code></td>
@@ -378,72 +378,28 @@ This is why these `optype` interfaces don't accept generic type arguments.
         <td><code>do_bytes</code></td>
         <td><code>DoesBytes</code></td>
         <td><code>__bytes__</code></td>
-        <td><code>CanBytes[+R: bytes = bytes]</code></td>
+        <td><code>CanBytes</code></td>
     </tr>
     <tr>
         <td><code>str(_)</code></td>
         <td><code>do_str</code></td>
         <td><code>DoesStr</code></td>
         <td><code>__str__</code></td>
-        <td><code>CanStr[+R: str = str]</code></td>
-    </tr>
-</table>
-
-> [!NOTE]
-> The `Can*` interfaces of the types that can used as `typing.Literal`
-> accept an optional type parameter `R`.
-> This can be used to indicate a literal return type,
-> for surgically precise typing, e.g. `None`, `True`, and `42` are
-> instances of `CanBool[Literal[False]]`, `CanInt[Literal[1]]`, and
-> `CanStr[Literal['42']]`, respectively.
-
-These formatting methods are allowed to return instances that are a subtype
-of the `str` builtin. The same holds for the `__format__` argument.
-So if you're a 10x developer that wants to hack Python's f-strings, but only
-if your type hints are spot-on; `optype` is you friend.
-
-<table>
-    <tr>
-        <th colspan="3" align="center">operator</th>
-        <th colspan="2" align="center">operand</th>
-    </tr>
-    <tr>
-        <td>expression</td>
-        <th>function</th>
-        <th>type</th>
-        <td>method</td>
-        <th>type</th>
+        <td><code>CanStr</code></td>
     </tr>
     <tr>
         <td><code>repr(_)</code></td>
         <td><code>do_repr</code></td>
         <td><code>DoesRepr</code></td>
         <td><code>__repr__</code></td>
-        <td><code>CanRepr[+R:str = str]</code></td>
+        <td><code>CanRepr</code></td>
     </tr>
     <tr>
         <td><code>format(_, x)</code></td>
         <td><code>do_format</code></td>
         <td><code>DoesFormat</code></td>
         <td><code>__format__</code></td>
-        <td><code>CanFormat[-T:str = str, +R:str = str]</code></td>
-    </tr>
-</table>
-
-Additionally, `optype` provides protocols for types with (custom) *hash* or
-*index* methods:
-
-<table>
-    <tr>
-        <th colspan="3" align="center">operator</th>
-        <th colspan="2" align="center">operand</th>
-    </tr>
-    <tr>
-        <td>expression</td>
-        <th>function</th>
-        <th>type</th>
-        <td>method</td>
-        <th>type</th>
+        <td><code>CanFormat</code></td>
     </tr>
     <tr>
         <td><code>hash(_)</code></td>
@@ -460,7 +416,7 @@ Additionally, `optype` provides protocols for types with (custom) *hash* or
         <td><code>do_index</code></td>
         <td><code>DoesIndex</code></td>
         <td><code>__index__</code></td>
-        <td><code>CanIndex[+R: int = int]</code></td>
+        <td><code>CanIndex</code></td>
     </tr>
 </table>
 
@@ -1434,7 +1390,7 @@ Additionally, there is `optype.CanAIterSelf[R]`, with both the
         <td><code>do_len</code></td>
         <td><code>DoesLen</code></td>
         <td><code>__len__</code></td>
-        <td><code>CanLen[+R:int=int]</code></td>
+        <td><code>CanLen</code></td>
     </tr>
     <tr>
         <td>
@@ -1444,7 +1400,7 @@ Additionally, there is `optype.CanAIterSelf[R]`, with both the
         <td><code>do_length_hint</code></td>
         <td><code>DoesLengthHint</code></td>
         <td><code>__length_hint__</code></td>
-        <td><code>CanLengthHint[+R:int=int]</code></td>
+        <td><code>CanLengthHint</code></td>
     </tr>
     <tr>
         <td><code>_[k]</code></td>
@@ -1491,7 +1447,7 @@ Additionally, there is `optype.CanAIterSelf[R]`, with both the
         <td><code>__reversed__</code></td>
         <td>
             <code>CanReversed[+R]</code>, or<br>
-            <code>CanSequence[-I, +V, +N=int]</code>
+            <code>CanSequence[-I, +V]</code>
         </td>
     </tr>
 </table>
@@ -1526,7 +1482,7 @@ specific and flexible `collections.abc.Sequence[V]`.
         <td><code>do_getattr</code></td>
         <td><code>DoesGetattr</code></td>
         <td><code>__getattr__</code></td>
-        <td><code>CanGetattr[-K:str=str, +V=object]</code></td>
+        <td><code>CanGetattr[+V=object]</code></td>
     </tr>
     <tr>
         <td>
@@ -1536,7 +1492,7 @@ specific and flexible `collections.abc.Sequence[V]`.
         <td><code>do_setattr</code></td>
         <td><code>DoesSetattr</code></td>
         <td><code>__setattr__</code></td>
-        <td><code>CanSetattr[-K:str=str, -V=object]</code></td>
+        <td><code>CanSetattr[-V=object]</code></td>
     </tr>
     <tr>
         <td>
@@ -1546,14 +1502,14 @@ specific and flexible `collections.abc.Sequence[V]`.
         <td><code>do_delattr</code></td>
         <td><code>DoesDelattr</code></td>
         <td><code>__delattr__</code></td>
-        <td><code>CanDelattr[-K:str=str]</code></td>
+        <td><code>CanDelattr</code></td>
     </tr>
     <tr>
         <td><code>dir(_)</code></td>
         <td><code>do_dir</code></td>
         <td><code>DoesDir</code></td>
         <td><code>__dir__</code></td>
-        <td><code>CanDir[+R:CanIter[CanIterSelf[str]]]</code></td>
+        <td><code>CanDir[+R: Iterable[str]]</code></td>
     </tr>
 </table>
 
@@ -1683,7 +1639,7 @@ Interfaces for [descriptors](https://docs.python.org/3/howto/descriptor.html).
     <tr>
         <td><code>class T: d = _</code></td>
         <td><code>__set_name__</code></td>
-        <td><code>CanSetName[-T, -N: str = str]</code></td>
+        <td><code>CanSetName[-T]</code></td>
     </tr>
 </table>
 
@@ -1704,7 +1660,7 @@ Interfaces for emulating buffer types using the [buffer protocol][BP].
     <tr>
         <td><code>v = memoryview(_)</code></td>
         <td><code>__buffer__</code></td>
-        <td><code>CanBuffer[-T: int = int]</code></td>
+        <td><code>CanBuffer</code></td>
     </tr>
     <tr>
         <td><code>del v</code></td>
