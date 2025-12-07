@@ -83,6 +83,7 @@ type = [
   "basedpyright>=1.35.0",
   "mypy[faster-cache]>=1.19.0",
   "pyrefly==0.44.2",
+  "ty==0.0.1a32",
 ]
 dev = [
   { include-group = "extra" },
@@ -136,6 +137,18 @@ reportUnusedCallResult = false # https://github.com/microsoft/pyright/issues/865
 reportUnusedImport = false # dupe of F401
 reportUnusedVariable = false # dupe of F841
 
+# ty
+
+[tool.ty]
+
+[tool.ty.environment]
+python-platform = "all"
+python-version = "3.11" # unlike mypy and pyright, this doesn't depend on the Python env
+
+[tool.ty.rules]
+# unused-ignore-comment = "warn"  # will also complain about mypy `# type: ignore` comments
+possibly-unresolved-reference = "error"
+
 # pytest
 
 [tool.pytest]
@@ -156,7 +169,7 @@ ignore = [
   "RTD100", # Uses ReadTheDocs
 ]
 
-# tox
+# ruff
 
 [tool.ruff]
 src = ["optype", "examples", "tests"]
@@ -341,6 +354,8 @@ description = "repo-review"
 runner = "uv-venv-lock-runner"
 dependency_groups = ["lint"]
 commands = [["repo-review", "."]]
+
+# typos
 
 [tool.typos.default]
 extend-ignore-identifiers-re = [
