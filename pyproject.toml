@@ -8,7 +8,7 @@ module-root = ""
 [project]
 name = "optype"
 description = "Building Blocks for Precise & Flexible Type Hints"
-version = "0.15.0"
+version = "0.15.1.dev0"
 authors = [{ name = "Joren Hammudoglu", email = "jhammudoglu@gmail.com" }]
 license = "BSD-3-Clause"
 license-files = ["LICENSE"]
