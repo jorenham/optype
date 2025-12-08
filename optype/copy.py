@@ -35,8 +35,8 @@ class CanCopy(Protocol[_T_co]):
     def __copy__(self, /) -> _T_co: ...
 
 
-@runtime_checkable
-class CanCopySelf(CanCopy["CanCopySelf"], Protocol):
+@runtime_checkable  # https://github.com/astral-sh/ty/issues/1800
+class CanCopySelf(CanCopy["CanCopySelf"], Protocol):  # ty:ignore[unsupported-base]
     """Runtime-checkable alias `CanCopySelf = CanCopy[Self]`."""
 
     @override
@@ -50,8 +50,8 @@ class CanDeepcopy(Protocol[_T_co]):
     def __deepcopy__(self, memo: dict[int, object], /) -> _T_co: ...
 
 
-@runtime_checkable
-class CanDeepcopySelf(CanDeepcopy["CanDeepcopySelf"], Protocol):
+@runtime_checkable  # https://github.com/astral-sh/ty/issues/1800
+class CanDeepcopySelf(CanDeepcopy["CanDeepcopySelf"], Protocol):  # ty:ignore[unsupported-base]
     """Runtime-checkable alias `CanDeepcopySelf = CanDeepcopy[Self]`."""
 
     @override
@@ -76,8 +76,8 @@ class CanReplace(Protocol[_T_co]):
     def __replace__(self, /, *_: Any, **changes: Any) -> _T_co: ...
 
 
-@runtime_checkable
-class CanReplaceSelf(CanReplace["CanReplaceSelf"], Protocol):
+@runtime_checkable  # https://github.com/astral-sh/ty/issues/1800
+class CanReplaceSelf(CanReplace["CanReplaceSelf"], Protocol):  # ty:ignore[unsupported-base]
     """
     Runtime-checkable alias `CanReplaceSelf = CanReplace[Self]`, i.e.
     `copy.replace: def[S <: CanReplaceSelf](_: S) -> S`.

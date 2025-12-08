@@ -136,8 +136,7 @@ do_dir: Final[_d.DoesDir] = cast("_d.DoesDir", dir)
 
 # callables
 
-
-do_call: Final[_d.DoesCall] = _o.call  # pyrefly: ignore[bad-assignment]
+do_call: Final[_d.DoesCall] = _o.call  # ty:ignore[invalid-assignment]  # pyrefly: ignore[bad-assignment]
 
 # containers and sequences
 
@@ -174,7 +173,8 @@ def do_setitem(obj: _c.CanSetitem[_KT, _VT], key: _KT, value: _VT, /) -> None:
 
 def do_delitem(obj: _c.CanDelitem[_KT], key: _KT, /) -> None:
     """Same as `del obj[key]`."""
-    del obj[key]
+    # https://github.com/astral-sh/ty/issues/1799
+    del obj[key]  # ty:ignore[non-subscriptable]
 
 
 def do_missing(obj: _c.CanMissing[_KT, _DT], key: _KT, /) -> _DT:

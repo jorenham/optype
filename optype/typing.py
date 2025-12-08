@@ -62,7 +62,7 @@ _ValueT = TypeVar("_ValueT", default=object)
 )
 class Just(  # type: ignore[misc]
     # pyrefly: ignore[invalid-inheritance]
-    _just.Just[_T],  # pyright: ignore[reportGeneralTypeIssues]
+    _just.Just[_T],  # pyright: ignore[reportGeneralTypeIssues]  # ty:ignore[subclass-of-final-class]
     Protocol[_T],
 ): ...
 
@@ -91,10 +91,10 @@ class JustFloat(_just.JustFloat, Protocol, just=float): ...  # type: ignore[misc
 class JustComplex(_just.JustComplex, Protocol, just=complex): ...  # type: ignore[misc]  # pyright: ignore[reportGeneralTypeIssues]
 
 
-Just.__doc__ = _just.Just.__doc__  # pyright: ignore[reportDeprecated]
-JustInt.__doc__ = _just.JustInt.__doc__  # pyright: ignore[reportDeprecated]
-JustFloat.__doc__ = _just.JustFloat.__doc__  # pyright: ignore[reportDeprecated]
-JustComplex.__doc__ = _just.JustComplex.__doc__  # pyright: ignore[reportDeprecated]
+Just.__doc__ = _just.Just.__doc__  # pyright: ignore[reportDeprecated]  # ty:ignore[deprecated]
+JustInt.__doc__ = _just.JustInt.__doc__  # pyright: ignore[reportDeprecated]  # ty:ignore[deprecated]
+JustFloat.__doc__ = _just.JustFloat.__doc__  # pyright: ignore[reportDeprecated]  # ty:ignore[deprecated]
+JustComplex.__doc__ = _just.JustComplex.__doc__  # pyright: ignore[reportDeprecated]  # ty:ignore[deprecated]
 
 ###
 

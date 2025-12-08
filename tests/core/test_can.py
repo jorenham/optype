@@ -237,7 +237,7 @@ def test_can_iter_collection_str(
     value_iter_next: op.CanIter[op.CanNext[str]] = value
     value_iter_next_wrong: op.CanIter[op.CanNext[int]] = value  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     value_iter_self: op.CanIterSelf[str] = value  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
-    value_iter_iter_self: op.CanIter[op.CanIterSelf[str]] = value
+    value_iter_iter_self: op.CanIter[op.CanIterSelf[str]] = value  # ty:ignore[invalid-assignment]  # ty false positive
 
     # strings are iterables of strings; making them infinitely nested
     value_2_iter_next: op.CanIter[op.CanNext[op.CanIter[op.CanNext[str]]]] = value

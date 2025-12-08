@@ -83,6 +83,7 @@ type = [
   "basedpyright>=1.35.0",
   "mypy[faster-cache]>=1.19.0",
   "pyrefly==0.44.2",
+  "ty==0.0.1a32",
 ]
 dev = [
   { include-group = "extra" },
@@ -136,6 +137,26 @@ reportUnusedCallResult = false # https://github.com/microsoft/pyright/issues/865
 reportUnusedImport = false # dupe of F401
 reportUnusedVariable = false # dupe of F841
 
+# ty
+
+[tool.ty]
+
+[tool.ty.environment]
+python-platform = "all"
+python-version = "3.11" # unlike mypy and pyright, this doesn't depend on the Python env
+
+[tool.ty.src]
+include = [
+  "optype",
+  # there are  too many false positives in these dirs for now
+  # "examples",
+  # "tests",
+]
+
+[tool.ty.rules]
+# unused-ignore-comment = "warn"  # will also complain about mypy `# type: ignore` comments
+possibly-unresolved-reference = "error"
+
 # pytest
 
 [tool.pytest]
@@ -156,7 +177,7 @@ ignore = [
   "RTD100", # Uses ReadTheDocs
 ]
 
-# tox
+# ruff
 
 [tool.ruff]
 src = ["optype", "examples", "tests"]
@@ -246,8 +267,9 @@ env_list = [
   "3.14",
   "dprint",
   "ruff",
-  "mypy",
+  "ty",
   "pyrefly",
+  "mypy",
   "pyright",
   "pyright-verify",
   "repo-review",
@@ -296,14 +318,15 @@ commands = [
   ],
 ]
 
-[tool.tox.env.mypy]
-description = "mypy"
+[tool.tox.env.ty]
+description = "ty"
 runner = "uv-venv-lock-runner"
 dependency_groups = ["type"]
 commands = [
   [
-    "mypy",
-    { replace = "posargs", default = ["."], extend = true },
+    "ty",
+    "check",
+    { replace = "posargs", default = [], extend = true },
   ],
 ]
 
@@ -316,6 +339,17 @@ commands = [
     "pyrefly",
     "check",
     { replace = "posargs", default = [], extend = true },
+  ],
+]
+
+[tool.tox.env.mypy]
+description = "mypy"
+runner = "uv-venv-lock-runner"
+dependency_groups = ["type"]
+commands = [
+  [
+    "mypy",
+    { replace = "posargs", default = ["."], extend = true },
   ],
 ]
 
@@ -341,6 +375,8 @@ description = "repo-review"
 runner = "uv-venv-lock-runner"
 dependency_groups = ["lint"]
 commands = [["repo-review", "."]]
+
+# typos
 
 [tool.typos.default]
 extend-ignore-identifiers-re = [

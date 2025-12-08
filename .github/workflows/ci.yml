@@ -80,6 +80,9 @@ jobs:
           numpy==${{ matrix.np }}.*
           numpy-typing-compat==${{ env.NPTC_BUILD }}.${{ matrix.np }}
 
+      - name: ty
+        run: ty check
+
       - name: pyrefly
         run: pyrefly check
 

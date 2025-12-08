@@ -197,7 +197,8 @@ def __dir__() -> list[str]:
 
 
 # this should (but can't) be contravariant
-_Tss = ParamSpec("_Tss", default=...)
+# https://github.com/astral-sh/ty/issues/1798
+_Tss = ParamSpec("_Tss", default=...)  # ty:ignore[invalid-paramspec]
 
 _T = TypeVar("_T")
 _T_co = TypeVar("_T_co", covariant=True)
@@ -357,7 +358,7 @@ class CanAIter(Protocol[_CanANextT_co]):
 
 
 @runtime_checkable
-class CanAIterSelf(CanAIter["CanAIterSelf[_V_co]"], CanANext[_V_co], Protocol[_V_co]):
+class CanAIterSelf(CanAIter["CanAIterSelf[_V_co]"], CanANext[_V_co], Protocol[_V_co]):  # ty:ignore[unsupported-base]
     """Like `AsyncIterator[T]`, but without the `abc` nonsense."""
 
     @override

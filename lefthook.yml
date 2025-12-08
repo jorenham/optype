@@ -46,6 +46,10 @@ pre-commit:
       glob: "*.{py,pyi}"
       run: uv {run} pytest --quiet --no-summary
 
+    - name: pytest
+      glob: "optype/**/*.{py,pyi}"
+      run: uv {run} ty check
+
 post-checkout:
   jobs:
     - run: uv sync
