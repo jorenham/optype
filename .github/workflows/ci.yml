@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6.0.0
+      - uses: actions/checkout@v6.0.1
 
       - name: repo review
         uses: scientific-python/repo-review@v0.12.3
@@ -34,7 +34,7 @@ jobs:
       - name: typos
         uses: crate-ci/typos@v1.40.0
 
-      - uses: astral-sh/setup-uv@v7.1.4
+      - uses: astral-sh/setup-uv@v7.1.5
         with:
           python-version: "3.14"
 
@@ -64,9 +64,9 @@ jobs:
           - py: "3.14"
             np: "2.3"
     steps:
-      - uses: actions/checkout@v6.0.0
+      - uses: actions/checkout@v6.0.1
 
-      - uses: astral-sh/setup-uv@v7.1.4
+      - uses: astral-sh/setup-uv@v7.1.5
         with:
           activate-environment: true
           python-version: ${{ matrix.py }}
@@ -112,9 +112,9 @@ jobs:
           - py: "3.14"
             np: "2.0"
     steps:
-      - uses: actions/checkout@v6.0.0
+      - uses: actions/checkout@v6.0.1
 
-      - uses: astral-sh/setup-uv@v7.1.4
+      - uses: astral-sh/setup-uv@v7.1.5
         with:
           python-version: ${{ matrix.py }}
 
