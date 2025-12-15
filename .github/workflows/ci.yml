@@ -34,7 +34,7 @@ jobs:
       - name: typos
         uses: crate-ci/typos@v1.40.0
 
-      - uses: astral-sh/setup-uv@v7.1.5
+      - uses: astral-sh/setup-uv@v7.1.6
         with:
           python-version: "3.14"
 
@@ -66,7 +66,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6.0.1
 
-      - uses: astral-sh/setup-uv@v7.1.5
+      - uses: astral-sh/setup-uv@v7.1.6
         with:
           activate-environment: true
           python-version: ${{ matrix.py }}
@@ -114,7 +114,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6.0.1
 
-      - uses: astral-sh/setup-uv@v7.1.5
+      - uses: astral-sh/setup-uv@v7.1.6
         with:
           python-version: ${{ matrix.py }}
 
