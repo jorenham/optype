@@ -13,7 +13,7 @@ concurrency:
 
 env:
   UV_LOCKED: 1
-  NPTC_BUILD: 20250818
+  NPTC_BUILD: 20251206
 
 jobs:
   lint:
