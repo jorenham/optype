@@ -30,7 +30,7 @@ def __dir__() -> tuple[str, ...]:
 ###
 
 # https://github.com/astral-sh/ty/issues/1798
-_Tss = ParamSpec("_Tss", default=...)  # ty:ignore[invalid-paramspec]
+_Tss = ParamSpec("_Tss", default=...)
 _ArgT = TypeVar("_ArgT", default=object)
 _ArgT_co = TypeVar("_ArgT_co", covariant=True, default=object)
 _StateT_co = TypeVar("_StateT_co", covariant=True)
