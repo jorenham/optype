@@ -1,5 +1,5 @@
 [build-system]
-requires = ["uv_build>=0.9.16,<0.10.0"]
+requires = ["uv_build>=0.9.18,<0.10.0"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
@@ -68,22 +68,22 @@ extra = [
 ]
 lint = [
   "dprint-py>=0.50.2.0",
-  "ruff>=0.14.8",
+  "ruff>=0.14.10",
   "sp-repo-review[cli]>=2025.11.21",
 ]
 test = [
   { include-group = "extra" },
-  "beartype>=0.22.8",
+  "beartype>=0.22.9",
   "pytest>=9.0.2",
   "typing-extensions>=4.15.0",
 ]
 type = [
   { include-group = "extra" },
   { include-group = "test" },
-  "basedpyright>=1.35.0",
-  "mypy[faster-cache]>=1.19.0",
+  "basedpyright>=1.36.1",
+  "mypy[faster-cache]>=1.19.1",
   "pyrefly==0.46.0",
-  "ty==0.0.1a34",
+  "ty==0.0.4",
 ]
 dev = [
   { include-group = "extra" },
