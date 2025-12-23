@@ -385,7 +385,7 @@ class CanEq(Protocol[_T_object_contra, _T_bool_co]):  # noqa: PLW1641
     """
 
     @override
-    def __eq__(self, rhs: _T_object_contra, /) -> _T_bool_co: ...  # type: ignore[override]  # pyright:ignore[reportIncompatibleMethodOverride]  # pyrefly: ignore[bad-override]
+    def __eq__(self, rhs: _T_object_contra, /) -> _T_bool_co: ...  # type: ignore[override]  # pyright:ignore[reportIncompatibleMethodOverride]  # pyrefly: ignore[bad-override]  # ty: ignore[invalid-method-override]
 
 
 @runtime_checkable
@@ -396,7 +396,7 @@ class CanNe(Protocol[_T_object_contra, _T_bool_co]):
     """
 
     @override
-    def __ne__(self, rhs: _T_object_contra, /) -> _T_bool_co: ...  # type: ignore[override]  # pyright:ignore[reportIncompatibleMethodOverride]  # pyrefly: ignore[bad-override]
+    def __ne__(self, rhs: _T_object_contra, /) -> _T_bool_co: ...  # type: ignore[override]  # pyright:ignore[reportIncompatibleMethodOverride]  # pyrefly: ignore[bad-override]  # ty: ignore[invalid-method-override]
 
 
 @runtime_checkable
@@ -450,13 +450,13 @@ class CanSetattr(Protocol[_T_object_contra]):
     """Note that `isinstance(x, CanSetattr)` is always true."""
 
     @override
-    def __setattr__(self, name: str, value: _T_object_contra, /) -> _Ignored: ...  # type: ignore[misc, override]  # pyright: ignore[reportIncompatibleMethodOverride]
+    def __setattr__(self, name: str, value: _T_object_contra, /) -> _Ignored: ...  # type: ignore[misc, override]  # pyright: ignore[reportIncompatibleMethodOverride]  # ty: ignore[invalid-method-override]
 
 
 @runtime_checkable
 class CanDelattr(Protocol):
     @override
-    def __delattr__(self, name: str, /) -> _Ignored: ...  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]  # pyrefly: ignore[bad-override]
+    def __delattr__(self, name: str, /) -> _Ignored: ...  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]  # pyrefly: ignore[bad-override]  # ty: ignore[invalid-method-override]
 
 
 @runtime_checkable
