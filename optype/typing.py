@@ -72,7 +72,7 @@ class Just(  # type: ignore[misc]
     "and will be removed in optype 0.10.0",
 )
 @runtime_checkable
-class JustInt(_just.JustInt, Protocol, just=int): ...  # type: ignore[misc]  # pyright: ignore[reportGeneralTypeIssues]
+class JustInt(_just.JustInt, Protocol, just=int): ...  # type: ignore[misc]  # pyright: ignore[reportGeneralTypeIssues]  # ty:ignore[subclass-of-final-class]
 
 
 @deprecated(
@@ -80,7 +80,7 @@ class JustInt(_just.JustInt, Protocol, just=int): ...  # type: ignore[misc]  # p
     "and will be removed in optype 0.10.0",
 )
 @runtime_checkable
-class JustFloat(_just.JustFloat, Protocol, just=float): ...  # type: ignore[misc]  # pyright: ignore[reportGeneralTypeIssues]
+class JustFloat(_just.JustFloat, Protocol, just=float): ...  # type: ignore[misc]  # pyright: ignore[reportGeneralTypeIssues]  # ty:ignore[subclass-of-final-class]
 
 
 @deprecated(
@@ -88,7 +88,7 @@ class JustFloat(_just.JustFloat, Protocol, just=float): ...  # type: ignore[misc
     "and will be removed in optype 0.10.0",
 )
 @runtime_checkable
-class JustComplex(_just.JustComplex, Protocol, just=complex): ...  # type: ignore[misc]  # pyright: ignore[reportGeneralTypeIssues]
+class JustComplex(_just.JustComplex, Protocol, just=complex): ...  # type: ignore[misc]  # pyright: ignore[reportGeneralTypeIssues]  # ty:ignore[subclass-of-final-class]
 
 
 Just.__doc__ = _just.Just.__doc__  # pyright: ignore[reportDeprecated]  # ty:ignore[deprecated]

@@ -53,7 +53,7 @@ class Scalar(Protocol[_PT_co, _NB_co]):
     @property
     def data(self, /) -> memoryview: ...
     @property
-    def dtype(self, /) -> np.dtype[Self]: ...  # type: ignore[type-var]  # pyright: ignore[reportInvalidTypeArguments]
+    def dtype(self, /) -> np.dtype[Self]: ...  # type: ignore[type-var]  # pyright: ignore[reportInvalidTypeArguments]  # ty: ignore[invalid-type-arguments]
     @property
     def flags(self, /) -> Any: ...
     @property
