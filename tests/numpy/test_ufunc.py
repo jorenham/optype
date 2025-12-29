@@ -40,7 +40,7 @@ def test_anyufunc_ufunc_type() -> None:
     tp_4_str: type[UFunc[Any, Any, Any, LiteralString]] = np.ufunc  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
     # https://github.com/facebook/pyrefly/issues/1783
-    assert isinstance(tp, UFunc)  # pyrefly: ignore[invalid-argument]
+    assert isinstance(tp, UFunc)
 
 
 def test_anyufunc_ufunc_11() -> None:
