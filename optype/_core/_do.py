@@ -174,7 +174,7 @@ def do_setitem(obj: _c.CanSetitem[_KT, _VT], key: _KT, value: _VT, /) -> None:
 def do_delitem(obj: _c.CanDelitem[_KT], key: _KT, /) -> None:
     """Same as `del obj[key]`."""
     # https://github.com/astral-sh/ty/issues/1799
-    del obj[key]  # ty:ignore[non-subscriptable]
+    del obj[key]
 
 
 def do_missing(obj: _c.CanMissing[_KT, _DT], key: _KT, /) -> _DT:

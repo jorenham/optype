@@ -51,8 +51,8 @@ def test_can_add_same_int() -> None:
     r1: op.CanAddSame[object] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
     # https://github.com/facebook/pyrefly/issues/1783
-    assert isinstance(x, op.CanAddSame)  # pyrefly:ignore[invalid-argument]
-    assert issubclass(int, op.CanAddSame)  # pyrefly:ignore[invalid-argument]
+    assert isinstance(x, op.CanAddSame)
+    assert issubclass(int, op.CanAddSame)
 
 
 def test_iadd() -> None:
@@ -189,8 +189,8 @@ def test_can_iadd_same_list_accept() -> None:
     a3: op.CanIAddSame[bytes] = x
 
     # https://github.com/facebook/pyrefly/issues/1783
-    assert isinstance(x, op.CanIAddSame)  # pyrefly:ignore[invalid-argument]
-    assert issubclass(list, op.CanIAddSame)  # pyrefly:ignore[invalid-argument]
+    assert isinstance(x, op.CanIAddSame)
+    assert issubclass(list, op.CanIAddSame)
 
 
 def test_can_iadd_same_list_reject() -> None:
@@ -230,8 +230,7 @@ def test_can_iter_collection_str(
     value: (str | tuple[str, ...] | list[str] | set[str] | dict[str, object]),
 ) -> None:
     # (in)sanity checks
-    # https://github.com/facebook/pyrefly/issues/1784
-    assert isinstance(value, Collection)  # pyrefly:ignore[invalid-argument]
+    assert isinstance(value, Collection)  # pyrefly: ignore[unsafe-overlap]
     assert not isinstance(value, Iterator)
 
     value_iter_next: op.CanIter[op.CanNext[str]] = value
@@ -247,7 +246,7 @@ def test_can_iter_collection_str(
 
     assert isinstance(value, op.CanIter)
     assert not isinstance(value, op.CanNext)
-    assert not isinstance(value, op.CanIterSelf)
+    assert not isinstance(value, op.CanIterSelf)  # pyrefly: ignore[unsafe-overlap]
 
     ivalue = iter(value)
     ivalue_iter_next: op.CanIter[op.CanNext[str]] = ivalue
@@ -274,9 +273,10 @@ def test_unsliceable_sequence() -> None:
     seq_int_str: op.CanSequence[int, str] = UnsliceableSequence()
     seq_wrong_str: op.CanSequence[slice, str] = UnsliceableSequence()  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
 
-    # https://github.com/facebook/pyrefly/issues/1783
-    # pyrefly:ignore[invalid-argument]
-    assert isinstance(UnsliceableSequence, op.CanSequence)
+    assert isinstance(
+        UnsliceableSequence,
+        op.CanSequence,  # pyrefly: ignore[unsafe-overlap]
+    )
 
 
 @pytest.mark.parametrize(

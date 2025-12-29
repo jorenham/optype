@@ -63,7 +63,7 @@ _NameT = TypeVar("_NameT", bound=str, default=str)
 _QualNameT = TypeVar(
     "_QualNameT",
     bound=str,
-    default=_NameT,  # pyrefly: ignore[invalid-type-var]
+    default=_NameT,
 )
 _StrT_co = TypeVar("_StrT_co", bound=str, default=str, covariant=True)
 
