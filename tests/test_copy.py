@@ -79,8 +79,7 @@ def test_can_replace_date() -> None:
         # pyrefly: ignore[bad-assignment]
         d_copy_self: op.copy.CanReplaceSelf = d
 
-    # https://github.com/facebook/pyrefly/issues/1783
-    assert isinstance(d, op.copy.CanReplace)
+    assert isinstance(d, op.copy.CanReplace)  # pyrefly: ignore[unsafe-overlap]
     assert isinstance(d, op.copy.CanReplaceSelf)
 
 
@@ -107,6 +106,5 @@ def test_can_replace_custom() -> None:
         # pyrefly: ignore[bad-assignment]
         d_copy_self: op.copy.CanReplaceSelf = obj
 
-    # https://github.com/facebook/pyrefly/issues/1783
-    assert isinstance(obj, op.copy.CanReplace)
+    assert isinstance(obj, op.copy.CanReplace)  # pyrefly: ignore[unsafe-overlap]
     assert isinstance(obj, op.copy.CanReplaceSelf)
