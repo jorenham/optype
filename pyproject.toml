@@ -68,7 +68,7 @@ extra = [
 ]
 lint = [
   "dprint-py>=0.51.1.0",
-  "ruff>=0.14.10",
+  "ruff>=0.14.11",
   "sp-repo-review[cli]>=2025.11.21",
 ]
 test = [
@@ -80,10 +80,10 @@ test = [
 type = [
   { include-group = "extra" },
   { include-group = "test" },
-  "basedpyright>=1.36.2",
+  "basedpyright>=1.37.1",
   "mypy[faster-cache]>=1.19.1",
-  "pyrefly==0.47.0",
-  "ty==0.0.9",
+  "pyrefly==0.48.0",
+  "ty==0.0.11",
 ]
 dev = [
   { include-group = "extra" },
@@ -203,6 +203,7 @@ ignore = [
   "D", # pydocstyle
   "DOC201", # pydoclint - docstring-missing-returns
   "TRY003", # tryceratops - raise-vanilla-args
+  "RUF067", # ruff - non-empty-init-module
 ]
 
 [tool.ruff.lint.flake8-builtins]
