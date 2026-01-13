@@ -203,6 +203,7 @@ ignore = [
   "D", # pydocstyle
   "DOC201", # pydoclint - docstring-missing-returns
   "TRY003", # tryceratops - raise-vanilla-args
+  "RUF067", # ruff - non-empty-init-module
 ]
 
 [tool.ruff.lint.flake8-builtins]
