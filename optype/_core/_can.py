@@ -234,7 +234,7 @@ _IterT_str_co = TypeVar(
 # we can't use `CanIndex` here, because of a recent regression in pyright 1.1.392
 _IndexT_contra = TypeVar(
     "_IndexT_contra",
-    bound=SupportsIndex | slice,  # pyrefly: ignore[invalid-annotation]
+    bound=SupportsIndex | slice,
     contravariant=True,
 )
 

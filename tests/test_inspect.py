@@ -309,9 +309,7 @@ def test_is_union_type(origin: type) -> None:
     Alias: TypeAliasType = TypeAliasType("Alias", origin | None)  # noqa: N806  # pyright: ignore[reportGeneralTypeIssues]
     assert op.inspect.is_union_type(Alias)
 
-    # pyrefly: ignore[not-a-type]
     assert op.inspect.is_union_type(tp.Annotated[origin | None, None])
-    # pyrefly: ignore[not-a-type]
     assert op.inspect.is_union_type(tp.Annotated[origin, None] | None)
 
     assert not op.inspect.is_union_type(origin)
