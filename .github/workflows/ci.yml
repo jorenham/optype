@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6.0.1
+      - uses: actions/checkout@v6.0.2
 
       - name: repo review
         uses: scientific-python/repo-review@v0.12.3
@@ -32,7 +32,7 @@ jobs:
         uses: dprint/check@v2.3
 
       - name: typos
-        uses: crate-ci/typos@v1.42.1
+        uses: crate-ci/typos@v1.42.2
 
       - uses: astral-sh/setup-uv@v7.2.0
         with:
@@ -66,7 +66,7 @@ jobs:
           - py: "3.14"
             np: "2.4"
     steps:
-      - uses: actions/checkout@v6.0.1
+      - uses: actions/checkout@v6.0.2
 
       - uses: astral-sh/setup-uv@v7.2.0
         with:
@@ -114,7 +114,7 @@ jobs:
           - py: "3.14"
             np: "2.0"
     steps:
-      - uses: actions/checkout@v6.0.1
+      - uses: actions/checkout@v6.0.2
 
       - uses: astral-sh/setup-uv@v7.2.0
         with:
