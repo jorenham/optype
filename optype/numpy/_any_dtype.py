@@ -37,7 +37,6 @@ __all__ = [
 
     "AnyUIntDType",
     "AnyUInt8DType",
-    "AnyUInt8DType",
     "AnyUInt16DType",
     "AnyUInt32DType",
     "AnyUInt64DType",
@@ -49,7 +48,6 @@ __all__ = [
     "AnyULongLongDType",
 
     "AnyIntDType",
-    "AnyInt8DType",
     "AnyInt8DType",
     "AnyInt16DType",
     "AnyInt32DType",

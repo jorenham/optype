@@ -13,8 +13,8 @@ from ._shape import AnyShape, Shape
 from optype._utils import set_module
 
 __all__ = [  # noqa: RUF022
-    "Array", "Array0D", "Array1D", "Array1D", "Array2D", "Array3D", "ArrayND",
-    "MArray", "MArray0D", "MArray1D", "MArray1D", "MArray2D", "MArray3D",
+    "Array", "Array0D", "Array1D", "Array2D", "Array3D", "ArrayND",
+    "MArray", "MArray0D", "MArray1D", "MArray2D", "MArray3D",
     "Matrix",
     "CanArray", "CanArray0",
     "CanArrayND", "CanArray0D", "CanArray1D", "CanArray2D", "CanArray3D",

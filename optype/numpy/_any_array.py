@@ -33,7 +33,6 @@ __all__ = [
 
     "AnyUIntArray", "AnyIntArray",
     "AnyUInt8Array", "AnyInt8Array",
-    "AnyUInt8Array", "AnyInt8Array",
     "AnyUInt16Array", "AnyInt16Array",
     "AnyUInt32Array", "AnyInt32Array",
     "AnyUInt64Array", "AnyInt64Array",
