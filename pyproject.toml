@@ -68,7 +68,7 @@ extra = [
 ]
 lint = [
   "dprint-py>=0.51.1.0",
-  "ruff>=0.15.1",
+  "ruff>=0.15.0",
   "sp-repo-review[cli]>=2025.11.21",
 ]
 test = [

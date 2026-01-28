@@ -389,7 +389,7 @@ dev = [
     { name = "optype", extras = ["numpy"] },
     { name = "pyrefly", specifier = "==0.52.0" },
     { name = "pytest", specifier = ">=9.0.2" },
-    { name = "ruff", specifier = ">=0.15.1" },
+    { name = "ruff", specifier = ">=0.15.0" },
     { name = "sp-repo-review", extras = ["cli"], specifier = ">=2025.11.21" },
     { name = "ty", specifier = "==0.0.17" },
     { name = "typing-extensions", specifier = ">=4.15.0" },
@@ -397,7 +397,7 @@ dev = [
 extra = [{ name = "optype", extras = ["numpy"] }]
 lint = [
     { name = "dprint-py", specifier = ">=0.51.1.0" },
-    { name = "ruff", specifier = ">=0.15.1" },
+    { name = "ruff", specifier = ">=0.15.0" },
     { name = "sp-repo-review", extras = ["cli"], specifier = ">=2025.11.21" },
 ]
 test = [
