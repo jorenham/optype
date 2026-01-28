@@ -397,3 +397,6 @@ extend-ignore-identifiers-re = [
   "Mode(R|W|X|A|O|_)(B|T|_)(U|_)?",
   "ba", # file mode string
 ]
+extend-ignore-re = [
+  "np\\.arange",
+]
