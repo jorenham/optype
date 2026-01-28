@@ -1,9 +1,7 @@
 """Test module for optype.dataclasses protocols."""
 
 import dataclasses
-from typing import cast
-
-import pytest
+from typing import Any, cast
 
 import optype as op
 from optype.inspect import is_runtime_protocol
@@ -33,29 +31,39 @@ class ImmutablePoint:
 class FakeDataclass:
     """A class with __dataclass_fields__ attribute but not a real dataclass."""
 
-    __dataclass_fields__: dict[str, object] = {}
+    __dataclass_fields__: dict[str, Any] = {}  # noqa: RUF012
 
 
 class NotADataclass:
     """A regular class without __dataclass_fields__."""
 
-    pass
-
 
 def test_has_dataclass_fields_issubclass_real_dataclass() -> None:
     """Test issubclass with real dataclasses."""
-    assert issubclass(Point, op.dataclasses.HasDataclassFields)
-    assert issubclass(ImmutablePoint, op.dataclasses.HasDataclassFields)
+    assert issubclass(  # type: ignore[misc]
+        Point,
+        op.dataclasses.HasDataclassFields,  # pyright: ignore[reportGeneralTypeIssues]  # pyrefly: ignore[invalid-argument]
+    )
+    assert issubclass(  # type: ignore[misc]
+        ImmutablePoint,
+        op.dataclasses.HasDataclassFields,  # pyright: ignore[reportGeneralTypeIssues]  # pyrefly: ignore[invalid-argument]
+    )
 
 
 def test_has_dataclass_fields_issubclass_fake_dataclass() -> None:
     """Test issubclass with a fake dataclass that has __dataclass_fields__."""
-    assert issubclass(FakeDataclass, op.dataclasses.HasDataclassFields)
+    assert issubclass(  # type: ignore[misc]
+        FakeDataclass,
+        op.dataclasses.HasDataclassFields,  # pyright: ignore[reportGeneralTypeIssues]  # pyrefly: ignore[invalid-argument]
+    )
 
 
 def test_has_dataclass_fields_issubclass_not_dataclass() -> None:
     """Test issubclass with a regular class without __dataclass_fields__."""
-    assert not issubclass(NotADataclass, op.dataclasses.HasDataclassFields)
+    assert not issubclass(  # type: ignore[misc]
+        NotADataclass,
+        op.dataclasses.HasDataclassFields,  # pyright: ignore[reportGeneralTypeIssues]  # pyrefly: ignore[invalid-argument]
+    )
 
 
 def test_has_dataclass_fields_isinstance_real_dataclass() -> None:
@@ -96,5 +104,8 @@ def test_has_dataclass_fields_generic_type_parameter() -> None:
     assert isinstance(Point, op.dataclasses.HasDataclassFields)
 
     # This should type check correctly with the generic parameter
-    protocol_type = cast(type[op.dataclasses.HasDataclassFields], Point)
-    assert issubclass(protocol_type, op.dataclasses.HasDataclassFields)
+    protocol_type = cast("type[op.dataclasses.HasDataclassFields]", Point)
+    assert issubclass(  # type: ignore[misc]
+        protocol_type,
+        op.dataclasses.HasDataclassFields,  # pyright: ignore[reportGeneralTypeIssues]  # pyrefly: ignore[invalid-argument]
+    )
