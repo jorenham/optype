@@ -66,8 +66,17 @@ Funding = "https://github.com/sponsors/jorenham"
 extra = [
   "optype[numpy]",
 ]
+docs = [
+  "mkdocs>=1.6.1",
+  "mkdocs-material>=9.5.47",
+  "mkdocs-autorefs>=1.2.0",
+  "mkdocstrings[python]>=0.28.0",
+  "hippogriffe>=0.2.2",
+  "pymdown-extensions>=10.14",
+]
 lint = [
   "dprint-py>=0.51.1.0",
+  "lefthook>=2.0.15",
   "ruff>=0.14.14",
   "sp-repo-review[cli]>=2025.11.21",
 ]
@@ -388,4 +397,7 @@ extend-ignore-identifiers-re = [
   "(N|n)in",
   "Mode(R|W|X|A|O|_)(B|T|_)(U|_)?",
   "ba", # file mode string
+]
+extend-ignore-re = [
+  "np\\.arange",
 ]
