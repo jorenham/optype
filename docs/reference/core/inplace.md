@@ -32,14 +32,16 @@ For each in-place operation, `optype` provides three protocol variants:
 
 ## Protocol Details
 
+```python
+import optype as op
+```
+
 ### Standard Form: `CanI*[-T, +R]`
 
 Accepts an operand of type `T` and returns type `R`.
 
 ```python
-from optype import CanIAdd
-
-def add_inplace(lst: CanIAdd[int, list], value: int) -> list:
+def add_inplace(lst: op.CanIAdd[int, list], value: int) -> list:
     lst += value
     return lst
 ```
@@ -49,9 +51,7 @@ def add_inplace(lst: CanIAdd[int, list], value: int) -> list:
 Returns `typing.Self` after modification. Useful for methods that mutate an object and return itself.
 
 ```python
-from optype import CanIAddSelf
-
-class Counter(CanIAddSelf[int]):
+class Counter(op.CanIAddSelf[int]):
     def __init__(self, value: int = 0):
         self.value = value
     
@@ -65,9 +65,7 @@ class Counter(CanIAddSelf[int]):
 Accepts `Self | T` and returns `Self`. This is useful for operations that accept both instances of the same type and other types.
 
 ```python
-from optype import CanIAddSame
-
-class Vector(CanIAddSame[int]):
+class Vector(op.CanIAddSame[int]):
     def __init__(self, x: int, y: int):
         self.x = x
         self.y = y
@@ -87,9 +85,7 @@ class Vector(CanIAddSame[int]):
 ### Mutable List-like Container
 
 ```python
-from optype import CanIAddSelf, CanISubSelf
-
-class MutableList(CanIAddSelf[list], CanISubSelf[object]):
+class MutableList(op.CanIAddSelf[list], op.CanISubSelf[object]):
     def __init__(self, items: list):
         self.items = items
     
@@ -113,9 +109,8 @@ print(ml.items)  # [1, 3, 4, 5]
 ### Numeric Type with Multiple Operations
 
 ```python
-from optype import CanIAddSelf, CanISubSelf, CanIMulSelf, CanITruedivSelf
-
-class Decimal(CanIAddSelf[int], CanISubSelf[int], CanIMulSelf[int], CanITruedivSelf[int]):
+class Decimal(op.CanIAddSelf[int], op.CanISubSelf[int],
+              op.CanIMulSelf[int], op.CanITruedivSelf[int]):
     def __init__(self, value: float):
         self.value = value
     
@@ -149,9 +144,7 @@ print(d)  # Decimal(7.5)
 ### Bitwise Operations
 
 ```python
-from optype import CanIAndSelf, CanIOrSelf, CanIXorSelf
-
-class BitFlags(CanIAndSelf[int], CanIOrSelf[int], CanIXorSelf[int]):
+class BitFlags(op.CanIAndSelf[int], op.CanIOrSelf[int], op.CanIXorSelf[int]):
     def __init__(self, value: int):
         self.value = value
     
@@ -182,11 +175,10 @@ print(flags)     # BitFlags(0b1100)
 
 ```python
 from typing import TypeVar
-from optype import CanIAdd
 
 T = TypeVar("T")
 
-def accumulate(obj: CanIAdd[T, object], values: list[T]) -> object:
+def accumulate(obj: op.CanIAdd[T, object], values: list[T]) -> object:
     """Accumulate values using in-place addition."""
     for value in values:
         obj += value

@@ -27,9 +27,11 @@ Technically, `__anext__` can return any type, and `anext()` will pass it along. 
 ## Examples
 
 ```python
-from optype import CanANext, CanAIter
+import optype as op
+```
 
-async def consume(async_iter: CanAIter[object]) -> None:
+```python
+async def consume(async_iter: op.CanAIter[object]) -> None:
     """Consume an async iterable."""
     while True:
         try:
@@ -40,7 +42,7 @@ async def consume(async_iter: CanAIter[object]) -> None:
 ```
 
 ```python
-class AsyncCounter(CanAIterSelf[int]):
+class AsyncCounter(op.CanAIterSelf[int]):
     def __init__(self, max: int):
         self.current = 0
         self.max = max

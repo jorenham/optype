@@ -17,10 +17,7 @@ class CanArray[
     ND: tuple[int, ...] = ...,
     ST: np.generic = ...,
 ]:
-    def __array__(
-        self,
-        dtype: DType[RT] | None = None,
-    ) -> Array[ND, RT]: ...
+    def __array__(self, dtype: DType[RT] | None = None) -> Array[ND, RT]: ...
 ```
 
 **Purpose**: Enable conversion to NumPy array via `np.asarray()` or `np.array()`
@@ -29,10 +26,9 @@ class CanArray[
 
 ```python
 import numpy as np
-from optype import CanArray
-from optype.numpy import Array
+import optype.numpy as onp
 
-class MyMatrix(CanArray[tuple[int, int], np.float64]):
+class MyMatrix(onp.CanArray[tuple[int, int], np.float64]):
     def __init__(self, data):
         self._data = np.asarray(data, dtype=float)
     
@@ -70,9 +66,9 @@ class CanArrayUFunc[
 
 ```python
 import numpy as np
-from optype import CanArrayUFunc
+import optype.numpy as onp
 
-class Quantity(CanArrayUFunc[np.ufunc, "Quantity"]):
+class Quantity(onp.CanArrayUFunc[np.ufunc, "Quantity"]):
     def __init__(self, value, unit):
         self.value = value
         self.unit = unit
@@ -116,9 +112,9 @@ class CanArrayFunction[
 
 ```python
 import numpy as np
-from optype import CanArrayFunction
+import optype.numpy as onp
 
-class MaskedArray(CanArrayFunction[object, object]):
+class MaskedArray(onp.CanArrayFunction[object, object]):
     def __init__(self, data, mask):
         self.data = np.asarray(data)
         self.mask = np.asarray(mask, dtype=bool)
@@ -238,12 +234,11 @@ class HasDType[DT: DType = ...]:
 
 ```python
 import numpy as np
-from optype import CanArray, CanArrayUFunc, HasDType
-from optype.numpy import Array, DType
+import optype.numpy as onp
 
-class CustomArray(CanArray[tuple[int, ...], np.generic] &
-                  CanArrayUFunc[np.ufunc, "CustomArray"] &
-                  HasDType[np.dtype[np.float64]]):
+class CustomArray(onp.CanArray[tuple[int, ...], np.generic] &
+                  onp.CanArrayUFunc[np.ufunc, "CustomArray"] &
+                  onp.HasDType[np.dtype[np.float64]]):
     def __init__(self, data):
         self._array = np.asarray(data, dtype=np.float64)
     

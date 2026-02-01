@@ -21,12 +21,14 @@ The `CanCall` protocol describes objects that can be called (invoked) as functio
 
 ## Examples
 
+```python
+import optype as op
+```
+
 ### Basic Callable Protocol
 
 ```python
-from optype import CanCall
-
-def invoke(func: CanCall[..., int]) -> int:
+def invoke(func: op.CanCall[..., int]) -> int:
     """Invoke any callable that returns an int."""
     return func()
 
@@ -39,12 +41,11 @@ print(result)  # 42
 
 ```python
 from typing import ParamSpec, TypeVar
-from optype import CanCall
 
 P = ParamSpec("P")
 R = TypeVar("R")
 
-def repeat_call(func: CanCall[P, R], *args: P.args, **kwargs: P.kwargs) -> tuple[R, R]:
+def repeat_call(func: op.CanCall[P, R], *args: P.args, **kwargs: P.kwargs) -> tuple[R, R]:
     """Call a function twice with the same arguments."""
     first = func(*args, **kwargs)
     second = func(*args, **kwargs)
@@ -62,9 +63,7 @@ print(result)  # ("Hello, Alice!", "Hello, Alice!")
 ### Custom Callable Class
 
 ```python
-from optype import CanCall
-
-class Multiplier(CanCall[[int, int], int]):
+class Multiplier(op.CanCall[[int, int], int]):
     def __init__(self, factor: int):
         self.factor = factor
     
@@ -80,16 +79,12 @@ print(mult(2, 3))  # 50
 
 ```python
 from typing import ParamSpec, TypeVar
-from optype import CanCall
 
 P = ParamSpec("P")
 R = TypeVar("R")
 S = TypeVar("S")
 
-def compose(
-    f: CanCall[P, R],
-    g: CanCall[[R], S],
-) -> CanCall[P, S]:
+def compose(f: op.CanCall[P, R], g: op.CanCall[[R], S]) -> op.CanCall[P, S]:
     """Compose two functions: (g ∘ f)(x) = g(f(x))"""
     def composed(*args: P.args, **kwargs: P.kwargs) -> S:
         return g(f(*args, **kwargs))

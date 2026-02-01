@@ -4,7 +4,7 @@ Protocols for Python's binary operators (`+`, `-`, `*`, `/`, `@`, `%`, `**`, `<<
 
 ## Overview
 
-These operations are called "arithmetic operations" in the Python docs, but they aren't limited to numeric types. The operations aren't required to be commutative, might be non-deterministic, and could have side-effects.
+In the [Python docs](https://docs.python.org/3/library/stdtypes.html#numeric-types-int-float-complex), these are referred to as "arithmetic operations". But the operands aren't limited to numeric types, and because the operations aren't required to be commutative, might be non-deterministic, and could have side-effects. Classifying them "arithmetic" is, at the very least, a bit of a stretch.
 
 Each binary operation has three protocol variants:
 
@@ -36,13 +36,58 @@ Each binary operation has three protocol variants:
 
 The standard protocol accepts an operand of type `T` and returns type `R` (defaulting to `T`).
 
+Example:
+
+```python
+import optype as op
+
+def add_numbers(x: op.CanAdd[int, float]) -> float:
+    return x + 5.0  # Returns float
+```
+
 ### Self Form: `Can*Self[-T]`
 
-Returns `Self` for fluent interfaces. Method signature: `(self, rhs: T, /) -> Self`.
+Returns `typing.Self` for fluent interfaces. Method signature: `(self, rhs: T, /) -> Self`.
+
+Example:
+
+```python
+import optype as op
+
+class Builder(op.CanAddSelf[str]):
+    def __init__(self, value: str = ""):
+        self.value = value
+
+    def __add__(self, other: str) -> "Builder":
+        return Builder(self.value + other)
+```
 
 ### Same Form: `Can*Same[-T?, +R?]`
 
-Accepts `Self | T` and returns `Self | R`. Both `T` and `R` default to `Never`.
+Accepts `Self | T` and returns `Self | R`. Both `T` and `R` default to `typing.Never`.
+
+To illustrate:
+
+- `CanAddSelf[T]` implements `__add__` as `(self, rhs: T, /) -> Self`
+- `CanAddSame[T, R]` implements it as `(self, rhs: Self | T, /) -> Self | R`
+- `CanAddSame` (without `T` and `R`) as `(self, rhs: Self, /) -> Self`
+
+Example:
+
+```python
+import optype as op
+
+def combine(x: op.CanAddSame[int, float]) -> ...:
+    # x can be added to itself OR to an int
+    # and returns either itself OR a float
+    return x + x  # Returns Self
+    # OR
+    return x + 5  # Returns Self | float
+```
+
+## Special Cases
+
+### pow() with Optional Third Argument
 
 !!! tip "pow() Special Cases"
 Because `pow()` can take an optional third argument, `optype` provides:
@@ -51,4 +96,51 @@ Because `pow()` can take an optional third argument, `optype` provides:
     - `CanPow3[-T, -M, +R = int]` for `pow(x, y, m)`
     - `CanPow[-T, -M, +R, +RM]` as intersection type for both
 
-See the [full README](https://github.com/jorenham/optype/blob/master/README.md#binary-operations) for complete documentation.
+    The full `CanPow` type is defined as:
+    ```python
+    type CanPow[-T, -M, +R, +RM] = CanPow2[T, R] & CanPow3[T, M, RM]
+    ```
+
+## Examples
+
+### Basic Usage
+
+```python
+import optype as op
+
+def double(x: op.CanMul[int, int]) -> int:
+    """Double a value by multiplying by 2."""
+    return x * 2
+
+double(21)  # OK: returns 42
+```
+
+### Generic Return Types
+
+```python
+import optype as op
+
+def add_one[R](x: op.CanAdd[int, R]) -> R:
+    """Add 1 to any value that supports it."""
+    return x + 1
+
+add_one(41)     # -> int (42)
+add_one(2.5)    # -> float (3.5)
+add_one([1, 2]) # -> list[int] ([1, 2, 1])
+```
+
+### Combining Multiple Operations
+
+```python
+from typing import Protocol
+import optype as op
+
+class CanAddMul(
+    op.CanAdd[int, float],
+    op.CanMul[int, float],
+    Protocol,
+): ...
+
+def calculate(x: CanAddMul) -> float:
+    return (x + 1) * 2
+```

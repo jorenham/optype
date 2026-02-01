@@ -1,7 +1,5 @@
 # Reference
 
-This section provides comprehensive documentation for all `optype` modules and types.
-
 ## Overview
 
 The API of `optype` is flat; a single `import optype as opt` is all you need (except for `optype.numpy`).
@@ -133,66 +131,13 @@ NumPy-specific typing utilities (requires NumPy):
 - **[Type Aliases](numpy/aliases.md)**: Common type aliases
 - **[Low-level](numpy/low-level.md)**: Low-level NumPy interfaces
 
-## Common Patterns
+## Type Variance Notation
 
-### Combining Protocols
+In the reference docs we use a fictional notation to describe the variance of generic type parameters:
 
-Use intersection types to require multiple capabilities:
+- `~T`: invariant
+- `+T`: covariant
+- `-T`: contravariant
 
-```python
-from optype import CanAdd, CanMul
-from typing import Protocol
-
-class CanAddAndMulIntFloat(CanAdd[int, float], CanMul[int, float], Protocol):
-    pass
-
-
-def process(x: CanAddAndMulIntFloat) -> float:
-    return (x + 1) * 2
-```
-
-Some type checkers may support the `&` operator for more concise intersections.
-
-### Union Types
-
-Use union types (`|`) for alternative capabilities:
-
-```python
-from optype import CanInt, CanFloat
-
-
-def to_number(x: CanInt | CanFloat) -> int | float:
-    if isinstance(x, CanInt):
-        return int(x)
-    return float(x)
-```
-
-### Generic Functions
-
-Use type parameters for flexible generic functions:
-
-```python
-from optype import CanAdd
-
-
-def add_one[T, R](x: CanAdd[T, R], one: T) -> R:
-    return x + one
-```
-
-## Type Variance
-
-Many `optype` protocols use variance annotations:
-
-- **Contravariant (`-T`)**: For input types (method parameters)
-- **Covariant (`+R`)**: For output types (return values)
-- **Invariant (`T`)**: For both input and output
-
-This ensures type safety when using protocols in different contexts.
-
-## Best Practices
-
-1. **Prefer specific protocols** over generic types like `Any`
-2. **Use runtime checks** with `isinstance()` when branching logic
-3. **Combine protocols** to express precise requirements
-4. **Document type parameters** for clarity
-5. **Leverage variance** for maximum flexibility
+See the [typing spec](https://typing.python.org/en/latest/spec/generics.html#variance)
+for an explanation

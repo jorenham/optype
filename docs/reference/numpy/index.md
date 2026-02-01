@@ -82,5 +82,3 @@ def create_float_array(
 - [UFunc](ufunc.md): Universal functions
 - [Type Aliases](aliases.md): Common type aliases
 - [Low-level](low-level.md): Low-level interfaces
-
-See the [full README](https://github.com/jorenham/optype/blob/master/README.md#optypenumpy) for complete documentation.

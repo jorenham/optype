@@ -15,13 +15,16 @@ The buffer protocol is a Python mechanism for exposing a byte-oriented data buff
 
 ## Examples
 
+```python
+import optype as op
+```
+
 ### Implementing a Bufferable Type
 
 ```python
-from optype import CanBuffer
 import struct
 
-class ByteArray(CanBuffer):
+class ByteArray(op.CanBuffer):
     def __init__(self, data: bytes):
         self._data = bytearray(data)
     
@@ -39,9 +42,7 @@ print(bytes(mv))  # b'hello'
 ### Working with Bufferable Objects
 
 ```python
-from optype import CanBuffer
-
-def copy_buffer_data(obj: CanBuffer) -> bytes:
+def copy_buffer_data(obj: op.CanBuffer) -> bytes:
     """Copy data from any bufferable object."""
     mv = memoryview(obj)
     return bytes(mv)
@@ -55,9 +56,7 @@ print(data)  # b'test'
 ### Custom Buffer with Release
 
 ```python
-from optype import CanBuffer, CanReleaseBuffer
-
-class ManagedBuffer(CanBuffer, CanReleaseBuffer):
+class ManagedBuffer(op.CanBuffer, op.CanReleaseBuffer):
     def __init__(self, size: int):
         self._buffer = bytearray(size)
         self._locked = False

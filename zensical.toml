@@ -1,0 +1,25 @@
+[project]
+site_name = "optype"
+site_description = "Building blocks for precise & flexible type hints"
+site_url = "https://jorenham.github.io/optype"
+docs_dir = "docs"
+site_dir = "site"
+nav = [
+  { "Home" = "index.md" },
+  { "Installation" = "installation.md" },
+  { "Getting Started" = "getting-started.md" },
+  { "Reference" = ["reference/index.md", { "Core Types" = ["reference/core/just.md", "reference/core/conversion.md", "reference/core/relations.md", "reference/core/binary.md", "reference/core/reflected.md", "reference/core/inplace.md", "reference/core/unary.md", "reference/core/rounding.md", "reference/core/callables.md", "reference/core/iteration.md", "reference/core/awaitables.md", "reference/core/async-iteration.md", "reference/core/containers.md", "reference/core/attributes.md", "reference/core/context.md", "reference/core/descriptors.md", "reference/core/buffer.md"] }, { "Standard Library" = ["reference/stdlib/copy.md", "reference/stdlib/dataclasses.md", "reference/stdlib/inspect.md", "reference/stdlib/io.md", "reference/stdlib/json.md", "reference/stdlib/pickle.md", "reference/stdlib/string.md", "reference/stdlib/typing.md", "reference/stdlib/dlpack.md"] }, { "NumPy" = ["reference/numpy/index.md", "reference/numpy/shape.md", "reference/numpy/array-likes.md", "reference/numpy/literals.md", "reference/numpy/compat.md", "reference/numpy/random.md", "reference/numpy/dtype.md", "reference/numpy/scalar.md", "reference/numpy/ufunc.md", "reference/numpy/aliases.md", "reference/numpy/low-level.md"] }] },
+]
+
+[project.extra]
+repo_url = "https://github.com/jorenham/optype"
+repo_name = "jorenham/optype"
+edit_uri = "edit/master/docs/"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/github"
+link = "https://github.com/jorenham/optype"
+
+[[project.extra.social]]
+icon = "fontawesome/brands/python"
+link = "https://pypi.org/project/optype"

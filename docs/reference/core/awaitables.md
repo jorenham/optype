@@ -14,13 +14,16 @@ Unlike `collections.abc.Awaitable`, `CanAwait` is a pure interface protocol with
 
 ## Examples
 
+```python
+import optype as op
+```
+
 ### Basic Awaitable
 
 ```python
 from typing import Coroutine
-from optype import CanAwait
 
-async def wait_for_result(awaitable: CanAwait[int]) -> int:
+async def wait_for_result(awaitable: op.CanAwait[int]) -> int:
     """Wait for an awaitable to return an integer."""
     return await awaitable
 
@@ -36,9 +39,7 @@ async def main() -> None:
 ### Custom Awaitable Class
 
 ```python
-from optype import CanAwait
-
-class DelayedValue(CanAwait[str]):
+class DelayedValue(op.CanAwait[str]):
     def __init__(self, value: str, delay: float):
         self.value = value
         self.delay = delay
@@ -57,10 +58,9 @@ async def example() -> None:
 ### Coroutine Integration
 
 ```python
-from optype import CanAwait
 import asyncio
 
-def process_awaitable(coro: CanAwait[str]) -> asyncio.Task[str]:
+def process_awaitable(coro: op.CanAwait[str]) -> asyncio.Task[str]:
     """Wrap an awaitable in a task."""
     return asyncio.create_task(coro)
 

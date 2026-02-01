@@ -26,12 +26,14 @@ Container protocols in `optype` describe the operations that allow objects to be
 
 ## Examples
 
+```python
+import optype as op
+```
+
 ### Getting Container Length
 
 ```python
-from optype import CanLen
-
-def get_size(container: CanLen) -> int:
+def get_size(container: op.CanLen) -> int:
     """Get the size of any container."""
     return len(container)
 
@@ -44,9 +46,9 @@ print(get_size({1, 2, 3}))      # 3
 ### Indexing Operations
 
 ```python
-from optype import CanGetitem, CanSetitem
+class CanGetSetitem[K, V](op.CanGetitem[K, V], op.CanSetitem[K, V], Protocol[K, V]): ...
 
-def swap_first_last[K, V](container: CanGetitem[K, V] & CanSetitem[K, V], first_key: K, last_key: K) -> None:
+def swap_first_last[K, V](container: CanGetSetitem, first_key: K, last_key: K) -> None:
     """Swap the first and last items in a container."""
     first_val = container[first_key]
     container[first_key] = container[last_key]
@@ -61,9 +63,7 @@ print(data)  # {"a": 26, "z": 1}
 ### Membership Testing
 
 ```python
-from optype import CanContains
-
-def has_admin[K](permissions: CanContains[K], role: K) -> bool:
+def has_admin[K](permissions: op.CanContains[K], role: K) -> bool:
     """Check if a role is in the permissions."""
     return role in permissions
 
@@ -75,10 +75,9 @@ print(has_admin(["user", "guest"], "admin"))     # False
 ### Reversing Collections
 
 ```python
-from optype import CanReversed
 from collections.abc import Iterator
 
-def reverse_items[V](container: CanReversed[Iterator[V]]) -> list[V]:
+def reverse_items[V](container: op.CanReversed[Iterator[V]]) -> list[V]:
     """Reverse a container's items."""
     return list(reversed(container))
 
@@ -89,9 +88,7 @@ print(reverse_items([1, 2, 3, 4]))  # [4, 3, 2, 1]
 ### Mapping with Fallback (Missing Keys)
 
 ```python
-from optype import CanGetMissing
-
-class CaseInsensitiveDict(CanGetMissing[str, str, str]):
+class CaseInsensitiveDict(op.CanGetMissing[str, str, str]):
     def __init__(self, data: dict[str, str]):
         self._data = {k.lower(): v for k, v in data.items()}
     
@@ -110,10 +107,9 @@ print(d["missing"])     # <Key missing not found>
 ### Custom Sequence
 
 ```python
-from optype import CanSequence
 from collections.abc import Iterator
 
-class RangeSequence(CanSequence[int, int]):
+class RangeSequence(op.CanSequence[int, int]):
     def __init__(self, start: int, end: int):
         self.start = start
         self.end = end

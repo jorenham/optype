@@ -144,27 +144,18 @@ Using these literals makes function signatures more precise:
 
 ```python
 import numpy as np
-from optype.numpy import ByteOrder, ConvolveMode, SortKind
+import optype.numpy as onp
 from typing import Literal
 
-def create_array(
-    shape: tuple[int, ...],
-    byteorder: ByteOrder = '=',
-) -> np.ndarray:
+def create_array(shape: tuple[int, ...], byteorder: onp.ByteOrder = '=') -> np.ndarray:
     """Create array with specified byte order."""
     return np.zeros(shape).astype(f'{byteorder}f8')
 
-def convolve_same(
-    x: np.ndarray,
-    h: np.ndarray,
-) -> np.ndarray:
+def convolve_same(x: np.ndarray, h: np.ndarray) -> np.ndarray:
     """Convolve returning same-sized output."""
     return np.convolve(x, h, mode='same')
 
-def sort_stable(
-    arr: np.ndarray,
-    kind: SortKind = 'stable',
-) -> np.ndarray:
+def sort_stable(arr: np.ndarray, kind: onp.SortKind = 'stable') -> np.ndarray:
     """Sort using specified algorithm."""
     return np.sort(arr, kind=kind)
 ```

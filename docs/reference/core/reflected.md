@@ -47,12 +47,14 @@ result = x + y  # Calls x.__add__(y)
 
 ## Examples
 
+```python
+import optype as op
+```
+
 ### Reflected Addition
 
 ```python
-from optype import CanRAddSelf
-
-class Vector(CanRAddSelf[int]):
+class Vector(op.CanRAddSelf[int]):
     def __init__(self, x: int, y: int):
         self.x = x
         self.y = y
@@ -75,9 +77,7 @@ print(result)      # Vector(11, 12)
 ### Reflected Multiplication
 
 ```python
-from optype import CanRMulSelf
-
-class Scale(CanRMulSelf[float]):
+class Scale(op.CanRMulSelf[float]):
     def __init__(self, factor: float):
         self.factor = factor
     
@@ -97,9 +97,7 @@ print(result)         # Scale(6.0)
 ### Reflected String Formatting
 
 ```python
-from optype import CanRMod
-
-class Template(CanRMod[dict, str]):
+class Template(op.CanRMod[dict, str]):
     def __init__(self, template: str):
         self.template = template
     
@@ -116,11 +114,9 @@ print(result)  # "Hello Alice, you are 30 years old"
 ### Custom Type Coercion
 
 ```python
-from optype import CanRAdd, CanRSub, CanRMul
-
-class ComplexNumber(CanRAdd[int, "ComplexNumber"], 
-                    CanRSub[int, "ComplexNumber"],
-                    CanRMul[int, "ComplexNumber"]):
+class ComplexNumber(op.CanRAdd[int, "ComplexNumber"], 
+                    op.CanRSub[int, "ComplexNumber"],
+                    op.CanRMul[int, "ComplexNumber"]):
     def __init__(self, real: float, imag: float):
         self.real = real
         self.imag = imag
@@ -157,9 +153,7 @@ print(5 * c)  # (10+15j)
 ### Reflected Bitwise Operations
 
 ```python
-from optype import CanRAndSelf, CanROrSelf, CanRXorSelf
-
-class Mask(CanRAndSelf[int], CanROrSelf[int], CanRXorSelf[int]):
+class Mask(op.CanRAndSelf[int], op.CanROrSelf[int], op.CanRXorSelf[int]):
     def __init__(self, value: int):
         self.value = value
     
@@ -189,7 +183,9 @@ print(0b0011 ^ mask)  # Mask(0b1001)
 
 ### Power Operator
 
-`CanRPow` corresponds to the 2-argument `pow(x, y)` only. The 3-argument `pow(x, y, m)` does not have a reflected version, as Python's coercion rules don't support it for ternary operations.
+`CanRPow` corresponds to the 2-argument `pow(x, y)` only. The 3-argument `pow(x, y, m)`
+does not have a reflected version, as Python's coercion rules don't support it for
+ternary operations.
 
 ### Return Values
 

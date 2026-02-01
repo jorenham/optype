@@ -36,12 +36,14 @@ The `Has*` protocols check for the presence of special attributes:
 
 ## Examples
 
+```python
+import optype as op
+```
+
 ### Getting Attributes
 
 ```python
-from optype import CanGetattr
-
-def get_name(obj: CanGetattr[str]) -> str:
+def get_name(obj: op.CanGetattr[str]) -> str:
     """Get the name of an object."""
     return getattr(obj, '__name__')
 ```
@@ -49,9 +51,7 @@ def get_name(obj: CanGetattr[str]) -> str:
 ### Setting Attributes
 
 ```python
-from optype import CanSetattr
-
-def set_metadata(obj: CanSetattr[dict], metadata: dict) -> None:
+def set_metadata(obj: op.CanSetattr[dict], metadata: dict) -> None:
     """Set metadata on an object."""
     setattr(obj, '__metadata__', metadata)
 ```
@@ -59,9 +59,11 @@ def set_metadata(obj: CanSetattr[dict], metadata: dict) -> None:
 ### Checking Attribute Presence
 
 ```python
-from optype import HasName, HasDoc
+from typing import Protocol
 
-def describe(obj: HasName & HasDoc) -> str:
+class HasNameAndDoc(op.HasName, op.HasDoc, Protocol): ...
+
+def describe(obj: HasNameAndDoc) -> str:
     """Get name and docstring."""
     return f"{obj.__name__}: {obj.__doc__}"
 ```
@@ -69,9 +71,7 @@ def describe(obj: HasName & HasDoc) -> str:
 ### Directory Listing
 
 ```python
-from optype import CanDir
-
-def list_public_attrs(obj: CanDir[list]) -> list[str]:
+def list_public_attrs(obj: op.CanDir[list]) -> list[str]:
     """List non-private attributes."""
     return [name for name in dir(obj) if not name.startswith('_')]
 ```

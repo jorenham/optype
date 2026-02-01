@@ -21,15 +21,16 @@ The return type of these special methods is **invariant**. Python will raise an 
 
 ## Protocols
 
+```python
+import optype as op
+```
+
 ### CanComplex
 
 Protocol for types that can be converted to `complex`.
 
 ```python
-from optype import CanComplex
-
-
-def to_complex(x: CanComplex) -> complex:
+def to_complex(x: op.CanComplex) -> complex:
     return complex(x)
 ```
 
@@ -40,10 +41,7 @@ def to_complex(x: CanComplex) -> complex:
 Protocol for types that can be converted to `float`.
 
 ```python
-from optype import CanFloat
-
-
-def to_float(x: CanFloat) -> float:
+def to_float(x: op.CanFloat) -> float:
     return float(x)
 ```
 
@@ -54,10 +52,7 @@ def to_float(x: CanFloat) -> float:
 Protocol for types that can be converted to `int`.
 
 ```python
-from optype import CanInt
-
-
-def to_int(x: CanInt) -> int:
+def to_int(x: op.CanInt) -> int:
     return int(x)
 ```
 
@@ -68,10 +63,7 @@ def to_int(x: CanInt) -> int:
 Protocol for types that can be converted to `bool`.
 
 ```python
-from optype import CanBool
-
-
-def to_bool(x: CanBool) -> bool:
+def to_bool(x: op.CanBool) -> bool:
     return bool(x)
 ```
 
@@ -86,10 +78,7 @@ While most implementations return `bool`, the protocol allows for subtypes.
 Protocol for types that can be converted to `bytes`.
 
 ```python
-from optype import CanBytes
-
-
-def to_bytes(x: CanBytes) -> bytes:
+def to_bytes(x: op.CanBytes) -> bytes:
     return bytes(x)
 ```
 
@@ -100,10 +89,7 @@ def to_bytes(x: CanBytes) -> bytes:
 Protocol for types that can be converted to `str`.
 
 ```python
-from optype import CanStr
-
-
-def to_str(x: CanStr) -> str:
+def to_str(x: op.CanStr) -> str:
     return str(x)
 ```
 
@@ -114,10 +100,7 @@ def to_str(x: CanStr) -> str:
 Protocol for types that have a string representation via `repr()`.
 
 ```python
-from optype import CanRepr
-
-
-def get_repr(x: CanRepr) -> str:
+def get_repr(x: op.CanRepr) -> str:
     return repr(x)
 ```
 
@@ -128,10 +111,7 @@ def get_repr(x: CanRepr) -> str:
 Protocol for types that can be formatted with `format()`.
 
 ```python
-from optype import CanFormat
-
-
-def format_value(x: CanFormat, fmt: str = "") -> str:
+def format_value(x: op.CanFormat, fmt: str = "") -> str:
     return format(x, fmt)
 ```
 
@@ -142,10 +122,7 @@ def format_value(x: CanFormat, fmt: str = "") -> str:
 Protocol for hashable types.
 
 ```python
-from optype import CanHash
-
-
-def get_hash(x: CanHash) -> int:
+def get_hash(x: op.CanHash) -> int:
     return hash(x)
 ```
 
@@ -156,10 +133,7 @@ def get_hash(x: CanHash) -> int:
 Protocol for types that implement `__index__()`.
 
 ```python
-from optype import CanIndex
-
-
-def as_index(x: CanIndex) -> int:
+def as_index(x: op.CanIndex) -> int:
     return x.__index__()
 ```
 
@@ -174,10 +148,8 @@ def as_index(x: CanIndex) -> int:
 Typed implementation of `complex()`.
 
 ```python
-from optype import do_complex, CanComplex
-
-x: CanComplex = 3.14
-result = do_complex(x)  # -> complex
+x: op.CanComplex = 3.14
+result = op.do_complex(x)  # -> complex
 ```
 
 **Type:** `DoesComplex`
@@ -187,10 +159,8 @@ result = do_complex(x)  # -> complex
 Typed implementation of `float()`.
 
 ```python
-from optype import do_float, CanFloat
-
-x: CanFloat = 42
-result = do_float(x)  # -> float
+x: op.CanFloat = 42
+result = op.do_float(x)  # -> float
 ```
 
 **Type:** `DoesFloat`
@@ -200,10 +170,8 @@ result = do_float(x)  # -> float
 Typed implementation of `int()`.
 
 ```python
-from optype import do_int, CanInt
-
-x: CanInt = 3.14
-result = do_int(x)  # -> int
+x: op.CanInt = 3.14
+result = op.do_int(x)  # -> int
 ```
 
 **Type:** `DoesInt`
@@ -217,10 +185,7 @@ Similarly: `do_bool`, `do_bytes`, `do_str`, `do_repr`, `do_format`, `do_hash`, `
 ### Custom Type with Multiple Conversions
 
 ```python
-from optype import CanInt, CanFloat, CanStr
-
-
-class CustomNumber(CanInt, CanFloat, CanStr):
+class CustomNumber(op.CanInt, op.CanFloat, op.CanStr):
     def __init__(self, value: float):
         self.value = value
     
@@ -243,12 +208,9 @@ print(str(num))    # "CustomNumber(3.14)"
 ### Type-Safe Conversion Function
 
 ```python
-from optype import CanInt, CanFloat
-
-
-def safe_to_number(x: CanInt | CanFloat) -> int | float:
+def safe_to_number(x: op.CanInt | op.CanFloat) -> int | float:
     """Convert to int if possible, otherwise to float."""
-    if isinstance(x, CanInt):
+    if isinstance(x, op.CanInt):
         return int(x)
     return float(x)
 ```

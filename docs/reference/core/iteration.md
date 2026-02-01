@@ -18,14 +18,16 @@ The iteration protocol allows objects to be used in `for` loops and other iterat
 
 ## Protocols
 
+```python
+import optype as op
+```
+
 ### CanNext[+V]
 
 Protocol for types that can be iterated over using `next()`. Implements `__next__` method.
 
 ```python
-from optype import CanNext
-
-def get_next_item(iterator: CanNext[int]) -> int:
+def get_next_item(iterator: op.CanNext[int]) -> int:
     """Get the next item from an iterator."""
     return next(iterator)
 ```
@@ -37,9 +39,7 @@ def get_next_item(iterator: CanNext[int]) -> int:
 Protocol for types that can be converted to an iterator using `iter()`. Implements `__iter__` method.
 
 ```python
-from optype import CanIter, CanNext
-
-def iterate_items[V](iterable: CanIter[CanNext[V]]) -> list[V]:
+def iterate_items[V](iterable: op.CanIter[op.CanNext[V]]) -> list[V]:
     """Collect all items from an iterable."""
     return list(iter(iterable))
 ```
@@ -55,9 +55,7 @@ Convenience protocol for iterators that return themselves from `__iter__()`. Equ
 ### Custom Iterator
 
 ```python
-from optype import CanNext
-
-class CountUp(CanNext[int]):
+class CountUp(op.CanNext[int]):
     def __init__(self, max: int):
         self.current = 0
         self.max = max
@@ -78,9 +76,7 @@ print(next(counter))  # 3
 ### Custom Iterable
 
 ```python
-from optype import CanIter, CanNext
-
-class Range(CanIter[CanNext[int]]):
+class Range(op.CanIter[op.CanNext[int]]):
     def __init__(self, start: int, end: int):
         self.start = start
         self.end = end
@@ -89,7 +85,7 @@ class Range(CanIter[CanNext[int]]):
         return RangeIterator(self.start, self.end)
 
 
-class RangeIterator(CanNext[int]):
+class RangeIterator(op.CanNext[int]):
     def __init__(self, start: int, end: int):
         self.current = start
         self.end = end
@@ -109,9 +105,7 @@ for i in Range(1, 4):
 ### Self-returning Iterator
 
 ```python
-from optype import CanIterSelf
-
-class Fibonacci(CanIterSelf[int]):
+class Fibonacci(op.CanIterSelf[int]):
     def __init__(self, max_count: int):
         self.a = 0
         self.b = 1
@@ -138,11 +132,10 @@ print(list(fib))  # [0, 1, 1, 2, 3]
 
 ```python
 from typing import TypeVar
-from optype import CanIter, CanNext
 
 T = TypeVar("T")
 
-def collect_all[V](iterable: CanIter[CanNext[V]]) -> list[V]:
+def collect_all[V](iterable: op.CanIter[op.CanNext[V]]) -> list[V]:
     """Collect all items from any iterable."""
     result = []
     for item in iterable:
@@ -150,7 +143,7 @@ def collect_all[V](iterable: CanIter[CanNext[V]]) -> list[V]:
     return result
 
 
-class SimpleList(CanIter[CanNext[int]]):
+class SimpleList(op.CanIter[op.CanNext[int]]):
     def __init__(self, items: list[int]):
         self.items = items
     
@@ -158,7 +151,7 @@ class SimpleList(CanIter[CanNext[int]]):
         return SimpleListIterator(self.items)
 
 
-class SimpleListIterator(CanNext[int]):
+class SimpleListIterator(op.CanNext[int]):
     def __init__(self, items: list[int]):
         self.items = items
         self.index = 0
@@ -178,9 +171,7 @@ print(data)  # [1, 2, 3, 4, 5]
 ### Infinite Iterator with Limit
 
 ```python
-from optype import CanNext
-
-class InfiniteCounter(CanNext[int]):
+class InfiniteCounter(op.CanNext[int]):
     def __init__(self):
         self.current = 0
     
@@ -190,7 +181,7 @@ class InfiniteCounter(CanNext[int]):
         return result
 
 
-def take[T](iterator: CanNext[T], n: int) -> list[T]:
+def take[T](iterator: op.CanNext[T], n: int) -> list[T]:
     """Take the first n items from an iterator."""
     result = []
     for _ in range(n):

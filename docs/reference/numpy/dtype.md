@@ -25,11 +25,14 @@ type DType[ST: np.generic = np.generic] = np.dtype[ST]
 
 ## Usage Examples
 
+```python
+import optype.numpy as onp
+```
+
 ### Basic Usage
 
 ```python
 import numpy as np
-import optype.numpy as onp
 
 # Without type parameter - matches any dtype
 any_dtype: onp.DType = np.dtype(float)
@@ -44,7 +47,6 @@ bool_dtype: onp.DType[np.bool_] = np.dtype(bool)
 
 ```python
 import numpy as np
-import optype.numpy as onp
 
 def create_array(
     shape: tuple[int, ...],
@@ -63,7 +65,6 @@ arr3 = create_array((3, 4), dtype=np.dtype(int))      # ✓ Integer dtype
 
 ```python
 import numpy as np
-import optype.numpy as onp
 
 def dtype_kind(dt: onp.DType[onp.generic]) -> str:
     """Get the kind character of a dtype."""
@@ -83,7 +84,6 @@ print(is_float_dtype(dt))  # True
 
 ```python
 import numpy as np
-import optype.numpy as onp
 
 def cast_array(
     arr: onp.Array,
@@ -154,7 +154,6 @@ For structured arrays with named fields:
 
 ```python
 import numpy as np
-import optype.numpy as onp
 
 # Create a structured dtype
 person_dtype = np.dtype([

@@ -23,4 +23,6 @@ venv/
 # IntelliJ
 .idea/
 .run/
+
+# macOS
 .DS_Store
