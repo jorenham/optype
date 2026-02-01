@@ -73,7 +73,7 @@ def is_iterable(obj: object, /) -> TypeIs[_ToIter]:
 
         # not all sequence-likes implement __len__, e.g. `ctypes.pointer`
         try:
-            obj[0]  # pyright: ignore[reportArgumentType]
+            obj[0]  # pyright: ignore[reportArgumentType]  # ty: ignore[invalid-argument-type]
         except (IndexError, StopIteration):
             pass
         except (KeyError, ValueError, TypeError):
