@@ -31,14 +31,16 @@ The `Just{Bytes,Int,Float,Complex,Date,Object}` protocols are runtime-checkable:
 
 ## Use Cases
 
-### 1. Rejecting bool when accepting int
-
-Since `bool` is a strict subtype of `int` in Python, using `int` as a type hint will accept `bool` values. Use `JustInt` to prevent this:
-
 ```python
 import optype as op
+```
 
+### 1. Rejecting bool when accepting int
 
+Since `bool` is a strict subtype of `int` in Python, using `int` as a type hint will
+accept `bool` values. Use `JustInt` to prevent this:
+
+```python
 def assert_int(x: op.Just[int]) -> int:
     assert type(x) is int
     return x
@@ -53,8 +55,6 @@ assert_int(False)  # ✗ Type error: bool is rejected
 Sentinel values are often created as `object()` instances. Use `JustObject` to ensure only the specific sentinel is accepted:
 
 ```python
-import optype as op
-
 _DEFAULT = object()
 
 
@@ -80,9 +80,6 @@ intmap(1, "invalid")   # ✗ Type error: str is rejected
 Python's type system has special [type promotion rules](https://typing.readthedocs.io/en/latest/spec/special-types.html#special-cases-for-float-and-complex) for `float` and `complex`. Use `JustFloat` and `JustComplex` to avoid unwanted promotions:
 
 ```python
-import optype as op
-
-
 def precise_float(x: op.JustFloat) -> op.JustFloat:
     """Only accepts actual floats, not complex numbers."""
     return x * 2.0
@@ -97,7 +94,6 @@ precise_float(1+2j)  # ✗ Type error: complex is rejected
 Since `datetime.datetime` is a subtype of `datetime.date`, use `JustDate` when you specifically need dates without times:
 
 ```python
-import optype as op
 from datetime import date, datetime
 
 

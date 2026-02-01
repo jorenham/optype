@@ -22,9 +22,9 @@ type RNG = np.random.Generator | np.random.RandomState
 
 ```python
 import numpy as np
-import optype.numpy.random as onr
+import optype.numpy as onp
 
-def generate_random(rng: onr.RNG, size: int) -> np.ndarray:
+def generate_random(rng: onp.random.RNG, size: int) -> np.ndarray:
     """Works with both Generator and RandomState."""
     if isinstance(rng, np.random.Generator):
         return rng.standard_normal(size)
@@ -66,9 +66,9 @@ type ToSeed = (
 
 ```python
 import numpy as np
-import optype.numpy.random as onr
+import optype.numpy as onp
 
-def create_rng(seed: onr.ToSeed) -> np.random.Generator:
+def create_rng(seed: onp.random.ToSeed) -> np.random.Generator:
     """Create generator with flexible seed type."""
     return np.random.default_rng(seed)
 
@@ -97,12 +97,9 @@ type ToRNG = (
 
 ```python
 import numpy as np
-import optype.numpy.random as onr
+import optype.numpy as onp
 
-def flexible_random(
-    rng: onr.ToRNG,
-    size: int,
-) -> np.ndarray:
+def flexible_random(rng: onp.random.ToRNG, size: int) -> np.ndarray:
     """Accept any RNG-compatible input."""
     gen = np.random.default_rng(rng)
     return gen.standard_normal(size)
@@ -120,9 +117,9 @@ flexible_random(np.random.SeedSequence(42), 10)     # ✓ SeedSequence
 
 ```python
 import numpy as np
-import optype.numpy.random as onr
+import optype.numpy as onp
 
-def modern_random(rng: onr.RNG | int = None) -> float:
+def modern_random(rng: onp.random.RNG | int = None) -> float:
     """Use modern Generator API."""
     if not isinstance(rng, np.random.Generator):
         rng = np.random.default_rng(rng)
@@ -138,7 +135,6 @@ y = modern_random(gen)
 
 ```python
 import numpy as np
-import optype.numpy.random as onr
 
 def legacy_random(seed: int) -> float:
     """Use legacy RandomState API."""
@@ -176,14 +172,13 @@ gen_pcg = np.random.Generator(bg_pcg64)
 
 ```python
 import numpy as np
-import optype.numpy.random as onr
-from optype.numpy import Array1D, AnyFloat64Array
+import optype.numpy as onp
 
 def bootstrap_sample(
-    data: AnyFloat64Array,
-    rng: onr.ToRNG = None,
+    data: onp.AnyFloat64Array,
+    rng: onp.random.ToRNG = None,
     n_samples: int = 1000,
-) -> Array1D[np.float64]:
+) -> onp.Array1D[np.float64]:
     """Bootstrap resampling with flexible RNG input."""
     gen = np.random.default_rng(rng)
     n = len(data)
@@ -209,11 +204,9 @@ This module follows [SPEC 7: Accessibility of type hints for NumPy's type annota
 
 ```python
 import numpy as np
-import optype.numpy.random as onr
+import optype.numpy as onp
 
-def reproducible_analysis(
-    seed: onr.ToSeed = 42,
-) -> dict:
+def reproducible_analysis(seed: onp.random.ToSeed = 42) -> dict:
     """Ensure reproducible results with type-safe seed."""
     rng = np.random.default_rng(seed)
     return {
@@ -227,12 +220,9 @@ def reproducible_analysis(
 
 ```python
 import numpy as np
-import optype.numpy.random as onr
+import optype.numpy as onp
 
-def parallel_random(
-    n_workers: int,
-    seed: onr.ToSeed = 42,
-) -> list[onr.RNG]:
+def parallel_random(n_workers: int, seed: on.random.ToSeed = 42) -> list[on.random.RNG]:
     """Create independent RNG streams for parallel workers."""
     rng = np.random.default_rng(seed)
     # Use SeedSequence to spawn independent generators

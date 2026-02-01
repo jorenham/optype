@@ -50,13 +50,16 @@ All three functions have fixed signatures taking a single argument and returning
 
 ## Examples
 
+```python
+import optype as op
+```
+
 ### Custom Decimal Type with Both Rounding Overloads
 
 ```python
 from decimal import Decimal
-from optype import CanRound
 
-class Fraction(CanRound[int, int, "Fraction"]):
+class Fraction(op.CanRound[int, int, "Fraction"]):
     def __init__(self, numerator: int, denominator: int):
         self.num = numerator
         self.den = denominator
@@ -85,9 +88,7 @@ print(round(frac, 2))     # Fraction(314, 100)
 ### Custom Numeric Type with Truncation
 
 ```python
-from optype import CanTrunc
-
-class Temperature(CanTrunc[int]):
+class Temperature(op.CanTrunc[int]):
     def __init__(self, celsius: float):
         self.celsius = celsius
     
@@ -108,9 +109,8 @@ print(truncated)       # 98
 
 ```python
 import math
-from optype import CanFloor, CanCeil
 
-class Vector(CanFloor[int], CanCeil[int]):
+class Vector(op.CanFloor[int], op.CanCeil[int]):
     def __init__(self, x: float, y: float):
         self.x = x
         self.y = y
@@ -138,12 +138,9 @@ print(math.ceil(vec))   # 6
 
 ```python
 import math
-from optype import CanRound, CanTrunc, CanFloor, CanCeil
 
-class Rational(CanRound[int, int, "Rational"] &
-               CanTrunc[int] &
-               CanFloor[int] &
-               CanCeil[int]):
+class Rational(op.CanRound[int, int, "Rational"], op.CanTrunc[int],
+               op.CanFloor[int], op.CanCeil[int]):
     def __init__(self, numerator: int, denominator: int):
         self.num = numerator
         self.den = denominator

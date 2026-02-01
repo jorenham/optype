@@ -18,6 +18,10 @@ The descriptor protocol is a powerful Python mechanism that allows objects to cu
 
 ## Protocol Details
 
+```python
+import optype as op
+```
+
 ### CanGet[-T, +V, +VT=V]
 
 The standard descriptor protocol for getting attributes. It handles both instance and class attribute access:
@@ -26,9 +30,7 @@ The standard descriptor protocol for getting attributes. It handles both instanc
 - Class access: `Class.descriptor -> VT`
 
 ```python
-from optype import CanGet
-
-class Descriptor(CanGet[object, int, str]):
+class Descriptor(op.CanGet[object, int, str]):
     def __get__(self, obj: object | None, objtype: type | None = None) -> int | str:
         if obj is None:
             return "class attribute"
@@ -40,10 +42,9 @@ class Descriptor(CanGet[object, int, str]):
 For descriptors that return `Self` (typing.Self) on class access:
 
 ```python
-from optype import CanGetSelf
 from typing import Self
 
-class ClassMethod(CanGetSelf[object, int]):
+class ClassMethod(op.CanGetSelf[object, int]):
     def __get__(self, obj: object | None, objtype: type | None = None) -> int | Self:
         if obj is None:
             return self
@@ -55,9 +56,7 @@ class ClassMethod(CanGetSelf[object, int]):
 For data descriptors that allow setting attribute values:
 
 ```python
-from optype import CanSet
-
-class DataDescriptor(CanSet[object, int]):
+class DataDescriptor(op.CanSet[object, int]):
     def __set__(self, obj: object, value: int) -> None:
         print(f"Setting to {value}")
 ```
@@ -67,9 +66,7 @@ class DataDescriptor(CanSet[object, int]):
 For descriptors that support deletion:
 
 ```python
-from optype import CanDelete
-
-class DeletableDescriptor(CanDelete[object]):
+class DeletableDescriptor(op.CanDelete[object]):
     def __delete__(self, obj: object) -> None:
         print("Deleted")
 ```
@@ -79,9 +76,7 @@ class DeletableDescriptor(CanDelete[object]):
 Called when the descriptor is assigned to a class attribute:
 
 ```python
-from optype import CanSetName
-
-class NameAware(CanSetName[object]):
+class NameAware(op.CanSetName[object]):
     def __set_name__(self, owner: type, name: str) -> None:
         self.name = name
 ```
@@ -91,9 +86,7 @@ class NameAware(CanSetName[object]):
 ### Property-like Descriptor
 
 ```python
-from optype import CanGet, CanSet
-
-class Property(CanGet[object, int], CanSet[object, int]):
+class Property(op.CanGet[object, int], op.CanSet[object, int]):
     def __init__(self, fget=None, fset=None):
         self.fget = fget
         self.fset = fset
@@ -134,9 +127,7 @@ class Circle:
 ### Lazy Attribute Loader
 
 ```python
-from optype import CanGet, CanSetName
-
-class Lazy(CanGet[object, object], CanSetName[object]):
+class Lazy(op.CanGet[object, object], op.CanSetName[object]):
     def __init__(self, func):
         self.func = func
         self.name = None
@@ -168,10 +159,9 @@ print(obj.expensive_data)  # (no computation, cached)
 ### Method Descriptor
 
 ```python
-from optype import CanGet, CanGetSelf
 from typing import Self
 
-class Method(CanGetSelf[object, None]):
+class Method(op.CanGetSelf[object, None]):
     def __init__(self, func):
         self.func = func
     
@@ -195,9 +185,7 @@ class MyClass:
 ### Typed Validator Descriptor
 
 ```python
-from optype import CanSet, CanGet, CanDelete
-
-class ValidatedInt(CanGet[object, int], CanSet[object, int], CanDelete[object]):
+class ValidatedInt(op.CanGet[object, int], op.CanSet[object, int], op.CanDelete[object]):
     def __init__(self, min_val: int = 0, max_val: int = 100):
         self.min_val = min_val
         self.max_val = max_val

@@ -67,12 +67,7 @@ extra = [
   "optype[numpy]",
 ]
 docs = [
-  "mkdocs>=1.6.1",
-  "mkdocs-material>=9.5.47",
-  "mkdocs-autorefs>=1.2.0",
-  "mkdocstrings[python]>=0.28.0",
-  "hippogriffe>=0.2.2",
-  "pymdown-extensions>=10.14",
+  "zensical>=0.0.20",
 ]
 lint = [
   "dprint-py>=0.51.1.0",

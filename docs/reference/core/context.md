@@ -38,13 +38,16 @@ Protocols for the `async with` statement.
 
 ## Examples
 
+```python
+import optype as op
+```
+
 ### File-like Context Manager
 
 ```python
-from optype import CanWith
 from typing import TextIO
 
-def read_file_content(f: CanWith[TextIO, None]) -> str:
+def read_file_content(f: op.CanWith[TextIO, None]) -> str:
     """Read content from any context manager that yields a file."""
     with f as file:
         return file.read()
@@ -53,9 +56,7 @@ def read_file_content(f: CanWith[TextIO, None]) -> str:
 ### Custom Resource Manager
 
 ```python
-from optype import CanEnter, CanExit
-
-class DatabaseConnection(CanEnter[object], CanExit[None]):
+class DatabaseConnection(op.CanEnter[object], op.CanExit[None]):
     def __init__(self, url: str):
         self.url = url
         self.connected = False
@@ -77,9 +78,7 @@ with DatabaseConnection("postgres://localhost") as db:
 ### Self-returning Context Manager
 
 ```python
-from optype import CanEnterSelf
-
-class Lock(CanEnterSelf):
+class Lock(op.CanEnterSelf):
     def __init__(self):
         self.acquired = False
     
@@ -100,10 +99,9 @@ print(f"Lock held: {lock.acquired}")  # False
 ### Async Context Manager
 
 ```python
-from optype import CanAsyncWith
 import asyncio
 
-class AsyncConnection(CanAsyncWith[object, None]):
+class AsyncConnection(op.CanAsyncWith[object, None]):
     def __init__(self, name: str):
         self.name = name
     
@@ -129,13 +127,12 @@ asyncio.run(main())
 
 ```python
 from typing import TypeVar, Generic
-from optype import CanWith
 
 T = TypeVar("T")
 R = TypeVar("R")
 
 class ContextHandler(Generic[T, R]):
-    def execute[S](self, ctx: CanWith[T, R], func: (T) -> S) -> S:
+    def execute[S](self, ctx: op.CanWith[T, R], func: (T) -> S) -> S:
         """Execute a function within a context."""
         with ctx as resource:
             return func(resource)
@@ -157,15 +154,13 @@ print(content)  # 5
 Both `__exit__` and `__aexit__` receive exception information if an exception occurs within the context:
 
 ```python
-from optype import CanWith
-from typing import Optional
-
-class ErrorHandler(CanWith[None, bool]):
+class ErrorHandler(op.CanWith[None, bool]):
     def __enter__(self) -> None:
         print("Entering")
         return None
     
-    def __exit__(self, exc_type: Optional[type], exc_val: Optional[Exception], exc_tb: Optional[object]) -> bool:
+    def __exit__(self, exc_type: type | None, exc_val: Exception | None,
+                 exc_tb: object | None) -> bool:
         if exc_type is not None:
             print(f"Caught exception: {exc_type.__name__}")
             return True  # Suppress the exception

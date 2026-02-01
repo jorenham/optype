@@ -28,15 +28,20 @@ type Scalar[
 
 ## NumPy Scalar Types
 
+```python
+import numpy as np
+from typing import Literal
+
+import optype.numpy as onp
+```
+
 ### Boolean Scalars
 
 ```python
-import numpy as np
-from optype.numpy import Scalar
 from typing import Literal
 
 # 1-byte boolean
-value: Scalar[bool, Literal[1]] = np.bool_(True)
+value: onp.Scalar[bool, Literal[1]] = np.bool_(True)
 
 # .item() returns Python bool
 py_bool: bool = value.item()
@@ -45,65 +50,50 @@ py_bool: bool = value.item()
 ### Integer Scalars
 
 ```python
-import numpy as np
-from optype.numpy import Scalar
-from typing import Literal
-
 # Signed integers
-int8: Scalar[int, Literal[1]] = np.int8(42)
-int16: Scalar[int, Literal[2]] = np.int16(1000)
-int32: Scalar[int, Literal[4]] = np.int32(1000000)
-int64: Scalar[int, Literal[8]] = np.int64(9223372036854775807)
+int8: onp.Scalar[int, Literal[1]] = np.int8(42)
+int16: onp.Scalar[int, Literal[2]] = np.int16(1000)
+int32: onp.Scalar[int, Literal[4]] = np.int32(1000000)
+int64: onp.Scalar[int, Literal[8]] = np.int64(9223372036854775807)
 
 # Unsigned integers
-uint8: Scalar[int, Literal[1]] = np.uint8(255)
-uint16: Scalar[int, Literal[2]] = np.uint16(65535)
-uint32: Scalar[int, Literal[4]] = np.uint32(4294967295)
-uint64: Scalar[int, Literal[8]] = np.uint64(18446744073709551615)
+uint8: onp.Scalar[int, Literal[1]] = np.uint8(255)
+uint16: onp.Scalar[int, Literal[2]] = np.uint16(65535)
+uint32: onp.Scalar[int, Literal[4]] = np.uint32(4294967295)
+uint64: onp.Scalar[int, Literal[8]] = np.uint64(18446744073709551615)
 ```
 
 ### Floating-Point Scalars
 
 ```python
-import numpy as np
-from optype.numpy import Scalar
-from typing import Literal
-
 # 16-bit float (2 bytes)
-f16: Scalar[float, Literal[2]] = np.float16(3.14)
+f16: onp.Scalar[float, Literal[2]] = np.float16(3.14)
 
 # 32-bit float (4 bytes)
-f32: Scalar[float, Literal[4]] = np.float32(3.14159)
+f32: onp.Scalar[float, Literal[4]] = np.float32(3.14159)
 
 # 64-bit float (8 bytes) - Python's native float
-f64: Scalar[float, Literal[8]] = np.float64(3.141592653589793)
+f64: onp.Scalar[float, Literal[8]] = np.float64(3.141592653589793)
 ```
 
 ### Complex Scalars
 
 ```python
-import numpy as np
-from optype.numpy import Scalar
-from typing import Literal
-
 # 64-bit complex (8 bytes)
-c64: Scalar[complex, Literal[8]] = np.complex64(1 + 2j)
+c64: onp.Scalar[complex, Literal[8]] = np.complex64(1 + 2j)
 
 # 128-bit complex (16 bytes)
-c128: Scalar[complex, Literal[16]] = np.complex128(1 + 2j)
+c128: onp.Scalar[complex, Literal[16]] = np.complex128(1 + 2j)
 ```
 
 ### String and Bytes Scalars
 
 ```python
-import numpy as np
-from optype.numpy import Scalar
-
 # String scalar (variable length)
-str_scalar: Scalar[str] = np.str_("hello")
+str_scalar: onp.Scalar[str] = np.str_("hello")
 
 # Bytes scalar (variable length)
-bytes_scalar: Scalar[bytes] = np.bytes_(b"hello")
+bytes_scalar: onp.Scalar[bytes] = np.bytes_(b"hello")
 ```
 
 ## Scalar Protocol
@@ -113,9 +103,7 @@ bytes_scalar: Scalar[bytes] = np.bytes_(b"hello")
 The generic scalar protocol (runtime-checkable):
 
 ```python
-from optype.numpy import Scalar
-
-def accept_scalar(x: Scalar) -> None:
+def accept_scalar(x: onp.Scalar) -> None:
     """Accept any NumPy scalar."""
     print(f"Itemsize: {x.itemsize}")
     print(f"Value: {x.item()}")
@@ -131,11 +119,7 @@ accept_scalar(np.complex128(1+2j))
 ### Function with Scalar Type Specification
 
 ```python
-import numpy as np
-from optype.numpy import Scalar
-from typing import Literal
-
-def double_value(x: Scalar[int, Literal[8]]) -> Scalar[int, Literal[8]]:
+def double_value(x: onp.Scalar[int, Literal[8]]) -> onp.Scalar[int, Literal[8]]:
     """Double a 64-bit integer."""
     return np.int64(x.item() * 2)
 
@@ -147,10 +131,7 @@ print(result.item())  # 42
 ### Working with Mixed Scalar Types
 
 ```python
-import numpy as np
-from optype.numpy import Scalar
-
-def to_python_type(scalar: Scalar) -> object:
+def to_python_type(scalar: onp.Scalar) -> object:
     """Convert any NumPy scalar to Python type."""
     return scalar.item()
 
@@ -168,15 +149,9 @@ python_values = [to_python_type(v) for v in values]
 ### Array Element Access as Scalar
 
 ```python
-import numpy as np
-from optype.numpy import Scalar, Array
-from typing import Literal
-
 def get_pixel(
-    image: Array[tuple[int, int, Literal[3]], np.uint8],
-    x: int,
-    y: int,
-) -> Scalar[int, Literal[1]]:
+    image: onp.Array[tuple[int, int, Literal[3]], np.uint8], x: int, y: int,
+) -> onp.Scalar[int, Literal[1]]:
     """Get a pixel value as a scalar."""
     return image[y, x]
 
@@ -191,8 +166,6 @@ rgb_value = np.array([(255, 0, 128)], dtype=np.uint8)[0, 0]
 All NumPy scalars have useful properties:
 
 ```python
-import numpy as np
-
 scalar = np.int32(42)
 
 # Size information
@@ -210,8 +183,6 @@ print(scalar.dtype.name)    # 'int32'
 Common scalar methods:
 
 ```python
-import numpy as np
-
 scalar = np.float64(3.14159)
 
 # Convert to Python type
@@ -231,11 +202,8 @@ print(repr(scalar))      # 'np.float64(3.14159)'
 ### Use Specific Scalar Types in Type Hints
 
 ```python
-from optype.numpy import Scalar
-from typing import Literal
-
 # ✓ Specific and informative
-def process(value: Scalar[int, Literal[8]]) -> None:
+def process(value: onp.Scalar[int, Literal[8]]) -> None:
     pass
 
 # ✗ Vague
@@ -248,19 +216,14 @@ def process(value: np.generic) -> None:
 When the number of bits doesn't matter:
 
 ```python
-from optype.numpy import Scalar
-
 # These are equivalent:
-Scalar[float]           # NB defaults to int (any size)
-Scalar[float, int]
+onp.Scalar[float]           # NB defaults to int (any size)
+onp.Scalar[float, int]
 ```
 
 ### Runtime Checking
 
 ```python
-import numpy as np
-from optype.numpy import Scalar
-
 def is_scalar(x) -> bool:
     """Check if value is a NumPy scalar."""
     return isinstance(x, np.generic)

@@ -57,12 +57,14 @@ class FlexibleNegation(CanNegSelf[int]):
 
 ## Examples
 
+```python
+import optype as op
+```
+
 ### Positive and Negative Operations
 
 ```python
-from optype import CanPosSelf, CanNegSelf
-
-class Temperature(CanPosSelf, CanNegSelf):
+class Temperature(op.CanPosSelf, op.CanNegSelf):
     def __init__(self, celsius: float):
         self.celsius = celsius
     
@@ -86,9 +88,7 @@ print(-temp)  # Temperature(-25.0°C)
 ### Bitwise Inversion
 
 ```python
-from optype import CanInvertSelf
-
-class Flags(CanInvertSelf[int]):
+class Flags(op.CanInvertSelf[int]):
     def __init__(self, value: int):
         self.value = value
     
@@ -109,9 +109,7 @@ print(~flags)  # Flags(0b...11111111111111111111111111110101)
 ### Absolute Value
 
 ```python
-from optype import CanAbsSelf
-
-class Vector(CanAbsSelf):
+class Vector(op.CanAbsSelf):
     def __init__(self, x: float, y: float):
         self.x = x
         self.y = y
@@ -138,9 +136,8 @@ print(abs_vec.magnitude()) # 5.0
 
 ```python
 import math
-from optype import CanPos, CanNeg, CanAbs
 
-class Complex(CanPos[float], CanNeg["Complex"], CanAbs[float]):
+class Complex(op.CanPos[float], op.CanNeg["Complex"], op.CanAbs[float]):
     def __init__(self, real: float, imag: float):
         self.real = real
         self.imag = imag
@@ -175,9 +172,7 @@ print(abs(c))  # 5.0
 ### Numeric Type with Type Transformation
 
 ```python
-from optype import CanNeg, CanAbs
-
-class Rational(CanNeg["Rational"], CanAbs[int]):
+class Rational(op.CanNeg["Rational"], op.CanAbs[int]):
     def __init__(self, numerator: int, denominator: int):
         from math import gcd
         g = gcd(abs(numerator), abs(denominator))

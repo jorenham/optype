@@ -70,9 +70,12 @@ Unlike `numpy.typing.ArrayLike`:
 ### Example
 
 ```python
+import optype.numpy as onp
+```
+
+```python
 import numpy as np
 import numpy.typing as npt
-import optype.numpy as onp
 
 # numpy.typing accepts bare scalars
 arr_np: npt.ArrayLike = 3.14  # ✓ Accepted
@@ -96,7 +99,6 @@ matrix_op: onp.AnyArray = [[1, 2], [3, 4]]
 
 ```python
 import numpy as np
-import optype.numpy as onp
 
 # Specific scalar type
 floats: onp.AnyFloat64Array = np.array([1.0, 2.0, 3.0])

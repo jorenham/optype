@@ -35,20 +35,24 @@ type UFunc[
 
 ## Type Parameters
 
+```
+import numpy as np
+
+import optype.numpy as onp
+```
+
 ### Fn (Function)
 
 Callable signature of the ufunc:
 
 ```python
-import numpy as np
-from optype.numpy import UFunc
 from typing import Callable
 
 # Binary operation returning same type
-add: UFunc[Callable[[float, float], float], ...]
+add: onp.UFunc[Callable[[float, float], float], ...]
 
 # Unary operation
-sin: UFunc[Callable[[float], float], ...]
+sin: onp.UFunc[Callable[[float], float], ...]
 ```
 
 ### Nin (Number of Inputs)
@@ -57,10 +61,10 @@ Number of input arguments:
 
 ```python
 # Unary ufuncs
-sin: UFunc[..., Literal[1], ...]  # 1 input
+sin: onp.UFunc[..., Literal[1], ...]  # 1 input
 
 # Binary ufuncs
-add: UFunc[..., Literal[2], ...]  # 2 inputs
+add: onp.UFunc[..., Literal[2], ...]  # 2 inputs
 ```
 
 ### Nout (Number of Outputs)
@@ -69,10 +73,10 @@ Number of output values:
 
 ```python
 # Single output
-add: UFunc[..., ..., Literal[1], ...]
+add: onp.UFunc[..., ..., Literal[1], ...]
 
 # Multiple outputs (like divmod)
-divmod: UFunc[..., Literal[2], Literal[2], ...]
+divmod: onp.UFunc[..., Literal[2], Literal[2], ...]
 ```
 
 ### Sig (Signature)
@@ -82,10 +86,10 @@ divmod: UFunc[..., Literal[2], Literal[2], ...]
 
 ```python
 # Element-wise ufunc
-add: UFunc[..., ..., ..., None, ...]
+add: onp.UFunc[..., ..., ..., None, ...]
 
 # Generalized ufunc (gufunc)
-matmul: UFunc[..., ..., ..., "(m,n),(n,p)->(m,p)", ...]
+matmul: onp.UFunc[..., ..., ..., "(m,n),(n,p)->(m,p)", ...]
 ```
 
 ### Id (Identity Element)
@@ -94,11 +98,11 @@ The identity value for reduction operations:
 
 ```python
 # Ufuncs with identity
-add: UFunc[..., ..., ..., ..., Literal[0]]  # 0 is identity for addition
-multiply: UFunc[..., ..., ..., ..., Literal[1]]  # 1 for multiplication
+add: onp.UFunc[..., ..., ..., ..., Literal[0]]  # 0 is identity for addition
+multiply: onp.UFunc[..., ..., ..., ..., Literal[1]]  # 1 for multiplication
 
 # No identity
-maximum: UFunc[..., ..., ..., ..., None]
+maximum: onp.UFunc[..., ..., ..., ..., None]
 ```
 
 ## Common Ufunc Examples
@@ -106,12 +110,10 @@ maximum: UFunc[..., ..., ..., ..., None]
 ### Unary Ufuncs
 
 ```python
-import numpy as np
-from optype.numpy import UFunc
 from typing import Literal, Callable
 
 # Trigonometric
-sin: UFunc[
+sin: onp.UFunc[
     Callable[[float], float],
     Literal[1],  # 1 input
     Literal[1],  # 1 output
@@ -120,7 +122,7 @@ sin: UFunc[
 ]
 
 # Absolute value
-abs: UFunc[
+abs: onp.UFunc[
     Callable[[float], float],
     Literal[1],
     Literal[1],
@@ -132,12 +134,10 @@ abs: UFunc[
 ### Binary Ufuncs
 
 ```python
-import numpy as np
-from optype.numpy import UFunc
 from typing import Literal, Callable
 
 # Addition
-add: UFunc[
+add: onp.UFunc[
     Callable[[float, float], float],
     Literal[2],  # 2 inputs
     Literal[1],  # 1 output
@@ -146,7 +146,7 @@ add: UFunc[
 ]
 
 # Multiplication
-multiply: UFunc[
+multiply: onp.UFunc[
     Callable[[float, float], float],
     Literal[2],
     Literal[1],
@@ -155,7 +155,7 @@ multiply: UFunc[
 ]
 
 # Maximum (no identity)
-maximum: UFunc[
+maximum: onp.UFunc[
     Callable[[float, float], float],
     Literal[2],
     Literal[1],
@@ -167,12 +167,10 @@ maximum: UFunc[
 ### Generalized Ufuncs (gufuncs)
 
 ```python
-import numpy as np
-from optype.numpy import UFunc
 from typing import Literal
 
 # Matrix multiplication
-matmul: UFunc[
+matmul: onp.UFunc[
     ...,
     Literal[2],
     Literal[1],
@@ -181,7 +179,7 @@ matmul: UFunc[
 ]
 
 # Outer product
-outer: UFunc[
+outer: onp.UFunc[
     ...,
     Literal[2],
     Literal[1],
@@ -195,8 +193,6 @@ outer: UFunc[
 ### Direct Call
 
 ```python
-import numpy as np
-
 result = np.add(1, 2)  # Calls ufunc directly
 ```
 
@@ -205,8 +201,6 @@ result = np.add(1, 2)  # Calls ufunc directly
 Applies ufunc along an axis:
 
 ```python
-import numpy as np
-
 arr = np.array([1, 2, 3, 4])
 total = np.add.reduce(arr)  # 10 (1+2+3+4)
 ```
@@ -216,8 +210,6 @@ total = np.add.reduce(arr)  # 10 (1+2+3+4)
 Intermediate results of reduction:
 
 ```python
-import numpy as np
-
 arr = np.array([1, 2, 3, 4])
 cumsum = np.add.accumulate(arr)  # [1, 3, 6, 10]
 ```
@@ -227,8 +219,6 @@ cumsum = np.add.accumulate(arr)  # [1, 3, 6, 10]
 Outer product of two arrays:
 
 ```python
-import numpy as np
-
 a = np.array([1, 2, 3])
 b = np.array([10, 20])
 result = np.multiply.outer(a, b)
@@ -242,8 +232,6 @@ result = np.multiply.outer(a, b)
 In-place operation at specified indices:
 
 ```python
-import numpy as np
-
 arr = np.array([1, 2, 3, 4, 5])
 np.add.at(arr, [0, 2, 4], 10)
 # arr is now [11, 2, 13, 4, 15]
@@ -254,8 +242,6 @@ np.add.at(arr, [0, 2, 4], 10)
 Reduce at specified slices:
 
 ```python
-import numpy as np
-
 arr = np.array([0, 1, 2, 3, 4, 5])
 result = np.add.reduceat(arr, [0, 3, 5])
 # [3, 7, 5]  # sum([0:3]), sum([3:5]), sum([5:])
@@ -266,15 +252,12 @@ result = np.add.reduceat(arr, [0, 3, 5])
 ### Using np.frompyfunc
 
 ```python
-import numpy as np
-from optype.numpy import UFunc
-
 def my_func(x: float, y: float) -> float:
     """Custom binary function."""
     return x ** 2 + y ** 2
 
 # Create ufunc
-ufunc: UFunc = np.frompyfunc(my_func, nin=2, nout=1)
+ufunc: onp.UFunc = np.frompyfunc(my_func, nin=2, nout=1)
 
 # Use it
 arr1 = np.array([1.0, 2.0, 3.0])
@@ -285,9 +268,6 @@ result = ufunc(arr1, arr2)
 ### Duck-Typed Ufunc
 
 ```python
-from optype.numpy import UFunc
-from typing import Callable
-
 class CustomUFunc(UFunc[Callable[[float], float], int, int, None, None]):
     """Custom ufunc-like class."""
     
@@ -312,7 +292,6 @@ NumPy's ufunc methods (`.at`, `.reduce`, `.reduceat`, `.accumulate`, `.outer`) a
 **Workaround**: Cast to specific callable when needed:
 
 ```python
-import numpy as np
 from typing import cast, Callable
 
 reduce_fn = cast(Callable, np.add.reduce)
@@ -330,10 +309,7 @@ The `identity` attribute is only valid when:
 ## Runtime Checking
 
 ```python
-import numpy as np
-from optype.numpy import UFunc
-
-def apply_ufunc(func: UFunc, arr: np.ndarray) -> np.ndarray:
+def apply_ufunc(func: onp.UFunc, arr: np.ndarray) -> np.ndarray:
     """Apply any ufunc to an array."""
     if isinstance(func, np.ufunc):
         return func(arr)
@@ -379,4 +355,4 @@ result = apply_ufunc(np.sin, np.array([0, np.pi/2, np.pi]))
 
 - [NumPy UFunc Documentation](https://numpy.org/doc/stable/reference/ufuncs.html)
 - [NumPy Generalized UFuncs](https://numpy.org/doc/stable/reference/c-api/generalized-ufuncs.html)
-- [NEP 13: UFunc Overrides](https://numpy.org/neps/nep-0013-ufunc-overrides.html)
+- [NEP 13: onp.UFunc Overrides](https://numpy.org/neps/nep-0013-ufunc-overrides.html)
