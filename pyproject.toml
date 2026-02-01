@@ -80,10 +80,10 @@ test = [
 type = [
   { include-group = "extra" },
   { include-group = "test" },
-  "basedpyright>=1.37.2",
-  "mypy[faster-cache]>=1.19.1",
-  "pyrefly==0.50.0",
-  "ty==0.0.13",
+  "basedpyright==1.37.3",
+  "mypy[faster-cache]==1.19.1",
+  "pyrefly==0.50.1",
+  "ty==0.0.14",
 ]
 dev = [
   { include-group = "extra" },
