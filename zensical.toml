@@ -1,15 +1,56 @@
 [project]
 site_name = "optype"
+site_author = "Joren Hammudoglu"
 site_description = "Building blocks for precise & flexible type hints"
 site_url = "https://jorenham.github.io/optype"
+repo_url = "https://github.com/jorenham/optype"
 docs_dir = "docs"
 site_dir = "site"
-nav = [
-  { "Home" = "index.md" },
-  { "Installation" = "installation.md" },
-  { "Getting Started" = "getting-started.md" },
-  { "Reference" = ["reference/index.md", { "Core Types" = ["reference/core/just.md", "reference/core/conversion.md", "reference/core/relations.md", "reference/core/binary.md", "reference/core/reflected.md", "reference/core/inplace.md", "reference/core/unary.md", "reference/core/rounding.md", "reference/core/callables.md", "reference/core/iteration.md", "reference/core/awaitables.md", "reference/core/async-iteration.md", "reference/core/containers.md", "reference/core/attributes.md", "reference/core/context.md", "reference/core/descriptors.md", "reference/core/buffer.md"] }, { "Standard Library" = ["reference/stdlib/copy.md", "reference/stdlib/dataclasses.md", "reference/stdlib/inspect.md", "reference/stdlib/io.md", "reference/stdlib/json.md", "reference/stdlib/pickle.md", "reference/stdlib/string.md", "reference/stdlib/typing.md", "reference/stdlib/dlpack.md"] }, { "NumPy" = ["reference/numpy/index.md", "reference/numpy/shape.md", "reference/numpy/array-likes.md", "reference/numpy/literals.md", "reference/numpy/compat.md", "reference/numpy/random.md", "reference/numpy/dtype.md", "reference/numpy/scalar.md", "reference/numpy/ufunc.md", "reference/numpy/aliases.md", "reference/numpy/low-level.md"] }] },
+[[project.nav]]
+"Home" = "index.md"
+
+[[project.nav]]
+"Installation" = "installation.md"
+
+[[project.nav]]
+"Getting Started" = "getting-started.md"
+
+[[project.nav]]
+"Reference" = [
+  "reference/index.md",
+  { "Core Types" = ["reference/core/just.md", "reference/core/conversion.md", "reference/core/relations.md", "reference/core/binary.md", "reference/core/reflected.md", "reference/core/inplace.md", "reference/core/unary.md", "reference/core/rounding.md", "reference/core/callables.md", "reference/core/iteration.md", "reference/core/awaitables.md", "reference/core/async-iteration.md", "reference/core/containers.md", "reference/core/attributes.md", "reference/core/context.md", "reference/core/descriptors.md", "reference/core/buffer.md"] },
+  { "Standard Library" = ["reference/stdlib/copy.md", "reference/stdlib/dataclasses.md", "reference/stdlib/inspect.md", "reference/stdlib/io.md", "reference/stdlib/json.md", "reference/stdlib/pickle.md", "reference/stdlib/string.md", "reference/stdlib/typing.md", "reference/stdlib/dlpack.md"] },
+  { "NumPy" = ["reference/numpy/index.md", "reference/numpy/shape.md", "reference/numpy/array-likes.md", "reference/numpy/literals.md", "reference/numpy/compat.md", "reference/numpy/random.md", "reference/numpy/dtype.md", "reference/numpy/scalar.md", "reference/numpy/ufunc.md", "reference/numpy/aliases.md", "reference/numpy/low-level.md"] },
 ]
+
+[project.theme]
+features = [
+  "navigation.footer",
+  "navigation.path",
+  "navigation.prune",
+  "navigation.indexes",
+  "navigation.sections",
+  "navigation.tabs",
+  "navigation.tracking",
+  "navigation.top",
+]
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme)"
+toggle.icon = "lucide/sun-moon"
+toggle.name = "Switch to light mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: light)"
+scheme = "default"
+toggle.icon = "lucide/sun"
+toggle.name = "Switch to dark mode"
+
+[[project.theme.palette]]
+media = "(prefers-color-scheme: dark)"
+scheme = "slate"
+toggle.icon = "lucide/moon"
+toggle.name = "Switch to system preference"
 
 [project.extra]
 repo_url = "https://github.com/jorenham/optype"
@@ -17,9 +58,13 @@ repo_name = "jorenham/optype"
 edit_uri = "edit/master/docs/"
 
 [[project.extra.social]]
-icon = "fontawesome/brands/github"
+icon = "simple/github"
 link = "https://github.com/jorenham/optype"
 
 [[project.extra.social]]
-icon = "fontawesome/brands/python"
+icon = "simple/pypi"
 link = "https://pypi.org/project/optype"
+
+[[project.extra.social]]
+icon = "simple/condaforge"
+link = "https://anaconda.org/conda-forge/optype"
