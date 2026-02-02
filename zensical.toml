@@ -58,9 +58,13 @@ repo_name = "jorenham/optype"
 edit_uri = "edit/master/docs/"
 
 [[project.extra.social]]
-icon = "fontawesome/brands/github"
+icon = "simple/github"
 link = "https://github.com/jorenham/optype"
 
 [[project.extra.social]]
-icon = "fontawesome/brands/python"
+icon = "simple/pypi"
 link = "https://pypi.org/project/optype"
+
+[[project.extra.social]]
+icon = "simple/condaforge"
+link = "https://anaconda.org/conda-forge/optype"
