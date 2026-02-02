@@ -1,7 +1,9 @@
 [project]
 site_name = "optype"
+site_author = "Joren Hammudoglu"
 site_description = "Building blocks for precise & flexible type hints"
 site_url = "https://jorenham.github.io/optype"
+repo_url = "https://github.com/jorenham/optype"
 docs_dir = "docs"
 site_dir = "site"
 [[project.nav]]
