@@ -92,11 +92,11 @@ With this, the `twice` function can written as:
 ```python
 from typing import Literal
 from typing import TypeAlias, TypeVar
-from optype import CanRMul
+import optype as op
 
 R = TypeVar("R")
 Two: TypeAlias = Literal[2]
-RMul2: TypeAlias = CanRMul[Two, R]
+RMul2: TypeAlias = op.CanRMul[Two, R]
 
 
 def twice(x: RMul2[R]) -> R:
@@ -108,10 +108,10 @@ def twice(x: RMul2[R]) -> R:
 
 ```python
 from typing import Literal
-from optype import CanRMul
+import optype as op
 
 type Two = Literal[2]
-type RMul2[R] = CanRMul[Two, R]
+type RMul2[R] = op.CanRMul[Two, R]
 
 
 def twice[R](x: RMul2[R]) -> R:
@@ -136,9 +136,9 @@ Because the `optype.Can*` protocols are runtime-checkable, the revised
 <td>
 
 ```python
-from optype import CanMul
+import optype as op
 
-Mul2: TypeAlias = CanMul[Two, R]
+Mul2: TypeAlias = op.CanMul[Two, R]
 CMul2: TypeAlias = Mul2[R] | RMul2[R]
 
 
@@ -153,9 +153,9 @@ def twice2(x: CMul2[R]) -> R:
 <td>
 
 ```python
-from optype import CanMul
+import optype as op
 
-type Mul2[R] = CanMul[Two, R]
+type Mul2[R] = op.CanMul[Two, R]
 type CMul2[R] = Mul2[R] | RMul2[R]
 
 
@@ -179,44 +179,64 @@ The API of `optype` is flat; a single `import optype as opt` is all you need
 
 <!-- TOC start (generated with https://github.com/derlin/bitdowntoc) -->
 
-- [`optype`](#optype)
-  - [`Just`](#just)
-  - [Builtin type conversion](#builtin-type-conversion)
-  - [Rich relations](#rich-relations)
-  - [Binary operations](#binary-operations)
-  - [Reflected operations](#reflected-operations)
-  - [Inplace operations](#inplace-operations)
-  - [Unary operations](#unary-operations)
-  - [Rounding](#rounding)
-  - [Callables](#callables)
-  - [Iteration](#iteration)
-  - [Awaitables](#awaitables)
-  - [Async Iteration](#async-iteration)
-  - [Containers](#containers)
-  - [Attributes](#attributes)
-  - [Context managers](#context-managers)
-  - [Descriptors](#descriptors)
-  - [Buffer types](#buffer-types)
-- [`optype.copy`](#optypecopy)
-- [`optype.dataclasses`](#optypedataclasses)
-- [`optype.inspect`](#optypeinspect)
-- [`optype.io`](#optypeio)
-- [`optype.json`](#optypejson)
-- [`optype.pickle`](#optypepickle)<!-- - - [`optype.rick`](#optyperick) -->
-- [`optype.string`](#optypestring)
-- [`optype.typing`](#optypetyping)
-  - [`Any*` type aliases](#any-type-aliases)
-  - [`Empty*` type aliases](#empty-type-aliases)
-  - [Literal types](#literal-types)
-- [`optype.dlpack`](#optypedlpack)
-- [`optype.numpy`](#optypenumpy)
-  - [Shape-typing](#shape-typing)
-  - [Array-likes](#array-likes)
-  - [Literals](#literals)
-  - [`compat` submodule](#compat-submodule)
-  - [`random` submodule](#random-submodule)
-  - [`Any*Array` and `Any*DType`](#anyarray-and-anydtype)
-  - [Low-level interfaces](#low-level-interfaces)
+- [Installation](#installation)
+  - [PyPI](#pypi)
+  - [Conda](#conda)
+- [Example](#example)
+- [Reference](#reference)
+  - [`optype`](#optype)
+    - [`Just`](#just)
+    - [Builtin type conversion](#builtin-type-conversion)
+    - [Rich relations](#rich-relations)
+    - [Binary operations](#binary-operations)
+    - [Reflected operations](#reflected-operations)
+    - [Inplace operations](#inplace-operations)
+    - [Unary operations](#unary-operations)
+    - [Rounding](#rounding)
+    - [Callables](#callables)
+    - [Iteration](#iteration)
+    - [Awaitables](#awaitables)
+    - [Async Iteration](#async-iteration)
+    - [Containers](#containers)
+    - [Attributes](#attributes)
+    - [Context managers](#context-managers)
+    - [Descriptors](#descriptors)
+    - [Buffer types](#buffer-types)
+  - [`optype.copy`](#optypecopy)
+  - [`optype.dataclasses`](#optypedataclasses)
+  - [`optype.inspect`](#optypeinspect)
+  - [`optype.io`](#optypeio)
+  - [`optype.json`](#optypejson)
+  - [`optype.pickle`](#optypepickle)
+  - [`optype.string`](#optypestring)
+  - [`optype.typing`](#optypetyping)
+    - [`Any*` type aliases](#any-type-aliases)
+    - [`Empty*` type aliases](#empty-type-aliases)
+    - [Literal types](#literal-types)
+  - [`optype.dlpack`](#optypedlpack)
+    - [Protocols](#protocols)
+    - [Enums](#enums)
+  - [`optype.numpy`](#optypenumpy)
+    - [Shape-typing](#shape-typing)
+      - [Array aliases](#array-aliases)
+      - [Array typeguards](#array-typeguards)
+      - [Shape aliases](#shape-aliases)
+    - [Array-likes](#array-likes)
+    - [Literals](#literals)
+    - [`compat` submodule](#compat-submodule)
+    - [`random` submodule](#random-submodule)
+    - [`DType`](#dtype)
+    - [`Scalar`](#scalar)
+    - [`UFunc`](#ufunc)
+    - [`Any*Array` and `Any*DType`](#anyarray-and-anydtype)
+      - [Abstract types](#abstract-types)
+      - [Unsigned integers](#unsigned-integers)
+      - [Signed integers](#signed-integers)
+      - [Real floats](#real-floats)
+      - [Complex floats](#complex-floats)
+      - ["Flexible"](#flexible)
+      - [Other types](#other-types)
+    - [Low-level interfaces](#low-level-interfaces)
 
 <!-- TOC end -->
 
