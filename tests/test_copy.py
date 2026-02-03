@@ -93,9 +93,9 @@ def test_can_replace_custom() -> None:
             self.val = val
 
         def __replace__(self, /, *, val: int) -> Self:
-            cpy = copy.copy(self)
-            cpy.val = val
-            return cpy
+            twin = copy.copy(self)
+            twin.val = val
+            return twin
 
     obj = ReplaceableClass(42)
 
