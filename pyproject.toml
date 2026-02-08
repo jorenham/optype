@@ -1,5 +1,5 @@
 [build-system]
-requires = ["uv_build>=0.10,<0.11.0"]
+requires = ["uv_build>=0.10,<0.11"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
@@ -51,7 +51,7 @@ dependencies = ["typing-extensions>=4.10; python_version<'3.13'"]
 
 [project.optional-dependencies]
 numpy = [
-  "numpy>=1.25",
+  "numpy>=1.26,<2.7",
   "numpy-typing-compat>=20250818.1.25,<20251207",
 ]
 

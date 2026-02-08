@@ -364,7 +364,7 @@ type = [
 
 [package.metadata]
 requires-dist = [
-    { name = "numpy", marker = "extra == 'numpy'", specifier = ">=1.25" },
+    { name = "numpy", marker = "extra == 'numpy'", specifier = ">=1.26,<2.7" },
     { name = "numpy-typing-compat", marker = "extra == 'numpy'", specifier = ">=20250818.1.25,<20251207" },
     { name = "typing-extensions", marker = "python_full_version < '3.13'", specifier = ">=4.10" },
 ]
