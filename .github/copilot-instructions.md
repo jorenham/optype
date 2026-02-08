@@ -26,7 +26,7 @@ type-checkers like beartype.
 - **Linting & formatting**: ruff, dprint
 - **Git hooks manager**: lefthook
 - **Task runner**: tox
-- **Optional dependencies**: numpy>=1.25 (minimum version follows
+- **Optional dependencies**: numpy>=1.26 (minimum version follows
   [SPEC 0](https://scientific-python.org/specs/spec-0000/))
 
 ## Code Style & Conventions

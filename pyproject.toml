@@ -1,5 +1,5 @@
 [build-system]
-requires = ["uv_build>=0.10,<0.11.0"]
+requires = ["uv_build>=0.10,<0.11"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
@@ -8,7 +8,7 @@ module-root = ""
 [project]
 name = "optype"
 description = "Building Blocks for Precise & Flexible Type Hints"
-version = "0.15.1.dev0"
+version = "0.16.0.dev0"
 authors = [{ name = "Joren Hammudoglu", email = "jhammudoglu@gmail.com" }]
 license = "BSD-3-Clause"
 license-files = ["LICENSE"]
@@ -51,7 +51,7 @@ dependencies = ["typing-extensions>=4.10; python_version<'3.13'"]
 
 [project.optional-dependencies]
 numpy = [
-  "numpy>=1.25",
+  "numpy>=1.26,<2.7",
   "numpy-typing-compat>=20250818.1.25,<20251207",
 ]
 

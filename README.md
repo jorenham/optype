@@ -2383,7 +2383,7 @@ internal type-codes of the `DLPack` data types.
 
 ### `optype.numpy`
 
-Optype supports both NumPy 1 and 2. The current minimum supported version is `1.25`,
+Optype supports both NumPy 1 and 2. The current minimum supported version is `1.26`,
 following [NEP 29][NEP29] and [SPEC 0][SPEC0].
 
 `optype.numpy` uses [`numpy-typing-compat`][NPTC] package to ensure compatibility for
@@ -3059,7 +3059,7 @@ Source code: [`optype/numpy/_to.py`][CODE-NP-TO]
 
 #### `compat` submodule
 
-Compatibility module for supporting a wide range of numpy versions (currently `>=1.25`).
+Compatibility module for supporting a wide range of numpy versions (currently `>=1.26`).
 It contains the abstract numeric scalar types, with `numpy>=2.2`
 type-parameter defaults, which I explained in the [`release notes`][NP-REL22].
 
@@ -3200,7 +3200,7 @@ sigma1_op: onp.AnyArray = [[0, 1], [1, 0]]  # accepted
 ```
 
 > [!NOTE]
-> The [`numpy.dtypes` docs][REF-DTYPES] exists since NumPy 1.25, but its
+> The [`numpy.dtypes` docs][REF-DTYPES] exists since NumPy 1.26, but its
 > type annotations were incorrect before NumPy 2.1 (see
 > [numpy/numpy#27008](https://github.com/numpy/numpy/pull/27008))
 
