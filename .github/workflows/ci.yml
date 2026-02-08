@@ -77,10 +77,7 @@ jobs:
         run: uv sync --no-editable
 
       - name: install deps
-        run: >
-          uv pip install
-          numpy==${{ matrix.np }}.*
-          numpy-typing-compat==${{ env.NPTC_BUILD }}.${{ matrix.np }}
+        run: uv pip install --exact --group type numpy==${{ matrix.np }}.* .
 
       - name: ty
         run: ty check
@@ -119,10 +116,10 @@ jobs:
       - uses: astral-sh/setup-uv@v7.2.1
         with:
           python-version: ${{ matrix.py }}
+          activate-environment: true
+
+      - name: install dependencies
+        run: uv pip install --exact --group test numpy==${{ matrix.np }}.* .
 
       - name: pytest
-        run: >-
-          uv run
-          --with="numpy==${{ matrix.np }}.*"
-          --with="numpy-typing-compat==${{ env.NPTC_BUILD }}.${{ matrix.np }}"
-          pytest
+        run: pytest
