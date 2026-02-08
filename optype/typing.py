@@ -9,15 +9,15 @@ from typing import (
     TypeAlias,
     runtime_checkable,
 )
-from typing_extensions import deprecated
 
 if TYPE_CHECKING:
     import enum
 
 if sys.version_info >= (3, 13):
     from typing import TypedDict, TypeVar
+    from warnings import deprecated
 else:
-    from typing_extensions import TypedDict, TypeVar
+    from typing_extensions import TypedDict, TypeVar, deprecated
 
 from ._core import _can as _c, _just
 
