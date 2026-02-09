@@ -82,7 +82,7 @@ type = [
   { include-group = "test" },
   "basedpyright==1.37.4",
   "mypy[faster-cache]==1.19.1",
-  "pyrefly==0.51.2",
+  "pyrefly==0.52.0",
   "ty==0.0.15",
 ]
 dev = [
