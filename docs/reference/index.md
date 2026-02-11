@@ -141,3 +141,35 @@ In the reference docs we use a fictional notation to describe the variance of ge
 
 See the [typing spec](https://typing.python.org/en/latest/spec/generics.html#variance)
 for an explanation
+
+## Performance Considerations
+
+### isinstance() with Protocols
+
+All `optype` protocols are [runtime-checkable](https://typing.readthedocs.io/en/latest/spec/protocol.html#runtime-checkable-decorator-and-narrowing-types-by-isinstance), which allows them to be used with `isinstance()`. However, it's important to understand the performance implications:
+
+!!! warning "Performance Caveat"
+
+    `isinstance()` checks against `typing.Protocol` types have **O(n) time complexity**, where *n* is the number of methods/attributes defined in the protocol.
+
+    This is significantly slower than checking against regular classes (which is O(1)).
+
+**Impact on Common Patterns**:
+
+```python
+import optype as op
+
+# This is efficient - checks only the protocol once
+if isinstance(obj, op.CanAdd):
+    result = obj + 1
+
+# This is less efficient - checks the protocol repeatedly
+for item in items:
+    if isinstance(item, op.CanAdd):  # O(n) check each iteration
+        process(item + 1)
+```
+
+**Recommendations**:
+
+1. **Cache protocol checks**: Store the result of `isinstance()` for reuse
+2. **Check early**: Validate types at function entry rather than in loops

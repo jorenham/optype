@@ -36,6 +36,9 @@ type ArrayND[
 ] = ndarray[ND, dtype[SCT]]
 ```
 
+!!! note "Comparison with `numpy.typing.NDArray`"
+Since `numpy>=2.2`, the `NDArray` alias uses `tuple[int, ...]` as shape-type instead of `Any`[^1]. The `optype.numpy.Array` and `ArrayND` aliases provide more precise shape typing with better defaults.
+
 ### Usage Examples
 
 ```python
@@ -211,3 +214,5 @@ arr: np.ndarray[tuple[Literal[3], Literal[3]], np.dtype[np.float64]]
 - **[Array-likes](array-likes.md)**: Array-like type conversions
 - **[DType](dtype.md)**: Data type specifications
 - **[Scalar](scalar.md)**: Scalar type annotations
+
+[^1]: Since `numpy>=2.2` the `NDArray` alias uses `tuple[int, ...]` as shape-type instead of `Any`.

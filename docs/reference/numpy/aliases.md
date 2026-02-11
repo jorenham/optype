@@ -114,9 +114,44 @@ dtype_f32: onp.AnyFloat32DType = np.dtype(np.float32)
 dtype_int: onp.AnyJustIntDType = np.dtype(np.int64)
 ```
 
+## Platform and Version Specific Notes
+
+!!! info "Integer Type Aliases"
+
+- Since NumPy 2, `np.uint` and `np.int_` are aliases for `np.uintp` and `np.intp`, respectively[^2].
+- On unix-based platforms, `np.[u]intc` are aliases for `np.[u]int32`[^3].
+- On NumPy 1, `np.uint` and `np.int_` are what in NumPy 2 are now the `np.ulong` and `np.long` types, respectively[^4].
+
+!!! info "Floating Point Type Aliases"
+
+- Depending on the platform, `np.longdouble` is (almost always) an alias for **either** `float128`, `float96`, or (sometimes) `float64`[^5].
+- Depending on the platform, `np.clongdouble` is (almost always) an alias for **either** `complex256`, `complex192`, or (sometimes) `complex128`[^6].
+
+!!! info "Other Type Notes"
+
+- Since NumPy 2, `np.bool` is preferred over `np.bool_`, which only exists for backwards compatibility[^7].
+- At runtime `np.timedelta64` is a subclass of `np.signedinteger`, but this is currently not reflected in the type annotations[^8].
+- The `np.dtypes.StringDType` has no associated numpy scalar type, and its `.type` attribute returns the `str` builtin[^9].
+
 ## Related Types
 
 - **[Shape Typing](shape.md)**: For precise shape type annotations
 - **[DType](dtype.md)**: For dtype-specific utilities
 - **[Scalar](scalar.md)**: For NumPy scalar type annotations
 - **[Array-likes](array-likes.md)**: For array-like protocol objects
+
+[^2]: Since NumPy 2, `np.uint` and `np.int_` are aliases for `np.uintp` and `np.intp`, respectively.
+
+[^3]: On unix-based platforms `np.[u]intc` are aliases for `np.[u]int32`.
+
+[^4]: On NumPy 1 `np.uint` and `np.int_` are what in NumPy 2 are now the `np.ulong` and `np.long` types, respectively.
+
+[^5]: Depending on the platform, `np.longdouble` is (almost always) an alias for **either** `float128`, `float96`, or (sometimes) `float64`.
+
+[^6]: Depending on the platform, `np.clongdouble` is (almost always) an alias for **either** `complex256`, `complex192`, or (sometimes) `complex128`.
+
+[^7]: Since NumPy 2, `np.bool` is preferred over `np.bool_`, which only exists for backwards compatibility.
+
+[^8]: At runtime `np.timedelta64` is a subclass of `np.signedinteger`, but this is currently not reflected in the type annotations.
+
+[^9]: The `np.dtypes.StringDType` has no associated numpy scalar type, and its `.type` attribute returns the `str` builtin.
