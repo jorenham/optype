@@ -8,7 +8,7 @@ else:
     from typing_extensions import CapsuleType, TypeAliasType, TypeVar, runtime_checkable
 
 import numpy as np
-from numpy._typing import (
+from numpy._typing import (  # noqa: PLC2701
     _8Bit,
     _16Bit,
     _32Bit,
