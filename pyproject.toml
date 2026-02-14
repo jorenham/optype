@@ -73,7 +73,7 @@ doc = [
 ]
 lint = [
   "dprint-py>=0.51.1.0",
-  "ruff>=0.15.0",
+  "ruff>=0.15.1",
   "sp-repo-review[cli]>=2025.11.21",
 ]
 test = [
@@ -394,7 +394,4 @@ extend-ignore-identifiers-re = [
   "(N|n)in",
   "Mode(R|W|X|A|O|_)(B|T|_)(U|_)?",
   "ba", # file mode string
-]
-extend-ignore-re = [
-  "np\\.arange",
 ]

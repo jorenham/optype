@@ -5,7 +5,7 @@ Support for the `with` statement.
 <table>
     <tr>
         <th align="center">operator</th>
-        <th colspan="2" align="center">operand</th>
+        <th colspan="2" align="center">operands</th>
     </tr>
     <tr>
         <td>expression</td>

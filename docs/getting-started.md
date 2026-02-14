@@ -23,7 +23,7 @@ However, this has several problems:
 1. **Type safety**: Calling `twice(None)` will raise, but type-checkers will accept it
 2. **Type transformation**: `twice(True) == 2` changes the type from `bool` to `int`
 3. **Type transformation**: `twice((1, 2)) == (1, 2, 1, 2)` changes from a 2-tuple to a 4-tuple
-4. **Limited to known types**: It doesn't account for custom types with `__rmul__` methods```
+4. **Limited to known types**: It doesn't account for custom types with `__rmul__` methods
 
 ## The optype Solution
 
@@ -91,8 +91,8 @@ class MyNumber:
         return f"{other} * {self.value}"
 
 
-def twice[R](x: op.CanRMul[Two, R]) -> R:  
-    return 2 * x  
+def twice[R](x: op.CanRMul[Two, R]) -> R:
+    return 2 * x
 
 
 result = twice(MyNumber(42))  # -> str
@@ -191,8 +191,8 @@ Protocols describing what operations are **can** be used.
 Each `Can*` protocol implements a single special "dunder" method.
 
 ```python
-_: op.CanAbs[int] = 42         # abs(42) -> int  
-_: CanAdd[str, str] = "hi"     # "hi" + "hi" -> str  
+_: op.CanAbs[int] = 42         # abs(42) -> int
+_: CanAdd[str, str] = "hi"     # "hi" + "hi" -> str
 _: CanGetitem[int, int] = [1]  # [1][0] -> int
 ```
 
@@ -205,8 +205,8 @@ def get_name(obj: op.HasName) -> str:
     return obj.__name__
 
 
-get_name(str)           # ✔️ 
-get_name(lambda: None)  # ✔️  
+get_name(str)           # ✔️
+get_name(lambda: None)  # ✔️
 get_name(None)          # ❌
 ```
 
@@ -308,8 +308,8 @@ import numpy as np
 import optype.numpy as onp
 
 
-def normalize[T: np.inexact](arr: onp.Array2D[T]) -> onp.Array2D[T]:  
-    """Normalize a 2D array of real or complex numbers."""  
+def normalize[T: np.inexact](arr: onp.Array2D[T]) -> onp.Array2D[T]:
+    """Normalize a 2D array of real or complex numbers."""
     return arr / np.linalg.norm(arr)
 ```
 

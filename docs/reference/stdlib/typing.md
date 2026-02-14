@@ -88,7 +88,7 @@ yield no elements.
     </tr>
     <tr>
         <td><code>{False, True}</code></td>
-        <td><code>LiteralFalse</code></td>
+        <td><code>LiteralBool</code></td>
         <td>
             Similar to <code>typing.LiteralString</code>, but for
             <code>bool</code>.
