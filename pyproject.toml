@@ -57,7 +57,7 @@ numpy = [
 
 [project.urls]
 Repository = "https://github.com/jorenham/optype/"
-Documentation = "https://github.com/jorenham/optype/blob/master/README.md"
+Documentation = "https://jorenham.github.io/optype/"
 Issues = "https://github.com/jorenham/optype/issues"
 Changelog = "https://github.com/jorenham/optype/releases"
 Funding = "https://github.com/sponsors/jorenham"
