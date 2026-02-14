@@ -23,7 +23,10 @@
 
 ## What is optype?
 
-`optype` is a Python library that provides building blocks for precise and flexible type hints. It focuses on typing utilities and has optional elaborate NumPy support. The library is compatible with all modern static type-checkers (mypy, basedpyright, pyright, pyrefly, etc.) and also works with runtime type-checkers like beartype.
+`optype` is a Python library that provides building blocks for precise and flexible type
+hints. It focuses on typing utilities and has optional elaborate NumPy support.
+The library is compatible with all modern static type-checkers (mypy, basedpyright,
+pyright, pyrefly, ty) and also works with runtime type-checkers like beartype.
 
 ## Key Features
 
@@ -50,14 +53,11 @@ that accepts `2` as an argument.
 This is where `optype` comes in handy. Use `optype.CanRMul[T, R]`, which is a
 protocol with (only) the `__rmul__(self, lhs: T) -> R` method:
 
-```python
-import optype as op
-```
-
 === "Python 3.12+"
 
     ```python
     from typing import Literal
+    import optype as op
 
     type Two = Literal[2]
     type RMul2[R] = op.CanRMul[Two, R]
@@ -71,6 +71,7 @@ import optype as op
 
     ```python
     from typing import Literal, TypeAlias, TypeVar
+    import optype as op
 
     R = TypeVar("R")
     Two: TypeAlias = Literal[2]
