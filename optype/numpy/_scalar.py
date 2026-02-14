@@ -8,13 +8,13 @@ else:
     from typing_extensions import CapsuleType, TypeAliasType, TypeVar, runtime_checkable
 
 import numpy as np
-from numpy._typing import (
-    _8Bit,  # noqa: PLC2701
-    _16Bit,  # noqa: PLC2701
-    _32Bit,  # noqa: PLC2701
-    _64Bit,  # noqa: PLC2701
-    _96Bit,  # noqa: PLC2701
-    _128Bit,  # noqa: PLC2701
+from numpy._typing import (  # noqa: PLC2701
+    _8Bit,
+    _16Bit,
+    _32Bit,
+    _64Bit,
+    _96Bit,
+    _128Bit,
 )
 
 from optype._utils import set_module
