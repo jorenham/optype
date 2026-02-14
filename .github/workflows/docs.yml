@@ -2,7 +2,7 @@ name: deploy docs
 
 on:
   push:
-    branches: [master]
+    branches: [$default-branch]
     paths:
       - "docs/**"
       - ".github/workflows/docs.yml"
@@ -15,18 +15,23 @@ permissions:
   pages: write
   id-token: write
 
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
 
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - uses: actions/configure-pages@v5.0.0
-
       - uses: actions/checkout@v6.0.2
+
+      - uses: actions/configure-pages@v5.0.0
 
       - uses: astral-sh/setup-uv@v7.3.0
 
