@@ -6,6 +6,7 @@ site_url = "https://jorenham.github.io/optype"
 repo_url = "https://github.com/jorenham/optype"
 docs_dir = "docs"
 site_dir = "site"
+extra_javascript = ["scripts/posthog.js"]
 
 # nav
 
