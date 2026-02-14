@@ -1,0 +1,48 @@
+name: deploy docs
+
+on:
+  push:
+    branches: [$default-branch]
+    paths:
+      - "docs/**"
+      - ".github/workflows/docs.yml"
+      - "zensical.toml"
+      - "uv.lock"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - uses: actions/configure-pages@v5.0.0
+
+      - uses: astral-sh/setup-uv@v7.3.0
+
+      - name: build
+        run: uv run --only-group=doc zensical build --clean
+
+      - name: upload artifact
+        uses: actions/upload-pages-artifact@v4.0.0
+        with:
+          path: site
+
+      - name: deploy
+        id: deployment
+        uses: actions/deploy-pages@v4.0.5
