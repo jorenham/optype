@@ -1,279 +1,224 @@
 # Low-level Interfaces
 
-Low-level NumPy protocols and interfaces for advanced array operations.
+Within `optype.numpy` there are several `Can*` (single-method) and `Has*`
+(single-attribute) protocols, related to the `__array_*__` dunders of the
+NumPy Python API.
+These typing protocols are, just like the `optype.Can*` and `optype.Has*` ones,
+runtime-checkable and extensible (i.e. not `@final`).
 
-## Overview
+!!! tip
 
-NumPy provides several special methods and attributes that enable objects to integrate deeply with NumPy's ecosystem. These protocols are used for advanced array operations, universal functions, and custom array types.
+    All type parameters of these protocols can be omitted, which is equivalent
+    to passing its upper type bound.
 
-## Array Protocol Methods
+<table>
+    <tr>
+        <th>Protocol type signature</th>
+        <th>Implements</th>
+        <th>NumPy docs</th>
+    </tr>
+    <tr>
+<td>
 
-### CanArray
-
-Implements the `__array__` protocol for converting objects to arrays:
-
-```python
+```{ .py .no-copy .no-select }
 class CanArray[
     ND: tuple[int, ...] = ...,
     ST: np.generic = ...,
-]:
-    def __array__(self, dtype: DType[RT] | None = None) -> Array[ND, RT]: ...
+]: ...
 ```
 
-**Purpose**: Enable conversion to NumPy array via `np.asarray()` or `np.array()`
+</td>
+<td>
 
-**Usage**:
+<!-- blacken-docs:off -->
 
-```python
-import numpy as np
-import optype.numpy as onp
-
-class MyMatrix(onp.CanArray[tuple[int, int], np.float64]):
-    def __init__(self, data):
-        self._data = np.asarray(data, dtype=float)
-    
-    def __array__(self, dtype=None):
-        if dtype is None:
-            return self._data
-        return np.asarray(self._data, dtype=dtype)
-
-# Works with NumPy functions
-m = MyMatrix([[1, 2], [3, 4]])
-arr = np.asarray(m)  # Calls __array__()
+```{ .py .no-copy .no-select }
+def __array__[RT = ST](
+    _,
+    dtype: DType[RT] | None = ...,
+) -> Array[ND, RT]
 ```
 
-### CanArrayUFunc
+<!-- blacken-docs:on -->
 
-Implements the `__array_ufunc__` protocol (NEP 13):
+</td>
+<td>
+<a href="https://numpy.org/doc/stable/user/basics.interoperability.html#the-array-method">User Guide: Interoperability with NumPy</a>
+</td>
+    </tr>
+    <tr><td colspan="3"></td></tr>
+    <tr>
+<td>
 
-```python
+```{ .py .no-copy .no-select }
 class CanArrayUFunc[
     U: UFunc = ...,
     R: object = ...,
-]:
-    def __array_ufunc__(
-        self,
-        ufunc: U,
-        method: LiteralString,
-        *args: object,
-        **kwargs: object,
-    ) -> R: ...
+]: ...
 ```
 
-**Purpose**: Override universal function behavior on custom types
+</td>
+<td>
 
-**Usage**:
-
-```python
-import numpy as np
-import optype.numpy as onp
-
-class Quantity(onp.CanArrayUFunc[np.ufunc, "Quantity"]):
-    def __init__(self, value, unit):
-        self.value = value
-        self.unit = unit
-    
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        if method == '__call__':
-            # Handle element-wise operations
-            values = [x.value if isinstance(x, Quantity) else x
-                     for x in inputs]
-            result = ufunc(*values, **kwargs)
-            return Quantity(result, self.unit)
-        return NotImplemented
-
-# Use with ufuncs
-q1 = Quantity(3.0, 'm')
-q2 = Quantity(4.0, 'm')
-result = np.add(q1, q2)  # Calls __array_ufunc__
+```{ .py .no-copy .no-select }
+def __array_ufunc__(
+    _,
+    ufunc: U,
+    method: LiteralString,
+    *args: object,
+    **kwargs: object,
+) -> R: ...
 ```
 
-### CanArrayFunction
+</td>
+<td>
+<a href="https://numpy.org/neps/nep-0013-ufunc-overrides.html">NEP 13</a>
+</td>
+    </tr>
+    <tr><td colspan="3"></td></tr>
+    <tr>
+<td>
 
-Implements the `__array_function__` protocol (NEP 18):
-
-```python
+```{ .py .no-copy .no-select }
 class CanArrayFunction[
     F: CanCall[..., object] = ...,
-    R: object = ...,
-]:
-    def __array_function__(
-        self,
-        func: F,
-        types: CanIterSelf[type[CanArrayFunction]],
-        args: tuple[object, ...],
-        kwargs: Mapping[str, object],
-    ) -> R: ...
+    R = object,
+]: ...
 ```
 
-**Purpose**: Intercept calls to NumPy functions for custom array types
+</td>
+<td>
 
-**Usage**:
-
-```python
-import numpy as np
-import optype.numpy as onp
-
-class MaskedArray(onp.CanArrayFunction[object, object]):
-    def __init__(self, data, mask):
-        self.data = np.asarray(data)
-        self.mask = np.asarray(mask, dtype=bool)
-    
-    def __array_function__(self, func, types, args, kwargs):
-        if func is np.mean:
-            # Custom mean for masked data
-            return self.data[~self.mask].mean()
-        return NotImplemented
-
-# Override NumPy functions
-ma = MaskedArray([1, 2, 3], [False, True, False])
-mean = np.mean(ma)  # Uses custom implementation
+```{ .py .no-copy .no-select }
+def __array_function__(
+    _,
+    func: F,
+    types: CanIterSelf[type[CanArrayFunction]],
+    args: tuple[object, ...],
+    kwargs: Mapping[str, object],
+) -> R: ...
 ```
 
-### CanArrayFinalize
+</td>
+<td>
+<a href="https://numpy.org/neps/nep-0018-array-function-protocol.html">NEP 18</a>
+</td>
+    </tr>
+    <tr><td colspan="3"></td></tr>
+    <tr>
+<td>
 
-Implements the `__array_finalize__` protocol:
-
-```python
-class CanArrayFinalize[T: object = ...]:
-    def __array_finalize__(self, obj: T) -> None: ...
+```{ .py .no-copy .no-select }
+class CanArrayFinalize[
+    T: object = ...,
+]: ...
 ```
 
-**Purpose**: Called after array creation during subclassing
+</td>
+<td>
 
-**Usage**:
-
-```python
-import numpy as np
-
-class SpecialArray(np.ndarray):
-    def __new__(cls, input_array):
-        obj = np.asarray(input_array).view(cls)
-        obj.special_attr = None
-        return obj
-    
-    def __array_finalize__(self, obj):
-        if obj is None:
-            return
-        self.special_attr = getattr(obj, 'special_attr', None)
+```{ .py .no-copy .no-select }
+def __array_finalize__(_, obj: T): ...
 ```
 
-### CanArrayWrap
+</td>
+<td>
+<a href="https://numpy.org/doc/stable/user/basics.subclassing.html#the-role-of-array-finalize">User Guide: Subclassing ndarray</a>
+</td>
+    </tr>
+    <tr><td colspan="3"></td></tr>
+    <tr>
+<td>
 
-Implements the `__array_wrap__` protocol:
-
-```python
-class CanArrayWrap:
-    def __array_wrap__(
-        self,
-        array: Array[ND, ST],
-        context: tuple | None = None,
-        return_scalar: bool = False,
-    ) -> Self | Array[ND, ST]: ...
+```{ .py .no-copy .no-select }
+class CanArrayWrap: ...
 ```
 
-**Purpose**: Control the output type of ufuncs and array operations
+</td>
+<td>
 
-## Array Interface Attributes
+<!-- blacken-docs:off -->
 
-### HasArrayInterface
-
-Provides the `__array_interface__` attribute:
-
-```python
-class HasArrayInterface[V: Mapping[str, object] = ...]:
-    __array_interface__: V
+```{ .py .no-copy .no-select }
+def __array_wrap__[ND, ST](
+    _,
+    array: Array[ND, ST],
+    context: (...) | None = ...,
+    return_scalar: bool = ...,
+) -> Self | Array[ND, ST]
 ```
 
-**Purpose**: Expose memory layout and data buffer information
+<!-- blacken-docs:on -->
 
-**Interface structure**:
+</td>
+<td>
+<a href="https://numpy.org/doc/stable/reference/arrays.classes.html#numpy.class.__array_wrap__">API: Standard array subclasses</a>
+</td>
+    </tr>
+    <tr><td colspan="3"></td></tr>
+    <tr>
+<td>
 
-```python
-{
-    'shape': (rows, cols),
-    'typestr': '<f8',  # dtype string
-    'data': (data_ptr, False),
-    'strides': (stride1, stride2),
-    'version': 3,
-}
+```{ .py .no-copy .no-select }
+class HasArrayInterface[
+    V: Mapping[str, object] = ...,
+]: ...
 ```
 
-### HasArrayPriority
+</td>
+<td>
 
-Provides the `__array_priority__` attribute:
-
-```python
-class HasArrayPriority:
-    __array_priority__: float
+```{ .py .no-copy .no-select }
+__array_interface__: V
 ```
 
-**Purpose**: Control which object's method takes precedence in operations
+</td>
+<td>
+<a href="https://numpy.org/doc/stable/reference/arrays.interface.html#array-interface-protocol">API: The array interface protocol</a>
+</td>
+    </tr>
+    <tr><td colspan="3"></td></tr>
+    <tr>
+<td>
 
-**Convention**:
-
-- Python scalars: 0
-- Arrays: 0
-- Matrix: 15
-- Quantity/custom: 20+
-
-### HasDType
-
-Provides the `dtype` attribute:
-
-```python
-class HasDType[DT: DType = ...]:
-    dtype: DT
+```{ .py .no-copy .no-select }
+class HasArrayPriority: ...
 ```
 
-**Purpose**: Expose the data type of an object's elements
+</td>
+<td>
 
-## Integration Examples
-
-### Complete Custom Array Type
-
-```python
-import numpy as np
-import optype.numpy as onp
-
-class CustomArray(onp.CanArray[tuple[int, ...], np.generic] &
-                  onp.CanArrayUFunc[np.ufunc, "CustomArray"] &
-                  onp.HasDType[np.dtype[np.float64]]):
-    def __init__(self, data):
-        self._array = np.asarray(data, dtype=np.float64)
-    
-    @property
-    def dtype(self) -> np.dtype[np.float64]:
-        return self._array.dtype
-    
-    def __array__(self, dtype=None):
-        if dtype is None:
-            return self._array
-        return np.asarray(self._array, dtype=dtype)
-    
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        if method == '__call__':
-            args = [x._array if isinstance(x, CustomArray) else x
-                   for x in inputs]
-            result = ufunc(*args, **kwargs)
-            return CustomArray(result)
-        return NotImplemented
-
-# Usage
-c1 = CustomArray([1, 2, 3])
-c2 = CustomArray([4, 5, 6])
-result = np.add(c1, c2)  # Type-safe!
+```{ .py .no-copy .no-select }
+__array_priority__: float
 ```
 
-## References
+</td>
+<td>
 
-- [NumPy Enhancement Proposals (NEP 13, NEP 18, NEP 29)](https://numpy.org/neps/)
-- [NumPy C-API Array Interface Protocol](https://numpy.org/doc/stable/reference/arrays.interface.html)
-- [NumPy Subclassing ndarray](https://numpy.org/doc/stable/user/basics.subclassing.html)
+<a href="https://numpy.org/doc/stable/reference/arrays.classes.html#numpy.class.__array_priority__">API: Standard array subclasses</a>
 
-## Related Types
+</td>
+    </tr>
+    <tr><td colspan="3"></td></tr>
+    <tr>
+<td>
 
-- **[UFunc](ufunc.md)**: Universal function type annotations
-- **[Aliases](aliases.md)**: Array type aliases
-- **[Array-likes](array-likes.md)**: Array-like protocols
-- **[DType](dtype.md)**: Data type specifications
+```{ .py .no-copy .no-select }
+class HasDType[
+    DT: DType = ...,
+]: ...
+```
+
+</td>
+<td>
+
+```{ .py .no-copy .no-select }
+dtype: DT
+```
+
+</td>
+<td>
+<a href="https://numpy.org/doc/stable/reference/arrays.dtypes.html#specifying-and-constructing-data-types">API: Specifying and constructing data types</a>
+</td>
+    </tr>
+</table>

@@ -1,208 +1,177 @@
 # Inplace Operations
 
-Protocols for in-place assignment operators (`+=`, `-=`, `*=`, etc.).
+Similar to the reflected ops, the inplace/augmented ops are prefixed with
+`CanI`, namely:
 
-## Overview
+<table>
+    <tr>
+        <th colspan="3" align="center">operator</th>
+        <th colspan="2" align="center">operand</th>
+    </tr>
+    <tr>
+        <td>expression</td>
+        <th>function</th>
+        <th>type</th>
+        <td>method</td>
+        <th>types</th>
+    </tr>
+    <tr>
+        <td><code>_ += x</code></td>
+        <td><code>do_iadd</code></td>
+        <td><code>DoesIAdd</code></td>
+        <td><code>__iadd__</code></td>
+        <td>
+            <code>CanIAdd[-T, +R]</code><br>
+            <code>CanIAddSelf[-T]</code><br>
+            <code>CanIAddSame[-T?]</code>
+        </td>
+    </tr>
+    <tr>
+        <td><code>_ -= x</code></td>
+        <td><code>do_isub</code></td>
+        <td><code>DoesISub</code></td>
+        <td><code>__isub__</code></td>
+        <td>
+            <code>CanISub[-T, +R]</code><br>
+            <code>CanISubSelf[-T]</code><br>
+            <code>CanISubSame[-T?]</code>
+        </td>
+    </tr>
+    <tr>
+        <td><code>_ *= x</code></td>
+        <td><code>do_imul</code></td>
+        <td><code>DoesIMul</code></td>
+        <td><code>__imul__</code></td>
+        <td>
+            <code>CanIMul[-T, +R]</code><br>
+            <code>CanIMulSelf[-T]</code><br>
+            <code>CanIMulSame[-T?]</code>
+        </td>
+    </tr>
+    <tr>
+        <td><code>_ @= x</code></td>
+        <td><code>do_imatmul</code></td>
+        <td><code>DoesIMatmul</code></td>
+        <td><code>__imatmul__</code></td>
+        <td>
+            <code>CanIMatmul[-T, +R]</code><br>
+            <code>CanIMatmulSelf[-T]</code><br>
+            <code>CanIMatmulSame[-T?]</code>
+        </td>
+    </tr>
+    <tr>
+        <td><code>_ /= x</code></td>
+        <td><code>do_itruediv</code></td>
+        <td><code>DoesITruediv</code></td>
+        <td><code>__itruediv__</code></td>
+        <td>
+            <code>CanITruediv[-T, +R]</code><br>
+            <code>CanITruedivSelf[-T]</code><br>
+            <code>CanITruedivSame[-T?]</code>
+        </td>
+    </tr>
+    <tr>
+        <td><code>_ //= x</code></td>
+        <td><code>do_ifloordiv</code></td>
+        <td><code>DoesIFloordiv</code></td>
+        <td><code>__ifloordiv__</code></td>
+        <td>
+            <code>CanIFloordiv[-T, +R]</code><br>
+            <code>CanIFloordivSelf[-T]</code><br>
+            <code>CanIFloordivSame[-T?]</code>
+        </td>
+    </tr>
+    <tr>
+        <td><code>_ %= x</code></td>
+        <td><code>do_imod</code></td>
+        <td><code>DoesIMod</code></td>
+        <td><code>__imod__</code></td>
+        <td>
+            <code>CanIMod[-T, +R]</code><br>
+            <code>CanIModSelf[-T]</code><br>
+            <code>CanIModSame[-T?]</code>
+        </td>
+    </tr>
+    <tr>
+        <td><code>_ **= x</code></td>
+        <td><code>do_ipow</code></td>
+        <td><code>DoesIPow</code></td>
+        <td><code>__ipow__</code></td>
+        <td>
+            <code>CanIPow[-T, +R]</code><br>
+            <code>CanIPowSelf[-T]</code><br>
+            <code>CanIPowSame[-T?]</code>
+        </td>
+    </tr>
+    <tr>
+        <td><code>_ <<= x</code></td>
+        <td><code>do_ilshift</code></td>
+        <td><code>DoesILshift</code></td>
+        <td><code>__ilshift__</code></td>
+        <td>
+            <code>CanILshift[-T, +R]</code><br>
+            <code>CanILshiftSelf[-T]</code><br>
+            <code>CanILshiftSame[-T?]</code>
+        </td>
+    </tr>
+    <tr>
+        <td><code>_ >>= x</code></td>
+        <td><code>do_irshift</code></td>
+        <td><code>DoesIRshift</code></td>
+        <td><code>__irshift__</code></td>
+        <td>
+            <code>CanIRshift[-T, +R]</code><br>
+            <code>CanIRshiftSelf[-T]</code><br>
+            <code>CanIRshiftSame[-T?]</code>
+        </td>
+    </tr>
+    <tr>
+        <td><code>_ &= x</code></td>
+        <td><code>do_iand</code></td>
+        <td><code>DoesIAnd</code></td>
+        <td><code>__iand__</code></td>
+        <td>
+            <code>CanIAnd[-T, +R]</code><br>
+            <code>CanIAndSelf[-T]</code><br>
+            <code>CanIAndSame[-T?]</code>
+        </td>
+    </tr>
+    <tr>
+        <td><code>_ ^= x</code></td>
+        <td><code>do_ixor</code></td>
+        <td><code>DoesIXor</code></td>
+        <td><code>__ixor__</code></td>
+        <td>
+            <code>CanIXor[-T, +R]</code><br>
+            <code>CanIXorSelf[-T]</code><br>
+            <code>CanIXorSame[-T?]</code>
+        </td>
+    </tr>
+    <tr>
+        <td><code>_ |= x</code></td>
+        <td><code>do_ior</code></td>
+        <td><code>DoesIOr</code></td>
+        <td><code>__ior__</code></td>
+        <td>
+            <code>CanIOr[-T, +R]</code><br>
+            <code>CanIOrSelf[-T]</code><br>
+            <code>CanIOrSame[-T?]</code>
+        </td>
+    </tr>
+</table>
 
-In-place operations allow objects to modify themselves in place and return the modified result. These operations are prefixed with `CanI` in `optype`. Each in-place operation has three protocol variants to handle different return value scenarios.
+These inplace operators usually return themselves (after some in-place mutation).
+But unfortunately, it currently isn't possible to use `Self` for this (i.e.
+something like `type MyAlias[T] = optype.CanIAdd[T, Self]` isn't allowed).
+So to help ease this unbearable pain, `optype` comes equipped with ready-made
+aliases for you to use. They bear the same name, with an additional `*Self`
+suffix, e.g. `optype.CanIAddSelf[T]`.
 
-## Protocol Variants
+!!! note
 
-For each in-place operation, `optype` provides three protocol variants:
+    The `CanI*Self` protocols method return `typing.Self` and optionally accept `T`. The
+    `CanI*Same` protocols also return `Self`, but instead accept `rhs: Self | T`. Since
+    `T` defaults to `Never`, it will accept `rhs: Self | Never` if `T` is not provided,
+    which is equivalent to `rhs: Self`.
 
-1. **`CanI*[-T, +R]`**: Standard form accepting operand of type `T` and returning type `R`
-2. **`CanI*Self[-T]`**: Returns `Self` after mutation
-3. **`CanI*Same[-T?]`**: Accepts `Self | T` and returns `Self`
-
-| Operator  | Function       | Method          | Protocols                                                                   |
-| --------- | -------------- | --------------- | --------------------------------------------------------------------------- |
-| `_ += x`  | `do_iadd`      | `__iadd__`      | `CanIAdd[-T, +R]`<br>`CanIAddSelf[-T]`<br>`CanIAddSame[-T?]`                |
-| `_ -= x`  | `do_isub`      | `__isub__`      | `CanISub[-T, +R]`<br>`CanISubSelf[-T]`<br>`CanISubSame[-T?]`                |
-| `_ *= x`  | `do_imul`      | `__imul__`      | `CanIMul[-T, +R]`<br>`CanIMulSelf[-T]`<br>`CanIMulSame[-T?]`                |
-| `_ @= x`  | `do_imatmul`   | `__imatmul__`   | `CanIMatmul[-T, +R]`<br>`CanIMatmulSelf[-T]`<br>`CanIMatmulSame[-T?]`       |
-| `_ /= x`  | `do_itruediv`  | `__itruediv__`  | `CanITruediv[-T, +R]`<br>`CanITruedivSelf[-T]`<br>`CanITruedivSame[-T?]`    |
-| `_ //= x` | `do_ifloordiv` | `__ifloordiv__` | `CanIFloordiv[-T, +R]`<br>`CanIFloordivSelf[-T]`<br>`CanIFloordivSame[-T?]` |
-| `_ %= x`  | `do_imod`      | `__imod__`      | `CanIMod[-T, +R]`<br>`CanIModSelf[-T]`<br>`CanIModSame[-T?]`                |
-| `_ **= x` | `do_ipow`      | `__ipow__`      | `CanIPow[-T, +R]`<br>`CanIPowSelf[-T]`<br>`CanIPowSame[-T?]`                |
-| `_ <<= x` | `do_ilshift`   | `__ilshift__`   | `CanILshift[-T, +R]`<br>`CanILshiftSelf[-T]`<br>`CanILshiftSame[-T?]`       |
-| `_ >>= x` | `do_irshift`   | `__irshift__`   | `CanIRshift[-T, +R]`<br>`CanIRshiftSelf[-T]`<br>`CanIRshiftSame[-T?]`       |
-| `_ &= x`  | `do_iand`      | `__iand__`      | `CanIAnd[-T, +R]`<br>`CanIAndSelf[-T]`<br>`CanIAndSame[-T?]`                |
-| `_ ^= x`  | `do_ixor`      | `__ixor__`      | `CanIXor[-T, +R]`<br>`CanIXorSelf[-T]`<br>`CanIXorSame[-T?]`                |
-| `_ \|= x` | `do_ior`       | `__ior__`       | `CanIOr[-T, +R]`<br>`CanIOrSelf[-T]`<br>`CanIOrSame[-T?]`                   |
-
-## Protocol Details
-
-```python
-import optype as op
-```
-
-### Standard Form: `CanI*[-T, +R]`
-
-Accepts an operand of type `T` and returns type `R`.
-
-```python
-def add_inplace(lst: op.CanIAdd[int, list], value: int) -> list:
-    lst += value
-    return lst
-```
-
-### Self Form: `CanI*Self[-T]`
-
-Returns `typing.Self` after modification. Useful for methods that mutate an object and return itself.
-
-```python
-class Counter(op.CanIAddSelf[int]):
-    def __init__(self, value: int = 0):
-        self.value = value
-    
-    def __iadd__(self, other: int) -> "Counter":
-        self.value += other
-        return self
-```
-
-### Same Form: `CanI*Same[-T?]`
-
-Accepts `Self | T` and returns `Self`. This is useful for operations that accept both instances of the same type and other types.
-
-```python
-class Vector(op.CanIAddSame[int]):
-    def __init__(self, x: int, y: int):
-        self.x = x
-        self.y = y
-    
-    def __iadd__(self, other: "Vector | int") -> "Vector":
-        if isinstance(other, Vector):
-            self.x += other.x
-            self.y += other.y
-        else:
-            self.x += other
-            self.y += other
-        return self
-```
-
-## Examples
-
-### Mutable List-like Container
-
-```python
-class MutableList(op.CanIAddSelf[list], op.CanISubSelf[object]):
-    def __init__(self, items: list):
-        self.items = items
-    
-    def __iadd__(self, other: list) -> "MutableList":
-        self.items.extend(other)
-        return self
-    
-    def __isub__(self, item: object) -> "MutableList":
-        if item in self.items:
-            self.items.remove(item)
-        return self
-
-
-ml = MutableList([1, 2, 3])
-ml += [4, 5]
-print(ml.items)  # [1, 2, 3, 4, 5]
-ml -= 2
-print(ml.items)  # [1, 3, 4, 5]
-```
-
-### Numeric Type with Multiple Operations
-
-```python
-class Decimal(op.CanIAddSelf[int], op.CanISubSelf[int],
-              op.CanIMulSelf[int], op.CanITruedivSelf[int]):
-    def __init__(self, value: float):
-        self.value = value
-    
-    def __iadd__(self, other: int) -> "Decimal":
-        self.value += other
-        return self
-    
-    def __isub__(self, other: int) -> "Decimal":
-        self.value -= other
-        return self
-    
-    def __imul__(self, other: int) -> "Decimal":
-        self.value *= other
-        return self
-    
-    def __itruediv__(self, other: int) -> "Decimal":
-        self.value /= other
-        return self
-    
-    def __repr__(self) -> str:
-        return f"Decimal({self.value})"
-
-
-d = Decimal(10)
-d += 5
-d *= 2
-d /= 4
-print(d)  # Decimal(7.5)
-```
-
-### Bitwise Operations
-
-```python
-class BitFlags(op.CanIAndSelf[int], op.CanIOrSelf[int], op.CanIXorSelf[int]):
-    def __init__(self, value: int):
-        self.value = value
-    
-    def __iand__(self, other: int) -> "BitFlags":
-        self.value &= other
-        return self
-    
-    def __ior__(self, other: int) -> "BitFlags":
-        self.value |= other
-        return self
-    
-    def __ixor__(self, other: int) -> "BitFlags":
-        self.value ^= other
-        return self
-    
-    def __repr__(self) -> str:
-        return f"BitFlags({bin(self.value)})"
-
-
-flags = BitFlags(0b1010)
-flags |= 0b0101  # OR
-print(flags)     # BitFlags(0b1111)
-flags &= 0b1100  # AND
-print(flags)     # BitFlags(0b1100)
-```
-
-### Generic In-place Operation Handler
-
-```python
-from typing import TypeVar
-
-T = TypeVar("T")
-
-def accumulate(obj: op.CanIAdd[T, object], values: list[T]) -> object:
-    """Accumulate values using in-place addition."""
-    for value in values:
-        obj += value
-    return obj
-
-
-result = accumulate([1, 2], [3, 4, 5])
-print(result)  # [1, 2, 3, 4, 5]
-```
-
-## Type Parameters
-
-- **Operand (`-T`)**: Contravariant - accepts operands of this type or supertypes
-- **Result (`+R`)**: Covariant - returns this type or subtypes
-- **`Self`**: Returns the same type as the object being modified
-
-## Notes
-
-- In-place operations should typically modify the object and return it (or `Self`)
-- If an in-place operation is not defined, Python falls back to the corresponding binary operation
-- The `CanI*Self` aliases exist because `Self` cannot be used directly in generic aliases in current Python
-- The `CanI*Same` protocols (available since 0.12.1) default `T` to `Never`, meaning they accept only `Self` if `T` is not specified
-
-## Related Protocols
-
-- **[Binary Operations](binary.md)**: For non-mutating binary operators
-- **[Reflected Operations](reflected.md)**: For reflected/right-hand operators
+    *Available since `0.12.1`*

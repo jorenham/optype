@@ -1,77 +1,52 @@
-# Attributes
+# Attribute Access
 
-Protocols for accessing and manipulating object attributes.
-
-## Overview
-
-The `optype` library provides two categories of attribute-related protocols:
-
-1. **`Can*` Protocols** - For attribute operations like `getattr()`, `setattr()`, and `delattr()`
-2. **`Has*` Protocols** - For checking the presence of special attributes like `__name__`, `__dict__`, `__doc__`, etc.
-
-## Attribute Operations
-
-These protocols describe the operations for getting, setting, and deleting attributes.
-
-| Operation          | Protocol                    |
-| ------------------ | --------------------------- |
-| `getattr(_, k)`    | `CanGetattr[+V = object]`   |
-| `setattr(_, k, v)` | `CanSetattr[-V = object]`   |
-| `delattr(_, k)`    | `CanDelattr`                |
-| `dir(_)`           | `CanDir[+R: Iterable[str]]` |
-
-## Attribute Presence Protocols
-
-The `Has*` protocols check for the presence of special attributes:
-
-| Attribute         | Protocol         |
-| ----------------- | ---------------- |
-| `__name__`        | `HasName`        |
-| `__doc__`         | `HasDoc`         |
-| `__dict__`        | `HasDict`        |
-| `__module__`      | `HasModule`      |
-| `__qualname__`    | `HasQualname`    |
-| `__annotations__` | `HasAnnotations` |
-| `__class__`       | `HasClass`       |
-
-## Examples
-
-```python
-import optype as op
-```
-
-### Getting Attributes
-
-```python
-def get_name(obj: op.CanGetattr[str]) -> str:
-    """Get the name of an object."""
-    return getattr(obj, '__name__')
-```
-
-### Setting Attributes
-
-```python
-def set_metadata(obj: op.CanSetattr[dict], metadata: dict) -> None:
-    """Set metadata on an object."""
-    setattr(obj, '__metadata__', metadata)
-```
-
-### Checking Attribute Presence
-
-```python
-from typing import Protocol
-
-class HasNameAndDoc(op.HasName, op.HasDoc, Protocol): ...
-
-def describe(obj: HasNameAndDoc) -> str:
-    """Get name and docstring."""
-    return f"{obj.__name__}: {obj.__doc__}"
-```
-
-### Directory Listing
-
-```python
-def list_public_attrs(obj: op.CanDir[list]) -> list[str]:
-    """List non-private attributes."""
-    return [name for name in dir(obj) if not name.startswith('_')]
-```
+<table>
+    <tr>
+        <th colspan="3" align="center">operator</th>
+        <th colspan="2" align="center">operand</th>
+    </tr>
+    <tr>
+        <td>expression</td>
+        <th>function</th>
+        <th>type</th>
+        <td>method</td>
+        <th>type</th>
+    </tr>
+    <tr>
+        <td>
+            <code>v = _.k</code> or<br/>
+            <code>v = getattr(_, k)</code>
+        </td>
+        <td><code>do_getattr</code></td>
+        <td><code>DoesGetattr</code></td>
+        <td><code>__getattr__</code></td>
+        <td><code>CanGetattr[+V=object]</code></td>
+    </tr>
+    <tr>
+        <td>
+            <code>_.k = v</code> or<br/>
+            <code>setattr(_, k, v)</code>
+        </td>
+        <td><code>do_setattr</code></td>
+        <td><code>DoesSetattr</code></td>
+        <td><code>__setattr__</code></td>
+        <td><code>CanSetattr[-V=object]</code></td>
+    </tr>
+    <tr>
+        <td>
+            <code>del _.k</code> or<br/>
+            <code>delattr(_, k)</code>
+        </td>
+        <td><code>do_delattr</code></td>
+        <td><code>DoesDelattr</code></td>
+        <td><code>__delattr__</code></td>
+        <td><code>CanDelattr</code></td>
+    </tr>
+    <tr>
+        <td><code>dir(_)</code></td>
+        <td><code>do_dir</code></td>
+        <td><code>DoesDir</code></td>
+        <td><code>__dir__</code></td>
+        <td><code>CanDir[+R: Iterable[str]]</code></td>
+    </tr>
+</table>

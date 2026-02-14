@@ -6,6 +6,9 @@ site_url = "https://jorenham.github.io/optype"
 repo_url = "https://github.com/jorenham/optype"
 docs_dir = "docs"
 site_dir = "site"
+
+# nav
+
 [[project.nav]]
 "Home" = "index.md"
 
@@ -23,8 +26,13 @@ site_dir = "site"
   { "NumPy" = ["reference/numpy/index.md", "reference/numpy/shape.md", "reference/numpy/array-likes.md", "reference/numpy/literals.md", "reference/numpy/compat.md", "reference/numpy/random.md", "reference/numpy/dtype.md", "reference/numpy/scalar.md", "reference/numpy/ufunc.md", "reference/numpy/aliases.md", "reference/numpy/low-level.md"] },
 ]
 
+# theme
+
 [project.theme]
 features = [
+  "content.code.annotate",
+  "content.code.copy",
+  "content.code.select",
   "navigation.footer",
   "navigation.path",
   "navigation.prune",
@@ -33,6 +41,7 @@ features = [
   "navigation.tabs",
   "navigation.tracking",
   "navigation.top",
+  "toc.integrate",
 ]
 
 [[project.theme.palette]]
@@ -52,6 +61,8 @@ scheme = "slate"
 toggle.icon = "lucide/moon"
 toggle.name = "Switch to system preference"
 
+# extra
+
 [project.extra]
 repo_url = "https://github.com/jorenham/optype"
 repo_name = "jorenham/optype"
@@ -68,3 +79,18 @@ link = "https://pypi.org/project/optype"
 [[project.extra.social]]
 icon = "simple/condaforge"
 link = "https://anaconda.org/conda-forge/optype"
+
+# markdown extensions
+
+[project.markdown_extensions.tables]
+[project.markdown_extensions.admonition]
+# https://zensical.org/docs/authoring/code-blocks/
+[project.markdown_extensions.pymdownx.highlight]
+anchor_linenums = true
+line_spans = "__span"
+pygments_lang_class = true
+
+[project.markdown_extensions.pymdownx.inlinehilite]
+[project.markdown_extensions.pymdownx.snippets]
+[project.markdown_extensions.pymdownx.superfences]
+[project.markdown_extensions.pymdownx.details]

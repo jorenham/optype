@@ -1,358 +1,55 @@
-# UFunc
+# `UFunc`
 
-Universal function (ufunc) type annotations for NumPy.
+A large portion of NumPy's public API consists of *universal functions*, often
+denoted as [ufuncs][DOC-UFUNC], which are (callable) instances of
+[`np.ufunc`][REF_UFUNC].
 
-## Overview
+!!! tip
 
-Universal functions (ufuncs) are the core of NumPy's vectorized operations. They operate element-wise on arrays and support broadcasting. The `optype.numpy.UFunc` protocol provides comprehensive type annotations for ufuncs.
+    Custom ufuncs can be created using [`np.frompyfunc`][REF_FROMPY], but also
+    through a user-defined class that implements the required attributes and
+    methods (i.e., duck typing).
 
-## Why optype.numpy.UFunc?
+But `np.ufunc` has a big issue; it accepts no type parameters.
+This makes it very difficult to properly annotate its callable signature and
+its literal attributes (e.g. `.nin` and `.identity`).
 
-The built-in `np.ufunc` lacks type parameters, making it impossible to:
-
-- Specify callable signatures precisely
-- Annotate literal attributes (`nin`, `nout`, `identity`)
-- Distinguish between regular and generalized ufuncs
-
-`optype.numpy.UFunc` solves this with a runtime-checkable generic protocol.
-
-## UFunc Type Signature
+This is where `optype.numpy.UFunc` comes into play:
+It's a runtime-checkable generic typing protocol, that has been thoroughly
+type- and unit-tested to ensure compatibility with all of numpy's ufunc
+definitions.
+Its generic type signature looks roughly like:
 
 ```python
 type UFunc[
-    # Callable signature
+    # The type of the (bound) `__call__` method.
     Fn: CanCall = CanCall,
-    # Number of inputs
+    # The types of the `nin` and `nout` (readonly) attributes.
+    # Within numpy these match either `Literal[1]` or `Literal[2]`.
     Nin: int = int,
-    # Number of outputs
     Nout: int = int,
-    # Signature (None for element-wise, string for generalized)
+    # The type of the `signature` (readonly) attribute;
+    # Must be `None` unless this is a generalized ufunc (gufunc), e.g.
+    # `np.matmul`.
     Sig: str | None = str | None,
-    # Identity element
+    # The type of the `identity` (readonly) attribute (used in `.reduce`).
+    # Unless `Nin: Literal[2]`, `Nout: Literal[1]`, and `Sig: None`,
+    # this should always be `None`.
+    # Note that `complex` also includes `bool | int | float`.
     Id: complex | bytes | str | None = float | None,
 ] = ...
 ```
 
-## Type Parameters
-
-```
-import numpy as np
-
-import optype.numpy as onp
-```
-
-### Fn (Function)
-
-Callable signature of the ufunc:
-
-```python
-from typing import Callable
-
-# Binary operation returning same type
-add: onp.UFunc[Callable[[float, float], float], ...]
-
-# Unary operation
-sin: onp.UFunc[Callable[[float], float], ...]
-```
-
-### Nin (Number of Inputs)
-
-Number of input arguments:
-
-```python
-# Unary ufuncs
-sin: onp.UFunc[..., Literal[1], ...]  # 1 input
-
-# Binary ufuncs
-add: onp.UFunc[..., Literal[2], ...]  # 2 inputs
-```
-
-### Nout (Number of Outputs)
-
-Number of output values:
-
-```python
-# Single output
-add: onp.UFunc[..., ..., Literal[1], ...]
-
-# Multiple outputs (like divmod)
-divmod: onp.UFunc[..., Literal[2], Literal[2], ...]
-```
-
-### Sig (Signature)
-
-- **`None`**: Element-wise ufunc (default)
-- **`str`**: Generalized ufunc signature
-
-```python
-# Element-wise ufunc
-add: onp.UFunc[..., ..., ..., None, ...]
-
-# Generalized ufunc (gufunc)
-matmul: onp.UFunc[..., ..., ..., "(m,n),(n,p)->(m,p)", ...]
-```
-
-### Id (Identity Element)
-
-The identity value for reduction operations:
-
-```python
-# Ufuncs with identity
-add: onp.UFunc[..., ..., ..., ..., Literal[0]]  # 0 is identity for addition
-multiply: onp.UFunc[..., ..., ..., ..., Literal[1]]  # 1 for multiplication
-
-# No identity
-maximum: onp.UFunc[..., ..., ..., ..., None]
-```
-
-## Common Ufunc Examples
-
-### Unary Ufuncs
-
-```python
-from typing import Literal, Callable
-
-# Trigonometric
-sin: onp.UFunc[
-    Callable[[float], float],
-    Literal[1],  # 1 input
-    Literal[1],  # 1 output
-    None,        # element-wise
-    None,        # no identity
-]
-
-# Absolute value
-abs: onp.UFunc[
-    Callable[[float], float],
-    Literal[1],
-    Literal[1],
-    None,
-    None,
-]
-```
-
-### Binary Ufuncs
-
-```python
-from typing import Literal, Callable
-
-# Addition
-add: onp.UFunc[
-    Callable[[float, float], float],
-    Literal[2],  # 2 inputs
-    Literal[1],  # 1 output
-    None,        # element-wise
-    Literal[0],  # identity = 0
-]
-
-# Multiplication
-multiply: onp.UFunc[
-    Callable[[float, float], float],
-    Literal[2],
-    Literal[1],
-    None,
-    Literal[1],  # identity = 1
-]
-
-# Maximum (no identity)
-maximum: onp.UFunc[
-    Callable[[float, float], float],
-    Literal[2],
-    Literal[1],
-    None,
-    None,  # no identity
-]
-```
-
-### Generalized Ufuncs (gufuncs)
-
-```python
-from typing import Literal
-
-# Matrix multiplication
-matmul: onp.UFunc[
-    ...,
-    Literal[2],
-    Literal[1],
-    "(m,n),(n,p)->(m,p)",  # signature
-    None,
-]
-
-# Outer product
-outer: onp.UFunc[
-    ...,
-    Literal[2],
-    Literal[1],
-    "(i),(j)->(i,j)",
-    None,
-]
-```
-
-## Ufunc Methods
-
-### Direct Call
-
-```python
-result = np.add(1, 2)  # Calls ufunc directly
-```
-
-### `.reduce()`
-
-Applies ufunc along an axis:
-
-```python
-arr = np.array([1, 2, 3, 4])
-total = np.add.reduce(arr)  # 10 (1+2+3+4)
-```
-
-### `.accumulate()`
-
-Intermediate results of reduction:
-
-```python
-arr = np.array([1, 2, 3, 4])
-cumsum = np.add.accumulate(arr)  # [1, 3, 6, 10]
-```
-
-### `.outer()`
-
-Outer product of two arrays:
-
-```python
-a = np.array([1, 2, 3])
-b = np.array([10, 20])
-result = np.multiply.outer(a, b)
-# [[10, 20],
-#  [20, 40],
-#  [30, 60]]
-```
-
-### `.at()`
-
-In-place operation at specified indices:
-
-```python
-arr = np.array([1, 2, 3, 4, 5])
-np.add.at(arr, [0, 2, 4], 10)
-# arr is now [11, 2, 13, 4, 15]
-```
-
-### `.reduceat()`
-
-Reduce at specified slices:
-
-```python
-arr = np.array([0, 1, 2, 3, 4, 5])
-result = np.add.reduceat(arr, [0, 3, 5])
-# [3, 7, 5]  # sum([0:3]), sum([3:5]), sum([5:])
-```
-
-## Custom Ufuncs
-
-### Using np.frompyfunc
-
-```python
-def my_func(x: float, y: float) -> float:
-    """Custom binary function."""
-    return x ** 2 + y ** 2
-
-# Create ufunc
-ufunc: onp.UFunc = np.frompyfunc(my_func, nin=2, nout=1)
-
-# Use it
-arr1 = np.array([1.0, 2.0, 3.0])
-arr2 = np.array([4.0, 5.0, 6.0])
-result = ufunc(arr1, arr2)
-```
-
-### Duck-Typed Ufunc
-
-```python
-class CustomUFunc(UFunc[Callable[[float], float], int, int, None, None]):
-    """Custom ufunc-like class."""
-    
-    nin = 1
-    nout = 1
-    signature = None
-    identity = None
-    
-    def __call__(self, x: float) -> float:
-        return x * 2
-
-uf = CustomUFunc()
-result = uf(3.14)  # 6.28
-```
-
-## Important Notes
-
-### Method Annotation Limitation
-
-NumPy's ufunc methods (`.at`, `.reduce`, `.reduceat`, `.accumulate`, `.outer`) are incorrectly annotated as `None` attributes in numpy's stubs, even though they're callable methods at runtime. This prevents `optype.numpy.UFunc` from properly typing them.
-
-**Workaround**: Cast to specific callable when needed:
-
-```python
-from typing import cast, Callable
-
-reduce_fn = cast(Callable, np.add.reduce)
-result = reduce_fn([1, 2, 3, 4])
-```
-
-### Identity Requirements
-
-The `identity` attribute is only valid when:
-
-- `Nin == Literal[2]`
-- `Nout == Literal[1]`
-- `Sig == None` (not a gufunc)
-
-## Runtime Checking
-
-```python
-def apply_ufunc(func: onp.UFunc, arr: np.ndarray) -> np.ndarray:
-    """Apply any ufunc to an array."""
-    if isinstance(func, np.ufunc):
-        return func(arr)
-    raise TypeError("Not a ufunc")
-
-# Usage
-result = apply_ufunc(np.sin, np.array([0, np.pi/2, np.pi]))
-```
-
-## Common NumPy Ufuncs
-
-### Mathematical
-
-- **Arithmetic**: `add`, `subtract`, `multiply`, `divide`, `power`
-- **Trigonometric**: `sin`, `cos`, `tan`, `arcsin`, `arccos`, `arctan`
-- **Hyperbolic**: `sinh`, `cosh`, `tanh`
-- **Exponential**: `exp`, `log`, `log10`, `log2`
-- **Rounding**: `floor`, `ceil`, `trunc`, `round`
-
-### Comparison
-
-- `greater`, `greater_equal`, `less`, `less_equal`
-- `equal`, `not_equal`
-- `maximum`, `minimum`
-
-### Logical
-
-- `logical_and`, `logical_or`, `logical_not`, `logical_xor`
-
-### Bitwise
-
-- `bitwise_and`, `bitwise_or`, `bitwise_xor`, `invert`
-- `left_shift`, `right_shift`
-
-## Related Types
-
-- **[Low-level](low-level.md)**: `CanArrayUFunc` protocol
-- **[Aliases](aliases.md)**: Array type aliases
-- **[Array-likes](array-likes.md)**: Array-like types
-- **[Scalar](scalar.md)**: Scalar type annotations
-
-## References
-
-- [NumPy UFunc Documentation](https://numpy.org/doc/stable/reference/ufuncs.html)
-- [NumPy Generalized UFuncs](https://numpy.org/doc/stable/reference/c-api/generalized-ufuncs.html)
-- [NEP 13: onp.UFunc Overrides](https://numpy.org/neps/nep-0013-ufunc-overrides.html)
+!!! note
+
+    On older NumPy versions the extra callable methods of `np.ufunc` (`at`, `reduce`,
+    `reduceat`, `accumulate`, and `outer`), are incorrectly annotated (as `None`
+    *attributes*, even though at runtime they're methods that raise a
+    `ValueError` when called).
+    Until optype drops support for these older NumPy versions, it won't be possible to
+    properly type these in `optype.numpy.UFunc`; doing so would make it incompatible with
+    NumPy's ufuncs.
+
+[DOC-UFUNC]: https://numpy.org/doc/stable/reference/ufuncs.html
+[REF_UFUNC]: https://numpy.org/doc/stable/reference/generated/numpy.ufunc.html
+[REF_FROMPY]: https://numpy.org/doc/stable/reference/generated/numpy.frompyfunc.html

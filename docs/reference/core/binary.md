@@ -1,146 +1,200 @@
 # Binary Operations
 
-Protocols for Python's binary operators (`+`, `-`, `*`, `/`, `@`, `%`, `**`, `<<`, `>>`, `&`, `^`, `|`).
+In the [Python docs][NT], these are referred to as "arithmetic operations".
+But the operands aren't limited to numeric types, and because the
+operations aren't required to be commutative, might be non-deterministic, and
+could have side-effects.
+Classifying them "arithmetic" is, at the very least, a bit of a stretch.
 
-## Overview
+[NT]: https://docs.python.org/3/reference/datamodel.html#emulating-numeric-types
 
-In the [Python docs](https://docs.python.org/3/library/stdtypes.html#numeric-types-int-float-complex), these are referred to as "arithmetic operations". But the operands aren't limited to numeric types, and because the operations aren't required to be commutative, might be non-deterministic, and could have side-effects. Classifying them "arithmetic" is, at the very least, a bit of a stretch.
+<table>
+    <tr>
+        <th colspan="3" align="center">operator</th>
+        <th colspan="2" align="center">operand</th>
+    </tr>
+    <tr>
+        <td>expression</td>
+        <th>function</th>
+        <th>type</th>
+        <td>method</td>
+        <th>type</th>
+    </tr>
+    <tr>
+        <td><code>_ + x</code></td>
+        <td><code>do_add</code></td>
+        <td><code>DoesAdd</code></td>
+        <td><code>__add__</code></td>
+        <td>
+            <code>CanAdd[-T, +R = T]</code><br>
+            <code>CanAddSelf[-T]</code><br>
+            <code>CanAddSame[-T?, +R?]</code>
+        </td>
+    </tr>
+    <tr>
+        <td><code>_ - x</code></td>
+        <td><code>do_sub</code></td>
+        <td><code>DoesSub</code></td>
+        <td><code>__sub__</code></td>
+        <td>
+            <code>CanSub[-T, +R = T]</code><br>
+            <code>CanSubSelf[-T]</code><br>
+            <code>CanSubSame[-T?, +R?]</code>
+        </td>
+    </tr>
+    <tr>
+        <td><code>_ * x</code></td>
+        <td><code>do_mul</code></td>
+        <td><code>DoesMul</code></td>
+        <td><code>__mul__</code></td>
+        <td>
+            <code>CanMul[-T, +R = T]</code><br>
+            <code>CanMulSelf[-T]</code><br>
+            <code>CanMulSame[-T?, +R?]</code>
+        </td>
+    </tr>
+    <tr>
+        <td><code>_ @ x</code></td>
+        <td><code>do_matmul</code></td>
+        <td><code>DoesMatmul</code></td>
+        <td><code>__matmul__</code></td>
+        <td>
+            <code>CanMatmul[-T, +R = T]</code><br>
+            <code>CanMatmulSelf[-T]</code><br>
+            <code>CanMatmulSame[-T?, +R?]</code>
+        </td>
+    </tr>
+    <tr>
+        <td><code>_ / x</code></td>
+        <td><code>do_truediv</code></td>
+        <td><code>DoesTruediv</code></td>
+        <td><code>__truediv__</code></td>
+        <td>
+            <code>CanTruediv[-T, +R = T]</code><br>
+            <code>CanTruedivSelf[-T]</code><br>
+            <code>CanTruedivSame[-T?, +R?]</code>
+        </td>
+    </tr>
+    <tr>
+        <td><code>_ // x</code></td>
+        <td><code>do_floordiv</code></td>
+        <td><code>DoesFloordiv</code></td>
+        <td><code>__floordiv__</code></td>
+        <td>
+            <code>CanFloordiv[-T, +R = T]</code><br>
+            <code>CanFloordivSelf[-T]</code><br>
+            <code>CanFloordivSame[-T?, +R?]</code>
+        </td>
+    </tr>
+    <tr>
+        <td><code>_ % x</code></td>
+        <td><code>do_mod</code></td>
+        <td><code>DoesMod</code></td>
+        <td><code>__mod__</code></td>
+        <td>
+            <code>CanMod[-T, +R = T]</code><br>
+            <code>CanModSelf[-T]</code><br>
+            <code>CanModSame[-T?, +R?]</code>
+        </td>
+    </tr>
+    <tr>
+        <td><code>divmod(_, x)</code></td>
+        <td><code>do_divmod</code></td>
+        <td><code>DoesDivmod</code></td>
+        <td><code>__divmod__</code></td>
+        <td><code>CanDivmod[-T, +R]</code></td>
+    </tr>
+    <tr>
+        <td>
+            <code>_ ** x</code><br/>
+            <code>pow(_, x)</code>
+        </td>
+        <td><code>do_pow/2</code></td>
+        <td><code>DoesPow</code></td>
+        <td><code>__pow__</code></td>
+        <td>
+            <code>CanPow2[-T, +R = T]</code><br>
+            <code>CanPowSelf[-T]</code><br>
+            <code>CanPowSame[-T?, +R?]</code>
+        </td>
+    </tr>
+    <tr>
+        <td><code>pow(_, x, m)</code></td>
+        <td><code>do_pow/3</code></td>
+        <td><code>DoesPow</code></td>
+        <td><code>__pow__</code></td>
+        <td><code>CanPow3[-T, -M, +R = int]</code></td>
+    </tr>
+    <tr>
+        <td><code>_ << x</code></td>
+        <td><code>do_lshift</code></td>
+        <td><code>DoesLshift</code></td>
+        <td><code>__lshift__</code></td>
+        <td>
+            <code>CanLshift[-T, +R = T]</code><br>
+            <code>CanLshiftSelf[-T]</code><br>
+            <code>CanLshiftSame[-T?, +R?]</code>
+        </td>
+    </tr>
+    <tr>
+        <td><code>_ >> x</code></td>
+        <td><code>do_rshift</code></td>
+        <td><code>DoesRshift</code></td>
+        <td><code>__rshift__</code></td>
+        <td>
+            <code>CanRshift[-T, +R = T]</code><br>
+            <code>CanRshiftSelf[-T]</code><br>
+            <code>CanRshiftSame[-T?, +R?]</code>
+        </td>
+    </tr>
+    <tr>
+        <td><code>_ & x</code></td>
+        <td><code>do_and</code></td>
+        <td><code>DoesAnd</code></td>
+        <td><code>__and__</code></td>
+        <td>
+            <code>CanAnd[-T, +R = T]</code><br>
+            <code>CanAndSelf[-T]</code><br>
+            <code>CanAndSame[-T?, +R?]</code>
+        </td>
+    </tr>
+    <tr>
+        <td><code>_ ^ x</code></td>
+        <td><code>do_xor</code></td>
+        <td><code>DoesXor</code></td>
+        <td><code>__xor__</code></td>
+        <td>
+            <code>CanXor[-T, +R = T]</code><br>
+            <code>CanXorSelf[-T]</code><br>
+            <code>CanXorSame[-T?, +R?]</code>
+        </td>
+    </tr>
+    <tr>
+        <td><code>_ | x</code></td>
+        <td><code>do_or</code></td>
+        <td><code>DoesOr</code></td>
+        <td><code>__or__</code></td>
+        <td>
+            <code>CanOr[-T, +R = T]</code><br>
+            <code>CanOrSelf[-T]</code><br>
+            <code>CanOrSame[-T?, +R?]</code>
+        </td>
+    </tr>
+</table>
 
-Each binary operation has three protocol variants:
+!!! tip
 
-- `Can*[T, R]` - Standard form
-- `Can*Self[T]` - Returns `typing.Self`
-- `Can*Same[T?, R?]` - Accepts `Self | T`, returns `Self | R`
+    Because `pow()` can take an optional third argument, `optype` provides separate
+    interfaces for `pow()` with two and three arguments. Additionally, there is the
+    overloaded intersection type
+    `type CanPow[-T, -M, +R, +RM] = CanPow2[T, R] & CanPow3[T, M, RM]`, as interface
+    for types that can take an optional third argument.
 
-| Operator               | Protocols                                                                         |
-| ---------------------- | --------------------------------------------------------------------------------- |
-| `_ + x`                | `CanAdd[-T, +R = T]`<br>`CanAddSelf[-T]`<br>`CanAddSame[-T?, +R?]`                |
-| `_ - x`                | `CanSub[-T, +R = T]`<br>`CanSubSelf[-T]`<br>`CanSubSame[-T?, +R?]`                |
-| `_ * x`                | `CanMul[-T, +R = T]`<br>`CanMulSelf[-T]`<br>`CanMulSame[-T?, +R?]`                |
-| `_ @ x`                | `CanMatmul[-T, +R = T]`<br>`CanMatmulSelf[-T]`<br>`CanMatmulSame[-T?, +R?]`       |
-| `_ / x`                | `CanTruediv[-T, +R = T]`<br>`CanTruedivSelf[-T]`<br>`CanTruedivSame[-T?, +R?]`    |
-| `_ // x`               | `CanFloordiv[-T, +R = T]`<br>`CanFloordivSelf[-T]`<br>`CanFloordivSame[-T?, +R?]` |
-| `_ % x`                | `CanMod[-T, +R = T]`<br>`CanModSelf[-T]`<br>`CanModSame[-T?, +R?]`                |
-| `divmod(_, x)`         | `CanDivmod[-T, +R]`                                                               |
-| `_ ** x` / `pow(_, x)` | `CanPow2[-T, +R = T]`<br>`CanPowSelf[-T]`<br>`CanPowSame[-T?, +R?]`               |
-| `pow(_, x, m)`         | `CanPow3[-T, -M, +R = int]`                                                       |
-| `_ << x`               | `CanLshift[-T, +R = T]`<br>`CanLshiftSelf[-T]`<br>`CanLshiftSame[-T?, +R?]`       |
-| `_ >> x`               | `CanRshift[-T, +R = T]`<br>`CanRshiftSelf[-T]`<br>`CanRshiftSame[-T?, +R?]`       |
-| `_ & x`                | `CanAnd[-T, +R = T]`<br>`CanAndSelf[-T]`<br>`CanAndSame[-T?, +R?]`                |
-| `_ ^ x`                | `CanXor[-T, +R = T]`<br>`CanXorSelf[-T]`<br>`CanXorSame[-T?, +R?]`                |
-| `_ \| x`               | `CanOr[-T, +R = T]`<br>`CanOrSelf[-T]`<br>`CanOrSame[-T?, +R?]`                   |
+!!! note
 
-## Protocol Variants Explained
-
-### Standard Form: `Can*[-T, +R = T]`
-
-The standard protocol accepts an operand of type `T` and returns type `R` (defaulting to `T`).
-
-Example:
-
-```python
-import optype as op
-
-def add_numbers(x: op.CanAdd[int, float]) -> float:
-    return x + 5.0  # Returns float
-```
-
-### Self Form: `Can*Self[-T]`
-
-Returns `typing.Self` for fluent interfaces. Method signature: `(self, rhs: T, /) -> Self`.
-
-Example:
-
-```python
-import optype as op
-
-class Builder(op.CanAddSelf[str]):
-    def __init__(self, value: str = ""):
-        self.value = value
-
-    def __add__(self, other: str) -> "Builder":
-        return Builder(self.value + other)
-```
-
-### Same Form: `Can*Same[-T?, +R?]`
-
-Accepts `Self | T` and returns `Self | R`. Both `T` and `R` default to `typing.Never`.
-
-To illustrate:
-
-- `CanAddSelf[T]` implements `__add__` as `(self, rhs: T, /) -> Self`
-- `CanAddSame[T, R]` implements it as `(self, rhs: Self | T, /) -> Self | R`
-- `CanAddSame` (without `T` and `R`) as `(self, rhs: Self, /) -> Self`
-
-Example:
-
-```python
-import optype as op
-
-def combine(x: op.CanAddSame[int, float]) -> ...:
-    # x can be added to itself OR to an int
-    # and returns either itself OR a float
-    return x + x  # Returns Self
-    # OR
-    return x + 5  # Returns Self | float
-```
-
-## Special Cases
-
-### pow() with Optional Third Argument
-
-!!! tip "pow() Special Cases"
-Because `pow()` can take an optional third argument, `optype` provides:
-
-    - `CanPow2[-T, +R = T]` for `pow(x, y)` 
-    - `CanPow3[-T, -M, +R = int]` for `pow(x, y, m)`
-    - `CanPow[-T, -M, +R, +RM]` as intersection type for both
-
-    The full `CanPow` type is defined as:
-    ```python
-    type CanPow[-T, -M, +R, +RM] = CanPow2[T, R] & CanPow3[T, M, RM]
-    ```
-
-## Examples
-
-### Basic Usage
-
-```python
-import optype as op
-
-def double(x: op.CanMul[int, int]) -> int:
-    """Double a value by multiplying by 2."""
-    return x * 2
-
-double(21)  # OK: returns 42
-```
-
-### Generic Return Types
-
-```python
-import optype as op
-
-def add_one[R](x: op.CanAdd[int, R]) -> R:
-    """Add 1 to any value that supports it."""
-    return x + 1
-
-add_one(41)     # -> int (42)
-add_one(2.5)    # -> float (3.5)
-add_one([1, 2]) # -> list[int] ([1, 2, 1])
-```
-
-### Combining Multiple Operations
-
-```python
-from typing import Protocol
-import optype as op
-
-class CanAddMul(
-    op.CanAdd[int, float],
-    op.CanMul[int, float],
-    Protocol,
-): ...
-
-def calculate(x: CanAddMul) -> float:
-    return (x + 1) * 2
-```
+    The `Can*Self` protocols method return `typing.Self` and optionally accept `T` and
+    `R`. The `Can*Same` protocols also return `Self`, but instead accept `Self | T`,
+    with `T` and `R` optional generic type parameters that default to `typing.Never`.
+    To illustrate, `CanAddSelf[T]` implements `__add__` as `(self, rhs: T, /) -> Self`,
+    while `CanAddSame[T, R]` implements it as `(self, rhs: Self | T, /) -> Self | R`,
+    and `CanAddSame` (without `T` and `R`) as `(self, rhs: Self, /) -> Self`.

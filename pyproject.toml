@@ -66,8 +66,10 @@ Funding = "https://github.com/sponsors/jorenham"
 extra = [
   "optype[numpy]",
 ]
-docs = [
-  "zensical>=0.0.20",
+doc = [
+  "zensical>=0.0.23,<0.1",
+  "pymdown-extensions>=10.20.1,<11",
+  "pygments>=2.19.2,<3",
 ]
 lint = [
   "dprint-py>=0.51.1.0",
@@ -90,6 +92,7 @@ type = [
 ]
 dev = [
   { include-group = "extra" },
+  { include-group = "doc" },
   { include-group = "lint" },
   { include-group = "test" },
   { include-group = "type" },

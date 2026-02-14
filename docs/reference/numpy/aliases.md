@@ -1,157 +1,472 @@
-# Type Aliases
+# `Any*Array` and `Any*DType`
 
-Pre-defined type aliases for common NumPy array and dtype patterns.
+The `Any{Scalar}Array` type aliases describe array-likes that are coercible to an
+`numpy.ndarray` with specific [dtype][REF-DTYPES].
 
-## Overview
+Unlike `numpy.typing.ArrayLike`, these `optype.numpy` aliases **don't**
+accept "bare" scalar types such as `float` and `np.float64`. However, arrays of
+"zero dimensions" like `onp.Array[tuple[()], np.float64]` will be accepted.
+This is in line with the behavior of [`numpy.isscalar`][REF-ISSCALAR] on `numpy >= 2`.
 
-`optype.numpy` provides convenient type aliases for arrays and dtypes organized by scalar type category. These aliases are more specific than `numpy.typing.ArrayLike` and don't accept bare scalar types (which aligns with NumPy 2+ behavior).
-
-## Array Type Aliases
-
-### `Array`, `ArrayND`, `Array0D-3D`
-
-Generic array type aliases with optional shape and scalar type parameters:
-
-```python
-type Array[
-    ND: tuple[int, ...] = (int, ...),
-    SCT: np.generic = np.generic,
-] = np.ndarray[ND, np.dtype[SCT]]
-
-type ArrayND[
-    SCT: np.generic = np.generic,
-    ND: tuple[int, ...] = (int, ...),
-] = np.ndarray[ND, np.dtype[SCT]]
-
-type Array0D[SCT: np.generic = np.generic] = np.ndarray[tuple[()], np.dtype[SCT]]
-type Array1D[SCT: np.generic = np.generic] = np.ndarray[tuple[int], np.dtype[SCT]]
-type Array2D[SCT: np.generic = np.generic] = np.ndarray[tuple[int, int], np.dtype[SCT]]
-type Array3D[SCT: np.generic = np.generic] = np.ndarray[tuple[int, int, int], np.dtype[SCT]]
-```
-
-### Other Array Type Aliases
-
-- **`MArray`, `MArray0D-3D`**: Masked arrays (`np.ma.MaskedArray`)
-- **`Matrix`**: Matrix type (`np.matrix`)
-
-## Any*Array and Any*DType
-
-Type aliases for arrays coercible to NumPy arrays with specific dtypes:
-
-### Supported Categories
-
-Arrays accepting different scalar types:
-
-| Category         | Array Types                                    | DType Types                                    |
-| ---------------- | ---------------------------------------------- | ---------------------------------------------- |
-| **Boolean**      | `AnyJustBoolArray`, `AnyBoolArray`, etc.       | `AnyJustBoolDType`, `AnyBoolDType`             |
-| **Unsigned Int** | `AnyJustUIntArray`, `AnyJustUInt8Array`, etc.  | `AnyJustUIntDType`, `AnyJustUInt8DType`        |
-| **Signed Int**   | `AnyJustIntArray`, `AnyJustInt8Array`, etc.    | `AnyJustIntDType`, `AnyJustInt8DType`          |
-| **Floats**       | `AnyJustFloatArray`, `AnyFloat32Array`, etc.   | `AnyJustFloatDType`, `AnyFloat32DType`         |
-| **Complex**      | `AnyJustComplexArray`, `AnyComplexArray`       | `AnyJustComplexDType`, `AnyComplexDType`       |
-| **Flexible**     | `AnyStrArray`, `AnyBytesArray`, `AnyVoidArray` | `AnyStrDType`, `AnyBytesDType`, `AnyVoidDType` |
-| **All**          | `AnyArray`                                     | `AnyDType`                                     |
-
-### Strict Variants
-
-For each category, there are also strict variants (ending with `Strict`) that only accept arrays of that specific dimensionality:
-
-- `AnyBoolArray1D` vs `AnyBoolStrict1D`
-- `AnyJustIntArray2D` vs `AnyJustIntStrict2D`
-
-## Key Differences from numpy.typing
-
-Unlike `numpy.typing.ArrayLike`:
-
-- ✅ Arrays of zero dimensions are accepted
-- ❌ Bare scalars (e.g., `3.14`, `True`) are **not** accepted
-- ✅ More type-safe and precise
-
-### Example
-
-```python
-import optype.numpy as onp
-```
-
-```python
-import numpy as np
+```py
 import numpy.typing as npt
+import optype.numpy as onp
 
-# numpy.typing accepts bare scalars
-arr_np: npt.ArrayLike = 3.14  # ✓ Accepted
+v_np: npt.ArrayLike = 3.14  # accepted
+v_op: onp.AnyArray = 3.14  # rejected
 
-# optype.numpy requires array form
-arr_op: onp.AnyArray = 3.14   # ✗ Rejected
-arr_op: onp.AnyArray = np.array(3.14)  # ✓ Accepted
-
-# Both accept nested sequences
-matrix_np: npt.ArrayLike = [[1, 2], [3, 4]]
-matrix_op: onp.AnyArray = [[1, 2], [3, 4]]
+sigma1_np: npt.ArrayLike = [[0, 1], [1, 0]]  # accepted
+sigma1_op: onp.AnyArray = [[0, 1], [1, 0]]  # accepted
 ```
 
-## Type Parameter Information
+!!! info
 
-- **Shape (`ND`)**: `tuple[int, ...]` - Array shape
-- **Scalar Type (`SCT`)**: Covariant - NumPy scalar type
-- **Data Type (`DT`)**: `np.dtype[SCT]`
+    The [`numpy.dtypes` docs][REF-DTYPES] exists since NumPy 1.26, but its
+    type annotations were incorrect before NumPy 2.1 (see
+    [numpy/numpy#27008](https://github.com/numpy/numpy/pull/27008))
 
-## Usage Examples
+See the [docs][REF-SCT] for more info on the NumPy scalar type hierarchy.
 
-```python
-import numpy as np
+[REF-SCT]: https://numpy.org/doc/stable/reference/arrays.scalars.html
+[REF-DTYPES]: https://numpy.org/doc/stable/reference/arrays.dtypes.html
+[REF-ISSCALAR]: https://numpy.org/doc/stable/reference/generated/numpy.isscalar.html
 
-# Specific scalar type
-floats: onp.AnyFloat64Array = np.array([1.0, 2.0, 3.0])
+## Abstract types
 
-# Specific dimensionality
-matrix: onp.AnyJustIntArray2D = np.array([[1, 2], [3, 4]])
+<table>
+    <tr>
+        <th align="center" colspan="2"><code>numpy._</code></th>
+        <th align="center" colspan="2"><code>optype.numpy._</code></th>
+    </tr>
+    <tr>
+        <th>scalar</th>
+        <th>scalar base</th>
+        <th>array-like</th>
+        <th>dtype-like</th>
+    </tr>
+    <tr>
+        <td><code>generic</code></td>
+        <td></td>
+        <td><code>AnyArray</code></td>
+        <td><code>AnyDType</code></td>
+    </tr>
+    <tr>
+        <td><code>number</code></td>
+        <td><code>generic</code></td>
+        <td><code>AnyNumberArray</code></td>
+        <td><code>AnyNumberDType</code></td>
+    </tr>
+    <tr>
+        <td><code>integer</code></td>
+        <td rowspan="2"><code>number</code></td>
+        <td><code>AnyIntegerArray</code></td>
+        <td><code>AnyIntegerDType</code></td>
+    </tr>
+    <tr>
+        <td><code>inexact</code></td>
+        <td><code>AnyInexactArray</code></td>
+        <td><code>AnyInexactDType</code></td>
+    </tr>
+    <tr>
+        <td><code>unsignedinteger</code></td>
+        <td rowspan="2"><code>integer</code></td>
+        <td><code>AnyUnsignedIntegerArray</code></td>
+        <td><code>AnyUnsignedIntegerDType</code></td>
+    </tr>
+    <tr>
+        <td><code>signedinteger</code></td>
+        <td><code>AnySignedIntegerArray</code></td>
+        <td><code>AnySignedIntegerDType</code></td>
+    </tr>
+    <tr>
+        <td><code>floating</code></td>
+        <td rowspan="2"><code>inexact</code></td>
+        <td><code>AnyFloatingArray</code></td>
+        <td><code>AnyFloatingDType</code></td>
+    </tr>
+    <tr>
+        <td><code>complexfloating</code></td>
+        <td><code>AnyComplexFloatingArray</code></td>
+        <td><code>AnyComplexFloatingDType</code></td>
+    </tr>
+</table>
 
-# Generic array
-any_arr: onp.AnyArray = np.arange(10)
+## Integers
 
-# Working with dtypes
-dtype_f32: onp.AnyFloat32DType = np.dtype(np.float32)
-dtype_int: onp.AnyJustIntDType = np.dtype(np.int64)
-```
+Unsigned:
 
-## Platform and Version Specific Notes
+<table>
+    <tr>
+        <th align="center" colspan="2"><code>numpy._</code></th>
+        <th align="center"><code>numpy.dtypes._</code></th>
+        <th align="center" colspan="2"><code>optype.numpy._</code></th>
+    </tr>
+    <tr>
+        <th>scalar</th>
+        <th>scalar base</th>
+        <th>dtype</th>
+        <th>array-like</th>
+        <th>dtype-like</th>
+    </tr>
+    <tr>
+        <td><code>uint_</code></td>
+        <td rowspan="9"><code>unsignedinteger</code></td>
+        <td rowspan="2"></td>
+        <td><code>AnyUIntArray</code></td>
+        <td><code>AnyUIntDType</code></td>
+    </tr>
+    <tr>
+        <td><code>uintp</code></td>
+        <td><code>AnyUIntPArray</code></td>
+        <td><code>AnyUIntPDType</code></td>
+    </tr>
+    <tr>
+        <td><code>uint8</code>, <code>ubyte</code></td>
+        <td><code>UInt8DType</code></td>
+        <td><code>AnyUInt8Array</code></td>
+        <td><code>AnyUInt8DType</code></td>
+    </tr>
+    <tr>
+        <td><code>uint16</code>, <code>ushort</code></td>
+        <td><code>UInt16DType</code></td>
+        <td><code>AnyUInt16Array</code></td>
+        <td><code>AnyUInt16DType</code></td>
+    </tr>
+    <tr>
+        <td><code>uint32</code></td>
+        <td><code>UInt32DType</code></td>
+        <td><code>AnyUInt32Array</code></td>
+        <td><code>AnyUInt32DType</code></td>
+    </tr>
+    <tr>
+        <td><code>uint64</code></td>
+        <td><code>UInt64DType</code></td>
+        <td><code>AnyUInt64Array</code></td>
+        <td><code>AnyUInt64DType</code></td>
+    </tr>
+    <tr>
+        <td><code>uintc</code></td>
+        <td><code>UIntDType</code></td>
+        <td><code>AnyUIntCArray</code></td>
+        <td><code>AnyUIntCDType</code></td>
+    </tr>
+    <tr>
+        <td><code>ulong</code></td>
+        <td><code>ULongDType</code></td>
+        <td><code>AnyULongArray</code></td>
+        <td><code>AnyULongDType</code></td>
+    </tr>
+    <tr>
+        <td><code>ulonglong</code></td>
+        <td><code>ULongLongDType</code></td>
+        <td><code>AnyULongLongArray</code></td>
+        <td><code>AnyULongLongDType</code></td>
+    </tr>
+</table>
 
-!!! info "Integer Type Aliases"
+Signed:
 
-- Since NumPy 2, `np.uint` and `np.int_` are aliases for `np.uintp` and `np.intp`, respectively[^2].
-- On unix-based platforms, `np.[u]intc` are aliases for `np.[u]int32`[^3].
-- On NumPy 1, `np.uint` and `np.int_` are what in NumPy 2 are now the `np.ulong` and `np.long` types, respectively[^4].
+<table>
+    <tr>
+        <th align="center" colspan="2"><code>numpy._</code></th>
+        <th align="center"><code>numpy.dtypes._</code></th>
+        <th align="center" colspan="2"><code>optype.numpy._</code></th>
+    </tr>
+    <tr>
+        <th>scalar</th>
+        <th>scalar base</th>
+        <th>dtype</th>
+        <th>array-like</th>
+        <th>dtype-like</th>
+    </tr>
+    <tr>
+        <td><code>int_</code></td>
+        <td rowspan="9"><code>signedinteger</code></td>
+        <td rowspan="2"></td>
+        <td><code>AnyIntArray</code></td>
+        <td><code>AnyIntDType</code></td>
+    </tr>
+    <tr>
+        <td><code>intp</code></td>
+        <td><code>AnyIntPArray</code></td>
+        <td><code>AnyIntPDType</code></td>
+    </tr>
+    <tr>
+        <td><code>int8</code>, <code>byte</code></td>
+        <td><code>Int8DType</code></td>
+        <td><code>AnyInt8Array</code></td>
+        <td><code>AnyInt8DType</code></td>
+    </tr>
+    <tr>
+        <td><code>int16</code>, <code>short</code></td>
+        <td><code>Int16DType</code></td>
+        <td><code>AnyInt16Array</code></td>
+        <td><code>AnyInt16DType</code></td>
+    </tr>
+    <tr>
+        <td><code>int32</code></td>
+        <td><code>Int32DType</code></td>
+        <td><code>AnyInt32Array</code></td>
+        <td><code>AnyInt32DType</code></td>
+    </tr>
+    <tr>
+        <td><code>int64</code></td>
+        <td><code>Int64DType</code></td>
+        <td><code>AnyInt64Array</code></td>
+        <td><code>AnyInt64DType</code></td>
+    </tr>
+    <tr>
+        <td><span><code>intc</code></span></td>
+        <td><code>IntDType</code></td>
+        <td><code>AnyIntCArray</code></td>
+        <td><code>AnyIntCDType</code></td>
+    </tr>
+    <tr>
+        <td><code>long</code></td>
+        <td><code>LongDType</code></td>
+        <td><code>AnyLongArray</code></td>
+        <td><code>AnyLongDType</code></td>
+    </tr>
+    <tr>
+        <td><code>longlong</code></td>
+        <td><code>LongLongDType</code></td>
+        <td><code>AnyLongLongArray</code></td>
+        <td><code>AnyLongLongDType</code></td>
+    </tr>
+</table>
 
-!!! info "Floating Point Type Aliases"
+!!! info
 
-- Depending on the platform, `np.longdouble` is (almost always) an alias for **either** `float128`, `float96`, or (sometimes) `float64`[^5].
-- Depending on the platform, `np.clongdouble` is (almost always) an alias for **either** `complex256`, `complex192`, or (sometimes) `complex128`[^6].
+    Since NumPy 2, `np.uint` and `np.int_` are aliases for `np.uintp` and `np.intp`,
+    respectively.
 
-!!! info "Other Type Notes"
+!!! info
 
-- Since NumPy 2, `np.bool` is preferred over `np.bool_`, which only exists for backwards compatibility[^7].
-- At runtime `np.timedelta64` is a subclass of `np.signedinteger`, but this is currently not reflected in the type annotations[^8].
-- The `np.dtypes.StringDType` has no associated numpy scalar type, and its `.type` attribute returns the `str` builtin[^9].
+    On unix-based platforms `np.[u]intc` are aliases for `np.[u]int32`.
 
-## Related Types
+!!! info
 
-- **[Shape Typing](shape.md)**: For precise shape type annotations
-- **[DType](dtype.md)**: For dtype-specific utilities
-- **[Scalar](scalar.md)**: For NumPy scalar type annotations
-- **[Array-likes](array-likes.md)**: For array-like protocol objects
+    On NumPy 1 `np.uint` and `np.int_` are what in NumPy 2 are now the `np.ulong` and
+    `np.long` types, respectively.
 
-[^2]: Since NumPy 2, `np.uint` and `np.int_` are aliases for `np.uintp` and `np.intp`, respectively.
+## Real floats
 
-[^3]: On unix-based platforms `np.[u]intc` are aliases for `np.[u]int32`.
+<table>
+    <tr>
+        <th align="center" colspan="2"><code>numpy._</code></th>
+        <th align="center"><code>numpy.dtypes._</code></th>
+        <th align="center" colspan="2"><code>optype.numpy._</code></th>
+    </tr>
+    <tr>
+        <th>scalar</th>
+        <th>scalar base</th>
+        <th>dtype</th>
+        <th>array-like</th>
+        <th>dtype-like</th>
+    </tr>
+    <tr>
+        <td>
+            <code>float16</code>,<br>
+            <code>half</code>
+        </td>
+        <td rowspan="2"><code>np.floating</code></td>
+        <td><code>Float16DType</code></td>
+        <td><code>AnyFloat16Array</code></td>
+        <td><code>AnyFloat16DType</code></td>
+    </tr>
+    <tr>
+        <td>
+            <code>float32</code>,<br>
+            <code>single</code>
+        </td>
+        <td><code>Float32DType</code></td>
+        <td><code>AnyFloat32Array</code></td>
+        <td><code>AnyFloat32DType</code></td>
+    </tr>
+    <tr>
+        <td>
+            <code>float64</code>,<br>
+            <code>double</code>
+        </td>
+        <td>
+            <code>np.floating &</code><br>
+            <code>builtins.float</code>
+        </td>
+        <td><code>Float64DType</code></td>
+        <td><code>AnyFloat64Array</code></td>
+        <td><code>AnyFloat64DType</code></td>
+    </tr>
+    <tr>
+        <td><code>longdouble</code></td>
+        <td><code>np.floating</code></td>
+        <td><code>LongDoubleDType</code></td>
+        <td><code>AnyLongDoubleArray</code></td>
+        <td><code>AnyLongDoubleDType</code></td>
+    </tr>
+</table>
 
-[^4]: On NumPy 1 `np.uint` and `np.int_` are what in NumPy 2 are now the `np.ulong` and `np.long` types, respectively.
+!!! info
 
-[^5]: Depending on the platform, `np.longdouble` is (almost always) an alias for **either** `float128`, `float96`, or (sometimes) `float64`.
+    Depending on the platform, `np.longdouble` is (almost always) an alias for
+    **either** `float128`, `float96`, or (sometimes) `float64`.
 
-[^6]: Depending on the platform, `np.clongdouble` is (almost always) an alias for **either** `complex256`, `complex192`, or (sometimes) `complex128`.
+## Complex floats
 
-[^7]: Since NumPy 2, `np.bool` is preferred over `np.bool_`, which only exists for backwards compatibility.
+<table>
+    <tr>
+        <th align="center" colspan="2"><code>numpy._</code></th>
+        <th align="center"><code>numpy.dtypes._</code></th>
+        <th align="center" colspan="2"><code>optype.numpy._</code></th>
+    </tr>
+    <tr>
+        <th>scalar</th>
+        <th>scalar base</th>
+        <th>dtype</th>
+        <th>array-like</th>
+        <th>dtype-like</th>
+    </tr>
+    <tr>
+        <td>
+            <code>complex64</code>,<br>
+            <code>csingle</code>
+        </td>
+        <td><code>complexfloating</code></td>
+        <td><code>Complex64DType</code></td>
+        <td><code>AnyComplex64Array</code></td>
+        <td><code>AnyComplex64DType</code></td>
+    </tr>
+    <tr>
+        <td>
+            <code>complex128</code>,<br>
+            <code>cdouble</code>
+        </td>
+        <td>
+            <code>complexfloating &</code><br>
+            <code>builtins.complex</code>
+        </td>
+        <td><code>Complex128DType</code></td>
+        <td><code>AnyComplex128Array</code></td>
+        <td><code>AnyComplex128DType</code></td>
+    </tr>
+    <tr>
+        <td><code>clongdouble</code></td>
+        <td><code>complexfloating</code></td>
+        <td><code>CLongDoubleDType</code></td>
+        <td><code>AnyCLongDoubleArray</code></td>
+        <td><code>AnyCLongDoubleDType</code></td>
+    </tr>
+</table>
 
-[^8]: At runtime `np.timedelta64` is a subclass of `np.signedinteger`, but this is currently not reflected in the type annotations.
+!!! info
 
-[^9]: The `np.dtypes.StringDType` has no associated numpy scalar type, and its `.type` attribute returns the `str` builtin.
+    Depending on the platform, `np.clongdouble` is (almost always) an alias for
+    **either** `complex256`, `complex192`, or (sometimes) `complex128`.
+
+## "Flexible"
+
+Scalar types with "flexible" length, whose values have a (constant) length
+that depends on the specific `np.dtype` instantiation.
+
+<table>
+    <tr>
+        <th align="center" colspan="2"><code>numpy._</code></th>
+        <th align="center"><code>numpy.dtypes._</code></th>
+        <th align="center" colspan="2"><code>optype.numpy._</code></th>
+    </tr>
+    <tr>
+        <th>scalar</th>
+        <th>scalar base</th>
+        <th>dtype</th>
+        <th>array-like</th>
+        <th>dtype-like</th>
+    </tr>
+    <tr>
+        <td><code>str_</code></td>
+        <td rowspan="3"><code>character</code></td>
+        <td><code>StrDType</code></td>
+        <td><code>AnyStrArray</code></td>
+        <td><code>AnyStrDType</code></td>
+    </tr>
+    <tr>
+        <td rowspan="2"><code>bytes_</code></td>
+        <td><code>BytesDType</code></td>
+        <td rowspan="2"><code>AnyBytesArray</code></td>
+        <td><code>AnyBytesDType</code></td>
+    </tr>
+    <tr>
+        <td><code>dtype("c")</code></td>
+        <td><code>AnyBytes8DType</code></td>
+    </tr>
+    <tr>
+        <td><code>void</code></td>
+        <td><code>flexible</code></td>
+        <td><code>VoidDType</code></td>
+        <td><code>AnyVoidArray</code></td>
+        <td><code>AnyVoidDType</code></td>
+    </tr>
+</table>
+
+## Other types
+
+<table>
+    <tr>
+        <th align="center" colspan="2"><code>numpy._</code></th>
+        <th align="center"><code>numpy.dtypes._</code></th>
+        <th align="center" colspan="2"><code>optype.numpy._</code></th>
+    </tr>
+    <tr>
+        <th>scalar</th>
+        <th>scalar base</th>
+        <th>dtype</th>
+        <th>array-like</th>
+        <th>dtype-like</th>
+    </tr>
+    <tr>
+        <td><code>bool_</code></td>
+        <td rowspan="3"><code>generic</code></td>
+        <td><code>BoolDType</code></td>
+        <td><code>AnyBoolArray</code></td>
+        <td><code>AnyBoolDType</code></td>
+    </tr>
+    <tr>
+        <td><code>object_</code></td>
+        <td><code>ObjectDType</code></td>
+        <td><code>AnyObjectArray</code></td>
+        <td><code>AnyObjectDType</code></td>
+    </tr>
+    <tr>
+        <td><code>datetime64</code></td>
+        <td><code>DateTime64DType</code></td>
+        <td><code>AnyDateTime64Array</code></td>
+        <td><code>AnyDateTime64DType</code></td>
+    </tr>
+    <tr>
+        <td><code>timedelta64</code></td>
+        <td><i><code>generic</code></i></td>
+        <td><code>TimeDelta64DType</code></td>
+        <td><code>AnyTimeDelta64Array</code></td>
+        <td><code>AnyTimeDelta64DType</code></td>
+    </tr>
+    <tr>
+        <td colspan=2></td>
+        <td><code>StringDType</code></td>
+        <td><code>AnyStringArray</code></td>
+        <td><code>AnyStringDType</code></td>
+    </tr>
+</table>
+
+!!! info
+
+    Since NumPy 2, `np.bool` is preferred over `np.bool_`, which only exists for
+    backwards compatibility.
+
+!!! info
+
+    At runtime `np.timedelta64` is a subclass of `np.signedinteger`, but this is
+    currently not reflected in the type annotations.
+
+!!! info
+
+    The `np.dypes.StringDType` has no associated numpy scalar type, and its `.type`
+    attribute returns the `builtins.str` type instead. But from a typing perspective,
+    such a `np.dtype[builtins.str]` isn't a valid type.

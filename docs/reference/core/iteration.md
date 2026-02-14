@@ -1,216 +1,60 @@
 # Iteration
 
-Protocols for iteration operations (`iter()`, `next()`, `for` loops).
+The operand `x` of `iter(_)` is within Python known as an *iterable*, which is
+what `collections.abc.Iterable[V]` is often used for (e.g. as base class, or
+for instance checking).
 
-## Overview
+The `optype` analogue is `CanIter[R]`, which as the name suggests,
+also implements `__iter__`. But unlike `Iterable[V]`, its type parameter `R`
+binds to the return type of `iter(_) -> R`. This makes it possible to annotate
+the specific type of the *iterable* that `iter(_)` returns. `Iterable[V]` is
+only able to annotate the type of the iterated value. To see why that isn't
+possible, see [python/typing#548](https://github.com/python/typing/issues/548).
 
-The iteration protocol allows objects to be used in `for` loops and other iteration contexts. Unlike `collections.abc.Iterable` and `collections.abc.Iterator`, the `optype` protocols provide better type safety and performance characteristics.
+The `collections.abc.Iterator[V]` is even more awkward; it is a subtype of
+`Iterable[V]`. For those familiar with `collections.abc` this might come as a
+surprise, but an iterator only needs to implement `__next__`, `__iter__` isn't
+needed. This means that the `Iterator[V]` is unnecessarily restrictive.
+Apart from that being theoretically "ugly", it has significant performance
+implications, because the time-complexity of `isinstance` on a
+`typing.Protocol` is $O(n)$, with the $n$ referring to the amount of members.
+So even if the overhead of the inheritance and the `abc.ABC` usage is ignored,
+`collections.abc.Iterator` is twice as slow as it needs to be.
 
-### Advantages over collections.abc
+That's one of the (many) reasons that `optype.CanNext[V]` and
+`optype.CanIter[R]` are the better alternatives to `Iterable` and `Iterator`
+from the abracadabra collections. This is how they are defined:
 
-- **`CanIter[R]`** vs `Iterable[V]`: `CanIter` binds to the return type of `iter(_)`, allowing you to specify the exact iterator type returned, while `Iterable` only specifies the yielded value type.
-- **`CanNext[V]`**: Does not require `__iter__` to be implemented, unlike `collections.abc.Iterator` which unnecessarily requires both methods. This improves `isinstance()` performance significantly.
+<table>
+    <tr>
+        <th colspan="3" align="center">operator</th>
+        <th colspan="2" align="center">operand</th>
+    </tr>
+    <tr>
+        <td>expression</td>
+        <th>function</th>
+        <th>type</th>
+        <td>method</td>
+        <th>type</th>
+    </tr>
+    <tr>
+        <td><code>next(_)</code></td>
+        <td><code>do_next</code></td>
+        <td><code>DoesNext</code></td>
+        <td><code>__next__</code></td>
+        <td><code>CanNext[+V]</code></td>
+    </tr>
+    <tr>
+        <td><code>iter(_)</code></td>
+        <td><code>do_iter</code></td>
+        <td><code>DoesIter</code></td>
+        <td><code>__iter__</code></td>
+        <td><code>CanIter[+R: CanNext[object]]</code></td>
+    </tr>
+</table>
 
-| Function  | Protocol                       |
-| --------- | ------------------------------ |
-| `next(_)` | `CanNext[+V]`                  |
-| `iter(_)` | `CanIter[+R: CanNext[object]]` |
-
-## Protocols
-
-```python
-import optype as op
-```
-
-### CanNext[+V]
-
-Protocol for types that can be iterated over using `next()`. Implements `__next__` method.
-
-```python
-def get_next_item(iterator: op.CanNext[int]) -> int:
-    """Get the next item from an iterator."""
-    return next(iterator)
-```
-
-**Method:** `__next__(self) -> V`
-
-### CanIter[+R: CanNext[object]]
-
-Protocol for types that can be converted to an iterator using `iter()`. Implements `__iter__` method.
-
-```python
-def iterate_items[V](iterable: op.CanIter[op.CanNext[V]]) -> list[V]:
-    """Collect all items from an iterable."""
-    return list(iter(iterable))
-```
-
-**Method:** `__iter__(self) -> R`
-
-### CanIterSelf[V]
-
-Convenience protocol for iterators that return themselves from `__iter__()`. Equivalent to `collections.abc.Iterator[V]` but without the ABC overhead.
-
-## Examples
-
-### Custom Iterator
-
-```python
-class CountUp(op.CanNext[int]):
-    def __init__(self, max: int):
-        self.current = 0
-        self.max = max
-    
-    def __next__(self) -> int:
-        if self.current < self.max:
-            self.current += 1
-            return self.current
-        raise StopIteration
-
-
-counter = CountUp(3)
-print(next(counter))  # 1
-print(next(counter))  # 2
-print(next(counter))  # 3
-```
-
-### Custom Iterable
-
-```python
-class Range(op.CanIter[op.CanNext[int]]):
-    def __init__(self, start: int, end: int):
-        self.start = start
-        self.end = end
-    
-    def __iter__(self) -> "RangeIterator":
-        return RangeIterator(self.start, self.end)
-
-
-class RangeIterator(op.CanNext[int]):
-    def __init__(self, start: int, end: int):
-        self.current = start
-        self.end = end
-    
-    def __next__(self) -> int:
-        if self.current < self.end:
-            result = self.current
-            self.current += 1
-            return result
-        raise StopIteration
-
-
-for i in Range(1, 4):
-    print(i)  # 1, 2, 3
-```
-
-### Self-returning Iterator
-
-```python
-class Fibonacci(op.CanIterSelf[int]):
-    def __init__(self, max_count: int):
-        self.a = 0
-        self.b = 1
-        self.count = 0
-        self.max_count = max_count
-    
-    def __iter__(self) -> "Fibonacci":
-        return self
-    
-    def __next__(self) -> int:
-        if self.count < self.max_count:
-            result = self.a
-            self.a, self.b = self.b, self.a + self.b
-            self.count += 1
-            return result
-        raise StopIteration
-
-
-fib = Fibonacci(5)
-print(list(fib))  # [0, 1, 1, 2, 3]
-```
-
-### Generic Iteration Handler
-
-```python
-from typing import TypeVar
-
-T = TypeVar("T")
-
-def collect_all[V](iterable: op.CanIter[op.CanNext[V]]) -> list[V]:
-    """Collect all items from any iterable."""
-    result = []
-    for item in iterable:
-        result.append(item)
-    return result
-
-
-class SimpleList(op.CanIter[op.CanNext[int]]):
-    def __init__(self, items: list[int]):
-        self.items = items
-    
-    def __iter__(self):
-        return SimpleListIterator(self.items)
-
-
-class SimpleListIterator(op.CanNext[int]):
-    def __init__(self, items: list[int]):
-        self.items = items
-        self.index = 0
-    
-    def __next__(self) -> int:
-        if self.index < len(self.items):
-            result = self.items[self.index]
-            self.index += 1
-            return result
-        raise StopIteration
-
-
-data = collect_all(SimpleList([1, 2, 3, 4, 5]))
-print(data)  # [1, 2, 3, 4, 5]
-```
-
-### Infinite Iterator with Limit
-
-```python
-class InfiniteCounter(op.CanNext[int]):
-    def __init__(self):
-        self.current = 0
-    
-    def __next__(self) -> int:
-        result = self.current
-        self.current += 1
-        return result
-
-
-def take[T](iterator: op.CanNext[T], n: int) -> list[T]:
-    """Take the first n items from an iterator."""
-    result = []
-    for _ in range(n):
-        try:
-            result.append(next(iterator))
-        except StopIteration:
-            break
-    return result
-
-
-counter = InfiniteCounter()
-print(take(counter, 5))  # [0, 1, 2, 3, 4]
-print(take(counter, 3))  # [5, 6, 7]
-```
-
-## Type Parameters
-
-- **Value (`+V`)**: Covariant - the type yielded by iteration
-- **Result (`+R`)**: Covariant - the iterator type returned by `__iter__`
-
-## Performance Characteristics
-
-The `optype` iteration protocols have better performance than `collections.abc` because:
-
-- `isinstance()` checks on protocols only need to check required methods
-- `CanNext` only requires `__next__`, avoiding redundant method checks
-- No ABC metaclass overhead from `collections.abc.ABC`
-
-## Related Protocols
-
-- **[Async Iteration](async-iteration.md)**: For `async for` loops
-- **[Containers](containers.md)**: For length and indexing operations
+For the sake of compatibility with `collections.abc`, there is
+`optype.CanIterSelf[V]`, which is a protocol whose `__iter__` returns
+`typing.Self`, as well as a `__next__` method that returns `T`.
+I.e. it is equivalent to `collections.abc.Iterator[V]`, but without the `abc`
+nonsense.

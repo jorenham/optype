@@ -1,87 +1,27 @@
 # Buffer Types
 
-Protocols for the buffer protocol and memory views.
+Interfaces for emulating buffer types using the [buffer protocol][BP].
 
-## Overview
+<table>
+    <tr>
+        <th align="center">operator</th>
+        <th colspan="2" align="center">operand</th>
+    </tr>
+    <tr>
+        <td>expression</td>
+        <td>method</td>
+        <th>type</th>
+    </tr>
+    <tr>
+        <td><code>v = memoryview(_)</code></td>
+        <td><code>__buffer__</code></td>
+        <td><code>CanBuffer</code></td>
+    </tr>
+    <tr>
+        <td><code>del v</code></td>
+        <td><code>__release_buffer__</code></td>
+        <td><code>CanReleaseBuffer</code></td>
+    </tr>
+</table>
 
-The buffer protocol is a Python mechanism for exposing a byte-oriented data buffer interface. It allows efficient access to the internal data of objects that support it, such as bytes, bytearrays, and arrays.
-
-`optype` provides protocols for implementing the buffer protocol via the `__buffer__` and `__release_buffer__` special methods.
-
-| Operation           | Protocol           |
-| ------------------- | ------------------ |
-| `memoryview(_)`     | `CanBuffer`        |
-| `del memoryview(_)` | `CanReleaseBuffer` |
-
-## Examples
-
-```python
-import optype as op
-```
-
-### Implementing a Bufferable Type
-
-```python
-import struct
-
-class ByteArray(op.CanBuffer):
-    def __init__(self, data: bytes):
-        self._data = bytearray(data)
-    
-    def __buffer__(self, flags: int) -> memoryview:
-        """Return a memoryview of the internal buffer."""
-        return memoryview(self._data)
-
-
-# Usage
-ba = ByteArray(b"hello")
-mv = memoryview(ba)
-print(bytes(mv))  # b'hello'
-```
-
-### Working with Bufferable Objects
-
-```python
-def copy_buffer_data(obj: op.CanBuffer) -> bytes:
-    """Copy data from any bufferable object."""
-    mv = memoryview(obj)
-    return bytes(mv)
-
-
-# Works with any object supporting __buffer__
-data = copy_buffer_data(b"test")
-print(data)  # b'test'
-```
-
-### Custom Buffer with Release
-
-```python
-class ManagedBuffer(op.CanBuffer, op.CanReleaseBuffer):
-    def __init__(self, size: int):
-        self._buffer = bytearray(size)
-        self._locked = False
-    
-    def __buffer__(self, flags: int) -> memoryview:
-        """Return a memoryview."""
-        self._locked = True
-        return memoryview(self._buffer)
-    
-    def __release_buffer__(self, mv: memoryview) -> None:
-        """Called when the memoryview is deleted."""
-        self._locked = False
-
-
-mb = ManagedBuffer(10)
-mv = memoryview(mb)
-print(mb._locked)  # True
-del mv
-print(mb._locked)  # False
-```
-
-## Buffer Protocol Reference
-
-For more details on the Python buffer protocol, see the [official documentation](https://docs.python.org/3/reference/datamodel.html#python-buffer-protocol).
-
-## Related Protocols
-
-- **[Containers](containers.md)**: For container protocols like `__len__` and `__getitem__`
+[BP]: https://docs.python.org/3/reference/datamodel.html#python-buffer-protocol

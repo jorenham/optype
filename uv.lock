@@ -358,14 +358,19 @@ dev = [
     { name = "dprint-py" },
     { name = "mypy", extra = ["faster-cache"] },
     { name = "optype", extra = ["numpy"] },
+    { name = "pygments" },
+    { name = "pymdown-extensions" },
     { name = "pyrefly" },
     { name = "pytest" },
     { name = "ruff" },
     { name = "sp-repo-review", extra = ["cli"] },
     { name = "ty" },
     { name = "typing-extensions" },
+    { name = "zensical" },
 ]
-docs = [
+doc = [
+    { name = "pygments" },
+    { name = "pymdown-extensions" },
     { name = "zensical" },
 ]
 extra = [
@@ -408,14 +413,21 @@ dev = [
     { name = "dprint-py", specifier = ">=0.51.1.0" },
     { name = "mypy", extras = ["faster-cache"], specifier = "==1.19.1" },
     { name = "optype", extras = ["numpy"] },
+    { name = "pygments", specifier = ">=2.19.2,<3" },
+    { name = "pymdown-extensions", specifier = ">=10.20.1,<11" },
     { name = "pyrefly", specifier = "==0.52.0" },
     { name = "pytest", specifier = ">=9.0.2" },
     { name = "ruff", specifier = ">=0.15.0" },
     { name = "sp-repo-review", extras = ["cli"], specifier = ">=2025.11.21" },
     { name = "ty", specifier = "==0.0.17" },
     { name = "typing-extensions", specifier = ">=4.15.0" },
+    { name = "zensical", specifier = ">=0.0.23,<0.1" },
 ]
-docs = [{ name = "zensical", specifier = ">=0.0.20" }]
+doc = [
+    { name = "pygments", specifier = ">=2.19.2,<3" },
+    { name = "pymdown-extensions", specifier = ">=10.20.1,<11" },
+    { name = "zensical", specifier = ">=0.0.23,<0.1" },
+]
 extra = [{ name = "optype", extras = ["numpy"] }]
 lint = [
     { name = "dprint-py", specifier = ">=0.51.1.0" },
