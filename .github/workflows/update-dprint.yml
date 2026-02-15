@@ -1,0 +1,61 @@
+name: update dprint plugins
+
+on:
+  schedule:
+    # every Monday at 08:00 UTC
+    - cron: "0 8 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+env:
+  UV_LOCKED: 1
+
+jobs:
+  update:
+    if: github.repository == 'jorenham/optype'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - uses: astral-sh/setup-uv@v7.3.0
+
+      - name: dprint config update
+        id: update
+        run: |
+          output=$(uv run --only-group=lint dprint config update 2>&1)
+          echo "$output"
+          {
+            echo "output<<EOF"
+            echo "$output"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: create pull request
+        uses: peter-evans/create-pull-request@v8.1.0
+        with:
+          branch: github-actions-bot/dprint-config-update
+          branch-suffix: timestamp
+          commit-message: "update dprint plugins"
+          title: "update dprint plugins"
+          body: |
+            Automated update of [dprint][1] plugins via `dprint config update`.
+
+            ```
+            ${{ steps.update.outputs.output }}
+            ```
+
+            [1]: https://dprint.dev
+          labels: |
+            topic: dependencies
+          delete-branch: true
+          signoff: true
+          sign-commits: true
