@@ -49,7 +49,6 @@ jobs:
         uses: peter-evans/create-pull-request@v8.1.0
         with:
           branch: github-actions-bot/dprint-config-update
-          branch-suffix: timestamp
           commit-message: "update dprint plugins"
           title: "update dprint plugins"
           body: |
