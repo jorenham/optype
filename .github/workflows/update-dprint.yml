@@ -61,6 +61,7 @@ jobs:
 
             [1]: https://dprint.dev
           labels: |
+            tool: dprint
             topic: dependencies
           delete-branch: true
           signoff: true
