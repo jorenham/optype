@@ -28,10 +28,16 @@ jobs:
 
       - uses: astral-sh/setup-uv@v7.3.0
 
+      # this prevents dprint from printing "compiling ..." messages, which would
+      # otherwise be included in the PR body, so we can ignore errors here
+      - name: compile dprint plugins
+        run: uv run --only-group=lint dprint check
+        continue-on-error: true
+
       - name: dprint config update
         id: update
         run: |
-          output=$(uv run --only-group=lint dprint config update 2>&1)
+          output=$(uv run --quiet --only-group=lint dprint config update --yes 2>&1)
           echo "$output"
           {
             echo "output<<EOF"
