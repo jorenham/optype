@@ -1,3 +1,5 @@
+# pyright: reportInvalidStubStatement=false
+
 from optype.test import assert_subtype
 
 assert_subtype[int](True)
