@@ -1,6 +1,18 @@
 from typing import Final
 
-from . import copy, dataclasses, inspect, io, json, numpy, pickle, string, types, typing
+from . import (
+    copy,
+    dataclasses,
+    inspect,
+    io,
+    json,
+    numpy,
+    pickle,
+    string,
+    test,
+    types,
+    typing,
+)
 from ._core._can import (
     CanAbs,
     CanAbsSelf,
@@ -748,6 +760,7 @@ __all__ = [
     "numpy",
     "pickle",
     "string",
+    "test",
     "types",
     "typing",
 ]
