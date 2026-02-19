@@ -68,7 +68,7 @@ extra = [
 ]
 doc = [
   "zensical>=0.0.23,<0.1",
-  "pymdown-extensions>=10.20.1,<11",
+  "pymdown-extensions>=10.21,<11",
   "pygments>=2.19.2,<3",
 ]
 lint = [
@@ -85,9 +85,9 @@ test = [
 type = [
   { include-group = "extra" },
   { include-group = "test" },
-  "basedpyright==1.38.0",
+  "basedpyright==1.38.1",
   "mypy[faster-cache]==1.19.1",
-  "pyrefly==0.52.0",
+  "pyrefly==0.53.0",
   "ty==0.0.17",
 ]
 dev = [

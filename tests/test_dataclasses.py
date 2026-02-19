@@ -42,11 +42,11 @@ def test_has_dataclass_fields_issubclass_real_dataclass() -> None:
     """Test issubclass with real dataclasses."""
     assert issubclass(  # type: ignore[misc]
         Point,
-        op.dataclasses.HasDataclassFields,  # pyright: ignore[reportGeneralTypeIssues]  # pyrefly: ignore[invalid-argument]
+        op.dataclasses.HasDataclassFields,  # pyright: ignore[reportGeneralTypeIssues]  # pyrefly: ignore[invalid-argument, unsafe-overlap]
     )
     assert issubclass(  # type: ignore[misc]
         ImmutablePoint,
-        op.dataclasses.HasDataclassFields,  # pyright: ignore[reportGeneralTypeIssues]  # pyrefly: ignore[invalid-argument]
+        op.dataclasses.HasDataclassFields,  # pyright: ignore[reportGeneralTypeIssues]  # pyrefly: ignore[invalid-argument, unsafe-overlap]
     )
 
 
@@ -71,7 +71,9 @@ def test_has_dataclass_fields_isinstance_real_dataclass() -> None:
     point = Point(x=1.0, y=2.0)
     immutable_point = ImmutablePoint(x=3.0, y=4.0)
 
+    # pyrefly: ignore[unsafe-overlap]
     assert isinstance(point, op.dataclasses.HasDataclassFields)
+    # pyrefly: ignore[unsafe-overlap]
     assert isinstance(immutable_point, op.dataclasses.HasDataclassFields)
 
 
