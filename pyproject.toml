@@ -123,6 +123,25 @@ warn_unreachable = false # numpy-typing-compat compat
 [tool.pyrefly]
 project-includes = ["optype", "examples", "tests"]
 
+[tool.pyrefly.errors]
+implicit-abstract-class = "error"
+implicit-any = "error"
+implicitly-defined-attribute = "error"
+missing-override-decorator = "error"
+missing-source = "error" # bugged?
+not-required-key-access = "error"
+open-unpacking = "error"
+unannotated-attribute = "error"
+unannotated-parameter = "error"
+unannotated-return = "error"
+untyped-import = "error"
+unused-ignore = "error"
+variance-mismatch = "error"
+
+[[tool.pyrefly.sub-config]]
+matches = "tests/**"
+errors = { implicit-any = "ignore" }
+
 # [based]pyright
 
 [tool.pyright]
