@@ -72,6 +72,7 @@ class Just(Protocol[_T]):  # type: ignore[misc]
     @override
     def __class__(self, /) -> type[_T]: ...  # pyrefly: ignore[bad-override]
     @__class__.setter
+    @override
     def __class__(self, t: type[_T], /) -> None: ...
 
 
@@ -136,6 +137,7 @@ class JustBytes(Protocol, metaclass=_JustMeta, just=bytes):  # type: ignore[misc
     @override
     def __class__(self, /) -> type[bytes]: ...  # pyrefly: ignore[bad-override]
     @__class__.setter
+    @override
     def __class__(self, t: type[bytes], /) -> None: ...
 
 
@@ -190,6 +192,7 @@ class JustInt(Protocol, metaclass=_JustMeta, just=int):  # type: ignore[misc]  #
     @override
     def __class__(self, /) -> type[int]: ...  # pyrefly: ignore[bad-override]
     @__class__.setter
+    @override
     def __class__(self, t: type[int], /) -> None: ...
 
     # workaround for `pyright<1.1.390` and `basedpyright<1.22.1`
@@ -210,6 +213,7 @@ class JustFloat(Protocol, metaclass=_JustMeta, just=float):  # type: ignore[misc
     @override
     def __class__(self, /) -> type[float]: ...  # pyrefly: ignore[bad-override]
     @__class__.setter
+    @override
     def __class__(self, t: type[float], /) -> None: ...
 
     # workaround for `pyright<1.1.390` and `basedpyright<1.22.1`
@@ -230,6 +234,7 @@ class JustComplex(Protocol, metaclass=_JustMeta, just=complex):  # type: ignore[
     @override
     def __class__(self, /) -> type[complex]: ...  # pyrefly: ignore[bad-override]
     @__class__.setter
+    @override
     def __class__(self, t: type[complex], /) -> None: ...
 
     # workaround for `pyright<1.1.390` and `basedpyright<1.22.1`
@@ -247,6 +252,7 @@ class JustDate(Protocol, metaclass=_JustMeta, just=dt.date):  # type: ignore[mis
     @override
     def __class__(self, /) -> type[dt.date]: ...  # pyrefly: ignore[bad-override]
     @__class__.setter
+    @override
     def __class__(self, t: type[dt.date], /) -> None: ...
 
 
@@ -263,4 +269,5 @@ class JustObject(Protocol, metaclass=_JustMeta, just=object):  # type: ignore[mi
     @override
     def __class__(self, /) -> type[object]: ...
     @__class__.setter
+    @override
     def __class__(self, t: type[object], /) -> None: ...
