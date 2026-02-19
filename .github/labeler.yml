@@ -85,7 +85,7 @@ optype.string:
 optype.test:
   - changed-files:
       - any-glob-to-any-file:
-          - optype/test.py
+          - optype/test.pyi
 
 optype.typing:
   - changed-files:
