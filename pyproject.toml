@@ -162,6 +162,10 @@ reportUnusedCallResult = false # https://github.com/microsoft/pyright/issues/865
 reportUnusedImport = false # dupe of F401
 reportUnusedVariable = false # dupe of F841
 
+[[tool.pyright.executionEnvironments]]
+root = "tests"
+reportInvalidStubStatement = false
+
 # ty
 
 [tool.ty]
