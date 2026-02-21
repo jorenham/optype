@@ -1,6 +1,7 @@
 # ruff: noqa: DTZ005, DTZ011
 
 import datetime as dt
+from typing import Any, cast
 
 import pytest
 
@@ -123,3 +124,21 @@ def test_just_date() -> None:
 
     tn_date_type: type[op.JustDate] = dt.date
     tp_datetime_type: type[op.JustDate] = dt.datetime  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+
+
+def test_just_any() -> None:
+    x_obj: object = object()
+    x_any: Any = cast("Any", x_obj)
+    x_set: set[Any] = {x_any}
+
+    tn_any: op.JustAny = x_any
+    tp_obj: op.JustAny = x_obj  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    tp_set: op.JustAny = x_set  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+
+    t_obj: type[object] = object
+    t_any: type[Any] = cast("type[Any]", t_obj)
+    t_set: type[set[Any]] = type(x_set)
+
+    tn_any_type: type[op.JustAny] = t_any
+    tp_obj_type: type[op.JustAny] = t_obj  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    tp_set_type: type[op.JustAny] = t_set  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
