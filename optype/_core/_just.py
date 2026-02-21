@@ -3,6 +3,7 @@ import sys
 from typing import (
     Any,
     Generic,
+    Never,
     Protocol,
     Self,
     TypeAlias,
@@ -19,6 +20,7 @@ from ._can import CanFloat, CanIndex
 
 __all__ = [
     "Just",
+    "JustAny",
     "JustBytes",
     "JustComplex",
     "JustDate",
@@ -55,8 +57,8 @@ _CanFloatOrIndex: TypeAlias = CanFloat | CanIndex
 @final  # https://github.com/python/mypy/issues/17288
 class Just(Protocol[_T]):  # type: ignore[misc]
     """
-    An runtime-checkable invariant type "wrapper", where `Just[T]` only accepts
-    instances of `T`, and but rejects instances of any strict subtypes of `T`.
+    An invariant type "wrapper", where `Just[T]` only accepts instances of `T`, and but
+    rejects instances of any strict subtypes of `T`.
 
     Note that e.g. `Literal[""]` and `LiteralString` are not a strict `str` subtypes,
     and are therefore assignable to `Just[str]`, but instances of `class S(str): ...`
@@ -271,3 +273,18 @@ class JustObject(Protocol, metaclass=_JustMeta, just=object):  # type: ignore[mi
     @__class__.setter
     @override
     def __class__(self, t: type[object], /) -> None: ...
+
+
+@final
+class JustAny(Protocol):  # type: ignore[misc]
+    """
+    Will accept `Any` and `type[Any]` itself, and reject all other types, including
+    `object`, `type[object]`, and `list[Any]`.
+    """
+
+    @property
+    @override
+    def __class__(self, /) -> type[Never]: ...  # pyrefly: ignore[bad-override]
+    @__class__.setter
+    @override
+    def __class__(self, t: type[Never], /) -> None: ...
