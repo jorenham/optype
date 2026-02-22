@@ -6,7 +6,7 @@ https://docs.python.org/3/library/dataclasses.html
 import dataclasses
 import sys
 from collections.abc import Mapping
-from typing import Any, Protocol, TypeAlias
+from typing import Any, ClassVar, Protocol, TypeAlias
 
 if sys.version_info >= (3, 12):
     from typing import override
