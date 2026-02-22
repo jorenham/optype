@@ -1,7 +1,7 @@
 """Test module for optype.dataclasses protocols."""
 
 import dataclasses
-from typing import Any, cast
+from typing import Any, ClassVar, cast
 
 import optype as op
 from optype.inspect import is_runtime_protocol
@@ -31,7 +31,7 @@ class ImmutablePoint:
 class FakeDataclass:
     """A class with __dataclass_fields__ attribute but not a real dataclass."""
 
-    __dataclass_fields__: dict[str, Any] = {}  # noqa: RUF012
+    __dataclass_fields__: ClassVar[dict[str, Any]] = {}
 
 
 class NotADataclass:
@@ -97,17 +97,20 @@ def test_has_dataclass_fields_isinstance_builtin_types() -> None:
     assert not isinstance({}, op.dataclasses.HasDataclassFields)
 
 
-def test_has_dataclass_fields_generic_type_parameter() -> None:
+def test_has_dataclass_fields_type_parameter() -> None:
     """Test that HasDataclassFields has proper generic type parameter."""
     point_fields = Point.__dataclass_fields__
     assert isinstance(point_fields, dict)
 
     # Check that the protocol type variable works
-    assert isinstance(Point, op.dataclasses.HasDataclassFields)
+    assert isinstance(
+        Point,
+        op.dataclasses.HasDataclassFields,  # pyrefly: ignore[unsafe-overlap]
+    )
 
     # This should type check correctly with the generic parameter
     protocol_type = cast("type[op.dataclasses.HasDataclassFields]", Point)
-    assert issubclass(  # type: ignore[misc]
+    assert issubclass(
         protocol_type,
         op.dataclasses.HasDataclassFields,  # pyright: ignore[reportGeneralTypeIssues]  # pyrefly: ignore[invalid-argument]
     )
