@@ -27,18 +27,12 @@ def __dir__() -> tuple[str]:
 
 ###
 
-__Field: TypeAlias = dataclasses.Field[Any]
-_FieldsT = TypeVar("_FieldsT", bound=Mapping[str, __Field], default=dict[str, __Field])
-
-
-###
-
 
 @runtime_checkable
-class HasDataclassFields(Protocol[_FieldsT]):
+class HasDataclassFields(Protocol):
     """Can be used to check whether a type or instance is a dataclass."""
 
-    __dataclass_fields__: _FieldsT
+    __dataclass_fields__: ClassVar[dict[str, dataclasses.Field[Any]]]
 
     # Because of https://github.com/python/mypy/issues/3939 just having
     # `__dataclass_fields__` is insufficient for `issubclass` checks.
