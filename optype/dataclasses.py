@@ -5,8 +5,7 @@ https://docs.python.org/3/library/dataclasses.html
 
 import dataclasses
 import sys
-from collections.abc import Mapping
-from typing import Any, ClassVar, Protocol, TypeAlias
+from typing import Any, ClassVar, Protocol
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -14,9 +13,9 @@ else:
     from typing_extensions import override
 
 if sys.version_info >= (3, 13):
-    from typing import TypeVar, runtime_checkable
+    from typing import runtime_checkable
 else:
-    from typing_extensions import TypeVar, runtime_checkable
+    from typing_extensions import runtime_checkable
 
 __all__ = ("HasDataclassFields",)
 
