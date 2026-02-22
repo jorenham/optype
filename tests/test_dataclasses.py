@@ -97,18 +97,18 @@ def test_has_dataclass_fields_isinstance_builtin_types() -> None:
     assert not isinstance({}, op.dataclasses.HasDataclassFields)
 
 
-def test_has_dataclass_fields_type_parameter() -> None:
-    """Test that HasDataclassFields has proper generic type parameter."""
+def test_has_dataclass_fields_protocol_conformance() -> None:
+    """Test basic protocol conformance for HasDataclassFields."""
     point_fields = Point.__dataclass_fields__
     assert isinstance(point_fields, dict)
 
-    # Check that the protocol type variable works
+    # Check that the class structurally matches the protocol
     assert isinstance(
         Point,
         op.dataclasses.HasDataclassFields,  # pyrefly: ignore[unsafe-overlap]
     )
 
-    # This should type check correctly with the generic parameter
+    # This should type check correctly as a HasDataclassFields type
     protocol_type = cast("type[op.dataclasses.HasDataclassFields]", Point)
     assert issubclass(
         protocol_type,
