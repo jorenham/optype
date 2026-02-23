@@ -5,10 +5,9 @@ For the [`dataclasses`][DC] standard library, `optype.dataclasses` provides the
 It can conveniently be used to check whether a type or instance is a dataclass,
 i.e. `isinstance(obj, HasDataclassFields)`.
 
-!!! warning "Breaking change"
+!!! warning Breaking change
 
-    `HasDataclassFields` was previously generic (`HasDataclassFields[V: Mapping[str, Field]]`),
-    but has been deparametrized and is no longer generic.
+    Starting in v0.17 `HasDataclassFields` is no longer generic. Previously it was generic  -- `HasDataclassFields[V: Mapping[str, Field]]`.
 
 <!-- TODO(@jorenham): Examples -->
 
