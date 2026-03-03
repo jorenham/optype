@@ -171,8 +171,8 @@ python-platform = "all"
 [tool.ty.src]
 include = [
   "optype",
-  "examples",
   # there are  too many false positives in these dirs for now
+  # "examples",
   # "tests",
 ]
 
