@@ -22,7 +22,7 @@ _submodules = {
     "types": "types",
     "typing": "typing",
 }
-__all__ += list(_submodules)  # pyright: ignore[reportUnsupportedDunderAll]
+__all__ += list(_submodules)  # pyright: ignore[reportUnsupportedDunderAll] # pyrefly: ignore[unresolvable-dunder-all]
 
 
 def __0(dubdub: str, lubba: str, /) -> str:
