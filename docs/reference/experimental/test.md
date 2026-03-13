@@ -33,9 +33,9 @@ In contrast, `assert_subtype[int](1)` will be accepted by both type checkers.
     ```pyi title="assert_subtype_example.pyi"
     import optype as op
 
-    op.test.assert_subtype[int](True) # (1)!
-    op.test.assert_subtype[int](1) # (2)!
-    op.test.assert_subtype[int](1.0) # (3)!
+    op.test.assert_subtype[int](True)  # (1)!
+    op.test.assert_subtype[int](1)  # (2)!
+    op.test.assert_subtype[int](1.0)  # (3)!
     ```
 
     1.  ✔️ `True` is a `bool`, which is a subtype of `int`, so type-checkers will accept this.

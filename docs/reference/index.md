@@ -9,8 +9,8 @@ All typing protocols in `optype` are [runtime-checkable](https://typing.readthed
 ```python
 import optype as op
 
-isinstance('hello', op.CanAdd)  # True
-isinstance(42, op.CanAbs)       # True
+isinstance("hello", op.CanAdd)  # True
+isinstance(42, op.CanAbs)  # True
 isinstance([1], op.CanGetitem)  # True
 ```
 

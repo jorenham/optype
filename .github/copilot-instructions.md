@@ -156,6 +156,7 @@ if TYPE_CHECKING:
 import pytest
 import optype as op
 
+
 def test_functionality():
     """Test description."""
     # Test implementation

@@ -66,10 +66,10 @@ import optype as op
 Now the type checker correctly understands:
 
 ```python
-twice(2)           # -> int
-twice(3.14)        # -> float
-twice('I')         # -> str (because 'I' * 2 == 'II')
-twice(True)        # -> int (because 2 * True == 2)
+twice(2)  # -> int
+twice(3.14)  # -> float
+twice("I")  # -> str (because 'I' * 2 == 'II')
+twice(True)  # -> int (because 2 * True == 2)
 twice((42, True))  # -> tuple[int, bool, int, bool]
 ```
 
@@ -161,7 +161,7 @@ def assert_int(x: op.Just[int]) -> int:
     return x
 
 
-assert_int(42)     # ✓ OK
+assert_int(42)  # ✓ OK
 assert_int(False)  # ✗ Error: bool is a strict subtype of int
 ```
 
@@ -180,6 +180,7 @@ Use cases:
     def process(x: op.Just[int]) -> int:
         return x * 2
 
+
     # ✗ Wrong: Just in return position
     def get_value() -> op.Just[int]:  # Don't do this!
         return 42
@@ -191,8 +192,8 @@ Protocols describing what operations are **can** be used.
 Each `Can*` protocol implements a single special "dunder" method.
 
 ```python
-_: op.CanAbs[int] = 42         # abs(42) -> int
-_: CanAdd[str, str] = "hi"     # "hi" + "hi" -> str
+_: op.CanAbs[int] = 42  # abs(42) -> int
+_: CanAdd[str, str] = "hi"  # "hi" + "hi" -> str
 _: CanGetitem[int, int] = [1]  # [1][0] -> int
 ```
 
@@ -205,9 +206,9 @@ def get_name(obj: op.HasName) -> str:
     return obj.__name__
 
 
-get_name(str)           # ✔️
+get_name(str)  # ✔️
 get_name(lambda: None)  # ✔️
-get_name(None)          # ❌
+get_name(None)  # ❌
 ```
 
 ### 4. `Does*` - Operator Types
@@ -235,7 +236,9 @@ result = op.do_abs(-5)  # -> int
 ```python
 from typing import Protocol
 
+
 class CanAddSub(op.CanAdd[int, float], op.CanSub[int, float], Protocol): ...
+
 
 def process(x: CanAddSub) -> float:
     """Accept types that support both addition and subtraction."""
@@ -249,6 +252,7 @@ Use intersection types to require multiple capabilities:
 ```python
 from typing import Protocol
 import optype as op
+
 
 class CanAddAndMulIntFloat(op.CanAdd[int, float], op.CanMul[int, float], Protocol):
     pass
@@ -296,7 +300,7 @@ def first_item[T](container: op.CanSequence[int, T]) -> T | None:
     return container[0]
 
 
-first_item([1, 2, 3])      # -> int | None
+first_item([1, 2, 3])  # -> int | None
 ```
 
 ## Working with NumPy
