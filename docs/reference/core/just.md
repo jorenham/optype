@@ -54,11 +54,14 @@ Ensuring that a function returns just `Any` (statically):
 import optype as op
 from typing import Any
 
+
 def returns_any() -> Any: ...
 def returns_obj() -> object: ...
 def returns_set() -> set[Any]: ...
 
+
 def assert_any(x: op.JustAny, /) -> None: ...
+
 
 assert_any(returns_any())  # ok
 assert_any(returns_obj())  # rejected

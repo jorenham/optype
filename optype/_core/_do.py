@@ -136,7 +136,7 @@ do_dir: Final[_d.DoesDir] = cast("_d.DoesDir", dir)
 
 # callables
 
-do_call: Final[_d.DoesCall] = _o.call  # pyrefly: ignore[bad-assignment]
+do_call: Final[_d.DoesCall] = _o.call
 
 # containers and sequences
 

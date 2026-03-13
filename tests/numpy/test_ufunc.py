@@ -284,5 +284,5 @@ def test_anyufunc_custom_np() -> None:
 def test_canarrayufunc() -> None:
     quantiles = np.linspace(0, 1, 100)
     quantiles2: CanArrayUFunc = quantiles
-    assert isinstance(quantiles, CanArrayUFunc)
+    assert isinstance(quantiles, CanArrayUFunc)  # pyrefly: ignore[unsafe-overlap]
     assert not isinstance(list(quantiles), CanArrayUFunc)
