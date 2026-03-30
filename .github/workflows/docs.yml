@@ -31,9 +31,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6.0.2
 
-      - uses: actions/configure-pages@v5.0.0
+      - uses: actions/configure-pages@v6.0.0
 
-      - uses: astral-sh/setup-uv@v7.6.0
+      - uses: astral-sh/setup-uv@v8.0.0
 
       - name: build
         run: uv run --only-group=doc zensical build --clean
@@ -45,4 +45,4 @@ jobs:
 
       - name: deploy
         id: deployment
-        uses: actions/deploy-pages@v4.0.5
+        uses: actions/deploy-pages@v5.0.0
