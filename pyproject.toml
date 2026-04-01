@@ -67,8 +67,8 @@ extra = [
   "optype[numpy]",
 ]
 doc = [
-  "zensical==0.0.28",
-  "pygments>=2.19.2,<3",
+  "zensical==0.0.31",
+  "pygments==2.20.0",
 ]
 lint = [
   "dprint-py==0.52.0.0",
