@@ -67,27 +67,27 @@ extra = [
   "optype[numpy]",
 ]
 doc = [
-  "zensical==0.0.31",
+  "zensical==0.0.33",
   "pygments==2.20.0",
 ]
 lint = [
-  "dprint-py==0.52.0.0",
-  "ruff==0.15.7",
-  "sp-repo-review[cli]==2026.3.2",
+  "dprint-py==0.53.1.0",
+  "ruff==0.15.10",
+  "sp-repo-review[cli]==2026.4.4",
 ]
 test = [
   { include-group = "extra" },
   "beartype>=0.22.9",
-  "pytest>=9.0.2",
+  "pytest>=9.0.3",
   "typing-extensions>=4.15.0",
 ]
 type = [
   { include-group = "extra" },
   { include-group = "test" },
-  "basedpyright==1.38.3",
-  "mypy[faster-cache]==1.19.1",
-  "pyrefly==0.57.1",
-  "ty==0.0.24",
+  "basedpyright==1.39.1",
+  "mypy[faster-cache]==1.20.1",
+  "pyrefly==0.61.0",
+  "ty==0.0.31",
 ]
 dev = [
   { include-group = "extra" },

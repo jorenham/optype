@@ -27,7 +27,7 @@ class C(B): ...  # noqa: E302
     ],
 )
 def test_just_sub_meta(just_cls: type, cls: type) -> None:
-    obj = cls.today() if cls is dt.date else cls()  # type: ignore[attr-defined]
+    obj = cls.today() if cls is dt.date else cls()
     assert isinstance(obj, just_cls)
     assert not isinstance(bool(), just_cls)  # noqa: UP018
     assert not isinstance(cls, just_cls)
