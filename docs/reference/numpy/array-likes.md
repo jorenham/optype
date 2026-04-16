@@ -71,7 +71,13 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
     <td align="left"><code>ToBoolStrict{}D</code></td>
 </tr>
 <tr>
-    <td align="left"><code>~int</code></td>
+    <td align="left" rowspan="2"><code>~int</code></td>
+    <td align="left"><code>int64</code></td>
+    <td align="left"><code>ToJustInt64</code></td>
+    <td align="left"><code>ToJustInt64_{}D</code></td>
+    <td align="left"><code>ToJustInt64Strict{}D</code></td>
+</tr>
+<tr>
     <td align="left"><code>integer</code></td>
     <td align="left"><code>ToJustInt</code></td>
     <td align="left"><code>ToJustInt{}D</code></td>
@@ -137,6 +143,13 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
     <td align="left"><code>ToJustFloat64</code></td>
     <td align="left"><code>ToJustFloat64_{}D</code></td>
     <td align="left"><code>ToJustFloat64Strict{}D</code></td>
+</tr>
+<tr>
+    <td align="left"></td>
+    <td align="left"><code>longdouble</code></td>
+    <td align="left"><code>ToJustLongDouble</code></td>
+    <td align="left"><code>ToJustLongDouble{}D</code></td>
+    <td align="left"><code>ToJustLongDoubleStrict{}D</code></td>
 </tr>
 <tr>
     <td align="left">
@@ -206,6 +219,13 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
     <td align="left"><code>ToJustComplex128</code></td>
     <td align="left"><code>ToJustComplex128_{}D</code></td>
     <td align="left"><code>ToJustComplex128Strict{}D</code></td>
+</tr>
+<tr>
+    <td align="left"></td>
+    <td align="left"><code>clongdouble</code></td>
+    <td align="left"><code>ToJustCLongDouble</code></td>
+    <td align="left"><code>ToJustCLongDouble{}D</code></td>
+    <td align="left"><code>ToJustCLongDoubleStrict{}D</code></td>
 </tr>
 <tr>
     <td align="left">
@@ -296,7 +316,12 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
 
 !!! note
 
-    The `To[Just]{Float16,Float32,Complex64}*` type aliases were added in `optype 0.12.0`.
+    The `ToJustInt64*` type aliases were added in `optype 0.10.0`.
+
+!!! note
+
+    The `To[Just]{Float16,Float32,Complex64}*` and `ToJust[C]LongDouble*` type aliases
+    were added in `optype 0.12.0`.
 
 Source code: [`optype/numpy/_to.py`][CODE-NP-TO]
 
