@@ -71,13 +71,13 @@ The module assumes a C99-compatible platform with either a 32- or 64-bit data mo
 </tr>
 <tr>
 	<td align="left"><code>CType</code></td>
-	<td align="left"><code>ctypes._CData</code></td>
-	<td align="left">Broad base for ctypes objects (scalar, array, pointer, structure, union, ...).</td>
+	<td align="left"><code>ctypes._SimpleCData[T]</code></td>
+	<td align="left">Scalar-value ctypes base type.</td>
 </tr>
 <tr>
 	<td align="left"><code>CScalar</code></td>
-	<td align="left"><code>ctypes._SimpleCData[T]</code></td>
-	<td align="left">Scalar-value ctypes base type.</td>
+	<td align="left"><code>ctypes._CData</code></td>
+	<td align="left">Broad base for ctypes objects (scalar, array, pointer, structure, union, ...).</td>
 </tr>
 <tr>
 	<td align="left"><code>Array</code></td>
