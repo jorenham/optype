@@ -8,6 +8,10 @@ typing), and it exposes abstract `ctypes` type aliases for static typing.
 
 The module assumes a C99-compatible platform with either a 32- or 64-bit data model.
 
+```python
+import ctypes as ct
+```
+
 ## Reexported `ctypes` constructors
 
 <table>
