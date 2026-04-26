@@ -1,0 +1,114 @@
+name: mypy_primer comment
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: write
+
+on: # zizmor: ignore[dangerous-triggers] -- workflow_run is needed to post PR comments from fork PRs
+  workflow_run:
+    workflows: [mypy_primer run]
+    types: [completed]
+
+jobs:
+  comment:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.event.workflow_run.id }}
+      cancel-in-progress: true
+
+    steps:
+      - uses: dawidd6/action-download-artifact@8305c0f1062bb0d184d09ef4493ecb9288447732 # v20
+        name: download pr-number
+        with:
+          name: pr-number
+          path: ${{ runner.temp }}/artifacts
+          run_id: ${{ github.event.workflow_run.id }}
+
+      - name: parse pr-number
+        id: pr-number
+        run: |
+          if [[ -f ${{ runner.temp }}/artifacts/pr-number ]]
+          then
+            echo "pr-number=$(<${{ runner.temp }}/artifacts/pr-number)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: dawidd6/action-download-artifact@8305c0f1062bb0d184d09ef4493ecb9288447732 # v20
+        name: download mypy_primer.diff
+        id: download-mypy_primer-diff
+        if: ${{ steps.pr-number.outputs.pr-number }}
+        with:
+          name: mypy_primer-diff
+          path: ${{ runner.temp }}/artifacts
+          run_id: ${{ github.event.workflow_run.id }}
+
+      - name: generate comment content
+        id: generate-comment
+        if: ${{ steps.download-mypy_primer-diff.outputs.found_artifact == 'true' }}
+        run: |
+          # Guard against malicious mypy_primer results that symlink to a secret
+          # file on this runner
+          if [[ -L ${{ runner.temp }}/artifacts/mypy_primer.diff ]]
+          then
+              echo "Error: mypy_primer.diff cannot be a symlink"
+              exit 1
+          fi
+
+          # Note this identifier is used to find the comment to update on
+          # subsequent runs
+          echo '<!-- generated-comment mypy_primer -->' >> comment.md
+
+          echo '## `mypy_primer` results' >> comment.md
+          if [ -s "${{ runner.temp }}/artifacts/mypy_primer.diff" ]; then
+            # Keep the comment body under GitHub's comment limit (~65k chars).
+            DIFF_MAX=60000
+
+            echo '<details>' >> comment.md
+            echo '<summary>⚠️ Changes were detected when running mypy on open source projects</summary>' >> comment.md
+            echo '' >> comment.md
+            echo '```diff' >> comment.md
+            head -c "$DIFF_MAX" ${{ runner.temp }}/artifacts/mypy_primer.diff >> comment.md
+            if [ "$(wc -c < ${{ runner.temp }}/artifacts/mypy_primer.diff)" -gt "$DIFF_MAX" ]; then
+              echo '' >> comment.md
+              echo '... (truncated)' >> comment.md
+            fi
+            echo '```' >> comment.md
+            echo '</details>' >> comment.md
+          else
+            echo '✅ No ecosystem changes detected' >> comment.md
+          fi
+
+          echo 'comment<<EOF' >> "$GITHUB_OUTPUT"
+          cat comment.md >> "$GITHUB_OUTPUT"
+          echo 'EOF' >> "$GITHUB_OUTPUT"
+
+      - name: create or update comment
+        if: ${{ steps.generate-comment.outcome == 'success' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.pr-number.outputs.pr-number }}
+        run: |
+          # Find existing comment by the bot containing the marker
+          COMMENT_ID=$(
+            gh api \
+              "repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" \
+              --paginate \
+              --jq '.[] | select(.user.login == "github-actions[bot]") | select(.body | contains("<!-- generated-comment mypy_primer -->")) | .id' \
+            | head -n1
+          )
+
+          if [[ -n "$COMMENT_ID" ]]; then
+            # Update existing comment
+            gh api \
+              --method PATCH \
+              "repos/${{ github.repository }}/issues/comments/${COMMENT_ID}" \
+              --field "body=@comment.md"
+          else
+            # Create new comment
+            gh pr comment "${PR_NUMBER}" \
+              --repo "${{ github.repository }}" \
+              --body-file comment.md
+          fi
