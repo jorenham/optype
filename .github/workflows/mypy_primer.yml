@@ -1,0 +1,87 @@
+name: mypy_primer run
+permissions: read-all
+
+on:
+  # only run on pr, since we diff between branches
+  pull_request:
+    paths:
+      - "optype/**/*.py"
+      - "optype/**/*.pyi"
+      - "examples/**/*.py"
+      - "tests/**/*.py"
+      - "tests/**/*.pyi"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/mypy_primer.yml"
+      - ".github/workflows/mypy_primer_comment.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  mypy_primer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          path: new
+          fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+
+      - name: run mypy_primer
+        shell: bash
+        run: |
+          cd new
+          MYPY_VERSION=$(sed -n 's#.*\/mypy-\([0-9][^;]*\)-py3.*#\1#p' uv.lock | head -n1)
+          if [[ -z "$MYPY_VERSION" ]]; then
+            echo "Unable to determine mypy version from uv.lock"
+            exit 1
+          fi
+
+          echo "new commit"
+          git checkout $GITHUB_SHA
+          git rev-list --format=%s --max-count=1 HEAD
+
+          MERGE_BASE=$(git merge-base $GITHUB_SHA origin/$GITHUB_BASE_REF)
+          git worktree add ../old $MERGE_BASE
+          cd ../old
+
+          echo "old commit"
+          git rev-list --format=%s --max-count=1 HEAD
+
+          echo ""
+          cd ..
+
+          # Keep mypy version identical for old/new; only source path differs.
+          uvx \
+            --from="https://github.com/hauntsaninja/mypy_primer.git" \
+            mypy_primer \
+            --project-selector "/(beartype|dedupe|efax|hydpy|jax|lmo|numpy-typing-compat|optuna|pandera|scikit-learn|scipy|scipy-stubs|static-frame|vision|xarray)/?$" \
+            --new v${MYPY_VERSION} \
+            --new-prepend-path new \
+            --old v${MYPY_VERSION} \
+            --old-prepend-path old \
+            --output concise \
+            --additional-flags="--hide-error-context" > mypy_primer.diff || [ $? -eq 1 ]
+
+          # Remove ANSI color codes before uploading
+          sed -ie 's/\x1b\[[0-9;]*m//g' mypy_primer.diff
+
+          echo ${{ github.event.number }} > pr-number
+
+      - name: upload mypy_primer.diff
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mypy_primer-diff
+          path: mypy_primer.diff
+
+      - name: upload pr-number
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pr-number
+          path: pr-number
