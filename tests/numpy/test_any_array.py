@@ -1,5 +1,6 @@
 import ctypes as ct
 import datetime as dt
+import math
 from collections import deque
 from typing import Final
 
@@ -235,3 +236,47 @@ def test_any_object_array(sctype: type[np.object_ | _ct.Object]) -> None:
     x = np.array(sctype())
     x_any: onp.AnyObjectArray = x
     assert np.issubdtype(x.dtype, np.object_)
+
+
+def test_any_void_array_structured_forms() -> None:
+    """Verify AnyVoidArray accepts all 4 NumPy structured dtype forms plus raw void."""
+
+    dt1 = [("x", "f4"), ("y", "i4", 2), ((42, "z"), "f4", (2, 2))]
+    arr1: onp.AnyVoidArray = np.array(
+        [(1.0, [2, 3], [[4.0, 5.0], [6.0, 7.0]])],
+        dtype=dt1,
+    )
+    fields1 = arr1.dtype.fields
+    assert fields1 is not None
+    assert fields1["y"][0] == np.dtype(("i4", (2,)))
+    assert fields1["z"][0] == np.dtype(("f4", (2, 2)))
+    assert fields1["z"][2] == 42  # type: ignore[misc]  # stubs type fields as 2-tuple
+
+    arr2: onp.AnyVoidArray = np.array([(1, 2.0)], dtype="i4, f4")
+    assert arr2.dtype.names == ("f0", "f1")
+
+    arr3: onp.AnyVoidArray = np.array(
+        [(1, 2.0)],
+        dtype={
+            "names": ["a", "b"],
+            "formats": ["i4", "f4"],
+            "offsets": [0, 8],
+            "itemsize": 16,
+            "titles": ["A", None],
+        },
+    )
+    fields3 = arr3.dtype.fields
+    assert fields3 is not None
+    assert fields3["b"][1] == 8
+    assert arr3.dtype.itemsize == 16
+    assert fields3["a"][2] == "A"  # type: ignore[misc]  # stubs type fields as 2-tuple
+
+    dt4 = np.dtype({"x": ("i4", 0), "y": ("f4", 4, math.pi)})  # type: ignore[arg-type]
+    arr4: onp.AnyVoidArray = np.array([(1, 2.0)], dtype=dt4)
+    fields4 = arr4.dtype.fields
+    assert fields4 is not None
+    assert fields4["y"][2] == math.pi  # type: ignore[misc]  # stubs type fields as 2-tuple
+
+    arr5: onp.AnyVoidArray = np.empty(3, dtype="V8")
+    assert arr5.dtype == np.dtype("V8")
+    assert arr5.dtype.fields is None
