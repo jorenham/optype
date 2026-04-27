@@ -159,8 +159,6 @@ AnyStrArray: TypeAlias = _AnyArray[np.str_, np.str_ | str]
 
 AnyFlexibleArray: TypeAlias = _AnyArray[np.flexible, np.flexible | bytes | str]
 
-# TODO(jorenham): structured types
-# https://github.com/jorenham/optype/issues/371
 AnyVoidArray: TypeAlias = _AnyArray[np.void]
 
 AnyDateTime64Array: TypeAlias = _AnyArray[np.datetime64]
