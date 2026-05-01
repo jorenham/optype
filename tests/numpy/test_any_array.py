@@ -2,7 +2,7 @@ import ctypes as ct
 import datetime as dt
 import math
 from collections import deque
-from typing import Final
+from typing import Final, cast
 
 import numpy as np
 import pytest
@@ -250,7 +250,7 @@ def test_any_void_array_structured_forms() -> None:
     assert fields1 is not None
     assert fields1["y"][0] == np.dtype(("i4", (2,)))
     assert fields1["z"][0] == np.dtype(("f4", (2, 2)))
-    assert fields1["z"][2] == 42  # type: ignore[misc]  # stubs type fields as 2-tuple
+    assert fields1["z"][2] == 42  # type: ignore[misc]  # pyright: ignore[reportGeneralTypeIssues]
 
     arr2 = np.array([(1, 2.0)], dtype="i4, f4")
     arr2_any: onp.AnyVoidArray = arr2
@@ -271,14 +271,14 @@ def test_any_void_array_structured_forms() -> None:
     assert fields3 is not None
     assert fields3["b"][1] == 8
     assert arr3.dtype.itemsize == 16
-    assert fields3["a"][2] == "A"  # type: ignore[misc]  # stubs type fields as 2-tuple
+    assert fields3["a"][2] == "A"  # type: ignore[misc]  # pyright: ignore[reportGeneralTypeIssues]
 
-    dt4 = np.dtype({"x": ("i4", 0), "y": ("f4", 4, math.pi)})  # type: ignore[arg-type]
+    dt4 = cast("np.dtype[np.void]", np.dtype({"x": ("i4", 0), "y": ("f4", 4, math.pi)}))  # type: ignore[call-overload]
     arr4 = np.array([(1, 2.0)], dtype=dt4)
     arr4_any: onp.AnyVoidArray = arr4
     fields4 = arr4.dtype.fields
     assert fields4 is not None
-    assert fields4["y"][2] == math.pi  # type: ignore[misc]  # stubs type fields as 2-tuple
+    assert fields4["y"][2] == math.pi  # type: ignore[misc]  # pyright: ignore[reportGeneralTypeIssues]
 
     arr5 = np.empty(3, dtype="V8")
     arr5_any: onp.AnyVoidArray = arr5
