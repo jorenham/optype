@@ -299,7 +299,7 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
 
     The `ToJust{Bool,Float,Complex}*` type aliases were added in `optype 0.8.0`.
 
-    See [`optype.Just`](#just) for more information.
+    See [`optype.Just`](../core/just.md) for more information.
 
 !!! note
 

@@ -166,14 +166,7 @@ objects.
     </tr>
 </table>
 
-> [!NOTE]
-> All functions in `optype.inspect` also work for Python 3.12 `type _` aliases
-> (i.e. `types.TypeAliasType`) and with `typing.Annotated`.
+!!! note
 
-[UNION]: https://docs.python.org/3/library/typing.html#typing.Union
-[LITERAL-DOCS]: https://typing.readthedocs.io/en/latest/spec/literal.html#shortening-unions-of-literals
-[@FINAL]: https://docs.python.org/3/library/typing.html#typing.Literal
-[GET_ARGS]: https://docs.python.org/3/library/typing.html#typing.get_args
-[IS_PROTO]: https://docs.python.org/3.13/library/typing.html#typing.is_protocol
-[IS_PROTO_EXT]: https://typing-extensions.readthedocs.io/en/latest/#typing_extensions.is_protocol
-[PROTO_MEM]: https://docs.python.org/3.13/library/typing.html#typing.get_protocol_members
+    All functions in `optype.inspect` also work for Python 3.12 `type _` aliases
+    (i.e. `types.TypeAliasType`) and with `typing.Annotated`.
