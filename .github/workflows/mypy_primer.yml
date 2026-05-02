@@ -1,5 +1,5 @@
 name: mypy_primer run
-permissions: read-all
+permissions: {}
 
 on:
   # only run on pr, since we diff between branches
@@ -13,7 +13,6 @@ on:
       - "pyproject.toml"
       - "uv.lock"
       - ".github/workflows/mypy_primer.yml"
-      - ".github/workflows/mypy_primer_comment.yml"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -21,8 +20,11 @@ concurrency:
 
 jobs:
   mypy_primer:
+    name: mypy_primer
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -72,7 +74,9 @@ jobs:
           # Remove ANSI color codes before uploading
           sed -ie 's/\x1b\[[0-9;]*m//g' mypy_primer.diff
 
-          echo ${{ github.event.number }} > pr-number
+          echo "$PR_NUMBER" > pr-number
+        env:
+          PR_NUMBER: ${{ github.event.number }}
 
       - name: upload mypy_primer.diff
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
