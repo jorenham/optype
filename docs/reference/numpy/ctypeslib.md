@@ -37,7 +37,7 @@ import ctypes as ct
   <td align="left"><code>Byte</code>, <code>UByte</code>, <code>Short</code>, <code>UShort</code>, <code>IntC</code>, <code>UIntC</code>, <code>IntP</code>, <code>UIntP</code>, <code>Long</code>, <code>ULong</code>, <code>LongLong</code>, <code>ULongLong</code></td>
   <td align="left"><code>c_byte</code>, <code>c_ubyte</code>, <code>c_short</code>, <code>c_ushort</code>, <code>c_int</code>, <code>c_uint</code>, <code>c_ssize_t</code>, <code>c_size_t</code>, <code>c_long</code>, <code>c_ulong</code>, <code>c_longlong</code>, <code>c_ulonglong</code></td>
   <td align="left">platform-width integers</td>
-  <td align="left"><code>UIntP</code> uses <code>c_size_t</code> (<code>void_p</code> on NumPy &lt; 2, but almost always equivalent).</td>
+  <td align="left"><code>UIntP</code> uses <code>c_size_t</code> (<code>c_void_p</code> on NumPy &lt; 2, but almost always equivalent).</td>
 </tr>
 <tr>
   <td align="left"><code>Float32</code>, <code>Float64</code>, <code>LongDouble</code></td>
@@ -69,53 +69,53 @@ import ctypes as ct
 
 <table>
 <tr>
-	<th align="left">alias</th>
-	<th align="left">covers</th>
-	<th align="left">notes</th>
+  <th align="left">alias</th>
+  <th align="left">covers</th>
+  <th align="left">notes</th>
 </tr>
 <tr>
-	<td align="left"><code>CType</code></td>
-	<td align="left"><code>ctypes._SimpleCData[T]</code></td>
-	<td align="left">Scalar-value ctypes base type.</td>
+  <td align="left"><code>CType</code></td>
+  <td align="left"><code>ctypes._SimpleCData[T]</code></td>
+  <td align="left">Scalar-value ctypes base type.</td>
 </tr>
 <tr>
-	<td align="left"><code>CScalar</code></td>
-	<td align="left"><code>ctypes._CData</code></td>
-	<td align="left">Broad base for ctypes objects (scalar, array, pointer, structure, union, ...).</td>
+  <td align="left"><code>CScalar</code></td>
+  <td align="left"><code>ctypes._CData</code></td>
+  <td align="left">Broad base for ctypes objects (scalar, array, pointer, structure, union, ...).</td>
 </tr>
 <tr>
-	<td align="left"><code>Array</code></td>
-	<td align="left"><code>ct.Array[CT]</code> (including nested arrays)</td>
-	<td align="left"><code>CT</code> is bound to <code>CType</code>.</td>
+  <td align="left"><code>Array</code></td>
+  <td align="left"><code>ctypes.Array[CT]</code> (including nested arrays)</td>
+  <td align="left"><code>CT</code> is bound to <code>CType</code>.</td>
 </tr>
 <tr>
-	<td align="left"><code>SignedInteger</code>, <code>UnsignedInteger</code></td>
-	<td align="left">signed and unsigned integer constructor groups</td>
-	<td align="left"></td>
+  <td align="left"><code>SignedInteger</code>, <code>UnsignedInteger</code></td>
+  <td align="left">signed and unsigned integer constructor groups</td>
+  <td align="left"></td>
 </tr>
 <tr>
-	<td align="left"><code>Integer</code>, <code>Floating</code>, <code>ComplexFloating</code></td>
-	<td align="left">numeric scalar families</td>
-	<td align="left">Modeled via <code>CScalar</code> for static typing.</td>
+  <td align="left"><code>Integer</code>, <code>Floating</code>, <code>ComplexFloating</code></td>
+  <td align="left">numeric scalar families</td>
+  <td align="left">Modeled via <code>CScalar</code> for static typing.</td>
 </tr>
 <tr>
-	<td align="left"><code>Inexact</code>, <code>Number</code></td>
-	<td align="left">combined numeric families</td>
-	<td align="left"><code>Inexact = Floating | ComplexFloating</code>, <code>Number = Integer | Floating | ComplexFloating</code>.</td>
+  <td align="left"><code>Inexact</code>, <code>Number</code></td>
+  <td align="left">combined numeric families</td>
+  <td align="left"><code>Inexact = Floating | ComplexFloating</code>, <code>Number = Integer | Floating | ComplexFloating</code>.</td>
 </tr>
 <tr>
-	<td align="left"><code>Void</code></td>
-	<td align="left"><code>ct.Structure | ct.Union</code></td>
-	<td align="left">Not a constructor reexport; structural ctypes only.</td>
+  <td align="left"><code>Void</code></td>
+  <td align="left"><code>ctypes.Structure | ctypes.Union</code></td>
+  <td align="left">Not a constructor reexport; structural ctypes only.</td>
 </tr>
 <tr>
-	<td align="left"><code>Flexible</code></td>
-	<td align="left"><code>Bytes | Void</code></td>
-	<td align="left"></td>
+  <td align="left"><code>Flexible</code></td>
+  <td align="left"><code>Bytes | Void</code></td>
+  <td align="left"></td>
 </tr>
 <tr>
-	<td align="left"><code>Generic</code></td>
-	<td align="left"><code>Bool | Number | Flexible | Object</code></td>
-	<td align="left">Top-level union for this module.</td>
+  <td align="left"><code>Generic</code></td>
+  <td align="left"><code>Bool | Number | Flexible | Object</code></td>
+  <td align="left">Top-level union for this module.</td>
 </tr>
 </table>
