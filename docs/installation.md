@@ -16,7 +16,7 @@ versions are compatible with each other.
 pip install "optype[numpy]"
 ```
 
-See the [`optype.numpy` docs](#optypenumpy) for more info.
+See the [`optype.numpy` docs](reference/numpy/index.md) for more info.
 
 ## Conda
 
@@ -26,7 +26,7 @@ Optype can also be installed with `conda` from the [`conda-forge`][CONDA] channe
 conda install conda-forge::optype
 ```
 
-If you want to use [`optype.numpy`](#optypenumpy), you should instead install
+If you want to use [`optype.numpy`](reference/numpy/index.md), you should instead install
 [`optype-numpy`][CONDA-NP]:
 
 ```shell

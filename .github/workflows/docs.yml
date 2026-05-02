@@ -36,7 +36,7 @@ jobs:
       - uses: astral-sh/setup-uv@v8.1.0
 
       - name: build
-        run: uv run --only-group=doc zensical build --clean
+        run: uv run --only-group=doc zensical build --clean --strict
 
       - name: upload artifact
         uses: actions/upload-pages-artifact@v5.0.0

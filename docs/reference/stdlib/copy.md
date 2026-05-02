@@ -32,7 +32,7 @@ runtime-checkable interfaces:
 
 !!! note
 
-    [`copy.replace`](PY-COPY-REPLACE) requires `python>=3.13`, but
+    [`copy.replace`][PY-COPY-REPLACE] requires `python>=3.13`, but
     `optype.copy.CanReplace` is available in all versions of Python.
 
 In practice, it makes sense that a copy of an instance is the same type as the
