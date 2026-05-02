@@ -38,7 +38,7 @@ assert_type(typeof(int_obj), type[int])
 
 int_str: int | str
 # https://github.com/facebook/pyrefly/issues/3166
-assert_type(type(int_str), type[int] | type[str])  # pyrefly: ignore[assert-type]
+assert_type(type(int_str), type[int] | type[str])
 typeof(int_str)  # type: ignore[misc]  # pyright: ignore[reportArgumentType]
 
 bool_or_int: bool | int
