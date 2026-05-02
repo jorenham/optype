@@ -133,6 +133,7 @@ jobs:
           activate-environment: true
 
       - name: install dependencies
+        shell: bash
         run: uv pip install --exact --group test "numpy==$NP_VERSION.*" .
         env:
           NP_VERSION: ${{ matrix.np }}
