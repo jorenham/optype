@@ -74,12 +74,10 @@ def test_can_replace_date() -> None:
 
     # this seemingly redundant `if` statement prevents pyright errors
     if sys.version_info >= (3, 13):
-        # pyrefly: ignore[bad-assignment]
         d_replace: op.copy.CanReplace[date] = d
-        # pyrefly: ignore[bad-assignment]
         d_copy_self: op.copy.CanReplaceSelf = d
 
-    assert isinstance(d, op.copy.CanReplace)  # pyrefly: ignore[unsafe-overlap]
+    assert isinstance(d, op.copy.CanReplace)
     assert isinstance(d, op.copy.CanReplaceSelf)
 
 
@@ -101,10 +99,8 @@ def test_can_replace_custom() -> None:
 
     # this seemingly redundant `if` statement prevents pyright errors
     if sys.version_info >= (3, 13):
-        # pyrefly: ignore[bad-assignment]
         d_replace: op.copy.CanReplace[ReplaceableClass] = obj
-        # pyrefly: ignore[bad-assignment]
         d_copy_self: op.copy.CanReplaceSelf = obj
 
-    assert isinstance(obj, op.copy.CanReplace)  # pyrefly: ignore[unsafe-overlap]
+    assert isinstance(obj, op.copy.CanReplace)
     assert isinstance(obj, op.copy.CanReplaceSelf)
