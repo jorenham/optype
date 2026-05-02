@@ -27,7 +27,7 @@ jobs:
           persist-credentials: false
 
       - name: typos
-        uses: crate-ci/typos@6ac2ebd1b93eade61faf7e12688ad87a073fea59 # v1.46.0
+        uses: crate-ci/typos@cf5f1c29a8ac336af8568821ec41919923b05a83 # v1.45.1
 
       - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
