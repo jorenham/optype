@@ -2,7 +2,7 @@ import ctypes as ct
 import datetime as dt
 import math
 from collections import deque
-from typing import Final, cast
+from typing import Final
 
 import numpy as np
 import pytest
@@ -274,7 +274,11 @@ def test_any_void_array_structured_forms() -> None:
     assert arr3.dtype.itemsize == 16
     assert fields3["a"][2] == "A"  # type: ignore[misc]  # pyright: ignore[reportGeneralTypeIssues]
 
-    dt4 = cast("np.dtype[np.void]", np.dtype({"x": ("i4", 0), "y": ("f4", 4, math.pi)}))  # type: ignore[call-overload]
+    dt4_spec: dict[str, tuple[str, int] | tuple[str, int, float]] = {
+        "x": ("i4", 0),
+        "y": ("f4", 4, math.pi),
+    }
+    dt4 = np.dtype(dt4_spec)  # type: ignore[call-overload]  # pyright: ignore[reportCallIssue, reportArgumentType]
     arr4 = np.array([(1, 2.0)], dtype=dt4)
     arr4_any: onp.AnyVoidArray = arr4
     fields4 = arr4.dtype.fields
