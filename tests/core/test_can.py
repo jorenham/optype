@@ -230,7 +230,7 @@ def test_can_iter_collection_str(
     value: (str | tuple[str, ...] | list[str] | set[str] | dict[str, object]),
 ) -> None:
     # (in)sanity checks
-    assert isinstance(value, Collection)  # pyrefly: ignore[unsafe-overlap]
+    assert isinstance(value, Collection)
     assert not isinstance(value, Iterator)
 
     value_iter_next: op.CanIter[op.CanNext[str]] = value
@@ -246,7 +246,7 @@ def test_can_iter_collection_str(
 
     assert isinstance(value, op.CanIter)
     assert not isinstance(value, op.CanNext)
-    assert not isinstance(value, op.CanIterSelf)  # pyrefly: ignore[unsafe-overlap]
+    assert not isinstance(value, op.CanIterSelf)
 
     ivalue = iter(value)
     ivalue_iter_next: op.CanIter[op.CanNext[str]] = ivalue

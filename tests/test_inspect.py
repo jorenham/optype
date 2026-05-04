@@ -18,8 +18,7 @@ FalsyInt: tp.TypeAlias = tp.Annotated[tp.Literal[0], (int, False)]
 FalsyIntCo: tp.TypeAlias = FalsyBool | FalsyInt
 # this is equivalent to `type FalsyStr = ...` on `python>=3.12`
 FalsyStr = TypeAliasType("FalsyStr", tp.Literal["", b""])
-# https://github.com/facebook/pyrefly/issues/2633
-Falsy = TypeAliasType("Falsy", tp.Literal[None, FalsyIntCo] | FalsyStr)  # noqa: PYI061  # pyrefly: ignore[invalid-literal]
+Falsy = TypeAliasType("Falsy", tp.Literal[None, FalsyIntCo] | FalsyStr)  # noqa: PYI061
 
 _T = tp.TypeVar("_T")
 _T_tpx = tp.TypeVar("_T_tpx")

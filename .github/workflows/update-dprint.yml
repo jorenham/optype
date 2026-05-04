@@ -6,9 +6,7 @@ on:
     - cron: "0 8 * * 1"
   workflow_dispatch:
 
-permissions:
-  contents: write
-  pull-requests: write
+permissions: {}
 
 concurrency:
   group: ${{ github.ref }}
@@ -19,14 +17,21 @@ env:
 
 jobs:
   update:
-    if: github.repository == 'jorenham/optype'
+    name: update dprint plugins
+    if: github.repository == 'scipy/scipy-stubs'
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
-    steps:
-      - uses: actions/checkout@v6.0.2
+    permissions:
+      contents: write # to push the update branch
+      pull-requests: write # to create the pull request
 
-      - uses: astral-sh/setup-uv@v8.0.0
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
 
       # this prevents dprint from printing "compiling ..." messages, which would
       # otherwise be included in the PR body, so we can ignore errors here
@@ -46,22 +51,50 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: create pull request
-        uses: peter-evans/create-pull-request@v8.1.1
-        with:
-          branch: github-actions-bot/dprint-config-update-${{ github.ref_name }}
-          commit-message: "update dprint plugins"
-          title: "update dprint plugins"
-          body: |
-            Automated update of [dprint][1] plugins via `dprint config update`.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF_NAME: ${{ github.ref_name }}
+          UPDATE_OUTPUT: ${{ steps.update.outputs.output }}
+        run: |
+          BRANCH="github-actions-bot/dprint-config-update-${REF_NAME}"
 
-            ```
-            ${{ steps.update.outputs.output }}
-            ```
+          gh auth setup-git
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-            [1]: https://dprint.dev
-          labels: |
-            tool: dprint
-            topic: dependencies
-          delete-branch: true
-          signoff: true
-          sign-commits: true
+          git checkout -b "$BRANCH"
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git commit --signoff -m "update dprint plugins"
+          git push --force-with-lease origin "$BRANCH"
+
+          BODY=$(cat <<EOF
+          Automated update of [dprint][1] plugins via \`dprint config update\`.
+
+          \`\`\`
+          ${UPDATE_OUTPUT}
+          \`\`\`
+
+          [1]: https://dprint.dev
+          EOF
+          )
+
+          # create or update the PR
+          if gh pr view "$BRANCH" --json number &>/dev/null; then
+            gh pr edit "$BRANCH" \
+              --title "update dprint plugins" \
+              --body "$BODY"
+          else
+            gh pr create \
+              --base "$REF_NAME" \
+              --head "$BRANCH" \
+              --title "update dprint plugins" \
+              --body "$BODY" \
+              --label "tool: dprint" \
+              --label "topic: dependencies"
+          fi

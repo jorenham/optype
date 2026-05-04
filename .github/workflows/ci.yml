@@ -1,5 +1,5 @@
 name: CI
-permissions: read-all
+permissions: {}
 
 on:
   pull_request:
@@ -17,26 +17,32 @@ env:
 
 jobs:
   lint:
+    name: lint
     timeout-minutes: 5
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6.0.2
-
-      - name: repo review
-        uses: scientific-python/repo-review@v1.0.3
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          plugins: sp-repo-review
-
-      - name: dprint
-        uses: dprint/check@v2.3
+          persist-credentials: false
 
       - name: typos
-        uses: crate-ci/typos@v1.45.1
+        uses: crate-ci/typos@cf5f1c29a8ac336af8568821ec41919923b05a83 # v1.45.1
 
-      - uses: astral-sh/setup-uv@v8.0.0
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
           python-version: "3.14"
+
+      - name: dprint
+        run: uv run dprint check
+
+      # the `scientific-python/repo-review` action (v1.0.3) internally uses an unpinned
+      # `actions/setup-python@v6`, so we use `uvx` instead.
+      - name: repo-review
+        run: >
+          uvx --from='repo-review[cli]' --with=sp-repo-review
+          repo-review --format html --stderr rich .
+          >> $GITHUB_STEP_SUMMARY
 
       - name: ruff check
         run: uv run ruff check --output-format=github
@@ -48,6 +54,7 @@ jobs:
         run: uv run basedpyright --ignoreexternal --verifytypes optype
 
   typecheck:
+    name: typecheck
     timeout-minutes: 5
     runs-on: ubuntu-latest
     strategy:
@@ -66,9 +73,11 @@ jobs:
           - py: "3.14"
             np: "2.4"
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
-      - uses: astral-sh/setup-uv@v8.0.0
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
           activate-environment: true
           python-version: ${{ matrix.py }}
@@ -77,7 +86,9 @@ jobs:
         run: uv sync --no-editable
 
       - name: install deps
-        run: uv pip install --exact --group type numpy==${{ matrix.np }}.* .
+        run: uv pip install --exact --group type "numpy==$NP_VERSION.*" .
+        env:
+          NP_VERSION: ${{ matrix.np }}
 
       - name: ty
         run: ty check
@@ -93,6 +104,7 @@ jobs:
         run: mypy --no-incremental --cache-dir=/dev/null .
 
   test:
+    name: test
     timeout-minutes: 10
     runs-on: ${{ matrix.os }}-latest
     strategy:
@@ -111,15 +123,20 @@ jobs:
           - py: "3.14"
             np: "2.0"
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
-      - uses: astral-sh/setup-uv@v8.0.0
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
         with:
           python-version: ${{ matrix.py }}
           activate-environment: true
 
       - name: install dependencies
-        run: uv pip install --exact --group test numpy==${{ matrix.np }}.* .
+        shell: bash
+        run: uv pip install --exact --group test "numpy==$NP_VERSION.*" .
+        env:
+          NP_VERSION: ${{ matrix.np }}
 
       - name: pytest
         run: pytest

@@ -95,5 +95,8 @@ Almost all implementations use `int` for `R`.
 In fact, if no type for `R` is specified, it will default in `int`.
 But technically speaking, these methods can be made to return anything.
 
+For more information on the semantics of these operators, refer to the
+[Python documentation][NT].
+
 [MATH]: https://docs.python.org/3/library/math.html
 [NT]: https://docs.python.org/3/reference/datamodel.html#emulating-numeric-types

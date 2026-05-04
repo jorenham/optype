@@ -1,16 +1,23 @@
-# label PR's based on changed files
 name: Pull Request Labeler
 on:
-  pull_request_target:
+  # needed for fork PRs; safe because no PR code is checked out
+  pull_request_target: # zizmor: ignore[dangerous-triggers]
     types: [opened]
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   label_pull_request:
+    name: label pull request
     permissions:
       contents: read
-      pull-requests: write
+      pull-requests: write # apply labels
 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/labeler@v6.0.1
+      - uses: actions/labeler@634933edcd8ababfe52f92936142cc22ac488b1b # v6.0.1
         if: github.repository == 'jorenham/optype'
