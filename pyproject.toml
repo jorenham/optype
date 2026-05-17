@@ -1,5 +1,5 @@
 [build-system]
-requires = ["uv_build>=0.11.8,<0.12.0"]
+requires = ["uv_build>=0.11.14,<0.12.0"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
@@ -67,12 +67,12 @@ extra = [
   "optype[numpy]",
 ]
 doc = [
-  "zensical==0.0.40",
+  "zensical==0.0.42",
   "pygments==2.20.0",
 ]
 lint = [
   "dprint-py==0.53.1.0",
-  "ruff==0.15.12",
+  "ruff==0.15.13",
   "sp-repo-review[cli]==2026.4.4",
 ]
 test = [
@@ -84,10 +84,10 @@ test = [
 type = [
   { include-group = "extra" },
   { include-group = "test" },
-  "basedpyright==1.39.3",
-  "mypy[faster-cache]==2.0.0",
-  "pyrefly==0.64.0",
-  "ty==0.0.34",
+  "basedpyright==1.39.5",
+  "mypy[faster-cache]==2.1.0",
+  "pyrefly==1.0.0",
+  "ty==0.0.37",
 ]
 dev = [
   { include-group = "extra" },

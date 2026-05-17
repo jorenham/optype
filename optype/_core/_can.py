@@ -1096,7 +1096,6 @@ class CanROrSelf(Protocol[_T_contra]):
 ###
 # Augmented arithmetic operands
 
-# ruff: noqa: PYI034
 
 # __iadd__
 
