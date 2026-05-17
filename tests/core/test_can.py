@@ -352,3 +352,18 @@ def test_can_same_self(cls: type) -> None:
 
     assert members_same == members_self
     assert members_same == members_base
+
+
+def test_can_round_float() -> None:
+    # https://github.com/jorenham/optype/issues/596
+
+    x: float = 1 / 137
+
+    r1: op.CanRound1[int] = x
+    assert isinstance(r1, op.CanRound1)
+
+    r2: op.CanRound2[int, float] = x
+    assert isinstance(r2, op.CanRound2)
+
+    r: op.CanRound[int, int, float] = x
+    assert isinstance(r, op.CanRound)
