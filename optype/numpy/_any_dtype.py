@@ -5,14 +5,17 @@ The names are analogous to those in `numpy.dtypes`.
 
 import sys
 from collections.abc import Sequence
-from typing import Any, Never, Protocol, TypeAlias
+from typing import Any, Never, Protocol, TypeAlias, TypedDict
 
 if sys.version_info >= (3, 13):
-    from typing import TypeAliasType
+    from typing import NotRequired, TypeAliasType
 else:
+    from typing import NotRequired
     from typing_extensions import TypeAliasType
 
+
 import numpy as np
+import numpy.typing as npt
 import numpy_typing_compat
 
 import optype.numpy._dtype_attr as a
@@ -193,22 +196,47 @@ AnyBytesDType = TypeAliasType("AnyBytesDType", S_cls | To[np.bytes_] | a.S0_code
 AnyBytes8DType = TypeAliasType("AnyBytes8DType", a.S1_code)
 AnyStrDType = TypeAliasType("AnyStrDType", S_cls | To[np.str_] | a.U0_code)
 
-_ToShape: TypeAlias = tuple[int, ...] | int
-_ToName: TypeAlias = str | tuple[str, str]
-_ToDType: TypeAlias = To[Any] | str
-_ToStructured: TypeAlias = (
-    tuple[_ToDType, _ToShape]
-    | Sequence[tuple[_ToName, _ToDType] | tuple[_ToName, _ToDType, _ToShape]]
+# Structured dtype specifiers for np.void: covers all 4 NumPy forms.
+# See: https://numpy.org/doc/stable/user/basics.rec.html
+_StructuredDTypeField: TypeAlias = (
+    tuple[str, npt.DTypeLike]
+    | tuple[str, npt.DTypeLike, int]
+    | tuple[str, npt.DTypeLike, tuple[int, ...]]
+    | tuple[tuple[Any, str], npt.DTypeLike]
+    | tuple[tuple[Any, str], npt.DTypeLike, int]
+    | tuple[tuple[Any, str], npt.DTypeLike, tuple[int, ...]]
 )
+_StructuredDTypeListForm: TypeAlias = Sequence[_StructuredDTypeField]
+_ToDType: TypeAlias = To[Any] | str
+
+
+class _StructuredDTypeDictForm1(TypedDict, total=True):
+    names: Sequence[str]
+    formats: Sequence[npt.DTypeLike]
+    offsets: NotRequired[Sequence[int]]
+    itemsize: NotRequired[int]
+    aligned: NotRequired[bool]
+    titles: NotRequired[Sequence[Any]]
+
+
+_StructuredDTypeDictForm2: TypeAlias = dict[
+    str,
+    tuple[npt.DTypeLike, int] | tuple[npt.DTypeLike, int, Any],
+]
+
+_StructuredDTypeLike: TypeAlias = (
+    _StructuredDTypeListForm | _StructuredDTypeDictForm1 | _StructuredDTypeDictForm2
+)
+
 AnyVoidDType = TypeAliasType(
     "AnyVoidDType",
-    V_cls | To[np.void] | a.V0_code | _ToStructured,
+    V_cls | To[np.void] | a.V0_code | _StructuredDTypeLike,
 )
 
 # object
 
 AnyObjectDType = TypeAliasType("AnyObjectDType", O_cls | To[np.object_] | a.O_code)
-AnyDType = TypeAliasType("AnyDType", _ToDType | _ToStructured)
+AnyDType = TypeAliasType("AnyDType", _ToDType | _StructuredDTypeLike)
 
 # abstract
 
