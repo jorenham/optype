@@ -1,6 +1,6 @@
 import sys
 from collections.abc import AsyncIterator, Callable, Iterable, Iterator
-from typing import Protocol, overload
+from typing import Protocol, SupportsIndex, overload
 
 if sys.version_info >= (3, 13):
     from typing import ParamSpec, TypeVar
@@ -774,15 +774,25 @@ class DoesHash(Protocol):
 
 class DoesRound(Protocol):
     @overload
-    def __call__(self, obj: _c.CanRound1[_OutT], /) -> _OutT: ...
-    @overload
-    def __call__(self, obj: _c.CanRound1[_OutT], /, ndigits: None = None) -> _OutT: ...
-    @overload
     def __call__(
         self,
-        obj: _c.CanRound2[_NDigitsT, _OutT],
+        number: _c.CanRound1[_OutT],
+        ndigits: None = None,
         /,
+    ) -> _OutT: ...
+    @overload  # this unnecessary overload works around the issue described below
+    def __call__(
+        self,
+        number: _c.CanRound2[SupportsIndex, _OutT],
+        ndigits: SupportsIndex,
+        /,
+    ) -> _OutT: ...
+    @overload  # all type-checkers except ty fail to correctly resolve this overload
+    def __call__(
+        self,
+        number: _c.CanRound2[_NDigitsT, _OutT],
         ndigits: _NDigitsT,
+        /,
     ) -> _OutT: ...
 
 
