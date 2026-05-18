@@ -4,6 +4,8 @@ import datetime as dt
 from typing import Any, cast
 
 import pytest
+from beartype import beartype
+from beartype.roar import BeartypeCallHintParamViolation
 
 import optype as op
 
@@ -142,3 +144,16 @@ def test_just_any() -> None:
     tn_any_type: type[op.JustAny] = t_any
     tp_obj_type: type[op.JustAny] = t_obj  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     tp_set_type: type[op.JustAny] = t_set  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+
+
+def test_just_instancecheck_str() -> None:
+
+    @beartype
+    def foo(x: op.JustInt) -> None:
+        pass
+
+    with pytest.raises(
+        BeartypeCallHintParamViolation,
+        match="subclasses are not accepted",
+    ):
+        foo(True)
