@@ -5,12 +5,7 @@ on:
   # only run on pr, since we diff between branches
   pull_request:
     paths:
-      - "optype/**/*.py"
-      - "optype/**/*.pyi"
-      - "examples/**/*.py"
-      - "tests/**/*.py"
-      - "tests/**/*.pyi"
-      - "pyproject.toml"
+      - "optype/**/*.{py,pyi}"
       - "uv.lock"
       - ".github/workflows/mypy_primer.yml"
 
