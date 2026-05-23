@@ -58,7 +58,7 @@ jobs:
           uvx \
             --from="https://github.com/hauntsaninja/mypy_primer.git" \
             mypy_primer \
-            --project-selector "/(beartype|dedupe|efax|hydpy|jax|lmo|numpy-typing-compat|optuna|pandera|scikit-learn|scipy|scipy-stubs|static-frame|vision|xarray)/?$" \
+            --project-selector "/(colour|dedupe|efax|hydpy|jax|optuna|pandera|scikit-learn|scipy-stubs|static-frame|vision|xarray)/?$" \
             --new v${MYPY_VERSION} \
             --new-prepend-path new \
             --old v${MYPY_VERSION} \
