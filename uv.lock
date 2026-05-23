@@ -481,7 +481,7 @@ wheels = [
 
 [[package]]
 name = "optype"
-version = "0.17.1"
+version = "0.18.0.dev0"
 source = { editable = "." }
 dependencies = [
     { name = "typing-extensions", marker = "python_full_version < '3.13'" },
