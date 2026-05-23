@@ -1,23 +1,13 @@
 import sys
-from typing import (
-    TYPE_CHECKING,
-    Literal,
-    LiteralString,
-    Never,
-    NoReturn,
-    Protocol,
-    TypeAlias,
-    runtime_checkable,
-)
+from typing import TYPE_CHECKING, Literal, LiteralString, Never, NoReturn, TypeAlias
 
 if TYPE_CHECKING:
     import enum
 
 if sys.version_info >= (3, 13):
     from typing import TypedDict, TypeVar
-    from warnings import deprecated
 else:
-    from typing_extensions import TypedDict, TypeVar, deprecated
+    from typing_extensions import TypedDict, TypeVar
 
 from ._core import _can as _c, _just
 
@@ -34,10 +24,6 @@ __all__ = (
     "EmptySet",
     "EmptyString",
     "EmptyTuple",
-    "Just",
-    "JustComplex",
-    "JustFloat",
-    "JustInt",
     "LiteralBool",
     "LiteralByte",
 )
@@ -45,58 +31,6 @@ __all__ = (
 
 def __dir__() -> tuple[str, ...]:
     return __all__
-
-
-###
-
-_T = TypeVar("_T")
-_ValueT = TypeVar("_ValueT", default=object)
-
-
-###
-
-
-@deprecated(
-    "`optype.typing.Just` has been deprecated in favor of `optype.Just` "
-    "and will be removed in optype 0.10.0",
-)
-class Just(  # type: ignore[misc]
-    # pyrefly: ignore[invalid-inheritance]
-    _just.Just[_T],  # pyright: ignore[reportGeneralTypeIssues]  # ty:ignore[subclass-of-final-class]
-    Protocol[_T],
-): ...
-
-
-@deprecated(
-    "`optype.typing.JustInt` has been deprecated in favor of `optype.JustInt` "
-    "and will be removed in optype 0.10.0",
-)
-@runtime_checkable
-class JustInt(_just.JustInt, Protocol, just=int): ...  # type: ignore[misc]  # pyright: ignore[reportGeneralTypeIssues]  # ty:ignore[subclass-of-final-class]
-
-
-@deprecated(
-    "`optype.typing.JustFloat` has been deprecated in favor of `optype.JustFloat` "
-    "and will be removed in optype 0.10.0",
-)
-@runtime_checkable
-class JustFloat(_just.JustFloat, Protocol, just=float): ...  # type: ignore[misc]  # pyright: ignore[reportGeneralTypeIssues]  # ty:ignore[subclass-of-final-class]
-
-
-@deprecated(
-    "`optype.typing.JustComplex` has been deprecated in favor of `optype.JustComplex` "
-    "and will be removed in optype 0.10.0",
-)
-@runtime_checkable
-class JustComplex(_just.JustComplex, Protocol, just=complex): ...  # type: ignore[misc]  # pyright: ignore[reportGeneralTypeIssues]  # ty:ignore[subclass-of-final-class]
-
-
-Just.__doc__ = _just.Just.__doc__  # pyright: ignore[reportDeprecated]  # ty:ignore[deprecated]
-JustInt.__doc__ = _just.JustInt.__doc__  # pyright: ignore[reportDeprecated]  # ty:ignore[deprecated]
-JustFloat.__doc__ = _just.JustFloat.__doc__  # pyright: ignore[reportDeprecated]  # ty:ignore[deprecated]
-JustComplex.__doc__ = _just.JustComplex.__doc__  # pyright: ignore[reportDeprecated]  # ty:ignore[deprecated]
-
-###
 
 
 # Anything that can *always* be converted to an `int` / `float` / `complex`
@@ -107,6 +41,7 @@ AnyComplex: TypeAlias = _c.CanComplex | _c.CanFloat | _c.CanIndex
 
 # Anything that can be iterated over, e.g. in a `for` loop,`builtins.iter`,
 # `builtins.enumerate`, or `numpy.array`.
+_ValueT = TypeVar("_ValueT", default=object)
 AnyIterable: TypeAlias = _c.CanIter[_c.CanNext[_ValueT]] | _c.CanGetitem[int, _ValueT]
 
 # The closest supertype of a `Literal`, i.e. the allowed types that can be
