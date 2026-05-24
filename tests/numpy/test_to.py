@@ -73,9 +73,13 @@ def test_annotated(name: str) -> None:
     assert get_origin(getattr(onp, name)) is Annotated
 
 
+def _id(v: object) -> str:
+    return f"np.{type(v).__name__}" if isinstance(v, np.generic) else repr(v)[:30]
+
+
 @pytest.mark.parametrize("just", [False, True], ids=["co", "just"])
 @pytest.mark.parametrize("nd", _NDIMS)
-@pytest.mark.parametrize("value", _VALUES, ids=lambda v: repr(v)[:30])
+@pytest.mark.parametrize("value", _VALUES, ids=_id)
 @pytest.mark.parametrize(
     ("family", "just_sct", "co_target"),
     _FAMILIES,
