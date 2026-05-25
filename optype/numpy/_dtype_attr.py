@@ -84,11 +84,11 @@ if NUMPY_GE_2_0:
 else:
     type i0_name = L["intp"]
     type i0_char = p_char
-    type i0_code = L[i0_name, i0_char]
+    type i0_code = L[i0_name, p_char]  # using `i0_char` here confuses ty
 
     type u0_name = L["uintp"]
     type u0_char = P_char
-    type u0_code = L[u0_name, u0_char]
+    type u0_code = L[u0_name, P_char]  # using `u0_char` here confuses ty
 
     type i__name = L["int_", "int", "long"]
     type i__char = L[l_char]
