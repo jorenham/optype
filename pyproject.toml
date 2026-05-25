@@ -287,7 +287,6 @@ allow-magic-value-types = ["int", "str"]
 [tool.tox]
 requires = ["tox-uv>=1"]
 env_list = [
-  "3.11",
   "3.12",
   "3.13",
   "3.14",
