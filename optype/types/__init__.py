@@ -51,8 +51,7 @@ class WrappedFinalType(Protocol):
 class ProtocolType(Protocol):
     _is_protocol: Literal[True]
 
-    if sys.version_info >= (3, 12, 0):
-        __protocol_attrs__: set[LiteralString]
+    __protocol_attrs__: set[LiteralString]
 
 
 @runtime_checkable

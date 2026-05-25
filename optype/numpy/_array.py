@@ -1,11 +1,11 @@
 import sys
 from collections.abc import Mapping
-from typing import Any, Protocol, Self, final
+from typing import Any, Protocol, Self, TypeAliasType, final
 
 if sys.version_info >= (3, 13):
-    from typing import TypeAliasType, TypeVar, runtime_checkable
+    from typing import TypeVar, runtime_checkable
 else:
-    from typing_extensions import TypeAliasType, TypeVar, runtime_checkable
+    from typing_extensions import TypeVar, runtime_checkable
 
 import numpy as np
 
@@ -38,7 +38,7 @@ _SCT_co = TypeVar("_SCT_co", bound=np.generic, default=Any, covariant=True)
 _SCT0_co = TypeVar("_SCT0_co", bound=np.generic, covariant=True)
 
 
-Matrix = TypeAliasType(
+Matrix = TypeAliasType(  # noqa: UP040
     "Matrix",
     np.matrix[tuple[int, int], np.dtype[_SCT]],
     type_params=(_SCT,),
@@ -53,7 +53,7 @@ type Matrix[
 ```
 """
 
-Array = TypeAliasType(
+Array = TypeAliasType(  # noqa: UP040
     "Array",
     np.ndarray[_NDT, np.dtype[_SCT]],
     type_params=(_NDT, _SCT),
@@ -69,7 +69,7 @@ type Array[
 ```
 """
 
-ArrayND = TypeAliasType(
+ArrayND = TypeAliasType(  # noqa: UP040
     "ArrayND",
     np.ndarray[_NDT, np.dtype[_SCT]],
     type_params=(_SCT, _NDT),
@@ -86,7 +86,7 @@ Because the optional shape-type parameter comes *after* the scalar-type, `ArrayN
 can be seen as a flexible generalization of `npt.NDArray`.
 """
 
-MArray = TypeAliasType(
+MArray = TypeAliasType(  # noqa: UP040
     "MArray",
     np.ma.MaskedArray[_NDT, np.dtype[_SCT]],
     type_params=(_SCT, _NDT),
@@ -128,43 +128,43 @@ class CanArrayND(Protocol[_SCT0_co, _NDT_co]):
     def __array__(self, /) -> np.ndarray[_NDT_co, np.dtype[_SCT0_co]]: ...
 
 
-Array0D = TypeAliasType(
+Array0D = TypeAliasType(  # noqa: UP040
     "Array0D",
     np.ndarray[tuple[()], np.dtype[_SCT]],
     type_params=(_SCT,),
 )
-Array1D = TypeAliasType(
+Array1D = TypeAliasType(  # noqa: UP040
     "Array1D",
     np.ndarray[tuple[int], np.dtype[_SCT]],
     type_params=(_SCT,),
 )
-Array2D = TypeAliasType(
+Array2D = TypeAliasType(  # noqa: UP040
     "Array2D",
     np.ndarray[tuple[int, int], np.dtype[_SCT]],
     type_params=(_SCT,),
 )
-Array3D = TypeAliasType(
+Array3D = TypeAliasType(  # noqa: UP040
     "Array3D",
     np.ndarray[tuple[int, int, int], np.dtype[_SCT]],
     type_params=(_SCT,),
 )
 
-MArray0D = TypeAliasType(
+MArray0D = TypeAliasType(  # noqa: UP040
     "MArray0D",
     np.ma.MaskedArray[tuple[()], np.dtype[_SCT]],
     type_params=(_SCT,),
 )
-MArray1D = TypeAliasType(
+MArray1D = TypeAliasType(  # noqa: UP040
     "MArray1D",
     np.ma.MaskedArray[tuple[int], np.dtype[_SCT]],
     type_params=(_SCT,),
 )
-MArray2D = TypeAliasType(
+MArray2D = TypeAliasType(  # noqa: UP040
     "MArray2D",
     np.ma.MaskedArray[tuple[int, int], np.dtype[_SCT]],
     type_params=(_SCT,),
 )
-MArray3D = TypeAliasType(
+MArray3D = TypeAliasType(  # noqa: UP040
     "MArray3D",
     np.ma.MaskedArray[tuple[int, int, int], np.dtype[_SCT]],
     type_params=(_SCT,),

@@ -1,5 +1,5 @@
 import sys
-from typing import Literal, Protocol, TypeAlias as Alias
+from typing import Any, Literal, Protocol, TypeAliasType
 
 if sys.version_info >= (3, 13):
     from typing import TypeVar, runtime_checkable
@@ -34,9 +34,8 @@ def __dir__() -> tuple[str, ...]:
 # not a type parameter
 _StrOrBytes = TypeVar("_StrOrBytes", str, bytes, str | bytes, default=str | bytes)
 
-_T_co = TypeVar("_T_co", covariant=True)
 _T_contra = TypeVar("_T_contra", contravariant=True)
-_RT_co = TypeVar("_RT_co", default=object, covariant=True)
+_RT_co = TypeVar("_RT_co", default=Any, covariant=True)
 
 _PathT_co = TypeVar("_PathT_co", bound=str | bytes, default=str | bytes, covariant=True)
 
@@ -62,37 +61,37 @@ class CanFileno(Protocol):
 
 
 @runtime_checkable
-class CanRead(Protocol[_T_co]):
+class CanRead[T_co](Protocol):
     """
     Like `_typeshed.SupportsRead`, but without the required positional `int` argument,
     and is runtime-checkable.
     """
 
-    def read(self, /) -> _T_co: ...
+    def read(self, /) -> T_co: ...
 
 
 @runtime_checkable
-class CanReadN(Protocol[_T_co]):
+class CanReadN[T_co](Protocol):
     """Runtime-checkable equivalent of `_typeshed.SupportsRead`."""
 
-    def read(self, n: int = ..., /) -> _T_co: ...
+    def read(self, n: int = ..., /) -> T_co: ...
 
 
 @runtime_checkable
-class CanReadline(Protocol[_T_co]):
+class CanReadline[T_co](Protocol):
     """
     Runtime-checkable equivalent of `_typeshed.SupportsNoArgReadline`, that
     additionally allows `self` to be positional-only.
     """
 
-    def readline(self, /) -> _T_co: ...
+    def readline(self, /) -> T_co: ...
 
 
 @runtime_checkable
-class CanReadlineN(Protocol[_T_co]):
+class CanReadlineN[T_co](Protocol):
     """Runtime-checkable equivalent of `_typeshed.SupportsReadline`."""
 
-    def readline(self, n: int = ..., /) -> _T_co: ...
+    def readline(self, n: int = ..., /) -> T_co: ...
 
 
 @runtime_checkable
@@ -118,10 +117,14 @@ class CanFlush(Protocol[_RT_co]):
 ###
 
 # runtime-checkable `_typeshed.{Str,Bytes,StrOrBytes,Generic}Path` alternative
-ToPath: Alias = _StrOrBytes | CanFSPath[_StrOrBytes]
+ToPath = TypeAliasType(  # noqa: UP040
+    "ToPath",
+    _StrOrBytes | CanFSPath[_StrOrBytes],
+    type_params=(_StrOrBytes,),
+)
 
 # runtime-checkable `_typeshed.FileDescriptorLike` equivalent
-ToFileno: Alias = int | CanFileno
+type ToFileno = int | CanFileno
 
 
 ###
@@ -146,44 +149,44 @@ ToFileno: Alias = int | CanFileno
 #   - U -> '+'
 #   - _ -> '+' | ''
 
-ModeRB: Alias = Literal["rb", "br"]  # _typeshed.OpenBinaryModeReading (minus 'U')
-ModeRBU: Alias = Literal["rb+", "r+b", "+rb", "br+", "b+r", "+br"]
-ModeRB_: Alias = Literal[ModeRB, ModeRBU]
-ModeRT: Alias = Literal["r", "rt", "tr"]  # _typeshed.OpenTextModeReading (minus 'U')
-ModeRTU: Alias = Literal["r+", "+r", "rt+", "r+t", "+rt", "tr+", "t+r", "+tr"]
-ModeRT_: Alias = Literal[ModeRT, ModeRTU]
+type ModeRB = Literal["rb", "br"]  # _typeshed.OpenBinaryModeReading (minus 'U')
+type ModeRBU = Literal["rb+", "r+b", "+rb", "br+", "b+r", "+br"]
+type ModeRB_ = Literal[ModeRB, ModeRBU]
+type ModeRT = Literal["r", "rt", "tr"]  # _typeshed.OpenTextModeReading (minus 'U')
+type ModeRTU = Literal["r+", "+r", "rt+", "r+t", "+rt", "tr+", "t+r", "+tr"]
+type ModeRT_ = Literal[ModeRT, ModeRTU]
 
-ModeWB: Alias = Literal["wb", "bw"]
-ModeWBU: Alias = Literal["wb+", "w+b", "+wb", "bw+", "b+w", "+bw"]
-ModeWB_: Alias = Literal[ModeWB, ModeWBU]
-ModeWT: Alias = Literal["w", "wt", "tw"]
-ModeWTU: Alias = Literal["w+", "+w", "wt+", "w+t", "+wt", "tw+", "t+w", "+tw"]
-ModeWT_: Alias = Literal[ModeWT, ModeWTU]
+type ModeWB = Literal["wb", "bw"]
+type ModeWBU = Literal["wb+", "w+b", "+wb", "bw+", "b+w", "+bw"]
+type ModeWB_ = Literal[ModeWB, ModeWBU]
+type ModeWT = Literal["w", "wt", "tw"]
+type ModeWTU = Literal["w+", "+w", "wt+", "w+t", "+wt", "tw+", "t+w", "+tw"]
+type ModeWT_ = Literal[ModeWT, ModeWTU]
 
-ModeXB: Alias = Literal["xb", "bx"]
-ModeXBU: Alias = Literal["xb+", "x+b", "+xb", "bx+", "b+x", "+bx"]
-ModeXB_: Alias = Literal[ModeXB, ModeXBU]
-ModeXT: Alias = Literal["x", "xt", "tx"]
-ModeXTU: Alias = Literal["x+", "+x", "xt+", "x+t", "+xt", "tx+", "t+x", "+tx"]
-ModeXT_: Alias = Literal[ModeXT, ModeXTU]
+type ModeXB = Literal["xb", "bx"]
+type ModeXBU = Literal["xb+", "x+b", "+xb", "bx+", "b+x", "+bx"]
+type ModeXB_ = Literal[ModeXB, ModeXBU]
+type ModeXT = Literal["x", "xt", "tx"]
+type ModeXTU = Literal["x+", "+x", "xt+", "x+t", "+xt", "tx+", "t+x", "+tx"]
+type ModeXT_ = Literal[ModeXT, ModeXTU]
 
-ModeAB: Alias = Literal["ab", "ba"]
-ModeABU: Alias = Literal["ab+", "a+b", "+ab", "ba+", "b+a", "+ba"]
-ModeAB_: Alias = Literal[ModeAB, ModeABU]
-ModeAT: Alias = Literal["a", "at", "ta"]
-ModeATU: Alias = Literal["a+", "+a", "at+", "a+t", "+at", "ta+", "t+a", "+ta"]
-ModeAT_: Alias = Literal[ModeAT, ModeATU]
+type ModeAB = Literal["ab", "ba"]
+type ModeABU = Literal["ab+", "a+b", "+ab", "ba+", "b+a", "+ba"]
+type ModeAB_ = Literal[ModeAB, ModeABU]
+type ModeAT = Literal["a", "at", "ta"]
+type ModeATU = Literal["a+", "+a", "at+", "a+t", "+at", "ta+", "t+a", "+ta"]
+type ModeAT_ = Literal[ModeAT, ModeATU]
 
-ModeOB: Alias = Literal[ModeWB, ModeXB, ModeAB]  # typeshed.OpenBinaryModeWriting
-ModeOBU: Alias = Literal[ModeWBU, ModeXBU, ModeABU]
-ModeOB_: Alias = Literal[ModeWB_, ModeXB_, ModeAB_]
-ModeOT: Alias = Literal[ModeWT, ModeXT, ModeAT]  # _typeshed.OpenTextModeWriting
-ModeOTU: Alias = Literal[ModeWTU, ModeXTU, ModeATU]
-ModeOT_: Alias = Literal[ModeWT_, ModeXT_, ModeAT_]
+type ModeOB = Literal[ModeWB, ModeXB, ModeAB]  # typeshed.OpenBinaryModeWriting
+type ModeOBU = Literal[ModeWBU, ModeXBU, ModeABU]
+type ModeOB_ = Literal[ModeWB_, ModeXB_, ModeAB_]
+type ModeOT = Literal[ModeWT, ModeXT, ModeAT]  # _typeshed.OpenTextModeWriting
+type ModeOTU = Literal[ModeWTU, ModeXTU, ModeATU]
+type ModeOT_ = Literal[ModeWT_, ModeXT_, ModeAT_]
 
-Mode_B: Alias = Literal[ModeRB, ModeOB]  # _typeshed.OpenBinaryModeUpdating
-Mode_BU: Alias = Literal[ModeRBU, ModeOBU]  # _typeshed.OpenBinaryMode  (minus 'U')
-Mode_B_: Alias = Literal[ModeRB_, ModeOB_]
-Mode_T: Alias = Literal[ModeRT, ModeOT]
-Mode_TU: Alias = Literal[ModeRTU, ModeOTU]  # _typeshed.OpenTextModeUpdating
-Mode_T_: Alias = Literal[ModeRT_, ModeOT_]  # _typeshed.OpenTextMode  (minus 'U')
+type Mode_B = Literal[ModeRB, ModeOB]  # _typeshed.OpenBinaryModeUpdating
+type Mode_BU = Literal[ModeRBU, ModeOBU]  # _typeshed.OpenBinaryMode  (minus 'U')
+type Mode_B_ = Literal[ModeRB_, ModeOB_]
+type Mode_T = Literal[ModeRT, ModeOT]
+type Mode_TU = Literal[ModeRTU, ModeOTU]  # _typeshed.OpenTextModeUpdating
+type Mode_T_ = Literal[ModeRT_, ModeOT_]  # _typeshed.OpenTextMode  (minus 'U')

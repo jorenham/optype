@@ -1,12 +1,12 @@
 import sys
 import types
 from collections.abc import Iterable
-from typing import Literal, TypeAlias, cast, get_args as _get_args, overload
+from typing import Literal, TypeAliasType, cast, get_args as _get_args, overload
 
 if sys.version_info >= (3, 13):
-    from typing import TypeAliasType, TypeIs, is_protocol
+    from typing import TypeIs, is_protocol
 else:
-    from typing_extensions import TypeAliasType, TypeIs, is_protocol
+    from typing_extensions import TypeIs, is_protocol
 
 
 from ._core import _can as _c
@@ -38,7 +38,7 @@ def __dir__() -> tuple[str, ...]:
 ###
 
 
-_ToIter: TypeAlias = Iterable[object] | _c.CanGetitem[int, object]
+type _ToIter = Iterable[object] | _c.CanGetitem[int, object]
 
 
 def is_iterable(obj: object, /) -> TypeIs[_ToIter]:

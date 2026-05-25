@@ -1,5 +1,5 @@
 import types
-from typing import Final, Never
+from typing import Final, Never, cast
 
 import numpy as np
 import pytest
@@ -55,9 +55,9 @@ def _get_dtype_codes(
         literal_name = getattr(module, f"{dtype.char}_name")
         literal_char = getattr(module, f"{dtype.char}_char")
 
-    names = frozenset(() if literal_name is Never else literal_name.__args__)
-    chars = frozenset(() if literal_char is Never else literal_char.__args__)
-    return names, chars
+    names = frozenset(() if literal_name is Never else literal_name.__value__.__args__)
+    chars = frozenset(() if literal_char is Never else literal_char.__value__.__args__)
+    return cast("tuple[frozenset[str], frozenset[str]]", (names, chars))
 
 
 def _normalized_dtype_name(dtype: np.dtype[np.generic]) -> str:

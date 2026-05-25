@@ -1,12 +1,11 @@
 import sys
 import types
-from collections.abc import Callable
 from typing import LiteralString, Protocol
 
 if sys.version_info >= (3, 13):
-    from typing import TypeVar, is_protocol
+    from typing import is_protocol
 else:
-    from typing_extensions import TypeVar, is_protocol
+    from typing_extensions import is_protocol
 
 __all__ = "get_callables", "set_module"
 
@@ -23,7 +22,8 @@ class _HasModule(Protocol):
     __module__: str
 
 
-_HasModuleT = TypeVar("_HasModuleT", bound=_HasModule)
+class _DoesSetModule(Protocol):
+    def __call__[MT: _HasModule](self, has_module: MT, /) -> MT: ...
 
 
 ###
@@ -51,7 +51,7 @@ def get_callables(
     })
 
 
-def set_module(module: LiteralString, /) -> Callable[[_HasModuleT], _HasModuleT]:
+def set_module(module: LiteralString, /) -> _DoesSetModule:
     """
     Private decorator for overriding the `__module__` of a function or a class.
 
@@ -80,7 +80,7 @@ def set_module(module: LiteralString, /) -> Callable[[_HasModuleT], _HasModuleT]
     """
     assert all(name.isidentifier() for name in module.split("."))
 
-    def do_set_module(has_module: _HasModuleT, /) -> _HasModuleT:
+    def do_set_module[MT: _HasModule](has_module: MT, /) -> MT:
         assert hasattr(has_module, "__module__")
         has_module.__module__ = module
         return has_module

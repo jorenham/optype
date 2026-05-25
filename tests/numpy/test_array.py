@@ -1,18 +1,18 @@
 # pyright: reportUnnecessaryCast=false
 
 from collections.abc import Callable
-from typing import TypeAlias, TypeVar, cast
+from typing import cast
 
 import numpy as np
 import pytest
 
 import optype.numpy as onp
 
-_Shape0D: TypeAlias = tuple[()]
-_Shape1D: TypeAlias = tuple[int]
-_Shape2D: TypeAlias = tuple[int, int]
+type _Shape0D = tuple[()]
+type _Shape1D = tuple[int]
+type _Shape2D = tuple[int, int]
 
-_AnyCallable: TypeAlias = Callable[[], object]
+type _AnyCallable = Callable[[], object]
 
 
 # Don't wake up, Neo...
@@ -47,10 +47,9 @@ def test_can_array() -> None:
     assert isinstance(mat_x, onp.CanArray)
 
 
-_T = TypeVar("_T", bound=np.generic)
-_Arr0D: TypeAlias = onp.Array[tuple[()], _T]
-_Arr1D: TypeAlias = onp.Array[tuple[int], _T]
-_Arr2D: TypeAlias = onp.Array[tuple[int, int], _T]
+type _Arr0D[_T: np.generic] = onp.Array[tuple[()], _T]
+type _Arr1D[_T: np.generic] = onp.Array[tuple[int], _T]
+type _Arr2D[_T: np.generic] = onp.Array[tuple[int, int], _T]
 
 
 def test_can_array_function() -> None:

@@ -1,46 +1,33 @@
-# mypy: disable-error-code="unreachable"
-import sys
 import typing as tp
 import typing_extensions as tpx
 from inspect import getattr_static
-
-if sys.version_info >= (3, 13):
-    from typing import TypeAliasType
-else:
-    from typing_extensions import TypeAliasType
+from typing import TypeAliasType
 
 import pytest
 
 import optype as op
 
 FalsyBool = tp.Literal[False]
-FalsyInt: tp.TypeAlias = tp.Annotated[tp.Literal[0], (int, False)]
-FalsyIntCo: tp.TypeAlias = FalsyBool | FalsyInt
-# this is equivalent to `type FalsyStr = ...` on `python>=3.12`
-FalsyStr = TypeAliasType("FalsyStr", tp.Literal["", b""])
-Falsy = TypeAliasType("Falsy", tp.Literal[None, FalsyIntCo] | FalsyStr)  # noqa: PYI061
-
-_T = tp.TypeVar("_T")
-_T_tpx = tp.TypeVar("_T_tpx")
-
-_Pss = tp.ParamSpec("_Pss")
-_T_co = tp.TypeVar("_T_co", covariant=True)
+type FalsyInt = tp.Annotated[tp.Literal[0], (int, False)]
+type FalsyIntCo = FalsyBool | FalsyInt
+type FalsyStr = tp.Literal["", b""]
+type Falsy = tp.Literal[None, FalsyIntCo] | FalsyStr  # noqa: PYI061
 
 
-class GenericTP(tp.Generic[_T]): ...
+class GenericTP[T]: ...
 
 
-class GenericTPX(tp.Generic[_T_tpx]): ...
+class GenericTPX[T]: ...
 
 
 @tpx.runtime_checkable
-class CanInit(tpx.Protocol[_Pss]):
-    def __init__(self, *args: _Pss.args, **kwargs: _Pss.kwargs) -> None: ...
+class CanInit[**Tss](tpx.Protocol):
+    def __init__(self, *args: Tss.args, **kwargs: Tss.kwargs) -> None: ...
 
 
 @tpx.runtime_checkable
-class CanNew(tpx.Protocol[_Pss, _T_co]):
-    def __new__(cls, *args: _Pss.args, **kwargs: _Pss.kwargs) -> _T_co: ...  # type: ignore[misc]
+class CanNew[**Tss, T_co](tpx.Protocol):
+    def __new__(cls, *args: Tss.args, **kwargs: Tss.kwargs) -> T_co: ...  # type: ignore[misc]
 
 
 class ProtoOverload(tpx.Protocol):
@@ -270,7 +257,7 @@ def test_is_generic_alias(origin: op.types.GenericType) -> None:
     assert not op.inspect.is_generic_alias(origin)
     assert op.inspect.is_generic_alias(origin[None])
 
-    Alias = TypeAliasType("Alias", origin[None])  # type: ignore[valid-type]  # noqa: N806
+    type Alias = origin[None]  # type: ignore[valid-type]
     assert op.inspect.is_generic_alias(Alias)
 
     # pyrefly: ignore[not-a-type]

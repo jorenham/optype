@@ -43,12 +43,7 @@ from ctypes import (
     c_ushort as UShort,
     py_object as Object,
 )
-from typing import TYPE_CHECKING, Final, Literal, Never, TypeAlias, cast
-
-if sys.version_info >= (3, 13):
-    from typing import TypeAliasType, TypeVar
-else:
-    from typing_extensions import TypeAliasType, TypeVar
+from typing import TYPE_CHECKING, Final, Literal, Never, cast
 
 if sys.version_info >= (3, 14) and sys.platform != "win32":
     from ctypes import (  # noqa: I001
@@ -148,37 +143,36 @@ if __is_dev():
     )  # fmt: skip
 
 
-CT = TypeVar("CT", bound="CType")
-_Array: TypeAlias = ct.Array[CT] | ct.Array["_Array[CT]"]
-Array = TypeAliasType("Array", _Array[CT], type_params=(CT,))
+type _Array[CT: "CType"] = ct.Array[CT] | ct.Array[_Array[CT]]
+type Array[CT: "CType"] = _Array[CT]
 
 # `c_(u)byte` is an alias for `c_(u)int8`
-_SignedInteger: TypeAlias = (
+type _SignedInteger = (
     Int8 | Int16 | Int32 | Int64 | Short | IntC | IntP | Long | LongLong
 )
-_UnsignedInteger: TypeAlias = (
+type _UnsignedInteger = (
     UInt8 | UInt16 | UInt32 | UInt64 | UShort | UIntC | UIntP | ULong | ULongLong
 )
 
 if TYPE_CHECKING:
     # exploit the fact that `ct._SimpleCData` is invariant in `T`
-    _Integer: TypeAlias = CScalar[int]
-    _Floating: TypeAlias = CScalar[float]
-    _ComplexFloating: TypeAlias = CScalar[complex]
+    type _Integer = CScalar[int]
+    type _Floating = CScalar[float]
+    type _ComplexFloating = CScalar[complex]
 else:
     _Integer = CScalar
     _Floating = CScalar
     _ComplexFloating = CScalar
 
-SignedInteger = TypeAliasType("SignedInteger", _SignedInteger)
-UnsignedInteger = TypeAliasType("UnsignedInteger", _UnsignedInteger)
-Integer = TypeAliasType("Integer", _Integer)
-Floating = TypeAliasType("Floating", _Floating)
-ComplexFloating = TypeAliasType("ComplexFloating", _ComplexFloating)
-Inexact = TypeAliasType("Inexact", _Floating | _ComplexFloating)
-Number = TypeAliasType("Number", _Integer | _Floating | _ComplexFloating)
+type SignedInteger = _SignedInteger
+type UnsignedInteger = _UnsignedInteger
+type Integer = _Integer
+type Floating = _Floating
+type ComplexFloating = _ComplexFloating
+type Inexact = _Floating | _ComplexFloating
+type Number = _Integer | _Floating | _ComplexFloating
 
-Void = TypeAliasType("Void", ct.Structure | ct.Union)
-Flexible = TypeAliasType("Flexible", Bytes | Void)
+type Void = ct.Structure | ct.Union
+type Flexible = Bytes | Void
 
-Generic = TypeAliasType("Generic", Bool | Number | Flexible | Object)
+type Generic = Bool | Number | Flexible | Object
