@@ -53,34 +53,17 @@ that accepts `2` as an argument.
 This is where `optype` comes in handy. Use `optype.CanRMul[T, R]`, which is a
 protocol with (only) the `__rmul__(self, lhs: T) -> R` method:
 
-=== "Python 3.12+"
+```python
+from typing import Literal
+import optype as op
 
-    ```python
-    from typing import Literal
-    import optype as op
-
-    type Two = Literal[2]
-    type RMul2[R] = op.CanRMul[Two, R]
+type Two = Literal[2]
+type RMul2[R] = op.CanRMul[Two, R]
 
 
-    def twice[R](x: RMul2[R]) -> R:
-        return 2 * x
-    ```
-
-=== "Python 3.11"
-
-    ```python
-    from typing import Literal, TypeAlias, TypeVar
-    import optype as op
-
-    R = TypeVar("R")
-    Two: TypeAlias = Literal[2]
-    RMul2: TypeAlias = op.CanRMul[Two, R]
-
-
-    def twice(x: RMul2[R]) -> R:
-        return 2 * x
-    ```
+def twice[R](x: RMul2[R]) -> R:
+    return 2 * x
+```
 
 See the [Getting Started](getting-started.md) guide for more detailed examples.
 
