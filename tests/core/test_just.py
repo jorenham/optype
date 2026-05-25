@@ -149,7 +149,7 @@ def test_just_any() -> None:
 def test_just_instancecheck_str() -> None:
 
     @beartype
-    def foo(x: op.JustInt) -> None:
+    def foo(_x: op.JustInt) -> None:
         pass
 
     with pytest.raises(
