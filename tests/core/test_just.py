@@ -156,4 +156,4 @@ def test_just_instancecheck_str() -> None:
         BeartypeCallHintParamViolation,
         match="subclasses are not accepted",
     ):
-        foo(True)
+        foo(True)  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]  # pyrefly: ignore[bad-argument-type]
