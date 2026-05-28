@@ -67,12 +67,12 @@ extra = [
   "optype[numpy]",
 ]
 doc = [
-  "zensical==0.0.42",
+  "zensical==0.0.43",
   "pygments==2.20.0",
 ]
 lint = [
   "dprint-py==0.53.1.0",
-  "ruff==0.15.13",
+  "ruff==0.15.14",
   "sp-repo-review[cli]==2026.4.4",
 ]
 test = [
@@ -87,7 +87,7 @@ type = [
   "basedpyright==1.39.5",
   "mypy[faster-cache]==2.1.0",
   "pyrefly==1.0.0",
-  "ty==0.0.37",
+  "ty==0.0.38",
 ]
 dev = [
   { include-group = "extra" },
