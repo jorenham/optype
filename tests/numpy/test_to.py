@@ -7,7 +7,7 @@ from beartype.door import is_bearable
 import optype.numpy as onp
 
 _FAMILIES = [
-    ("Bool", np.bool_, np.bool_),
+    ("Bool", np.bool, np.bool),
     ("Int64", np.int64, np.int64),
     ("Float16", np.float16, np.float16),
     ("Float32", np.float32, np.float32),
@@ -16,9 +16,9 @@ _FAMILIES = [
     ("Complex64", np.complex64, np.complex64),
     ("Complex128", np.complex128, np.complex128),
     ("CLongDouble", np.clongdouble, np.clongdouble),
-    ("Int", np.integer, (np.integer, np.bool_)),
-    ("Float", np.floating, (np.floating, np.integer, np.bool_)),
-    ("Complex", np.complexfloating, (np.number, np.bool_)),
+    ("Int", np.integer, (np.integer, np.bool)),
+    ("Float", np.floating, (np.floating, np.integer, np.bool)),
+    ("Complex", np.complexfloating, (np.number, np.bool)),
 ]
 
 _NDIMS = [0, 1, 2, 3, None]
