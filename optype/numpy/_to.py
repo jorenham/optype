@@ -172,16 +172,16 @@ type _ToStrict3D2[T, SCT: np.generic] = (
 # TODO(jorenham): export & document
 # https://github.com/jorenham/optype/issues/373
 
-type integer_co = npc.integer | np.bool_  # noqa: PYI042
-type floating_co = npc.floating | npc.integer | np.bool_  # noqa: PYI042
-type complexfloating_co = npc.number | np.bool_  # noqa: PYI042
+type integer_co = npc.integer | np.bool  # noqa: PYI042
+type floating_co = npc.floating | npc.integer | np.bool  # noqa: PYI042
+type complexfloating_co = npc.number | np.bool  # noqa: PYI042
 
 # promotion rules with safe casting mode
-type f16_co = npc.floating16 | npc.integer8 | np.bool_  # noqa: PYI042
-type f32_co = npc.floating32 | npc.floating16 | npc.integer16 | npc.integer8 | np.bool_  # noqa: PYI042
-type c64_co = npc.inexact32 | npc.number16 | npc.integer8 | np.bool_  # noqa: PYI042
-type f64_co = npc.floating64 | npc.floating32 | npc.floating16 | npc.integer | np.bool_  # noqa: PYI042
-type c128_co = npc.number64 | npc.number32 | npc.number16 | npc.integer | np.bool_  # noqa: PYI042
+type f16_co = npc.floating16 | npc.integer8 | np.bool  # noqa: PYI042
+type f32_co = npc.floating32 | npc.floating16 | npc.integer16 | npc.integer8 | np.bool  # noqa: PYI042
+type c64_co = npc.inexact32 | npc.number16 | npc.integer8 | np.bool  # noqa: PYI042
+type f64_co = npc.floating64 | npc.floating32 | npc.floating16 | npc.integer | np.bool  # noqa: PYI042
+type c128_co = npc.number64 | npc.number32 | npc.number16 | npc.integer | np.bool  # noqa: PYI042
 
 
 ###
@@ -200,11 +200,11 @@ type ToTrue = nptc.LiteralTrue | Literal[1]
 type ToJustFalse = nptc.LiteralFalse
 type ToJustTrue = nptc.LiteralTrue
 
-type ToBool = _PyBool | np.bool_
-type ToBool1D = _To1D2[_PyBool, np.bool_]
-type ToBool2D = _To2D2[_PyBool, np.bool_]
-type ToBool3D = _To3D2[_PyBool, np.bool_]
-type ToBoolND = _ToND2[_PyBool, np.bool_]
+type ToBool = _PyBool | np.bool
+type ToBool1D = _To1D2[_PyBool, np.bool]
+type ToBool2D = _To2D2[_PyBool, np.bool]
+type ToBool3D = _To3D2[_PyBool, np.bool]
+type ToBoolND = _ToND2[_PyBool, np.bool]
 
 type ToInt = int | integer_co
 type ToInt1D = _To1D2[int, integer_co]
@@ -256,11 +256,11 @@ type ToComplexND = _ToND2[complex, complexfloating_co]
 
 # scalar- and array-likes, with "just" that scalar type
 
-type ToJustBool = bool | np.bool_
-type ToJustBool1D = _To1D2[bool, np.bool_]
-type ToJustBool2D = _To2D2[bool, np.bool_]
-type ToJustBool3D = _To3D2[bool, np.bool_]
-type ToJustBoolND = _ToND2[bool, np.bool_]
+type ToJustBool = bool | np.bool
+type ToJustBool1D = _To1D2[bool, np.bool]
+type ToJustBool2D = _To2D2[bool, np.bool]
+type ToJustBool3D = _To3D2[bool, np.bool]
+type ToJustBoolND = _ToND2[bool, np.bool]
 
 type ToJustInt64 = JustInt | np.intp
 type ToJustInt64_1D = _To1D2[JustInt, np.intp]
@@ -346,9 +346,9 @@ ToArrayStrict3D = TypeAliasType(  # noqa: UP040
     type_params=(T, SCT),
 )
 
-type ToBoolStrict1D = _ToStrict1D2[_PyBool, np.bool_]
-type ToBoolStrict2D = _ToStrict2D2[_PyBool, np.bool_]
-type ToBoolStrict3D = _ToStrict3D2[_PyBool, np.bool_]
+type ToBoolStrict1D = _ToStrict1D2[_PyBool, np.bool]
+type ToBoolStrict2D = _ToStrict2D2[_PyBool, np.bool]
+type ToBoolStrict3D = _ToStrict3D2[_PyBool, np.bool]
 
 type ToIntStrict1D = _ToStrict1D2[int, integer_co]
 type ToIntStrict2D = _ToStrict2D2[int, integer_co]
@@ -384,9 +384,9 @@ type ToComplexStrict3D = _ToStrict3D2[complex, complexfloating_co]
 
 # array-likes, with "just" that scalar type, and "strict" shape-types
 
-type ToJustBoolStrict1D = _ToStrict1D2[bool, np.bool_]
-type ToJustBoolStrict2D = _ToStrict2D2[bool, np.bool_]
-type ToJustBoolStrict3D = _ToStrict3D2[bool, np.bool_]
+type ToJustBoolStrict1D = _ToStrict1D2[bool, np.bool]
+type ToJustBoolStrict2D = _ToStrict2D2[bool, np.bool]
+type ToJustBoolStrict3D = _ToStrict3D2[bool, np.bool]
 type ToJustInt64Strict1D = _ToStrict1D2[JustInt, np.int64]
 type ToJustInt64Strict2D = _ToStrict2D2[JustInt, np.int64]
 type ToJustInt64Strict3D = _ToStrict3D2[JustInt, np.int64]

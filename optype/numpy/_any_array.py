@@ -10,7 +10,7 @@ else:
     from typing_extensions import TypeVar
 
 import numpy as np
-import numpy_typing_compat as nptc
+import numpy_typing_compat
 
 import optype.numpy._scalar as _sc
 from ._shape import AnyShape
@@ -114,7 +114,7 @@ type AnyInexactArray = _AnyArray[
     _sc.inexact | JustFloat | JustComplex,
 ]
 
-type AnyBoolArray = _AnyArray[np.bool_, np.bool_ | bool]
+type AnyBoolArray = _AnyArray[np.bool, np.bool | bool]
 
 type AnyUInt8Array = _AnyArray[np.uint8, np.uint8 | CanBuffer] | CanBuffer
 AnyUByteArray = AnyUInt8Array
@@ -124,7 +124,7 @@ type AnyUInt32Array = _AnyArray[np.uint32]
 type AnyUInt64Array = _AnyArray[np.uint64]
 type AnyUIntCArray = _AnyArray[np.uintc]
 type AnyULongLongArray = _AnyArray[np.ulonglong]
-type AnyULongArray = _AnyArray[nptc.ulong]
+type AnyULongArray = _AnyArray[np.ulong]
 type AnyUIntPArray = _AnyArray[np.uintp]
 type AnyUIntArray = _AnyArray[np.uint]
 
@@ -136,7 +136,7 @@ type AnyInt32Array = _AnyArray[np.int32]
 type AnyInt64Array = _AnyArray[np.int64]
 type AnyIntCArray = _AnyArray[np.intc]
 type AnyLongLongArray = _AnyArray[np.longlong]
-type AnyLongArray = _AnyArray[nptc.long]  # no int (numpy<=1)
+type AnyLongArray = _AnyArray[np.long]  # no int (numpy<=1)
 type AnyIntPArray = _AnyArray[np.intp]  # no int (numpy>=2)
 type AnyIntArray = _AnyArray[np.int_, np.int_ | JustInt]
 
@@ -174,4 +174,4 @@ type AnyObjectArray = _AnyArray[np.object_, np.object_ | JustObject]
 
 @set_module("optype.numpy")
 class AnyStringArray(Protocol):
-    def __array__(self, /) -> np.ndarray[Any, "nptc.StringDType"]: ...
+    def __array__(self, /) -> np.ndarray[Any, numpy_typing_compat.StringDType]: ...

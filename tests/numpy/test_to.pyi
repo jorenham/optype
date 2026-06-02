@@ -13,7 +13,7 @@ __all__ = ()
 # setup
 
 type _Sca_x = np.generic
-type _Sca_b = np.bool_
+type _Sca_b = np.bool
 type _Sca_i = np.integer[Any]
 type _Sca_f = (
     np.floating[_128Bit]
