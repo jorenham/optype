@@ -5,7 +5,7 @@ See Also:
     - https://docs.python.org/3/library/string.html
 """
 
-from typing import Final, Literal as L, TypeAlias  # noqa: N817
+from typing import Final, Literal as L  # noqa: N817
 
 __all__ = (
     "DIGITS",
@@ -31,15 +31,15 @@ __all__ = (
 )
 
 
-DigitBin: TypeAlias = L["0", "1"]
+type DigitBin = L["0", "1"]
 DIGITS_BIN: Final = "0", "1"
 
 # compatible with `string.octdigits`
-DigitOct: TypeAlias = L["0", "1", "2", "3", "4", "5", "6", "7"]
+type DigitOct = L["0", "1", "2", "3", "4", "5", "6", "7"]
 DIGITS_OCT: Final = "0", "1", "2", "3", "4", "5", "6", "7"
 
 # compatible with `string.hexdigits`
-DigitHex: TypeAlias = L[
+type DigitHex = L[
     "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
     "a", "b", "c", "d", "e", "f",
     "A", "B", "C", "D", "E", "F",
@@ -50,12 +50,12 @@ DIGITS_HEX: Final = (
 )  # fmt: skip
 
 # compatible with `string.digits`
-Digit: TypeAlias = L["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+type Digit = L["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
 DIGITS: Final = "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"
 
 
 # compatible with `string.ascii_letters`
-LetterLower: TypeAlias = L[
+type LetterLower = L[
     "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
     "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
 ]  # fmt: skip
@@ -65,7 +65,7 @@ LETTERS_LOWER: Final = (
 )  # fmt: skip
 
 # compatible with `string.ascii_lowercase`
-LetterUpper: TypeAlias = L[
+type LetterUpper = L[
     "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
     "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
 ]  # fmt: skip
@@ -75,12 +75,12 @@ LETTERS_UPPER: Final = (
 )  # fmt: skip
 
 # compatible with `string.ascii_letters`
-Letter: TypeAlias = LetterLower | LetterUpper
+type Letter = LetterLower | LetterUpper
 LETTERS: Final = LETTERS_LOWER + LETTERS_UPPER
 
 
 # compatible with `string.punctuation`
-Punctuation: TypeAlias = L[
+type Punctuation = L[
     "!", '"', "#", "$", "%", "&", "'", "(",
     ")", "*", "+", ",", "-", ".", "/", ":",
     ";", "<", "=", ">", "?", "@", "[", "\\",
@@ -94,9 +94,9 @@ PUNCTUATION: Final = (
 )  # fmt: skip
 
 # compatible with `string.whitespace`
-Whitespace: TypeAlias = L[" ", "\t", "\n", "\r", "\v", "\f"]
+type Whitespace = L[" ", "\t", "\n", "\r", "\v", "\f"]
 WHITESPACE: Final = " ", "\t", "\n", "\r", "\v", "\f"
 
 # compatible with `string.printable`
-Printable: TypeAlias = Digit | Letter | Punctuation | Whitespace
+type Printable = Digit | Letter | Punctuation | Whitespace
 PRINTABLE: Final = DIGITS + LETTERS + PUNCTUATION + WHITESPACE

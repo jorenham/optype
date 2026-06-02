@@ -5,12 +5,7 @@ https://docs.python.org/3/library/dataclasses.html
 
 import dataclasses
 import sys
-from typing import Any, ClassVar, Protocol
-
-if sys.version_info >= (3, 12):
-    from typing import override
-else:
-    from typing_extensions import override
+from typing import Any, ClassVar, Protocol, override
 
 if sys.version_info >= (3, 13):
     from typing import runtime_checkable

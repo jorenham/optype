@@ -1,12 +1,12 @@
 import sys
 import types
 from collections.abc import Generator, Iterable
-from typing import Any, Never, Protocol, Self, SupportsIndex, TypeAlias, overload
+from typing import Any, Never, Protocol, Self, SupportsIndex, overload, override
 
 if sys.version_info >= (3, 13):
-    from typing import ParamSpec, TypeVar, override, runtime_checkable
+    from typing import ParamSpec, TypeVar, runtime_checkable
 else:
-    from typing_extensions import ParamSpec, TypeVar, override, runtime_checkable
+    from typing_extensions import ParamSpec, TypeVar, runtime_checkable
 
 __all__ = [
     "CanAEnter",
@@ -200,7 +200,6 @@ def __dir__() -> list[str]:
 # https://github.com/astral-sh/ty/issues/1798
 _Tss = ParamSpec("_Tss", default=...)
 
-_T = TypeVar("_T")
 _T_co = TypeVar("_T_co", covariant=True)
 _T_contra = TypeVar("_T_contra", contravariant=True)
 _TT_co = TypeVar("_TT_co", covariant=True, default=_T_contra)
@@ -211,7 +210,6 @@ _V_co = TypeVar("_V_co", covariant=True)
 _VV_co = TypeVar("_VV_co", default=_V_co, covariant=True)
 
 _BoolT_co = TypeVar("_BoolT_co", default=bool, covariant=True)
-_ExcT = TypeVar("_ExcT", bound=BaseException)
 
 _T_object_contra = TypeVar("_T_object_contra", contravariant=True, default=object)
 _T_object_co = TypeVar("_T_object_co", covariant=True, default=object)
@@ -239,12 +237,12 @@ _IndexT_contra = TypeVar(
 )
 
 # return type that is usually `None`, but can be anything, as it is ignored at runtime
-_Ignored: TypeAlias = object
+type _Ignored = object
 # This should be `asyncio.Future[typing.Any] | None`. But that would make this
 # incompatible with `Awaitable` -- it (annoyingly) uses `Any`:
 # https://github.com/python/typeshed/blob/587ad6/stdlib/asyncio/futures.pyi#L51
-_FutureOrNone: TypeAlias = object
-_AsyncGen: TypeAlias = Generator[_FutureOrNone, None, _T]
+type _FutureOrNone = object
+type _AsyncGen[_T] = Generator[_FutureOrNone, None, _T]
 
 
 ###
@@ -1529,10 +1527,10 @@ class CanExit(Protocol[_T_None_co]):
     @overload
     def __exit__(self, exc_type: None, exc: None, tb: None, /) -> None: ...
     @overload
-    def __exit__(  # noqa: PYI036
+    def __exit__[ExcT: BaseException](  # noqa: PYI036
         self,
-        exc_type: type[_ExcT],
-        exc: _ExcT,
+        exc_type: type[ExcT],
+        exc: ExcT,
         tb: types.TracebackType,
         /,
     ) -> _T_None_co: ...
@@ -1567,10 +1565,10 @@ class CanAExit(Protocol[_T_None_co]):
     @overload
     def __aexit__(self, exc_type: None, exc: None, tb: None, /) -> CanAwait[None]: ...
     @overload
-    def __aexit__(
+    def __aexit__[ExcT: BaseException](
         self,
-        exc_type: type[_ExcT],
-        exc_: _ExcT,
+        exc_type: type[ExcT],
+        exc_: ExcT,
         tb: types.TracebackType,
         /,
     ) -> CanAwait[_T_None_co]: ...

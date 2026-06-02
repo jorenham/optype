@@ -26,7 +26,6 @@ def __dir__() -> list[str]:
     return __all__
 
 
-DTypeT = TypeVar("DTypeT", bound=np.dtype[Any])
 ScalarT = TypeVar("ScalarT", bound=np.generic, default=Any)
 
 

@@ -18,7 +18,7 @@ type-checkers like beartype.
 
 ## Key Technologies & Dependencies
 
-- **Python versions**: 3.11+
+- **Python versions**: 3.12+
 - **Build system**: uv (build-backend: uv_build)
 - **Testing**: pytest with doctests enabled
 - **Type checking**: mypy, basedpyright (a backwards compatible pyright fork with
@@ -165,7 +165,7 @@ def test_functionality():
 ## Special Considerations
 
 - This is a typing-focused library, so type correctness is paramount
-- Support multiple Python versions (3.11-3.14)
+- Support multiple Python versions (3.12+)
 - Optional numpy integration requires careful handling
 - Performance is important for type checking tools
 - Maintain backward compatibility within major versions

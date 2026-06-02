@@ -5,12 +5,12 @@ https://docs.python.org/3/library/pickle.html
 
 import sys
 from collections.abc import Callable, Iterable
-from typing import Protocol, Self, SupportsIndex, TypeAlias
+from typing import Protocol, Self, SupportsIndex, override
 
 if sys.version_info >= (3, 13):
-    from typing import ParamSpec, TypeVar, override, runtime_checkable
+    from typing import TypeVar, runtime_checkable
 else:
-    from typing_extensions import ParamSpec, TypeVar, override, runtime_checkable
+    from typing_extensions import TypeVar, runtime_checkable
 
 
 __all__ = (
@@ -29,26 +29,20 @@ def __dir__() -> tuple[str, ...]:
 
 ###
 
-# https://github.com/astral-sh/ty/issues/1798
-_Tss = ParamSpec("_Tss", default=...)
-_ArgT = TypeVar("_ArgT", default=object)
-_ArgT_co = TypeVar("_ArgT_co", covariant=True, default=object)
-_StateT_co = TypeVar("_StateT_co", covariant=True)
-_StateT_contra = TypeVar("_StateT_contra", contravariant=True)
 
-_Tuple: TypeAlias = tuple[object, ...]
-_Iter1: TypeAlias = Iterable[object]
-_Iter2: TypeAlias = Iterable[tuple[object, object]]
-_Callable: TypeAlias = Callable[_Tss, object]
+type _Tuple = tuple[object, ...]
+type _Iter1 = Iterable[object]
+type _Iter2 = Iterable[tuple[object, object]]
+type _Callable[**_Tss] = Callable[_Tss, object]
 
-_ReduceValue: TypeAlias = (
+type _ReduceValue = (
     str
-    | tuple[_Callable, _Tuple]
-    | tuple[_Callable, _Tuple, object]
-    | tuple[_Callable, _Tuple, object, _Iter1 | None]
-    | tuple[_Callable, _Tuple, object, _Iter1 | None, _Iter2 | None]
+    | tuple[_Callable[...], _Tuple]
+    | tuple[_Callable[...], _Tuple, object]
+    | tuple[_Callable[...], _Tuple, object, _Iter1 | None]
+    | tuple[_Callable[...], _Tuple, object, _Iter1 | None, _Iter2 | None]
     | tuple[
-        _Callable,
+        _Callable[...],
         _Tuple,
         object,
         _Iter1 | None,
@@ -56,6 +50,9 @@ _ReduceValue: TypeAlias = (
         _Callable[[object, object]] | None,
     ]
 )
+
+_ArgT = TypeVar("_ArgT", default=object)
+_ArgT_co = TypeVar("_ArgT_co", covariant=True, default=object)
 _RT_co = TypeVar("_RT_co", bound=_ReduceValue, default=_ReduceValue, covariant=True)
 
 
@@ -79,20 +76,20 @@ class CanReduceEx(Protocol[_RT_co]):
 
 
 @runtime_checkable
-class CanGetstate(Protocol[_StateT_co]):
+class CanGetstate[StateT_co](Protocol):
     """
     https://docs.python.org/3/library/pickle.html#object.__getstate__
     """
 
     @override
-    def __getstate__(self, /) -> _StateT_co: ...
+    def __getstate__(self, /) -> StateT_co: ...
 
 
 @runtime_checkable
-class CanSetstate(Protocol[_StateT_contra]):
+class CanSetstate[StateT_contra](Protocol):
     """https://docs.python.org/3/library/pickle.html#object.__setstate__"""
 
-    def __setstate__(self, state: _StateT_contra, /) -> None: ...
+    def __setstate__(self, state: StateT_contra, /) -> None: ...
 
 
 @runtime_checkable

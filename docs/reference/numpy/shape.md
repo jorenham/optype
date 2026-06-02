@@ -155,11 +155,14 @@ The signatures are almost identical to each other, and in the `0d` case it rough
 looks like this:
 
 ```py
-_T = TypeVar("_T", bound=np.generic, default=Any)
-_ToDType: TypeAlias = type[_T] | np.dtype[_T] | HasDType[np.dtype[_T]]
+type _ToDType[T: np.generic = Any] = type[T] | np.dtype[T] | HasDType[np.dtype[T]]
 
 
-def is_array_0d(a, /, dtype: _ToDType[_T] | None = None) -> TypeIs[Array0D[_T]]: ...
+def is_array_0d[T: np.generic](
+    a: object,
+    /,
+    dtype: _ToDType[T] | None = None,
+) -> TypeIs[Array0D[T]]: ...
 ```
 
 ## Shape aliases

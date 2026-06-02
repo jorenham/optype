@@ -1,5 +1,5 @@
 # ruff: noqa: PYI042
-from typing import Literal as L, TypeAlias as Alias  # noqa: N817
+from typing import Literal as L  # noqa: N817
 
 from numpy_typing_compat import NUMPY_GE_2_0
 
@@ -7,186 +7,186 @@ from numpy_typing_compat import NUMPY_GE_2_0
 
 # boolean
 
-b1_name: Alias = L["bool", "bool_"]  # 'bool0' was removed in NumPy 2.0
-b1_char: Alias = L["b1", "|b1", "?"]
-b1_code: Alias = L[b1_name, b1_char]
+type b1_name = L["bool", "bool_"]  # 'bool0' was removed in NumPy 2.0
+type b1_char = L["b1", "|b1", "?"]
+type b1_code = L[b1_name, b1_char]
 
 # integer
 
-i1_name: Alias = L["int8", "byte"]
-i1_char: Alias = L["i1", "|i1", "b"]
-i1_code: Alias = L[i1_name, i1_char]
+type i1_name = L["int8", "byte"]
+type i1_char = L["i1", "|i1", "b"]
+type i1_code = L[i1_name, i1_char]
 
-u1_name: Alias = L["uint8", "ubyte"]
-u1_char: Alias = L["u1", "|u1", "B"]
-u1_code: Alias = L[u1_name, u1_char]
+type u1_name = L["uint8", "ubyte"]
+type u1_char = L["u1", "|u1", "B"]
+type u1_code = L[u1_name, u1_char]
 
-i2_name: Alias = L["int16", "short"]
-i2_char: Alias = L["i2", "<i2", ">i2", "h"]
-i2_code: Alias = L[i2_name, i2_char]
+type i2_name = L["int16", "short"]
+type i2_char = L["i2", "<i2", ">i2", "h"]
+type i2_code = L[i2_name, i2_char]
 
-u2_name: Alias = L["uint16", "ushort"]
-u2_char: Alias = L["u2", "<u2", ">u2", "H"]
-u2_code: Alias = L[u2_name, u2_char]
+type u2_name = L["uint16", "ushort"]
+type u2_char = L["u2", "<u2", ">u2", "H"]
+type u2_code = L[u2_name, u2_char]
 
-i4_name: Alias = L["int32", "intc"]
-i4_char: Alias = L["i4", "<i4", ">i4", "i"]
-i4_code: Alias = L[i4_name, i4_char]
+type i4_name = L["int32", "intc"]
+type i4_char = L["i4", "<i4", ">i4", "i"]
+type i4_code = L[i4_name, i4_char]
 
-u4_name: Alias = L["uint32", "uintc"]
-u4_char: Alias = L["u4", "<u4", ">u4", "I"]
-u4_code: Alias = L[u4_name, u4_char]
+type u4_name = L["uint32", "uintc"]
+type u4_char = L["u4", "<u4", ">u4", "I"]
+type u4_code = L[u4_name, u4_char]
 
-i8_name: Alias = L["int64", "longlong"]
-i8_char: Alias = L["i8", "<i8", ">i8", "q"]
-i8_code: Alias = L[i8_name, i8_char]
+type i8_name = L["int64", "longlong"]
+type i8_char = L["i8", "<i8", ">i8", "q"]
+type i8_code = L[i8_name, i8_char]
 
-u8_name: Alias = L["uint64", "ulonglong"]
-u8_char: Alias = L["u8", "<u8", ">u8", "Q"]
-u8_code: Alias = L[u8_name, u8_char]
+type u8_name = L["uint64", "ulonglong"]
+type u8_char = L["u8", "<u8", ">u8", "Q"]
+type u8_code = L[u8_name, u8_char]
 
-l_char: Alias = L["l", "<l", ">l"]
-L_char: Alias = L["L", "<L", ">L"]
+type l_char = L["l", "<l", ">l"]
+type L_char = L["L", "<L", ">L"]
 
-p_char: Alias = L["p", "<p", ">p"]
-P_char: Alias = L["P", "<P", ">P"]
+type p_char = L["p", "<p", ">p"]
+type P_char = L["P", "<P", ">P"]
 
 # numpy>=2 only
-n_char: Alias = L["n", "<n", ">n"]
-N_char: Alias = L["N", "<N", ">N"]
+type n_char = L["n", "<n", ">n"]
+type N_char = L["N", "<N", ">N"]
 
 
 # mypy: disable-error-code="no-redef"
 # pyright: reportRedeclaration=false
 
 if NUMPY_GE_2_0:
-    i0_name: Alias = L["int_", "int", "intp"]
-    i0_char: Alias = n_char
-    i0_code: Alias = L[i0_name, i0_char]
+    type i0_name = L["int_", "int", "intp"]
+    type i0_char = n_char
+    type i0_code = L[i0_name, n_char]  # using `i0_char` here confuses ty
 
-    u0_char: Alias = N_char
-    u0_name: Alias = L["uint", "uintp"]
-    u0_code: Alias = L[u0_name, u0_char]
+    type u0_char = N_char
+    type u0_name = L["uint", "uintp"]
+    type u0_code = L[u0_name, N_char]  # using `u0_char` here confuses ty
 
-    i__name: Alias = i0_name
-    i__char: Alias = i0_char
-    i__code: Alias = i0_code
+    type i__name = i0_name
+    type i__char = i0_char
+    type i__code = i0_code
 
-    u__name: Alias = u0_name
-    u__char: Alias = u0_char
-    u__code: Alias = u0_code
+    type u__name = u0_name
+    type u__char = u0_char
+    type u__code = u0_code
 
-    l_name: Alias = L["long"]
-    l_code: Alias = L[l_name, l_char]
+    type l_name = L["long"]
+    type l_code = L[l_name, l_char]
 
-    L_name: Alias = L["ulong"]
-    L_code: Alias = L[L_name, L_char]
+    type L_name = L["ulong"]
+    type L_code = L[L_name, L_char]
 else:
-    i0_name: Alias = L["intp"]  # type: ignore[misc]
-    i0_char: Alias = p_char  # type: ignore[misc]
-    i0_code: Alias = L[i0_name, i0_char]  # type: ignore[misc]
+    type i0_name = L["intp"]
+    type i0_char = p_char
+    type i0_code = L[i0_name, p_char]  # using `i0_char` here confuses ty
 
-    u0_name: Alias = L["uintp"]  # type: ignore[misc]
-    u0_char: Alias = P_char  # type: ignore[misc]
-    u0_code: Alias = L[u0_name, u0_char]  # type: ignore[misc]
+    type u0_name = L["uintp"]
+    type u0_char = P_char
+    type u0_code = L[u0_name, P_char]  # using `u0_char` here confuses ty
 
-    i__name: Alias = L["int_", "int", "long"]  # type: ignore[misc]
-    i__char: Alias = L[l_char]  # type: ignore[misc]
-    i__code: Alias = L[i__name, i__char]  # type: ignore[misc]
+    type i__name = L["int_", "int", "long"]
+    type i__char = L[l_char]
+    type i__code = L[i__name, i__char]
 
-    u__name: Alias = L["uint", "ulong"]  # type: ignore[misc]
-    u__char: Alias = L[L_char]  # type: ignore[misc]
-    u__code: Alias = L[u__name, u__char]  # type: ignore[misc]
+    type u__name = L["uint", "ulong"]
+    type u__char = L[L_char]
+    type u__code = L[u__name, u__char]
 
-    l_name: Alias = i__name  # type: ignore[misc]
-    l_code: Alias = i__code  # type: ignore[misc]
+    type l_name = i__name
+    type l_code = i__code
 
-    L_name: Alias = u__name  # type: ignore[misc]
-    L_code: Alias = u__code  # type: ignore[misc]
+    type L_name = u__name
+    type L_code = u__code
 
 
 # float
 
-f2_name: Alias = L["float16", "half"]
-f2_char: Alias = L["f2", "<f2", ">f2", "e"]
-f2_code: Alias = L[f2_name, f2_char]
+type f2_name = L["float16", "half"]
+type f2_char = L["f2", "<f2", ">f2", "e"]
+type f2_code = L[f2_name, f2_char]
 
-f4_name: Alias = L["float32", "single"]
-f4_char: Alias = L["f4", "<f4", ">f4", "f"]
-f4_code: Alias = L[f4_name, f4_char]
+type f4_name = L["float32", "single"]
+type f4_char = L["f4", "<f4", ">f4", "f"]
+type f4_code = L[f4_name, f4_char]
 
-f8_name: Alias = L["float64", "double", "float"]
-f8_char: Alias = L["f8", "<f8", ">f8", "d"]
-f8_code: Alias = L[f8_name, f8_char]
+type f8_name = L["float64", "double", "float"]
+type f8_char = L["f8", "<f8", ">f8", "d"]
+type f8_code = L[f8_name, f8_char]
 
-f12_name: Alias = L["float96"]
-f12_char: Alias = L["f12", "<f12", ">f12"]
-f12_code: Alias = L[f12_name, f12_char]
+type f12_name = L["float96"]
+type f12_char = L["f12", "<f12", ">f12"]
+type f12_code = L[f12_name, f12_char]
 
-f16_name: Alias = L["float128"]
-f16_char: Alias = L["f16", "<f16", ">f16"]
-f16_code: Alias = L[f16_name, f16_char]
+type f16_name = L["float128"]
+type f16_char = L["f16", "<f16", ">f16"]
+type f16_code = L[f16_name, f16_char]
 
-g_name: Alias = L[f12_name, f16_name, "longdouble"]
-g_char: Alias = L[f12_char, f16_char, "g"]
-g_code: Alias = L[g_name, g_char]
+type g_name = L[f12_name, f16_name, "longdouble"]
+type g_char = L[f12_char, f16_char, "g"]
+type g_code = L[g_name, g_char]
 
 # complex
 
-c8_name: Alias = L["complex64", "csingle"]
-c8_char: Alias = L["c8", "<c8", ">c8", "F"]
-c8_code: Alias = L[c8_name, c8_char]
+type c8_name = L["complex64", "csingle"]
+type c8_char = L["c8", "<c8", ">c8", "F"]
+type c8_code = L[c8_name, c8_char]
 
-c16_name: Alias = L["complex", "complex128", "cdouble"]
-c16_char: Alias = L["c16", "<c16", ">c16", "D"]
-c16_code: Alias = L[c16_name, c16_char]
+type c16_name = L["complex", "complex128", "cdouble"]
+type c16_char = L["c16", "<c16", ">c16", "D"]
+type c16_code = L[c16_name, c16_char]
 
-c24_name: Alias = L["complex192"]
-c24_char: Alias = L["c24", "<c24", ">c24"]
-c24_code: Alias = L[c24_name, c24_char]
+type c24_name = L["complex192"]
+type c24_char = L["c24", "<c24", ">c24"]
+type c24_code = L[c24_name, c24_char]
 
-c32_name: Alias = L["complex256"]
-c32_char: Alias = L["c32", "<c32", ">c32"]
-c32_code: Alias = L[c32_name, c32_char]
+type c32_name = L["complex256"]
+type c32_char = L["c32", "<c32", ">c32"]
+type c32_code = L[c32_name, c32_char]
 
-G_name: Alias = L[c24_name, c32_name, "clongdouble"]
-G_char: Alias = L[c24_code, c32_code, "G"]
-G_code: Alias = L[G_name, G_char]
+type G_name = L[c24_name, c32_name, "clongdouble"]
+type G_char = L[c24_code, c32_code, "G"]
+type G_code = L[G_name, G_char]
 
 # object
 
-O_name: Alias = L["object_", "object"]
-O_char: Alias = L["O", "|O"]
-O_code: Alias = L[O_name, O_char]
+type O_name = L["object_", "object"]
+type O_char = L["O", "|O"]
+type O_code = L[O_name, O_char]
 
 # bytes_
 
 # NOTE: this only includes 0-length bytes
-S0_name: Alias = L["bytes_", "bytes"]
-S0_char: Alias = L["S0", "|S0", "<S0", ">S0", "S"]
-S0_code: Alias = L[S0_name, S0_char]
+type S0_name = L["bytes_", "bytes"]
+type S0_char = L["S0", "|S0", "<S0", ">S0", "S"]
+type S0_code = L[S0_name, S0_char]
 
-S1_name: Alias = L["bytes8"]
-S1_char: Alias = L["S1", "|S1", "<S1", ">S1", "c"]
-S1_code: Alias = L[S1_name, S1_char]
+type S1_name = L["bytes8"]
+type S1_char = L["S1", "|S1", "<S1", ">S1", "c"]
+type S1_code = L[S1_name, S1_char]
 
 # str_
 
 # NOTE: this only includes 0-length strings
-U0_name: Alias = L["str_", "str", "unicode"]
-U0_char: Alias = L["U0", "|U0", "<U0", ">U0", "U"]
-U0_code: Alias = L[U0_name, U0_char]
+type U0_name = L["str_", "str", "unicode"]
+type U0_char = L["U0", "|U0", "<U0", ">U0", "U"]
+type U0_code = L[U0_name, U0_char]
 
 # void
 
 # NOTE: this only includes "len-0 bytes void"
-V0_name: Alias = L["void"]  # 'void0' was removed in NumPy 2.0
-V0_char: Alias = L["V0", "|V0", "V"]
-V0_code: Alias = L[V0_name, V0_char]
+type V0_name = L["void"]  # 'void0' was removed in NumPy 2.0
+type V0_char = L["V0", "|V0", "V"]
+type V0_code = L[V0_name, V0_char]
 
 # datetime64
 
-M_name: Alias = L[
+type M_name = L[
     "datetime64",
     "datetime64[as]",
     "datetime64[fs]",
@@ -202,7 +202,7 @@ M_name: Alias = L[
     "datetime64[M]",
     "datetime64[Y]",
 ]
-M_char: Alias = L[
+type M_char = L[
     "M8", "<M8", ">M8", "M",
     "M8[as]", "<M8[as]", ">M8[as]",
     "M8[fs]", "<M8[fs]", ">M8[fs]",
@@ -217,11 +217,11 @@ M_char: Alias = L[
     "M8[M]", "<M8[M]", ">M8[M]",
     "M8[Y]", "<M8[Y]", ">M8[Y]",
 ]  # fmt: skip
-M_code: Alias = L[M_name, M_char]
+type M_code = L[M_name, M_char]
 
 # timedelta64
 
-m_name: Alias = L[
+type m_name = L[
     "timedelta64",
     "timedelta64[as]",
     "timedelta64[fs]",
@@ -237,7 +237,7 @@ m_name: Alias = L[
     "timedelta64[M]",
     "timedelta64[Y]",
 ]
-m_char: Alias = L[
+type m_char = L[
     "m8", "<m8", ">m8", "m",
     "m8[as]", "<m8[as]", ">m8[as]",
     "m8[fs]", "<m8[fs]", ">m8[fs]",
@@ -252,39 +252,39 @@ m_char: Alias = L[
     "m8[M]", "<m8[M]", ">m8[M]",
     "m8[Y]", "<m8[Y]", ">m8[Y]",
 ]  # fmt: skip
-m_code: Alias = L[m_name, m_char]
+type m_code = L[m_name, m_char]
 
 # stringv (or whatever we're gonna call the `StringDType().type` scalar type)
 
-T_name: Alias = L["StringDType128"]
-T_char: Alias = L["T"]
-T_code: Alias = T_char  # not yet
+type T_name = L["StringDType128"]
+type T_char = L["T"]
+type T_code = T_char  # not yet
 
 # abstract
 
-ix_name: Alias = L[
+type ix_name = L[
     "int8", "int16", "int32", "int64",
     "byte", "short", "intc", "long", "longlong",
     "int_", "intp",
 ]  # fmt: skip
-ix_char: Alias = L[i1_char, i2_char, i4_char, i8_char, l_char, p_char, n_char]
-ix_code: Alias = L[ix_name, ix_char]
+type ix_char = L[i1_char, i2_char, i4_char, i8_char, l_char, p_char, n_char]
+type ix_code = L[ix_name, ix_char]
 
 
-ux_name: Alias = L[
+type ux_name = L[
     "uint8", "uint16", "uint32", "uint64",
     "ubyte", "ushort", "uintc", "ulong", "ulonglong",
     "uint", "uintp",
 ]  # fmt: skip
-ux_char: Alias = L[u1_char, u2_char, u4_char, u8_char, L_char, P_char, N_char]
-ux_code: Alias = L[ux_name, ux_char]
+type ux_char = L[u1_char, u2_char, u4_char, u8_char, L_char, P_char, N_char]
+type ux_code = L[ux_name, ux_char]
 
-fx_code: Alias = L[f2_code, f4_code, f8_code, g_code]
-cx_code: Alias = L[c8_code, c16_code, G_code]
+type fx_code = L[f2_code, f4_code, f8_code, g_code]
+type cx_code = L[c8_code, c16_code, G_code]
 
-iu_code: Alias = L[ux_code, ix_code]
-fc_code: Alias = L[fx_code, cx_code]
-iufc_code: Alias = L[iu_code, fc_code]
+type iu_code = L[ux_code, ix_code]
+type fc_code = L[fx_code, cx_code]
+type iufc_code = L[iu_code, fc_code]
 
-SU_code: Alias = L[S0_code, S1_code, U0_code]
-SUV_code: Alias = L[SU_code, V0_code]
+type SU_code = L[S0_code, S1_code, U0_code]
+type SUV_code = L[SU_code, V0_code]

@@ -12,7 +12,7 @@ temporarily that invalid `optype` use will actually cause the typechecker
 
 import types
 from collections.abc import Collection, Iterable, Iterator
-from typing import Any, TypeAlias, TypeVar
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -20,8 +20,10 @@ import optype as op
 from optype._core import _can
 from optype.inspect import get_protocol_members, get_protocols
 
-_T_ReIter = TypeVar("_T_ReIter")
-CanReIter: TypeAlias = op.CanIter[op.CanIterSelf[_T_ReIter]]
+if TYPE_CHECKING:
+    from typing import Any
+
+type CanReIter[_T_ReIter] = op.CanIter[op.CanIterSelf[_T_ReIter]]
 
 
 def test_can_add_self_int() -> None:

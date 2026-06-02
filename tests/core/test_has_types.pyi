@@ -1,10 +1,8 @@
 # pyright: reportInvalidStubStatement=false
 
-from typing import LiteralString, TypedDict, TypeVar, assert_type
+from typing import LiteralString, TypedDict, assert_type
 
 import optype as op
-
-_TypeT = TypeVar("_TypeT", bound=type)
 
 class A: ...
 class B(A): ...
@@ -14,7 +12,7 @@ a: A
 b: B
 c: C
 
-def typeof(obj: op.HasClass[_TypeT], /) -> _TypeT: ...
+def typeof[TypeT: type](obj: op.HasClass[TypeT], /) -> TypeT: ...
 
 ###
 # HasClass

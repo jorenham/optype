@@ -1,13 +1,13 @@
 import sys
-from typing import TYPE_CHECKING, Literal, LiteralString, Never, NoReturn, TypeAlias
-
-if TYPE_CHECKING:
-    import enum
+from typing import TYPE_CHECKING, Literal, LiteralString, Never, NoReturn, TypeAliasType
 
 if sys.version_info >= (3, 13):
     from typing import TypedDict, TypeVar
 else:
     from typing_extensions import TypedDict, TypeVar
+
+if TYPE_CHECKING:
+    import enum
 
 from ._core import _can as _c, _just
 
@@ -34,21 +34,23 @@ def __dir__() -> tuple[str, ...]:
 
 
 # Anything that can *always* be converted to an `int` / `float` / `complex`
-AnyInt: TypeAlias = int | _c.CanInt | _c.CanIndex
+type AnyInt = int | _c.CanInt | _c.CanIndex
 
-AnyFloat: TypeAlias = _c.CanFloat | _c.CanIndex
-AnyComplex: TypeAlias = _c.CanComplex | _c.CanFloat | _c.CanIndex
+type AnyFloat = _c.CanFloat | _c.CanIndex
+type AnyComplex = _c.CanComplex | _c.CanFloat | _c.CanIndex
 
 # Anything that can be iterated over, e.g. in a `for` loop,`builtins.iter`,
 # `builtins.enumerate`, or `numpy.array`.
 _ValueT = TypeVar("_ValueT", default=object)
-AnyIterable: TypeAlias = _c.CanIter[_c.CanNext[_ValueT]] | _c.CanGetitem[int, _ValueT]
+AnyIterable = TypeAliasType(  # noqa: UP040
+    "AnyIterable",
+    _c.CanIter[_c.CanNext[_ValueT]] | _c.CanGetitem[int, _ValueT],
+    type_params=(_ValueT,),
+)
 
 # The closest supertype of a `Literal`, i.e. the allowed types that can be
 # passed to `typing.Literal`.
-AnyLiteral: TypeAlias = (
-    "bool | _just.JustInt | LiteralString | bytes | enum.Enum | None"
-)
+type AnyLiteral = bool | _just.JustInt | LiteralString | bytes | enum.Enum | None
 
 
 # Empty collection type aliases
@@ -58,9 +60,9 @@ class _EmptyTypedDict(TypedDict):
     pass
 
 
-EmptyString: TypeAlias = Literal[""]
-EmptyBytes: TypeAlias = Literal[b""]
-EmptyTuple: TypeAlias = (
+type EmptyString = Literal[""]
+type EmptyBytes = Literal[b""]
+type EmptyTuple = (
     # this should be the only that's needed here, but in practice we need 3
     # other variants, that are equivalent, but are somehow treated as
     # different types by pyright or mypy or both
@@ -73,16 +75,16 @@ EmptyTuple: TypeAlias = (
     # this is what infers the result of `tuple[Never, ...] + tuple[()]` as...
     | tuple[*tuple[Never, ...]]
 )
-EmptyList: TypeAlias = list[Never]
-EmptySet: TypeAlias = set[Never]
-EmptyDict: TypeAlias = dict[object, Never] | _EmptyTypedDict
-EmptyIterable: TypeAlias = AnyIterable[Never]
+type EmptyList = list[Never]
+type EmptySet = set[Never]
+type EmptyDict = dict[object, Never] | _EmptyTypedDict
+type EmptyIterable = AnyIterable[Never]
 
 
 # Literal
 
-LiteralBool: TypeAlias = Literal[False, True]  # noqa: RUF038
-LiteralByte: TypeAlias = Literal[
+type LiteralBool = Literal[False, True]  # noqa: RUF038
+type LiteralByte = Literal[
     0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
     0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
     0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
