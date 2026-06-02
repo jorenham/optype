@@ -1,8 +1,6 @@
 # ruff: noqa: PYI042
 from typing import Literal as L  # noqa: N817
 
-from numpy_typing_compat import NUMPY_GE_2_0
-
 ###
 
 # boolean
@@ -56,53 +54,27 @@ type n_char = L["n", "<n", ">n"]
 type N_char = L["N", "<N", ">N"]
 
 
-# mypy: disable-error-code="no-redef"
-# pyright: reportRedeclaration=false
+type i0_name = L["int_", "int", "intp"]
+type i0_char = n_char
+type i0_code = L[i0_name, n_char]  # using `i0_char` here confuses ty
 
-if NUMPY_GE_2_0:
-    type i0_name = L["int_", "int", "intp"]
-    type i0_char = n_char
-    type i0_code = L[i0_name, n_char]  # using `i0_char` here confuses ty
+type u0_char = N_char
+type u0_name = L["uint", "uintp"]
+type u0_code = L[u0_name, N_char]  # using `u0_char` here confuses ty
 
-    type u0_char = N_char
-    type u0_name = L["uint", "uintp"]
-    type u0_code = L[u0_name, N_char]  # using `u0_char` here confuses ty
+type i__name = i0_name
+type i__char = i0_char
+type i__code = i0_code
 
-    type i__name = i0_name
-    type i__char = i0_char
-    type i__code = i0_code
+type u__name = u0_name
+type u__char = u0_char
+type u__code = u0_code
 
-    type u__name = u0_name
-    type u__char = u0_char
-    type u__code = u0_code
+type l_name = L["long"]
+type l_code = L[l_name, l_char]
 
-    type l_name = L["long"]
-    type l_code = L[l_name, l_char]
-
-    type L_name = L["ulong"]
-    type L_code = L[L_name, L_char]
-else:
-    type i0_name = L["intp"]
-    type i0_char = p_char
-    type i0_code = L[i0_name, p_char]  # using `i0_char` here confuses ty
-
-    type u0_name = L["uintp"]
-    type u0_char = P_char
-    type u0_code = L[u0_name, P_char]  # using `u0_char` here confuses ty
-
-    type i__name = L["int_", "int", "long"]
-    type i__char = L[l_char]
-    type i__code = L[i__name, i__char]
-
-    type u__name = L["uint", "ulong"]
-    type u__char = L[L_char]
-    type u__code = L[u__name, u__char]
-
-    type l_name = i__name
-    type l_code = i__code
-
-    type L_name = u__name
-    type L_code = u__code
+type L_name = L["ulong"]
+type L_code = L[L_name, L_char]
 
 
 # float

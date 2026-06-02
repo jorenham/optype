@@ -4,7 +4,7 @@ The names are analogous to those in `numpy.dtypes`.
 """
 
 from collections.abc import Sequence
-from typing import Any, Never, Protocol
+from typing import Any, Protocol
 
 import numpy as np
 import numpy_typing_compat
@@ -93,9 +93,6 @@ type SUV_cls = SU_cls | V_cls
 
 ###
 
-# mypy: disable-error-code="no-redef"
-# pyright: reportRedeclaration=false
-
 # b1
 type AnyBoolDType = type[bool] | To[np.bool_] | a.b1_code
 
@@ -124,18 +121,13 @@ type AnyLongLongDType = AnyInt64DType  # deprecated
 type AnyUInt64DType = To[np.uint64] | a.u8_code
 type AnyULongLongDType = AnyUInt64DType  # deprecated
 # int_ / intp / long
-if numpy_typing_compat.NUMPY_GE_2_0:
-    type AnyIntPDType = type[JustInt] | To[np.int64] | a.i0_code
-    type AnyIntDType = AnyIntPDType
-    type AnyLongDType = To[numpy_typing_compat.long] | a.l_code
-else:
-    type AnyIntPDType = To[np.int64] | a.i0_code
-    type AnyIntDType = type[JustInt] | To[numpy_typing_compat.long] | a.l_code
-    type AnyLongDType = AnyIntDType
+type AnyIntPDType = type[JustInt] | To[np.int64] | a.i0_code
+type AnyIntDType = AnyIntPDType
+type AnyLongDType = To[np.long] | a.l_code
 
 # uint / uintp / ulong
 type AnyUIntPDType = To[np.uint64] | a.u0_code
-type AnyULongDType = To[numpy_typing_compat.ulong] | a.L_code
+type AnyULongDType = To[np.ulong] | a.L_code
 type AnyUIntDType = AnyULongDType
 
 
@@ -194,12 +186,10 @@ type AnyNumberDType = ifc_cls | To[_sc.number] | a.iufc_code
 type AnyCharacterDType = SU_cls | To[np.character] | a.SU_code
 type AnyFlexibleDType = SUV_cls | To[np.flexible] | a.SUV_code
 
-if numpy_typing_compat.NUMPY_GE_2_0:
 
-    class _HasStringDType(Protocol):
-        @property
-        def dtype(self) -> numpy_typing_compat.StringDType: ...
+class _HasStringDType(Protocol):
+    @property
+    def dtype(self) -> numpy_typing_compat.StringDType: ...
 
-    type AnyStringDType = numpy_typing_compat.StringDType | _HasStringDType | a.T_code
-else:
-    type AnyStringDType = Never
+
+type AnyStringDType = numpy_typing_compat.StringDType | _HasStringDType | a.T_code
