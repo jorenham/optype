@@ -51,7 +51,7 @@ dependencies = ["typing-extensions>=4.10; python_version<'3.13'"]
 [project.optional-dependencies]
 numpy = [
   "numpy>=2.0,<2.8",
-  "numpy-typing-compat>=20250818.1.25,<20251207",
+  "numpy-typing-compat>=20260602.2.0,<20260603",
 ]
 
 [project.urls]

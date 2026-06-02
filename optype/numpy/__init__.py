@@ -1,6 +1,6 @@
 # ruff: noqa: E402, PLC0415
 
-_NPTC_BUILD = 2025_08_18
+_NPTC_BUILD = 2026_06_02
 
 
 def _check_numpy_typing_compat() -> None:
