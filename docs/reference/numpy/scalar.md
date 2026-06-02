@@ -19,7 +19,7 @@ type Scalar[
 It can be used as e.g.
 
 ```py
-are_birds_real: Scalar[bool, Literal[1]] = np.bool_(True)
+are_birds_real: Scalar[bool, Literal[1]] = np.bool(True)
 the_answer: Scalar[int, Literal[2]] = np.uint16(42)
 alpha: Scalar[float, Literal[8]] = np.float64(1 / 137)
 ```

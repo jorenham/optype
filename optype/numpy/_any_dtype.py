@@ -94,7 +94,7 @@ type SUV_cls = SU_cls | V_cls
 ###
 
 # b1
-type AnyBoolDType = type[bool] | To[np.bool_] | a.b1_code
+type AnyBoolDType = type[bool] | To[np.bool] | a.b1_code
 
 # i1
 type AnyInt8DType = To[np.int8] | a.i1_code

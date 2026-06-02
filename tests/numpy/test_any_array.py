@@ -50,7 +50,7 @@ CHARACTER: Final = STR | BYTES
 # https://github.com/jorenham/optype/issues/371
 VOID: Final = {np.void}
 FLEXIBLE: Final = VOID | CHARACTER
-BOOL: Final = {np.bool_, ct.c_bool, bool}
+BOOL: Final = {np.bool, ct.c_bool, bool}
 OBJECT: Final = {np.object_, ct.py_object}
 
 
@@ -223,10 +223,10 @@ def test_any_flexible_array(
 
 
 @pytest.mark.parametrize("sctype", BOOL, ids="{0.__module__}.{0.__qualname__}".format)
-def test_any_bool_array(sctype: type[bool | np.bool_ | _ct.Bool]) -> None:
+def test_any_bool_array(sctype: type[bool | np.bool | _ct.Bool]) -> None:
     x = np.array(sctype(True))
     x_any: onp.AnyBoolArray = x
-    assert np.issubdtype(x.dtype, np.bool_)
+    assert np.issubdtype(x.dtype, np.bool)
 
 
 @pytest.mark.parametrize("sctype", OBJECT)

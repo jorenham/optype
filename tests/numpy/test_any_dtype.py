@@ -7,7 +7,7 @@ import pytest
 from optype.numpy import _dtype_attr
 
 _DTYPES: Final = (
-    np.dtype(np.bool_),
+    np.dtype(np.bool),
     np.dtype(np.int8),
     np.dtype(np.int16),
     np.dtype(np.int32),

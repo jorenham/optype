@@ -114,7 +114,7 @@ type AnyInexactArray = _AnyArray[
     _sc.inexact | JustFloat | JustComplex,
 ]
 
-type AnyBoolArray = _AnyArray[np.bool_, np.bool_ | bool]
+type AnyBoolArray = _AnyArray[np.bool, np.bool | bool]
 
 type AnyUInt8Array = _AnyArray[np.uint8, np.uint8 | CanBuffer] | CanBuffer
 AnyUByteArray = AnyUInt8Array
