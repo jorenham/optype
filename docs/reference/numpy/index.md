@@ -2,8 +2,7 @@
 
 Optional NumPy support for `optype`.
 
-Optype supports both NumPy 1 and 2. The current minimum supported version is `1.26`,
-following [NEP 29][NEP29] and [SPEC 0][SPEC0].
+Optype supports NumPy 2, following [NEP 29][NEP29] and [SPEC 0][SPEC0].
 
 `optype.numpy` uses [`numpy-typing-compat`][NPTC] package to ensure compatibility for
 older versions of NumPy. To ensure that the correct versions of `numpy` and

@@ -237,17 +237,7 @@ Signed:
 
 !!! info
 
-    Since NumPy 2, `np.uint` and `np.int_` are aliases for `np.uintp` and `np.intp`,
-    respectively.
-
-!!! info
-
     On unix-based platforms `np.[u]intc` are aliases for `np.[u]int32`.
-
-!!! info
-
-    On NumPy 1 `np.uint` and `np.int_` are what in NumPy 2 are now the `np.ulong` and
-    `np.long` types, respectively.
 
 ## Real floats
 
