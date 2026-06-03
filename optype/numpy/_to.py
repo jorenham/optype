@@ -1,6 +1,14 @@
 import sys
-from collections.abc import Sequence as Seq
-from typing import Any, Literal, Protocol, TypeAliasType
+from collections.abc import Callable, Sequence as Seq
+from typing import (
+    TYPE_CHECKING,
+    Annotated as Ann,
+    Any,
+    Literal,
+    Protocol,
+    TypeAliasType,
+    runtime_checkable,
+)
 
 if sys.version_info >= (3, 13):
     from typing import TypeVar
@@ -124,21 +132,47 @@ SCT_co = TypeVar("SCT_co", bound=np.generic, covariant=True)
 # (and aren't runtime checkable)
 
 
-type _CanArrayStrict1D[SCT: np.generic] = nptc.CanArray[tuple[int], np.dtype[SCT]]
-type _CanArrayStrict2D[SCT: np.generic] = nptc.CanArray[tuple[int, int], np.dtype[SCT]]
-type _CanArrayStrict3D[SCT: np.generic] = nptc.CanArray[
-    tuple[int, int, int],
-    np.dtype[SCT],
-]
-
-
+@runtime_checkable
 class _CanArrayND(Protocol[SCT_co]):
     def __len__(self, /) -> int: ...
     def __array__(self, /) -> np.ndarray[Any, np.dtype[SCT_co]]: ...
 
 
+@runtime_checkable
 class _CanArray(Protocol[SCT_co]):
     def __array__(self, /) -> np.ndarray[Any, np.dtype[SCT_co]]: ...
+
+
+if TYPE_CHECKING:
+    _CanArrayStrict1D = TypeAliasType(  # noqa: UP040
+        "_CanArrayStrict1D",
+        nptc.CanArray[tuple[int], np.dtype[SCT]],
+        type_params=(SCT,),
+    )
+    _CanArrayStrict2D = TypeAliasType(  # noqa: UP040
+        "_CanArrayStrict2D",
+        nptc.CanArray[tuple[int, int], np.dtype[SCT]],
+        type_params=(SCT,),
+    )
+    _CanArrayStrict3D = TypeAliasType(  # noqa: UP040
+        "_CanArrayStrict3D",
+        nptc.CanArray[tuple[int, int, int], np.dtype[SCT]],
+        type_params=(SCT,),
+    )
+
+else:
+
+    @runtime_checkable
+    class _CanArrayStrict1D(Protocol[SCT_co]):
+        def __array__(self) -> np.ndarray[tuple[int], np.dtype[SCT_co]]: ...
+
+    @runtime_checkable
+    class _CanArrayStrict2D(Protocol[SCT_co]):
+        def __array__(self) -> np.ndarray[tuple[int, int], np.dtype[SCT_co]]: ...
+
+    @runtime_checkable
+    class _CanArrayStrict3D(Protocol[SCT_co]):
+        def __array__(self) -> np.ndarray[tuple[int, int, int], np.dtype[SCT_co]]: ...
 
 
 type _To1D1[SCT: np.generic] = _CanArrayND[SCT] | Seq[SCT]
@@ -183,6 +217,17 @@ type c64_co = npc.inexact32 | npc.number16 | npc.integer8 | np.bool  # noqa: PYI
 type f64_co = npc.floating64 | npc.floating32 | npc.floating16 | npc.integer | np.bool  # noqa: PYI042
 type c128_co = npc.number64 | npc.number32 | npc.number16 | npc.integer | np.bool  # noqa: PYI042
 
+###
+
+# runtime type-checking compat
+
+if TYPE_CHECKING:
+    # we don't use float | int to avoid clutter in type-checker error output
+    py_float = float
+    py_complex = complex
+else:
+    py_float = float | int
+    py_complex = complex | py_float
 
 ###
 
@@ -224,17 +269,17 @@ type ToFloat32_2D = _To2D1[f32_co]
 type ToFloat32_3D = _To3D1[f32_co]
 type ToFloat32_ND = _ToND1[f32_co]
 
-type ToFloat64 = float | f64_co
-type ToFloat64_1D = _To1D2[float, f64_co]
-type ToFloat64_2D = _To2D2[float, f64_co]
-type ToFloat64_3D = _To3D2[float, f64_co]
-type ToFloat64_ND = _ToND2[float, f64_co]
+type ToFloat64 = py_float | f64_co
+type ToFloat64_1D = _To1D2[py_float, f64_co]
+type ToFloat64_2D = _To2D2[py_float, f64_co]
+type ToFloat64_3D = _To3D2[py_float, f64_co]
+type ToFloat64_ND = _ToND2[py_float, f64_co]
 
-type ToFloat = float | floating_co
-type ToFloat1D = _To1D2[float, floating_co]
-type ToFloat2D = _To2D2[float, floating_co]
-type ToFloat3D = _To3D2[float, floating_co]
-type ToFloatND = _ToND2[float, floating_co]
+type ToFloat = py_float | floating_co
+type ToFloat1D = _To1D2[py_float, floating_co]
+type ToFloat2D = _To2D2[py_float, floating_co]
+type ToFloat3D = _To3D2[py_float, floating_co]
+type ToFloatND = _ToND2[py_float, floating_co]
 
 type ToComplex64 = c64_co
 type ToComplex64_1D = _To1D1[c64_co]
@@ -242,17 +287,17 @@ type ToComplex64_2D = _To2D1[c64_co]
 type ToComplex64_3D = _To3D1[c64_co]
 type ToComplex64_ND = _ToND1[c64_co]
 
-type ToComplex128 = complex | c128_co
-type ToComplex128_1D = _To1D2[complex, c128_co]
-type ToComplex128_2D = _To2D2[complex, c128_co]
-type ToComplex128_3D = _To3D2[complex, c128_co]
-type ToComplex128_ND = _ToND2[complex, c128_co]
+type ToComplex128 = py_complex | c128_co
+type ToComplex128_1D = _To1D2[py_complex, c128_co]
+type ToComplex128_2D = _To2D2[py_complex, c128_co]
+type ToComplex128_3D = _To3D2[py_complex, c128_co]
+type ToComplex128_ND = _ToND2[py_complex, c128_co]
 
-type ToComplex = complex | complexfloating_co
-type ToComplex1D = _To1D2[complex, complexfloating_co]
-type ToComplex2D = _To2D2[complex, complexfloating_co]
-type ToComplex3D = _To3D2[complex, complexfloating_co]
-type ToComplexND = _ToND2[complex, complexfloating_co]
+type ToComplex = py_complex | complexfloating_co
+type ToComplex1D = _To1D2[py_complex, complexfloating_co]
+type ToComplex2D = _To2D2[py_complex, complexfloating_co]
+type ToComplex3D = _To3D2[py_complex, complexfloating_co]
+type ToComplexND = _ToND2[py_complex, complexfloating_co]
 
 # scalar- and array-likes, with "just" that scalar type
 
@@ -362,25 +407,25 @@ type ToFloat32Strict1D = _ToStrict1D1[f32_co]
 type ToFloat32Strict2D = _ToStrict2D1[f32_co]
 type ToFloat32Strict3D = _ToStrict3D1[f32_co]
 
-type ToFloat64Strict1D = _ToStrict1D2[float, f64_co]
-type ToFloat64Strict2D = _ToStrict2D2[float, f64_co]
-type ToFloat64Strict3D = _ToStrict3D2[float, f64_co]
+type ToFloat64Strict1D = _ToStrict1D2[py_float, f64_co]
+type ToFloat64Strict2D = _ToStrict2D2[py_float, f64_co]
+type ToFloat64Strict3D = _ToStrict3D2[py_float, f64_co]
 
-type ToFloatStrict1D = _ToStrict1D2[float, floating_co]
-type ToFloatStrict2D = _ToStrict2D2[float, floating_co]
-type ToFloatStrict3D = _ToStrict3D2[float, floating_co]
+type ToFloatStrict1D = _ToStrict1D2[py_float, floating_co]
+type ToFloatStrict2D = _ToStrict2D2[py_float, floating_co]
+type ToFloatStrict3D = _ToStrict3D2[py_float, floating_co]
 
 type ToComplex64Strict1D = _ToStrict1D1[c64_co]
 type ToComplex64Strict2D = _ToStrict2D1[c64_co]
 type ToComplex64Strict3D = _ToStrict3D1[c64_co]
 
-type ToComplex128Strict1D = _ToStrict1D2[complex, c128_co]
-type ToComplex128Strict2D = _ToStrict2D2[complex, c128_co]
-type ToComplex128Strict3D = _ToStrict3D2[complex, c128_co]
+type ToComplex128Strict1D = _ToStrict1D2[py_complex, c128_co]
+type ToComplex128Strict2D = _ToStrict2D2[py_complex, c128_co]
+type ToComplex128Strict3D = _ToStrict3D2[py_complex, c128_co]
 
-type ToComplexStrict1D = _ToStrict1D2[complex, complexfloating_co]
-type ToComplexStrict2D = _ToStrict2D2[complex, complexfloating_co]
-type ToComplexStrict3D = _ToStrict3D2[complex, complexfloating_co]
+type ToComplexStrict1D = _ToStrict1D2[py_complex, complexfloating_co]
+type ToComplexStrict2D = _ToStrict2D2[py_complex, complexfloating_co]
+type ToComplexStrict3D = _ToStrict3D2[py_complex, complexfloating_co]
 
 # array-likes, with "just" that scalar type, and "strict" shape-types
 
@@ -420,3 +465,99 @@ type ToJustCLongDoubleStrict3D = _ToStrict3D1[npc.complexfloating160]
 type ToJustComplexStrict1D = _ToStrict1D2[JustComplex, npc.complexfloating]
 type ToJustComplexStrict2D = _ToStrict2D2[JustComplex, npc.complexfloating]
 type ToJustComplexStrict3D = _ToStrict3D2[JustComplex, npc.complexfloating]
+
+
+# if not TYPE_CHECKING:
+try:
+    from beartype.vale import Is as _BeartypeIs
+except ImportError:
+    pass
+else:
+    # `beartype.vale._core._valecore.BeartypeValidator` is private, unfortunately
+    type _BeartypeValidator = Any
+
+    def _install() -> None:
+        def build(
+            check: Callable[[np.dtype[np.generic], Any], bool],
+        ) -> Callable[[int | None, object], _BeartypeValidator]:
+            def factory(nd: int | None, target: object) -> _BeartypeValidator:
+                def predicate(x: object, /) -> bool:
+                    try:
+                        x = np.asanyarray(x)
+                    except (ValueError, TypeError):
+                        return False
+                    return (nd is None or x.ndim == nd) and check(x.dtype, target)
+
+                return _BeartypeIs[predicate]
+
+            return factory
+
+        is_cast = build(np.can_cast)
+        is_sub = build(lambda dt, t: issubclass(dt.type, t))
+
+        def wrap(key: str, ann: _BeartypeValidator) -> None:
+            if key in globals():
+                globals()[key] = Ann[globals()[key], ann]  # ty:ignore[invalid-type-form]
+
+        for name, sct in [
+            ("Bool", np.bool),
+            ("Int64", np.int64),
+            ("Float16", np.float16),
+            ("Float32", np.float32),
+            ("Float64", np.float64),
+            ("LongDouble", np.longdouble),
+            ("Complex64", np.complex64),
+            ("Complex128", np.complex128),
+            ("CLongDouble", np.clongdouble),
+        ]:
+            name_ = f"{name}_" if name[-1].isdigit() else name
+
+            wrap(f"To{name}", is_cast(0, sct))
+            wrap(f"To{name_}1D", is_cast(1, sct))
+            wrap(f"To{name_}2D", is_cast(2, sct))
+            wrap(f"To{name_}3D", is_cast(3, sct))
+            wrap(f"To{name_}ND", is_cast(None, sct))
+
+            wrap(f"ToJust{name}", is_sub(0, sct))
+            wrap(f"ToJust{name_}1D", is_sub(1, sct))
+            wrap(f"ToJust{name_}2D", is_sub(2, sct))
+            wrap(f"ToJust{name_}3D", is_sub(3, sct))
+            wrap(f"ToJust{name_}ND", is_sub(None, sct))
+
+            wrap(f"To{name}Strict1D", is_cast(1, sct))
+            wrap(f"To{name}Strict2D", is_cast(2, sct))
+            wrap(f"To{name}Strict3D", is_cast(3, sct))
+
+            wrap(f"ToJust{name}Strict1D", is_sub(1, sct))
+            wrap(f"ToJust{name}Strict2D", is_sub(2, sct))
+            wrap(f"ToJust{name}Strict3D", is_sub(3, sct))
+
+        for name, sct, co_sct in [
+            ("Int", np.integer, (np.bool,)),
+            ("Float", np.floating, (np.integer, np.bool)),
+            ("Complex", np.complexfloating, (np.integer, np.floating, np.bool)),
+        ]:
+            co_classes = (sct, *co_sct)
+
+            wrap(f"To{name}", is_sub(0, co_classes))
+            wrap(f"To{name}1D", is_sub(1, co_classes))
+            wrap(f"To{name}2D", is_sub(2, co_classes))
+            wrap(f"To{name}3D", is_sub(3, co_classes))
+            wrap(f"To{name}ND", is_sub(None, co_classes))
+
+            wrap(f"ToJust{name}", is_sub(0, sct))
+            wrap(f"ToJust{name}1D", is_sub(1, sct))
+            wrap(f"ToJust{name}2D", is_sub(2, sct))
+            wrap(f"ToJust{name}3D", is_sub(3, sct))
+            wrap(f"ToJust{name}ND", is_sub(None, sct))
+
+            wrap(f"To{name}Strict1D", is_sub(1, co_classes))
+            wrap(f"To{name}Strict2D", is_sub(2, co_classes))
+            wrap(f"To{name}Strict3D", is_sub(3, co_classes))
+
+            wrap(f"ToJust{name}Strict1D", is_sub(1, sct))
+            wrap(f"ToJust{name}Strict2D", is_sub(2, sct))
+            wrap(f"ToJust{name}Strict3D", is_sub(3, sct))
+
+    _install()
+    del _install

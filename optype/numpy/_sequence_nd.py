@@ -1,5 +1,5 @@
 from collections.abc import Iterator
-from typing import Any, Protocol, TypeVar, final
+from typing import Any, Protocol, TypeVar, final, runtime_checkable
 
 __all__ = ["SequenceND"]
 
@@ -8,6 +8,7 @@ T_co = TypeVar("T_co", covariant=True)
 
 
 @final
+@runtime_checkable
 class SequenceND(Protocol[T_co]):  # type: ignore[misc]  # https://github.com/python/mypy/issues/17288
     """Based on `numpy._typing._NestedSequence`."""
 
