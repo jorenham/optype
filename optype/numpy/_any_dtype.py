@@ -4,13 +4,7 @@ The names are analogous to those in `numpy.dtypes`.
 """
 
 from collections.abc import Sequence
-from typing import Any, Never, NotRequired, Protocol, TypeAlias, TypedDict
-
-if sys.version_info >= (3, 13):
-    from typing import TypeAliasType
-else:
-    from typing_extensions import TypeAliasType
-
+from typing import Any, NotRequired, Protocol, TypedDict
 
 import numpy as np
 import numpy_typing_compat
@@ -166,15 +160,14 @@ type AnyStrDType = S_cls | To[np.str_] | a.U0_code
 
 # Structured dtype specifiers for np.void: covers all 4 NumPy forms.
 # See: https://numpy.org/doc/stable/user/basics.rec.html
-_StructuredDTypeField = TypeAliasType(
-    "_StructuredDTypeField",
-    tuple[str, "AnyDType"]
-    | tuple[str, "AnyDType", int | tuple[int, ...]]
-    | tuple[tuple[Any, str], "AnyDType"]
-    | tuple[tuple[Any, str], "AnyDType", int | tuple[int, ...]],
+type _StructuredDTypeField = (
+    tuple[str, AnyDType]
+    | tuple[str, AnyDType, int | tuple[int, ...]]
+    | tuple[tuple[Any, str], AnyDType]
+    | tuple[tuple[Any, str], AnyDType, int | tuple[int, ...]]
 )
-_StructuredDTypeListForm: TypeAlias = Sequence[_StructuredDTypeField]
-_ToDType: TypeAlias = To[Any] | str
+type _StructuredDTypeListForm = Sequence[_StructuredDTypeField]
+type _ToDType = To[Any] | str
 
 
 class _StructuredDTypeDictForm1(TypedDict):
@@ -186,24 +179,21 @@ class _StructuredDTypeDictForm1(TypedDict):
     titles: NotRequired[Sequence[Any]]
 
 
-_StructuredDTypeDictForm2: TypeAlias = dict[
+type _StructuredDTypeDictForm2 = dict[
     str,
-    tuple["AnyDType", int] | tuple["AnyDType", int, Any],
+    tuple[AnyDType, int] | tuple[AnyDType, int, Any],
 ]
 
-_StructuredDTypeLike: TypeAlias = (
+type _StructuredDTypeLike = (
     _StructuredDTypeListForm | _StructuredDTypeDictForm1 | _StructuredDTypeDictForm2
 )
 
-AnyVoidDType = TypeAliasType(
-    "AnyVoidDType",
-    V_cls | To[np.void] | a.V0_code | _StructuredDTypeLike,
-)
+type AnyVoidDType = V_cls | To[np.void] | a.V0_code | _StructuredDTypeLike
 
 # object
 
-AnyObjectDType = TypeAliasType("AnyObjectDType", O_cls | To[np.object_] | a.O_code)
-AnyDType = TypeAliasType("AnyDType", _ToDType | _StructuredDTypeLike)
+type AnyObjectDType = O_cls | To[np.object_] | a.O_code
+type AnyDType = _ToDType | _StructuredDTypeLike
 
 # abstract
 
