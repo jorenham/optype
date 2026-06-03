@@ -41,6 +41,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
   "Topic :: Scientific/Engineering",
   "Topic :: Software Development",
   "Typing :: Typed",
@@ -76,6 +77,7 @@ lint = [
 ]
 test = [
   { include-group = "extra" },
+  # see [tool.uv.sources] for the Python 3.15 git pin
   "beartype>=0.22.9",
   "pytest>=9.0.3",
   "typing-extensions>=4.15.0",
@@ -95,6 +97,18 @@ dev = [
   { include-group = "test" },
   { include-group = "type" },
 ]
+
+[tool.uv.sources.beartype]
+# TODO(@jorenham): drop this git pin once beartype >0.22.9 is released (3.15 fix)
+git = "https://github.com/beartype/beartype.git"
+rev = "4f5b8fb"
+marker = "python_version >= '3.15'"
+
+[tool.uv.sources.typing-extensions]
+# TODO(@jorenham): drop this git pin once typing-extensions >4.15.0 is released (3.15 fix)
+git = "https://github.com/python/typing_extensions.git"
+rev = "7e4fc36"
+marker = "python_version >= '3.15'"
 
 # mypy
 
