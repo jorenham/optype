@@ -104,6 +104,12 @@ git = "https://github.com/beartype/beartype.git"
 rev = "4f5b8fb"
 marker = "python_version >= '3.15'"
 
+[tool.uv.sources.typing-extensions]
+# TODO(@jorenham): drop this git pin once typing-extensions >4.15.0 is released (3.15 fix)
+git = "https://github.com/python/typing_extensions.git"
+rev = "7e4fc36"
+marker = "python_version >= '3.15'"
+
 # mypy
 
 [tool.mypy]
