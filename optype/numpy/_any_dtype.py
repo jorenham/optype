@@ -4,17 +4,15 @@ The names are analogous to those in `numpy.dtypes`.
 """
 
 from collections.abc import Sequence
-from typing import Any, Never, Protocol, TypeAlias, TypedDict
+from typing import Any, Never, NotRequired, Protocol, TypeAlias, TypedDict
 
 if sys.version_info >= (3, 13):
-    from typing import NotRequired, TypeAliasType
+    from typing import TypeAliasType
 else:
-    from typing import NotRequired
     from typing_extensions import TypeAliasType
 
 
 import numpy as np
-import numpy.typing as npt
 import numpy_typing_compat
 
 import optype.numpy._dtype_attr as a
@@ -168,21 +166,20 @@ type AnyStrDType = S_cls | To[np.str_] | a.U0_code
 
 # Structured dtype specifiers for np.void: covers all 4 NumPy forms.
 # See: https://numpy.org/doc/stable/user/basics.rec.html
-_StructuredDTypeField: TypeAlias = (
-    tuple[str, npt.DTypeLike]
-    | tuple[str, npt.DTypeLike, int]
-    | tuple[str, npt.DTypeLike, tuple[int, ...]]
-    | tuple[tuple[Any, str], npt.DTypeLike]
-    | tuple[tuple[Any, str], npt.DTypeLike, int]
-    | tuple[tuple[Any, str], npt.DTypeLike, tuple[int, ...]]
+_StructuredDTypeField = TypeAliasType(
+    "_StructuredDTypeField",
+    tuple[str, "AnyDType"]
+    | tuple[str, "AnyDType", int | tuple[int, ...]]
+    | tuple[tuple[Any, str], "AnyDType"]
+    | tuple[tuple[Any, str], "AnyDType", int | tuple[int, ...]],
 )
 _StructuredDTypeListForm: TypeAlias = Sequence[_StructuredDTypeField]
 _ToDType: TypeAlias = To[Any] | str
 
 
-class _StructuredDTypeDictForm1(TypedDict, total=True):
+class _StructuredDTypeDictForm1(TypedDict):
     names: Sequence[str]
-    formats: Sequence[npt.DTypeLike]
+    formats: Sequence["AnyDType"]
     offsets: NotRequired[Sequence[int]]
     itemsize: NotRequired[int]
     aligned: NotRequired[bool]
@@ -191,7 +188,7 @@ class _StructuredDTypeDictForm1(TypedDict, total=True):
 
 _StructuredDTypeDictForm2: TypeAlias = dict[
     str,
-    tuple[npt.DTypeLike, int] | tuple[npt.DTypeLike, int, Any],
+    tuple["AnyDType", int] | tuple["AnyDType", int, Any],
 ]
 
 _StructuredDTypeLike: TypeAlias = (
