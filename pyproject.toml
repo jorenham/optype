@@ -1,5 +1,5 @@
 [build-system]
-requires = ["uv_build>=0.11.14,<0.12.0"]
+requires = ["uv_build>=0.11.19,<0.12.0"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
@@ -67,12 +67,13 @@ extra = [
   "optype[numpy]",
 ]
 doc = [
-  "zensical==0.0.43",
+  # https://github.com/zensical/zensical/issues/735
+  "zensical>=0.0.43, <0.1, !=0.0.44",
   "pygments==2.20.0",
 ]
 lint = [
   "dprint-py==0.53.1.0",
-  "ruff==0.15.15",
+  "ruff==0.15.16",
   "sp-repo-review[cli]==2026.4.4",
 ]
 test = [
@@ -88,7 +89,7 @@ type = [
   "basedpyright==1.39.6",
   "mypy[faster-cache]==2.1.0",
   "pyrefly==1.0.0",
-  "ty==0.0.40",
+  "ty==0.0.44",
 ]
 dev = [
   { include-group = "extra" },
