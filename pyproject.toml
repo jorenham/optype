@@ -67,7 +67,8 @@ extra = [
   "optype[numpy]",
 ]
 doc = [
-  "zensical==0.0.44",
+  # https://github.com/zensical/zensical/issues/735
+  "zensical>=0.0.43, <0.1, !=0.0.44",
   "pygments==2.20.0",
 ]
 lint = [
