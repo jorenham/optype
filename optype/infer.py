@@ -527,10 +527,12 @@ class _Renderer:
         selected: list[str],
         spies: dict[str, _SpyObject],
         result: object,
+        optional: frozenset[str],
     ) -> None:
         self._selected = selected
         self._spies = spies
         self._result = result
+        self._optional = optional
 
         param_spies = [spies[name] for name in names]
         order, appear = _analyze(param_spies, result)
@@ -624,7 +626,7 @@ class _Renderer:
         return self.traces(spy.__optype_trace__)
 
     def slot(self, spy: _SpyObject) -> str:
-        return self._vars.get(id(spy)) or self.spy(spy) or "object"
+        return self._vars.get(id(spy)) or self.spy(spy) or "Unused"
 
     def typevar(self, spy: _SpyObject) -> str:
         var = self._vars[id(spy)]
@@ -649,7 +651,11 @@ class _Renderer:
             typevars.append("R")
         generics = f"[{', '.join(typevars)}]" if typevars else ""
         params = ", ".join(
-            f"{name}: {self.slot(self._spies[name])}" for name in self._selected
+            f"{name}: {slot}"
+            for name in self._selected
+            # an unused optional param is dropped; an unused required one stays `Unused`
+            if (slot := self.slot(self._spies[name])) != "Unused"
+            or name not in self._optional
         )
         return f"{generics}({params}) -> {self.return_type()}"
 
@@ -703,6 +709,9 @@ def _infer(func: _AnyFunc, /, *params: str | int) -> str:
 
     names = list(parameters)
     selected = _select(params, names)
+    optional = frozenset(
+        name for name, p in parameters.items() if p.default is not Parameter.empty
+    )
 
     spies = {name: _SpyObject() for name in names}
     args: list[_SpyObject] = []
@@ -714,9 +723,9 @@ def _infer(func: _AnyFunc, /, *params: str | int) -> str:
             args.append(spies[name])
     result = func(*args, **kwds)
 
-    sig1 = _Renderer(names, selected, spies, result).render()
+    sig1 = _Renderer(names, selected, spies, result, optional).render()
     _reflect(list(spies.values()), result)
-    sig2 = _Renderer(names, selected, spies, result).render()
+    sig2 = _Renderer(names, selected, spies, result, optional).render()
     return sig1 if sig1 == sig2 else f"{sig1}\n{sig2}"
 
 

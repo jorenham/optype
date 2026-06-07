@@ -82,6 +82,10 @@ BINARY_CASES: list[tuple[Callable[[Any, Any], Any], str]] = [
         "[T, R](x: CanMul[T, R], y: T) -> R\n[T, R](x: T, y: CanRMul[T, R]) -> R",
     ),
     (
+        lambda x, y: x**y,
+        "[T, R](x: CanPow[T, R], y: T) -> R\n[T, R](x: T, y: CanRPow[T, R]) -> R",
+    ),
+    (
         lambda x, y: x + y,
         "[T, R](x: CanAdd[T, R], y: T) -> R\n[T, R](x: T, y: CanRAdd[T, R]) -> R",
     ),
@@ -94,6 +98,7 @@ BINARY_CASES: list[tuple[Callable[[Any, Any], Any], str]] = [
         "[T: CanMul[T, U], U, R](x: CanAdd[U, R], y: T) -> R\n[T, U: CanRMul[U, CanRAdd[T, R]], R](x: T, y: U) -> R",
     ),
     (lambda x, y: x[y], "[T, R](x: CanGetitem[T, R], y: T) -> R"),
+    (lambda x, y: x, "[T](x: T, y: Unused) -> T"),  # noqa: ARG005
     (
         lambda x, y: x * 2 + y,
         "[T, R](x: CanMul[Literal[2], CanAdd[T, R]], y: T) -> R\n[T, R](x: CanMul[Literal[2], T], y: CanRAdd[T, R]) -> R",
@@ -179,6 +184,17 @@ def test_callable_instance() -> None:
             return x + 1
 
     assert _infer(Add1()) == "[R](x: CanAdd[Literal[1], R]) -> R"
+
+
+def test_ternary_pow() -> None:
+    # the optional modulo is used forward but dropped from the reflected overload
+    def f(x: Any, y: Any, z: Any = None) -> Any:
+        return x.__pow__(y, z)  # noqa: PLC2801
+
+    assert (
+        _infer(f)
+        == "[T, U, R](x: CanPow[T, U, R], y: T, z: U) -> R\n[T, R](x: T, y: CanRPow[T, R]) -> R"
+    )
 
 
 @pytest.mark.parametrize("selector", ["nope", 9, -9])
