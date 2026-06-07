@@ -49,6 +49,9 @@ classifiers = [
 requires-python = ">=3.12"
 dependencies = ["typing-extensions>=4.10; python_version<'3.13'"]
 
+[project.scripts]
+optype = "optype.__main__:main"
+
 [project.optional-dependencies]
 numpy = [
   "numpy>=2.0,<2.8",
