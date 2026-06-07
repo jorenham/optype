@@ -1,4 +1,4 @@
-# ruff: noqa: FURB118
+# ruff: noqa: FURB118, E501
 import math
 import operator
 from collections.abc import Callable
@@ -10,10 +10,16 @@ from optype.infer import _doc_params, _infer, infer
 
 UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     (lambda x: x + 1, "[R](x: CanAdd[Literal[1], R]) -> R"),
-    (lambda x: x + x, "[T: CanAdd[T, R], R](x: T) -> R"),
+    (
+        lambda x: x + x,
+        "[T: CanAdd[T, R], R](x: T) -> R\n[T: CanRAdd[T, R], R](x: T) -> R",
+    ),
     (lambda x: x - 1, "[R](x: CanSub[Literal[1], R]) -> R"),
     (lambda x: x * 2, "[R](x: CanMul[Literal[2], R]) -> R"),
-    (lambda x: x / x, "[T: CanTruediv[T, R], R](x: T) -> R"),
+    (
+        lambda x: x / x,
+        "[T: CanTruediv[T, R], R](x: T) -> R\n[T: CanRTruediv[T, R], R](x: T) -> R",
+    ),
     (lambda x: x % 2, "[R](x: CanMod[Literal[2], R]) -> R"),
     (lambda x: x**2, "[R](x: CanPow[Literal[2], R]) -> R"),
     (lambda x: x | 1, "[R](x: CanOr[Literal[1], R]) -> R"),
@@ -27,10 +33,7 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     (len, "(obj: CanLen) -> int"),
     (math.sqrt, "(x: CanFloat | CanIndex) -> float"),
     (lambda x: int(x), "(x: CanInt | CanIndex) -> int"),  # noqa: PLW0108
-    (
-        lambda x: complex(x),  # noqa: PLW0108
-        "(x: CanComplex | CanFloat | CanIndex) -> complex",
-    ),
+    (lambda x: complex(x), "(x: CanComplex | CanFloat | CanIndex) -> complex"),  # noqa: PLW0108
     (operator.index, "(a: CanIndex) -> int"),
     (lambda x: x(), "[R](x: CanCall[R]) -> R"),
     (lambda x: x(1, 2), "[R](x: CanCall[Literal[1], Literal[2], R]) -> R"),
@@ -44,11 +47,18 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     (lambda x: x[True], "[R](x: CanGetitem[Literal[True], R]) -> R"),
     (lambda x: x[None], "[R](x: CanGetitem[None, R]) -> R"),
     (lambda x: x[1.0], "[R](x: CanGetitem[float, R]) -> R"),
-    (lambda x: -(x + x), "[T: CanAdd[T, CanNeg[R]], R](x: T) -> R"),
+    (
+        lambda x: +x * -x,
+        "[T, R](x: CanPos[CanMul[T, R]] & CanNeg[T]) -> R\n[T, R](x: CanPos[T] & CanNeg[CanRMul[T, R]]) -> R",
+    ),
+    (
+        lambda x: -(x + x),
+        "[T: CanAdd[T, CanNeg[R]], R](x: T) -> R\n[T: CanRAdd[T, CanNeg[R]], R](x: T) -> R",
+    ),
     (lambda x: (x + 1) * 2, "[R](x: CanAdd[Literal[1], CanMul[Literal[2], R]]) -> R"),
     (
         lambda x: x[0] + x[1],
-        "[T, R](x: CanGetitem[Literal[0, 1], T & CanAdd[T, R]]) -> R",
+        "[T, R](x: CanGetitem[Literal[0, 1], T & CanAdd[T, R]]) -> R\n[T, R](x: CanGetitem[Literal[0, 1], T & CanRAdd[T, R]]) -> R",
     ),
     (lambda x: (x + 1, x + 1), "(x: CanAdd[Literal[1]]) -> tuple"),
     (lambda x: (x + 1, x + 2), "(x: CanAdd[Literal[1, 2]]) -> tuple"),
@@ -67,16 +77,35 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
 ]
 
 BINARY_CASES: list[tuple[Callable[[Any, Any], Any], str]] = [
-    (lambda x, y: x + y, "[T, R](x: CanAdd[T, R], y: T) -> R"),
-    (lambda x, y: y + x, "[T, R](x: T, y: CanAdd[T, R]) -> R"),
-    (lambda x, y: x + y * y, "[T: CanMul[T, U], U, R](x: CanAdd[U, R], y: T) -> R"),
+    (
+        lambda x, y: x * y,
+        "[T, R](x: CanMul[T, R], y: T) -> R\n[T, R](x: T, y: CanRMul[T, R]) -> R",
+    ),
+    (
+        lambda x, y: x + y,
+        "[T, R](x: CanAdd[T, R], y: T) -> R\n[T, R](x: T, y: CanRAdd[T, R]) -> R",
+    ),
+    (
+        lambda x, y: y + x,
+        "[T, R](x: T, y: CanAdd[T, R]) -> R\n[T, R](x: CanRAdd[T, R], y: T) -> R",
+    ),
+    (
+        lambda x, y: x + y * y,
+        "[T: CanMul[T, U], U, R](x: CanAdd[U, R], y: T) -> R\n[T, U: CanRMul[U, CanRAdd[T, R]], R](x: T, y: U) -> R",
+    ),
     (lambda x, y: x[y], "[T, R](x: CanGetitem[T, R], y: T) -> R"),
-    (lambda x, y: x * 2 + y, "[T, R](x: CanMul[Literal[2], CanAdd[T, R]], y: T) -> R"),
+    (
+        lambda x, y: x * 2 + y,
+        "[T, R](x: CanMul[Literal[2], CanAdd[T, R]], y: T) -> R\n[T, R](x: CanMul[Literal[2], T], y: CanRAdd[T, R]) -> R",
+    ),
     (
         lambda x, y: (x + y, y * 2),
-        "[T: CanMul[Literal[2]]](x: CanAdd[T], y: T) -> tuple",
+        "[T: CanMul[Literal[2]]](x: CanAdd[T], y: T) -> tuple\n[T](x: T, y: CanMul[Literal[2]] & CanRAdd[T]) -> tuple",
     ),
-    (lambda x, y: (x + y, y + x), "[T: CanAdd[U], U: CanAdd[T]](x: T, y: U) -> tuple"),
+    (
+        lambda x, y: (x + y, y + x),
+        "[T: CanAdd[U], U: CanAdd[T]](x: T, y: U) -> tuple\n[T: CanRAdd[U], U: CanRAdd[T]](x: T, y: U) -> tuple",
+    ),
 ]
 
 
@@ -86,21 +115,21 @@ INFER_CASES = [*UNARY_CASES, *BINARY_CASES]
 @pytest.mark.parametrize(
     ("func", "expected"),
     INFER_CASES,
-    ids=[f"{i}:{e}" for i, (_, e) in enumerate(INFER_CASES)],
+    ids=[f"{i}:{e.splitlines()[0]}" for i, (_, e) in enumerate(INFER_CASES)],
 )
 def test_infer(func: Callable[..., Any], expected: str) -> None:
     assert _infer(func) == expected
 
 
 SELECT_CASES: list[tuple[Callable[[Any, Any], Any], tuple[str | int, ...], str]] = [
-    (lambda x, y: x + y, ("x",), "[T, R](x: CanAdd[T, R]) -> R"),
-    (lambda x, y: x + y, ("y",), "[T, R](y: T) -> R"),
-    (lambda x, y: x + y, (0,), "[T, R](x: CanAdd[T, R]) -> R"),
-    (lambda x, y: x + y, (-1,), "[T, R](y: T) -> R"),
-    (lambda x, y: x + y, ("x", "y"), "[T, R](x: CanAdd[T, R], y: T) -> R"),
-    (lambda x, y: x + y, ("y", "x"), "[T, R](y: T, x: CanAdd[T, R]) -> R"),
-    (lambda x, y: x + y, (1, 0), "[T, R](y: T, x: CanAdd[T, R]) -> R"),
-    (lambda x, y: x + y, (), "[T, R](x: CanAdd[T, R], y: T) -> R"),
+    (lambda x, y: x[y], ("x",), "[T, R](x: CanGetitem[T, R]) -> R"),
+    (lambda x, y: x[y], ("y",), "[T, R](y: T) -> R"),
+    (lambda x, y: x[y], (0,), "[T, R](x: CanGetitem[T, R]) -> R"),
+    (lambda x, y: x[y], (-1,), "[T, R](y: T) -> R"),
+    (lambda x, y: x[y], ("x", "y"), "[T, R](x: CanGetitem[T, R], y: T) -> R"),
+    (lambda x, y: x[y], ("y", "x"), "[T, R](y: T, x: CanGetitem[T, R]) -> R"),
+    (lambda x, y: x[y], (1, 0), "[T, R](y: T, x: CanGetitem[T, R]) -> R"),
+    (lambda x, y: x[y], (), "[T, R](x: CanGetitem[T, R], y: T) -> R"),
 ]
 
 
@@ -139,9 +168,9 @@ def test_stringify(func: Callable[[Any], Any], expected: str) -> None:
 
 def test_keyword_only() -> None:
     def f(x: Any, *, y: Any) -> Any:
-        return x + y
+        return x[y]
 
-    assert _infer(f) == "[T, R](x: CanAdd[T, R], y: T) -> R"
+    assert _infer(f) == "[T, R](x: CanGetitem[T, R], y: T) -> R"
 
 
 def test_callable_instance() -> None:

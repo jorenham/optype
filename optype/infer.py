@@ -52,6 +52,12 @@ _COERCION_UNION = {
     for dunder, fallback in _COERCION_FALLBACK.items()
 }
 
+_FORWARD_ARITH = frozenset(
+    dunder
+    for dunder, proto in _DUNDER_PROTOCOL_MAP.items()
+    if "CanR" + proto.removeprefix("Can") in _DUNDER_PROTOCOL_MAP.values()
+)
+
 
 class _TraceItem(NamedTuple):
     attr: str
@@ -672,6 +678,24 @@ def _parameters(func: _AnyFunc) -> Mapping[str, Parameter]:
         return {n: Parameter(n, Parameter.POSITIONAL_OR_KEYWORD) for n in names}
 
 
+def _reflect(param_spies: list[_SpyObject], result: object) -> None:
+    order, _ = _analyze(param_spies, result)
+    added: defaultdict[int, list[_TraceItem]] = defaultdict(list)
+    for spy in order:
+        keep: list[_TraceItem] = []
+        for item in spy.__optype_trace__:
+            rhs = item.args[0] if item.args else None
+            if item.attr in _FORWARD_ARITH and isinstance(rhs, _SpyObject):
+                reflected = _TraceItem("__r" + item.attr[2:], (spy,), {}, item.return_)
+                added[id(rhs)].append(reflected)
+            else:
+                keep.append(item)
+        spy.__optype_trace__ = keep
+
+    for spy in order:
+        spy.__optype_trace__ += added[id(spy)]
+
+
 def _infer(func: _AnyFunc, /, *params: str | int) -> str:
     parameters = _parameters(func)
     if any(p.kind in _VARIADIC for p in parameters.values()):
@@ -689,7 +713,11 @@ def _infer(func: _AnyFunc, /, *params: str | int) -> str:
         else:
             args.append(spies[name])
     result = func(*args, **kwds)
-    return _Renderer(names, selected, spies, result).render()
+
+    sig1 = _Renderer(names, selected, spies, result).render()
+    _reflect(list(spies.values()), result)
+    sig2 = _Renderer(names, selected, spies, result).render()
+    return sig1 if sig1 == sig2 else f"{sig1}\n{sig2}"
 
 
 def infer(func: _AnyFunc, /, *params: str | int) -> None:
