@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 
-from optype.infer import _doc_params, _infer, infer
+from optype.infer import _doc_params, infer
 
 UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     (lambda x: x + 1, "[R](x: CanAdd[Literal[1], R]) -> R"),
@@ -162,7 +162,7 @@ BINARY_CASES: list[tuple[Callable[[Any, Any], Any], str]] = [
     ),
     (lambda x, y: x[y], "[T, R](x: CanGetitem[T, R], y: T) -> R"),
     (lambda x, y: y[str(x)], "[R](x: CanStr, y: CanGetitem[str, R]) -> R"),
-    (lambda x, y: x, "[T](x: T, y: Unused) -> T"),  # noqa: ARG005
+    (lambda x, y: x, "[T](x: T, y: object) -> T"),  # noqa: ARG005
     (lambda x, y: x or y, "[T: CanBool, U](x: T, y: U) -> T | U"),
     (lambda x, y: x if x in y else y, "[T, U: CanContains[T]](x: T, y: U) -> T | U"),
     (lambda x, y: x and y, "[T: CanBool, U](x: T, y: U) -> U | T"),
@@ -226,7 +226,7 @@ INFER_CASES = [*UNARY_CASES, *BINARY_CASES]
     ids=[f"{i}:{e.splitlines()[0]}" for i, (_, e) in enumerate(INFER_CASES)],
 )
 def test_infer(func: Callable[..., Any], expected: str) -> None:
-    assert _infer(func) == expected
+    assert infer(func) == expected
 
 
 SELECT_CASES: list[tuple[Callable[[Any, Any], Any], tuple[str | int, ...], str]] = [
@@ -247,7 +247,7 @@ def test_infer_select(
     params: tuple[str | int, ...],
     expected: str,
 ) -> None:
-    assert _infer(func, *params) == expected
+    assert infer(func, *params) == expected
 
 
 def _str(x: Any) -> Any:
@@ -271,14 +271,14 @@ def _bytes(x: Any) -> Any:
     ],
 )
 def test_stringify(func: Callable[[Any], Any], expected: str) -> None:
-    assert _infer(func) == expected
+    assert infer(func) == expected
 
 
 def test_keyword_only() -> None:
     def f(x: Any, *, y: Any) -> Any:
         return x[y]
 
-    assert _infer(f) == "[T, R](x: CanGetitem[T, R], y: T) -> R"
+    assert infer(f) == "[T, R](x: CanGetitem[T, R], y: T) -> R"
 
 
 def test_callable_instance() -> None:
@@ -286,7 +286,7 @@ def test_callable_instance() -> None:
         def __call__(self, x: Any) -> Any:
             return x + 1
 
-    assert _infer(Add1()) == "[R](x: CanAdd[Literal[1], R]) -> R"
+    assert infer(Add1()) == "[R](x: CanAdd[Literal[1], R]) -> R"
 
 
 def test_ternary_pow() -> None:
@@ -294,7 +294,7 @@ def test_ternary_pow() -> None:
     def f(x: Any, y: Any, z: Any = None) -> Any:
         return x.__pow__(y, z)  # noqa: PLC2801
 
-    assert _infer(f) == (
+    assert infer(f) == (
         "[T, U, R](x: CanPow[T, U, R], y: T, z: U) -> R\n"
         "[T, R](x: T, y: CanRPow[T, R]) -> R"
     )
@@ -303,7 +303,7 @@ def test_ternary_pow() -> None:
 @pytest.mark.parametrize("selector", ["nope", 9, -9])
 def test_unknown_param(selector: str | int) -> None:
     with pytest.raises(ValueError, match="parameter"):
-        _infer(abs, selector)
+        infer(abs, selector)
 
 
 def _var_args(*args: Any) -> Any:
@@ -317,7 +317,7 @@ def _var_kwargs(**kwargs: Any) -> Any:
 @pytest.mark.parametrize("func", [_var_args, _var_kwargs], ids=["args", "kwargs"])
 def test_variadic(func: Callable[..., Any]) -> None:
     with pytest.raises(NotImplementedError):
-        _infer(func)
+        infer(func)
 
 
 def test_doc_params() -> None:
@@ -332,7 +332,7 @@ def test_doc_params() -> None:
 
 def test_doc_signature() -> None:
     # builtins like `int` have no signature; fall back to the docstring
-    assert _infer(int) == "(x: CanInt | CanIndex) -> int"
+    assert infer(int) == "(x: CanInt | CanIndex) -> int"
 
 
 def _set_attr(x: Any) -> object:
@@ -361,9 +361,4 @@ NO_PROTOCOL_CASES: list[Callable[[Any], Any]] = [
 )
 def test_no_protocol(func: Callable[[Any], Any]) -> None:
     with pytest.raises(NotImplementedError):
-        _infer(func)
-
-
-def test_infer_prints(capsys: pytest.CaptureFixture[str]) -> None:
-    infer(abs)
-    assert capsys.readouterr().out == "[R](x: CanAbs[R]) -> R\n"
+        infer(func)

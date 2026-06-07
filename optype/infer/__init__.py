@@ -57,6 +57,10 @@ _FORWARD_ARITH = frozenset(
 )
 
 
+_DOC_SIGNATURE = re.compile(r"\b(\w+)\(([^)]*)\)")
+_DOC_PARAM = re.compile(r"(?:^|,)\s*\**([a-zA-Z_]\w*)")
+
+
 class _Op(NamedTuple):
     proto: str
     args: tuple[Any, ...]
@@ -185,29 +189,17 @@ class _Renderer:
             self._vars[id(spy)] = _TYPEVARS[i] if i < len(_TYPEVARS) else f"T{i}"
 
     def union(self, values: list[Any]) -> str | None:
-        concrete = [value for value in values if not isinstance(value, _Spy)]
-        literals = [value for value in concrete if isinstance(value, int | str | bytes)]
-        names = [
-            self.return_type(value)
-            for value in concrete
-            if not isinstance(value, int | str | bytes)
-        ]
-
+        literals: list[Any] = []
+        names: list[str] = []
+        for value in values:
+            if isinstance(value, int | str | bytes) and not isinstance(value, _Spy):
+                literals.append(value)
+            else:
+                names.append(self.return_type(value))
         if "float" in names or "complex" in names:
             literals = [value for value in literals if not isinstance(value, int)]
         if "complex" in names:
             names = [name for name in names if name != "float"]
-
-        names += [
-            self._vars[id(value)]
-            for value in values
-            if isinstance(value, _Spy) and id(value) in self._vars
-        ]
-        names += [
-            "str" if isinstance(value, _SpyStr) else "bytes"
-            for value in values
-            if isinstance(value, _SpyStr | _SpyBytes)
-        ]
 
         parts: list[str] = []
         if literals:
@@ -262,7 +254,7 @@ class _Renderer:
         return self.traces(spy.__optype_trace__)
 
     def slot(self, spy: _SpyObject) -> str:
-        return self._vars.get(id(spy)) or self.spy(spy) or "Unused"
+        return self._vars.get(id(spy)) or self.spy(spy) or "object"
 
     def typevar(self, spy: _SpyObject) -> str:
         var = self._vars[id(spy)]
@@ -304,14 +296,10 @@ class _Renderer:
         params = ", ".join(
             f"{name}: {slot}"
             for name in self._selected
-            if (slot := self.slot(self._spies[name])) != "Unused"
+            if (slot := self.slot(self._spies[name])) != "object"
             or name not in self._optional
         )
         return f"{generics}({params}) -> {self.return_types()}"
-
-
-_DOC_SIGNATURE = re.compile(r"\b(\w+)\(([^)]*)\)")
-_DOC_PARAM = re.compile(r"(?:^|,)\s*\**([a-zA-Z_]\w*)")
 
 
 def _doc_params(func: _AnyFunc) -> list[str] | None:
@@ -352,28 +340,33 @@ def _reflect(param_spies: list[_SpyObject], results: list[object]) -> None:
         spy.__optype_trace__ += added[id(spy)]
 
 
-def _explore(
-    func: _AnyFunc,
+def _explore[T](
+    func: Callable[..., T],
     args: list[_SpyObject],
     kwds: dict[str, _SpyObject],
-) -> list[object]:
-    results: list[object] = []
-
-    def go(plan: list[bool]) -> None:
+) -> list[T]:
+    results: list[T] = []
+    stack: list[list[bool]] = [[]]
+    while stack:
+        plan = stack.pop()
         token = _fork.set(iter(plan))
         try:
             results.append(func(*args, **kwds))
         except _Fork:
-            go([*plan, True])
-            go([*plan, False])
+            stack.extend(([*plan, False], [*plan, True]))
         finally:
             _fork.reset(token)
-
-    go([])
     return results
 
 
-def _infer(func: _AnyFunc, /, *params: str | int) -> str:
+def infer(func: _AnyFunc, /, *params: str | int) -> str:
+    """Infer the ``optype`` protocol(s) required of ``func``'s parameters.
+
+    Pass parameter names or positions to report only those parameters.
+
+    >>> print(infer(lambda x: x + 1))
+    [R](x: CanAdd[Literal[1], R]) -> R
+    """
     parameters = _parameters(func)
     if any(p.kind in _VARIADIC for p in parameters.values()):
         raise NotImplementedError("variadic parameters")
@@ -397,15 +390,4 @@ def _infer(func: _AnyFunc, /, *params: str | int) -> str:
     sig1 = _Renderer(names, selected, spies, results, optional).render()
     _reflect(list(spies.values()), results)
     sig2 = _Renderer(names, selected, spies, results, optional).render()
-    return sig1 if sig1 == sig2 else f"{sig1}\n{sig2}"
-
-
-def infer(func: _AnyFunc, /, *params: str | int) -> None:
-    """Print the ``optype`` protocol(s) required of ``func``'s parameters.
-
-    Pass parameter names or positions to report only those parameters.
-
-    >>> infer(lambda x: x + 1)
-    [R](x: CanAdd[Literal[1], R]) -> R
-    """
-    print(_infer(func, *params))  # noqa: T201
+    return "\n".join(dict.fromkeys((sig1, sig2)))

@@ -55,20 +55,6 @@ class _SpyBytes(bytes, _Spy):
     __slots__ = ()  # pyrefly:ignore[implicit-any-attribute]
 
 
-# Free functions, not methods: a method would be an unrecorded hole in the proxy.
-def _element_of(spy: "_SpyObject") -> "_SpyObject":
-    if (element := spy.__optype_element__) is None:
-        element = _SpyObject()
-        spy.__optype_element__ = element  # ty:ignore[invalid-assignment]
-    return element
-
-
-def _iterator_of(spy: "_SpyObject") -> "_SpyObject":
-    iterator = _SpyObject()
-    iterator.__optype_element__ = _element_of(spy)  # ty:ignore[invalid-assignment]
-    return iterator
-
-
 class _SpyObject(_Spy):  # noqa: PLR0904
     __optype_element__: "_SpyObject | None" = None
 
@@ -419,3 +405,17 @@ class _SpyObject(_Spy):  # noqa: PLR0904
 
     def __aexit__(self, /, *args: object) -> None:
         return self.__optype_trace_add__("__aexit__", args, {}, None)
+
+
+# Free functions, not methods: a method would be an unrecorded hole in the proxy.
+def _element_of(spy: _SpyObject) -> _SpyObject:
+    if (element := spy.__optype_element__) is None:
+        element = _SpyObject()
+        spy.__optype_element__ = element  # ty:ignore[invalid-assignment]
+    return element
+
+
+def _iterator_of(spy: _SpyObject) -> _SpyObject:
+    iterator = _SpyObject()
+    iterator.__optype_element__ = _element_of(spy)  # ty:ignore[invalid-assignment]
+    return iterator

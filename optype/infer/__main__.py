@@ -22,7 +22,7 @@ def main() -> None:
     exec(compile(ast.Module(body[:-1], []), "<expr>", "exec"), namespace)  # noqa: S102
     code = compile(ast.Expression(last.value), "<expr>", "eval")
     try:
-        infer(eval(code, namespace), *params)  # noqa: S307
+        print(infer(eval(code, namespace), *params))  # noqa: S307, T201
     except (NotImplementedError, ValueError, TypeError) as exc:
         sys.exit(f"{type(exc).__name__}: {exc}")
 
