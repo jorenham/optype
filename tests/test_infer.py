@@ -32,6 +32,7 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     (lambda x: ~x, "[R](x: CanInvert[R]) -> R"),
     (abs, "[R](x: CanAbs[R]) -> R"),
     (len, "(obj: CanLen) -> int"),
+    (list, "[R](iterable: CanIter[CanNext[R]] & CanLen) -> list[R]"),
     (math.sqrt, "(x: CanFloat | CanIndex) -> float"),
     (lambda x: int(x), "(x: CanInt | CanIndex) -> int"),  # noqa: PLW0108
     (lambda x: complex(x), "(x: CanComplex | CanFloat | CanIndex) -> complex"),  # noqa: PLW0108
@@ -106,10 +107,15 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
             "[T, R](x: CanGetitem[Literal[0, 1], T & CanRAdd[T, R]]) -> R"
         ),
     ),
-    (lambda x: [i for i in x], "(x: CanIter[CanNext]) -> list"),  # noqa: C416
-    (lambda x: [str(i) for i in x], "(x: CanIter[CanNext[CanStr]]) -> list"),
+    (lambda x: [i for i in x], "[R](x: CanIter[CanNext[R]]) -> list[R]"),  # noqa: C416
+    (lambda x: [[i] for i in x], "[R](x: CanIter[CanNext[R]]) -> list[list[R]]"),
+    (lambda x: [str(i) for i in x], "(x: CanIter[CanNext[CanStr]]) -> list[str]"),
     (lambda x: next(iter(x)), "[R](x: CanIter[CanNext[R]]) -> R"),
-    (lambda x: {*x}, "(x: CanIter[CanNext[CanHash]]) -> set"),
+    (lambda x: {*x}, "[R: CanHash](x: CanIter[CanNext[R]]) -> set[R]"),
+    (
+        lambda x: {i: str(i) for i in x},
+        "[R: CanStr & CanHash](x: CanIter[CanNext[R]]) -> dict[R, str]",
+    ),
     (
         lambda x: sum(x),  # noqa: PLW0108
         "[R](x: CanIter[CanNext[CanRAdd[Literal[0], R]]]) -> R",

@@ -55,7 +55,23 @@ class _SpyBytes(bytes, _Spy):
     __slots__ = ()  # pyrefly:ignore[implicit-any-attribute]
 
 
+# Free functions, not methods: a method would be an unrecorded hole in the proxy.
+def _element_of(spy: "_SpyObject") -> "_SpyObject":
+    if (element := spy.__optype_element__) is None:
+        element = _SpyObject()
+        spy.__optype_element__ = element  # ty:ignore[invalid-assignment]
+    return element
+
+
+def _iterator_of(spy: "_SpyObject") -> "_SpyObject":
+    iterator = _SpyObject()
+    iterator.__optype_element__ = _element_of(spy)  # ty:ignore[invalid-assignment]
+    return iterator
+
+
 class _SpyObject(_Spy):  # noqa: PLR0904
+    __optype_element__: "_SpyObject | None" = None
+
     ###
 
     def __getattr__(self, attr: str, /) -> "_SpyObject | None":
@@ -179,10 +195,10 @@ class _SpyObject(_Spy):  # noqa: PLR0904
     # no need for `__missing__`
 
     def __iter__(self, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__iter__", (), {}, _SpyObject())
+        return self.__optype_trace_add__("__iter__", (), {}, _iterator_of(self))
 
     def __reversed__(self, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__reversed__", (), {}, _SpyObject())
+        return self.__optype_trace_add__("__reversed__", (), {}, _iterator_of(self))
 
     def __contains__(self, item: object, /) -> bool:
         return self.__optype_trace_add__("__contains__", (item,), {}, _decide())
@@ -191,7 +207,7 @@ class _SpyObject(_Spy):  # noqa: PLR0904
     def __next__(self, /) -> Any:
         if any(item.attr == "__next__" for item in self.__optype_trace__):
             raise StopIteration
-        return self.__optype_trace_add__("__next__", (), {}, _SpyObject())
+        return self.__optype_trace_add__("__next__", (), {}, _element_of(self))
 
     ###
 

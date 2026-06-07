@@ -2,9 +2,9 @@
 
 import re
 from collections import defaultdict
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Collection, Iterator, Mapping
 from inspect import Parameter, signature
-from typing import Any, NamedTuple, final
+from typing import Any, NamedTuple, cast, final
 
 from ._spy import _Fork, _fork, _Spy, _SpyBytes, _SpyObject, _SpyStr, _TraceItem
 from optype._core import _can, _has
@@ -127,6 +127,22 @@ def _select(params: tuple[str | int, ...], names: list[str]) -> list[str]:
     return selected or names
 
 
+def _return_spies(value: object) -> Iterator[_SpyObject]:
+    match value:
+        case _SpyObject():
+            yield value
+        case list() | set() | frozenset():
+            for item in cast("Collection[object]", value):
+                yield from _return_spies(item)
+        case dict():
+            mapping = cast("Mapping[object, object]", value)
+            for key, val in mapping.items():
+                yield from _return_spies(key)
+                yield from _return_spies(val)
+        case _:
+            pass
+
+
 @final
 class _Renderer:
     """Render an inferred ``def`` signature from the recorded spy traces."""
@@ -149,15 +165,14 @@ class _Renderer:
         param_ids = {id(spy) for spy in param_spies}
 
         self._vars: _Vars = {}
-        self._result_vars: list[str] = []
+        self._result_spies: list[_SpyObject] = []
         for result in results:
-            if not isinstance(result, _SpyObject):
-                continue
-            if id(result) in param_ids or id(result) in self._vars:
-                continue
-            var = "R" if not self._result_vars else f"R{len(self._result_vars) + 1}"
-            self._vars[id(result)] = var
-            self._result_vars.append(var)
+            for spy in _return_spies(result):
+                if id(spy) in param_ids or id(spy) in self._vars:
+                    continue
+                n = len(self._result_spies)
+                self._vars[id(spy)] = "R" if not n else f"R{n + 1}"
+                self._result_spies.append(spy)
         self._pool = [spies[name] for name in names if appear[id(spies[name])] >= 2]
         self._pool += [
             spy
@@ -173,7 +188,7 @@ class _Renderer:
         concrete = [value for value in values if not isinstance(value, _Spy)]
         literals = [value for value in concrete if isinstance(value, int | str | bytes)]
         names = [
-            "None" if value is None else type(value).__name__
+            self.return_type(value)
             for value in concrete
             if not isinstance(value, int | str | bytes)
         ]
@@ -264,13 +279,27 @@ class _Renderer:
             case None:
                 return "None"
             case _:
-                return type(result).__name__
+                return self._container(result)
+
+    def _container(self, result: object) -> str:
+        name = type(result).__name__
+        match result:
+            case dict():
+                mapping = cast("Mapping[object, object]", result)
+                key = self.union([*mapping]) or "object"
+                val = self.union([*mapping.values()]) or "object"
+                return f"dict[{key}, {val}]" if mapping else name
+            case list() | set() | frozenset():
+                inner = self.union([*cast("Collection[object]", result)])
+                return f"{name}[{inner}]" if inner else name
+            case _:
+                return name
 
     def return_types(self) -> str:
         return " | ".join(dict.fromkeys(map(self.return_type, self._results)))
 
     def render(self) -> str:
-        typevars = [self.typevar(spy) for spy in self._pool] + self._result_vars
+        typevars = [self.typevar(spy) for spy in self._pool + self._result_spies]
         generics = f"[{', '.join(typevars)}]" if typevars else ""
         params = ", ".join(
             f"{name}: {slot}"
