@@ -34,14 +34,14 @@ Pass parameter names or positions to report only those parameters:
 '[T, R](x: CanGetitem[T, R]) -> R'
 ```
 
-There is also a command-line interface. Its argument is a Python expression; leading
-statements are allowed, as long as the last line is an expression:
+The `optype infer` command takes a Python expression; leading statements are allowed, as
+long as the last line is an expression:
 
 ```console
-$ python -m optype.infer "lambda x: x * 2"
+$ optype infer "lambda x: x * 2"
 [R](x: CanMul[Literal[2], R]) -> R
 
-$ python -m optype.infer "import math; math.sqrt"
+$ optype infer "import math; math.sqrt"
 (x: CanFloat | CanIndex) -> float
 ```
 
@@ -51,7 +51,7 @@ A binary operator can dispatch to either operand, so it is reported as two overl
 one per line:
 
 ```console
-$ python -m optype.infer "lambda x, y: x * y"
+$ optype infer "lambda x, y: x * y"
 [T, R](x: CanMul[T, R], y: T) -> R
 [T, R](x: T, y: CanRMul[T, R]) -> R
 ```
