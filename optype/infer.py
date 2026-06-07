@@ -5,7 +5,8 @@ import ast
 import re
 import sys
 from collections import defaultdict
-from collections.abc import Callable, Generator, Mapping
+from collections.abc import Callable, Generator, Iterator, Mapping
+from contextvars import ContextVar
 from inspect import Parameter, signature
 from typing import Any, NamedTuple, final, override
 
@@ -57,6 +58,20 @@ _FORWARD_ARITH = frozenset(
     for dunder, proto in _DUNDER_PROTOCOL_MAP.items()
     if "CanR" + proto.removeprefix("Can") in _DUNDER_PROTOCOL_MAP.values()
 )
+
+
+class _Fork(BaseException): ...
+
+
+_fork: ContextVar[Iterator[bool] | None] = ContextVar("_fork", default=None)
+
+
+def _decide() -> bool:
+    if (plan := _fork.get()) is None:
+        return True
+    if (value := next(plan, None)) is None:
+        raise _Fork
+    return value
 
 
 class _TraceItem(NamedTuple):
@@ -171,8 +186,7 @@ class _SpyObject(_Spy):  # noqa: PLR0904
         return self.__optype_trace_add__("__hash__", (), {}, super().__hash__())
 
     def __bool__(self, /) -> bool:
-        # TODO: fork (by raising); and try both `True` and `False` paths
-        return self.__optype_trace_add__("__bool__", (), {}, True)
+        return self.__optype_trace_add__("__bool__", (), {}, _decide())
 
     ###
 
@@ -227,8 +241,7 @@ class _SpyObject(_Spy):  # noqa: PLR0904
         return self.__optype_trace_add__("__reversed__", (), {}, _SpyObject())
 
     def __contains__(self, item: object, /) -> bool:
-        # TODO: fork (by raising); and try both `True` and `False` paths
-        return self.__optype_trace_add__("__contains__", (item,), {}, True)
+        return self.__optype_trace_add__("__contains__", (item,), {}, _decide())
 
     # return `Any` instead of `_SpyObject` to avoid an LSP error for `__dir__`
     def __next__(self, /) -> Any:
@@ -474,13 +487,14 @@ def _resolve(trace: _TraceItem) -> _Op:
 
 def _analyze(
     params: list[_SpyObject],
-    result: object,
+    results: list[object],
 ) -> tuple[list[_SpyObject], dict[int, int]]:
     appear: defaultdict[int, int] = defaultdict(int)
     for spy in params:
         appear[id(spy)] += 1
-    if isinstance(result, _SpyObject):
-        appear[id(result)] += 1
+    for result in results:
+        if isinstance(result, _SpyObject):
+            appear[id(result)] += 1
 
     order: list[_SpyObject] = []
     seen: set[int] = set()
@@ -526,22 +540,28 @@ class _Renderer:
         names: list[str],
         selected: list[str],
         spies: dict[str, _SpyObject],
-        result: object,
+        results: list[object],
         optional: frozenset[str],
     ) -> None:
         self._selected = selected
         self._spies = spies
-        self._result = result
+        self._results = results
         self._optional = optional
 
         param_spies = [spies[name] for name in names]
-        order, appear = _analyze(param_spies, result)
+        order, appear = _analyze(param_spies, results)
         param_ids = {id(spy) for spy in param_spies}
 
-        self._has_result = (
-            isinstance(result, _SpyObject) and id(result) not in param_ids
-        )
-        self._vars: _Vars = {id(result): "R"} if self._has_result else {}
+        self._vars: _Vars = {}
+        self._result_vars: list[str] = []
+        for result in results:
+            if not isinstance(result, _SpyObject):
+                continue
+            if id(result) in param_ids or id(result) in self._vars:
+                continue
+            var = "R" if not self._result_vars else f"R{len(self._result_vars) + 1}"
+            self._vars[id(result)] = var
+            self._result_vars.append(var)
         self._pool = [spies[name] for name in names if appear[id(spies[name])] >= 2]
         self._pool += [
             spy
@@ -632,9 +652,9 @@ class _Renderer:
         var = self._vars[id(spy)]
         return f"{var}: {bound}" if (bound := self.spy(spy)) else var
 
-    def return_type(self) -> str:
-        match self._result:
-            case _SpyObject() as result:
+    def return_type(self, result: object) -> str:
+        match result:
+            case _SpyObject():
                 return self._vars.get(id(result), "object")
             case _SpyStr():
                 return "str"
@@ -642,22 +662,22 @@ class _Renderer:
                 return "bytes"
             case None:
                 return "None"
-            case result:
+            case _:
                 return type(result).__name__
 
+    def return_types(self) -> str:
+        return " | ".join(dict.fromkeys(map(self.return_type, self._results)))
+
     def render(self) -> str:
-        typevars = [self.typevar(spy) for spy in self._pool]
-        if self._has_result:
-            typevars.append("R")
+        typevars = [self.typevar(spy) for spy in self._pool] + self._result_vars
         generics = f"[{', '.join(typevars)}]" if typevars else ""
         params = ", ".join(
             f"{name}: {slot}"
             for name in self._selected
-            # an unused optional param is dropped; an unused required one stays `Unused`
             if (slot := self.slot(self._spies[name])) != "Unused"
             or name not in self._optional
         )
-        return f"{generics}({params}) -> {self.return_type()}"
+        return f"{generics}({params}) -> {self.return_types()}"
 
 
 _DOC_SIGNATURE = re.compile(r"\b(\w+)\(([^)]*)\)")
@@ -684,8 +704,8 @@ def _parameters(func: _AnyFunc) -> Mapping[str, Parameter]:
         return {n: Parameter(n, Parameter.POSITIONAL_OR_KEYWORD) for n in names}
 
 
-def _reflect(param_spies: list[_SpyObject], result: object) -> None:
-    order, _ = _analyze(param_spies, result)
+def _reflect(param_spies: list[_SpyObject], results: list[object]) -> None:
+    order, _ = _analyze(param_spies, results)
     added: defaultdict[int, list[_TraceItem]] = defaultdict(list)
     for spy in order:
         keep: list[_TraceItem] = []
@@ -700,6 +720,27 @@ def _reflect(param_spies: list[_SpyObject], result: object) -> None:
 
     for spy in order:
         spy.__optype_trace__ += added[id(spy)]
+
+
+def _explore(
+    func: _AnyFunc,
+    args: list[_SpyObject],
+    kwds: dict[str, _SpyObject],
+) -> list[object]:
+    results: list[object] = []
+
+    def go(plan: list[bool]) -> None:
+        token = _fork.set(iter(plan))
+        try:
+            results.append(func(*args, **kwds))
+        except _Fork:
+            go([*plan, True])
+            go([*plan, False])
+        finally:
+            _fork.reset(token)
+
+    go([])
+    return results
 
 
 def _infer(func: _AnyFunc, /, *params: str | int) -> str:
@@ -721,11 +762,11 @@ def _infer(func: _AnyFunc, /, *params: str | int) -> str:
             kwds[name] = spies[name]
         else:
             args.append(spies[name])
-    result = func(*args, **kwds)
+    results = _explore(func, args, kwds)
 
-    sig1 = _Renderer(names, selected, spies, result, optional).render()
-    _reflect(list(spies.values()), result)
-    sig2 = _Renderer(names, selected, spies, result, optional).render()
+    sig1 = _Renderer(names, selected, spies, results, optional).render()
+    _reflect(list(spies.values()), results)
+    sig2 = _Renderer(names, selected, spies, results, optional).render()
     return sig1 if sig1 == sig2 else f"{sig1}\n{sig2}"
 
 

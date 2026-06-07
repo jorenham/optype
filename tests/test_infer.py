@@ -57,6 +57,15 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     ),
     (lambda x: (x + 1) * 2, "[R](x: CanAdd[Literal[1], CanMul[Literal[2], R]]) -> R"),
     (
+        lambda x: x if x > 0 else -x,
+        "[T: CanGt[Literal[0], CanBool] & CanNeg[R], R](x: T) -> T | R",
+    ),
+    (lambda x: -x if x else x, "[T: CanBool & CanNeg[R], R](x: T) -> R | T"),
+    (
+        lambda x: (x + 1) if x else (x - 1),
+        "[R, R2](x: CanBool & CanAdd[Literal[1], R] & CanSub[Literal[1], R2]) -> R | R2",
+    ),
+    (
         lambda x: x[0] + x[1],
         "[T, R](x: CanGetitem[Literal[0, 1], T & CanAdd[T, R]]) -> R\n[T, R](x: CanGetitem[Literal[0, 1], T & CanRAdd[T, R]]) -> R",
     ),
@@ -99,6 +108,17 @@ BINARY_CASES: list[tuple[Callable[[Any, Any], Any], str]] = [
     ),
     (lambda x, y: x[y], "[T, R](x: CanGetitem[T, R], y: T) -> R"),
     (lambda x, y: x, "[T](x: T, y: Unused) -> T"),  # noqa: ARG005
+    (lambda x, y: x or y, "[T: CanBool, U](x: T, y: U) -> T | U"),
+    (lambda x, y: x if x in y else y, "[T, U: CanContains[T]](x: T, y: U) -> T | U"),
+    (lambda x, y: x and y, "[T: CanBool, U](x: T, y: U) -> U | T"),
+    (
+        lambda x, y: -x if x else -y if y else x,
+        "[T: CanBool & CanNeg[R], R, R2](x: T, y: CanBool & CanNeg[R2]) -> R | R2 | T",
+    ),
+    (
+        lambda x, y: (x + y) if x else y,
+        "[T, R](x: CanBool & CanAdd[T, R], y: T) -> R | T\n[T: CanBool, U: CanRAdd[T, R], R](x: T, y: U) -> R | U",
+    ),
     (
         lambda x, y: x * 2 + y,
         "[T, R](x: CanMul[Literal[2], CanAdd[T, R]], y: T) -> R\n[T, R](x: CanMul[Literal[2], T], y: CanRAdd[T, R]) -> R",
