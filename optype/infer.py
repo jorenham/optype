@@ -38,6 +38,17 @@ _ATTR_PROTOCOL_MAP = {
     if len(members := get_protocol_members(getattr(_has, name))) == 1
 }
 
+_COERCION_FALLBACK = {
+    "__float__": ("__index__",),
+    "__int__": ("__index__",),
+    "__complex__": ("__float__", "__index__"),
+}
+
+_COERCION_UNION = {
+    dunder: " | ".join(map(_DUNDER_PROTOCOL_MAP.__getitem__, (dunder, *fallback)))
+    for dunder, fallback in _COERCION_FALLBACK.items()
+}
+
 
 class _TraceItem(NamedTuple):
     attr: str
@@ -359,8 +370,11 @@ class _SpyObject(_Spy):  # noqa: PLR0904
 
     ###
 
-    # no need for `__complex__`
-    # no need for `__float__`
+    def __complex__(self, /) -> complex:
+        return self.__optype_trace_add__("__complex__", (), {}, 0j)
+
+    def __float__(self, /) -> float:
+        return self.__optype_trace_add__("__float__", (), {}, 0.0)
 
     def __int__(self, /) -> int:
         # TODO: fork (by raising); and try 0, 1, ...
@@ -441,6 +455,8 @@ def _resolve(trace: _TraceItem) -> _Op:
         if name not in _ATTR_PROTOCOL_MAP:
             raise NotImplementedError(name)
         return _Op(_ATTR_PROTOCOL_MAP[name], (), {}, trace.return_)
+    if trace.attr in _COERCION_UNION:
+        return _Op(_COERCION_UNION[trace.attr], (), {}, trace.return_)
     if trace.attr in _DUNDER_PROTOCOL_MAP:
         proto = _DUNDER_PROTOCOL_MAP[trace.attr]
         return _Op(proto, trace.args, trace.kwargs, trace.return_)
@@ -589,7 +605,11 @@ class _Renderer:
             op = _resolve(trace)
             key = op.proto, len(op.args), tuple(sorted(op.kwargs))
             groups.setdefault(key, []).append(op)
-        return " & ".join(self.group(key[0], group) for key, group in groups.items())
+        parts = [(key[0], self.group(key[0], group)) for key, group in groups.items()]
+        wrap = len(parts) > 1
+        return " & ".join(
+            f"({s})" if wrap and " | " in proto else s for proto, s in parts
+        )
 
     def spy(self, spy: _Spy) -> str:
         return self.traces(spy.__optype_trace__)
@@ -602,16 +622,17 @@ class _Renderer:
         return f"{var}: {bound}" if (bound := self.spy(spy)) else var
 
     def return_type(self) -> str:
-        result = self._result
-        if isinstance(result, _SpyObject):
-            return self._vars.get(id(result), "object")
-        if isinstance(result, _SpyStr):
-            return "str"
-        if isinstance(result, _SpyBytes):
-            return "bytes"
-        if result is None:
-            return "None"
-        return type(result).__name__
+        match self._result:
+            case _SpyObject() as result:
+                return self._vars.get(id(result), "object")
+            case _SpyStr():
+                return "str"
+            case _SpyBytes():
+                return "bytes"
+            case None:
+                return "None"
+            case result:
+                return type(result).__name__
 
     def render(self) -> str:
         typevars = [self.typevar(spy) for spy in self._pool]

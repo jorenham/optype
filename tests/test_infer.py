@@ -1,4 +1,6 @@
 # ruff: noqa: FURB118
+import math
+import operator
 from collections.abc import Callable
 from typing import Any
 
@@ -23,6 +25,13 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     (lambda x: ~x, "[R](x: CanInvert[R]) -> R"),
     (abs, "[R](x: CanAbs[R]) -> R"),
     (len, "(obj: CanLen) -> int"),
+    (math.sqrt, "(x: CanFloat | CanIndex) -> float"),
+    (lambda x: int(x), "(x: CanInt | CanIndex) -> int"),  # noqa: PLW0108
+    (
+        lambda x: complex(x),  # noqa: PLW0108
+        "(x: CanComplex | CanFloat | CanIndex) -> complex",
+    ),
+    (operator.index, "(a: CanIndex) -> int"),
     (lambda x: x(), "[R](x: CanCall[R]) -> R"),
     (lambda x: x(1, 2), "[R](x: CanCall[Literal[1], Literal[2], R]) -> R"),
     (lambda x: x(a=1), "[R](x: CanCall[a=Literal[1], R]) -> R"),
