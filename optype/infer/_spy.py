@@ -57,6 +57,7 @@ class _SpyBytes(bytes, _Spy):
 
 class _SpyObject(_Spy):  # noqa: PLR0904
     __optype_element__: "_SpyObject | None" = None
+    __optype_iterator__: bool = False
 
     ###
 
@@ -181,6 +182,8 @@ class _SpyObject(_Spy):  # noqa: PLR0904
     # no need for `__missing__`
 
     def __iter__(self, /) -> "_SpyObject":
+        if self.__optype_iterator__:
+            return self  # an iterator is its own iterable (idempotent `iter()`)
         return self.__optype_trace_add__("__iter__", (), {}, _iterator_of(self))
 
     def __reversed__(self, /) -> "_SpyObject":
@@ -418,4 +421,5 @@ def _element_of(spy: _SpyObject) -> _SpyObject:
 def _iterator_of(spy: _SpyObject) -> _SpyObject:
     iterator = _SpyObject()
     iterator.__optype_element__ = _element_of(spy)  # ty:ignore[invalid-assignment]
+    iterator.__optype_iterator__ = True
     return iterator

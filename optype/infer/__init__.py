@@ -25,19 +25,27 @@ _ATTRIBUTE_DUNDERS = frozenset({
     "__setattr__",
 })
 
-_DUNDER_PROTOCOL_MAP = {
-    dunder: name
-    for name in _can.__all__
-    if not name.endswith(("Self", "Same"))
-    if (dunder := "__" + name.removeprefix("Can").lower() + "__")
-    not in _ATTRIBUTE_DUNDERS
-}
 
-_ATTR_PROTOCOL_MAP = {
-    next(iter(members)): name
-    for name in _has.__all__
-    if len(members := get_protocol_members(getattr(_has, name))) == 1
-}
+def _dunder_protocols() -> dict[str, str]:
+    return {
+        dunder: name
+        for name in _can.__all__
+        if not name.endswith(("Self", "Same"))
+        if (dunder := "__" + name.removeprefix("Can").lower() + "__")
+        not in _ATTRIBUTE_DUNDERS
+    }
+
+
+def _attr_protocols() -> dict[str, str]:
+    return {
+        next(iter(members)): name
+        for name in _has.__all__
+        if len(members := get_protocol_members(getattr(_has, name))) == 1
+    }
+
+
+_DUNDER_PROTOCOL_MAP = _dunder_protocols()
+_ATTR_PROTOCOL_MAP = _attr_protocols()
 
 _COERCION_FALLBACK = {
     "__float__": ("__index__",),

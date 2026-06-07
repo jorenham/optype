@@ -30,7 +30,7 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     (lambda x: x >= 1, "[R](x: CanGe[Literal[1], R]) -> R"),
     (lambda x: -x, "[R](x: CanNeg[R]) -> R"),
     (lambda x: ~x, "[R](x: CanInvert[R]) -> R"),
-    (abs, "[R](x: CanAbs[R]) -> R"),
+    (lambda x: abs(x), "[R](x: CanAbs[R]) -> R"),  # noqa: PLW0108
     (len, "(obj: CanLen) -> int"),
     (list, "[R](iterable: CanIter[CanNext[R]] & CanLen) -> list[R]"),
     (math.sqrt, "(x: CanFloat | CanIndex) -> float"),
