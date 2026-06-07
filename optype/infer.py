@@ -2,9 +2,10 @@
 """Structurally infer the ``optype`` protocols required by a function."""
 
 import ast
+import re
 import sys
 from collections import defaultdict
-from collections.abc import Callable, Generator
+from collections.abc import Callable, Generator, Mapping
 from inspect import Parameter, signature
 from typing import Any, NamedTuple, final, override
 
@@ -12,6 +13,8 @@ from optype._core import _can, _has
 from optype.inspect import get_protocol_members
 
 __all__ = ("infer",)
+
+type _AnyFunc = Callable[..., Any]
 
 _VARIADIC = frozenset({Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD})
 
@@ -645,8 +648,32 @@ class _Renderer:
         return f"{generics}({params}) -> {self.return_type()}"
 
 
-def _infer(func: Callable[..., Any], /, *params: str | int) -> str:
-    parameters = signature(func).parameters
+_DOC_SIGNATURE = re.compile(r"\b(\w+)\(([^)]*)\)")
+_DOC_PARAM = re.compile(r"(?:^|,)\s*\**([a-zA-Z_]\w*)")
+
+
+def _doc_params(func: _AnyFunc) -> list[str] | None:
+    name = getattr(func, "__name__", "")
+    if not name:
+        return None
+    for match in _DOC_SIGNATURE.finditer(func.__doc__ or ""):
+        if match[1] == name:
+            params = match[2].replace("[", "").replace("]", "")
+            return _DOC_PARAM.findall(params) or None
+    return None
+
+
+def _parameters(func: _AnyFunc) -> Mapping[str, Parameter]:
+    try:
+        return signature(func).parameters
+    except ValueError as exc:
+        if (names := _doc_params(func)) is None:
+            raise NotImplementedError(str(exc)) from exc
+        return {n: Parameter(n, Parameter.POSITIONAL_OR_KEYWORD) for n in names}
+
+
+def _infer(func: _AnyFunc, /, *params: str | int) -> str:
+    parameters = _parameters(func)
     if any(p.kind in _VARIADIC for p in parameters.values()):
         raise NotImplementedError("variadic parameters")
 
@@ -665,7 +692,7 @@ def _infer(func: Callable[..., Any], /, *params: str | int) -> str:
     return _Renderer(names, selected, spies, result).render()
 
 
-def infer(func: Callable[..., Any], /, *params: str | int) -> None:
+def infer(func: _AnyFunc, /, *params: str | int) -> None:
     """Print the ``optype`` protocol(s) required of ``func``'s parameters.
 
     Pass parameter names or positions to report only those parameters.
@@ -691,4 +718,7 @@ if __name__ == "__main__":
     namespace: dict[str, object] = {}
     exec(compile(ast.Module(body[:-1], []), "<expr>", "exec"), namespace)  # noqa: S102
     code = compile(ast.Expression(last.value), "<expr>", "eval")
-    infer(eval(code, namespace), *params)  # noqa: S307
+    try:
+        infer(eval(code, namespace), *params)  # noqa: S307
+    except (NotImplementedError, ValueError, TypeError) as exc:
+        sys.exit(f"{type(exc).__name__}: {exc}")

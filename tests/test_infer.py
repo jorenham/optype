@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from optype.infer import _infer, infer
+from optype.infer import _doc_params, _infer, infer
 
 UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     (lambda x: x + 1, "[R](x: CanAdd[Literal[1], R]) -> R"),
@@ -170,6 +170,21 @@ def _var_kwargs(**kwargs: Any) -> Any:
 def test_variadic(func: Callable[..., Any]) -> None:
     with pytest.raises(NotImplementedError):
         _infer(func)
+
+
+def test_doc_params() -> None:
+    def f() -> None: ...
+
+    f.__doc__ = "f(a, b=1, [c]) -> z"
+    assert _doc_params(f) == ["a", "b", "c"]
+
+    f.__doc__ = "no signature line here"
+    assert _doc_params(f) is None
+
+
+def test_doc_signature() -> None:
+    # builtins like `int` have no signature; fall back to the docstring
+    assert _infer(int) == "(x: CanInt | CanIndex) -> int"
 
 
 def _set_attr(x: Any) -> object:
