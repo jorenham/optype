@@ -348,6 +348,9 @@ def _reflect(param_spies: list[_SpyObject], results: list[object]) -> None:
         spy.__optype_trace__ += added[id(spy)]
 
 
+_FORK_LIMIT = 64  # bound fork depth so a forking loop can't diverge
+
+
 def _explore[T](
     func: Callable[..., T],
     args: list[_SpyObject],
@@ -361,7 +364,8 @@ def _explore[T](
         try:
             results.append(func(*args, **kwds))
         except _Fork:
-            stack.extend(([*plan, False], [*plan, True]))
+            if len(plan) < _FORK_LIMIT:
+                stack.extend(([*plan, False], [*plan, True]))
         finally:
             _fork.reset(token)
     return results
