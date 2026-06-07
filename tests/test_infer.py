@@ -1,4 +1,5 @@
-# ruff: noqa: FURB118, E501
+# ruff: noqa: FURB118
+
 import math
 import operator
 from collections.abc import Callable
@@ -49,11 +50,17 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     (lambda x: x[1.0], "[R](x: CanGetitem[float, R]) -> R"),
     (
         lambda x: +x * -x,
-        "[T, R](x: CanPos[CanMul[T, R]] & CanNeg[T]) -> R\n[T, R](x: CanPos[T] & CanNeg[CanRMul[T, R]]) -> R",
+        (
+            "[T, R](x: CanPos[CanMul[T, R]] & CanNeg[T]) -> R\n"
+            "[T, R](x: CanPos[T] & CanNeg[CanRMul[T, R]]) -> R"
+        ),
     ),
     (
         lambda x: -(x + x),
-        "[T: CanAdd[T, CanNeg[R]], R](x: T) -> R\n[T: CanRAdd[T, CanNeg[R]], R](x: T) -> R",
+        (
+            "[T: CanAdd[T, CanNeg[R]], R](x: T) -> R\n"
+            "[T: CanRAdd[T, CanNeg[R]], R](x: T) -> R"
+        ),
     ),
     (lambda x: (x + 1) * 2, "[R](x: CanAdd[Literal[1], CanMul[Literal[2], R]]) -> R"),
     (
@@ -63,11 +70,41 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     (lambda x: -x if x else x, "[T: CanBool & CanNeg[R], R](x: T) -> R | T"),
     (
         lambda x: (x + 1) if x else (x - 1),
-        "[R, R2](x: CanBool & CanAdd[Literal[1], R] & CanSub[Literal[1], R2]) -> R | R2",
+        (
+            "[R, R2](x: CanBool & CanAdd[Literal[1], R] & "
+            "CanSub[Literal[1], R2]) -> R | R2"
+        ),
+    ),
+    (
+        lambda x: x[0] if len(x) else None,
+        "[R](x: CanLen & CanGetitem[Literal[0], R]) -> R | None",
+    ),
+    (
+        lambda x: -x if int(x) else +x,
+        "[R, R2](x: (CanInt | CanIndex) & CanNeg[R] & CanPos[R2]) -> R | R2",
+    ),
+    (
+        lambda x: -x if operator.index(x) else +x,
+        "[R, R2](x: CanIndex & CanNeg[R] & CanPos[R2]) -> R | R2",
+    ),
+    (
+        lambda x: "empty" if len(x) == 0 else x[0],
+        "[R](x: CanLen & CanGetitem[Literal[0], R]) -> R | str",
+    ),
+    (lambda x: len(x) + int(x), "(x: CanLen & (CanInt | CanIndex)) -> int"),
+    (
+        lambda x: x[0] if len(x) else (-x if int(x) else None),
+        (
+            "[R, R2](x: CanLen & CanGetitem[Literal[0], R] & "
+            "(CanInt | CanIndex) & CanNeg[R2]) -> R | R2 | None"
+        ),
     ),
     (
         lambda x: x[0] + x[1],
-        "[T, R](x: CanGetitem[Literal[0, 1], T & CanAdd[T, R]]) -> R\n[T, R](x: CanGetitem[Literal[0, 1], T & CanRAdd[T, R]]) -> R",
+        (
+            "[T, R](x: CanGetitem[Literal[0, 1], T & CanAdd[T, R]]) -> R\n"
+            "[T, R](x: CanGetitem[Literal[0, 1], T & CanRAdd[T, R]]) -> R"
+        ),
     ),
     (lambda x: (x + 1, x + 1), "(x: CanAdd[Literal[1]]) -> tuple"),
     (lambda x: (x + 1, x + 2), "(x: CanAdd[Literal[1, 2]]) -> tuple"),
@@ -104,7 +141,10 @@ BINARY_CASES: list[tuple[Callable[[Any, Any], Any], str]] = [
     ),
     (
         lambda x, y: x + y * y,
-        "[T: CanMul[T, U], U, R](x: CanAdd[U, R], y: T) -> R\n[T, U: CanRMul[U, CanRAdd[T, R]], R](x: T, y: U) -> R",
+        (
+            "[T: CanMul[T, U], U, R](x: CanAdd[U, R], y: T) -> R\n"
+            "[T, U: CanRMul[U, CanRAdd[T, R]], R](x: T, y: U) -> R"
+        ),
     ),
     (lambda x, y: x[y], "[T, R](x: CanGetitem[T, R], y: T) -> R"),
     (lambda x, y: x, "[T](x: T, y: Unused) -> T"),  # noqa: ARG005
@@ -117,19 +157,47 @@ BINARY_CASES: list[tuple[Callable[[Any, Any], Any], str]] = [
     ),
     (
         lambda x, y: (x + y) if x else y,
-        "[T, R](x: CanBool & CanAdd[T, R], y: T) -> R | T\n[T: CanBool, U: CanRAdd[T, R], R](x: T, y: U) -> R | U",
+        (
+            "[T, R](x: CanBool & CanAdd[T, R], y: T) -> R | T\n"
+            "[T: CanBool, U: CanRAdd[T, R], R](x: T, y: U) -> R | U"
+        ),
+    ),
+    (
+        lambda x, y: x[0] if len(x) else y,
+        "[T, R](x: CanLen & CanGetitem[Literal[0], R], y: T) -> R | T",
+    ),
+    (
+        lambda x, y: (x + y) if len(x) else y,
+        (
+            "[T, R](x: CanLen & CanAdd[T, R], y: T) -> R | T\n"
+            "[T: CanLen, U: CanRAdd[T, R], R](x: T, y: U) -> R | U"
+        ),
+    ),
+    # a coerced int flowing as *data* into another spy op pollutes the key/return
+    (
+        lambda x, y: x[int(y)],
+        "[R, R2](x: CanGetitem[Literal[1, 0], R & R2], y: CanInt | CanIndex) -> R | R2",
     ),
     (
         lambda x, y: x * 2 + y,
-        "[T, R](x: CanMul[Literal[2], CanAdd[T, R]], y: T) -> R\n[T, R](x: CanMul[Literal[2], T], y: CanRAdd[T, R]) -> R",
+        (
+            "[T, R](x: CanMul[Literal[2], CanAdd[T, R]], y: T) -> R\n"
+            "[T, R](x: CanMul[Literal[2], T], y: CanRAdd[T, R]) -> R"
+        ),
     ),
     (
         lambda x, y: (x + y, y * 2),
-        "[T: CanMul[Literal[2]]](x: CanAdd[T], y: T) -> tuple\n[T](x: T, y: CanMul[Literal[2]] & CanRAdd[T]) -> tuple",
+        (
+            "[T: CanMul[Literal[2]]](x: CanAdd[T], y: T) -> tuple\n"
+            "[T](x: T, y: CanMul[Literal[2]] & CanRAdd[T]) -> tuple"
+        ),
     ),
     (
         lambda x, y: (x + y, y + x),
-        "[T: CanAdd[U], U: CanAdd[T]](x: T, y: U) -> tuple\n[T: CanRAdd[U], U: CanRAdd[T]](x: T, y: U) -> tuple",
+        (
+            "[T: CanAdd[U], U: CanAdd[T]](x: T, y: U) -> tuple\n"
+            "[T: CanRAdd[U], U: CanRAdd[T]](x: T, y: U) -> tuple"
+        ),
     ),
 ]
 
@@ -211,9 +279,9 @@ def test_ternary_pow() -> None:
     def f(x: Any, y: Any, z: Any = None) -> Any:
         return x.__pow__(y, z)  # noqa: PLC2801
 
-    assert (
-        _infer(f)
-        == "[T, U, R](x: CanPow[T, U, R], y: T, z: U) -> R\n[T, R](x: T, y: CanRPow[T, R]) -> R"
+    assert _infer(f) == (
+        "[T, U, R](x: CanPow[T, U, R], y: T, z: U) -> R\n"
+        "[T, R](x: T, y: CanRPow[T, R]) -> R"
     )
 
 

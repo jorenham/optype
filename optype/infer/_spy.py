@@ -165,8 +165,7 @@ class _SpyObject(_Spy):  # noqa: PLR0904
     ###
 
     def __len__(self, /) -> int:
-        # TODO: fork (by raising); and try 0, 1, ...
-        return self.__optype_trace_add__("__len__", (), {}, 1)
+        return self.__optype_trace_add__("__len__", (), {}, 1 if _decide() else 0)
 
     # no need for `__length_hint__`
 
@@ -346,12 +345,10 @@ class _SpyObject(_Spy):  # noqa: PLR0904
         return self.__optype_trace_add__("__float__", (), {}, 0.0)
 
     def __int__(self, /) -> int:
-        # TODO: fork (by raising); and try 0, 1, ...
-        return self.__optype_trace_add__("__int__", (), {}, 0)
+        return self.__optype_trace_add__("__int__", (), {}, 1 if _decide() else 0)
 
     def __index__(self, /) -> int:
-        # TODO: fork (by raising); and try 0, 1, ...
-        return self.__optype_trace_add__("__index__", (), {}, 0)
+        return self.__optype_trace_add__("__index__", (), {}, 1 if _decide() else 0)
 
     ###
 
