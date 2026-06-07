@@ -45,15 +45,42 @@ $ optype infer "import math; math.sqrt"
 (x: CanFloat | CanIndex) -> float
 ```
 
-## Reflected operators
+## Overloads
 
-A binary operator can dispatch to either operand, so it is reported as two overloads,
-one per line:
+A binary operator can dispatch to either operand, so it is reported as one overload per
+line:
 
 ```console
 $ optype infer "lambda x, y: x * y"
 [T, R](x: CanMul[T, R], y: T) -> R
 [T, R](x: T, y: CanRMul[T, R]) -> R
+```
+
+An operator applied to its own result yields a recursive bound, where the bound of `T`
+refers back to `T`:
+
+```console
+$ optype infer "lambda x: -x + x"
+[T: CanNeg[CanAdd[T, R]], R](x: T) -> R
+[T, R](x: CanNeg[T] & CanRAdd[T, R]) -> R
+```
+
+## Branches
+
+Both sides of a conditional are explored, so the parameter has to satisfy every branch
+(an intersection) and the return is the union of the branch results:
+
+```console
+$ optype infer "lambda x: x if x > 0 else -x"
+[T: CanGt[Literal[0], CanBool] & CanNeg[R], R](x: T) -> T | R
+```
+
+Branching and overloads combine:
+
+```console
+$ optype infer "lambda x, y: (x + y) if x else y"
+[T, R](x: CanBool & CanAdd[T, R], y: T) -> R | T
+[T: CanBool, U: CanRAdd[T, R], R](x: T, y: U) -> R | U
 ```
 
 ## Limitations

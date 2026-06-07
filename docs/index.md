@@ -65,6 +65,15 @@ def twice[R](x: RMul2[R]) -> R:
     return 2 * x
 ```
 
+You don't have to work this out by hand. The experimental
+[`optype infer`](reference/experimental/infer.md) command derives the same signature
+straight from the implementation:
+
+```console
+$ optype infer "lambda x: 2 * x"
+[R](x: CanRMul[Literal[2], R]) -> R
+```
+
 See the [Getting Started](getting-started.md) guide for more detailed examples.
 
 ## Next Steps
