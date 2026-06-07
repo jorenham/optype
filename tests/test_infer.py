@@ -2,6 +2,8 @@
 
 import math
 import operator
+import subprocess  # noqa: S404
+import sys
 from collections.abc import Callable
 from typing import Any
 
@@ -362,3 +364,30 @@ NO_PROTOCOL_CASES: list[Callable[[Any], Any]] = [
 def test_no_protocol(func: Callable[[Any], Any]) -> None:
     with pytest.raises(NotImplementedError):
         infer(func)
+
+
+def _run_cli(*args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(  # noqa: S603
+        [sys.executable, *args],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def test_cli_module() -> None:
+    out = _run_cli("-m", "optype.infer", "lambda x: x + 1")
+    assert out.returncode == 0
+    assert out.stdout.strip() == "[R](x: CanAdd[Literal[1], R]) -> R"
+
+
+def test_cli_subcommand() -> None:
+    out = _run_cli("-m", "optype", "infer", "lambda x: x * 2")
+    assert out.returncode == 0
+    assert out.stdout.strip() == "[R](x: CanMul[Literal[2], R]) -> R"
+
+
+def test_cli_usage() -> None:
+    out = _run_cli("-m", "optype")
+    assert out.returncode == 1
+    assert "usage" in out.stderr.lower()
