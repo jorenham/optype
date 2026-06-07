@@ -167,7 +167,7 @@ class _SpyObject(_Spy):  # noqa: PLR0904
     def __len__(self, /) -> int:
         # TODO: over-recorded as required when probed optionally (e.g. `list()` via
         # `length_hint`); detect optional protocols by forking value-vs-raise
-        return self.__optype_trace_add__("__len__", (), {}, 1 if _decide() else 0)
+        return self.__optype_trace_add__("__len__", (), {}, _decide())
 
     # no need for `__length_hint__`
 
@@ -349,10 +349,10 @@ class _SpyObject(_Spy):  # noqa: PLR0904
         return self.__optype_trace_add__("__float__", (), {}, 0.0)
 
     def __int__(self, /) -> int:
-        return self.__optype_trace_add__("__int__", (), {}, 1 if _decide() else 0)
+        return self.__optype_trace_add__("__int__", (), {}, int(_decide()))
 
     def __index__(self, /) -> int:
-        return self.__optype_trace_add__("__index__", (), {}, 1 if _decide() else 0)
+        return self.__optype_trace_add__("__index__", (), {}, int(_decide()))
 
     ###
 
