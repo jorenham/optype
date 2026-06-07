@@ -165,6 +165,8 @@ class _SpyObject(_Spy):  # noqa: PLR0904
     ###
 
     def __len__(self, /) -> int:
+        # TODO: over-recorded as required when probed optionally (e.g. `list()` via
+        # `length_hint`); detect optional protocols by forking value-vs-raise
         return self.__optype_trace_add__("__len__", (), {}, 1 if _decide() else 0)
 
     # no need for `__length_hint__`
@@ -191,6 +193,8 @@ class _SpyObject(_Spy):  # noqa: PLR0904
 
     # return `Any` instead of `_SpyObject` to avoid an LSP error for `__dir__`
     def __next__(self, /) -> Any:
+        if any(item.attr == "__next__" for item in self.__optype_trace__):
+            raise StopIteration
         return self.__optype_trace_add__("__next__", (), {}, _SpyObject())
 
     ###

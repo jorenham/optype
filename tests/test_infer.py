@@ -106,6 +106,14 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
             "[T, R](x: CanGetitem[Literal[0, 1], T & CanRAdd[T, R]]) -> R"
         ),
     ),
+    (lambda x: [i for i in x], "(x: CanIter[CanNext]) -> list"),  # noqa: C416
+    (lambda x: [str(i) for i in x], "(x: CanIter[CanNext[CanStr]]) -> list"),
+    (lambda x: next(iter(x)), "[R](x: CanIter[CanNext[R]]) -> R"),
+    (lambda x: {*x}, "(x: CanIter[CanNext[CanHash]]) -> set"),
+    (
+        lambda x: sum(x),  # noqa: PLW0108
+        "[R](x: CanIter[CanNext[CanRAdd[Literal[0], R]]]) -> R",
+    ),
     (lambda x: (x + 1, x + 1), "(x: CanAdd[Literal[1]]) -> tuple"),
     (lambda x: (x + 1, x + 2), "(x: CanAdd[Literal[1, 2]]) -> tuple"),
     (lambda x: (x + 1, x + 2, x + 3), "(x: CanAdd[Literal[1, 2, 3]]) -> tuple"),
