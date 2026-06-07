@@ -155,6 +155,7 @@ BINARY_CASES: list[tuple[Callable[[Any, Any], Any], str]] = [
         ),
     ),
     (lambda x, y: x[y], "[T, R](x: CanGetitem[T, R], y: T) -> R"),
+    (lambda x, y: y[str(x)], "[R](x: CanStr, y: CanGetitem[str, R]) -> R"),
     (lambda x, y: x, "[T](x: T, y: Unused) -> T"),  # noqa: ARG005
     (lambda x, y: x or y, "[T: CanBool, U](x: T, y: U) -> T | U"),
     (lambda x, y: x if x in y else y, "[T, U: CanContains[T]](x: T, y: U) -> T | U"),

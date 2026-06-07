@@ -188,6 +188,11 @@ class _Renderer:
             for value in values
             if isinstance(value, _Spy) and id(value) in self._vars
         ]
+        names += [
+            "str" if isinstance(value, _SpyStr) else "bytes"
+            for value in values
+            if isinstance(value, _SpyStr | _SpyBytes)
+        ]
 
         parts: list[str] = []
         if literals:

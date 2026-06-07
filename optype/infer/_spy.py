@@ -49,14 +49,10 @@ class _Spy:
 class _SpyStr(str, _Spy):
     __slots__ = ()  # pyrefly:ignore[implicit-any-attribute]
 
-    # TODO: override __eq__ to figure out what the expected value is
-
 
 @final
 class _SpyBytes(bytes, _Spy):
     __slots__ = ()  # pyrefly:ignore[implicit-any-attribute]
-
-    # TODO: override __eq__ to figure out what the expected value is
 
 
 class _SpyObject(_Spy):  # noqa: PLR0904
