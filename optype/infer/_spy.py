@@ -2,7 +2,7 @@
 
 """Recording proxy objects that trace the operations performed on them."""
 
-from collections.abc import Generator, Iterator
+from collections.abc import Callable, Generator, Iterator
 from contextvars import ContextVar
 from typing import Any, NamedTuple, final, override
 
@@ -385,6 +385,34 @@ class _SpyObject(_Spy):  # noqa: PLR0904
 
     def __release_buffer__(self, buffer: memoryview, /) -> None:
         return self.__optype_trace_add__("__releasebuffer__", (buffer,), {}, None)
+
+    ###
+
+    # numpy looks these up on the type, so `__getattr__` won't do
+    def __array_ufunc__(
+        self,
+        ufunc: Callable[..., Any],
+        method: str,
+        /,
+        *inputs: object,
+        **kwargs: object,
+    ) -> "_SpyObject":
+        return self.__optype_trace_add__("__array_ufunc__", (ufunc,), {}, _SpyObject())
+
+    def __array_function__(
+        self,
+        func: Callable[..., Any],
+        types: object,
+        args: object,
+        kwargs: object,
+        /,
+    ) -> "_SpyObject":
+        return self.__optype_trace_add__(
+            "__array_function__",
+            (func,),
+            {},
+            _SpyObject(),
+        )
 
     ###
 

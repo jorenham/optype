@@ -83,6 +83,30 @@ $ optype infer "lambda x, y: (x + y) if x else y"
 [T: CanBool, U: CanRAdd[T, R], R](x: T, y: U) -> R | U
 ```
 
+## NumPy
+
+!!! info
+
+    NumPy is not a required dependency, and `optype infer` works fine without it
+    installed.
+
+A [ufunc](https://numpy.org/doc/stable/reference/ufuncs.html) requires each operand to
+either override it (NEP 13's `CanArrayUFunc`) or be an array-like of its widest accepted
+dtype (read from its `.types`):
+
+```console
+$ optype infer "import numpy as np; np.sin"
+[R](x: CanArrayUFunc[np.ufunc, R] | ToComplexND) -> R
+```
+
+A [NEP 18](https://numpy.org/neps/nep-0018-array-function-protocol.html) function such as
+`np.mean` requires the `CanArrayFunction` override:
+
+```console
+$ optype infer "import numpy as np; np.mean"
+[R](a: CanArrayFunction[CanCall[Any, R], R]) -> R
+```
+
 ## Limitations
 
 `infer` calls the function, so it only works on functions that are safe to run with
