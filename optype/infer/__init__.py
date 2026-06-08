@@ -44,7 +44,11 @@ def _attr_protocols() -> dict[str, str]:
     }
 
 
-_DUNDER_PROTOCOL_MAP = _dunder_protocols()
+# numpy's array protocols aren't in `_can`, nor are their members name-derivable
+_DUNDER_PROTOCOL_MAP = _dunder_protocols() | {
+    "__array_ufunc__": "CanArrayUFunc",
+    "__array_function__": "CanArrayFunction",
+}
 _ATTR_PROTOCOL_MAP = _attr_protocols()
 
 _COERCION_FALLBACK = {
@@ -155,6 +159,20 @@ def _return_spies(value: object) -> Iterator[_SpyObject]:
             pass
 
 
+def _required_args(func: _AnyFunc) -> int | None:
+    # required positional params of `func`, or None if variadic/uninspectable
+    try:
+        params = signature(func).parameters.values()
+    except (TypeError, ValueError):
+        return None
+    if any(p.kind in _VARIADIC for p in params):
+        return None
+    return sum(
+        p.kind is not Parameter.KEYWORD_ONLY and p.default is Parameter.empty
+        for p in params
+    )
+
+
 @final
 class _Renderer:
     """Render an inferred ``def`` signature from the recorded spy traces."""
@@ -231,6 +249,11 @@ class _Renderer:
         return " & ".join(parts) or None
 
     def group(self, proto: str, members: list[_Op]) -> str:
+        if proto == "CanArrayFunction":
+            ret = self.returns(members) or "object"
+            n = _required_args(members[0].args[0])
+            args = ["Any"] * n if n is not None else ["..."]
+            return f"CanArrayFunction[CanCall[{', '.join([*args, ret])}], {ret}]"
         parts = [
             arg
             for i in range(len(members[0].args))
@@ -293,7 +316,8 @@ class _Renderer:
                 inner = self.union([*cast("Collection[object]", result)])
                 return f"{name}[{inner}]" if inner else name
             case _:
-                return name
+                module = type(result).__module__.partition(".")[0]
+                return f"np.{name}" if module == "numpy" else name
 
     def return_types(self) -> str:
         return " | ".join(dict.fromkeys(map(self.return_type, self._results)))
@@ -319,6 +343,47 @@ def _doc_params(func: _AnyFunc) -> list[str] | None:
             params = match[2].replace("[", "").replace("]", "")
             return _DOC_PARAM.findall(params) or None
     return None
+
+
+def _ufunc_nin(func: _AnyFunc) -> int | None:
+    nin, nout = getattr(func, "nin", None), getattr(func, "nout", None)
+    if isinstance(nin, int) and isinstance(nout, int):
+        return nin
+    return None
+
+
+_DTYPE_KINDS = (
+    ("?", "ToBoolND"),
+    ("bhilqpBHILQP", "ToIntND"),
+    ("efdg", "ToFloatND"),
+    ("FDG", "ToComplexND"),
+)
+_DTYPE_RANK: dict[str, int] = {
+    char: rank for rank, (chars, _) in enumerate(_DTYPE_KINDS) for char in chars
+}
+_DTYPE_ALIASES = [alias for _, alias in _DTYPE_KINDS]
+
+
+def _ufunc_dtype(func: _AnyFunc, i: int) -> str | None:
+    types = cast("list[str]", getattr(func, "types", ()))
+    ranks = [
+        _DTYPE_RANK[ins[i]]
+        for sig in types
+        if i < len(ins := sig.partition("->")[0]) and ins[i] in _DTYPE_RANK
+    ]
+    return _DTYPE_ALIASES[max(ranks)] if ranks else None
+
+
+def _infer_ufunc(func: _AnyFunc, nin: int, params: tuple[str | int, ...]) -> str:
+    names = ["x"] if nin == 1 else [f"x{i + 1}" for i in range(nin)]
+    parts: list[str] = []
+    for name in _select(params, names):
+        i = names.index(name)
+        arms: list[str] = ["CanArrayUFunc[np.ufunc, R]"] if i == 0 else []
+        if (dtype := _ufunc_dtype(func, i)) is not None:
+            arms.append(dtype)
+        parts.append(f"{name}: {' | '.join(arms) or 'object'}")
+    return f"[R]({', '.join(parts)}) -> R"
 
 
 def _parameters(func: _AnyFunc) -> Mapping[str, Parameter]:
@@ -379,6 +444,9 @@ def infer(func: _AnyFunc, /, *params: str | int) -> str:
     >>> print(infer(lambda x: x + 1))
     [R](x: CanAdd[Literal[1], R]) -> R
     """
+    if (nin := _ufunc_nin(func)) is not None:
+        return _infer_ufunc(func, nin, params)
+
     parameters = _parameters(func)
     if any(p.kind in _VARIADIC for p in parameters.values()):
         raise NotImplementedError("variadic parameters")

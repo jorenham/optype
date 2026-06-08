@@ -302,6 +302,46 @@ def test_ternary_pow() -> None:
     )
 
 
+def test_infer_ufunc() -> None:
+    np = pytest.importorskip("numpy")
+    assert infer(np.sin) == "[R](x: CanArrayUFunc[np.ufunc, R] | ToComplexND) -> R"
+    assert infer(np.add) == (
+        "[R](x1: CanArrayUFunc[np.ufunc, R] | ToComplexND, x2: ToComplexND) -> R"
+    )
+    assert infer(np.hypot) == (
+        "[R](x1: CanArrayUFunc[np.ufunc, R] | ToFloatND, x2: ToFloatND) -> R"
+    )
+    assert infer(np.gcd) == (
+        "[R](x1: CanArrayUFunc[np.ufunc, R] | ToIntND, x2: ToIntND) -> R"
+    )
+    # ldexp(mantissa: float, exponent: int) — different widest dtype per input
+    assert infer(np.ldexp) == (
+        "[R](x1: CanArrayUFunc[np.ufunc, R] | ToFloatND, x2: ToIntND) -> R"
+    )
+
+
+def test_infer_ufunc_in_function() -> None:
+    np = pytest.importorskip("numpy")
+
+    # a ufunc inside a traced function → override path only (spy's `__array_ufunc__`)
+    def f(x: Any) -> Any:
+        return np.sin(x)
+
+    assert infer(f) == "[R](x: CanArrayUFunc[np.ufunc, R]) -> R"
+
+
+def test_infer_array_function() -> None:
+    np = pytest.importorskip("numpy")
+    # NEP-18 functions (np.mean, np.strings.upper, ...) dispatch via __array_function__
+    sig = "[R](a: CanArrayFunction[CanCall[Any, R], R]) -> R"
+    assert infer(np.mean) == sig
+    assert infer(np.sum) == sig
+    # the func type's arity tracks the required positional params (a, b)
+    assert infer(np.outer) == (
+        "[R](a: CanArrayFunction[CanCall[Any, Any, R], R], b: object) -> R"
+    )
+
+
 @pytest.mark.parametrize("selector", ["nope", 9, -9])
 def test_unknown_param(selector: str | int) -> None:
     with pytest.raises(ValueError, match="parameter"):
