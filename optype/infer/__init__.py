@@ -2,9 +2,19 @@
 
 import re
 from collections import defaultdict
-from collections.abc import Callable, Collection, Coroutine, Iterator, Mapping
-from inspect import Parameter, iscoroutine, signature
-from typing import Any, NamedTuple, cast, final
+from collections.abc import (
+    AsyncGenerator,
+    Callable,
+    Collection,
+    Coroutine,
+    Generator,
+    Iterable,
+    Mapping,
+    Sequence,
+)
+from inspect import Parameter, isasyncgen, iscoroutine, isgenerator, signature
+from itertools import islice
+from typing import Any, NamedTuple, cast, final, overload
 
 from ._spy import _Fork, _fork, _Spy, _SpyBytes, _SpyObject, _SpyStr, _TraceItem
 from optype._core import _can, _has
@@ -12,13 +22,11 @@ from optype.inspect import get_protocol_members
 
 __all__ = ("infer",)
 
-type _AnyFunc = Callable[..., Any]
-
-_VARIADIC = frozenset({Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD})
+_PARAM_VAR = frozenset({Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD})
 
 _TYPEVARS = "TUVWXYZ"
 
-_ATTRIBUTE_DUNDERS = frozenset({
+_DUNDER_ATTR = frozenset({
     "__delattr__",
     "__getattr__",
     "__getattribute__",
@@ -26,17 +34,28 @@ _ATTRIBUTE_DUNDERS = frozenset({
 })
 
 
-def _dunder_protocols() -> dict[str, str]:
+def _get_dunder_can_map() -> dict[str, str]:
     return {
         dunder: name
         for name in _can.__all__
         if not name.endswith(("Self", "Same"))
         if (dunder := "__" + name.removeprefix("Can").lower() + "__")
-        not in _ATTRIBUTE_DUNDERS
+        not in _DUNDER_ATTR
+    } | {
+        "__array_ufunc__": "CanArrayUFunc",
+        "__array_function__": "CanArrayFunction",
     }
 
 
-def _attr_protocols() -> dict[str, str]:
+_DUNDER_CAN_MAP = _get_dunder_can_map()
+_DUNDER_CAN_R = frozenset(
+    dunder
+    for dunder, proto in _DUNDER_CAN_MAP.items()
+    if "CanR" + proto.removeprefix("Can") in _DUNDER_CAN_MAP.values()
+)
+
+
+def _get_dunder_has_map() -> dict[str, str]:
     return {
         next(iter(members)): name
         for name in _has.__all__
@@ -44,33 +63,27 @@ def _attr_protocols() -> dict[str, str]:
     }
 
 
-# numpy's array protocols aren't in `_can`, nor are their members name-derivable
-_DUNDER_PROTOCOL_MAP = _dunder_protocols() | {
-    "__array_ufunc__": "CanArrayUFunc",
-    "__array_function__": "CanArrayFunction",
-}
-_ATTR_PROTOCOL_MAP = _attr_protocols()
+_DUNDER_HAS_MAP = _get_dunder_has_map()
 
 _COERCION_FALLBACK = {
     "__float__": ("__index__",),
     "__int__": ("__index__",),
     "__complex__": ("__float__", "__index__"),
 }
-
 _COERCION_UNION = {
-    dunder: " | ".join(map(_DUNDER_PROTOCOL_MAP.__getitem__, (dunder, *fallback)))
+    dunder: " | ".join(map(_DUNDER_CAN_MAP.__getitem__, (dunder, *fallback)))
     for dunder, fallback in _COERCION_FALLBACK.items()
 }
 
-_FORWARD_ARITH = frozenset(
-    dunder
-    for dunder, proto in _DUNDER_PROTOCOL_MAP.items()
-    if "CanR" + proto.removeprefix("Can") in _DUNDER_PROTOCOL_MAP.values()
-)
+_RE_DOC_SIGNATURE = re.compile(r"\b(\w+)\(([^)]*)\)")
+_RE_DOC_PARAM = re.compile(r"(?:^|,)\s*\**([a-zA-Z_]\w*)")
+
+_FORK_LIMIT = 64
+_YIELD_LIMIT = 64
 
 
-_DOC_SIGNATURE = re.compile(r"\b(\w+)\(([^)]*)\)")
-_DOC_PARAM = re.compile(r"(?:^|,)\s*\**([a-zA-Z_]\w*)")
+type _AnyFunc = Callable[..., Any]
+type _Vars = dict[int, str]
 
 
 class _Op(NamedTuple):
@@ -80,26 +93,32 @@ class _Op(NamedTuple):
     ret: Any
 
 
-type _Vars = dict[int, str]
+class _Gen(NamedTuple):
+    yielded: list[object]
+    is_async: bool
+
+    @property
+    def kind(self) -> str:
+        return "AsyncGenerator" if self.is_async else "Generator"
 
 
 def _resolve(trace: _TraceItem) -> _Op:
-    if trace.attr in _ATTRIBUTE_DUNDERS:
+    if trace.attr in _DUNDER_ATTR:
         name = trace.args[0]
-        if name not in _ATTR_PROTOCOL_MAP:
+        if name not in _DUNDER_HAS_MAP:
             raise NotImplementedError(name)
-        return _Op(_ATTR_PROTOCOL_MAP[name], (), {}, trace.return_)
+        return _Op(_DUNDER_HAS_MAP[name], (), {}, trace.return_)
     if trace.attr in _COERCION_UNION:
         return _Op(_COERCION_UNION[trace.attr], (), {}, trace.return_)
-    if trace.attr in _DUNDER_PROTOCOL_MAP:
-        proto = _DUNDER_PROTOCOL_MAP[trace.attr]
+    if trace.attr in _DUNDER_CAN_MAP:
+        proto = _DUNDER_CAN_MAP[trace.attr]
         return _Op(proto, trace.args, trace.kwargs, trace.return_)
     raise NotImplementedError(trace.attr)
 
 
 def _analyze(
-    params: list[_SpyObject],
-    results: list[object],
+    params: Sequence[_SpyObject],
+    results: Iterable[object],
 ) -> tuple[list[_SpyObject], dict[int, int]]:
     appear: defaultdict[int, int] = defaultdict(int)
     for spy in params:
@@ -143,10 +162,13 @@ def _select(params: tuple[str | int, ...], names: list[str]) -> list[str]:
     return selected or names
 
 
-def _return_spies(value: object) -> Iterator[_SpyObject]:
+def _return_spies(value: object) -> Generator[_SpyObject]:
     match value:
         case _SpyObject():
             yield value
+        case _Gen():
+            for item in value.yielded:
+                yield from _return_spies(item)
         case list() | set() | frozenset():
             for item in cast("Collection[object]", value):
                 yield from _return_spies(item)
@@ -160,12 +182,11 @@ def _return_spies(value: object) -> Iterator[_SpyObject]:
 
 
 def _required_args(func: _AnyFunc) -> int | None:
-    # required positional params of `func`, or None if variadic/uninspectable
     try:
         params = signature(func).parameters.values()
     except (TypeError, ValueError):
         return None
-    if any(p.kind in _VARIADIC for p in params):
+    if any(p.kind in _PARAM_VAR for p in params):
         return None
     return sum(
         p.kind is not Parameter.KEYWORD_ONLY and p.default is Parameter.empty
@@ -214,7 +235,7 @@ class _Renderer:
         for i, spy in enumerate(self._pool):
             self._vars[id(spy)] = _TYPEVARS[i] if i < len(_TYPEVARS) else f"T{i}"
 
-    def union(self, values: list[Any]) -> str | None:
+    def union(self, values: Iterable[Any]) -> str | None:
         literals: list[Any] = []
         names: list[str] = []
         for value in values:
@@ -233,7 +254,7 @@ class _Renderer:
         parts.extend(dict.fromkeys(names))
         return " | ".join(parts) or None
 
-    def returns(self, members: list[_Op]) -> str | None:
+    def returns(self, members: Iterable[_Op]) -> str | None:
         named: list[str] = []
         traces: list[_TraceItem] = []
         for m in members:
@@ -248,7 +269,7 @@ class _Renderer:
             parts.append(formatted)
         return " & ".join(parts) or None
 
-    def group(self, proto: str, members: list[_Op]) -> str:
+    def group(self, proto: str, members: Sequence[_Op]) -> str:
         if proto == "CanArrayFunction":
             ret = self.returns(members) or "object"
             n = _required_args(members[0].args[0])
@@ -257,19 +278,19 @@ class _Renderer:
         parts = [
             arg
             for i in range(len(members[0].args))
-            if (arg := self.union([m.args[i] for m in members])) is not None
+            if (arg := self.union(m.args[i] for m in members)) is not None
         ]
         parts += [
             f"{key}={kw}"
             for key in members[0].kwargs
-            if (kw := self.union([m.kwargs[key] for m in members])) is not None
+            if (kw := self.union(m.kwargs[key] for m in members)) is not None
         ]
         if (ret := self.returns(members)) is not None:
             parts.append(ret)
 
         return f"{proto}[{', '.join(parts)}]" if parts else proto
 
-    def traces(self, traces: list[_TraceItem]) -> str:
+    def traces(self, traces: Iterable[_TraceItem]) -> str:
         groups: dict[tuple[str, int, tuple[str, ...]], list[_Op]] = {}
         for trace in traces:
             op = _resolve(trace)
@@ -299,6 +320,9 @@ class _Renderer:
                 return "str"
             case _SpyBytes():
                 return "bytes"
+            case _Gen():
+                yields = dict.fromkeys(map(self.return_type, result.yielded))
+                return f"{result.kind}[{' | '.join(yields) or 'Never'}]"
             case None:
                 return "None"
             case _:
@@ -309,11 +333,11 @@ class _Renderer:
         match result:
             case dict():
                 mapping = cast("Mapping[object, object]", result)
-                key = self.union([*mapping]) or "object"
-                val = self.union([*mapping.values()]) or "object"
+                key = self.union(mapping) or "object"
+                val = self.union(mapping.values()) or "object"
                 return f"dict[{key}, {val}]" if mapping else name
             case list() | set() | frozenset():
-                inner = self.union([*cast("Collection[object]", result)])
+                inner = self.union(cast("Collection[object]", result))
                 return f"{name}[{inner}]" if inner else name
             case _:
                 module = type(result).__module__.partition(".")[0]
@@ -338,10 +362,10 @@ def _doc_params(func: _AnyFunc) -> list[str] | None:
     name = getattr(func, "__name__", "")
     if not name:
         return None
-    for match in _DOC_SIGNATURE.finditer(func.__doc__ or ""):
+    for match in _RE_DOC_SIGNATURE.finditer(func.__doc__ or ""):
         if match[1] == name:
             params = match[2].replace("[", "").replace("]", "")
-            return _DOC_PARAM.findall(params) or None
+            return _RE_DOC_PARAM.findall(params) or None
     return None
 
 
@@ -395,14 +419,14 @@ def _parameters(func: _AnyFunc) -> Mapping[str, Parameter]:
         return {n: Parameter(n, Parameter.POSITIONAL_OR_KEYWORD) for n in names}
 
 
-def _reflect(param_spies: list[_SpyObject], results: list[object]) -> None:
+def _reflect(param_spies: Sequence[_SpyObject], results: Iterable[object]) -> None:
     order, _ = _analyze(param_spies, results)
     added: defaultdict[int, list[_TraceItem]] = defaultdict(list)
     for spy in order:
         keep: list[_TraceItem] = []
         for item in spy.__optype_trace__:
             rhs = item.args[0] if item.args else None
-            if item.attr in _FORWARD_ARITH and isinstance(rhs, _SpyObject):
+            if item.attr in _DUNDER_CAN_R and isinstance(rhs, _SpyObject):
                 reflected = _TraceItem("__r" + item.attr[2:], (spy,), {}, item.return_)
                 added[id(rhs)].append(reflected)
             else:
@@ -413,9 +437,6 @@ def _reflect(param_spies: list[_SpyObject], results: list[object]) -> None:
         spy.__optype_trace__ += added[id(spy)]
 
 
-_FORK_LIMIT = 64  # bound fork depth so a forking loop can't diverge
-
-
 def _await[R](coro: Coroutine[Any, Any, R]) -> R:
     # a spy's awaitables resolve synchronously, so the coroutine runs straight through
     try:
@@ -424,6 +445,47 @@ def _await[R](coro: Coroutine[Any, Any, R]) -> R:
         return stop.value
     coro.close()
     raise NotImplementedError("await on a non-spy awaitable")
+
+
+def _yield_key(value: object) -> tuple[str, *tuple[str, ...]]:
+    # a value's "shape": two yields with the same key are treated as the same type
+    if isinstance(value, _SpyObject):
+        return ("spy", *(op.attr for op in value.__optype_trace__))
+    return ("val", type(value).__name__)
+
+
+def _yields[T](values: Iterable[T]) -> list[T]:
+    seen: set[tuple[str, ...]] = set()
+    out: list[T] = []
+    for value in islice(values, _YIELD_LIMIT):
+        if (key := _yield_key(value)) in seen:
+            break
+        seen.add(key)
+        out.append(value)
+    return out
+
+
+def _sync[T](agen: AsyncGenerator[T, Any]) -> Generator[T]:
+    # iterate an async generator synchronously by resolving each step's awaitable
+    for _ in range(_YIELD_LIMIT):
+        try:
+            yield _await(anext(agen))
+        except StopAsyncIteration:
+            return
+
+
+@overload
+def _next(result: Generator[object]) -> _Gen: ...
+@overload
+def _next(result: AsyncGenerator[object]) -> _Gen: ...
+@overload
+def _next[T](result: T) -> T: ...
+def _next(result: object) -> object:
+    if isgenerator(result):
+        return _Gen(_yields(result), is_async=False)
+    if isasyncgen(result):
+        return _Gen(_yields(_sync(result)), is_async=True)
+    return result
 
 
 def _explore[T](
@@ -459,7 +521,7 @@ def infer(func: _AnyFunc, /, *params: str | int) -> str:
         return _infer_ufunc(func, nin, params)
 
     parameters = _parameters(func)
-    if any(p.kind in _VARIADIC for p in parameters.values()):
+    if any(p.kind in _PARAM_VAR for p in parameters.values()):
         raise NotImplementedError("variadic parameters")
 
     names = list(parameters)
@@ -476,7 +538,7 @@ def infer(func: _AnyFunc, /, *params: str | int) -> str:
             kwds[name] = spies[name]
         else:
             args.append(spies[name])
-    results = _explore(func, args, kwds)
+    results: list[object] = [_next(r) for r in _explore(func, args, kwds)]
 
     sig1 = _Renderer(names, selected, spies, results, optional).render()
     _reflect(list(spies.values()), results)

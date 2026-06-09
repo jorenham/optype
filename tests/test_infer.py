@@ -325,6 +325,49 @@ def test_infer_async() -> None:
     assert infer(async_for) == "[R](x: CanAIter[CanANext[CanAwait[R]]]) -> R"
 
 
+def test_infer_generator() -> None:
+    # generator expressions are lazy, so they are iterated to trace what they yield
+    def gen(xs: Any) -> Any:
+        return (x for x in xs)
+
+    assert infer(gen) == "[R](xs: CanIter[CanNext[R]]) -> Generator[R]"
+
+    def gen_add(xs: Any) -> Any:
+        return (x + 1 for x in xs)
+
+    assert infer(gen_add) == (
+        "[R](xs: CanIter[CanNext[CanAdd[Literal[1], R]]]) -> Generator[R]"
+    )
+
+    async def async_gen(xs: Any) -> Any:
+        return (x async for x in xs)
+
+    assert infer(async_gen) == (
+        "[R](xs: CanAIter[CanANext[CanAwait[R]]]) -> AsyncGenerator[R]"
+    )
+
+
+def test_infer_generator_yields() -> None:
+    # heterogeneous yields are sampled and unioned; an empty generator yields Never
+    def hetero() -> Any:
+        yield None
+        yield 1
+
+    assert infer(hetero) == "() -> Generator[None | int]"
+
+    def empty() -> Any:
+        yield from ()
+
+    assert infer(empty) == "() -> Generator[Never]"
+
+    # an infinite generator terminates once a yield shape repeats, without exploding R
+    def loop(x: Any) -> Any:
+        while True:
+            yield x + 1
+
+    assert infer(loop) == "[R](x: CanAdd[Literal[1], R]) -> Generator[R]"
+
+
 def test_infer_ufunc() -> None:
     np = pytest.importorskip("numpy")
     assert infer(np.sin) == "[R](x: CanArrayUFunc[np.ufunc, R] | ToComplexND) -> R"
