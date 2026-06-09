@@ -96,6 +96,21 @@ $ optype infer "async def f(xs): return [x async for x in xs]"
 [R](xs: CanAIter[CanANext[CanAwait[R]]]) -> list[R]
 ```
 
+## Generators
+
+A generator is lazy, so it is iterated to collect the types it yields:
+
+```console
+$ optype infer "def f(n): yield from range(n)"
+(n: CanIndex) -> Generator[int]
+
+$ optype infer "def f(): yield None; yield 1"
+() -> Generator[None | int]
+
+$ optype infer "async def f(xs): return (x async for x in xs)"
+[R](xs: CanAIter[CanANext[CanAwait[R]]]) -> AsyncGenerator[R]
+```
+
 ## NumPy
 
 !!! info
