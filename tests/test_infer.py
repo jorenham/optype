@@ -450,6 +450,15 @@ def test_cli_subcommand() -> None:
     assert out.stdout.strip() == "[R](x: CanMul[Literal[2], R]) -> R"
 
 
+def test_cli_def() -> None:
+    # a trailing def/class is inferred directly, without a closing name reference
+    out = _run_cli("-m", "optype", "infer", "def f(x, y): return x @ y")
+    assert out.returncode == 0
+    assert out.stdout.strip() == (
+        "[T, R](x: CanMatmul[T, R], y: T) -> R\n[T, R](x: T, y: CanRMatmul[T, R]) -> R"
+    )
+
+
 def test_cli_usage() -> None:
     out = _run_cli("-m", "optype")
     assert out.returncode == 1

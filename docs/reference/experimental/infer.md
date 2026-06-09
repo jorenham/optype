@@ -34,8 +34,8 @@ Pass parameter names or positions to report only those parameters:
 '[T, R](x: CanGetitem[T, R]) -> R'
 ```
 
-The `optype infer` command takes a Python expression; leading statements are allowed, as
-long as the last line is an expression:
+The `optype infer` command takes a Python snippet whose final statement is
+an expression or a `def`/`class` definition; any leading statements run as setup:
 
 ```console
 $ optype infer "lambda x: x * 2"
@@ -81,6 +81,19 @@ Branching and overloads combine:
 $ optype infer "lambda x, y: (x + y) if x else y"
 [T, R](x: CanBool & CanAdd[T, R], y: T) -> R | T
 [T: CanBool, U: CanRAdd[T, R], R](x: T, y: U) -> R | U
+```
+
+## Async
+
+Coroutine functions are run to completion, so `await`, `async with`, and `async for` are
+traced like their synchronous counterparts:
+
+```console
+$ optype infer "async def f(x): return await x"
+[R](x: CanAwait[R]) -> R
+
+$ optype infer "async def f(xs): return [x async for x in xs]"
+[R](xs: CanAIter[CanANext[CanAwait[R]]]) -> list[R]
 ```
 
 ## NumPy
