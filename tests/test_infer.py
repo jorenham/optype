@@ -302,6 +302,29 @@ def test_ternary_pow() -> None:
     )
 
 
+def test_infer_async() -> None:
+    # coroutine functions are driven to completion; await/async with/async for trace
+    async def aw(x: Any) -> Any:
+        return (await x) + 1
+
+    assert infer(aw) == "[R](x: CanAwait[CanAdd[Literal[1], R]]) -> R"
+
+    async def async_with(x: Any) -> Any:
+        async with x as y:
+            return y
+
+    assert infer(async_with) == (
+        "[R](x: CanAEnter[CanAwait[R]] & CanAExit[None, None, None, CanAwait]) -> R"
+    )
+
+    async def async_for(x: Any) -> Any:
+        async for item in x:
+            return item
+        return None
+
+    assert infer(async_for) == "[R](x: CanAIter[CanANext[CanAwait[R]]]) -> R"
+
+
 def test_infer_ufunc() -> None:
     np = pytest.importorskip("numpy")
     assert infer(np.sin) == "[R](x: CanArrayUFunc[np.ufunc, R] | ToComplexND) -> R"

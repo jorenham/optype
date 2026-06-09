@@ -417,25 +417,27 @@ class _SpyObject(_Spy):  # noqa: PLR0904
     ###
 
     def __await__(self, /) -> Generator[Any, None, "_SpyObject"]:
-        out = _SpyObject()
+        out = self.__optype_trace_add__("__await__", (), {}, _SpyObject())
 
         def spy_generator() -> Generator[Any, None, "_SpyObject"]:
             yield from ()
             return out  # noqa: B901
 
-        return self.__optype_trace_add__("__await__", (), {}, spy_generator())
+        return spy_generator()
 
     def __aiter__(self, /) -> "_SpyObject":
         return self.__optype_trace_add__("__aiter__", (), {}, _SpyObject())
 
     def __anext__(self, /) -> "_SpyObject":
+        if any(item.attr == "__anext__" for item in self.__optype_trace__):
+            raise StopAsyncIteration
         return self.__optype_trace_add__("__anext__", (), {}, _SpyObject())
 
     def __aenter__(self, /) -> "_SpyObject":
         return self.__optype_trace_add__("__aenter__", (), {}, _SpyObject())
 
-    def __aexit__(self, /, *args: object) -> None:
-        return self.__optype_trace_add__("__aexit__", args, {}, None)
+    def __aexit__(self, /, *args: object) -> "_SpyObject":
+        return self.__optype_trace_add__("__aexit__", args, {}, _SpyObject())
 
 
 # Free functions, not methods: a method would be an unrecorded hole in the proxy.

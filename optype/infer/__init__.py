@@ -2,8 +2,8 @@
 
 import re
 from collections import defaultdict
-from collections.abc import Callable, Collection, Iterator, Mapping
-from inspect import Parameter, signature
+from collections.abc import Callable, Collection, Coroutine, Iterator, Mapping
+from inspect import Parameter, iscoroutine, signature
 from typing import Any, NamedTuple, cast, final
 
 from ._spy import _Fork, _fork, _Spy, _SpyBytes, _SpyObject, _SpyStr, _TraceItem
@@ -416,8 +416,18 @@ def _reflect(param_spies: list[_SpyObject], results: list[object]) -> None:
 _FORK_LIMIT = 64  # bound fork depth so a forking loop can't diverge
 
 
+def _await[R](coro: Coroutine[Any, Any, R]) -> R:
+    # a spy's awaitables resolve synchronously, so the coroutine runs straight through
+    try:
+        coro.send(None)
+    except StopIteration as stop:
+        return stop.value
+    coro.close()
+    raise NotImplementedError("await on a non-spy awaitable")
+
+
 def _explore[T](
-    func: Callable[..., T],
+    func: Callable[..., T | Coroutine[Any, None, T]],
     args: list[_SpyObject],
     kwds: dict[str, _SpyObject],
 ) -> list[T]:
@@ -427,7 +437,8 @@ def _explore[T](
         plan = stack.pop()
         token = _fork.set(iter(plan))
         try:
-            results.append(func(*args, **kwds))
+            result = func(*args, **kwds)
+            results.append(_await(result) if iscoroutine(result) else cast("T", result))
         except _Fork:
             if len(plan) < _FORK_LIMIT:
                 stack.extend(([*plan, False], [*plan, True]))
