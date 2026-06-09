@@ -32,25 +32,38 @@ _DUNDER_ATTR = frozenset({
     "__getattribute__",
     "__setattr__",
 })
-_DUNDER_CAN_MAP = {
-    dunder: name
-    for name in _can.__all__
-    if not name.endswith(("Self", "Same"))
-    if (dunder := "__" + name.removeprefix("Can").lower() + "__") not in _DUNDER_ATTR
-} | {
-    "__array_ufunc__": "CanArrayUFunc",
-    "__array_function__": "CanArrayFunction",
-}
+
+
+def _get_dunder_can_map() -> dict[str, str]:
+    return {
+        dunder: name
+        for name in _can.__all__
+        if not name.endswith(("Self", "Same"))
+        if (dunder := "__" + name.removeprefix("Can").lower() + "__")
+        not in _DUNDER_ATTR
+    } | {
+        "__array_ufunc__": "CanArrayUFunc",
+        "__array_function__": "CanArrayFunction",
+    }
+
+
+_DUNDER_CAN_MAP = _get_dunder_can_map()
 _DUNDER_CAN_R = frozenset(
     dunder
     for dunder, proto in _DUNDER_CAN_MAP.items()
     if "CanR" + proto.removeprefix("Can") in _DUNDER_CAN_MAP.values()
 )
-_DUNDER_HAS_MAP = {
-    next(iter(members)): name
-    for name in _has.__all__
-    if len(members := get_protocol_members(getattr(_has, name))) == 1
-}
+
+
+def _get_dunder_has_map() -> dict[str, str]:
+    return {
+        next(iter(members)): name
+        for name in _has.__all__
+        if len(members := get_protocol_members(getattr(_has, name))) == 1
+    }
+
+
+_DUNDER_HAS_MAP = _get_dunder_has_map()
 
 _COERCION_FALLBACK = {
     "__float__": ("__index__",),
