@@ -10,6 +10,7 @@ from typing import Any
 import pytest
 
 from optype.infer import InferError, InferWarning, _doc_params, infer
+from optype.infer._ir import App, Lit, Name, Type, subtype
 
 UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     (lambda x: x + 1, "[R](x: CanAdd[Literal[1], R]) -> R"),
@@ -95,6 +96,16 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
         "[R](x: CanLen & CanGetitem[Literal[0], R]) -> R | str",
     ),
     (lambda x: len(x) + int(x), "(x: CanLen & (CanInt | CanIndex)) -> int"),
+    (lambda x: True if x else 1, "(x: CanBool) -> int"),
+    (lambda x: 1 if x else 1.5, "(x: CanBool) -> int | float"),
+    (
+        lambda x: (OSError(), "a") if x else (FileNotFoundError(), "a"),
+        "(x: CanBool) -> tuple[OSError, Literal['a']]",
+    ),
+    (
+        lambda x: [FileNotFoundError()] if x else [OSError()],  # list is invariant
+        "(x: CanBool) -> list[FileNotFoundError] | list[OSError]",
+    ),
     (
         lambda x: x[0] if len(x) else (-x if int(x) else None),
         (
@@ -128,12 +139,30 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
         lambda x: (x + 1, x + 2, x + 3),
         "[R](x: CanAdd[Literal[1, 2, 3], R]) -> tuple[R, R, R]",
     ),
-    (lambda x: (x + 1, x + 1.0), "[R](x: CanAdd[float, R]) -> tuple[R, R]"),
-    (lambda x: (x + 1, x + 1j), "[R](x: CanAdd[complex, R]) -> tuple[R, R]"),
-    (lambda x: (x + 1.0, x + 1j), "[R](x: CanAdd[complex, R]) -> tuple[R, R]"),
+    # PEP 484's numeric tower is a static-typing fiction, so `int` is no `float`
+    (
+        lambda x: (x + 1, x + 1.0),
+        "[R](x: CanAdd[Literal[1] | float, R]) -> tuple[R, R]",
+    ),
+    (
+        lambda x: (x + 1, x + 1j),
+        "[R](x: CanAdd[Literal[1] | complex, R]) -> tuple[R, R]",
+    ),
+    (
+        lambda x: (x + 1.0, x + 1j),
+        "[R](x: CanAdd[float | complex, R]) -> tuple[R, R]",
+    ),
     (
         lambda x: (x + 1, x + 1.0, x + "a"),
-        "[R](x: CanAdd[Literal['a'] | float, R]) -> tuple[R, R, R]",
+        "[R](x: CanAdd[Literal[1, 'a'] | float, R]) -> tuple[R, R, R]",
+    ),
+    (
+        lambda x: (x[True], x[1.5]),
+        "[R](x: CanGetitem[Literal[True] | float, R]) -> tuple[R, R]",
+    ),
+    (
+        lambda x: (x[True], x[1]),  # Literal[True] is not Literal[1]
+        "[R](x: CanGetitem[Literal[True, 1], R]) -> tuple[R, R]",
     ),
     (lambda x: (x[1.0], x[None]), "[R](x: CanGetitem[float | None, R]) -> tuple[R, R]"),
     (lambda x: (-x, -x), "[R](x: CanNeg[R]) -> tuple[R, R]"),
@@ -288,6 +317,45 @@ def test_stringify(func: Callable[[Any], Any], expected: str) -> None:
     assert infer(func) == expected
 
 
+SUBTYPE_CASES: list[tuple[Any, Any, bool]] = [
+    (Type(bool), Type(int), True),
+    (Type(int), Type(bool), False),
+    (Type(int), Type(float), False),  # PEP 484's numeric tower is not real
+    (Type(FileNotFoundError), Type(OSError), True),
+    (Type(OSError), Type(FileNotFoundError), False),
+    (Name("Never"), Type(str), True),
+    (Type(str), Name("object"), True),
+    (Type(str), Type(object), True),
+    (Lit((True, 1)), Type(int), True),
+    (Lit((1, "a")), Type(int), False),
+    (Lit((1,)), Lit((1, 2)), True),
+    (Lit((True,)), Lit((1,)), False),  # Literal[True] is not Literal[1]
+    # the yield type is covariant
+    (App("Generator", (Type(bool),)), App("Generator", (Type(int),)), True),
+    (App("Generator", (Type(int),)), App("Generator", (Type(bool),)), False),
+    # the send type is contravariant
+    (
+        App("Generator", (Type(int), Type(int), Type(int))),
+        App("Generator", (Type(int), Type(bool), Type(int))),
+        True,
+    ),
+    (
+        App("Generator", (Type(int), Type(bool), Type(int))),
+        App("Generator", (Type(int), Type(int), Type(int))),
+        False,
+    ),
+    # tuple is covariant in every element; list is invariant
+    (App("tuple", (Type(bool), Lit((1,)))), App("tuple", (Type(int),) * 2), True),
+    (App("tuple", (Type(bool),)), App("tuple", (Type(int),) * 2), False),
+    (App("list", (Type(bool),)), App("list", (Type(int),)), False),
+]
+
+
+@pytest.mark.parametrize(("sub", "sup", "expected"), SUBTYPE_CASES)
+def test_subtype(sub: Any, sup: Any, expected: bool) -> None:
+    assert subtype(sub, sup) is expected
+
+
 def test_return_union_parenthesized() -> None:
     # a union intersected with a typevar is parenthesized, also in return position
     def f(x: Any) -> Any:
@@ -382,6 +450,30 @@ def test_infer_generator_yields() -> None:
         yield from ()
 
     assert infer(empty) == "() -> Generator[Never]"
+
+    # a yield whose type is a (nominal) subtype of another is absorbed into it
+    def nominal() -> Any:
+        yield True
+        yield 1
+
+    assert infer(nominal) == "() -> Generator[int]"
+
+    def raisable() -> Any:
+        yield FileNotFoundError()
+        yield OSError()
+
+    assert infer(raisable) == "() -> Generator[OSError]"
+
+    # user-defined subclass relations are recognized as well
+    class Base: ...
+
+    class Child(Base): ...
+
+    def custom() -> Any:
+        yield Child()
+        yield Base()
+
+    assert infer(custom) == "() -> Generator[Base]"
 
     # an infinite generator terminates once a yield shape repeats, without exploding R
     def loop(x: Any) -> Any:

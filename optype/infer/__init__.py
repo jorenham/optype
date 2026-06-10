@@ -310,14 +310,10 @@ class _Renderer:
                 literals.append(value)
             else:
                 parts.append(self.return_type(value))
-        if _ir.Name("float") in parts or _ir.Name("complex") in parts:
-            literals = [value for value in literals if not isinstance(value, int)]
-        if _ir.Name("complex") in parts:
-            parts = [part for part in parts if part != _ir.Name("float")]
 
         nodes: list[_ir.Node] = []
         if literals:
-            nodes.append(_ir.Lit(tuple(dict.fromkeys(literals))))
+            nodes.append(_ir.Lit(tuple(literals)))
         nodes.extend(dict.fromkeys(parts))
         return _ir.union(nodes)
 
@@ -385,9 +381,9 @@ class _Renderer:
             case _SpyObject():
                 return _ir.Name(self._vars.get(id(result), _OBJECT))
             case _SpyStr():
-                return _ir.Name("str")
+                return _ir.Type(str)
             case _SpyBytes():
-                return _ir.Name("bytes")
+                return _ir.Type(bytes)
             case _Gen():
                 yields = list(dict.fromkeys(map(self.return_type, result.yielded)))
                 inner = _ir.union(yields) or _ir.Name(_NEVER)
@@ -415,11 +411,11 @@ class _Renderer:
                 elems = (self.union((item,)) or _ir.Name(_NEVER) for item in items)
                 return _ir.App("tuple", tuple(elems))
             case _:
-                return _ir.Name(_numpy.type_name(cls))
+                return _ir.Type(cls)
 
     def return_types(self) -> str:
-        nodes = dict.fromkeys(map(self.return_type, self._results))
-        return " | ".join(map(_ir.render, nodes))
+        node = _ir.union(dict.fromkeys(map(self.return_type, self._results)))
+        return _ir.render(node) if node is not None else _NEVER
 
     def render(self) -> str:
         typevars = [self.typevar(spy) for spy in self._pool + self._result_spies]
@@ -568,7 +564,7 @@ def infer(func: _AnyFunc, /, *params: str | int) -> str:
         InferError: If `func` is not supported, such as a non-callable, variadic
             parameters, or an operation without a matching protocol.
     """
-    if (nin := _numpy.ufunc_nin(func)) is not None:
+    if nin := _numpy.ufunc_nin(func):
         names = _numpy.ufunc_params(nin)
         return _numpy.infer_ufunc(func, names, _select(params, names))
 

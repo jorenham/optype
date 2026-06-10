@@ -111,6 +111,37 @@ $ optype infer "async def f(xs): return (x async for x in xs)"
 [R](xs: CanAIter[CanANext[CanAwait[R]]]) -> AsyncGenerator[R]
 ```
 
+## Unions
+
+A union member that is a subtype of another member is absorbed into it, following the
+runtime subclass relations, such as `bool <: int` and `FileNotFoundError <: OSError`:
+
+```console
+$ optype infer "def f(): yield True; yield 1"
+() -> Generator[int]
+
+$ optype infer "def f(): yield FileNotFoundError(); yield OSError()"
+() -> Generator[OSError]
+```
+
+PEP 484's `int <: float <: complex` numeric tower is a static-typing fiction with no
+runtime counterpart, so it is not applied:
+
+```console
+$ optype infer "lambda x: (x + 1, x + 1.0)"
+[R](x: CanAdd[Literal[1] | float, R]) -> tuple[R, R]
+```
+
+Variance is respected: a covariant `tuple` simplifies, but an invariant `list` does not:
+
+```console
+$ optype infer "lambda x: (OSError(), 'a') if x else (FileNotFoundError(), 'a')"
+(x: CanBool) -> tuple[OSError, Literal['a']]
+
+$ optype infer "lambda x: [FileNotFoundError()] if x else [OSError()]"
+(x: CanBool) -> list[FileNotFoundError] | list[OSError]
+```
+
 ## NumPy
 
 !!! info
