@@ -1,4 +1,4 @@
-"""``python -m optype.infer EXPR [PARAM ...]`` (also: the ``optype infer`` command)."""
+"""`python -m optype.infer EXPR [PARAM ...]` (also: the `optype infer` command)."""
 
 import sys
 

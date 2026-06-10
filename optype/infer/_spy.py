@@ -6,6 +6,10 @@ from collections.abc import Callable, Generator, Iterator
 from contextvars import ContextVar
 from typing import Any, NamedTuple, final, override
 
+type _AnyFunc = Callable[..., object]
+type _Args = tuple[object, ...]
+type _Kwargs = dict[str, object]
+
 
 class _Fork(BaseException): ...
 
@@ -23,9 +27,9 @@ def _decide() -> bool:
 
 class _TraceItem(NamedTuple):
     attr: str
-    args: tuple[Any, ...]
-    kwargs: dict[str, Any]
-    return_: Any
+    args: _Args
+    kwargs: _Kwargs
+    return_: object
 
 
 class _Spy:
@@ -34,8 +38,8 @@ class _Spy:
     def __optype_trace_add__[OutT](  # noqa: PLW3201
         self,
         attr: str,
-        args: tuple[Any, ...],
-        kwargs: dict[str, Any],
+        args: _Args,
+        kwargs: _Kwargs,
         out: OutT,
     ) -> OutT:
         self.__optype_trace__.append(_TraceItem(attr, args, kwargs, out))
@@ -384,14 +388,14 @@ class _SpyObject(_Spy):  # noqa: PLR0904
         return self.__optype_trace_add__("__buffer__", (flags,), {}, memoryview(b""))
 
     def __release_buffer__(self, buffer: memoryview, /) -> None:
-        return self.__optype_trace_add__("__releasebuffer__", (buffer,), {}, None)
+        return self.__optype_trace_add__("__release_buffer__", (buffer,), {}, None)
 
     ###
 
     # numpy looks these up on the type, so `__getattr__` won't do
     def __array_ufunc__(
         self,
-        ufunc: Callable[..., Any],
+        ufunc: _AnyFunc,
         method: str,
         /,
         *inputs: object,
@@ -401,7 +405,7 @@ class _SpyObject(_Spy):  # noqa: PLR0904
 
     def __array_function__(
         self,
-        func: Callable[..., Any],
+        func: _AnyFunc,
         types: object,
         args: object,
         kwargs: object,
