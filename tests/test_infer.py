@@ -368,6 +368,19 @@ def test_infer_generator_yields() -> None:
     assert infer(loop) == "[R](x: CanAdd[Literal[1], R]) -> Generator[R]"
 
 
+def test_infer_empty_container() -> None:
+    # empty containers parametrize with `Never`; the empty tuple is `tuple[()]`
+    def returns(value: Any) -> Callable[[], Any]:
+        return lambda: value
+
+    assert infer(returns([])) == "() -> list[Never]"
+    assert infer(returns({})) == "() -> dict[Never, Never]"
+    assert infer(returns(())) == "() -> tuple[()]"
+    assert infer(returns(set())) == "() -> set[Never]"
+    assert infer(returns(frozenset())) == "() -> frozenset[Never]"
+    assert infer(returns([[]])) == "() -> list[list[Never]]"
+
+
 def test_infer_ufunc() -> None:
     np = pytest.importorskip("numpy")
     assert infer(np.sin) == "[R](x: CanArrayUFunc[np.ufunc, R] | ToComplexND) -> R"
