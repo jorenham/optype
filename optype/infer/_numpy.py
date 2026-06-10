@@ -1,10 +1,10 @@
 """NumPy-specific inference: NEP 13 ufuncs and NEP 18 `__array_function__`."""
 
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Iterable, Sequence
 from inspect import Parameter, signature
-from typing import Any, cast
+from typing import cast
 
-type _AnyFunc = Callable[..., Any]
+from ._spy import _AnyFunc
 
 DUNDER_CAN_MAP = {
     "__array_ufunc__": "CanArrayUFunc",

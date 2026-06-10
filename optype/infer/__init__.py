@@ -7,6 +7,7 @@ from collections.abc import (
     AsyncGenerator,
     Callable,
     Collection,
+    Container,
     Coroutine,
     Generator,
     Iterable,
@@ -18,7 +19,18 @@ from itertools import islice
 from typing import Any, NamedTuple, cast, final, overload
 
 from . import _ir, _numpy
-from ._spy import _Fork, _fork, _Spy, _SpyBytes, _SpyObject, _SpyStr, _TraceItem
+from ._spy import (
+    _AnyFunc,
+    _Args,
+    _Fork,
+    _fork,
+    _Kwargs,
+    _Spy,
+    _SpyBytes,
+    _SpyObject,
+    _SpyStr,
+    _TraceItem,
+)
 from optype._core import _can, _has
 from optype.inspect import get_protocol_members
 
@@ -95,17 +107,17 @@ _RUN_LIMIT = 256
 _YIELD_LIMIT = 64
 
 
-type _AnyFunc = Callable[..., Any]
 type _Vars = dict[int, str]
 type _Traces = dict[int, list[_TraceItem]]
 type _RetKey = tuple[int, str, int, tuple[str, ...]]
+type _Proto = str | tuple[str, ...]  # a tuple is rendered as a union of protocols
 
 
 class _Op(NamedTuple):
-    proto: str | tuple[str, ...]  # a tuple is rendered as a union of protocols
-    args: tuple[Any, ...]
-    kwargs: dict[str, Any]
-    ret: Any
+    proto: _Proto
+    args: _Args
+    kwargs: _Kwargs
+    ret: object
 
 
 class _Gen(NamedTuple):
@@ -120,7 +132,7 @@ class _Gen(NamedTuple):
 def _resolve(trace: _TraceItem) -> _Op:
     if trace.attr in _DUNDER_ATTR:
         name = trace.args[0]
-        if name not in _DUNDER_HAS_MAP:
+        if not isinstance(name, str) or name not in _DUNDER_HAS_MAP:
             msg = f"no protocol for attribute {name!r}"
             raise InferError(msg)
         return _Op(_DUNDER_HAS_MAP[name], (), {}, trace.return_)
@@ -134,7 +146,7 @@ def _resolve(trace: _TraceItem) -> _Op:
     raise InferError(msg)
 
 
-def _snapshot(params: Sequence[_SpyObject]) -> _Traces:
+def _snapshot(params: Iterable[_SpyObject]) -> _Traces:
     """Capture the traces of every spy reachable from `params`."""
     traces: _Traces = {}
     stack = list(params)
@@ -181,7 +193,7 @@ def _analyze(
 
 
 def _ret_keys(
-    order: Sequence[_SpyObject],
+    order: Iterable[_SpyObject],
     traces: _Traces,
 ) -> tuple[dict[int, _RetKey], set[int]]:
     """The shape of the op that returned each spy, and the spies used as args."""
@@ -198,7 +210,7 @@ def _ret_keys(
     return keys, args
 
 
-def _select(params: tuple[str | int, ...], names: list[str]) -> list[str]:
+def _select(params: Iterable[str | int], names: Sequence[str]) -> Sequence[str]:
     selected: list[str] = []
     for p in params:
         if isinstance(p, int):
@@ -239,10 +251,10 @@ class _Renderer:
 
     def __init__(
         self,
-        selected: list[str],
-        spies: dict[str, _SpyObject],
-        results: list[object],
-        optional: frozenset[str],
+        selected: Sequence[str],
+        spies: Mapping[str, _SpyObject],
+        results: Sequence[object],
+        optional: Container[str],
         traces: _Traces,
     ) -> None:
         self._selected = selected
@@ -290,8 +302,8 @@ class _Renderer:
         for i, spy in enumerate(self._pool):
             self._vars[id(spy)] = _TYPEVARS[i] if i < len(_TYPEVARS) else f"T{i}"
 
-    def union(self, values: Iterable[Any]) -> _ir.Node | None:
-        literals: list[Any] = []
+    def union(self, values: Iterable[object]) -> _ir.Node | None:
+        literals: list[object] = []
         parts: list[_ir.Node] = []
         for value in values:
             if isinstance(value, int | str | bytes) and not isinstance(value, _Spy):
@@ -324,13 +336,14 @@ class _Renderer:
             parts.append(node)
         return _ir.inter(parts)
 
-    def group(self, proto: str | tuple[str, ...], members: Sequence[_Op]) -> _ir.Node:
+    def group(self, proto: _Proto, members: Sequence[_Op]) -> _ir.Node:
         if isinstance(proto, tuple):  # coercion protocols, which record no args
             return _ir.Union(tuple(map(_ir.Name, proto)))
         if proto == "CanArrayFunction":
             ret = self.returns(members)
             ret_str = _ir.render(ret) if ret is not None else _OBJECT
-            return _ir.Name(_numpy.array_function_type(members[0].args[0], ret_str))
+            func = cast("_AnyFunc", members[0].args[0])
+            return _ir.Name(_numpy.array_function_type(func, ret_str))
         args: list[_ir.Node | _ir.Arg] = [
             arg
             for i in range(len(members[0].args))
@@ -346,7 +359,7 @@ class _Renderer:
         return _ir.App(proto, tuple(args))
 
     def traces(self, items: Iterable[_TraceItem]) -> _ir.Node | None:
-        groups: dict[tuple[str | tuple[str, ...], int, tuple[str, ...]], list[_Op]] = {}
+        groups: dict[tuple[_Proto, int, tuple[str, ...]], list[_Op]] = {}
         for item in items:
             op = _resolve(item)
             key = op.proto, len(op.args), tuple(sorted(op.kwargs))
@@ -515,8 +528,8 @@ def _next(result: object) -> object:
 
 def _explore[T](
     func: Callable[..., T | Coroutine[Any, None, T]],
-    args: list[_SpyObject],
-    kwds: dict[str, _SpyObject],
+    args: Sequence[_SpyObject],
+    kwds: Mapping[str, _SpyObject],
 ) -> list[T]:
     results: list[T] = []
     stack: list[list[bool]] = [[]]

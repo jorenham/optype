@@ -1,8 +1,7 @@
 """A minimal algebraic representation of inferred type expressions."""
 
-from collections.abc import Sequence
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any
 
 type Node = Lit | Name | App | Union | Inter
 
@@ -11,7 +10,7 @@ type Node = Lit | Name | App | Union | Inter
 class Lit:
     """A `Literal[...]` type of one or more literal values."""
 
-    values: tuple[Any, ...]
+    values: tuple[object, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,7 +50,7 @@ class Inter:
     parts: tuple[Node, ...]
 
 
-def union(parts: Sequence[Node]) -> Node | None:
+def union(parts: Iterable[Node]) -> Node | None:
     """The flat union of `parts`, unwrapped if singular, or `None` if empty."""
     flat: dict[Node, None] = {}
     for part in parts:
@@ -64,7 +63,7 @@ def union(parts: Sequence[Node]) -> Node | None:
     return next(iter(flat)) if len(flat) == 1 else Union(tuple(flat))
 
 
-def inter(parts: Sequence[Node]) -> Node | None:
+def inter(parts: Iterable[Node]) -> Node | None:
     """The flat intersection of `parts`, unwrapped if singular, or `None`."""
     flat: dict[Node, None] = {}
     for part in parts:
