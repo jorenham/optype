@@ -2,20 +2,49 @@
 
 from collections.abc import Iterable
 from dataclasses import dataclass
+from typing import override
 
-type Node = Lit | Name | App | Union | Inter
+type Node = Lit | Type | Name | App | Union | Inter
+
+# variance per type argument ("+" co, "-" contra); the last entry repeats variadically
+_VARIANCES = {
+    "AsyncGenerator": "+-",
+    "Generator": "+-+",
+    "frozenset": "+",
+    "tuple": "+",
+}
 
 
-@dataclass(frozen=True, slots=True)
+def _keys(values: Iterable[object]) -> tuple[tuple[type, object], ...]:
+    """Type-sensitive: `True == 1`, but `Literal[True]` is not `Literal[1]`."""
+    return tuple((type(value), value) for value in values)
+
+
+@dataclass(frozen=True, slots=True, eq=False)
 class Lit:
     """A `Literal[...]` type of one or more literal values."""
 
     values: tuple[object, ...]
 
+    @override
+    def __eq__(self, other: object) -> bool:
+        return isinstance(other, Lit) and _keys(self.values) == _keys(other.values)
+
+    @override
+    def __hash__(self) -> int:
+        return hash(_keys(self.values))
+
+
+@dataclass(frozen=True, slots=True)
+class Type:
+    """A concrete runtime type, e.g. `int` or `np.float64`."""
+
+    cls: type
+
 
 @dataclass(frozen=True, slots=True)
 class Name:
-    """An opaque type expression, e.g. `int`, a typevar, or `dict[str, int]`."""
+    """An opaque type expression, e.g. a typevar, a protocol, or `None`."""
 
     name: str
 
@@ -50,8 +79,63 @@ class Inter:
     parts: tuple[Node, ...]
 
 
+def subtype(sub: Node | Arg, sup: Node | Arg) -> bool:
+    """Whether `sub` is assignable to `sup`, as far as can be told from the nodes."""
+    if sub == sup or sub == Name("Never") or sup in {Name("object"), Type(object)}:
+        return True
+    match sub, sup:
+        case Union(parts), _:
+            result = all(subtype(part, sup) for part in parts)
+        case _, Union(parts):
+            result = any(subtype(sub, part) for part in parts)
+        case Lit(values), Lit(wider):
+            result = set(_keys(values)) <= set(_keys(wider))
+        case Lit(values), Type(cls):
+            result = all(isinstance(value, cls) for value in values)
+        case Type(cls), Type(wider):
+            result = issubclass(cls, wider)
+        case App(base, args), App(wider, wider_args) if base == wider:
+            variances = _VARIANCES.get(base, "")
+            result = (
+                bool(variances)
+                and len(args) == len(wider_args)
+                and all(
+                    subtype(arg, wide)
+                    if variances[min(i, len(variances) - 1)] == "+"
+                    else subtype(wide, arg)
+                    for i, (arg, wide) in enumerate(zip(args, wider_args, strict=True))
+                )
+            )
+        case _:
+            result = False
+    return result
+
+
+def _absorb(nodes: list[Node]) -> list[Node]:
+    """Drop the union members (and literal values) that another member covers."""
+    atoms: list[Node] = []
+    for node in nodes:
+        if isinstance(node, Lit):
+            atoms += (Lit((value,)) for value in node.values)
+        else:
+            atoms.append(node)
+
+    kept: list[Node] = []
+    for atom in atoms:
+        if not any(subtype(atom, wide) for wide in kept):
+            kept = [*(k for k in kept if not subtype(k, atom)), atom]
+
+    merged: list[Node] = []
+    for node in kept:
+        if isinstance(node, Lit) and merged and isinstance(last := merged[-1], Lit):
+            merged[-1] = Lit(last.values + node.values)
+        else:
+            merged.append(node)
+    return merged
+
+
 def union(parts: Iterable[Node]) -> Node | None:
-    """The flat union of `parts`, unwrapped if singular, or `None` if empty."""
+    """The simplified flat union of `parts`, unwrapped if singular, or `None`."""
     flat: dict[Node, None] = {}
     for part in parts:
         if isinstance(part, Union):
@@ -60,7 +144,8 @@ def union(parts: Iterable[Node]) -> Node | None:
             flat[part] = None
     if not flat:
         return None
-    return next(iter(flat)) if len(flat) == 1 else Union(tuple(flat))
+    nodes = _absorb(list(flat))
+    return nodes[0] if len(nodes) == 1 else Union(tuple(nodes))
 
 
 def inter(parts: Iterable[Node]) -> Node | None:
@@ -81,18 +166,19 @@ def render(node: Node) -> str:
     match node:
         case Lit(values):
             return f"Literal[{', '.join(map(repr, values))}]"
+        case Type(cls):
+            prefix = "np." if cls.__module__.partition(".")[0] == "numpy" else ""
+            return prefix + cls.__name__
         case Name(name):
             return name
         case App(base, args):
-            if not args:
-                return base
             parts = [
                 f"{arg.key}={render(arg.value)}"
                 if isinstance(arg, Arg)
                 else render(arg)
                 for arg in args
             ]
-            return f"{base}[{', '.join(parts)}]"
+            return f"{base}[{', '.join(parts)}]" if parts else base
         case Union(parts):
             return " | ".join(
                 f"({render(part)})" if isinstance(part, Inter) else render(part)

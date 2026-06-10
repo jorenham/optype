@@ -54,7 +54,7 @@ def infer_ufunc(func: _AnyFunc, names: Sequence[str], selected: Iterable[str]) -
     for name in selected:
         i = names.index(name)
         arms: list[str] = ["CanArrayUFunc[np.ufunc, R]"] if i == 0 else []
-        if (dtype := _ufunc_dtype(func, i)) is not None:
+        if dtype := _ufunc_dtype(func, i):
             arms.append(dtype)
         parts.append(f"{name}: {' | '.join(arms) or 'object'}")
     return f"[R]({', '.join(parts)}) -> R"
@@ -78,9 +78,3 @@ def array_function_type(func: _AnyFunc, ret: str) -> str:
     n = _required_args(func)
     args = ["Any"] * n if n is not None else ["..."]
     return f"CanArrayFunction[CanCall[{', '.join([*args, ret])}], {ret}]"
-
-
-def type_name(tp: type) -> str:
-    """The type's name, with the conventional `np.` prefix for numpy types."""
-    name = tp.__name__
-    return f"np.{name}" if tp.__module__.partition(".")[0] == "numpy" else name
