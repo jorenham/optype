@@ -7,15 +7,21 @@ from collections.abc import (
     AsyncGenerator,
     Callable,
     Collection,
-    Container,
     Coroutine,
     Generator,
     Iterable,
     Mapping,
     Sequence,
 )
-from inspect import Parameter, isasyncgen, iscoroutine, isgenerator, signature
-from itertools import islice
+from inspect import (
+    Parameter,
+    _ParameterKind,
+    isasyncgen,
+    iscoroutine,
+    isgenerator,
+    signature,
+)
+from itertools import groupby, islice
 from typing import Any, NamedTuple, cast, final, overload
 
 from . import _ir, _numpy
@@ -45,9 +51,13 @@ class InferWarning(RuntimeWarning):
     """Emitted when `infer` could not explore the function exhaustively."""
 
 
-_PARAM_VAR = frozenset({Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD})
+_PARAM_PREFIX: dict[_ParameterKind, str] = {
+    Parameter.VAR_POSITIONAL: "*",
+    Parameter.VAR_KEYWORD: "**",
+}
 
 _TYPEVARS = "TUVWXYZ"
+_TYPEVAR_TUPLE = "*Ts"
 _NEVER = "Never"
 _OBJECT = "object"
 
@@ -105,6 +115,10 @@ _RE_DOC_PARAM = re.compile(r"(?:^|,)\s*\**([a-zA-Z_]\w*)")
 _FORK_LIMIT = 64
 _RUN_LIMIT = 256
 _YIELD_LIMIT = 64
+# the `*args` placeholder counts to try: exact arities first, then doubling so that
+# large indices stay within reach
+_VARIADIC_COUNTS = (2, 3, 4, 5, 6, 7, 8, 16, 32, 64, 128, 256, 512, 1024)
+_KWARGS_LIMIT = 8  # max injected `**kwargs` keys
 
 
 type _Vars = dict[int, str]
@@ -226,6 +240,66 @@ def _select(params: Iterable[str | int], names: Sequence[str]) -> Sequence[str]:
     return selected or names
 
 
+def _spy_runs(items: Iterable[object], spy: _SpyObject) -> list[int]:
+    """Lengths of each consecutive run of `spy` within `items`."""
+    groups = groupby(items, key=lambda item: item is spy)
+    return [sum(1 for _ in group) for is_spy, group in groups if is_spy]
+
+
+def _packed_uses(value: object, spy: _SpyObject, count: int) -> Generator[bool]:
+    # yields each use of `spy`: True if packed (one full placeholder run in a tuple)
+    items: Iterable[object]
+    match value:
+        case _SpyObject():
+            if value is spy:
+                yield False
+            return
+        case _Gen():
+            items = value.yielded
+        case tuple():
+            tup = cast("tuple[object, ...]", value)
+            if runs := _spy_runs(tup, spy):
+                yield runs == [count]
+            items = (item for item in tup if item is not spy)
+        case list() | set() | frozenset():
+            items = cast("Collection[object]", value)
+        case dict():
+            mapping = cast("Mapping[object, object]", value)
+            items = (*mapping, *mapping.values())
+        case _:
+            return
+    for item in items:
+        yield from _packed_uses(item, spy, count)
+
+
+def _all_packed(
+    spy: _SpyObject,
+    results: Iterable[object],
+    traces: _Traces,
+    count: int,
+) -> bool:
+    """Whether `spy` is used at least once, but only ever packed.
+
+    PEP 646 cannot express bare element uses, and traces on `spy` are operations on its
+    elements, so a variadic parameter renders as a `TypeVarTuple` only when this holds.
+    """
+    if traces[id(spy)]:
+        return False
+
+    trace_values = (
+        value
+        for items in traces.values()
+        for item in items
+        for value in (*item.args, *item.kwargs.values())
+    )
+    uses = [
+        use
+        for value in (*results, *trace_values)
+        for use in _packed_uses(value, spy, count)
+    ]
+    return bool(uses) and all(uses)
+
+
 def _return_spies(value: object) -> Generator[_SpyObject]:
     match value:
         case _SpyObject():
@@ -251,23 +325,39 @@ class _Renderer:
 
     def __init__(
         self,
-        selected: Sequence[str],
         spies: Mapping[str, _SpyObject],
         results: Sequence[object],
-        optional: Container[str],
+        parameters: Mapping[str, Parameter],
+        count: int,
         traces: _Traces,
     ) -> None:
-        self._selected = selected
         self._spies = spies
         self._results = results
-        self._optional = optional
         self._traces = traces
+
+        self._prefix = {n: _PARAM_PREFIX.get(p.kind, "") for n, p in parameters.items()}
+        self._optional = {
+            name
+            for name, p in parameters.items()
+            if p.default is not Parameter.empty or p.kind in _PARAM_PREFIX
+        }
+        self._varpos = next(
+            (
+                spies[name]
+                for name, p in parameters.items()
+                if p.kind is Parameter.VAR_POSITIONAL
+            ),
+            None,
+        )
 
         param_spies = list(spies.values())
         order, appear = _analyze(param_spies, results, traces)
         param_ids = {id(spy) for spy in param_spies}
 
         self._vars: _Vars = {}
+        varpos = self._varpos
+        if varpos is not None and _all_packed(varpos, results, traces, count):
+            self._vars[id(varpos)] = _TYPEVAR_TUPLE
         self._result_spies: list[_SpyObject] = []
         ret_keys, arg_ids = _ret_keys(order, traces)
         shared: dict[_RetKey, str] = {}
@@ -291,7 +381,9 @@ class _Renderer:
                 self._result_spies.append(spy)
                 if key is not None:
                     shared[key] = var
-        self._pool = [spy for spy in param_spies if appear[id(spy)] >= 2]
+        self._pool = [
+            spy for spy in param_spies if appear[id(spy)] >= 2 or id(spy) in self._vars
+        ]
         self._pool += [
             spy
             for spy in order
@@ -299,7 +391,8 @@ class _Renderer:
             and id(spy) not in param_ids
             and id(spy) not in self._vars
         ]
-        for i, spy in enumerate(self._pool):
+        unnamed = [spy for spy in self._pool if id(spy) not in self._vars]
+        for i, spy in enumerate(unnamed):
             self._vars[id(spy)] = _TYPEVARS[i] if i < len(_TYPEVARS) else f"T{i}"
 
     def union(self, values: Iterable[object]) -> _ir.Node | None:
@@ -407,22 +500,40 @@ class _Renderer:
             case tuple() if cls is tuple:
                 if not result:
                     return _ir.Name("tuple[()]")
-                items = cast("tuple[object, ...]", result)
-                elems = (self.union((item,)) or _ir.Name(_NEVER) for item in items)
-                return _ir.App("tuple", tuple(elems))
+                return self._tuple(cast("tuple[object, ...]", result))
             case _:
                 return _ir.Type(cls)
+
+    def _tuple(self, items: tuple[object, ...]) -> _ir.Node:
+        spy = self._varpos
+        if spy is not None and any(item is spy for item in items):
+            if self._vars.get(id(spy)) == _TYPEVAR_TUPLE:
+                # every use is packed, so the placeholders splat into a single `*Ts`
+                start = next(i for i, item in enumerate(items) if item is spy)
+                parts = [
+                    self.union((item,)) or _ir.Name(_NEVER)
+                    for item in items
+                    if item is not spy
+                ]
+                parts.insert(start, _ir.Name(_TYPEVAR_TUPLE))
+                return _ir.App("tuple", tuple(parts))
+
+            if all(item is spy for item in items):
+                return _ir.App("tuple", (self.return_type(spy), _ir.Name("...")))
+
+        elems = (self.union((item,)) or _ir.Name(_NEVER) for item in items)
+        return _ir.App("tuple", tuple(elems))
 
     def return_types(self) -> str:
         node = _ir.union(dict.fromkeys(map(self.return_type, self._results)))
         return _ir.render(node) if node is not None else _NEVER
 
-    def render(self) -> str:
+    def render(self, selected: Sequence[str]) -> str:
         typevars = [self.typevar(spy) for spy in self._pool + self._result_spies]
         generics = f"[{', '.join(typevars)}]" if typevars else ""
         params = ", ".join(
-            f"{name}: {slot}"
-            for name in self._selected
+            f"{self._prefix[name]}{name}: {slot}"
+            for name in selected
             if (slot := self.slot(self._spies[name])) != _OBJECT
             or name not in self._optional
         )
@@ -552,6 +663,65 @@ def _explore[T](
     return results
 
 
+def _placeholders(
+    parameters: Mapping[str, Parameter],
+    count: int,
+    keys: Sequence[str],
+) -> tuple[dict[str, _SpyObject], list[_SpyObject], dict[str, _SpyObject]]:
+    """One spy per parameter, distributed over the call's `args` and `kwds`."""
+    spies = {name: _SpyObject() for name in parameters}
+    args: list[_SpyObject] = []
+    kwds: dict[str, _SpyObject] = {}
+    for name, param in parameters.items():
+        match param.kind:
+            case Parameter.VAR_POSITIONAL:
+                args += [spies[name]] * count
+            case Parameter.VAR_KEYWORD:
+                kwds |= dict.fromkeys(map(_SpyStr, keys or ("",)), spies[name])
+            case Parameter.KEYWORD_ONLY:
+                kwds[name] = spies[name]
+            case _:
+                args.append(spies[name])
+    return spies, args, kwds
+
+
+def _explore_spies(
+    func: _AnyFunc,
+    parameters: Mapping[str, Parameter],
+) -> tuple[dict[str, _SpyObject], list[object], int]:
+    # explore with fresh spies, retrying when the variadic placeholders come up short:
+    # an out-of-range index, a failed unpacking, or a missing `**kwargs` key
+    kinds = {p.kind for p in parameters.values()}
+    counts = iter(_VARIADIC_COUNTS)
+    count = next(counts)
+    keys: list[str] = []
+    while True:
+        spies, args, kwds = _placeholders(parameters, count, keys)
+        try:
+            results: list[object] = [_next(r) for r in _explore(func, args, kwds)]
+        except KeyError as exc:
+            key = exc.args[0] if exc.args else None
+            if (
+                Parameter.VAR_KEYWORD not in kinds
+                or not isinstance(key, str)
+                or key in keys
+                or key in parameters
+            ):
+                raise
+            if len(keys) >= _KWARGS_LIMIT:
+                msg = f"ran out of `**kwargs` placeholder keys ({exc})"
+                raise InferError(msg) from exc
+            keys.append(key)
+        except (IndexError, TypeError, ValueError) as exc:
+            if Parameter.VAR_POSITIONAL not in kinds:
+                raise
+            if (count := next(counts, 0)) == 0:
+                msg = f"ran out of `*args` placeholders ({exc})"
+                raise InferError(msg) from exc
+        else:
+            return spies, results, count
+
+
 def infer(func: _AnyFunc, /, *params: str | int) -> str:
     """Infer the `optype` protocol(s) required of `func`'s parameters.
 
@@ -561,36 +731,21 @@ def infer(func: _AnyFunc, /, *params: str | int) -> str:
     [R](x: CanAdd[Literal[1], R]) -> R
 
     Raises:
-        InferError: If `func` is not supported, such as a non-callable, variadic
-            parameters, or an operation without a matching protocol.
-    """
+        InferError: If `func` is not supported, such as a non-callable, or an
+            operation without a matching protocol.
+    """  # noqa: DOC502
     if nin := _numpy.ufunc_nin(func):
         names = _numpy.ufunc_params(nin)
         return _numpy.infer_ufunc(func, names, _select(params, names))
 
     parameters = _parameters(func)
-    if any(p.kind in _PARAM_VAR for p in parameters.values()):
-        raise InferError("variadic parameters")
+    selected = _select(params, list(parameters))
+    spies, results, count = _explore_spies(func, parameters)
 
-    names = list(parameters)
-    selected = _select(params, names)
-    optional = frozenset(
-        name for name, p in parameters.items() if p.default is not Parameter.empty
-    )
-
-    spies = {name: _SpyObject() for name in names}
-    args: list[_SpyObject] = []
-    kwds: dict[str, _SpyObject] = {}
-    for name, param in parameters.items():
-        if param.kind is Parameter.KEYWORD_ONLY:
-            kwds[name] = spies[name]
-        else:
-            args.append(spies[name])
-    results: list[object] = [_next(r) for r in _explore(func, args, kwds)]
     param_spies = list(spies.values())
     traces = _snapshot(param_spies)
     reflected = _reflect(param_spies, results, traces)
 
-    sig1 = _Renderer(selected, spies, results, optional, traces).render()
-    sig2 = _Renderer(selected, spies, results, optional, reflected).render()
+    sig1 = _Renderer(spies, results, parameters, count, traces).render(selected)
+    sig2 = _Renderer(spies, results, parameters, count, reflected).render(selected)
     return "\n".join(dict.fromkeys((sig1, sig2)))

@@ -260,7 +260,85 @@ BINARY_CASES: list[tuple[Callable[[Any, Any], Any], str]] = [
 ]
 
 
-INFER_CASES = [*UNARY_CASES, *BINARY_CASES]
+def _unused_args(x: Any, *_args: Any) -> Any:
+    return x + 1
+
+
+def _call_packed(x: Any, *args: Any) -> Any:
+    return x(args)
+
+
+def _prepend(x: Any, *args: Any) -> Any:
+    return (x, *args)
+
+
+def _unpack3(*args: Any) -> Any:
+    _a, b, _c = args
+    return b
+
+
+def _takes3(a: Any, _b: Any, _c: Any, /) -> Any:
+    return a
+
+
+def _spread(*args: Any) -> Any:
+    return _takes3(*args)
+
+
+def _kwargs_key(**kwargs: Any) -> Any:
+    return kwargs["key"]
+
+
+def _var_kwargs(**kwargs: Any) -> Any:
+    return kwargs
+
+
+def _sum_kwargs(**kwargs: Any) -> Any:
+    return sum(kwargs.values())
+
+
+VARIADIC_CASES: list[tuple[Callable[..., Any], str]] = [
+    # a variadic parameter whose every use is packed becomes a TypeVarTuple
+    (lambda *args: args, "[*Ts](*args: *Ts) -> tuple[*Ts]"),
+    (lambda *args: (args, 1), "[*Ts](*args: *Ts) -> tuple[tuple[*Ts], Literal[1]]"),
+    (_call_packed, "[*Ts, R](x: CanCall[tuple[*Ts], R], *args: *Ts) -> R"),
+    # a splat splices the TypeVarTuple into the surrounding tuple
+    (lambda *args: (1, *args), "[*Ts](*args: *Ts) -> tuple[Literal[1], *Ts]"),
+    (
+        lambda *args: (1, *args, 2),
+        "[*Ts](*args: *Ts) -> tuple[Literal[1], *Ts, Literal[2]]",
+    ),
+    (_prepend, "[T, *Ts](x: T, *args: *Ts) -> tuple[T, *Ts]"),
+    # a bare element use is inexpressible with a TypeVarTuple, so all elements
+    # share a single element type instead
+    (lambda *args: list(args), "[T](*args: T) -> list[T]"),
+    (lambda *args: args[0], "[T](*args: T) -> T"),
+    # too few placeholders are retried with more, until the call succeeds
+    (lambda *args: args[2], "[T](*args: T) -> T"),
+    (lambda *args: args[100], "[T](*args: T) -> T"),
+    (_unpack3, "[T](*args: T) -> T"),
+    (_spread, "[T](*args: T) -> T"),
+    # a missing `**kwargs` key is injected and retried
+    (_kwargs_key, "[T](**kwargs: T) -> T"),
+    (lambda *args: (args[0], *args), "[T](*args: T) -> tuple[T, ...]"),
+    (
+        lambda *args: args[0] + args[1],
+        "[T: CanAdd[T, R], R](*args: T) -> R\n[T: CanRAdd[T, R], R](*args: T) -> R",
+    ),
+    (
+        lambda *args: [a + 1 for a in args],
+        "[R](*args: CanAdd[Literal[1], R]) -> list[R]",
+    ),
+    # an unused variadic parameter is dropped, like an unused default
+    (_unused_args, "[R](x: CanAdd[Literal[1], R]) -> R"),
+    # the fixed placeholder count leaks through `len`
+    (lambda *args: (args[0], len(args)), "[T](*args: T) -> tuple[T, Literal[2]]"),
+    (_var_kwargs, "[T](**kwargs: T) -> dict[str, T]"),
+    (_sum_kwargs, "[R](**kwargs: CanRAdd[Literal[0], R]) -> R"),
+]
+
+
+INFER_CASES = [*UNARY_CASES, *BINARY_CASES, *VARIADIC_CASES]
 
 
 @pytest.mark.parametrize(
@@ -542,18 +620,20 @@ def test_unknown_param(selector: str | int) -> None:
         infer(abs, selector)
 
 
-def _var_args(*args: Any) -> Any:
-    return args
+def test_variadic_exhausted() -> None:
+    # placeholder growth is bounded; running out reports cleanly
+    with pytest.raises(InferError, match="placeholder"):
+        infer(lambda *args: args[10_000])
 
 
-def _var_kwargs(**kwargs: Any) -> Any:
-    return kwargs
+def test_variadic_mixed() -> None:
+    def f(x: Any, *args: Any, **kwargs: Any) -> Any:
+        return (x, args, kwargs)
 
-
-@pytest.mark.parametrize("func", [_var_args, _var_kwargs], ids=["args", "kwargs"])
-def test_variadic(func: Callable[..., Any]) -> None:
-    with pytest.raises(NotImplementedError):
-        infer(func)
+    assert infer(f) == (
+        "[T, *Ts, U](x: T, *args: *Ts, **kwargs: U)"
+        " -> tuple[T, tuple[*Ts], dict[str, U]]"
+    )
 
 
 def test_fork_explosion() -> None:
@@ -654,6 +734,12 @@ def test_cli_def() -> None:
     assert out.stdout.strip() == (
         "[T, R](x: CanMatmul[T, R], y: T) -> R\n[T, R](x: T, y: CanRMatmul[T, R]) -> R"
     )
+
+
+def test_cli_variadic() -> None:
+    out = _run_cli("-m", "optype", "infer", "lambda *args: args")
+    assert out.returncode == 0
+    assert out.stdout.strip() == "[*Ts](*args: *Ts) -> tuple[*Ts]"
 
 
 def test_cli_usage() -> None:

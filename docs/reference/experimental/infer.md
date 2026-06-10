@@ -83,6 +83,31 @@ $ optype infer "lambda x, y: (x + y) if x else y"
 [T: CanBool, U: CanRAdd[T, R], R](x: T, y: U) -> R | U
 ```
 
+## Variadic parameters
+
+A `*args` parameter that is only passed around as a whole is inferred as a
+[PEP 646](https://peps.python.org/pep-0646/) `TypeVarTuple`:
+
+```console
+$ optype infer "lambda *args: args"
+[*Ts](*args: *Ts) -> tuple[*Ts]
+
+$ optype infer "lambda *args: (1, *args)"
+[*Ts](*args: *Ts) -> tuple[Literal[1], *Ts]
+```
+
+Operating on individual elements is not expressible with a `TypeVarTuple`, so the
+elements then share a single inferred element type, as does every value of `**kwargs`:
+
+```console
+$ optype infer "lambda *args: args[0] + args[1]"
+[T: CanAdd[T, R], R](*args: T) -> R
+[T: CanRAdd[T, R], R](*args: T) -> R
+
+$ optype infer "lambda **kwargs: kwargs"
+[T](**kwargs: T) -> dict[str, T]
+```
+
 ## Async
 
 Coroutine functions are run to completion, so `await`, `async with`, and `async for` are
@@ -172,9 +197,14 @@ $ optype infer "import numpy as np; np.mean"
 placeholder arguments (no real side effects, no reliance on concrete values).
 
 When `infer` can't handle the input, it raises `InferError` (a `NotImplementedError`
-subclass). That's the case for variadic parameters, operations without a matching
-protocol, and arguments that aren't callable to begin with. Exceptions raised from
-within the function itself aren't caught.
+subclass). That's the case for operations without a matching protocol, and for
+arguments that aren't callable to begin with. Exceptions raised from within the
+function itself aren't caught.
+
+Variadic parameters are explored with a few placeholders, retried with more after an
+out-of-range index, a failed unpacking, or a missing `**kwargs` key, and reported as an
+`InferError` once the budget runs out. The placeholders remain observable: `len(args)`
+reports their count, and `args` and `kwargs` are never empty.
 
 The number of explored branches is capped, so a function with many of them gets a
 signature that only covers the explored ones, along with an `InferWarning`.
