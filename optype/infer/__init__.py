@@ -25,6 +25,8 @@ __all__ = ("infer",)
 _PARAM_VAR = frozenset({Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD})
 
 _TYPEVARS = "TUVWXYZ"
+_NEVER = "Never"
+_OBJECT = "object"
 
 _DUNDER_ATTR = frozenset({
     "__delattr__",
@@ -271,7 +273,7 @@ class _Renderer:
 
     def group(self, proto: str, members: Sequence[_Op]) -> str:
         if proto == "CanArrayFunction":
-            ret = self.returns(members) or "object"
+            ret = self.returns(members) or _OBJECT
             n = _required_args(members[0].args[0])
             args = ["Any"] * n if n is not None else ["..."]
             return f"CanArrayFunction[CanCall[{', '.join([*args, ret])}], {ret}]"
@@ -306,7 +308,7 @@ class _Renderer:
         return self.traces(spy.__optype_trace__)
 
     def slot(self, spy: _SpyObject) -> str:
-        return self._vars.get(id(spy)) or self.spy(spy) or "object"
+        return self._vars.get(id(spy)) or self.spy(spy) or _OBJECT
 
     def typevar(self, spy: _SpyObject) -> str:
         var = self._vars[id(spy)]
@@ -315,14 +317,14 @@ class _Renderer:
     def return_type(self, result: object) -> str:
         match result:
             case _SpyObject():
-                return self._vars.get(id(result), "object")
+                return self._vars.get(id(result), _OBJECT)
             case _SpyStr():
                 return "str"
             case _SpyBytes():
                 return "bytes"
             case _Gen():
                 yields = dict.fromkeys(map(self.return_type, result.yielded))
-                return f"{result.kind}[{' | '.join(yields) or 'Never'}]"
+                return f"{result.kind}[{' | '.join(yields) or _NEVER}]"
             case None:
                 return "None"
             case _:
@@ -333,12 +335,14 @@ class _Renderer:
         match result:
             case dict():
                 mapping = cast("Mapping[object, object]", result)
-                key = self.union(mapping) or "object"
-                val = self.union(mapping.values()) or "object"
-                return f"dict[{key}, {val}]" if mapping else name
+                key = self.union(mapping) or _NEVER
+                val = self.union(mapping.values()) or _NEVER
+                return f"dict[{key}, {val}]"
             case list() | set() | frozenset():
-                inner = self.union(cast("Collection[object]", result))
-                return f"{name}[{inner}]" if inner else name
+                inner = self.union(cast("Collection[object]", result)) or _NEVER
+                return f"{name}[{inner}]"
+            case tuple():
+                return "tuple[()]" if not result else name
             case _:
                 module = type(result).__module__.partition(".")[0]
                 return f"np.{name}" if module == "numpy" else name
@@ -352,7 +356,7 @@ class _Renderer:
         params = ", ".join(
             f"{name}: {slot}"
             for name in self._selected
-            if (slot := self.slot(self._spies[name])) != "object"
+            if (slot := self.slot(self._spies[name])) != _OBJECT
             or name not in self._optional
         )
         return f"{generics}({params}) -> {self.return_types()}"
