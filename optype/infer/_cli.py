@@ -1,9 +1,9 @@
-"""The ``optype infer`` command-line logic."""
+"""The `optype infer` command-line logic."""
 
 import ast
 import sys
 
-from optype.infer import infer
+from optype.infer import InferError, infer
 
 
 def run(*args: str) -> None:
@@ -11,7 +11,7 @@ def run(*args: str) -> None:
         sys.exit("usage: optype infer EXPR [PARAM ...]")
 
     source, *selectors = args
-    params = [int(s) if s.lstrip("-").isdigit() else s for s in selectors]
+    params = [int(s) if s.removeprefix("-").isdigit() else s for s in selectors]
 
     body = ast.parse(source).body
     last = body[-1] if body else None
@@ -27,5 +27,5 @@ def run(*args: str) -> None:
     code = compile(ast.Expression(last.value), "<expr>", "eval")
     try:
         print(infer(eval(code, namespace), *params))  # noqa: S307, T201
-    except (NotImplementedError, ValueError, TypeError) as exc:
+    except (InferError, ValueError) as exc:
         sys.exit(f"{type(exc).__name__}: {exc}")

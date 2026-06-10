@@ -140,6 +140,14 @@ $ optype infer "import numpy as np; np.mean"
 `infer` calls the function, so it only works on functions that are safe to run with
 placeholder arguments (no real side effects, no reliance on concrete values).
 
+When `infer` can't handle the input, it raises `InferError` (a `NotImplementedError`
+subclass). That's the case for variadic parameters, operations without a matching
+protocol, and arguments that aren't callable to begin with. Exceptions raised from
+within the function itself aren't caught.
+
+The number of explored branches is capped, so a function with many of them gets a
+signature that only covers the explored ones, along with an `InferWarning`.
+
 It can only observe operations that go through a dunder method. Anything that inspects a
 parameter at the C level is invisible, so a parameter passed to `type()`, `id()`,
 `isinstance()`, or an identity check (`is`) is reported as `object` rather than its real

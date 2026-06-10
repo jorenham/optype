@@ -9,7 +9,7 @@ from typing import Any
 
 import pytest
 
-from optype.infer import _doc_params, infer
+from optype.infer import InferError, InferWarning, _doc_params, infer
 
 UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     (lambda x: x + 1, "[R](x: CanAdd[Literal[1], R]) -> R"),
@@ -122,15 +122,25 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
         lambda x: sum(x),  # noqa: PLW0108
         "[R](x: CanIter[CanNext[CanRAdd[Literal[0], R]]]) -> R",
     ),
-    (lambda x: (x + 1, x + 1), "(x: CanAdd[Literal[1]]) -> tuple"),
-    (lambda x: (x + 1, x + 2), "(x: CanAdd[Literal[1, 2]]) -> tuple"),
-    (lambda x: (x + 1, x + 2, x + 3), "(x: CanAdd[Literal[1, 2, 3]]) -> tuple"),
-    (lambda x: (x + 1, x + 1.0), "(x: CanAdd[float]) -> tuple"),
-    (lambda x: (x + 1, x + 1j), "(x: CanAdd[complex]) -> tuple"),
-    (lambda x: (x + 1.0, x + 1j), "(x: CanAdd[complex]) -> tuple"),
-    (lambda x: (x + 1, x + 1.0, x + "a"), "(x: CanAdd[Literal['a'] | float]) -> tuple"),
-    (lambda x: (x[1.0], x[None]), "(x: CanGetitem[float | None]) -> tuple"),
-    (lambda x: (-x, -x), "(x: CanNeg) -> tuple"),
+    (lambda x: (x + 1, x + 1), "[R](x: CanAdd[Literal[1], R]) -> tuple[R, R]"),
+    (lambda x: (x + 1, x + 2), "[R](x: CanAdd[Literal[1, 2], R]) -> tuple[R, R]"),
+    (
+        lambda x: (x + 1, x + 2, x + 3),
+        "[R](x: CanAdd[Literal[1, 2, 3], R]) -> tuple[R, R, R]",
+    ),
+    (lambda x: (x + 1, x + 1.0), "[R](x: CanAdd[float, R]) -> tuple[R, R]"),
+    (lambda x: (x + 1, x + 1j), "[R](x: CanAdd[complex, R]) -> tuple[R, R]"),
+    (lambda x: (x + 1.0, x + 1j), "[R](x: CanAdd[complex, R]) -> tuple[R, R]"),
+    (
+        lambda x: (x + 1, x + 1.0, x + "a"),
+        "[R](x: CanAdd[Literal['a'] | float, R]) -> tuple[R, R, R]",
+    ),
+    (lambda x: (x[1.0], x[None]), "[R](x: CanGetitem[float | None, R]) -> tuple[R, R]"),
+    (lambda x: (-x, -x), "[R](x: CanNeg[R]) -> tuple[R, R]"),
+    (lambda x: (x + 1, "a"), "[R](x: CanAdd[Literal[1], R]) -> tuple[R, Literal['a']]"),
+    (lambda x: x + (1, 2), "[R](x: CanAdd[tuple[Literal[1], Literal[2]], R]) -> R"),  # noqa: RUF005
+    (lambda x: [x], "[T](x: T) -> list[T]"),
+    (lambda x: (x, 1), "[T](x: T) -> tuple[T, Literal[1]]"),
     (lambda x: x.__name__, "[R](x: HasName[R]) -> R"),
     (lambda x: x.__qualname__, "[R](x: HasQualname[R]) -> R"),
     (lambda x: x.__match_args__, "[R](x: HasMatchArgs[R]) -> R"),
@@ -190,10 +200,10 @@ BINARY_CASES: list[tuple[Callable[[Any, Any], Any], str]] = [
             "[T: CanLen, U: CanRAdd[T, R], R](x: T, y: U) -> R | U"
         ),
     ),
-    # a coerced int flowing as *data* into another spy op pollutes the key/return
+    # a coerced int flowing as *data* into another spy op pollutes the key
     (
         lambda x, y: x[int(y)],
-        "[R, R2](x: CanGetitem[Literal[1, 0], R & R2], y: CanInt | CanIndex) -> R | R2",
+        "[R](x: CanGetitem[Literal[1, 0], R], y: CanInt | CanIndex) -> R",
     ),
     (
         lambda x, y: x * 2 + y,
@@ -205,15 +215,17 @@ BINARY_CASES: list[tuple[Callable[[Any, Any], Any], str]] = [
     (
         lambda x, y: (x + y, y * 2),
         (
-            "[T: CanMul[Literal[2]]](x: CanAdd[T], y: T) -> tuple\n"
-            "[T](x: T, y: CanMul[Literal[2]] & CanRAdd[T]) -> tuple"
+            "[T: CanMul[Literal[2], R2], R, R2](x: CanAdd[T, R], y: T)"
+            " -> tuple[R, R2]\n"
+            "[T, R, R2](x: T, y: CanMul[Literal[2], R2] & CanRAdd[T, R])"
+            " -> tuple[R, R2]"
         ),
     ),
     (
         lambda x, y: (x + y, y + x),
         (
-            "[T: CanAdd[U], U: CanAdd[T]](x: T, y: U) -> tuple\n"
-            "[T: CanRAdd[U], U: CanRAdd[T]](x: T, y: U) -> tuple"
+            "[T: CanAdd[U, R], U: CanAdd[T, R2], R, R2](x: T, y: U) -> tuple[R, R2]\n"
+            "[T: CanRAdd[U, R2], U: CanRAdd[T, R], R, R2](x: T, y: U) -> tuple[R, R2]"
         ),
     ),
 ]
@@ -274,6 +286,17 @@ def _bytes(x: Any) -> Any:
 )
 def test_stringify(func: Callable[[Any], Any], expected: str) -> None:
     assert infer(func) == expected
+
+
+def test_return_union_parenthesized() -> None:
+    # a union intersected with a typevar is parenthesized, also in return position
+    def f(x: Any) -> Any:
+        return [x[0], int(x[1])]
+
+    assert infer(f) == (
+        "[R](x: CanGetitem[Literal[0, 1], R & (CanInt | CanIndex)])"
+        " -> list[Literal[1] | R] | list[Literal[0] | R]"
+    )
 
 
 def test_keyword_only() -> None:
@@ -441,6 +464,33 @@ def test_variadic(func: Callable[..., Any]) -> None:
         infer(func)
 
 
+def test_fork_explosion() -> None:
+    # exploration is budgeted: a function that forks on every run raises (timely)
+    # instead of exhaustively walking all 2**100 decision paths
+    def f(x: Any) -> Any:
+        for _ in range(100):
+            bool(x)
+        return x
+
+    with pytest.raises(InferError, match="completion"):
+        infer(f)
+
+
+def test_fork_truncation_warning() -> None:
+    # when the budget runs out before every branch was explored, it warns
+    def f(x: Any) -> Any:
+        return [bool(x) for _ in range(10)]
+
+    with pytest.warns(InferWarning, match="branch"):
+        infer(f)
+
+
+def test_not_callable() -> None:
+    not_callable: Any = 42
+    with pytest.raises(InferError, match="not a callable"):
+        infer(not_callable)
+
+
 def test_doc_params() -> None:
     def f() -> None: ...
 
@@ -468,20 +518,19 @@ def _set_name(x: Any) -> object:
     return C
 
 
+def test_set_name() -> None:
+    assert infer(_set_name) == "(x: CanSetName[type, Literal['attr']]) -> type"
+
+
 NO_PROTOCOL_CASES: list[Callable[[Any], Any]] = [
     lambda x: x.foo,
     _set_attr,
-    _set_name,
 ]
 
 
-@pytest.mark.parametrize(
-    "func",
-    NO_PROTOCOL_CASES,
-    ids=["getattr", "setattr", "set_name"],
-)
+@pytest.mark.parametrize("func", NO_PROTOCOL_CASES, ids=["getattr", "setattr"])
 def test_no_protocol(func: Callable[[Any], Any]) -> None:
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(InferError, match="no protocol"):
         infer(func)
 
 
@@ -519,3 +568,10 @@ def test_cli_usage() -> None:
     out = _run_cli("-m", "optype")
     assert out.returncode == 1
     assert "usage" in out.stderr.lower()
+
+
+def test_cli_infer_error() -> None:
+    # infer's own limitations exit cleanly, instead of with a traceback
+    out = _run_cli("-m", "optype", "infer", "lambda x: x.foo")
+    assert out.returncode == 1
+    assert out.stderr.startswith("InferError: no protocol")

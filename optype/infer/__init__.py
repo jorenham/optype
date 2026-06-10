@@ -1,6 +1,7 @@
-"""Structurally infer the ``optype`` protocols required by a function."""
+"""Structurally infer the `optype` protocols required by a function."""
 
 import re
+import warnings
 from collections import defaultdict
 from collections.abc import (
     AsyncGenerator,
@@ -16,11 +17,21 @@ from inspect import Parameter, isasyncgen, iscoroutine, isgenerator, signature
 from itertools import islice
 from typing import Any, NamedTuple, cast, final, overload
 
+from . import _ir, _numpy
 from ._spy import _Fork, _fork, _Spy, _SpyBytes, _SpyObject, _SpyStr, _TraceItem
 from optype._core import _can, _has
 from optype.inspect import get_protocol_members
 
-__all__ = ("infer",)
+__all__ = ("InferError", "InferWarning", "infer")
+
+
+class InferError(NotImplementedError):
+    """Raised when `infer` does not support the given function."""
+
+
+class InferWarning(RuntimeWarning):
+    """Emitted when `infer` could not explore the function exhaustively."""
+
 
 _PARAM_VAR = frozenset({Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD})
 
@@ -41,12 +52,11 @@ def _get_dunder_can_map() -> dict[str, str]:
         dunder: name
         for name in _can.__all__
         if not name.endswith(("Self", "Same"))
-        if (dunder := "__" + name.removeprefix("Can").lower() + "__")
-        not in _DUNDER_ATTR
-    } | {
-        "__array_ufunc__": "CanArrayUFunc",
-        "__array_function__": "CanArrayFunction",
-    }
+        if len(members := get_protocol_members(getattr(_can, name))) == 1
+        if (dunder := next(iter(members))) not in _DUNDER_ATTR
+        # CanPow2, CanRound1, ... share their dunder; keep the canonical protocol
+        if dunder.replace("_", "") == name.removeprefix("Can").lower()
+    } | _numpy.DUNDER_CAN_MAP
 
 
 _DUNDER_CAN_MAP = _get_dunder_can_map()
@@ -72,8 +82,8 @@ _COERCION_FALLBACK = {
     "__int__": ("__index__",),
     "__complex__": ("__float__", "__index__"),
 }
-_COERCION_UNION = {
-    dunder: " | ".join(map(_DUNDER_CAN_MAP.__getitem__, (dunder, *fallback)))
+_COERCION_PROTOS = {
+    dunder: tuple(map(_DUNDER_CAN_MAP.__getitem__, (dunder, *fallback)))
     for dunder, fallback in _COERCION_FALLBACK.items()
 }
 
@@ -81,15 +91,18 @@ _RE_DOC_SIGNATURE = re.compile(r"\b(\w+)\(([^)]*)\)")
 _RE_DOC_PARAM = re.compile(r"(?:^|,)\s*\**([a-zA-Z_]\w*)")
 
 _FORK_LIMIT = 64
+_RUN_LIMIT = 256
 _YIELD_LIMIT = 64
 
 
 type _AnyFunc = Callable[..., Any]
 type _Vars = dict[int, str]
+type _Traces = dict[int, list[_TraceItem]]
+type _RetKey = tuple[int, str, int, tuple[str, ...]]
 
 
 class _Op(NamedTuple):
-    proto: str
+    proto: str | tuple[str, ...]  # a tuple is rendered as a union of protocols
     args: tuple[Any, ...]
     kwargs: dict[str, Any]
     ret: Any
@@ -108,26 +121,45 @@ def _resolve(trace: _TraceItem) -> _Op:
     if trace.attr in _DUNDER_ATTR:
         name = trace.args[0]
         if name not in _DUNDER_HAS_MAP:
-            raise NotImplementedError(name)
+            msg = f"no protocol for attribute {name!r}"
+            raise InferError(msg)
         return _Op(_DUNDER_HAS_MAP[name], (), {}, trace.return_)
-    if trace.attr in _COERCION_UNION:
-        return _Op(_COERCION_UNION[trace.attr], (), {}, trace.return_)
+    # checked before _DUNDER_CAN_MAP, which also contains the coercion dunders
+    if trace.attr in _COERCION_PROTOS:
+        return _Op(_COERCION_PROTOS[trace.attr], (), {}, trace.return_)
     if trace.attr in _DUNDER_CAN_MAP:
         proto = _DUNDER_CAN_MAP[trace.attr]
         return _Op(proto, trace.args, trace.kwargs, trace.return_)
-    raise NotImplementedError(trace.attr)
+    msg = f"no protocol for {trace.attr!r}"
+    raise InferError(msg)
+
+
+def _snapshot(params: Sequence[_SpyObject]) -> _Traces:
+    """Capture the traces of every spy reachable from `params`."""
+    traces: _Traces = {}
+    stack = list(params)
+    while stack:
+        spy = stack.pop()
+        if id(spy) in traces:
+            continue
+        items = traces[id(spy)] = list(spy.__optype_trace__)
+        stack.extend(
+            ret for item in items if isinstance(ret := item.return_, _SpyObject)
+        )
+    return traces
 
 
 def _analyze(
     params: Sequence[_SpyObject],
     results: Iterable[object],
+    traces: _Traces,
 ) -> tuple[list[_SpyObject], dict[int, int]]:
     appear: defaultdict[int, int] = defaultdict(int)
     for spy in params:
         appear[id(spy)] += 1
     for result in results:
-        if isinstance(result, _SpyObject):
-            appear[id(result)] += 1
+        for spy in _return_spies(result):
+            appear[id(spy)] += 1
 
     order: list[_SpyObject] = []
     seen: set[int] = set()
@@ -138,7 +170,7 @@ def _analyze(
             continue
         seen.add(id(spy))
         order.append(spy)
-        for op in spy.__optype_trace__:
+        for op in traces[id(spy)]:
             for value in (*op.args, *op.kwargs.values()):
                 if isinstance(value, _SpyObject):
                     appear[id(value)] += 1
@@ -146,6 +178,24 @@ def _analyze(
                 appear[id(op.return_)] += 1
                 stack.append(op.return_)
     return order, appear
+
+
+def _ret_keys(
+    order: Sequence[_SpyObject],
+    traces: _Traces,
+) -> tuple[dict[int, _RetKey], set[int]]:
+    """The shape of the op that returned each spy, and the spies used as args."""
+    keys: dict[int, _RetKey] = {}
+    args: set[int] = set()
+    for owner in order:
+        for item in traces[id(owner)]:
+            for value in (*item.args, *item.kwargs.values()):
+                if isinstance(value, _SpyObject):
+                    args.add(id(value))
+            if isinstance(item.return_, _SpyObject):
+                key = id(owner), item.attr, len(item.args), tuple(sorted(item.kwargs))
+                keys[id(item.return_)] = key
+    return keys, args
 
 
 def _select(params: tuple[str | int, ...], names: list[str]) -> list[str]:
@@ -171,7 +221,7 @@ def _return_spies(value: object) -> Generator[_SpyObject]:
         case _Gen():
             for item in value.yielded:
                 yield from _return_spies(item)
-        case list() | set() | frozenset():
+        case list() | set() | frozenset() | tuple():
             for item in cast("Collection[object]", value):
                 yield from _return_spies(item)
         case dict():
@@ -183,50 +233,53 @@ def _return_spies(value: object) -> Generator[_SpyObject]:
             pass
 
 
-def _required_args(func: _AnyFunc) -> int | None:
-    try:
-        params = signature(func).parameters.values()
-    except (TypeError, ValueError):
-        return None
-    if any(p.kind in _PARAM_VAR for p in params):
-        return None
-    return sum(
-        p.kind is not Parameter.KEYWORD_ONLY and p.default is Parameter.empty
-        for p in params
-    )
-
-
 @final
 class _Renderer:
-    """Render an inferred ``def`` signature from the recorded spy traces."""
+    """Render an inferred `def` signature from the recorded spy traces."""
 
     def __init__(
         self,
-        names: list[str],
         selected: list[str],
         spies: dict[str, _SpyObject],
         results: list[object],
         optional: frozenset[str],
+        traces: _Traces,
     ) -> None:
         self._selected = selected
         self._spies = spies
         self._results = results
         self._optional = optional
+        self._traces = traces
 
-        param_spies = [spies[name] for name in names]
-        order, appear = _analyze(param_spies, results)
+        param_spies = list(spies.values())
+        order, appear = _analyze(param_spies, results, traces)
         param_ids = {id(spy) for spy in param_spies}
 
         self._vars: _Vars = {}
         self._result_spies: list[_SpyObject] = []
+        ret_keys, arg_ids = _ret_keys(order, traces)
+        shared: dict[_RetKey, str] = {}
         for result in results:
             for spy in _return_spies(result):
                 if id(spy) in param_ids or id(spy) in self._vars:
                     continue
+                # untraced results of same-shaped ops that are never passed as an
+                # argument are interchangeable, so they share a typevar
+                key = (
+                    ret_keys.get(id(spy))
+                    if not traces[id(spy)] and id(spy) not in arg_ids
+                    else None
+                )
+                if key is not None and key in shared:
+                    self._vars[id(spy)] = shared[key]
+                    continue
                 n = len(self._result_spies)
-                self._vars[id(spy)] = "R" if not n else f"R{n + 1}"
+                var = "R" if not n else f"R{n + 1}"
+                self._vars[id(spy)] = var
                 self._result_spies.append(spy)
-        self._pool = [spies[name] for name in names if appear[id(spies[name])] >= 2]
+                if key is not None:
+                    shared[key] = var
+        self._pool = [spy for spy in param_spies if appear[id(spy)] >= 2]
         self._pool += [
             spy
             for spy in order
@@ -237,118 +290,123 @@ class _Renderer:
         for i, spy in enumerate(self._pool):
             self._vars[id(spy)] = _TYPEVARS[i] if i < len(_TYPEVARS) else f"T{i}"
 
-    def union(self, values: Iterable[Any]) -> str | None:
+    def union(self, values: Iterable[Any]) -> _ir.Node | None:
         literals: list[Any] = []
-        names: list[str] = []
+        parts: list[_ir.Node] = []
         for value in values:
             if isinstance(value, int | str | bytes) and not isinstance(value, _Spy):
                 literals.append(value)
             else:
-                names.append(self.return_type(value))
-        if "float" in names or "complex" in names:
+                parts.append(self.return_type(value))
+        if _ir.Name("float") in parts or _ir.Name("complex") in parts:
             literals = [value for value in literals if not isinstance(value, int)]
-        if "complex" in names:
-            names = [name for name in names if name != "float"]
+        if _ir.Name("complex") in parts:
+            parts = [part for part in parts if part != _ir.Name("float")]
 
-        parts: list[str] = []
+        nodes: list[_ir.Node] = []
         if literals:
-            parts.append(f"Literal[{', '.join(map(repr, dict.fromkeys(literals)))}]")
-        parts.extend(dict.fromkeys(names))
-        return " | ".join(parts) or None
+            nodes.append(_ir.Lit(tuple(dict.fromkeys(literals))))
+        nodes.extend(dict.fromkeys(parts))
+        return _ir.union(nodes)
 
-    def returns(self, members: Iterable[_Op]) -> str | None:
+    def returns(self, members: Iterable[_Op]) -> _ir.Node | None:
         named: list[str] = []
-        traces: list[_TraceItem] = []
+        items: list[_TraceItem] = []
         for m in members:
             if not isinstance(m.ret, _SpyObject):
                 continue
             if (var := self._vars.get(id(m.ret))) is not None:
                 named.append(var)
             else:
-                traces.extend(m.ret.__optype_trace__)
-        parts = list(dict.fromkeys(named))
-        if traces and (formatted := self.traces(traces)):
-            parts.append(formatted)
-        return " & ".join(parts) or None
+                items.extend(self._traces[id(m.ret)])
+        parts: list[_ir.Node] = [_ir.Name(var) for var in dict.fromkeys(named)]
+        if items and (node := self.traces(items)) is not None:
+            parts.append(node)
+        return _ir.inter(parts)
 
-    def group(self, proto: str, members: Sequence[_Op]) -> str:
+    def group(self, proto: str | tuple[str, ...], members: Sequence[_Op]) -> _ir.Node:
+        if isinstance(proto, tuple):  # coercion protocols, which record no args
+            return _ir.Union(tuple(map(_ir.Name, proto)))
         if proto == "CanArrayFunction":
-            ret = self.returns(members) or _OBJECT
-            n = _required_args(members[0].args[0])
-            args = ["Any"] * n if n is not None else ["..."]
-            return f"CanArrayFunction[CanCall[{', '.join([*args, ret])}], {ret}]"
-        parts = [
+            ret = self.returns(members)
+            ret_str = _ir.render(ret) if ret is not None else _OBJECT
+            return _ir.Name(_numpy.array_function_type(members[0].args[0], ret_str))
+        args: list[_ir.Node | _ir.Arg] = [
             arg
             for i in range(len(members[0].args))
             if (arg := self.union(m.args[i] for m in members)) is not None
         ]
-        parts += [
-            f"{key}={kw}"
+        args += [
+            _ir.Arg(key, kw)
             for key in members[0].kwargs
             if (kw := self.union(m.kwargs[key] for m in members)) is not None
         ]
         if (ret := self.returns(members)) is not None:
-            parts.append(ret)
+            args.append(ret)
+        return _ir.App(proto, tuple(args))
 
-        return f"{proto}[{', '.join(parts)}]" if parts else proto
-
-    def traces(self, traces: Iterable[_TraceItem]) -> str:
-        groups: dict[tuple[str, int, tuple[str, ...]], list[_Op]] = {}
-        for trace in traces:
-            op = _resolve(trace)
+    def traces(self, items: Iterable[_TraceItem]) -> _ir.Node | None:
+        groups: dict[tuple[str | tuple[str, ...], int, tuple[str, ...]], list[_Op]] = {}
+        for item in items:
+            op = _resolve(item)
             key = op.proto, len(op.args), tuple(sorted(op.kwargs))
             groups.setdefault(key, []).append(op)
-        parts = [(key[0], self.group(key[0], group)) for key, group in groups.items()]
-        wrap = len(parts) > 1
-        return " & ".join(
-            f"({s})" if wrap and " | " in proto else s for proto, s in parts
-        )
+        return _ir.inter([self.group(key[0], group) for key, group in groups.items()])
 
-    def spy(self, spy: _Spy) -> str:
-        return self.traces(spy.__optype_trace__)
+    def spy(self, spy: _SpyObject) -> _ir.Node | None:
+        return self.traces(self._traces[id(spy)])
 
     def slot(self, spy: _SpyObject) -> str:
-        return self._vars.get(id(spy)) or self.spy(spy) or _OBJECT
+        if (var := self._vars.get(id(spy))) is not None:
+            return var
+        node = self.spy(spy)
+        return _ir.render(node) if node is not None else _OBJECT
 
     def typevar(self, spy: _SpyObject) -> str:
         var = self._vars[id(spy)]
-        return f"{var}: {bound}" if (bound := self.spy(spy)) else var
+        node = self.spy(spy)
+        return f"{var}: {_ir.render(node)}" if node is not None else var
 
-    def return_type(self, result: object) -> str:
+    def return_type(self, result: object) -> _ir.Node:
         match result:
             case _SpyObject():
-                return self._vars.get(id(result), _OBJECT)
+                return _ir.Name(self._vars.get(id(result), _OBJECT))
             case _SpyStr():
-                return "str"
+                return _ir.Name("str")
             case _SpyBytes():
-                return "bytes"
+                return _ir.Name("bytes")
             case _Gen():
-                yields = dict.fromkeys(map(self.return_type, result.yielded))
-                return f"{result.kind}[{' | '.join(yields) or _NEVER}]"
+                yields = list(dict.fromkeys(map(self.return_type, result.yielded)))
+                inner = _ir.union(yields) or _ir.Name(_NEVER)
+                return _ir.App(result.kind, (inner,))
             case None:
-                return "None"
+                return _ir.Name("None")
             case _:
                 return self._container(result)
 
-    def _container(self, result: object) -> str:
-        name = type(result).__name__
+    def _container(self, result: object) -> _ir.Node:
+        cls = type(result)
         match result:
             case dict():
                 mapping = cast("Mapping[object, object]", result)
-                key = self.union(mapping) or _NEVER
-                val = self.union(mapping.values()) or _NEVER
-                return f"dict[{key}, {val}]"
+                key = self.union(mapping) or _ir.Name(_NEVER)
+                val = self.union(mapping.values()) or _ir.Name(_NEVER)
+                return _ir.App("dict", (key, val))
             case list() | set() | frozenset():
-                inner = self.union(cast("Collection[object]", result)) or _NEVER
-                return f"{name}[{inner}]"
-            case tuple():
-                return "tuple[()]" if not result else name
+                inner = self.union(cast("Collection[object]", result))
+                return _ir.App(cls.__name__, (inner or _ir.Name(_NEVER),))
+            case tuple() if cls is tuple:
+                if not result:
+                    return _ir.Name("tuple[()]")
+                items = cast("tuple[object, ...]", result)
+                elems = (self.union((item,)) or _ir.Name(_NEVER) for item in items)
+                return _ir.App("tuple", tuple(elems))
             case _:
-                module = type(result).__module__.partition(".")[0]
-                return f"np.{name}" if module == "numpy" else name
+                return _ir.Name(_numpy.type_name(cls))
 
     def return_types(self) -> str:
-        return " | ".join(dict.fromkeys(map(self.return_type, self._results)))
+        nodes = dict.fromkeys(map(self.return_type, self._results))
+        return " | ".join(map(_ir.render, nodes))
 
     def render(self) -> str:
         typevars = [self.typevar(spy) for spy in self._pool + self._result_spies]
@@ -373,72 +431,37 @@ def _doc_params(func: _AnyFunc) -> list[str] | None:
     return None
 
 
-def _ufunc_nin(func: _AnyFunc) -> int | None:
-    nin, nout = getattr(func, "nin", None), getattr(func, "nout", None)
-    if isinstance(nin, int) and isinstance(nout, int):
-        return nin
-    return None
-
-
-_DTYPE_KINDS = (
-    ("?", "ToBoolND"),
-    ("bhilqpBHILQP", "ToIntND"),
-    ("efdg", "ToFloatND"),
-    ("FDG", "ToComplexND"),
-)
-_DTYPE_RANK: dict[str, int] = {
-    char: rank for rank, (chars, _) in enumerate(_DTYPE_KINDS) for char in chars
-}
-_DTYPE_ALIASES = [alias for _, alias in _DTYPE_KINDS]
-
-
-def _ufunc_dtype(func: _AnyFunc, i: int) -> str | None:
-    types = cast("list[str]", getattr(func, "types", ()))
-    ranks = [
-        _DTYPE_RANK[ins[i]]
-        for sig in types
-        if i < len(ins := sig.partition("->")[0]) and ins[i] in _DTYPE_RANK
-    ]
-    return _DTYPE_ALIASES[max(ranks)] if ranks else None
-
-
-def _infer_ufunc(func: _AnyFunc, nin: int, params: tuple[str | int, ...]) -> str:
-    names = ["x"] if nin == 1 else [f"x{i + 1}" for i in range(nin)]
-    parts: list[str] = []
-    for name in _select(params, names):
-        i = names.index(name)
-        arms: list[str] = ["CanArrayUFunc[np.ufunc, R]"] if i == 0 else []
-        if (dtype := _ufunc_dtype(func, i)) is not None:
-            arms.append(dtype)
-        parts.append(f"{name}: {' | '.join(arms) or 'object'}")
-    return f"[R]({', '.join(parts)}) -> R"
-
-
 def _parameters(func: _AnyFunc) -> Mapping[str, Parameter]:
     try:
         return signature(func).parameters
-    except ValueError as exc:
+    except TypeError as exc:  # not callable
+        raise InferError(str(exc)) from exc
+    except ValueError as exc:  # no signature
         if (names := _doc_params(func)) is None:
-            raise NotImplementedError(str(exc)) from exc
+            raise InferError(str(exc)) from exc
         return {n: Parameter(n, Parameter.POSITIONAL_OR_KEYWORD) for n in names}
 
 
-def _reflect(param_spies: Sequence[_SpyObject], results: Iterable[object]) -> None:
-    order, _ = _analyze(param_spies, results)
+def _reflect(
+    params: Sequence[_SpyObject],
+    results: Iterable[object],
+    traces: _Traces,
+) -> _Traces:
+    """A copy of `traces` with each spy-spy binary op reflected onto its RHS."""
+    order, _ = _analyze(params, results, traces)
+    kept: _Traces = {}
     added: defaultdict[int, list[_TraceItem]] = defaultdict(list)
     for spy in order:
         keep: list[_TraceItem] = []
-        for item in spy.__optype_trace__:
+        for item in traces[id(spy)]:
             rhs = item.args[0] if item.args else None
             if item.attr in _DUNDER_CAN_R and isinstance(rhs, _SpyObject):
                 reflected = _TraceItem("__r" + item.attr[2:], (spy,), {}, item.return_)
                 added[id(rhs)].append(reflected)
             else:
                 keep.append(item)
-        spy.__optype_trace__ = keep
-
-    for spy in order:
-        spy.__optype_trace__ += added[id(spy)]
+        kept[id(spy)] = keep
+    return {spy_id: keep + added[spy_id] for spy_id, keep in kept.items()}
 
 
 def _await[R](coro: Coroutine[Any, Any, R]) -> R:
@@ -448,7 +471,7 @@ def _await[R](coro: Coroutine[Any, Any, R]) -> R:
     except StopIteration as stop:
         return stop.value
     coro.close()
-    raise NotImplementedError("await on a non-spy awaitable")
+    raise InferError("await on a non-spy awaitable")
 
 
 def _yield_key(value: object) -> tuple[str, *tuple[str, ...]]:
@@ -479,9 +502,7 @@ def _sync[T](agen: AsyncGenerator[T, Any]) -> Generator[T]:
 
 
 @overload
-def _next(result: Generator[object]) -> _Gen: ...
-@overload
-def _next(result: AsyncGenerator[object]) -> _Gen: ...
+def _next(result: Generator[object] | AsyncGenerator[object]) -> _Gen: ...
 @overload
 def _next[T](result: T) -> T: ...
 def _next(result: object) -> object:
@@ -499,7 +520,10 @@ def _explore[T](
 ) -> list[T]:
     results: list[T] = []
     stack: list[list[bool]] = [[]]
-    while stack:
+    dropped = False
+    for _ in range(_RUN_LIMIT):  # caps the exponential blowup of independent forks
+        if not stack:
+            break
         plan = stack.pop()
         token = _fork.set(iter(plan))
         try:
@@ -508,25 +532,36 @@ def _explore[T](
         except _Fork:
             if len(plan) < _FORK_LIMIT:
                 stack.extend(([*plan, False], [*plan, True]))
+            else:
+                dropped = True
         finally:
             _fork.reset(token)
+    if not results:
+        raise InferError("the function never ran to completion")
+    if dropped or stack:
+        warnings.warn("not every branch was explored", InferWarning, stacklevel=3)
     return results
 
 
 def infer(func: _AnyFunc, /, *params: str | int) -> str:
-    """Infer the ``optype`` protocol(s) required of ``func``'s parameters.
+    """Infer the `optype` protocol(s) required of `func`'s parameters.
 
     Pass parameter names or positions to report only those parameters.
 
     >>> print(infer(lambda x: x + 1))
     [R](x: CanAdd[Literal[1], R]) -> R
+
+    Raises:
+        InferError: If `func` is not supported, such as a non-callable, variadic
+            parameters, or an operation without a matching protocol.
     """
-    if (nin := _ufunc_nin(func)) is not None:
-        return _infer_ufunc(func, nin, params)
+    if (nin := _numpy.ufunc_nin(func)) is not None:
+        names = _numpy.ufunc_params(nin)
+        return _numpy.infer_ufunc(func, names, _select(params, names))
 
     parameters = _parameters(func)
     if any(p.kind in _PARAM_VAR for p in parameters.values()):
-        raise NotImplementedError("variadic parameters")
+        raise InferError("variadic parameters")
 
     names = list(parameters)
     selected = _select(params, names)
@@ -543,8 +578,10 @@ def infer(func: _AnyFunc, /, *params: str | int) -> str:
         else:
             args.append(spies[name])
     results: list[object] = [_next(r) for r in _explore(func, args, kwds)]
+    param_spies = list(spies.values())
+    traces = _snapshot(param_spies)
+    reflected = _reflect(param_spies, results, traces)
 
-    sig1 = _Renderer(names, selected, spies, results, optional).render()
-    _reflect(list(spies.values()), results)
-    sig2 = _Renderer(names, selected, spies, results, optional).render()
+    sig1 = _Renderer(selected, spies, results, optional, traces).render()
+    sig2 = _Renderer(selected, spies, results, optional, reflected).render()
     return "\n".join(dict.fromkeys((sig1, sig2)))

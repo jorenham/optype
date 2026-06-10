@@ -384,7 +384,7 @@ class _SpyObject(_Spy):  # noqa: PLR0904
         return self.__optype_trace_add__("__buffer__", (flags,), {}, memoryview(b""))
 
     def __release_buffer__(self, buffer: memoryview, /) -> None:
-        return self.__optype_trace_add__("__releasebuffer__", (buffer,), {}, None)
+        return self.__optype_trace_add__("__release_buffer__", (buffer,), {}, None)
 
     ###
 
