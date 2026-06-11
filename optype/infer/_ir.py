@@ -4,7 +4,9 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import override
 
-type Node = Lit | Type | Name | App | Union | Inter
+type Node = Lit | Type | Name | App | Union | Inter | Not
+
+_NOT = "~"  # the type complement prefix
 
 # variance per type argument ("+" co, "-" contra); the last entry repeats variadically
 _VARIANCES = {
@@ -63,6 +65,13 @@ class App:
 
     base: str
     args: tuple[Node | Arg, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class Not:
+    """A type complement, e.g. the `~None` of everything but `None`."""
+
+    part: Node
 
 
 @dataclass(frozen=True, slots=True)
@@ -148,6 +157,12 @@ def union(parts: Iterable[Node]) -> Node | None:
     return nodes[0] if len(nodes) == 1 else Union(tuple(nodes))
 
 
+def exclude(base: Node | None, part: Node) -> Node:
+    """The intersection of `base` (if any) with the complement of `part`."""
+    neg = Not(part)
+    return neg if base is None else inter((base, neg)) or neg
+
+
 def inter(parts: Iterable[Node]) -> Node | None:
     """The flat intersection of `parts`, unwrapped if singular, or `None`."""
     flat: dict[Node, None] = {}
@@ -179,13 +194,14 @@ def render(node: Node) -> str:
                 for arg in args
             ]
             return f"{base}[{', '.join(parts)}]" if parts else base
-        case Union(parts):
-            return " | ".join(
-                f"({render(part)})" if isinstance(part, Inter) else render(part)
-                for part in parts
+        case Not(part):
+            inner = render(part)
+            return (
+                f"{_NOT}({inner})" if isinstance(part, Union | Inter) else _NOT + inner
             )
-        case Inter(parts):
-            return " & ".join(
-                f"({render(part)})" if isinstance(part, Union) else render(part)
+        case Union(parts) | Inter(parts):
+            sep, dual = (" | ", Inter) if isinstance(node, Union) else (" & ", Union)
+            return sep.join(
+                f"({render(part)})" if isinstance(part, dual) else render(part)
                 for part in parts
             )
