@@ -9,7 +9,8 @@ from typing import Any
 
 import pytest
 
-from optype.infer import InferError, InferWarning, _doc_params, infer
+from optype.infer import InferError, InferWarning, infer
+from optype.infer._explore import _doc_params
 from optype.infer._ir import App, Lit, Name, Type, subtype
 
 UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
