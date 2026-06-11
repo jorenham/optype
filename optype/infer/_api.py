@@ -5,8 +5,9 @@ from inspect import Parameter
 from typing import cast
 
 # `from . import` would import the package itself, which imports this module
-import optype.infer._numpy as _numpy  # noqa: PLR0402
-from ._explore import _explore_spies, _Gen, _parameters, _Recon
+import optype.infer._numpy as _numpy
+from ._errors import InferError
+from ._explore import _explore_lenient, _explore_spies, _Gen, _parameters, _Recon
 from ._render import _Defaults, _Names, _signatures
 from ._spy import _AnyFunc, _TraceItem
 
@@ -53,7 +54,7 @@ def _bind(value: object, binding: Mapping[int, object]) -> object:
 
 def _bind_recon(recon: _Recon, defaults: _Defaults) -> _Recon:
     """The recon as it would look with every defaulted parameter omitted."""
-    spies, traces, results, count = recon
+    spies, traces, results, count, fixed = recon
     binding = {id(spies[name]): value for name, value in defaults.items()}
     bound = {
         spy_id: [
@@ -68,7 +69,7 @@ def _bind_recon(recon: _Recon, defaults: _Defaults) -> _Recon:
         for spy_id, items in traces.items()
     }
     kept = {name: spy for name, spy in spies.items() if name not in defaults}
-    return kept, bound, [_bind(result, binding) for result in results], count
+    return kept, bound, [_bind(result, binding) for result in results], count, fixed
 
 
 def _defaults(
@@ -130,16 +131,24 @@ def infer(func: _AnyFunc, /, *params: str | int) -> str:
     [R](x: CanAdd[Literal[1], R]) -> R
 
     Raises:
-        InferError: If `func` is not supported, such as a non-callable, or an
-            operation without a matching protocol.
-    """  # noqa: DOC502
+        InferError: If `func` is not supported, such as a non-callable, an
+            operation without a matching protocol, or a parameter that requires
+            a value that no placeholder can provide.
+    """
     if nin := _numpy.ufunc_nin(func):
         names = _numpy.ufunc_params(nin)
         return _numpy.infer_ufunc(func, names, _select(params, names))
 
     parameters = _parameters(func)
     selected = _select(params, list(parameters))
-    recon = _explore_spies(func, parameters)
+    try:
+        recon, fallback = _explore_lenient(func, parameters)
+    except (IndexError, TypeError, ValueError) as exc:
+        raise InferError(str(exc)) from exc
+    if fallback:
+        # the rejected parameters render from their defaults; skip the probing
+        lines = _signatures(recon, parameters, selected, fallback)
+        return "\n".join(dict.fromkeys(lines))
     defaults, negate, overloads = _defaults(func, parameters, selected, recon)
     lines = _signatures(recon, parameters, selected, defaults, negate=negate)
     return "\n".join(dict.fromkeys((*overloads, *lines)))

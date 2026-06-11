@@ -7,8 +7,8 @@ from itertools import groupby
 from typing import NamedTuple, cast, final
 
 # `from . import` would import the package itself, which imports this module
-import optype.infer._ir as _ir  # noqa: PLR0402
-import optype.infer._numpy as _numpy  # noqa: PLR0402
+import optype.infer._ir as _ir
+import optype.infer._numpy as _numpy
 from ._errors import InferError
 from ._explore import _Gen, _Recon, _Traces
 from ._spy import (
@@ -259,12 +259,11 @@ class _Renderer:
 
     def __init__(
         self,
-        spies: Mapping[str, _SpyObject],
-        results: Sequence[object],
+        recon: _Recon,
         params: Mapping[str, Parameter],
-        count: int,
         traces: _Traces,
     ) -> None:
+        spies, _, results, count, self._fixed = recon
         self._spies = spies
         self._results = results
         self._traces = traces
@@ -293,28 +292,7 @@ class _Renderer:
         if varpos is not None and _all_packed(varpos, results, traces, count):
             self._vars[id(varpos)] = _TYPEVAR_TUPLE
         self._result_spies: list[_SpyObject] = []
-        ret_keys, arg_ids = _ret_keys(order, traces)
-        shared: dict[_RetKey, str] = {}
-        for result in results:
-            for spy in _return_spies(result):
-                if id(spy) in param_ids or id(spy) in self._vars:
-                    continue
-                # untraced results of same-shaped ops that are never passed as an
-                # argument are interchangeable, so they share a typevar
-                key = (
-                    ret_keys.get(id(spy))
-                    if not traces[id(spy)] and id(spy) not in arg_ids
-                    else None
-                )
-                if key is not None and key in shared:
-                    self._vars[id(spy)] = shared[key]
-                    continue
-                n = len(self._result_spies)
-                var = "R" if not n else f"R{n + 1}"
-                self._vars[id(spy)] = var
-                self._result_spies.append(spy)
-                if key is not None:
-                    shared[key] = var
+        self._name_results(order, param_ids)
         self._pool = [
             spy for spy in param_spies if appear[id(spy)] >= 2 or id(spy) in self._vars
         ]
@@ -328,6 +306,30 @@ class _Renderer:
         unnamed = [spy for spy in self._pool if id(spy) not in self._vars]
         for i, spy in enumerate(unnamed):
             self._vars[id(spy)] = _TYPEVARS[i] if i < len(_TYPEVARS) else f"T{i}"
+
+    def _name_results(self, order: Iterable[_SpyObject], param_ids: set[int]) -> None:
+        ret_keys, arg_ids = _ret_keys(order, self._traces)
+        shared: dict[_RetKey, str] = {}
+        for result in self._results:
+            for spy in _return_spies(result):
+                if id(spy) in param_ids or id(spy) in self._vars:
+                    continue
+                # untraced results of same-shaped ops that are never passed as an
+                # argument are interchangeable, so they share a typevar
+                key = (
+                    ret_keys.get(id(spy))
+                    if not self._traces[id(spy)] and id(spy) not in arg_ids
+                    else None
+                )
+                if key is not None and key in shared:
+                    self._vars[id(spy)] = shared[key]
+                    continue
+                n = len(self._result_spies)
+                var = "R" if not n else f"R{n + 1}"
+                self._vars[id(spy)] = var
+                self._result_spies.append(spy)
+                if key is not None:
+                    shared[key] = var
 
     def union(self, values: Iterable[object]) -> _ir.Node | None:
         literals: list[object] = []
@@ -508,6 +510,9 @@ class _Renderer:
         return f"{generics}({params}) -> {self.return_types()}"
 
     def _param(self, name: str, defaults: _Defaults, *, negate: bool) -> str | None:
+        if name in self._fixed and name not in self._optional:
+            # a fixed parameter without a default is a method descriptor's `self`
+            return f"{name}: {_ir.render(_ir.Type(type(self._fixed[name])))}"
         if (spy := self._spies.get(name)) is None:
             # an omitted parameter binds its default, so passing it behaves the same
             node = self.union((defaults[name],)) or _ir.Name(_NEVER)
@@ -552,13 +557,9 @@ def _signatures(
     *,
     negate: bool = False,
 ) -> list[str]:
-    spies, traces, results, count = recon
+    spies, traces, results, _, _ = recon
     reflected = _reflect(list(spies.values()), results, traces)
     return [
-        _Renderer(spies, results, params, count, t).render(
-            selected,
-            defaults,
-            negate=negate,
-        )
+        _Renderer(recon, params, t).render(selected, defaults, negate=negate)
         for t in (traces, reflected)
     ]

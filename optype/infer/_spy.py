@@ -1,5 +1,3 @@
-# ruff: noqa: TD002, TD003, PYI034
-
 """Recording proxy objects that trace the operations performed on them."""
 
 from collections.abc import Callable, Generator, Iterator
@@ -41,7 +39,7 @@ class _TraceItem(NamedTuple):
 class _Spy:
     __optype_trace__: list[_TraceItem]
 
-    def __optype_trace_add__[OutT](  # noqa: PLW3201
+    def __optype_trace_add__[OutT](
         self,
         attr: str,
         args: _Args,
@@ -65,7 +63,7 @@ class _SpyBytes(bytes, _Spy):
     __slots__ = ()  # pyrefly:ignore[implicit-any-attribute]
 
 
-class _SpyObject(_Spy):  # noqa: PLR0904
+class _SpyObject(_Spy):
     __optype_element__: "_SpyObject | None" = None
     __optype_iterator__: bool = False
 
