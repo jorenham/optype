@@ -1,10 +1,11 @@
 """Render the recorded spy traces as a PEP 695 signature."""
 
+import sys
 from collections import defaultdict
 from collections.abc import Collection, Generator, Iterable, Mapping, Sequence
 from inspect import Parameter, _ParameterKind
 from itertools import groupby
-from typing import NamedTuple, cast, final
+from typing import Any, NamedTuple, cast, final
 
 # `from . import` would import the package itself, which imports this module
 import optype.infer._ir as _ir
@@ -12,15 +13,18 @@ import optype.infer._numpy as _numpy
 from ._errors import InferError
 from ._explore import _Gen, _Recon, _Traces
 from ._spy import (
-    _ABSENT,
     _AnyFunc,
     _Args,
+    _class_spy,
     _Kwargs,
+    _Marker,
+    _own_spy,
     _Spy,
     _SpyBytes,
     _SpyObject,
     _SpyStr,
     _TraceItem,
+    as_spy,
 )
 from optype._core import _can, _has
 from optype.inspect import get_protocol_members
@@ -140,8 +144,8 @@ def _analyze(
         order.append(spy)
         for op in traces[id(spy)]:
             for value in (*op.args, *op.kwargs.values()):
-                if isinstance(value, _SpyObject):
-                    appear[id(value)] += 1
+                if (arg := as_spy(value)) is not None:
+                    appear[id(arg)] += 1
             if isinstance(op.return_, _SpyObject):
                 appear[id(op.return_)] += 1
                 stack.append(op.return_)
@@ -158,8 +162,8 @@ def _ret_keys(
     for owner in order:
         for item in traces[id(owner)]:
             for value in (*item.args, *item.kwargs.values()):
-                if isinstance(value, _SpyObject):
-                    args.add(id(value))
+                if (arg := as_spy(value)) is not None:
+                    args.add(id(arg))
             if isinstance(item.return_, _SpyObject):
                 key = id(owner), item.attr, len(item.args), tuple(sorted(item.kwargs))
                 keys[id(item.return_)] = key
@@ -227,8 +231,8 @@ def _all_packed(
 
 def _return_spies(value: object) -> Generator[_SpyObject]:
     match value:
-        case _SpyObject():
-            yield value
+        case _SpyObject() | type() if (spy := as_spy(value)) is not None:
+            yield spy
         case _Gen():
             for item in value.yielded:
                 yield from _return_spies(item)
@@ -386,10 +390,10 @@ class _Renderer:
     def traces(self, items: Iterable[_TraceItem]) -> _ir.Node | None:
         items = list(items)
         # a surviving absence marker proves the dunder was only probed optionally
-        optional = {item.args[0] for item in items if item.attr == _ABSENT}
+        optional = {item.args[0] for item in items if item.attr == _Marker.ABSENT}
         groups: dict[tuple[_Proto, int, tuple[str, ...]], list[_Op]] = {}
         for item in items:
-            if item.attr == _ABSENT or item.attr in optional:
+            if item.attr == _Marker.ABSENT or item.attr in optional:
                 continue
             op = _resolve(item)
             key = op.proto, len(op.args), tuple(sorted(op.kwargs))
@@ -425,7 +429,7 @@ class _Renderer:
     def return_type(self, result: object) -> _ir.Node:
         match result:
             case _SpyObject():
-                return _ir.Name(self._vars.get(id(result), _OBJECT))
+                return _ir.Name(self._vars.get(id(_own_spy(result)), _OBJECT))
             case _SpyStr():
                 return _ir.Type(str)
             case _SpyBytes():
@@ -439,9 +443,25 @@ class _Renderer:
             case _:
                 return self._container(result)
 
+    def _class_of(self, cls: type[Any]) -> _ir.Node | None:
+        """The type of `cls`'s instances, if it is expressible."""
+        if (spy := _class_spy(cls)) is not None:
+            return self.return_type(spy)
+        if issubclass(cls, _SpyStr):
+            return _ir.Type(str)
+        if issubclass(cls, _SpyBytes):
+            return _ir.Type(bytes)
+        if cls is type(None):
+            return _ir.Name("None")
+        if getattr(sys.modules.get(cls.__module__), cls.__name__, None) is cls:
+            return _ir.Type(cls)
+        return None  # a local class has no nameable type, so it stays a bare `type`
+
     def _container(self, result: object) -> _ir.Node:
         cls = type(result)
         match result:
+            case type() if (inner := self._class_of(result)) is not None:
+                return _ir.App("type", (inner,))
             case dict():
                 mapping = cast("Mapping[object, object]", result)
                 key = self.union(mapping) or _ir.Name(_NEVER)
@@ -542,7 +562,7 @@ def _reflect(
             rhs = item.args[0] if item.args else None
             if item.attr in _DUNDER_CAN_R and isinstance(rhs, _SpyObject):
                 reflected = _TraceItem("__r" + item.attr[2:], (spy,), {}, item.return_)
-                added[id(rhs)].append(reflected)
+                added[id(_own_spy(rhs))].append(reflected)
             else:
                 keep.append(item)
         kept[id(spy)] = keep

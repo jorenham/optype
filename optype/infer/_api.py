@@ -56,6 +56,8 @@ def _bind_recon(recon: _Recon, defaults: _Defaults) -> _Recon:
     """The recon as it would look with every defaulted parameter omitted."""
     spies, traces, results, count, fixed = recon
     binding = {id(spies[name]): value for name, value in defaults.items()}
+    # so that a `type(spy)` result becomes `type(default)`
+    binding |= {id(type(spies[name])): type(value) for name, value in defaults.items()}
     bound = {
         spy_id: [
             _TraceItem(

@@ -13,6 +13,11 @@ from optype.infer import InferError, InferWarning, infer
 from optype.infer._explore import _doc_params
 from optype.infer._ir import App, Lit, Name, Type, subtype
 
+
+def _type_of[T](x: T) -> type[T]:
+    return type(x)
+
+
 UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     (lambda x: x + 1, "[R](x: CanAdd[Literal[1], R]) -> R"),
     (
@@ -179,6 +184,20 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     (lambda x: x + (1, 2), "[R](x: CanAdd[tuple[Literal[1], Literal[2]], R]) -> R"),  # noqa: RUF005
     (lambda x: [x], "[T](x: T) -> list[T]"),
     (lambda x: (x, 1), "[T](x: T) -> tuple[T, Literal[1]]"),
+    # every spy has a unique class, so a `type(x)` result renders generically
+    (_type_of, "[T](x: T) -> type[T]"),
+    (lambda x: x.__class__, "[T](x: T) -> type[T]"),
+    (lambda x: (x, type(x)), "[T](x: T) -> tuple[T, type[T]]"),
+    (lambda x: type(next(x)), "[R](x: CanNext[R]) -> type[R]"),
+    (lambda x: type(str(x)), "(x: CanStr) -> type[str]"),
+    # an instance of a spy's class collapses onto the spy itself, and an operation
+    # on such an instance is required of the spy's type
+    (lambda x: type(x)(), "[T](x: T) -> T"),
+    (lambda x: type(x)() + 1, "[R](x: CanAdd[Literal[1], R]) -> R"),
+    (lambda x: str(type(x)()), "(x: CanStr) -> str"),
+    # a nameable class renders parameterized, and `type` is covariant
+    (lambda x: int if x else bool, "(x: CanBool) -> type[int]"),
+    (lambda x: bool if x else type(None), "(x: CanBool) -> type[bool] | type[None]"),
     (lambda x: x.__name__, "[R](x: HasName[R]) -> R"),
     (lambda x: x.__qualname__, "[R](x: HasQualname[R]) -> R"),
     (lambda x: x.__match_args__, "[R](x: HasMatchArgs[R]) -> R"),
@@ -213,6 +232,11 @@ BINARY_CASES: list[tuple[Callable[[Any, Any], Any], str]] = [
     (lambda x, y: x[y], "[T, R](x: CanGetitem[T, R], y: T) -> R"),
     (lambda x, y: y[str(x)], "[R](x: CanStr, y: CanGetitem[str, R]) -> R"),
     (lambda x, y: x, "[T](x: T, y: object) -> T"),  # noqa: ARG005
+    (lambda x, y: (type(x), type(y)), "[T, U](x: T, y: U) -> tuple[type[T], type[U]]"),
+    (
+        lambda x, y: y + type(x)(),
+        "[T, R](x: T, y: CanAdd[T, R]) -> R\n[T, R](x: CanRAdd[T, R], y: T) -> R",
+    ),
     (lambda x, y: x or y, "[T: CanBool, U](x: T, y: U) -> T | U"),
     (lambda x, y: x if x in y else y, "[T, U: CanContains[T]](x: T, y: U) -> T | U"),
     (lambda x, y: x and y, "[T: CanBool, U](x: T, y: U) -> U | T"),
@@ -391,6 +415,10 @@ def _str_default(x: Any = 0) -> Any:
     return str(x)
 
 
+def _type_default(x: object = 0) -> type[object]:
+    return type(x)
+
+
 def _unused_default(x: Any, _y: Any = 0) -> Any:
     return x + 1
 
@@ -410,6 +438,7 @@ DEFAULT_CASES: list[tuple[Callable[..., Any], str]] = [
     ),
     (_getitem_default, "[R, T = Literal[1]](x: CanGetitem[T, R], y: T = 1) -> R"),
     (_yield_default, "[T = Literal[0]](x: T = 0) -> Generator[T]"),
+    (_type_default, "[T = Literal[0]](x: T = 0) -> type[T]"),
     # a parameter whose typevar would only appear once shows the default inline
     (_or_default, "(x: CanBool = None) -> None"),
     (_str_default, "(x: CanStr = 0) -> str"),
@@ -525,6 +554,9 @@ SUBTYPE_CASES: list[tuple[Any, Any, bool]] = [
     (App("tuple", (Type(bool), Lit((1,)))), App("tuple", (Type(int),) * 2), True),
     (App("tuple", (Type(bool),)), App("tuple", (Type(int),) * 2), False),
     (App("list", (Type(bool),)), App("list", (Type(int),)), False),
+    # type is covariant
+    (App("type", (Type(bool),)), App("type", (Type(int),)), True),
+    (App("type", (Type(int),)), App("type", (Type(bool),)), False),
 ]
 
 
@@ -815,6 +847,10 @@ def test_doc_params() -> None:
 def test_doc_signature() -> None:
     # builtins like `int` have no signature; fall back to the docstring
     assert infer(int) == "(x: CanInt | CanIndex) -> int"
+
+
+def test_type() -> None:
+    assert infer(type) == "[T](object: T) -> type[T]"
 
 
 def _set_attr(x: Any) -> object:

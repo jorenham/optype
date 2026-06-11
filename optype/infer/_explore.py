@@ -24,6 +24,8 @@ from ._spy import (
     _AnyFunc,
     _Fork,
     _fork,
+    _Marker,
+    _own_spy,
     _SpyObject,
     _SpyStr,
     _TraceItem,
@@ -89,8 +91,16 @@ def _reachable(params: Iterable[object]) -> Generator[_SpyObject]:
 
 
 def _snapshot(params: Iterable[_SpyObject]) -> _Traces:
-    """Capture the traces of every spy reachable from `params`."""
-    return {id(spy): list(spy.__optype_trace__) for spy in _reachable(params)}
+    """Capture the traces of every spy reachable from `params`.
+
+    An operation on a `type(spy)(...)` sibling requires it of the spy's type, so a
+    sibling's trace merges into its owner's, and the markers themselves are dropped.
+    """
+    traces: _Traces = {}
+    for spy in _reachable(params):
+        items = (item for item in spy.__optype_trace__ if item.attr != _Marker.SIBLING)
+        traces.setdefault(id(_own_spy(spy)), []).extend(items)
+    return traces
 
 
 def _doc_params(func: _AnyFunc) -> list[str] | None:

@@ -2,7 +2,8 @@
 
 from collections.abc import Callable, Generator, Iterator
 from contextvars import ContextVar
-from typing import Any, NamedTuple, final, override
+from enum import StrEnum
+from typing import Any, ClassVar, NamedTuple, Self, cast, final, override
 
 type _AnyFunc = Callable[..., object]
 type _Args = tuple[object, ...]
@@ -16,7 +17,12 @@ class _AbsentError(TypeError):
     """A simulated missing dunder; subclasses `TypeError` so probes suppress it."""
 
 
-_ABSENT = "__absent__"  # the trace marker of a simulated-missing dunder
+class _Marker(StrEnum):
+    """A pseudo-operation trace marker, not a real dunder."""
+
+    ABSENT = "__absent__"  # a simulated-missing dunder
+    SIBLING = "__sibling__"  # a `type(spy)(...)` instantiation
+
 
 _fork: ContextVar[Iterator[bool] | None] = ContextVar("_fork", default=None)
 
@@ -66,6 +72,21 @@ class _SpyBytes(bytes, _Spy):
 class _SpyObject(_Spy):
     __optype_element__: "_SpyObject | None" = None
     __optype_iterator__: bool = False
+    # spies are descriptors (`__get__`), so only ever read through the class `__dict__`
+    __optype_instance__: "ClassVar[_SpyObject | None]" = None
+
+    def __new__(cls, /, *_args: object, **_kwargs: object) -> "_SpyObject":
+        if cls is not _SpyObject:
+            # a `type(spy)(...)` sibling; the marker keeps it reachable from the spy
+            self = super().__new__(cls)
+            if (owner := _class_spy(cls)) is not None:
+                owner.__optype_trace__.append(_TraceItem(_Marker.SIBLING, (), {}, self))
+            return self
+        # every spy gets a class of its own, so that `type(spy)` identifies the spy
+        unique = cast("type[Self]", type("_SpyObject", (cls,), {}))
+        self = super().__new__(unique)
+        unique.__optype_instance__ = self
+        return self
 
     ###
 
@@ -91,8 +112,6 @@ class _SpyObject(_Spy):
     def __dir__(self, /) -> "_SpyObject":
         # TODO: maybe return specialized `_SpyObject & Iterable[str]`
         return self.__optype_trace_add__("__dir__", (), {}, _SpyObject())
-
-    # TODO: __class__ -> _SpyType
 
     ###
 
@@ -175,7 +194,7 @@ class _SpyObject(_Spy):
         # `len()` is often probed optionally (e.g. `list()` via `length_hint`), so
         # also fork on its presence; the absent branch raises like a missing dunder
         if not _decide():
-            self.__optype_trace_add__(_ABSENT, ("__len__",), {}, None)
+            self.__optype_trace_add__(_Marker.ABSENT, ("__len__",), {}, None)
             raise _AbsentError
         return self.__optype_trace_add__("__len__", (), {}, _decide())
 
@@ -452,6 +471,26 @@ class _SpyObject(_Spy):
 
 
 # Free functions, not methods: a method would be an unrecorded hole in the proxy.
+def _class_spy(cls: object) -> _SpyObject | None:
+    """The spy whose unique class `cls` is, if any."""
+    if isinstance(cls, type) and issubclass(cls, _SpyObject):
+        spy = cls.__dict__.get("__optype_instance__")
+        if isinstance(spy, _SpyObject):
+            return spy
+    return None
+
+
+def _own_spy(spy: _SpyObject) -> _SpyObject:
+    """The first spy of `spy`'s class: `type(spy)()` siblings collapse onto it."""
+    owner = _class_spy(type(spy))  # `or spy` would trace a `__bool__` on the owner
+    return spy if owner is None else owner
+
+
+def as_spy(value: object) -> _SpyObject | None:
+    """The (first-of-its-class) spy itself, or the spy whose class it is, if any."""
+    return _own_spy(value) if isinstance(value, _SpyObject) else _class_spy(value)
+
+
 def _element_of(spy: _SpyObject) -> _SpyObject:
     if (element := spy.__optype_element__) is None:
         element = _SpyObject()

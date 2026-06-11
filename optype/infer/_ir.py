@@ -14,6 +14,7 @@ _VARIANCES = {
     "Generator": "+-+",
     "frozenset": "+",
     "tuple": "+",
+    "type": "+",
 }
 
 
