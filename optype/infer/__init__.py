@@ -26,6 +26,8 @@ from typing import Any, NamedTuple, cast, final, overload
 
 from . import _ir, _numpy
 from ._spy import (
+    _ABSENT,
+    _AbsentError,
     _AnyFunc,
     _Args,
     _Fork,
@@ -166,19 +168,26 @@ def _resolve(trace: _TraceItem) -> _Op:
     raise InferError(msg)
 
 
-def _snapshot(params: Iterable[_SpyObject]) -> _Traces:
-    """Capture the traces of every spy reachable from `params`."""
-    traces: _Traces = {}
+def _reachable(params: Iterable[_SpyObject]) -> Generator[_SpyObject]:
+    # every spy reachable from `params` through the recorded operations
+    seen: set[int] = set()
     stack = list(params)
     while stack:
         spy = stack.pop()
-        if id(spy) in traces:
+        if id(spy) in seen:
             continue
-        items = traces[id(spy)] = list(spy.__optype_trace__)
+        seen.add(id(spy))
+        yield spy
         stack.extend(
-            ret for item in items if isinstance(ret := item.return_, _SpyObject)
+            ret
+            for item in spy.__optype_trace__
+            if isinstance(ret := item.return_, _SpyObject)
         )
-    return traces
+
+
+def _snapshot(params: Iterable[_SpyObject]) -> _Traces:
+    """Capture the traces of every spy reachable from `params`."""
+    return {id(spy): list(spy.__optype_trace__) for spy in _reachable(params)}
 
 
 def _analyze(
@@ -462,8 +471,13 @@ class _Renderer:
         return _ir.App(proto, tuple(args))
 
     def traces(self, items: Iterable[_TraceItem]) -> _ir.Node | None:
+        items = list(items)
+        # a surviving absence marker proves the dunder was only probed optionally
+        optional = {item.args[0] for item in items if item.attr == _ABSENT}
         groups: dict[tuple[_Proto, int, tuple[str, ...]], list[_Op]] = {}
         for item in items:
+            if item.attr == _ABSENT or item.attr in optional:
+                continue
             op = _resolve(item)
             key = op.proto, len(op.args), tuple(sorted(op.kwargs))
             groups.setdefault(key, []).append(op)
@@ -702,6 +716,10 @@ def _explore[T](
         if not stack:
             break
         plan = stack.pop()
+        marks = [
+            (spy, len(spy.__optype_trace__))
+            for spy in _reachable((*args, *kwds.values()))
+        ]
         token = _fork.set(iter(plan))
         try:
             result = func(*args, **kwds)
@@ -711,6 +729,10 @@ def _explore[T](
                 stack.extend(([*plan, False], [*plan, True]))
             else:
                 dropped = True
+        except _AbsentError:
+            # the dunder is genuinely needed, so this run (and its marker) never was
+            for spy, length in marks:
+                del spy.__optype_trace__[length:]
         finally:
             _fork.reset(token)
     if not results:

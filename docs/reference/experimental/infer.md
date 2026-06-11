@@ -23,8 +23,9 @@ the result as a [PEP 695](https://peps.python.org/pep-0695/) signature.
 >>> from optype.infer import infer
 >>> infer(lambda x: x + 1)
 '[R](x: CanAdd[Literal[1], R]) -> R'
->>> infer(list)
-'[R](iterable: CanIter[CanNext[R]] & CanLen) -> list[R]'
+>>> print(infer(list))
+(iterable: tuple[()] = ...) -> list[Never]
+[R](iterable: CanIter[CanNext[R]] & ~tuple[()]) -> list[R]
 ```
 
 Pass parameter names or positions to report only those parameters:
