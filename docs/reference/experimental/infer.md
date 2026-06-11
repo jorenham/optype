@@ -113,6 +113,37 @@ $ optype infer "lambda x: reversed(x)"
 [R](x: CanReversed[R]) -> R
 ```
 
+## Classes
+
+`type` reads the class directly instead of dispatching through a dunder, but every
+recording proxy has a unique class, so the result is still tied to its parameter:
+
+```console
+$ optype infer "type"
+[T](object: T) -> type[T]
+
+$ optype infer "lambda x: type(next(x))"
+[R](x: CanNext[R]) -> type[R]
+```
+
+That unique class also ties its instances back to the parameter:
+
+```console
+$ optype infer "lambda x: type(x)()"
+[T](x: T) -> T
+```
+
+A concrete class renders parameterized when it resolves by name (a local class stays
+a bare `type`), and `type` is covariant, so a subclass is absorbed by its parent:
+
+```console
+$ optype infer "lambda: bool"
+() -> type[bool]
+
+$ optype infer "lambda x: int if x else bool"
+(x: CanBool) -> type[int]
+```
+
 ## Branches
 
 Both sides of a conditional are explored, so the parameter has to satisfy every branch
