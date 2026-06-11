@@ -66,6 +66,53 @@ $ optype infer "lambda x: -x + x"
 [T, R](x: CanNeg[T] & CanRAdd[T, R]) -> R
 ```
 
+## Intersections
+
+Python has no intersection types, so the `&` is not valid Python: both requirements
+apply at once. Since each `optype` protocol declares a single method, an intersection
+of distinct protocols is expressible as a protocol that inherits from all members:
+
+```python
+class CanNegRAdd[T, R](CanNeg[T], CanRAdd[T, R], Protocol): ...
+```
+
+This turns the `CanNeg[T] & CanRAdd[T, R]` above into the valid `CanNegRAdd[T, R]`.
+
+Only an intersection of the same protocol shares its method, which happens when an
+operation is traced at several arities:
+
+```console
+$ optype infer "lambda x: (round(x), round(x, 2))"
+[R, R2](x: CanRound[R] & CanRound[Literal[2], R2]) -> tuple[R, R2]
+```
+
+That takes `@overload`s instead, which `optype` ships as the three-parameter
+`CanRound`: this intersection is `CanRound[Literal[2], R, R2]`.
+
+## Operators
+
+Every operation that dispatches through a dunder is traced. That includes augmented
+assignments, which map to the in-place protocols:
+
+```console
+$ optype infer "def f(x, y): x += y; return x"
+[T, R](x: CanIAdd[T, R], y: T) -> R
+```
+
+The same goes for builtins such as `divmod`, `round`, and `reversed`, which dispatch
+through dunders too:
+
+```console
+$ optype infer "lambda x: divmod(x, 2)"
+[R](x: CanDivmod[Literal[2], R]) -> R
+
+$ optype infer "lambda x: round(x, 2)"
+[R](x: CanRound[Literal[2], R]) -> R
+
+$ optype infer "lambda x: reversed(x)"
+[R](x: CanReversed[R]) -> R
+```
+
 ## Branches
 
 Both sides of a conditional are explored, so the parameter has to satisfy every branch
@@ -84,10 +131,19 @@ $ optype infer "lambda x, y: (x + y) if x else y"
 [T: CanBool, U: CanRAdd[T, R], R](x: T, y: U) -> R | U
 ```
 
+A comparison chain short-circuits, so it branches too: a falsy first comparison is
+returned as-is, and only a truthy one evaluates the second (`0 < x` reflects to
+`x.__gt__`):
+
+```console
+$ optype infer "lambda x: 0 < x < 10"
+[R, R2: CanBool](x: CanGt[Literal[0], R2 & CanBool] & CanLt[Literal[10], R]) -> R | R2
+```
+
 ## Variadic parameters
 
 A `*args` parameter that is only passed around as a whole is inferred as a
-[PEP 646](https://peps.python.org/pep-0646/) `TypeVarTuple`:
+[PEP 646](https://peps.python.org/pep-0646/) variadic type parameter, `*Ts`:
 
 ```console
 $ optype infer "lambda *args: args"
@@ -97,8 +153,9 @@ $ optype infer "lambda *args: (1, *args)"
 [*Ts](*args: *Ts) -> tuple[Literal[1], *Ts]
 ```
 
-Operating on individual elements is not expressible with a `TypeVarTuple`, so the
-elements then share a single inferred element type, as does every value of `**kwargs`:
+Operating on individual elements is not expressible with a variadic type parameter, so
+the elements then share a single inferred element type, as does every value of
+`**kwargs`:
 
 ```console
 $ optype infer "lambda *args: args[0] + args[1]"
@@ -139,6 +196,43 @@ The `~None` complement makes the overloads disjoint: the first one covers `f()` 
 `f(None)`, and the second one everything else. Like `&`, the `~` is not valid Python;
 in practice it's fine to omit it, as overloads are matched in order anyway.
 
+## Methods
+
+Anything callable can be inferred: not just functions, but also builtins (like
+`math.sqrt` above), callable instances, and unbound method descriptors. A method
+descriptor's `self` requires a real instance of its defining class, so it is reported
+as that concrete type:
+
+```console
+$ optype infer "str.upper"
+(self: str) -> str
+
+$ optype infer "dict.get"
+[T = None](self: dict, key: CanHash, default: T = None) -> T
+```
+
+When a builtin rejects the recording proxy for a defaulted parameter, its default is
+passed instead and the parameter is pinned to it, while the accepting parameters stay
+structural:
+
+```console
+$ optype infer "str.split"
+(self: str, sep: None = None, maxsplit: CanIndex = -1) -> list[Never]
+```
+
+## Context managers
+
+A `with` statement requires `CanEnter` and `CanExit`; on a clean exit, `__exit__` is
+called with `(None, None, None)`:
+
+```pycon
+>>> def f(x):
+...     with x as y:
+...         return y
+>>> infer(f)
+'[R](x: CanEnter[R] & CanExit[None, None, None]) -> R'
+```
+
 ## Async
 
 Coroutine functions are run to completion, so `await`, `async with`, and `async for` are
@@ -150,6 +244,16 @@ $ optype infer "async def f(x): return await x"
 
 $ optype infer "async def f(xs): return [x async for x in xs]"
 [R](xs: CanAIter[CanANext[CanAwait[R]]]) -> list[R]
+```
+
+`async with` requires `CanAEnter` and `CanAExit`, whose results must be awaitable:
+
+```pycon
+>>> async def f(x):
+...     async with x as y:
+...         return y
+>>> infer(f)
+'[R](x: CanAEnter[CanAwait[R]] & CanAExit[None, None, None, CanAwait]) -> R'
 ```
 
 ## Generators
@@ -165,6 +269,19 @@ $ optype infer "def f(): yield None; yield 1"
 
 $ optype infer "async def f(xs): return (x async for x in xs)"
 [R](xs: CanAIter[CanANext[CanAwait[R]]]) -> AsyncGenerator[R]
+```
+
+## Containers
+
+Element types are tracked through the containers that hold them, so a typevar can
+surface at any depth, on either side of the signature:
+
+```console
+$ optype infer "lambda x: (x + 1, x + 1)"
+[R](x: CanAdd[Literal[1], R]) -> tuple[R, R]
+
+$ optype infer "lambda x: {0: [v + 1 for v in x[0]]}"
+[R](x: CanGetitem[Literal[0], CanIter[CanNext[CanAdd[Literal[1], R]]]]) -> dict[Literal[0], list[R]]
 ```
 
 ## Unions
