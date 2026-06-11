@@ -559,6 +559,46 @@ def test_callable_instance() -> None:
     assert infer(Add1()) == "[R](x: CanAdd[Literal[1], R]) -> R"
 
 
+def test_method_descriptor() -> None:
+    # an unbound method descriptor's `self` requires a real `__objclass__` instance
+    assert infer(str.upper) == "(self: str) -> str"
+    assert infer(int.bit_length) == "(self: int) -> int"
+    assert infer(float.hex) == "(self: float) -> str"
+    assert infer(list[Any].append) == "(self: list, object: object) -> None"
+    assert infer(object.__str__) == "(self: object) -> str"
+    assert infer(dict[Any, Any].get) == (
+        "[T = None](self: dict, key: CanHash, default: T = None) -> T"
+    )
+    # `memoryview()` is constructed from a spy through its `__buffer__`
+    assert infer(memoryview.tobytes) == (
+        "(self: memoryview, order: Literal['C'] = 'C') -> bytes"
+    )
+
+
+def test_method_descriptor_fixed_defaults() -> None:
+    # a defaulted parameter whose spy the function rejects passes its default
+    # instead, while the accepting parameters stay structural
+    assert infer(str.split) == (
+        "(self: str, sep: None = None, maxsplit: CanIndex = -1) -> list[Never]"
+    )
+    assert infer(bytes.decode) == (
+        "(self: bytes, encoding: Literal['utf-8'] = 'utf-8', "
+        "errors: Literal['strict'] = 'strict') -> str"
+    )
+
+
+def test_method_descriptor_unsupported() -> None:
+    # generators cannot be constructed, spy-rejecting parameters without a default
+    # have nothing to fall back on, and an empty `self` cannot always run
+    send = type(x for x in range(0)).send
+    with pytest.raises(InferError, match="cannot instantiate 'generator'"):
+        infer(send)
+    with pytest.raises(InferError, match="expected str instance"):
+        infer(str.join)
+    with pytest.raises(InferError, match="pop from empty list"):
+        infer(list[Any].pop)
+
+
 def test_ternary_pow() -> None:
     # the optional modulo is used forward but dropped from the reflected overload
     def f(x: Any, y: Any, z: Any = None) -> Any:

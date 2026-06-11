@@ -1,0 +1,15 @@
+extend = "../../pyproject.toml"
+cache-dir = "../../.ruff_cache"
+
+[lint.per-file-ignores]
+"_api.py" = ["PLR0402"]
+"_cli.py" = ["S102", "S307", "T201"]
+"_render.py" = ["PLR0402"]
+"_spy.py" = ["TD002", "TD003", "PYI034", "PLR0904"]
+
+[lint.pylint]
+allow-dunder-method-names = [
+  "__array_function__",
+  "__array_ufunc__",
+  "__optype_trace_add__",
+]

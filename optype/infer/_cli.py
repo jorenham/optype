@@ -23,9 +23,9 @@ def run(*args: str) -> None:
         sys.exit("the final statement must be an expression or a definition")
 
     namespace: dict[str, object] = {}
-    exec(compile(ast.Module(body[:-1], []), "<expr>", "exec"), namespace)  # noqa: S102
+    exec(compile(ast.Module(body[:-1], []), "<expr>", "exec"), namespace)
     code = compile(ast.Expression(last.value), "<expr>", "eval")
     try:
-        print(infer(eval(code, namespace), *params))  # noqa: S307, T201
+        print(infer(eval(code, namespace), *params))
     except (InferError, ValueError) as exc:
         sys.exit(f"{type(exc).__name__}: {exc}")

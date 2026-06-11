@@ -12,8 +12,10 @@ from collections.abc import (
     Mapping,
     Sequence,
 )
+from contextlib import suppress
 from inspect import Parameter, isasyncgen, iscoroutine, isgenerator, signature
 from itertools import islice
+from types import MethodDescriptorType, WrapperDescriptorType
 from typing import Any, NamedTuple, cast, overload
 
 from ._errors import InferError, InferWarning
@@ -27,7 +29,15 @@ from ._spy import (
     _TraceItem,
 )
 
-__all__ = ("_Gen", "_Recon", "_Traces", "_doc_params", "_explore_spies", "_parameters")
+__all__ = (
+    "_Gen",
+    "_Recon",
+    "_Traces",
+    "_doc_params",
+    "_explore_lenient",
+    "_explore_spies",
+    "_parameters",
+)
 
 _RE_DOC_SIGNATURE = re.compile(r"\b(\w+)\(([^)]*)\)")
 _RE_DOC_PARAM = re.compile(r"(?:^|,)\s*\**([a-zA-Z_]\w*)")
@@ -42,8 +52,15 @@ _KWARGS_LIMIT = 8  # max injected `**kwargs` keys
 
 type _Traces = dict[int, list[_TraceItem]]
 
-# the spies, their traces, the results, and the `*args` placeholder count
-type _Recon = tuple[Mapping[str, _SpyObject], _Traces, list[object], int]
+# the spies, their traces, the results, the `*args` placeholder count, and the fixed
+# parameter values (passed as-is instead of a spy)
+type _Recon = tuple[
+    Mapping[str, _SpyObject],
+    _Traces,
+    list[object],
+    int,
+    Mapping[str, object],
+]
 
 
 class _Gen(NamedTuple):
@@ -55,13 +72,12 @@ class _Gen(NamedTuple):
         return "AsyncGenerator" if self.is_async else "Generator"
 
 
-def _reachable(params: Iterable[_SpyObject]) -> Generator[_SpyObject]:
+def _reachable(params: Iterable[object]) -> Generator[_SpyObject]:
     # every spy reachable from `params` through the recorded operations
     seen: set[int] = set()
-    stack = list(params)
+    stack = [spy for spy in params if isinstance(spy, _SpyObject)]
     while stack:
-        spy = stack.pop()
-        if id(spy) in seen:
+        if id(spy := stack.pop()) in seen:
             continue
         seen.add(id(spy))
         yield spy
@@ -150,8 +166,8 @@ def _next(result: object) -> object:
 
 def _explore[T](
     func: Callable[..., T] | Callable[..., Coroutine[Any, None, T]],
-    args: Sequence[_SpyObject],
-    kwds: Mapping[str, _SpyObject],
+    args: Sequence[object],
+    kwds: Mapping[str, object],
 ) -> list[T]:
     results: list[T] = []
     stack: list[list[bool]] = [[]]
@@ -186,35 +202,52 @@ def _explore[T](
     return results
 
 
+def _fixed_self(func: _AnyFunc, params: Mapping[str, Parameter]) -> dict[str, object]:
+    if not isinstance(func, MethodDescriptorType | WrapperDescriptorType) or not params:
+        return {}
+    cls = func.__objclass__
+    # a spy argument satisfies constructors that need a buffer/index/iterable/...
+    for args in ((), (_SpyObject(),)):
+        with suppress(Exception):
+            return {next(iter(params)): cls(*args)}
+    msg = f"cannot instantiate {cls.__name__!r} for {func.__qualname__!r}"
+    raise InferError(msg)
+
+
 def _placeholders(
     params: Mapping[str, Parameter],
     count: int,
     keys: Sequence[str],
-    omit: Collection[str] = (),
-) -> tuple[dict[str, _SpyObject], list[_SpyObject], dict[str, _SpyObject]]:
-    # one spy per non-omitted parameter, distributed over the call's args and kwds
-    spies = {name: _SpyObject() for name in params if name not in omit}
-    args: list[_SpyObject] = []
-    kwds: dict[str, _SpyObject] = {}
+    omit: Collection[str],
+    fixed: Mapping[str, object],
+) -> tuple[dict[str, _SpyObject], list[object], dict[str, object]]:
+    # one spy per non-omitted, non-fixed parameter, distributed over the call's
+    # args and kwds
+    spies = {
+        name: _SpyObject() for name in params if name not in omit and name not in fixed
+    }
+    args: list[object] = []
+    kwds: dict[str, object] = {}
     gap = False  # a positional parameter after an omitted one must pass by keyword
     for name, param in params.items():
         if name in omit:
             gap = gap or param.kind is not Parameter.KEYWORD_ONLY
             continue
+        value = fixed[name] if name in fixed else spies[name]
         match param.kind:
             case Parameter.VAR_POSITIONAL:
-                args += [spies[name]] * count
+                args += [value] * count
             case Parameter.VAR_KEYWORD:
-                kwds |= dict.fromkeys(map(_SpyStr, keys or ("",)), spies[name])
+                kwds |= dict.fromkeys(map(_SpyStr, keys or ("",)), value)
             case Parameter.KEYWORD_ONLY:
-                kwds[name] = spies[name]
+                kwds[name] = value
             case Parameter.POSITIONAL_ONLY if gap:
                 msg = f"cannot pass {name!r} by keyword"
                 raise InferError(msg)
             case _ if gap:
-                kwds[name] = spies[name]
+                kwds[name] = value
             case _:
-                args.append(spies[name])
+                args.append(value)
     return spies, args, kwds
 
 
@@ -222,6 +255,7 @@ def _explore_spies(
     func: _AnyFunc,
     params: Mapping[str, Parameter],
     omit: Collection[str] = (),
+    fix: Collection[str] = (),
 ) -> _Recon:
     # rerun with fresh spies whenever the variadic placeholders come up short
     kinds = {p.kind for p in params.values()}
@@ -229,7 +263,9 @@ def _explore_spies(
     count = next(counts)
     keys: list[str] = []
     while True:
-        spies, args, kwds = _placeholders(params, count, keys, omit)
+        # a fresh `self` instance per attempt, so a mutated one cannot leak
+        fixed = _fixed_self(func, params) | {n: params[n].default for n in fix}
+        spies, args, kwds = _placeholders(params, count, keys, omit, fixed)
         try:
             results: list[object] = [_next(r) for r in _explore(func, args, kwds)]
         except KeyError as exc:
@@ -252,4 +288,28 @@ def _explore_spies(
                 msg = f"ran out of `*args` placeholders ({exc})"
                 raise InferError(msg) from exc
         else:
-            return spies, _snapshot(spies.values()), results, count
+            return spies, _snapshot(spies.values()), results, count, fixed
+
+
+def _explore_lenient(
+    func: _AnyFunc,
+    params: Mapping[str, Parameter],
+) -> tuple[_Recon, Mapping[str, object]]:
+    # if a spy placeholder is rejected, fall back to fixing the defaulted parameters,
+    # and also return every parameter default for rendering
+    try:
+        return _explore_spies(func, params), {}
+    except (TypeError, ValueError):
+        defaults = {
+            n: p.default for n, p in params.items() if p.default is not Parameter.empty
+        }
+        if not defaults:
+            raise
+    # start from the all-fixed baseline and greedily promote one spy at a time
+    fix = set(defaults)
+    recon = _explore_spies(func, params, fix=fix)
+    for name in defaults:
+        with suppress(Exception):
+            recon = _explore_spies(func, params, fix=fix - {name})
+            fix.discard(name)
+    return recon, defaults
