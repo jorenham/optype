@@ -108,6 +108,36 @@ $ optype infer "lambda **kwargs: kwargs"
 [T](**kwargs: T) -> dict[str, T]
 ```
 
+## Parameter defaults
+
+[PEP 696](https://peps.python.org/pep-0696/) type parameter defaults are used when
+appropriate:
+
+```console
+$ optype infer "def f(x=0): return x"
+[T = Literal[0]](x: T = 0) -> T
+```
+
+A parameter without its own typevar shows the default inline instead:
+
+```console
+$ optype infer "def f(x=0): return str(x)"
+(x: CanStr = 0) -> str
+```
+
+When omission behaves differently, such as when the function branches on the default,
+the call without the argument is reported as a separate overload:
+
+```console
+$ optype infer "def f(x=None): return [] if x is None else x"
+(x: None = None) -> list[Never]
+[T: ~None](x: T) -> T
+```
+
+The `~None` complement makes the overloads disjoint: the first one covers `f()` and
+`f(None)`, and the second one everything else. Like `&`, the `~` is not valid Python;
+in practice it's fine to omit it, as overloads are matched in order anyway.
+
 ## Async
 
 Coroutine functions are run to completion, so `await`, `async with`, and `async for` are

@@ -35,7 +35,13 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     (lambda x: ~x, "[R](x: CanInvert[R]) -> R"),
     (lambda x: abs(x), "[R](x: CanAbs[R]) -> R"),  # noqa: PLW0108
     (len, "(obj: CanLen) -> int"),
-    (list, "[R](iterable: CanIter[CanNext[R]] & CanLen) -> list[R]"),
+    (
+        list,
+        (
+            "(iterable: tuple[()] = ...) -> list[Never]\n"
+            "[R](iterable: CanIter[CanNext[R]] & CanLen & ~tuple[()]) -> list[R]"
+        ),
+    ),
     (math.sqrt, "(x: CanFloat | CanIndex) -> float"),
     (lambda x: int(x), "(x: CanInt | CanIndex) -> int"),  # noqa: PLW0108
     (lambda x: complex(x), "(x: CanComplex | CanFloat | CanIndex) -> complex"),  # noqa: PLW0108
@@ -338,7 +344,97 @@ VARIADIC_CASES: list[tuple[Callable[..., Any], str]] = [
 ]
 
 
-INFER_CASES = [*UNARY_CASES, *BINARY_CASES, *VARIADIC_CASES]
+def _int_default(x: Any = 0) -> Any:
+    return x
+
+
+def _none_default(x: Any = None) -> Any:
+    return x
+
+
+def _float_default(x: Any = 1.5) -> Any:
+    return x
+
+
+def _add_one_default(x: Any = 0) -> Any:
+    return x + 1
+
+
+def _mul_defaults(x: Any = 1, y: Any = 2) -> Any:
+    return x * y
+
+
+def _add_default(x: Any, y: Any = 0) -> Any:
+    return x + y
+
+
+def _getitem_default(x: Any, *, y: Any = 1) -> Any:
+    return x[y]
+
+
+def _yield_default(x: Any = 0) -> Any:
+    yield x
+
+
+def _if_none(x: Any = None) -> Any:
+    return [] if x is None else x
+
+
+def _or_default(x: Any = None) -> None:
+    _: Any = x or []
+
+
+def _str_default(x: Any = 0) -> Any:
+    return str(x)
+
+
+def _unused_default(x: Any, _y: Any = 0) -> Any:
+    return x + 1
+
+
+DEFAULT_CASES: list[tuple[Callable[..., Any], str]] = [
+    # the typevar of a defaulted parameter gets a PEP 696 default when omitting
+    # the argument behaves like substituting its value
+    (_int_default, "[T = Literal[0]](x: T = 0) -> T"),
+    (_none_default, "[T = None](x: T = None) -> T"),
+    (_float_default, "[T = float](x: T = 1.5) -> T"),
+    (
+        _add_default,
+        (
+            "[R, T = Literal[0]](x: CanAdd[T, R], y: T = 0) -> R\n"
+            "[T, R](x: T, y: CanRAdd[T, R] = 0) -> R"
+        ),
+    ),
+    (_getitem_default, "[R, T = Literal[1]](x: CanGetitem[T, R], y: T = 1) -> R"),
+    (_yield_default, "[T = Literal[0]](x: T = 0) -> Generator[T]"),
+    # a parameter whose typevar would only appear once shows the default inline
+    (_or_default, "(x: CanBool = None) -> None"),
+    (_str_default, "(x: CanStr = 0) -> str"),
+    # when omission behaves differently, the omitted call is its own overload,
+    # which also covers passing the default explicitly; a single default's type
+    # is excluded from the generic overload, so that the overloads are disjoint
+    (_if_none, "(x: None = None) -> list[Never]\n[T: ~None](x: T) -> T"),
+    (
+        _add_one_default,
+        "(x: Literal[0] = 0) -> int\n[R](x: CanAdd[Literal[1], R] & ~Literal[0]) -> R",
+    ),
+    # with several defaults, each one also gets an overload of its own
+    (
+        _mul_defaults,
+        (
+            "(x: Literal[1] = 1, y: Literal[2] = 2) -> int\n"
+            "[R](x: Literal[1] = 1, y: CanRMul[Literal[1], R]) -> R\n"
+            "[R](x: CanMul[Literal[2], R], y: Literal[2] = 2) -> R\n"
+            "[T, R](x: CanMul[T, R], y: T) -> R\n"
+            "[T, R](x: T, y: CanRMul[T, R]) -> R"
+        ),
+    ),
+    # an unused default is dropped from the signature either way
+    (_unused_default, "[R](x: CanAdd[Literal[1], R]) -> R"),
+]
+
+
+INFER_CASES = [*UNARY_CASES, *BINARY_CASES, *VARIADIC_CASES, *DEFAULT_CASES]
 
 
 @pytest.mark.parametrize(
@@ -466,7 +562,7 @@ def test_ternary_pow() -> None:
         return x.__pow__(y, z)  # noqa: PLC2801
 
     assert infer(f) == (
-        "[T, U, R](x: CanPow[T, U, R], y: T, z: U) -> R\n"
+        "[T, R, U = None](x: CanPow[T, U, R], y: T, z: U = None) -> R\n"
         "[T, R](x: T, y: CanRPow[T, R]) -> R"
     )
 
@@ -734,6 +830,12 @@ def test_cli_def() -> None:
     assert out.stdout.strip() == (
         "[T, R](x: CanMatmul[T, R], y: T) -> R\n[T, R](x: T, y: CanRMatmul[T, R]) -> R"
     )
+
+
+def test_cli_default() -> None:
+    out = _run_cli("-m", "optype", "infer", "def f(x=0): return x")
+    assert out.returncode == 0
+    assert out.stdout.strip() == "[T = Literal[0]](x: T = 0) -> T"
 
 
 def test_cli_variadic() -> None:

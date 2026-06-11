@@ -126,6 +126,12 @@ type _Traces = dict[int, list[_TraceItem]]
 type _RetKey = tuple[int, str, int, tuple[str, ...]]
 type _Proto = str | tuple[str, ...]  # a tuple is rendered as a union of protocols
 
+type _Names = Sequence[str]
+type _Defaults = Mapping[str, object]
+
+# the spies, their traces, the results, and the `*args` placeholder count
+type _Recon = tuple[Mapping[str, _SpyObject], _Traces, list[object], int]
+
 
 class _Op(NamedTuple):
     proto: _Proto
@@ -224,7 +230,7 @@ def _ret_keys(
     return keys, args
 
 
-def _select(params: Iterable[str | int], names: Sequence[str]) -> Sequence[str]:
+def _select(params: Iterable[str | int], names: _Names) -> _Names:
     selected: list[str] = []
     for p in params:
         if isinstance(p, int):
@@ -248,7 +254,6 @@ def _spy_runs(items: Iterable[object], spy: _SpyObject) -> list[int]:
 
 def _packed_uses(value: object, spy: _SpyObject, count: int) -> Generator[bool]:
     # yields each use of `spy`: True if packed (one full placeholder run in a tuple)
-    items: Iterable[object]
     match value:
         case _SpyObject():
             if value is spy:
@@ -319,6 +324,15 @@ def _return_spies(value: object) -> Generator[_SpyObject]:
             pass
 
 
+def _suffix(defaults: _Defaults, name: str) -> str:
+    """The ` = <default>` suffix of a defaulted parameter, in stub style."""
+    if name not in defaults:
+        return ""
+    value = defaults[name]
+    simple = value is None or isinstance(value, int | float | complex | str | bytes)
+    return f" = {value!r}" if simple else " = ..."
+
+
 @final
 class _Renderer:
     """Render an inferred `def` signature from the recorded spy traces."""
@@ -327,7 +341,7 @@ class _Renderer:
         self,
         spies: Mapping[str, _SpyObject],
         results: Sequence[object],
-        parameters: Mapping[str, Parameter],
+        params: Mapping[str, Parameter],
         count: int,
         traces: _Traces,
     ) -> None:
@@ -335,16 +349,16 @@ class _Renderer:
         self._results = results
         self._traces = traces
 
-        self._prefix = {n: _PARAM_PREFIX.get(p.kind, "") for n, p in parameters.items()}
+        self._prefix = {n: _PARAM_PREFIX.get(p.kind, "") for n, p in params.items()}
         self._optional = {
             name
-            for name, p in parameters.items()
+            for name, p in params.items()
             if p.default is not Parameter.empty or p.kind in _PARAM_PREFIX
         }
         self._varpos = next(
             (
                 spies[name]
-                for name, p in parameters.items()
+                for name, p in params.items()
                 if p.kind is Parameter.VAR_POSITIONAL
             ),
             None,
@@ -464,10 +478,22 @@ class _Renderer:
         node = self.spy(spy)
         return _ir.render(node) if node is not None else _OBJECT
 
-    def typevar(self, spy: _SpyObject) -> str:
+    def typevar(
+        self,
+        spy: _SpyObject,
+        defaulted: Mapping[int, _ir.Node],
+        *,
+        negate: bool = False,
+    ) -> str:
         var = self._vars[id(spy)]
         node = self.spy(spy)
-        return f"{var}: {_ir.render(node)}" if node is not None else var
+        default = defaulted.get(id(spy))
+        if negate and default is not None:
+            node = _ir.exclude(node, default)
+        decl = f"{var}: {_ir.render(node)}" if node is not None else var
+        if not negate and default is not None:
+            decl += f" = {_ir.render(default)}"
+        return decl
 
     def return_type(self, result: object) -> _ir.Node:
         match result:
@@ -528,16 +554,47 @@ class _Renderer:
         node = _ir.union(dict.fromkeys(map(self.return_type, self._results)))
         return _ir.render(node) if node is not None else _NEVER
 
-    def render(self, selected: Sequence[str]) -> str:
-        typevars = [self.typevar(spy) for spy in self._pool + self._result_spies]
+    def render(
+        self,
+        selected: _Names,
+        defaults: _Defaults | None = None,
+        *,
+        negate: bool = False,
+    ) -> str:
+        defaults = defaults or {}
+        defaulted = {
+            spy_id: node
+            for name, value in defaults.items()
+            if (spy := self._spies.get(name)) is not None
+            if (spy_id := id(spy)) in self._vars
+            if (node := self.union((value,))) is not None
+        }
+        ordered = self._pool + self._result_spies
+        if not negate:
+            # PEP 696 requires defaulted type parameters to come last
+            ordered.sort(key=lambda spy: id(spy) in defaulted)
+        typevars = [self.typevar(spy, defaulted, negate=negate) for spy in ordered]
         generics = f"[{', '.join(typevars)}]" if typevars else ""
         params = ", ".join(
-            f"{self._prefix[name]}{name}: {slot}"
+            decl
             for name in selected
-            if (slot := self.slot(self._spies[name])) != _OBJECT
-            or name not in self._optional
+            if (decl := self._param(name, defaults, negate=negate)) is not None
         )
         return f"{generics}({params}) -> {self.return_types()}"
+
+    def _param(self, name: str, defaults: _Defaults, *, negate: bool) -> str | None:
+        if (spy := self._spies.get(name)) is None:
+            # an omitted parameter binds its default, so passing it behaves the same
+            node = self.union((defaults[name],)) or _ir.Name(_NEVER)
+            return f"{name}: {_ir.render(node)}{_suffix(defaults, name)}"
+        slot = self.slot(spy)
+        if negate and name in defaults:
+            if id(spy) not in self._vars and (mark := self.union((defaults[name],))):
+                slot = _ir.render(_ir.exclude(self.spy(spy), mark))
+            return f"{self._prefix[name]}{name}: {slot}"
+        if slot == _OBJECT and name in self._optional:
+            return None
+        return f"{self._prefix[name]}{name}: {slot}{_suffix(defaults, name)}"
 
 
 def _doc_params(func: _AnyFunc) -> list[str] | None:
@@ -569,7 +626,7 @@ def _reflect(
 ) -> _Traces:
     """A copy of `traces` with each spy-spy binary op reflected onto its RHS."""
     order, _ = _analyze(params, results, traces)
-    kept: _Traces = {}
+    kept: _Traces = dict(traces)
     added: defaultdict[int, list[_TraceItem]] = defaultdict(list)
     for spy in order:
         keep: list[_TraceItem] = []
@@ -634,7 +691,7 @@ def _next(result: object) -> object:
 
 
 def _explore[T](
-    func: Callable[..., T | Coroutine[Any, None, T]],
+    func: Callable[..., T] | Callable[..., Coroutine[Any, None, T]],
     args: Sequence[_SpyObject],
     kwds: Mapping[str, _SpyObject],
 ) -> list[T]:
@@ -664,21 +721,31 @@ def _explore[T](
 
 
 def _placeholders(
-    parameters: Mapping[str, Parameter],
+    params: Mapping[str, Parameter],
     count: int,
     keys: Sequence[str],
+    omit: Collection[str] = (),
 ) -> tuple[dict[str, _SpyObject], list[_SpyObject], dict[str, _SpyObject]]:
-    """One spy per parameter, distributed over the call's `args` and `kwds`."""
-    spies = {name: _SpyObject() for name in parameters}
+    # one spy per non-omitted parameter, distributed over the call's args and kwds
+    spies = {name: _SpyObject() for name in params if name not in omit}
     args: list[_SpyObject] = []
     kwds: dict[str, _SpyObject] = {}
-    for name, param in parameters.items():
+    gap = False  # a positional parameter after an omitted one must pass by keyword
+    for name, param in params.items():
+        if name in omit:
+            gap = gap or param.kind is not Parameter.KEYWORD_ONLY
+            continue
         match param.kind:
             case Parameter.VAR_POSITIONAL:
                 args += [spies[name]] * count
             case Parameter.VAR_KEYWORD:
                 kwds |= dict.fromkeys(map(_SpyStr, keys or ("",)), spies[name])
             case Parameter.KEYWORD_ONLY:
+                kwds[name] = spies[name]
+            case Parameter.POSITIONAL_ONLY if gap:
+                msg = f"cannot pass {name!r} by keyword"
+                raise InferError(msg)
+            case _ if gap:
                 kwds[name] = spies[name]
             case _:
                 args.append(spies[name])
@@ -687,16 +754,16 @@ def _placeholders(
 
 def _explore_spies(
     func: _AnyFunc,
-    parameters: Mapping[str, Parameter],
-) -> tuple[dict[str, _SpyObject], list[object], int]:
-    # explore with fresh spies, retrying when the variadic placeholders come up short:
-    # an out-of-range index, a failed unpacking, or a missing `**kwargs` key
-    kinds = {p.kind for p in parameters.values()}
+    params: Mapping[str, Parameter],
+    omit: Collection[str] = (),
+) -> _Recon:
+    # rerun with fresh spies whenever the variadic placeholders come up short
+    kinds = {p.kind for p in params.values()}
     counts = iter(_VARIADIC_COUNTS)
     count = next(counts)
     keys: list[str] = []
     while True:
-        spies, args, kwds = _placeholders(parameters, count, keys)
+        spies, args, kwds = _placeholders(params, count, keys, omit)
         try:
             results: list[object] = [_next(r) for r in _explore(func, args, kwds)]
         except KeyError as exc:
@@ -705,7 +772,7 @@ def _explore_spies(
                 Parameter.VAR_KEYWORD not in kinds
                 or not isinstance(key, str)
                 or key in keys
-                or key in parameters
+                or key in params
             ):
                 raise
             if len(keys) >= _KWARGS_LIMIT:
@@ -719,7 +786,119 @@ def _explore_spies(
                 msg = f"ran out of `*args` placeholders ({exc})"
                 raise InferError(msg) from exc
         else:
-            return spies, results, count
+            return spies, _snapshot(spies.values()), results, count
+
+
+def _bind(value: object, binding: Mapping[int, object]) -> object:
+    """A deep copy of `value` with every bound spy replaced by its binding."""
+    cls = type(value)
+    match value:
+        case _Gen():
+            yielded = [_bind(item, binding) for item in value.yielded]
+            return _Gen(yielded, value.is_async)
+        case tuple() if cls is tuple:
+            tup = cast("tuple[object, ...]", value)
+            return tuple(_bind(item, binding) for item in tup)
+        case list():
+            return [_bind(item, binding) for item in cast("list[object]", value)]
+        case set() | frozenset():
+            items = {_bind(item, binding) for item in cast("Collection[object]", value)}
+            return frozenset(items) if isinstance(value, frozenset) else items
+        case dict():
+            mapping = cast("Mapping[object, object]", value)
+            return {_bind(k, binding): _bind(v, binding) for k, v in mapping.items()}
+        case _:
+            return binding.get(id(value), value)
+
+
+def _bind_recon(recon: _Recon, defaults: _Defaults) -> _Recon:
+    """The recon as it would look with every defaulted parameter omitted."""
+    spies, traces, results, count = recon
+    binding = {id(spies[name]): value for name, value in defaults.items()}
+    bound = {
+        spy_id: [
+            _TraceItem(
+                item.attr,
+                tuple(_bind(arg, binding) for arg in item.args),
+                {key: _bind(val, binding) for key, val in item.kwargs.items()},
+                item.return_,
+            )
+            for item in items
+        ]
+        for spy_id, items in traces.items()
+    }
+    kept = {name: spy for name, spy in spies.items() if name not in defaults}
+    return kept, bound, [_bind(result, binding) for result in results], count
+
+
+def _signatures(
+    recon: _Recon,
+    params: Mapping[str, Parameter],
+    selected: _Names,
+    defaults: _Defaults | None = None,
+    *,
+    negate: bool = False,
+) -> list[str]:
+    spies, traces, results, count = recon
+    reflected = _reflect(list(spies.values()), results, traces)
+    return [
+        _Renderer(spies, results, params, count, t).render(
+            selected,
+            defaults,
+            negate=negate,
+        )
+        for t in (traces, reflected)
+    ]
+
+
+def _defaults(
+    func: _AnyFunc,
+    params: Mapping[str, Parameter],
+    selected: _Names,
+    recon: _Recon,
+) -> tuple[_Defaults, bool, list[str]]:
+    """The parameter defaults if expressible as typevar defaults, else overloads.
+
+    Omitting the defaulted parameters must behave like substituting their values
+    into the generic signature; the function is rerun without them to check. On a
+    mismatch the omitted calls are reported as separate overload lines, and a
+    single defaulted parameter's type is excluded from the generic signature.
+    """
+    defaults = {
+        name: p.default
+        for name, p in params.items()
+        if p.default is not Parameter.empty
+    }
+    kinds = {p.kind for p in params.values()}
+    if not defaults or (
+        # `*args` placeholders would positionally fill an omitted default
+        Parameter.VAR_POSITIONAL in kinds
+        and any(params[n].kind is not Parameter.KEYWORD_ONLY for n in defaults)
+    ):
+        return {}, False, []
+
+    required = {name: p for name, p in params.items() if name not in defaults}
+    names = list(required)
+    try:
+        omitted = _explore_spies(func, params, omit=defaults)
+        # the comparison must see every required parameter, regardless of selection
+        observed = _signatures(omitted, required, names)
+    except Exception:  # noqa: BLE001  # the omitted call may legitimately fail
+        return {}, False, []
+    if _signatures(_bind_recon(recon, defaults), required, names) == observed:
+        return defaults, False, []
+
+    overloads = _signatures(omitted, required, selected, defaults)
+    if len(defaults) == 1:
+        return defaults, True, overloads
+    for name, value in defaults.items():
+        rest = {n: p for n, p in params.items() if n != name}
+        try:
+            variant = _explore_spies(func, params, omit={name})
+        except Exception:  # noqa: BLE001, S112
+            continue
+        overloads += _signatures(variant, rest, selected, {name: value})
+    return {}, False, overloads
 
 
 def infer(func: _AnyFunc, /, *params: str | int) -> str:
@@ -740,12 +919,7 @@ def infer(func: _AnyFunc, /, *params: str | int) -> str:
 
     parameters = _parameters(func)
     selected = _select(params, list(parameters))
-    spies, results, count = _explore_spies(func, parameters)
-
-    param_spies = list(spies.values())
-    traces = _snapshot(param_spies)
-    reflected = _reflect(param_spies, results, traces)
-
-    sig1 = _Renderer(spies, results, parameters, count, traces).render(selected)
-    sig2 = _Renderer(spies, results, parameters, count, reflected).render(selected)
-    return "\n".join(dict.fromkeys((sig1, sig2)))
+    recon = _explore_spies(func, parameters)
+    defaults, negate, overloads = _defaults(func, parameters, selected, recon)
+    lines = _signatures(recon, parameters, selected, defaults, negate=negate)
+    return "\n".join(dict.fromkeys((*overloads, *lines)))
