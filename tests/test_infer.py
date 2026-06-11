@@ -39,9 +39,11 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
         list,
         (
             "(iterable: tuple[()] = ...) -> list[Never]\n"
-            "[R](iterable: CanIter[CanNext[R]] & CanLen & ~tuple[()]) -> list[R]"
+            "[R](iterable: CanIter[CanNext[R]] & ~tuple[()]) -> list[R]"
         ),
     ),
+    # `list()` probes `__len__` optionally via `length_hint`, so it is no requirement
+    (lambda x: list(x), "[R](x: CanIter[CanNext[R]]) -> list[R]"),  # noqa: PLW0108
     (math.sqrt, "(x: CanFloat | CanIndex) -> float"),
     (lambda x: int(x), "(x: CanInt | CanIndex) -> int"),  # noqa: PLW0108
     (lambda x: complex(x), "(x: CanComplex | CanFloat | CanIndex) -> complex"),  # noqa: PLW0108

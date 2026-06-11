@@ -14,6 +14,12 @@ type _Kwargs = dict[str, object]
 class _Fork(BaseException): ...
 
 
+class _AbsentError(TypeError):
+    """A simulated missing dunder; subclasses `TypeError` so probes suppress it."""
+
+
+_ABSENT = "__absent__"  # the trace marker of a simulated-missing dunder
+
 _fork: ContextVar[Iterator[bool] | None] = ContextVar("_fork", default=None)
 
 
@@ -168,8 +174,11 @@ class _SpyObject(_Spy):  # noqa: PLR0904
     ###
 
     def __len__(self, /) -> int:
-        # TODO: over-recorded as required when probed optionally (e.g. `list()` via
-        # `length_hint`); detect optional protocols by forking value-vs-raise
+        # `len()` is often probed optionally (e.g. `list()` via `length_hint`), so
+        # also fork on its presence; the absent branch raises like a missing dunder
+        if not _decide():
+            self.__optype_trace_add__(_ABSENT, ("__len__",), {}, None)
+            raise _AbsentError
         return self.__optype_trace_add__("__len__", (), {}, _decide())
 
     # no need for `__length_hint__`
