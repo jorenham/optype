@@ -45,8 +45,14 @@ _OBJECT = "object"
 _READ = "+"  # covariant: a read-only property suffices
 _WRITE = "-"  # contravariant: the attribute only has to accept the value
 
+_DUNDER_ATTR_READ = frozenset({"__getattr__", "__getattribute__"})
 _DUNDER_ATTR_WRITE = frozenset({"__delattr__", "__setattr__"})
-_DUNDER_ATTR = _DUNDER_ATTR_WRITE | {"__getattr__", "__getattribute__"}
+_DUNDER_ATTR = _DUNDER_ATTR_READ | _DUNDER_ATTR_WRITE
+_DUNDER_CLASS_ATTR = frozenset({
+    _Marker.CLASS_DELATTR,
+    _Marker.CLASS_GETATTR,
+    _Marker.CLASS_SETATTR,
+})
 
 
 def _get_dunder_can_map() -> dict[str, str]:
@@ -103,14 +109,21 @@ class _Op(NamedTuple):
     kwargs: _Kwargs
     ret: object
     attr: str | None = None  # the subject of a synthesized `Has[...]` form
+    classvar: bool = False  # a class-level attribute, i.e. a `ClassVar` member
 
 
 def _resolve(trace: _TraceItem) -> _Op:
-    if trace.attr in _DUNDER_ATTR:
+    if trace.attr in _DUNDER_ATTR or trace.attr in _DUNDER_CLASS_ATTR:
         name = trace.args[0]
         if not isinstance(name, str) or isinstance(name, _Spy):
             msg = "no protocol for a dynamic attribute name"
             raise InferError(msg)
+
+        # a class-level attribute mirrors a `ClassVar` protocol member, which no
+        # shipped instance-member `Has*` protocol declares
+        if trace.attr in _DUNDER_CLASS_ATTR:
+            return _Op("Has", trace.args[1:], {}, trace.return_, name, classvar=True)
+
         # a read of an attribute with a shipped single-member `Has*` protocol
         if name in _DUNDER_HAS_MAP and trace.attr not in _DUNDER_ATTR_WRITE:
             return _Op(_DUNDER_HAS_MAP[name], (), {}, trace.return_)
@@ -189,7 +202,11 @@ def _ret_keys(
 
             if isinstance(item.return_, _SpyObject):
                 # an attribute name replaces the fixed arity: `x.spam` is not `x.ham`
-                shape = item.args[0] if item.attr in _DUNDER_ATTR else len(item.args)
+                shape = (
+                    item.args[0]
+                    if item.attr in _DUNDER_ATTR or item.attr in _DUNDER_CLASS_ATTR
+                    else len(item.args)
+                )
                 key = id(owner), item.attr, shape, tuple(sorted(item.kwargs))
                 keys[id(item.return_)] = key
 
@@ -455,13 +472,12 @@ class _Renderer:
         if (attr := members[0].attr) is not None:
             # a read is covariant (a property suffices) and a write contravariant
             # (the attribute only has to accept the value); existence renders bare
-            signed: tuple[_ir.Node, ...] = (
-                _ir.Name(repr(attr)),
-                *(_ir.Polarity(_WRITE, a) for a in pos),
-            )
+            signed: tuple[_ir.Node, ...] = tuple(_ir.Polarity(_WRITE, a) for a in pos)
             if ret is not None and ret != _ir.Name(_OBJECT):
                 signed = *signed, _sign_read(ret)
-            return _ir.App(proto, signed)
+            if members[0].classvar:
+                signed = (_ir.App("ClassVar", signed),)
+            return _ir.App(proto, (_ir.Name(repr(attr)), *signed))
 
         if ret is not None:
             args = *args, ret
@@ -472,12 +488,15 @@ class _Renderer:
         items = list(items)
         # a surviving absence marker proves the dunder was only probed optionally
         optional = {item.args[0] for item in items if item.attr == _Marker.ABSENT}
-        groups: dict[tuple[_Proto, str | None, int, tuple[str, ...]], list[_Op]] = {}
+        groups: dict[
+            tuple[_Proto, str | None, bool, int, tuple[str, ...]],
+            list[_Op],
+        ] = {}
         for item in items:
             if item.attr == _Marker.ABSENT or item.attr in optional:
                 continue
             op = _resolve(item)
-            key = op.proto, op.attr, len(op.args), tuple(sorted(op.kwargs))
+            key = op.proto, op.attr, op.classvar, len(op.args), tuple(sorted(op.kwargs))
             groups.setdefault(key, []).append(op)
         parts = [self.group(key[0], group) for key, group in groups.items()]
         return _ir.inter(_merge_combined(parts))

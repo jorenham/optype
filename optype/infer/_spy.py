@@ -23,6 +23,10 @@ class _Marker(StrEnum):
     ABSENT = "__absent__"  # a simulated-missing dunder
     SIBLING = "__sibling__"  # a `type(spy)(...)` instantiation
 
+    CLASS_DELATTR = "__class_delattr__"
+    CLASS_GETATTR = "__class_getattr__"
+    CLASS_SETATTR = "__class_setattr__"
+
 
 _fork: ContextVar[Iterator[bool] | None] = ContextVar("_fork", default=None)
 
@@ -69,7 +73,38 @@ class _SpyBytes(bytes, _Spy):
     __slots__ = ()  # pyrefly:ignore[implicit-any-attribute]
 
 
-class _SpyObject(_Spy):
+class _SpyType(type):
+    """The metaclass of every spy's unique class, so class attribute access records."""
+
+    def __getattr__(cls, attr: str, /) -> "_SpyObject | None":
+        if attr.startswith("__optype"):
+            return None
+
+        if (owner := _class_spy(cls)) is None:
+            msg = f"type object {cls.__name__!r} has no attribute {attr!r}"
+            raise AttributeError(msg)
+
+        out = _SpyObject()
+        return owner.__optype_trace_add__(_Marker.CLASS_GETATTR, (attr,), {}, out)
+
+    @override
+    def __setattr__(cls, attr: str, value: object, /) -> None:
+        # recorded without mutating, so forked reruns stay clean
+        if attr.startswith("__optype") or (owner := _class_spy(cls)) is None:
+            return super().__setattr__(attr, value)
+
+        args = attr, value
+        return owner.__optype_trace_add__(_Marker.CLASS_SETATTR, args, {}, None)
+
+    @override
+    def __delattr__(cls, attr: str, /) -> None:
+        if attr.startswith("__optype") or (owner := _class_spy(cls)) is None:
+            return super().__delattr__(attr)
+
+        return owner.__optype_trace_add__(_Marker.CLASS_DELATTR, (attr,), {}, None)
+
+
+class _SpyObject(_Spy, metaclass=_SpyType):
     __optype_element__: "_SpyObject | None" = None
     __optype_iterator__: bool = False
     # spies are descriptors (`__get__`), so only ever read through the class `__dict__`
