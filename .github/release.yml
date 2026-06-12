@@ -19,6 +19,9 @@ changelog:
     - title: "`optype.dlpack`"
       labels:
         - "optype.dlpack"
+    - title: "`optype.infer`"
+      labels:
+        - "optype.infer"
     - title: "`optype.inspect`"
       labels:
         - "optype.inspect"
