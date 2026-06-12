@@ -1,6 +1,7 @@
 # ruff: noqa: FURB118, PLW0108
 # pyright: reportUnknownArgumentType=false, reportUnknownLambdaType=false
-# pyright: reportUnknownVariableType=false, reportUnusedParameter=false
+# pyright: reportUnknownMemberType=false, reportUnknownVariableType=false
+# pyright: reportUnusedParameter=false
 
 import builtins
 import functools
@@ -54,6 +55,18 @@ def _set_dunder(x: Any) -> None:
 
 def _del_dunder(x: Any) -> None:
     del x.__name__
+
+
+def _set_class_attr(x: Any) -> None:
+    type(x).spam = 1
+
+
+def _del_class_attr(x: Any) -> None:
+    del type(x).spam
+
+
+def _get_class_attr(x: Any) -> None:
+    type(x).spam  # noqa: B018
 
 
 UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
@@ -281,6 +294,26 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     # declares `__name__: str`, which the assigned value need not satisfy
     (_set_dunder, "(x: Has['__name__', -Literal[123]]) -> None"),
     (_del_dunder, "(x: Has['__name__']) -> None"),
+    # an attribute on the class itself mirrors a `ClassVar` protocol member
+    (lambda x: type(x).spam, "[R](x: Has['spam', ClassVar[+R]]) -> R"),
+    (lambda x: x.__class__.spam, "[R](x: Has['spam', ClassVar[+R]]) -> R"),
+    (lambda x: type(x).spam(), "[R](x: Has['spam', ClassVar[() -> +R]]) -> R"),
+    (
+        lambda x: type(x).spam(1),
+        "[R](x: Has['spam', ClassVar[(Literal[1]) -> +R]]) -> R",
+    ),
+    (lambda x: type(x).spam.ham, "[R](x: Has['spam', ClassVar[+Has['ham', +R]]]) -> R"),
+    (
+        lambda x: (type(x).spam, type(x).spam),
+        "[R](x: Has['spam', ClassVar[+R]]) -> tuple[R, R]",
+    ),
+    (
+        lambda x: (x.spam, type(x).spam),
+        "[R, R2](x: Has['spam', +R] & Has['spam', ClassVar[+R2]]) -> tuple[R, R2]",
+    ),
+    (_set_class_attr, "(x: Has['spam', ClassVar[-Literal[1]]]) -> None"),
+    (_del_class_attr, "(x: Has['spam', ClassVar]) -> None"),
+    (_get_class_attr, "(x: Has['spam', ClassVar]) -> None"),
 ]
 
 BINARY_CASES: list[tuple[Callable[[Any, Any], Any], str]] = [
@@ -613,7 +646,7 @@ FUNCTION_CASES: list[tuple[Callable[..., Any], str]] = [
     ),
     (lambda x: lambda f: f(x), "[T, R](x: T) -> (f: (T) -> R) -> R"),
     (
-        lambda x: lambda y: y.foo,  # noqa: ARG005  # pyright: ignore[reportUnknownMemberType]
+        lambda x: lambda y: y.foo,  # noqa: ARG005
         "[R](x: object) -> (y: Has['foo', +R]) -> R",
     ),
     # a failed inner run rolls back its traces on the closed-over parameter, so
@@ -630,7 +663,7 @@ FUNCTION_CASES: list[tuple[Callable[..., Any], str]] = [
         "() -> (str, sep: None = None, maxsplit: CanIndex = -1) -> list[Never]",
     ),
     (
-        lambda: dict.get,  # pyright: ignore[reportUnknownMemberType]
+        lambda: dict.get,
         "[T]() -> (dict, CanHash, T = None) -> T",
     ),
     # a `functools.partial` explores with its bound arguments in place

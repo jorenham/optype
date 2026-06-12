@@ -201,6 +201,20 @@ $ optype infer "lambda x: type(x)()"
 [T](x: T) -> T
 ```
 
+An attribute access on the class itself renders inside `ClassVar`, mirroring a protocol
+member declared as `spam: ClassVar[...]`.
+
+```console
+$ optype infer "lambda x: type(x).spam"
+[R](x: Has['spam', ClassVar[+R]]) -> R
+
+$ optype infer "def f(x): type(x).spam = 1"
+(x: Has['spam', ClassVar[-Literal[1]]]) -> None
+
+$ optype infer "def f(x): del type(x).spam"
+(x: Has['spam', ClassVar]) -> None
+```
+
 A concrete class renders parameterized when it resolves by name (a local class stays
 a bare `type`), and `type` is covariant, so a subclass is absorbed by its parent:
 
