@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import override
 
-type Node = Lit | Type | Name | App | Fn | Union | Inter | Not
+type Node = Lit | Type | Name | App | Fn | Union | Inter | Not | Polarity
 
 _NOT = "~"  # the type complement prefix
 
@@ -88,6 +88,14 @@ def _param_type(param: "Node | Arg") -> "Node":
 class Not:
     """A type complement, e.g. the `~None` of everything but `None`."""
 
+    part: Node
+
+
+@dataclass(frozen=True, slots=True)
+class Polarity:
+    """A polarity-marked type: covariant (read-only) or contravariant (write-only)."""
+
+    sign: str
     part: Node
 
 
@@ -204,6 +212,12 @@ def inter(parts: Iterable[Node]) -> Node | None:
     return next(iter(flat)) if len(flat) == 1 else Inter(tuple(flat))
 
 
+def _prefix(op: str, part: Node) -> str:
+    """Format a prefix-operated type, parenthesized where precedence requires."""
+    inner = render(part)
+    return f"{op}({inner})" if isinstance(part, Union | Inter | Fn) else op + inner
+
+
 def render(node: Node) -> str:
     """Format a type expression, parenthesized where precedence requires."""
     match node:
@@ -231,12 +245,9 @@ def render(node: Node) -> str:
             )
             out = f"({decls}) -> {render(ret)}"
         case Not(part):
-            inner = render(part)
-            out = (
-                f"{_NOT}({inner})"
-                if isinstance(part, Union | Inter | Fn)
-                else _NOT + inner
-            )
+            out = _prefix(_NOT, part)
+        case Polarity(sign, part):
+            out = _prefix(sign, part)
         case Union(parts) | Inter(parts):
             sep, dual = (" | ", Inter) if isinstance(node, Union) else (" & ", Union)
             out = sep.join(

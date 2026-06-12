@@ -130,6 +130,57 @@ $ optype infer "lambda f: f(1, b=2)"
 [R](f: (Literal[1], b: Literal[2]) -> R) -> R
 ```
 
+## Attributes
+
+Attribute access dispatches through `__getattr__`, except for the few attributes
+that every object already has, like `__doc__`, which require nothing. Reading a
+special attribute that `optype` ships a single-member `Has*` protocol for reports
+that protocol directly:
+
+```console
+$ optype infer "lambda x: x.__name__"
+[R](x: HasName[R]) -> R
+```
+
+An attribute without a shipped protocol renders as the fictional inline form
+`Has['name', T]`. Like `&` and `~`, it is not valid Python, but it is expressible as
+a protocol with a single member. The type argument carries a polarity sigil: a read
+requires only the covariant `+T`, so a `@property` getter suffices:
+
+```python
+class HasSpam[T](Protocol):
+    @property
+    def spam(self) -> T: ...
+```
+
+This turns `Has['spam', +R]` into the valid `HasSpam[R]`:
+
+```console
+$ optype infer "lambda x: x.spam"
+[R](x: Has['spam', +R]) -> R
+```
+
+When the attribute is called, the sigil sinks into the callable's return type, where
+the covariance applies: `Has['spam', () -> +R]` is the method `def spam(self) -> R`:
+
+```console
+$ optype infer "lambda x: x.spam()"
+[R](x: Has['spam', () -> +R]) -> R
+```
+
+An assignment requires the contravariant `-T`: a mutable attribute that accepts the
+assigned value's type, such as `spam: T` itself, or any wider type. A deletion, or a
+read whose result is unused, requires only that the attribute exists (deletability
+itself is not expressible):
+
+```console
+$ optype infer "def f(x): x.spam = 1; return x"
+[T: Has['spam', -Literal[1]]](x: T) -> T
+
+$ optype infer "def f(x): del x.spam"
+(x: Has['spam']) -> None
+```
+
 ## Classes
 
 `type` reads the class directly instead of dispatching through a dunder, but every
@@ -470,9 +521,13 @@ placeholder arguments (no real side effects, no reliance on concrete values). Th
 extends to anything it returns: a returned function is called with placeholders of its
 own, and a returned lazy iterator is iterated. A returned function that raises during
 this exploration is not treated as an error: its type stays an opaque `function`.
+An attribute probe with a fallback, such as `hasattr` or `getattr` with a default,
+reports the attribute as a requirement anyway: a placeholder has every attribute, so
+the fallback branch is never taken.
 
 When `infer` can't handle the input, it raises `InferError` (a `NotImplementedError`
-subclass). That's the case for operations without a matching protocol, and for
+subclass). That's the case for operations without a matching protocol, such as an
+attribute access whose name is not statically known (a computed `getattr`), and for
 arguments that aren't callable to begin with. Exceptions raised from within the
 function itself aren't caught.
 
