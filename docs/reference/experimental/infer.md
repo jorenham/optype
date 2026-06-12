@@ -77,6 +77,9 @@ class CanNegRAdd[T, R](CanNeg[T], CanRAdd[T, R], Protocol): ...
 ```
 
 This turns the `CanNeg[T] & CanRAdd[T, R]` above into the valid `CanNegRAdd[T, R]`.
+Where `optype` already ships the combined protocol, `infer` reports it directly: a
+traced `with` statement renders as [`CanWith`](#context-managers) rather than
+`CanEnter & CanExit`.
 
 Only an intersection of the same protocol shares its method, which happens when an
 operation is traced at several arities:
@@ -262,15 +265,15 @@ $ optype infer "str.split"
 
 ## Context managers
 
-A `with` statement requires `CanEnter` and `CanExit`; on a clean exit, `__exit__` is
-called with `(None, None, None)`:
+A `with` statement requires `__enter__` and `__exit__` together, which `optype` combines
+as `CanWith`; the `__exit__` result is unused, so it stays `object`:
 
 ```pycon
 >>> def f(x):
 ...     with x as y:
 ...         return y
 >>> infer(f)
-'[R](x: CanEnter[R] & CanExit[None, None, None]) -> R'
+'[R](x: CanWith[R, object]) -> R'
 ```
 
 ## Async
@@ -286,14 +289,15 @@ $ optype infer "async def f(xs): return [x async for x in xs]"
 [R](xs: CanAIter[CanANext[CanAwait[R]]]) -> list[R]
 ```
 
-`async with` requires `CanAEnter` and `CanAExit`, whose results must be awaitable:
+`async with` combines `__aenter__` and `__aexit__` as `CanAsyncWith`, whose parameters
+are the awaited results:
 
 ```pycon
 >>> async def f(x):
 ...     async with x as y:
 ...         return y
 >>> infer(f)
-'[R](x: CanAEnter[CanAwait[R]] & CanAExit[None, None, None, CanAwait]) -> R'
+'[R](x: CanAsyncWith[R, object]) -> R'
 ```
 
 ## Generators and lazy iterators

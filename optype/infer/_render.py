@@ -244,6 +244,35 @@ def _suffix(defaults: _Defaults, name: str) -> str:
     return f" = {value!r}" if simple else " = ..."
 
 
+_CLEAN_EXIT = _ir.App("CanExit", (_ir.Name("None"),) * 3)
+_CLEAN_AEXIT = _ir.App(
+    "CanAExit",
+    (*(_ir.Name("None"),) * 3, _ir.App("CanAwait", (_ir.Name(_OBJECT),))),
+)
+
+
+def _merge_context(parts: list[_ir.Node]) -> list[_ir.Node]:
+    """Merge a traced `(async) with` statement into its combined protocol.
+
+    A `with` statement requires `__enter__` and a clean-exit `__exit__` together,
+    which optype combines as `CanWith`; the unused `__exit__` result is unconstrained.
+    An `async with` merges into `CanAsyncWith` likewise, whose declared parameters are
+    the awaited results, so the `CanAwait` wrappers unwrap.
+    """
+    for enter in parts:
+        match enter:
+            case _ir.App("CanEnter", (entered,)):
+                clean_exit, combined = _CLEAN_EXIT, "CanWith"
+            case _ir.App("CanAEnter", (_ir.App("CanAwait", (entered,)),)):
+                clean_exit, combined = _CLEAN_AEXIT, "CanAsyncWith"
+            case _:
+                continue
+        if clean_exit in parts:
+            merged = _ir.App(combined, (entered, _ir.Name(_OBJECT)))
+            parts = [merged if p is enter else p for p in parts if p != clean_exit]
+    return parts
+
+
 @final
 class _Renderer:
     """Render an inferred `def` signature from the recorded spy traces."""
@@ -394,7 +423,8 @@ class _Renderer:
             op = _resolve(item)
             key = op.proto, len(op.args), tuple(sorted(op.kwargs))
             groups.setdefault(key, []).append(op)
-        return _ir.inter([self.group(key[0], group) for key, group in groups.items()])
+        parts = [self.group(key[0], group) for key, group in groups.items()]
+        return _ir.inter(_merge_context(parts))
 
     def spy(self, spy: _SpyObject) -> _ir.Node | None:
         return self.traces(self._traces[id(spy)])

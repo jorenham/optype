@@ -824,6 +824,34 @@ def test_ternary_pow() -> None:
     )
 
 
+def test_infer_with() -> None:
+    # a `with` statement requires `__enter__` and `__exit__` together, which is the
+    # combined `CanWith`; its unused `__exit__` result is unconstrained
+    def f(x: Any) -> Any:
+        with x as y:
+            return y
+
+    assert infer(f) == "[R](x: CanWith[R, object]) -> R"
+
+    def g(x: Any) -> Any:
+        with x as y:
+            return y + 1
+
+    assert infer(g) == "[R](x: CanWith[CanAdd[Literal[1], R], object]) -> R"
+
+    # a lone `__enter__` or `__exit__` does not imply the other, so it stays as-is
+    def enter_only(x: Any) -> Any:
+        x.__enter__()  # noqa: PLC2801
+        return x
+
+    assert infer(enter_only) == "[T: CanEnter[object]](x: T) -> T"
+
+    def exit_only(x: Any) -> Any:
+        return x.__exit__(None, None, None)
+
+    assert infer(exit_only) == "(x: CanExit[None, None, None]) -> None"
+
+
 def test_infer_async() -> None:
     # coroutine functions are driven to completion; await/async with/async for trace
     async def aw(x: Any) -> Any:
@@ -835,10 +863,26 @@ def test_infer_async() -> None:
         async with x as y:
             return y
 
-    # the `__aexit__` awaitable resolves to an unused, and so unconstrained, result
-    assert infer(async_with) == (
-        "[R](x: CanAEnter[CanAwait[R]] & "
-        "CanAExit[None, None, None, CanAwait[object]]) -> R"
+    # like `CanWith`, but its declared parameters are the awaited results
+    assert infer(async_with) == "[R](x: CanAsyncWith[R, object]) -> R"
+
+    async def aenter_only(x: Any) -> Any:
+        return await x.__aenter__()  # noqa: PLC2801
+
+    assert infer(aenter_only) == "[R](x: CanAEnter[CanAwait[R]]) -> R"
+
+    async def aexit_only(x: Any) -> Any:
+        return await x.__aexit__(None, None, None)
+
+    assert infer(aexit_only) == "[R](x: CanAExit[None, None, None, CanAwait[R]]) -> R"
+
+    async def both(x: Any) -> Any:
+        with x:
+            async with x as y:
+                return y
+
+    assert infer(both) == (
+        "[R](x: CanWith[object, object] & CanAsyncWith[R, object]) -> R"
     )
 
     async def async_for(x: Any) -> Any:
