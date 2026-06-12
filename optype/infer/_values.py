@@ -6,8 +6,6 @@ from typing import NamedTuple, cast
 
 from ._spy import _SpyObject
 
-__all__ = ("_Fn", "_Gen", "_children", "_fn_spies", "_walk")
-
 
 class _Gen(NamedTuple):
     """An explored generator or lazy iterator result, e.g. `Generator[R]`."""
@@ -35,7 +33,7 @@ def _children(value: object) -> Iterable[object]:
             return value.results
         case tuple() | list() | set() | frozenset():
             return cast("Collection[object]", value)
-        case dict():
+        case Mapping():  # `dict`, and the `frozendict` builtin on Python 3.15+
             mapping = cast("Mapping[object, object]", value)
             return chain.from_iterable(mapping.items())
         case _:
@@ -48,7 +46,7 @@ def _walk(value: object) -> Generator[object]:
         yield from _walk(child)
 
 
-def _fn_spies(results: Iterable[object]) -> Generator[_SpyObject]:
+def fn_spies(results: Iterable[object]) -> Generator[_SpyObject]:
     # every parameter spy of the explored function results, in signature order
     for result in results:
         for node in _walk(result):
