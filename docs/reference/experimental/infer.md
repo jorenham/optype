@@ -244,6 +244,17 @@ The `~None` complement makes the overloads disjoint: the first one covers `f()` 
 `f(None)`, and the second one everything else. Like `&`, the `~` is not valid Python;
 in practice it's fine to omit it, as overloads are matched in order anyway.
 
+A Python 3.15+ `sentinel` is its own type per
+[PEP 661](https://peps.python.org/pep-0661/), spelled as its declared name, so the
+common sentinel-default pattern renders just like the `None` default above:
+
+```console
+$ optype infer "MISSING = sentinel('MISSING')
+def f(x=MISSING): return [] if x is MISSING else x"
+(x: MISSING = MISSING) -> list[Never]
+[T: ~MISSING](x: T) -> T
+```
+
 ## Methods
 
 Anything callable can be inferred: not just functions, but also builtins (like
@@ -387,6 +398,13 @@ $ optype infer "lambda x: (x + 1, x + 1)"
 
 $ optype infer "lambda x: {0: [v + 1 for v in x[0]]}"
 [R](x: CanGetitem[Literal[0], CanIter[CanNext[CanAdd[Literal[1], R]]]]) -> dict[Literal[0], list[R]]
+```
+
+The Python 3.15+ `frozendict` parametrizes like `dict` does:
+
+```console
+$ optype infer "lambda x: frozendict({'k': x + 1})"
+[R](x: CanAdd[Literal[1], R]) -> frozendict[Literal['k'], R]
 ```
 
 ## Unions

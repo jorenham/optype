@@ -38,7 +38,7 @@ from ._spy import (
     _SpyStr,
     _TraceItem,
 )
-from ._values import _Fn, _fn_spies, _Gen, _walk
+from ._values import _Fn, _Gen, _walk, fn_spies
 
 __all__ = (
     "_Recon",
@@ -239,7 +239,7 @@ def _next(result: object) -> object:
     # a function (or iterator) within the yields or a container is explored as well
     cls = type(result)
     if isgenerator(result):
-        out: object = _Gen([_next(v) for v in _yields(result)], "Generator")
+        out = _Gen([_next(v) for v in _yields(result)], "Generator")
     elif isasyncgen(result):
         out = _Gen([_next(v) for v in _yields(_sync(result))], "AsyncGenerator")
     elif cls in _ITERATOR_TYPES:
@@ -250,15 +250,18 @@ def _next(result: object) -> object:
         out = _Gen([_next(v) for v in values], cls.__name__)
     elif isinstance(_unwrap(result), _FUNCTION_TYPES):
         out = _explore_func(cast("_AnyFunc", result))
-    elif cls is tuple:
-        out = tuple(map(_next, cast("tuple[object, ...]", result)))
-    elif cls is list:
-        out = [_next(item) for item in cast("list[object]", result)]
-    elif cls is dict:  # the keys must stay hashable, so only the values recurse
-        mapping = cast("Mapping[object, object]", result)
-        out = {key: _next(value) for key, value in mapping.items()}
     else:
-        out = result
+        # pyright fails miserably here when narrowing types
+        match result:
+            case tuple():
+                out = tuple(map(_next, result))  # pyright:ignore[reportUnknownArgumentType]
+            case list():
+                out = [_next(item) for item in result]  # pyright:ignore[reportUnknownArgumentType,reportUnknownVariableType]
+            case Mapping():
+                # the keys must stay hashable, so only the values recurse
+                out = cls({key: _next(value) for key, value in result.items()})  # type:ignore[call-arg] # pyright:ignore[reportCallIssue,reportUnknownVariableType]
+            case _:
+                out = result
     return out
 
 
@@ -390,7 +393,7 @@ def _explore_spies(
                     msg = f"ran out of `*args` placeholders ({exc})"
                     raise InferError(msg) from exc
             else:
-                traces = _snapshot((*spies.values(), *_fn_spies(results)))
+                traces = _snapshot((*spies.values(), *fn_spies(results)))
                 return spies, traces, results, count, fixed
     finally:
         _exploring.reset(token)

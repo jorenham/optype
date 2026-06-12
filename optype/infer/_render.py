@@ -1,5 +1,6 @@
 """Render the recorded spy traces as a PEP 695 signature."""
 
+import builtins
 import sys
 from collections import defaultdict
 from collections.abc import Collection, Generator, Iterable, Mapping, Sequence
@@ -26,11 +27,9 @@ from ._spy import (
     _TraceItem,
     as_spy,
 )
-from ._values import _children, _Fn, _fn_spies, _Gen, _walk
+from ._values import _children, _Fn, _Gen, _walk, fn_spies
 from optype._core import _can, _has
 from optype.inspect import get_protocol_members
-
-__all__ = ("_Defaults", "_Names", "_signatures")
 
 _PARAM_PREFIX: dict[_ParameterKind, str] = {
     Parameter.VAR_POSITIONAL: "*",
@@ -235,12 +234,23 @@ def _return_spies(value: object) -> Generator[_SpyObject]:
             yield spy
 
 
+def _is_sentinel(obj: object, /) -> bool:
+    # we can't write this using `and` because pyrefly (1.0.0) wouldn't understand it
+    if sys.version_info >= (3, 15):
+        return isinstance(obj, builtins.sentinel)
+    return False
+
+
 def _suffix(defaults: _Defaults, name: str) -> str:
     """The ` = <default>` suffix of a defaulted parameter, in stub style."""
     if name not in defaults:
         return ""
     value = defaults[name]
-    simple = value is None or isinstance(value, int | float | complex | str | bytes)
+    simple = (
+        value is None
+        or _is_sentinel(value)  # a sentinel's repr is its declared name
+        or isinstance(value, int | float | complex | str | bytes)
+    )
     return f" = {value!r}" if simple else " = ..."
 
 
@@ -309,7 +319,7 @@ class _Renderer:
         )
 
         # a returned function's parameter spies are named like regular parameters
-        param_spies = [*spies.values(), *_fn_spies(results)]
+        param_spies = [*spies.values(), *fn_spies(results)]
         order, appear = _analyze(param_spies, results, traces)
         param_ids = {id(spy) for spy in param_spies}
 
@@ -460,6 +470,7 @@ class _Renderer:
         return decl
 
     def return_type(self, result: object) -> _ir.Node:
+
         match result:
             case _SpyObject():
                 node: _ir.Node = _ir.Name(self._vars.get(id(_own_spy(result)), _OBJECT))
@@ -471,8 +482,8 @@ class _Renderer:
                 node = _ir.App(result.kind, (self._union_type(result.yielded),))
             case _Fn():
                 node = self._function(result)
-            case None:
-                node = _ir.Name("None")
+            case _ if result is None or _is_sentinel(result):
+                node = _ir.Name(repr(result))
             case _:
                 node = self._container(result)
         return node
@@ -518,18 +529,20 @@ class _Renderer:
         match result:
             case type() if (inner := self._class_of(result)) is not None:
                 return _ir.App("type", (inner,))
-            case dict():
+            case Mapping():
                 mapping = cast("Mapping[object, object]", result)
                 key = self.union(mapping) or _ir.Name(_NEVER)
                 val = self.union(mapping.values()) or _ir.Name(_NEVER)
-                return _ir.App("dict", (key, val))
+                return _ir.App(cls.__name__, (key, val))
             case list() | set() | frozenset():
                 inner = self.union(cast("Collection[object]", result))
                 return _ir.App(cls.__name__, (inner or _ir.Name(_NEVER),))
             case tuple() if cls is tuple:
-                if not result:
-                    return _ir.Name("tuple[()]")
-                return self._tuple(cast("tuple[object, ...]", result))
+                return (
+                    self._tuple(cast("tuple[object, ...]", result))
+                    if result
+                    else _ir.Name("tuple[()]")
+                )
             case _:
                 return _ir.Type(cls)
 
@@ -624,7 +637,7 @@ def _reflect(
     return {spy_id: keep + added[spy_id] for spy_id, keep in kept.items()}
 
 
-def _signatures(
+def signatures(
     recon: _Recon,
     params: Mapping[str, Parameter],
     selected: _Names,
@@ -633,7 +646,7 @@ def _signatures(
     negate: bool = False,
 ) -> list[str]:
     spies, traces, results, _, _ = recon
-    roots = [*spies.values(), *_fn_spies(results)]
+    roots = [*spies.values(), *fn_spies(results)]
     reflected = _reflect(roots, results, traces)
     return [
         _Renderer(recon, params, t).render(selected, defaults, negate=negate)

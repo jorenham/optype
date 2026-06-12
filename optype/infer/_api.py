@@ -1,5 +1,7 @@
 """The `infer` entry point: explore, probe the defaults, render."""
 
+import builtins
+import sys
 from collections.abc import Collection, Iterable, Mapping
 from inspect import Parameter
 from typing import cast
@@ -14,11 +16,9 @@ from ._explore import (
     _parameters,
     _Recon,
 )
-from ._render import _Defaults, _Names, _signatures
+from ._render import _Defaults, _Names, signatures
 from ._spy import _AnyFunc, _TraceItem
 from ._values import _Fn, _Gen
-
-__all__ = ("infer",)
 
 
 def _select(params: Iterable[str | int], names: _Names) -> _Names:
@@ -39,7 +39,12 @@ def _select(params: Iterable[str | int], names: _Names) -> _Names:
 
 def _bind(value: object, binding: Mapping[int, object]) -> object:
     """A deep copy of `value` with every bound spy replaced by its binding."""
-    cls = type(value)
+    if sys.version_info >= (3, 15):
+        if isinstance(value, builtins.frozendict):
+            return builtins.frozendict({
+                _bind(k, binding): _bind(v, binding) for k, v in value.items()
+            })
+
     match value:
         case _Gen():
             yielded = [_bind(item, binding) for item in value.yielded]
@@ -47,7 +52,7 @@ def _bind(value: object, binding: Mapping[int, object]) -> object:
         case _Fn():
             bound = [_bind(item, binding) for item in value.results]
             out = value._replace(results=bound)
-        case tuple() if cls is tuple:
+        case tuple() if type(value) is tuple:  # pyright: ignore[reportUnknownArgumentType]
             tup = cast("tuple[object, ...]", value)
             out = tuple(_bind(item, binding) for item in tup)
         case list():
@@ -109,25 +114,30 @@ def _defaults(
 
     required = {name: p for name, p in params.items() if name not in defaults}
     names = list(required)
+
     try:
         omitted = _explore_spies(func, params, omit=defaults)
         # the comparison must see every required parameter, regardless of selection
-        observed = _signatures(omitted, required, names)
-    except Exception:  # noqa: BLE001  # the omitted call may legitimately fail
+        observed = signatures(omitted, required, names)
+    except Exception:  # noqa: BLE001
         return {}, False, []
-    if _signatures(_bind_recon(recon, defaults), required, names) == observed:
+
+    if signatures(_bind_recon(recon, defaults), required, names) == observed:
         return defaults, False, []
 
-    overloads = _signatures(omitted, required, selected, defaults)
+    overloads = signatures(omitted, required, selected, defaults)
+
     if len(defaults) == 1:
         return defaults, True, overloads
+
     for name, value in defaults.items():
         rest = {n: p for n, p in params.items() if n != name}
         try:
             variant = _explore_spies(func, params, omit={name})
         except Exception:  # noqa: BLE001, S112
             continue
-        overloads += _signatures(variant, rest, selected, {name: value})
+        overloads += signatures(variant, rest, selected, {name: value})
+
     return {}, False, overloads
 
 
@@ -156,8 +166,8 @@ def infer(func: _AnyFunc, /, *params: str | int) -> str:
         raise InferError(str(exc)) from exc
     if fallback:
         # the rejected parameters render from their defaults; skip the probing
-        lines = _signatures(recon, parameters, selected, fallback)
+        lines = signatures(recon, parameters, selected, fallback)
         return "\n".join(dict.fromkeys(lines))
     defaults, negate, overloads = _defaults(func, parameters, selected, recon)
-    lines = _signatures(recon, parameters, selected, defaults, negate=negate)
+    lines = signatures(recon, parameters, selected, defaults, negate=negate)
     return "\n".join(dict.fromkeys((*overloads, *lines)))

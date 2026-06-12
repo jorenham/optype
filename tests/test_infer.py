@@ -2,6 +2,7 @@
 # pyright: reportUnknownArgumentType=false, reportUnknownLambdaType=false
 # pyright: reportUnknownVariableType=false, reportUnusedParameter=false
 
+import builtins
 import functools
 import math
 import operator
@@ -1003,6 +1004,44 @@ def test_infer_empty_container() -> None:
     assert infer(returns(set())) == "() -> set[Never]"
     assert infer(returns(frozenset())) == "() -> frozenset[Never]"
     assert infer(returns([[]])) == "() -> list[list[Never]]"
+
+
+@pytest.mark.skipif(sys.version_info < (3, 15), reason="requires Python 3.15+")
+def test_infer_frozendict() -> None:
+    frozendict: Any = getattr(builtins, "frozendict", None)
+
+    # a `frozendict` result parametrizes like `dict`, also through a typevar default
+    assert infer(lambda x: frozendict({"k": x + 1})) == (
+        "[R](x: CanAdd[Literal[1], R]) -> frozendict[Literal['k'], R]"
+    )
+
+    empty = frozendict()
+    assert infer(lambda: empty) == "() -> frozendict[Never, Never]"
+
+    def f(x: Any = 0) -> Any:
+        return frozendict({"k": x})
+
+    assert infer(f) == "[T = Literal[0]](x: T = 0) -> frozendict[Literal['k'], T]"
+
+
+@pytest.mark.skipif(sys.version_info < (3, 15), reason="requires Python 3.15+")
+def test_infer_sentinel() -> None:
+    sentinel: Any = getattr(builtins, "sentinel", None)
+
+    # a sentinel is its own (PEP 661) type, spelled as its declared name
+    missing = sentinel("MISSING")
+
+    assert infer(lambda x: x + missing) == "[R](x: CanAdd[MISSING, R]) -> R"
+
+    def f(x: Any = missing) -> Any:
+        return x
+
+    assert infer(f) == "[T = MISSING](x: T = MISSING) -> T"
+
+    def g(x: Any = missing) -> Any:
+        return [] if x is missing else x
+
+    assert infer(g) == "(x: MISSING = MISSING) -> list[Never]\n[T: ~MISSING](x: T) -> T"
 
 
 def test_infer_ufunc() -> None:
