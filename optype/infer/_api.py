@@ -129,18 +129,17 @@ def _defaults(
     if signatures(_bind_recon(recon, defaults), required, names) == observed:
         return defaults, False, []
 
-    overloads = signatures(omitted, required, selected, defaults)
+    overloads = signatures(omitted, params, selected, defaults)
 
     if len(defaults) == 1:
         return defaults, True, overloads
 
     for name, value in defaults.items():
-        rest = {n: p for n, p in params.items() if n != name}
         try:
             variant = _explore_spies(func, params, omit={name})
         except Exception:  # noqa: BLE001, S112
             continue
-        overloads += signatures(variant, rest, selected, {name: value})
+        overloads += signatures(variant, params, selected, {name: value})
 
     return {}, False, overloads
 

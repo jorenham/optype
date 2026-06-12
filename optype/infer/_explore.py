@@ -232,7 +232,7 @@ def _explore_func(func: _AnyFunc) -> object:
     except Exception:  # noqa: BLE001  # an unexplorable function stays opaque
         return func
     spies, _, results, _, fixed = recon
-    return _Fn(tuple(params), spies, fixed, _declared_defaults(params), results)
+    return _Fn(params, spies, fixed, _declared_defaults(params), results)
 
 
 def _next(result: object) -> object:
