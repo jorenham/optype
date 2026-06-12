@@ -24,8 +24,8 @@ the result as a [PEP 695](https://peps.python.org/pep-0695/) signature.
 >>> infer(lambda x: x + 1)
 '[R](x: CanAdd[Literal[1], R]) -> R'
 >>> print(infer(list))
-(iterable: tuple[()] = ...) -> list[Never]
-[R](iterable: CanIter[CanNext[R]] & ~tuple[()]) -> list[R]
+(tuple[()] = ...) -> list[Never]
+[R](CanIter[CanNext[R]] & ~tuple[()]) -> list[R]
 ```
 
 Pass parameter names or positions to report only those parameters:
@@ -43,7 +43,7 @@ $ optype infer "lambda x: x * 2"
 [R](x: CanMul[Literal[2], R]) -> R
 
 $ optype infer "import math; math.sqrt"
-(x: CanFloat | CanIndex) -> float
+(CanFloat | CanIndex) -> float
 ```
 
 ## Overloads
@@ -258,16 +258,17 @@ def f(x=MISSING): return [] if x is MISSING else x"
 ## Methods
 
 Anything callable can be inferred: not just functions, but also builtins (like
-`math.sqrt` above), callable instances, and unbound method descriptors. A method
-descriptor's `self` requires a real instance of its defining class, so it is reported
-as that concrete type:
+`math.sqrt` above), callable instances, and unbound method descriptors. A
+positional-only parameter cannot be passed by keyword, so it renders as a bare type
+without its name. A method descriptor's `self` requires a real instance of its
+defining class, so it is reported as that concrete type:
 
 ```console
 $ optype infer "str.upper"
-(self: str) -> str
+(str) -> str
 
 $ optype infer "dict.get"
-[T = None](self: dict, key: CanHash, default: T = None) -> T
+[T = None](dict, CanHash, T = None) -> T
 ```
 
 When a builtin rejects the recording proxy for a defaulted parameter, its default is
@@ -276,7 +277,7 @@ structural:
 
 ```console
 $ optype infer "str.split"
-(self: str, sep: None = None, maxsplit: CanIndex = -1) -> list[Never]
+(str, sep: None = None, maxsplit: CanIndex = -1) -> list[Never]
 ```
 
 ## Context managers
@@ -367,7 +368,7 @@ returned container:
 
 ```console
 $ optype infer "lambda: str.upper"
-() -> (self: str) -> str
+() -> (str) -> str
 
 $ optype infer "import functools
 def add(x, y): return x + y

@@ -1,6 +1,7 @@
 """The composite shapes of explored results, and the traversal over them."""
 
 from collections.abc import Collection, Generator, Iterable, Mapping
+from inspect import Parameter
 from itertools import chain
 from typing import NamedTuple, cast
 
@@ -17,7 +18,7 @@ class _Gen(NamedTuple):
 class _Fn(NamedTuple):
     """An explored function result, rendered in signature syntax."""
 
-    names: tuple[str, ...]
+    params: Mapping[str, Parameter]
     spies: Mapping[str, _SpyObject]
     fixed: Mapping[str, object]
     defaults: Mapping[str, object]

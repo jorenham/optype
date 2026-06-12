@@ -302,6 +302,9 @@ class _Renderer:
         self._traces = traces
 
         self._prefix = {n: _PARAM_PREFIX.get(p.kind, "") for n, p in params.items()}
+        self._nameless = {
+            n for n, p in params.items() if p.kind is Parameter.POSITIONAL_ONLY
+        }
         self._optional = {
             name
             for name, p in params.items()
@@ -494,8 +497,12 @@ class _Renderer:
     def _function(self, fn: _Fn) -> _ir.Node:
         """The signature-syntax type of an explored function result."""
         params = tuple(
-            _ir.Arg(name, self._fn_param(fn, name), _suffix(fn.defaults, name))
-            for name in fn.names
+            _ir.Arg(
+                None if p.kind is Parameter.POSITIONAL_ONLY else name,
+                self._fn_param(fn, name),
+                _suffix(fn.defaults, name),
+            )
+            for name, p in fn.params.items()
         )
         return _ir.Fn(params, self._union_type(fn.results))
 
@@ -596,21 +603,23 @@ class _Renderer:
         return f"{generics}({params}) -> {self.return_types()}"
 
     def _param(self, name: str, defaults: _Defaults, *, negate: bool) -> str | None:
+        # a positional-only parameter cannot be passed by keyword, so no name shows
+        label = "" if name in self._nameless else f"{self._prefix[name]}{name}: "
         if name in self._fixed and name not in self._optional:
             # a fixed parameter without a default is a method descriptor's `self`
-            return f"{name}: {_ir.render(_ir.Type(type(self._fixed[name])))}"
+            return f"{label}{_ir.render(_ir.Type(type(self._fixed[name])))}"
         if (spy := self._spies.get(name)) is None:
             # an omitted parameter binds its default, so passing it behaves the same
             node = self.union((defaults[name],)) or _ir.Name(_NEVER)
-            return f"{name}: {_ir.render(node)}{_suffix(defaults, name)}"
+            return f"{label}{_ir.render(node)}{_suffix(defaults, name)}"
         slot = self.slot(spy)
         if negate and name in defaults:
             if id(spy) not in self._vars and (mark := self.union((defaults[name],))):
                 slot = _ir.render(_ir.exclude(self.spy(spy), mark))
-            return f"{self._prefix[name]}{name}: {slot}"
+            return f"{label}{slot}"
         if slot == _OBJECT and name in self._optional:
             return None
-        return f"{self._prefix[name]}{name}: {slot}{_suffix(defaults, name)}"
+        return f"{label}{slot}{_suffix(defaults, name)}"
 
 
 def _reflect(

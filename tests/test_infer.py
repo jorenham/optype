@@ -1,4 +1,4 @@
-# ruff: noqa: FURB118
+# ruff: noqa: FURB118, PLW0108
 # pyright: reportUnknownArgumentType=false, reportUnknownLambdaType=false
 # pyright: reportUnknownVariableType=false, reportUnusedParameter=false
 
@@ -43,21 +43,23 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     (lambda x: x >= 1, "[R](x: CanGe[Literal[1], R]) -> R"),
     (lambda x: -x, "[R](x: CanNeg[R]) -> R"),
     (lambda x: ~x, "[R](x: CanInvert[R]) -> R"),
-    (lambda x: abs(x), "[R](x: CanAbs[R]) -> R"),  # noqa: PLW0108
-    (len, "(obj: CanLen) -> int"),
+    (lambda x: abs(x), "[R](x: CanAbs[R]) -> R"),
+    # a positional-only parameter cannot be passed by keyword, so no name is shown
+    (lambda x, /: x, "[T](T) -> T"),
+    (len, "(CanLen) -> int"),
     (
         list,
         (
-            "(iterable: tuple[()] = ...) -> list[Never]\n"
-            "[R](iterable: CanIter[CanNext[R]] & ~tuple[()]) -> list[R]"
+            "(tuple[()] = ...) -> list[Never]\n"
+            "[R](CanIter[CanNext[R]] & ~tuple[()]) -> list[R]"
         ),
     ),
     # `list()` probes `__len__` optionally via `length_hint`, so it is no requirement
-    (lambda x: list(x), "[R](x: CanIter[CanNext[R]]) -> list[R]"),  # noqa: PLW0108
-    (math.sqrt, "(x: CanFloat | CanIndex) -> float"),
-    (lambda x: int(x), "(x: CanInt | CanIndex) -> int"),  # noqa: PLW0108
-    (lambda x: complex(x), "(x: CanComplex | CanFloat | CanIndex) -> complex"),  # noqa: PLW0108
-    (operator.index, "(a: CanIndex) -> int"),
+    (lambda x: list(x), "[R](x: CanIter[CanNext[R]]) -> list[R]"),
+    (math.sqrt, "(CanFloat | CanIndex) -> float"),
+    (lambda x: int(x), "(x: CanInt | CanIndex) -> int"),
+    (lambda x: complex(x), "(x: CanComplex | CanFloat | CanIndex) -> complex"),
+    (operator.index, "(CanIndex) -> int"),
     (lambda x: x(), "[R](x: () -> R) -> R"),
     (lambda x: x(1, 2), "[R](x: (Literal[1], Literal[2]) -> R) -> R"),
     (lambda x: x(a=1), "[R](x: (a: Literal[1]) -> R) -> R"),
@@ -149,7 +151,7 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
         "[R: CanStr & CanHash](x: CanIter[CanNext[R]]) -> dict[R, str]",
     ),
     (
-        lambda x: sum(x),  # noqa: PLW0108
+        lambda x: sum(x),
         "[R](x: CanIter[CanNext[CanRAdd[Literal[0], R]]]) -> R",
     ),
     (lambda x: (x + 1, x + 1), "[R](x: CanAdd[Literal[1], R]) -> tuple[R, R]"),
@@ -211,6 +213,8 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
 ]
 
 BINARY_CASES: list[tuple[Callable[[Any, Any], Any], str]] = [
+    # a positional-only parameter renders bare, a keyword-passable one by name
+    (lambda x, /, y: (x, y), "[T, U](T, y: U) -> tuple[T, U]"),
     (
         lambda x, y: x * y,
         "[T, R](x: CanMul[T, R], y: T) -> R\n[T, R](x: T, y: CanRMul[T, R]) -> R",
@@ -513,6 +517,9 @@ FUNCTION_CASES: list[tuple[Callable[..., Any], str]] = [
     (lambda x: lambda y: y, "[T](x: object) -> (y: T) -> T"),  # noqa: ARG005
     (lambda x: lambda *, y: (x, y), "[T, U](x: T) -> (y: U) -> tuple[T, U]"),
     (lambda x: lambda y=1: (x, y), "[T, U](x: T) -> (y: U = 1) -> tuple[T, U]"),
+    # ...except for a positional-only parameter, which renders without its name
+    (lambda x: lambda y, /: (x, y), "[T, U](x: T) -> (U) -> tuple[T, U]"),
+    (lambda x: lambda y=1, /: (x, y), "[T, U](x: T) -> (U = 1) -> tuple[T, U]"),
     (
         lambda x: lambda y: lambda z: (x, y, z),
         "[T, U, V](x: T) -> (y: U) -> (z: V) -> tuple[T, U, V]",
@@ -533,16 +540,16 @@ FUNCTION_CASES: list[tuple[Callable[..., Any], str]] = [
     (lambda x: lambda: list(x), "[R](x: CanIter[CanNext[R]]) -> () -> list[R]"),
     # a returned builtin or method descriptor explores like a direct `infer`,
     # including the lenient fallback that pins a rejected defaulted parameter
-    (lambda: len, "() -> (obj: CanLen) -> int"),
-    (lambda: math.sqrt, "() -> (x: CanFloat | CanIndex) -> float"),
-    (lambda: str.upper, "() -> (self: str) -> str"),
+    (lambda: len, "() -> (CanLen) -> int"),
+    (lambda: math.sqrt, "() -> (CanFloat | CanIndex) -> float"),
+    (lambda: str.upper, "() -> (str) -> str"),
     (
         lambda: str.split,
-        "() -> (self: str, sep: None = None, maxsplit: CanIndex = -1) -> list[Never]",
+        "() -> (str, sep: None = None, maxsplit: CanIndex = -1) -> list[Never]",
     ),
     (
         lambda: dict.get,  # pyright: ignore[reportUnknownMemberType]
-        "[T]() -> (self: dict, key: CanHash, default: T = None) -> T",
+        "[T]() -> (dict, CanHash, T = None) -> T",
     ),
     # a `functools.partial` explores with its bound arguments in place
     (
@@ -597,7 +604,7 @@ ITERATOR_CASES: list[tuple[Callable[..., Any], str]] = [
     # lazy builtin iterators are iterated like generators
     (lambda x: map(str, x), "(x: CanIter[CanNext[CanStr]]) -> map[str]"),
     (
-        lambda f, x: map(f, x),  # noqa: PLW0108
+        lambda f, x: map(f, x),
         "[T, R](f: (T) -> R, x: CanIter[CanNext[T]]) -> map[R]",
     ),
     (
@@ -606,11 +613,11 @@ ITERATOR_CASES: list[tuple[Callable[..., Any], str]] = [
     ),
     (lambda x: filter(None, x), "[R: CanBool](x: CanIter[CanNext[R]]) -> filter[R]"),
     (
-        lambda x, y: zip(x, y),  # noqa: B905, PLW0108
+        lambda x, y: zip(x, y),  # noqa: B905
         "[R, R2](x: CanIter[CanNext[R]], y: CanIter[CanNext[R2]]) -> zip[tuple[R, R2]]",
     ),
     # `enumerate[R]` is parameterized by the element type, not the yielded pair
-    (lambda x: enumerate(x), "[R](x: CanIter[CanNext[R]]) -> enumerate[R]"),  # noqa: PLW0108
+    (lambda x: enumerate(x), "[R](x: CanIter[CanNext[R]]) -> enumerate[R]"),
     # only `zip` is covariant in typeshed, so an `enumerate` union does not absorb
     (
         lambda x: zip([FileNotFoundError()]) if x else zip([OSError()]),
@@ -781,17 +788,15 @@ def test_callable_instance() -> None:
 
 def test_method_descriptor() -> None:
     # an unbound method descriptor's `self` requires a real `__objclass__` instance
-    assert infer(str.upper) == "(self: str) -> str"
-    assert infer(int.bit_length) == "(self: int) -> int"
-    assert infer(float.hex) == "(self: float) -> str"
-    assert infer(list[Any].append) == "(self: list, object: object) -> None"
-    assert infer(object.__str__) == "(self: object) -> str"
-    assert infer(dict[Any, Any].get) == (
-        "[T = None](self: dict, key: CanHash, default: T = None) -> T"
-    )
+    assert infer(str.upper) == "(str) -> str"
+    assert infer(int.bit_length) == "(int) -> int"
+    assert infer(float.hex) == "(float) -> str"
+    assert infer(list[Any].append) == "(list, object) -> None"
+    assert infer(object.__str__) == "(object) -> str"
+    assert infer(dict[Any, Any].get) == "[T = None](dict, CanHash, T = None) -> T"
     # `memoryview()` is constructed from a spy through its `__buffer__`
     assert infer(memoryview.tobytes) == (
-        "(self: memoryview, order: Literal['C'] = 'C') -> bytes"
+        "(memoryview, order: Literal['C'] = 'C') -> bytes"
     )
 
 
@@ -799,10 +804,10 @@ def test_method_descriptor_fixed_defaults() -> None:
     # a defaulted parameter whose spy the function rejects passes its default
     # instead, while the accepting parameters stay structural
     assert infer(str.split) == (
-        "(self: str, sep: None = None, maxsplit: CanIndex = -1) -> list[Never]"
+        "(str, sep: None = None, maxsplit: CanIndex = -1) -> list[Never]"
     )
     assert infer(bytes.decode) == (
-        "(self: bytes, encoding: Literal['utf-8'] = 'utf-8', "
+        "(bytes, encoding: Literal['utf-8'] = 'utf-8', "
         "errors: Literal['strict'] = 'strict') -> str"
     )
 

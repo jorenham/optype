@@ -56,9 +56,9 @@ class Name:
 
 @dataclass(frozen=True, slots=True)
 class Arg:
-    """A keyword-labeled parameter, e.g. `a: Literal[1]` in `(a: Literal[1]) -> R`."""
+    """An optionally keyword-labeled parameter, e.g. `a: Literal[1]` or `T = 1`."""
 
-    key: str
+    key: str | None
     value: Node
     suffix: str = ""  # an optional ` = <default>` display suffix
 
@@ -224,7 +224,7 @@ def render(node: Node) -> str:
             out = f"{base}[{', '.join(parts)}]" if parts else base
         case Fn(params, ret):
             decls = ", ".join(
-                f"{p.key}: {render(p.value)}{p.suffix}"
+                (f"{p.key}: " if p.key else "") + f"{render(p.value)}{p.suffix}"
                 if isinstance(p, Arg)
                 else render(p)
                 for p in params
