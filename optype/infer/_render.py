@@ -11,7 +11,7 @@ from typing import Any, NamedTuple, cast, final
 import optype.infer._ir as _ir
 import optype.infer._numpy as _numpy
 from ._errors import InferError
-from ._explore import _Gen, _Recon, _Traces
+from ._explore import _Recon, _Traces
 from ._spy import (
     _AnyFunc,
     _Args,
@@ -26,6 +26,7 @@ from ._spy import (
     _TraceItem,
     as_spy,
 )
+from ._values import _children, _Fn, _fn_spies, _Gen, _walk
 from optype._core import _can, _has
 from optype.inspect import get_protocol_members
 
@@ -183,20 +184,13 @@ def _packed_uses(value: object, spy: _SpyObject, count: int) -> Generator[bool]:
             if value is spy:
                 yield False
             return
-        case _Gen():
-            items = value.yielded
-        case tuple():
+        case tuple() if not isinstance(value, _Gen | _Fn):
             tup = cast("tuple[object, ...]", value)
             if runs := _spy_runs(tup, spy):
                 yield runs == [count]
-            items = (item for item in tup if item is not spy)
-        case list() | set() | frozenset():
-            items = cast("Collection[object]", value)
-        case dict():
-            mapping = cast("Mapping[object, object]", value)
-            items = (*mapping, *mapping.values())
+            items: Iterable[object] = (item for item in tup if item is not spy)
         case _:
-            return
+            items = _children(value)
     for item in items:
         yield from _packed_uses(item, spy, count)
 
@@ -230,22 +224,10 @@ def _all_packed(
 
 
 def _return_spies(value: object) -> Generator[_SpyObject]:
-    match value:
-        case _SpyObject() | type() if (spy := as_spy(value)) is not None:
+    # an `_Fn`'s parameter spies are not returns; they are named like parameters
+    for node in _walk(value):
+        if (spy := as_spy(node)) is not None:
             yield spy
-        case _Gen():
-            for item in value.yielded:
-                yield from _return_spies(item)
-        case list() | set() | frozenset() | tuple():
-            for item in cast("Collection[object]", value):
-                yield from _return_spies(item)
-        case dict():
-            mapping = cast("Mapping[object, object]", value)
-            for key, val in mapping.items():
-                yield from _return_spies(key)
-                yield from _return_spies(val)
-        case _:
-            pass
 
 
 def _suffix(defaults: _Defaults, name: str) -> str:
@@ -287,7 +269,8 @@ class _Renderer:
             None,
         )
 
-        param_spies = list(spies.values())
+        # a returned function's parameter spies are named like regular parameters
+        param_spies = [*spies.values(), *_fn_spies(results)]
         order, appear = _analyze(param_spies, results, traces)
         param_ids = {id(spy) for spy in param_spies}
 
@@ -353,9 +336,11 @@ class _Renderer:
     def returns(self, members: Iterable[_Op]) -> _ir.Node | None:
         named: list[str] = []
         items: list[_TraceItem] = []
+        returned = False
         for m in members:
             if not isinstance(m.ret, _SpyObject):
                 continue
+            returned = True
             if (var := self._vars.get(id(m.ret))) is not None:
                 named.append(var)
             else:
@@ -363,7 +348,11 @@ class _Renderer:
         parts: list[_ir.Node] = [_ir.Name(var) for var in dict.fromkeys(named)]
         if items and (node := self.traces(items)) is not None:
             parts.append(node)
-        return _ir.inter(parts)
+        if (out := _ir.inter(parts)) is None and returned:
+            # an unused result is unconstrained, but omitting it would leave the
+            # last argument in the return slot, e.g. the `R` of `CanCall[T, R]`
+            out = _ir.Name(_OBJECT)
+        return out
 
     def group(self, proto: _Proto, members: Sequence[_Op]) -> _ir.Node:
         if isinstance(proto, tuple):  # coercion protocols, which record no args
@@ -403,11 +392,14 @@ class _Renderer:
     def spy(self, spy: _SpyObject) -> _ir.Node | None:
         return self.traces(self._traces[id(spy)])
 
-    def slot(self, spy: _SpyObject) -> str:
+    def _slot(self, spy: _SpyObject) -> _ir.Node:
         if (var := self._vars.get(id(spy))) is not None:
-            return var
+            return _ir.Name(var)
         node = self.spy(spy)
-        return _ir.render(node) if node is not None else _OBJECT
+        return node if node is not None else _ir.Name(_OBJECT)
+
+    def slot(self, spy: _SpyObject) -> str:
+        return _ir.render(self._slot(spy))
 
     def typevar(
         self,
@@ -429,19 +421,38 @@ class _Renderer:
     def return_type(self, result: object) -> _ir.Node:
         match result:
             case _SpyObject():
-                return _ir.Name(self._vars.get(id(_own_spy(result)), _OBJECT))
+                node: _ir.Node = _ir.Name(self._vars.get(id(_own_spy(result)), _OBJECT))
             case _SpyStr():
-                return _ir.Type(str)
+                node = _ir.Type(str)
             case _SpyBytes():
-                return _ir.Type(bytes)
+                node = _ir.Type(bytes)
             case _Gen():
-                yields = list(dict.fromkeys(map(self.return_type, result.yielded)))
-                inner = _ir.union(yields) or _ir.Name(_NEVER)
-                return _ir.App(result.kind, (inner,))
+                node = _ir.App(result.kind, (self._union_type(result.yielded),))
+            case _Fn():
+                node = self._function(result)
             case None:
-                return _ir.Name("None")
+                node = _ir.Name("None")
             case _:
-                return self._container(result)
+                node = self._container(result)
+        return node
+
+    def _union_type(self, values: Iterable[object]) -> _ir.Node:
+        """The deduplicated union of the types of `values`, or `Never` if empty."""
+        parts = dict.fromkeys(map(self.return_type, values))
+        return _ir.union(parts) or _ir.Name(_NEVER)
+
+    def _function(self, fn: _Fn) -> _ir.Node:
+        """The signature-syntax type of an explored function result."""
+        params = tuple(
+            _ir.Arg(
+                name,
+                _ir.Type(type(fn.fixed[name]))
+                if name in fn.fixed
+                else self._slot(fn.spies[name]),
+            )
+            for name in fn.names
+        )
+        return _ir.Fn(params, self._union_type(fn.results))
 
     def _class_of(self, cls: type[Any]) -> _ir.Node | None:
         """The type of `cls`'s instances, if it is expressible."""
@@ -498,8 +509,7 @@ class _Renderer:
         return _ir.App("tuple", tuple(elems))
 
     def return_types(self) -> str:
-        node = _ir.union(dict.fromkeys(map(self.return_type, self._results)))
-        return _ir.render(node) if node is not None else _NEVER
+        return _ir.render(self._union_type(self._results))
 
     def render(
         self,
@@ -578,7 +588,8 @@ def _signatures(
     negate: bool = False,
 ) -> list[str]:
     spies, traces, results, _, _ = recon
-    reflected = _reflect(list(spies.values()), results, traces)
+    roots = [*spies.values(), *_fn_spies(results)]
+    reflected = _reflect(roots, results, traces)
     return [
         _Renderer(recon, params, t).render(selected, defaults, negate=negate)
         for t in (traces, reflected)

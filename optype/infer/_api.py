@@ -7,9 +7,10 @@ from typing import cast
 # `from . import` would import the package itself, which imports this module
 import optype.infer._numpy as _numpy
 from ._errors import InferError
-from ._explore import _explore_lenient, _explore_spies, _Gen, _parameters, _Recon
+from ._explore import _explore_lenient, _explore_spies, _parameters, _Recon
 from ._render import _Defaults, _Names, _signatures
 from ._spy import _AnyFunc, _TraceItem
+from ._values import _Fn, _Gen
 
 __all__ = ("infer",)
 
@@ -36,20 +37,24 @@ def _bind(value: object, binding: Mapping[int, object]) -> object:
     match value:
         case _Gen():
             yielded = [_bind(item, binding) for item in value.yielded]
-            return _Gen(yielded, value.is_async)
+            out: object = _Gen(yielded, value.kind)
+        case _Fn():
+            bound = [_bind(item, binding) for item in value.results]
+            out = _Fn(value.names, value.spies, value.fixed, bound)
         case tuple() if cls is tuple:
             tup = cast("tuple[object, ...]", value)
-            return tuple(_bind(item, binding) for item in tup)
+            out = tuple(_bind(item, binding) for item in tup)
         case list():
-            return [_bind(item, binding) for item in cast("list[object]", value)]
+            out = [_bind(item, binding) for item in cast("list[object]", value)]
         case set() | frozenset():
             items = {_bind(item, binding) for item in cast("Collection[object]", value)}
-            return frozenset(items) if isinstance(value, frozenset) else items
+            out = frozenset(items) if isinstance(value, frozenset) else items
         case dict():
             mapping = cast("Mapping[object, object]", value)
-            return {_bind(k, binding): _bind(v, binding) for k, v in mapping.items()}
+            out = {_bind(k, binding): _bind(v, binding) for k, v in mapping.items()}
         case _:
-            return binding.get(id(value), value)
+            out = binding.get(id(value), value)
+    return out
 
 
 def _bind_recon(recon: _Recon, defaults: _Defaults) -> _Recon:

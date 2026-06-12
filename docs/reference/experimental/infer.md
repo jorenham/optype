@@ -302,6 +302,62 @@ $ optype infer "async def f(xs): return (x async for x in xs)"
 [R](xs: CanAIter[CanANext[CanAwait[R]]]) -> AsyncGenerator[R]
 ```
 
+Lazy builtin iterators (`map`, `filter`, `zip`, and `enumerate`) are iterated the same
+way, and a callable argument is traced right through them:
+
+```console
+$ optype infer "lambda x: map(str, x)"
+(x: CanIter[CanNext[CanStr]]) -> map[str]
+
+$ optype infer "lambda f, x: map(f, x)"
+[T, R](f: CanCall[T, R], x: CanIter[CanNext[T]]) -> map[R]
+```
+
+## Returned functions
+
+A returned function is lazy too, so it is explored with placeholders of its own, and
+its type renders in the same signature syntax:
+
+```console
+$ optype infer "lambda x: lambda y: (x, y)"
+[T, U](x: T) -> (y: U) -> tuple[T, U]
+```
+
+An operation inside the returned function is required of the closed-over parameter,
+and overloads reflect as usual:
+
+```console
+$ optype infer "lambda x: lambda y: x + y"
+[T, R](x: CanAdd[T, R]) -> (y: T) -> R
+[T, R](x: T) -> (y: CanRAdd[T, R]) -> R
+```
+
+This applies to anything function-like: builtins, method descriptors, and a
+`functools.partial` (explored with its bound arguments in place), also from within a
+returned container:
+
+```console
+$ optype infer "lambda: str.upper"
+() -> (self: str) -> str
+
+$ optype infer "import functools
+def add(x, y): return x + y
+lambda: functools.partial(add, 1)"
+[R]() -> (y: CanRAdd[Literal[1], R]) -> R
+
+$ optype infer "def counter(start): return (lambda: start), (lambda by: start + by)"
+[T: CanAdd[U, R], U, R](start: T) -> tuple[() -> T, (by: U) -> R]
+[T, R](start: T) -> tuple[() -> T, (by: CanRAdd[T, R]) -> R]
+```
+
+A recursive function (factory) has an inexpressible type, so it stays an opaque
+`function`, as does one with variadic parameters:
+
+```console
+$ optype infer "def f(x): return f"
+(x: object) -> function
+```
+
 ## Containers
 
 Element types are tracked through the containers that hold them, so a typevar can
@@ -373,7 +429,9 @@ $ optype infer "import numpy as np; np.mean"
 ## Limitations
 
 `infer` calls the function, so it only works on functions that are safe to run with
-placeholder arguments (no real side effects, no reliance on concrete values).
+placeholder arguments (no real side effects, no reliance on concrete values). This
+extends to anything it returns: a returned function is called with placeholders of its
+own, and a returned lazy iterator is iterated.
 
 When `infer` can't handle the input, it raises `InferError` (a `NotImplementedError`
 subclass). That's the case for operations without a matching protocol, and for

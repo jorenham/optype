@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import override
 
-type Node = Lit | Type | Name | App | Union | Inter | Not
+type Node = Lit | Type | Name | App | Fn | Union | Inter | Not
 
 _NOT = "~"  # the type complement prefix
 
@@ -12,9 +12,13 @@ _NOT = "~"  # the type complement prefix
 _VARIANCES = {
     "AsyncGenerator": "+-",
     "Generator": "+-+",
+    "enumerate": "+",
+    "filter": "+",
     "frozenset": "+",
+    "map": "+",
     "tuple": "+",
     "type": "+",
+    "zip": "+",
 }
 
 
@@ -69,6 +73,14 @@ class App:
 
 
 @dataclass(frozen=True, slots=True)
+class Fn:
+    """A function type in signature syntax, e.g. `(x: T) -> R`."""
+
+    params: tuple[Arg, ...]
+    ret: Node
+
+
+@dataclass(frozen=True, slots=True)
 class Not:
     """A type complement, e.g. the `~None` of everything but `None`."""
 
@@ -114,6 +126,17 @@ def subtype(sub: Node | Arg, sup: Node | Arg) -> bool:
                     if variances[min(i, len(variances) - 1)] == "+"
                     else subtype(wide, arg)
                     for i, (arg, wide) in enumerate(zip(args, wider_args, strict=True))
+                )
+            )
+        case Fn(params, ret), Fn(wider_params, wider_ret):
+            # parameters are contravariant (and positionally matched), the return
+            # type is covariant
+            result = (
+                len(params) == len(wider_params)
+                and subtype(ret, wider_ret)
+                and all(
+                    subtype(wide.value, param.value)
+                    for param, wide in zip(params, wider_params, strict=True)
                 )
             )
         case _:
@@ -181,12 +204,12 @@ def render(node: Node) -> str:
     """Format a type expression, parenthesized where precedence requires."""
     match node:
         case Lit(values):
-            return f"Literal[{', '.join(map(repr, values))}]"
+            out = f"Literal[{', '.join(map(repr, values))}]"
         case Type(cls):
             prefix = "np." if cls.__module__.partition(".")[0] == "numpy" else ""
-            return prefix + cls.__name__
+            out = prefix + cls.__name__
         case Name(name):
-            return name
+            out = name
         case App(base, args):
             parts = [
                 f"{arg.key}={render(arg.value)}"
@@ -194,15 +217,21 @@ def render(node: Node) -> str:
                 else render(arg)
                 for arg in args
             ]
-            return f"{base}[{', '.join(parts)}]" if parts else base
+            out = f"{base}[{', '.join(parts)}]" if parts else base
+        case Fn(params, ret):
+            decls = ", ".join(f"{p.key}: {render(p.value)}" for p in params)
+            out = f"({decls}) -> {render(ret)}"
         case Not(part):
             inner = render(part)
-            return (
-                f"{_NOT}({inner})" if isinstance(part, Union | Inter) else _NOT + inner
+            out = (
+                f"{_NOT}({inner})"
+                if isinstance(part, Union | Inter | Fn)
+                else _NOT + inner
             )
         case Union(parts) | Inter(parts):
             sep, dual = (" | ", Inter) if isinstance(node, Union) else (" & ", Union)
-            return sep.join(
-                f"({render(part)})" if isinstance(part, dual) else render(part)
+            out = sep.join(
+                f"({render(part)})" if isinstance(part, dual | Fn) else render(part)
                 for part in parts
             )
+    return out

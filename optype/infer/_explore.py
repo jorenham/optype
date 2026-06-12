@@ -13,10 +13,17 @@ from collections.abc import (
     Sequence,
 )
 from contextlib import suppress
+from functools import partial
 from inspect import Parameter, isasyncgen, iscoroutine, isgenerator, signature
 from itertools import islice
-from types import MethodDescriptorType, WrapperDescriptorType
-from typing import Any, NamedTuple, cast, overload
+from types import (
+    BuiltinFunctionType,
+    FunctionType,
+    MethodDescriptorType,
+    MethodType,
+    WrapperDescriptorType,
+)
+from typing import Any, cast
 
 from ._errors import InferError, InferWarning
 from ._spy import (
@@ -30,9 +37,9 @@ from ._spy import (
     _SpyStr,
     _TraceItem,
 )
+from ._values import _Fn, _fn_spies, _Gen, _walk
 
 __all__ = (
-    "_Gen",
     "_Recon",
     "_Traces",
     "_doc_params",
@@ -63,15 +70,6 @@ type _Recon = tuple[
     int,
     Mapping[str, object],
 ]
-
-
-class _Gen(NamedTuple):
-    yielded: list[object]
-    is_async: bool
-
-    @property
-    def kind(self) -> str:
-        return "AsyncGenerator" if self.is_async else "Generator"
 
 
 def _reachable(params: Iterable[object]) -> Generator[_SpyObject]:
@@ -162,16 +160,98 @@ def _sync[T](agen: AsyncGenerator[T, Any]) -> Generator[T]:
             return
 
 
-@overload
-def _next(result: Generator[object] | AsyncGenerator[object]) -> _Gen: ...
-@overload
-def _next[T](result: T) -> T: ...
+# lazy builtin iterators with a single type argument
+_ITERATOR_TYPES = frozenset({enumerate, filter, map, zip})
+
+_FUNCTION_TYPES = (
+    FunctionType,
+    BuiltinFunctionType,
+    MethodType,
+    MethodDescriptorType,
+    WrapperDescriptorType,
+)
+_VARIADIC_KINDS = frozenset({Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD})
+
+# the (unwrapped) functions currently being explored, see `_explore_key`
+_exploring: set[int] = set()
+
+
+def _unwrap(obj: object) -> object:
+    """The underlying callable of (nested) `functools.partial` wrappers."""
+    while isinstance(obj, partial):
+        obj = obj.func
+    return obj
+
+
+def _explore_key(func: object) -> int:
+    # closures from a single def share their code object, so a recursive function
+    # factory is recognized even though it returns a fresh closure on every call
+    base = _unwrap(func)
+    return id(getattr(base, "__code__", base))
+
+
+def _closed_over(func: object, seen: set[int] | None = None) -> Generator[object]:
+    # every value a function can reach besides its arguments, transitively
+    seen = set() if seen is None else seen
+    if id(func) in seen:
+        return
+    seen.add(id(func))
+    values: list[object] = []
+    while isinstance(func, partial):
+        values += func.args
+        values += func.keywords.values()
+        func = func.func
+    values += getattr(func, "__defaults__", None) or ()
+    values += (getattr(func, "__kwdefaults__", None) or {}).values()
+    for cell in getattr(func, "__closure__", None) or ():
+        with suppress(ValueError):  # an unset cell
+            values.append(cell.cell_contents)
+    for value in values:
+        for node in _walk(value):
+            yield node
+            if isinstance(_unwrap(node), _FUNCTION_TYPES):
+                yield from _closed_over(node, seen)
+
+
+def _explore_func(func: _AnyFunc) -> object:
+    """Explore a returned function, so it renders in signature syntax."""
+    if _explore_key(func) in _exploring:
+        return func  # a recursive function type is inexpressible
+    try:
+        params = _parameters(func)
+        if any(p.kind in _VARIADIC_KINDS for p in params.values()):
+            return func  # variadic parameters are not expressible (yet)
+        spies, _, results, _, fixed = _explore_spies(func, params)
+    except Exception:  # noqa: BLE001  # an unexplorable function stays opaque
+        return func
+    return _Fn(tuple(params), spies, fixed, results)
+
+
 def _next(result: object) -> object:
+    cls = type(result)
     if isgenerator(result):
-        return _Gen(_yields(result), is_async=False)
-    if isasyncgen(result):
-        return _Gen(_yields(_sync(result)), is_async=True)
-    return result
+        out: object = _Gen(_yields(result), "Generator")
+    elif isasyncgen(result):
+        out = _Gen(_yields(_sync(result)), "AsyncGenerator")
+    elif cls in _ITERATOR_TYPES:
+        values = _yields(cast("Iterable[object]", result))
+        if cls is enumerate:
+            # `enumerate[R]` is parameterized by the element type, not the yields
+            values = [item for _, item in cast("list[tuple[int, object]]", values)]
+        out = _Gen(values, cls.__name__)
+    elif isinstance(_unwrap(result), _FUNCTION_TYPES):
+        out = _explore_func(cast("_AnyFunc", result))
+    # a function (or iterator) within a returned container is explored as well
+    elif cls is tuple:
+        out = tuple(map(_next, cast("tuple[object, ...]", result)))
+    elif cls is list:
+        out = [_next(item) for item in cast("list[object]", result)]
+    elif cls is dict:  # the keys must stay hashable, so only the values recurse
+        mapping = cast("Mapping[object, object]", result)
+        out = {key: _next(value) for key, value in mapping.items()}
+    else:
+        out = result
+    return out
 
 
 def _explore[T](
@@ -186,9 +266,10 @@ def _explore[T](
         if not stack:
             break
         plan = stack.pop()
+        # a failed run must also roll back its traces on the closed-over spies
         marks = [
             (spy, len(spy.__optype_trace__))
-            for spy in _reachable((*args, *kwds.values()))
+            for spy in _reachable((*args, *kwds.values(), *_closed_over(func)))
         ]
         token = _fork.set(iter(plan))
         try:
@@ -272,33 +353,41 @@ def _explore_spies(
     counts = iter(_VARIADIC_COUNTS)
     count = next(counts)
     keys: list[str] = []
-    while True:
-        # a fresh `self` instance per attempt, so a mutated one cannot leak
-        fixed = _fixed_self(func, params) | {n: params[n].default for n in fix}
-        spies, args, kwds = _placeholders(params, count, keys, omit, fixed)
-        try:
-            results: list[object] = [_next(r) for r in _explore(func, args, kwds)]
-        except KeyError as exc:
-            key = exc.args[0] if exc.args else None
-            if (
-                Parameter.VAR_KEYWORD not in kinds
-                or not isinstance(key, str)
-                or key in keys
-                or key in params
-            ):
-                raise
-            if len(keys) >= _KWARGS_LIMIT:
-                msg = f"ran out of `**kwargs` placeholder keys ({exc})"
-                raise InferError(msg) from exc
-            keys.append(key)
-        except (IndexError, TypeError, ValueError) as exc:
-            if Parameter.VAR_POSITIONAL not in kinds:
-                raise
-            if (count := next(counts, 0)) == 0:
-                msg = f"ran out of `*args` placeholders ({exc})"
-                raise InferError(msg) from exc
-        else:
-            return spies, _snapshot(spies.values()), results, count, fixed
+    # registering `func` itself keeps a returned self-reference from recursing
+    nested = (guard := _explore_key(func)) in _exploring
+    _exploring.add(guard)
+    try:
+        while True:
+            # a fresh `self` instance per attempt, so a mutated one cannot leak
+            fixed = _fixed_self(func, params) | {n: params[n].default for n in fix}
+            spies, args, kwds = _placeholders(params, count, keys, omit, fixed)
+            try:
+                results: list[object] = [_next(r) for r in _explore(func, args, kwds)]
+            except KeyError as exc:
+                key = exc.args[0] if exc.args else None
+                if (
+                    Parameter.VAR_KEYWORD not in kinds
+                    or not isinstance(key, str)
+                    or key in keys
+                    or key in params
+                ):
+                    raise
+                if len(keys) >= _KWARGS_LIMIT:
+                    msg = f"ran out of `**kwargs` placeholder keys ({exc})"
+                    raise InferError(msg) from exc
+                keys.append(key)
+            except (IndexError, TypeError, ValueError) as exc:
+                if Parameter.VAR_POSITIONAL not in kinds:
+                    raise
+                if (count := next(counts, 0)) == 0:
+                    msg = f"ran out of `*args` placeholders ({exc})"
+                    raise InferError(msg) from exc
+            else:
+                traces = _snapshot((*spies.values(), *_fn_spies(results)))
+                return spies, traces, results, count, fixed
+    finally:
+        if not nested:
+            _exploring.discard(guard)
 
 
 def _explore_lenient(
