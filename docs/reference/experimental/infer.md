@@ -77,9 +77,14 @@ class CanNegRAdd[T, R](CanNeg[T], CanRAdd[T, R], Protocol): ...
 ```
 
 This turns the `CanNeg[T] & CanRAdd[T, R]` above into the valid `CanNegRAdd[T, R]`.
-Where `optype` already ships the combined protocol, `infer` reports it directly: a
-traced `with` statement renders as [`CanWith`](#context-managers) rather than
-`CanEnter & CanExit`.
+Where `optype` already ships the combined protocol, `infer` reports it directly:
+`CanGetitem & CanLen` merges into `CanSequence`, and a traced `with` statement renders
+as [`CanWith`](#context-managers) rather than `CanEnter & CanExit`:
+
+```console
+$ optype infer "lambda x, i: x[i] if len(x) else None"
+[T, R](x: CanSequence[T, R], i: T) -> R | None
+```
 
 Only an intersection of the same protocol shares its method, which happens when an
 operation is traced at several arities:
