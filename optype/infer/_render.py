@@ -41,12 +41,12 @@ _TYPEVAR_TUPLE = "*Ts"
 _NEVER = "Never"
 _OBJECT = "object"
 
-_DUNDER_ATTR = frozenset({
-    "__delattr__",
-    "__getattr__",
-    "__getattribute__",
-    "__setattr__",
-})
+# the attribute polarity sigils of the fictional inline `Has['name', T]` form
+_READ = "+"  # covariant: a read-only property suffices
+_WRITE = "-"  # contravariant: the attribute only has to accept the value
+
+_DUNDER_ATTR_WRITE = frozenset({"__delattr__", "__setattr__"})
+_DUNDER_ATTR = _DUNDER_ATTR_WRITE | {"__getattr__", "__getattribute__"}
 
 
 def _get_dunder_can_map() -> dict[str, str]:
@@ -90,7 +90,7 @@ _COERCION_PROTOS = {
 }
 
 type _Vars = dict[int, str]
-type _RetKey = tuple[int, str, int, tuple[str, ...]]
+type _RetKey = tuple[int, str, object, tuple[str, ...]]
 type _Proto = str | tuple[str, ...]  # a tuple is rendered as a union of protocols
 
 type _Names = Sequence[str]
@@ -102,21 +102,31 @@ class _Op(NamedTuple):
     args: _Args
     kwargs: _Kwargs
     ret: object
+    attr: str | None = None  # the subject of a synthesized `Has[...]` form
 
 
 def _resolve(trace: _TraceItem) -> _Op:
     if trace.attr in _DUNDER_ATTR:
         name = trace.args[0]
-        if not isinstance(name, str) or name not in _DUNDER_HAS_MAP:
-            msg = f"no protocol for attribute {name!r}"
+        if not isinstance(name, str) or isinstance(name, _Spy):
+            msg = "no protocol for a dynamic attribute name"
             raise InferError(msg)
-        return _Op(_DUNDER_HAS_MAP[name], (), {}, trace.return_)
+        # a read of an attribute with a shipped single-member `Has*` protocol
+        if name in _DUNDER_HAS_MAP and trace.attr not in _DUNDER_ATTR_WRITE:
+            return _Op(_DUNDER_HAS_MAP[name], (), {}, trace.return_)
+
+        # everything else synthesizes the inline `Has['name', T]` form; a write
+        # binds the assigned value's type, which a bounded `Has*` could reject
+        return _Op("Has", trace.args[1:], {}, trace.return_, name)
+
     # checked before _DUNDER_CAN_MAP, which also contains the coercion dunders
     if trace.attr in _COERCION_PROTOS:
         return _Op(_COERCION_PROTOS[trace.attr], (), {}, trace.return_)
+
     if trace.attr in _DUNDER_CAN_MAP:
         proto = _DUNDER_CAN_MAP[trace.attr]
         return _Op(proto, trace.args, trace.kwargs, trace.return_)
+
     msg = f"no protocol for {trace.attr!r}"
     raise InferError(msg)
 
@@ -124,6 +134,13 @@ def _resolve(trace: _TraceItem) -> _Op:
 def _or_object(node: _ir.Node | None) -> _ir.Node:
     """The node itself, or `object` for an unconstrained (`None`) one."""
     return _ir.Name(_OBJECT) if node is None else node
+
+
+def _sign_read(ret: _ir.Node) -> _ir.Node:
+    """Mark a read covariant; a callable signs its return type instead: a method."""
+    if isinstance(ret, _ir.Fn):
+        return _ir.Fn(ret.params, _sign_read(ret.ret))
+    return ret if ret == _ir.Name(_OBJECT) else _ir.Polarity(_READ, ret)
 
 
 def _analyze(
@@ -169,9 +186,13 @@ def _ret_keys(
             for value in (*item.args, *item.kwargs.values()):
                 if (arg := as_spy(value)) is not None:
                     args.add(id(arg))
+
             if isinstance(item.return_, _SpyObject):
-                key = id(owner), item.attr, len(item.args), tuple(sorted(item.kwargs))
+                # an attribute name replaces the fixed arity: `x.spam` is not `x.ham`
+                shape = item.args[0] if item.attr in _DUNDER_ATTR else len(item.args)
+                key = id(owner), item.attr, shape, tuple(sorted(item.kwargs))
                 keys[id(item.return_)] = key
+
     return keys, args
 
 
@@ -192,7 +213,7 @@ def _packed_uses(value: object, spy: _SpyObject, count: int) -> Generator[bool]:
             tup = cast("tuple[object, ...]", value)
             if runs := _spy_runs(tup, spy):
                 yield runs == [count]
-            items: Iterable[object] = (item for item in tup if item is not spy)
+            items = (item for item in tup if item is not spy)
         case _:
             items = _children(value)
     for item in items:
@@ -407,37 +428,56 @@ class _Renderer:
     def group(self, proto: _Proto, members: Sequence[_Op]) -> _ir.Node:
         if isinstance(proto, tuple):  # coercion protocols, which record no args
             return _ir.Union(tuple(map(_ir.Name, proto)))
+
         if proto == "CanArrayFunction":
             ret_str = _ir.render(_or_object(self.returns(members)))
             func = cast("_AnyFunc", members[0].args[0])
             return _ir.Name(_numpy.array_function_type(func, ret_str))
-        args: list[_ir.Node | _ir.Arg] = [
+
+        pos = [
             arg
             for i in range(len(members[0].args))
             if (arg := self.union(m.args[i] for m in members)) is not None
         ]
-        args += [
-            _ir.Arg(key, kw)
-            for key in members[0].kwargs
-            if (kw := self.union(m.kwargs[key] for m in members)) is not None
-        ]
+        args = (
+            *pos,
+            *(
+                _ir.Arg(key, kw)
+                for key in members[0].kwargs
+                if (kw := self.union(m.kwargs[key] for m in members)) is not None
+            ),
+        )
         ret = self.returns(members)
+
         if proto == "CanCall":
-            return _ir.Fn(tuple(args), _or_object(ret))
+            return _ir.Fn(args, _or_object(ret))
+
+        if (attr := members[0].attr) is not None:
+            # a read is covariant (a property suffices) and a write contravariant
+            # (the attribute only has to accept the value); existence renders bare
+            signed: tuple[_ir.Node, ...] = (
+                _ir.Name(repr(attr)),
+                *(_ir.Polarity(_WRITE, a) for a in pos),
+            )
+            if ret is not None and ret != _ir.Name(_OBJECT):
+                signed = *signed, _sign_read(ret)
+            return _ir.App(proto, signed)
+
         if ret is not None:
-            args.append(ret)
-        return _ir.App(proto, tuple(args))
+            args = *args, ret
+
+        return _ir.App(proto, args)
 
     def traces(self, items: Iterable[_TraceItem]) -> _ir.Node | None:
         items = list(items)
         # a surviving absence marker proves the dunder was only probed optionally
         optional = {item.args[0] for item in items if item.attr == _Marker.ABSENT}
-        groups: dict[tuple[_Proto, int, tuple[str, ...]], list[_Op]] = {}
+        groups: dict[tuple[_Proto, str | None, int, tuple[str, ...]], list[_Op]] = {}
         for item in items:
             if item.attr == _Marker.ABSENT or item.attr in optional:
                 continue
             op = _resolve(item)
-            key = op.proto, len(op.args), tuple(sorted(op.kwargs))
+            key = op.proto, op.attr, len(op.args), tuple(sorted(op.kwargs))
             groups.setdefault(key, []).append(op)
         parts = [self.group(key[0], group) for key, group in groups.items()]
         return _ir.inter(_merge_combined(parts))

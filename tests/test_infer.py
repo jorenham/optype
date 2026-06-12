@@ -22,6 +22,40 @@ def _type_of[T](x: T) -> type[T]:
     return type(x)
 
 
+def _set_attr(x: Any) -> object:
+    x.spam = 1
+    return x
+
+
+def _set_attr_twice(x: Any) -> None:
+    x.spam = 1
+    x.spam = 1.5
+
+
+def _del_attr(x: Any) -> None:
+    del x.spam
+
+
+def _get_attr(x: Any) -> None:
+    x.spam  # noqa: B018
+
+
+def _call_attr(x: Any) -> None:
+    x.spam()
+
+
+def _iadd_attr(x: Any) -> None:
+    x.spam += 1
+
+
+def _set_dunder(x: Any) -> None:
+    x.__name__ = 123
+
+
+def _del_dunder(x: Any) -> None:
+    del x.__name__
+
+
 UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     (lambda x: x + 1, "[R](x: CanAdd[Literal[1], R]) -> R"),
     (
@@ -210,6 +244,43 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     (lambda x: x.__match_args__, "[R](x: HasMatchArgs[R]) -> R"),
     (lambda x: x.__type_params__, "[R](x: HasTypeParams[R]) -> R"),
     (lambda x: x.__self__, "[R](x: HasSelf[R]) -> R"),
+    # an attribute without a shipped `Has*` protocol synthesizes the fictional
+    # inline `Has['name', T]` form, which is not valid Python, like `&` and `~`;
+    # a read requires only the covariant (read-only) `+T`, i.e. a property; on
+    # a callable the sigil sinks into the return type, i.e. a method
+    (lambda x: x.spam, "[R](x: Has['spam', +R]) -> R"),
+    (lambda x: x.spam(), "[R](x: Has['spam', () -> +R]) -> R"),
+    (lambda x: x.spam(1), "[R](x: Has['spam', (Literal[1]) -> +R]) -> R"),
+    (_call_attr, "(x: Has['spam', () -> object]) -> None"),
+    (lambda x: x.__wibble__, "[R](x: Has['__wibble__', +R]) -> R"),
+    (lambda x: getattr(x, "spam"), "[R](x: Has['spam', +R]) -> R"),  # noqa: B009
+    (lambda x: x.spam.ham, "[R](x: Has['spam', +Has['ham', +R]]) -> R"),
+    # distinct attributes get distinct typevars; repeated reads share one
+    (
+        lambda x: (x.spam, x.ham),
+        "[R, R2](x: Has['spam', +R] & Has['ham', +R2]) -> tuple[R, R2]",
+    ),
+    (lambda x: (x.spam, x.spam), "[R](x: Has['spam', +R]) -> tuple[R, R]"),
+    (
+        lambda x: (x.__name__, x.__qualname__),
+        "[R, R2](x: HasName[R] & HasQualname[R2]) -> tuple[R, R2]",
+    ),
+    # an assignment binds the contravariant (write-only) `-T`, which the attribute
+    # only has to accept, so merged writes union; a deletion or an unused read
+    # requires bare existence
+    (_set_attr, "[T: Has['spam', -Literal[1]]](x: T) -> T"),
+    (_set_attr_twice, "(x: Has['spam', -(Literal[1] | float)]) -> None"),
+    (_del_attr, "(x: Has['spam']) -> None"),
+    (_get_attr, "(x: Has['spam']) -> None"),
+    # an augmented assignment is both a read and a write
+    (
+        _iadd_attr,
+        "[T](x: Has['spam', +CanIAdd[Literal[1], T]] & Has['spam', -T]) -> None",
+    ),
+    # a write to an attribute with a shipped protocol synthesizes too: `HasName`
+    # declares `__name__: str`, which the assigned value need not satisfy
+    (_set_dunder, "(x: Has['__name__', -Literal[123]]) -> None"),
+    (_del_dunder, "(x: Has['__name__']) -> None"),
 ]
 
 BINARY_CASES: list[tuple[Callable[[Any, Any], Any], str]] = [
@@ -309,6 +380,8 @@ BINARY_CASES: list[tuple[Callable[[Any, Any], Any], str]] = [
             "[T: CanRAdd[U, R2], U: CanRAdd[T, R], R, R2](x: T, y: U) -> tuple[R, R2]"
         ),
     ),
+    # a synthesized attribute assignment binds the assigned value's type
+    (lambda x, y: setattr(x, "spam", y), "[T](x: Has['spam', -T], y: T) -> None"),
 ]
 
 
@@ -422,6 +495,10 @@ def _yield_default(x: Any = 0) -> Any:
     yield x
 
 
+def _set_attr_default(x: Any, y: Any = 1) -> None:
+    x.spam = y
+
+
 def _if_none(x: Any = None) -> Any:
     return [] if x is None else x
 
@@ -456,6 +533,7 @@ DEFAULT_CASES: list[tuple[Callable[..., Any], str]] = [
         ),
     ),
     (_getitem_default, "[R, T = Literal[1]](x: CanGetitem[T, R], y: T = 1) -> R"),
+    (_set_attr_default, "[T = Literal[1]](x: Has['spam', -T], y: T = 1) -> None"),
     (_yield_default, "[T = Literal[0]](x: T = 0) -> Generator[T]"),
     (_type_default, "[T = Literal[0]](x: T = 0) -> type[T]"),
     # a parameter whose typevar would only appear once shows the default inline
@@ -534,6 +612,10 @@ FUNCTION_CASES: list[tuple[Callable[..., Any], str]] = [
         ),
     ),
     (lambda x: lambda f: f(x), "[T, R](x: T) -> (f: (T) -> R) -> R"),
+    (
+        lambda x: lambda y: y.foo,  # noqa: ARG005  # pyright: ignore[reportUnknownMemberType]
+        "[R](x: object) -> (y: Has['foo', +R]) -> R",
+    ),
     # a failed inner run rolls back its traces on the closed-over parameter, so
     # an optionally probed `__len__` is no requirement, just like in a direct call
     (lambda x: lambda: len(x), "(x: CanLen) -> () -> int"),
@@ -1157,9 +1239,10 @@ def test_type() -> None:
     assert infer(type) == "[T](object: T) -> type[T]"
 
 
-def _set_attr(x: Any) -> object:
-    x.spam = 1
-    return x
+def test_dynamic_attr_name() -> None:
+    # a spy-derived attribute name is not statically known
+    with pytest.raises(InferError, match="no protocol"):
+        infer(lambda x, y: getattr(x, str(y)))
 
 
 def _set_name(x: Any) -> object:
@@ -1171,24 +1254,6 @@ def _set_name(x: Any) -> object:
 
 def test_set_name() -> None:
     assert infer(_set_name) == "(x: CanSetName[type, Literal['attr']]) -> type"
-
-
-NO_PROTOCOL_CASES: list[Callable[[Any], Any]] = [
-    lambda x: x.foo,
-    _set_attr,
-    # an inexpressible operation inside a returned function fails just as honestly
-    lambda x: lambda y: y.foo,  # noqa: ARG005  # pyright: ignore[reportUnknownMemberType]
-]
-
-
-@pytest.mark.parametrize(
-    "func",
-    NO_PROTOCOL_CASES,
-    ids=["getattr", "setattr", "returned"],
-)
-def test_no_protocol(func: Callable[[Any], Any]) -> None:
-    with pytest.raises(InferError, match="no protocol"):
-        infer(func)
 
 
 def _run_cli(*args: str) -> subprocess.CompletedProcess[str]:
@@ -1247,6 +1312,6 @@ def test_cli_usage() -> None:
 
 def test_cli_infer_error() -> None:
     # infer's own limitations exit cleanly, instead of with a traceback
-    out = _run_cli("-m", "optype", "infer", "lambda x: x.foo")
+    out = _run_cli("-m", "optype", "infer", "lambda x, y: getattr(x, str(y))")
     assert out.returncode == 1
     assert out.stderr.startswith("InferError: no protocol")
