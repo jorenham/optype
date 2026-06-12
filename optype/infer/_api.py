@@ -40,8 +40,10 @@ def _select(params: Iterable[str | int], names: _Names) -> _Names:
 def _bind(value: object, binding: Mapping[int, object]) -> object:
     """A deep copy of `value` with every bound spy replaced by its binding."""
     if sys.version_info >= (3, 15):
-        if isinstance(value, builtins.frozendict):
-            return builtins.frozendict({
+        # workaround for pyrefly (1.0.0)
+        frozendict_ = getattr(builtins, "frozendict")  # noqa: B009
+        if isinstance(value, frozendict_):
+            return frozendict_({
                 _bind(k, binding): _bind(v, binding) for k, v in value.items()
             })
 

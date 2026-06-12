@@ -234,11 +234,9 @@ def _return_spies(value: object) -> Generator[_SpyObject]:
             yield spy
 
 
-def _is_sentinel(obj: object, /) -> bool:
-    # we can't write this using `and` because pyrefly (1.0.0) wouldn't understand it
-    if sys.version_info >= (3, 15):
-        return isinstance(obj, builtins.sentinel)
-    return False
+def _is_sentinel(x: object, /) -> bool:
+    # the getattr is a workaround for a pyrefly (1.0.0) bug
+    return sys.version_info >= (3, 15) and isinstance(x, getattr(builtins, "sentinel"))  # noqa: B009
 
 
 def _suffix(defaults: _Defaults, name: str) -> str:
