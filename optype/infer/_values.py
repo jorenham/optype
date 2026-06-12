@@ -22,6 +22,7 @@ class _Fn(NamedTuple):
     names: tuple[str, ...]
     spies: Mapping[str, _SpyObject]
     fixed: Mapping[str, object]
+    defaults: Mapping[str, object]
     results: list[object]
 
 

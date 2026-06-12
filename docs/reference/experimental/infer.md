@@ -440,7 +440,8 @@ $ optype infer "import numpy as np; np.mean"
 `infer` calls the function, so it only works on functions that are safe to run with
 placeholder arguments (no real side effects, no reliance on concrete values). This
 extends to anything it returns: a returned function is called with placeholders of its
-own, and a returned lazy iterator is iterated.
+own, and a returned lazy iterator is iterated. A returned function that raises during
+this exploration is not treated as an error: its type stays an opaque `function`.
 
 When `infer` can't handle the input, it raises `InferError` (a `NotImplementedError`
 subclass). That's the case for operations without a matching protocol, and for

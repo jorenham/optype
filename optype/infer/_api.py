@@ -7,7 +7,13 @@ from typing import cast
 # `from . import` would import the package itself, which imports this module
 import optype.infer._numpy as _numpy
 from ._errors import InferError
-from ._explore import _explore_lenient, _explore_spies, _parameters, _Recon
+from ._explore import (
+    _declared_defaults,
+    _explore_lenient,
+    _explore_spies,
+    _parameters,
+    _Recon,
+)
 from ._render import _Defaults, _Names, _signatures
 from ._spy import _AnyFunc, _TraceItem
 from ._values import _Fn, _Gen
@@ -37,10 +43,10 @@ def _bind(value: object, binding: Mapping[int, object]) -> object:
     match value:
         case _Gen():
             yielded = [_bind(item, binding) for item in value.yielded]
-            out: object = _Gen(yielded, value.kind)
+            out: object = value._replace(yielded=yielded)
         case _Fn():
             bound = [_bind(item, binding) for item in value.results]
-            out = _Fn(value.names, value.spies, value.fixed, bound)
+            out = value._replace(results=bound)
         case tuple() if cls is tuple:
             tup = cast("tuple[object, ...]", value)
             out = tuple(_bind(item, binding) for item in tup)
@@ -92,11 +98,7 @@ def _defaults(
     mismatch the omitted calls are reported as separate overload lines, and a
     single defaulted parameter's type is excluded from the generic signature.
     """
-    defaults = {
-        name: p.default
-        for name, p in params.items()
-        if p.default is not Parameter.empty
-    }
+    defaults = _declared_defaults(params)
     kinds = {p.kind for p in params.values()}
     if not defaults or (
         # `*args` placeholders would positionally fill an omitted default

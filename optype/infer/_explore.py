@@ -13,6 +13,7 @@ from collections.abc import (
     Sequence,
 )
 from contextlib import suppress
+from contextvars import ContextVar
 from functools import partial
 from inspect import Parameter, isasyncgen, iscoroutine, isgenerator, signature
 from itertools import islice
@@ -42,6 +43,7 @@ from ._values import _Fn, _fn_spies, _Gen, _walk
 __all__ = (
     "_Recon",
     "_Traces",
+    "_declared_defaults",
     "_doc_params",
     "_explore_lenient",
     "_explore_spies",
@@ -123,6 +125,11 @@ def _parameters(func: _AnyFunc) -> Mapping[str, Parameter]:
         return {n: Parameter(n, Parameter.POSITIONAL_OR_KEYWORD) for n in names}
 
 
+def _declared_defaults(params: Mapping[str, Parameter]) -> dict[str, object]:
+    """The declared parameter defaults, by name."""
+    return {n: p.default for n, p in params.items() if p.default is not Parameter.empty}
+
+
 def _await[R](coro: Coroutine[Any, Any, R]) -> R:
     # a spy's awaitables resolve synchronously, so the coroutine runs straight through
     try:
@@ -173,7 +180,7 @@ _FUNCTION_TYPES = (
 _VARIADIC_KINDS = frozenset({Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD})
 
 # the (unwrapped) functions currently being explored, see `_explore_key`
-_exploring: set[int] = set()
+_exploring: ContextVar[frozenset[int]] = ContextVar("_exploring", default=frozenset())
 
 
 def _unwrap(obj: object) -> object:
@@ -215,33 +222,34 @@ def _closed_over(func: object, seen: set[int] | None = None) -> Generator[object
 
 def _explore_func(func: _AnyFunc) -> object:
     """Explore a returned function, so it renders in signature syntax."""
-    if _explore_key(func) in _exploring:
+    if _explore_key(func) in _exploring.get():
         return func  # a recursive function type is inexpressible
     try:
         params = _parameters(func)
         if any(p.kind in _VARIADIC_KINDS for p in params.values()):
             return func  # variadic parameters are not expressible (yet)
-        spies, _, results, _, fixed = _explore_spies(func, params)
+        recon, _ = _explore_lenient(func, params)
     except Exception:  # noqa: BLE001  # an unexplorable function stays opaque
         return func
-    return _Fn(tuple(params), spies, fixed, results)
+    spies, _, results, _, fixed = recon
+    return _Fn(tuple(params), spies, fixed, _declared_defaults(params), results)
 
 
 def _next(result: object) -> object:
+    # a function (or iterator) within the yields or a container is explored as well
     cls = type(result)
     if isgenerator(result):
-        out: object = _Gen(_yields(result), "Generator")
+        out: object = _Gen([_next(v) for v in _yields(result)], "Generator")
     elif isasyncgen(result):
-        out = _Gen(_yields(_sync(result)), "AsyncGenerator")
+        out = _Gen([_next(v) for v in _yields(_sync(result))], "AsyncGenerator")
     elif cls in _ITERATOR_TYPES:
         values = _yields(cast("Iterable[object]", result))
         if cls is enumerate:
             # `enumerate[R]` is parameterized by the element type, not the yields
             values = [item for _, item in cast("list[tuple[int, object]]", values)]
-        out = _Gen(values, cls.__name__)
+        out = _Gen([_next(v) for v in values], cls.__name__)
     elif isinstance(_unwrap(result), _FUNCTION_TYPES):
         out = _explore_func(cast("_AnyFunc", result))
-    # a function (or iterator) within a returned container is explored as well
     elif cls is tuple:
         out = tuple(map(_next, cast("tuple[object, ...]", result)))
     elif cls is list:
@@ -354,8 +362,7 @@ def _explore_spies(
     count = next(counts)
     keys: list[str] = []
     # registering `func` itself keeps a returned self-reference from recursing
-    nested = (guard := _explore_key(func)) in _exploring
-    _exploring.add(guard)
+    token = _exploring.set(_exploring.get() | {_explore_key(func)})
     try:
         while True:
             # a fresh `self` instance per attempt, so a mutated one cannot leak
@@ -386,8 +393,7 @@ def _explore_spies(
                 traces = _snapshot((*spies.values(), *_fn_spies(results)))
                 return spies, traces, results, count, fixed
     finally:
-        if not nested:
-            _exploring.discard(guard)
+        _exploring.reset(token)
 
 
 def _explore_lenient(
@@ -399,9 +405,7 @@ def _explore_lenient(
     try:
         return _explore_spies(func, params), {}
     except (TypeError, ValueError):
-        defaults = {
-            n: p.default for n, p in params.items() if p.default is not Parameter.empty
-        }
+        defaults = _declared_defaults(params)
         if not defaults:
             raise
     # start from the all-fixed baseline and greedily promote one spy at a time

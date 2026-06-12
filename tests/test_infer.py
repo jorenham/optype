@@ -495,6 +495,10 @@ def _counter(start: Any) -> Any:
     return (lambda: start), (lambda by: start + by)
 
 
+def _yield_fn(x: Any) -> Any:
+    yield lambda: x
+
+
 FUNCTION_CASES: list[tuple[Callable[..., Any], str]] = [
     # a returned function is lazy, so it is explored with placeholders of its own
     # and renders in signature syntax; its parameter spies are named like parameters
@@ -502,7 +506,7 @@ FUNCTION_CASES: list[tuple[Callable[..., Any], str]] = [
     (lambda x: lambda: x, "[T](x: T) -> () -> T"),
     (lambda x: lambda y: y, "[T](x: object) -> (y: T) -> T"),  # noqa: ARG005
     (lambda x: lambda *, y: (x, y), "[T, U](x: T) -> (y: U) -> tuple[T, U]"),
-    (lambda x: lambda y=1: (x, y), "[T, U](x: T) -> (y: U) -> tuple[T, U]"),
+    (lambda x: lambda y=1: (x, y), "[T, U](x: T) -> (y: U = 1) -> tuple[T, U]"),
     (
         lambda x: lambda y: lambda z: (x, y, z),
         "[T, U, V](x: T) -> (y: U) -> (z: V) -> tuple[T, U, V]",
@@ -521,10 +525,19 @@ FUNCTION_CASES: list[tuple[Callable[..., Any], str]] = [
     # an optionally probed `__len__` is no requirement, just like in a direct call
     (lambda x: lambda: len(x), "(x: CanLen) -> () -> int"),
     (lambda x: lambda: list(x), "[R](x: CanIter[CanNext[R]]) -> () -> list[R]"),
-    # a returned builtin or method descriptor explores like a direct `infer`
+    # a returned builtin or method descriptor explores like a direct `infer`,
+    # including the lenient fallback that pins a rejected defaulted parameter
     (lambda: len, "() -> (obj: CanLen) -> int"),
     (lambda: math.sqrt, "() -> (x: CanFloat | CanIndex) -> float"),
     (lambda: str.upper, "() -> (self: str) -> str"),
+    (
+        lambda: str.split,
+        "() -> (self: str, sep: None = None, maxsplit: CanIndex = -1) -> list[Never]",
+    ),
+    (
+        lambda: dict.get,  # pyright: ignore[reportUnknownMemberType]
+        "[T]() -> (self: dict, key: CanHash, default: T = None) -> T",
+    ),
     # a `functools.partial` explores with its bound arguments in place
     (
         lambda: functools.partial(_add2, 1),
@@ -546,6 +559,8 @@ FUNCTION_CASES: list[tuple[Callable[..., Any], str]] = [
     (lambda x: [lambda: x], "[T](x: T) -> list[() -> T]"),
     (lambda x: {"get": lambda: x}, "[T](x: T) -> dict[Literal['get'], () -> T]"),
     (lambda x: {lambda: x}, "(x: object) -> set[function]"),
+    # ...and so is a function within the yields of a generator
+    (_yield_fn, "[T](x: T) -> Generator[() -> T]"),
     (
         _counter,
         (
@@ -573,11 +588,15 @@ FUNCTION_CASES: list[tuple[Callable[..., Any], str]] = [
 ]
 
 ITERATOR_CASES: list[tuple[Callable[..., Any], str]] = [
-    # lazy builtin iterators are iterated like generators, and render covariantly
+    # lazy builtin iterators are iterated like generators
     (lambda x: map(str, x), "(x: CanIter[CanNext[CanStr]]) -> map[str]"),
     (
         lambda f, x: map(f, x),  # noqa: PLW0108
         "[T, R](f: (T) -> R, x: CanIter[CanNext[T]]) -> map[R]",
+    ),
+    (
+        lambda x: map(lambda v: lambda: v, x),
+        "[R](x: CanIter[CanNext[R]]) -> map[() -> R]",
     ),
     (lambda x: filter(None, x), "[R: CanBool](x: CanIter[CanNext[R]]) -> filter[R]"),
     (
@@ -586,9 +605,14 @@ ITERATOR_CASES: list[tuple[Callable[..., Any], str]] = [
     ),
     # `enumerate[R]` is parameterized by the element type, not the yielded pair
     (lambda x: enumerate(x), "[R](x: CanIter[CanNext[R]]) -> enumerate[R]"),  # noqa: PLW0108
+    # only `zip` is covariant in typeshed, so an `enumerate` union does not absorb
+    (
+        lambda x: zip([FileNotFoundError()]) if x else zip([OSError()]),
+        "(x: CanBool) -> zip[tuple[OSError]]",
+    ),
     (
         lambda x: enumerate([True]) if x else enumerate([1]),
-        "(x: CanBool) -> enumerate[int]",
+        "(x: CanBool) -> enumerate[bool] | enumerate[int]",
     ),
     (lambda: map(str, [1, 2]), "() -> map[str]"),
     (lambda: zip((), ()), "() -> zip[Never]"),  # noqa: B905
@@ -711,6 +735,10 @@ SUBTYPE_CASES: list[tuple[Any, Any, bool]] = [
         False,
     ),
     (Fn((), Type(int)), Fn((Arg("x", Type(int)),), Type(int)), False),
+    # `zip` is covariant in typeshed; `map`, `filter`, and `enumerate` are invariant
+    (App("zip", (Type(bool),)), App("zip", (Type(int),)), True),
+    (App("map", (Type(bool),)), App("map", (Type(int),)), False),
+    (App("enumerate", (Type(bool),)), App("enumerate", (Type(int),)), False),
 ]
 
 

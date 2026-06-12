@@ -12,12 +12,10 @@ _NOT = "~"  # the type complement prefix
 _VARIANCES = {
     "AsyncGenerator": "+-",
     "Generator": "+-+",
-    "enumerate": "+",
-    "filter": "+",
     "frozenset": "+",
-    "map": "+",
     "tuple": "+",
     "type": "+",
+    # `enumerate`, `filter`, and `map` are invariant in typeshed; only `zip` is not
     "zip": "+",
 }
 
@@ -62,6 +60,7 @@ class Arg:
 
     key: str
     value: Node
+    suffix: str = ""  # an optional ` = <default>` display suffix
 
 
 @dataclass(frozen=True, slots=True)
@@ -225,7 +224,9 @@ def render(node: Node) -> str:
             out = f"{base}[{', '.join(parts)}]" if parts else base
         case Fn(params, ret):
             decls = ", ".join(
-                f"{p.key}: {render(p.value)}" if isinstance(p, Arg) else render(p)
+                f"{p.key}: {render(p.value)}{p.suffix}"
+                if isinstance(p, Arg)
+                else render(p)
                 for p in params
             )
             out = f"({decls}) -> {render(ret)}"

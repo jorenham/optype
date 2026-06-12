@@ -450,15 +450,19 @@ class _Renderer:
     def _function(self, fn: _Fn) -> _ir.Node:
         """The signature-syntax type of an explored function result."""
         params = tuple(
-            _ir.Arg(
-                name,
-                _ir.Type(type(fn.fixed[name]))
-                if name in fn.fixed
-                else self._slot(fn.spies[name]),
-            )
+            _ir.Arg(name, self._fn_param(fn, name), _suffix(fn.defaults, name))
             for name in fn.names
         )
         return _ir.Fn(params, self._union_type(fn.results))
+
+    def _fn_param(self, fn: _Fn, name: str) -> _ir.Node:
+        if (spy := fn.spies.get(name)) is not None:
+            return self._slot(spy)
+        value = fn.fixed[name]
+        if name in fn.defaults:
+            # a pinned default renders as its value, like the outer parameters do
+            return self.union((value,)) or _ir.Name(_NEVER)
+        return _ir.Type(type(value))  # a method descriptor's pinned `self`
 
     def _class_of(self, cls: type[Any]) -> _ir.Node | None:
         """The type of `cls`'s instances, if it is expressible."""
