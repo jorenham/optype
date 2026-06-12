@@ -96,9 +96,10 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
             "CanSub[Literal[1], R2]) -> R | R2"
         ),
     ),
+    # `CanGetitem & CanLen` combines as `CanSequence`
     (
         lambda x: x[0] if len(x) else None,
-        "[R](x: CanLen & CanGetitem[Literal[0], R]) -> R | None",
+        "[R](x: CanSequence[Literal[0], R]) -> R | None",
     ),
     (
         lambda x: -x if int(x) else +x,
@@ -110,7 +111,7 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     ),
     (
         lambda x: "empty" if len(x) == 0 else x[0],
-        "[R](x: CanLen & CanGetitem[Literal[0], R]) -> R | str",
+        "[R](x: CanSequence[Literal[0], R]) -> R | str",
     ),
     (lambda x: len(x) + int(x), "(x: CanLen & (CanInt | CanIndex)) -> int"),
     (lambda x: True if x else 1, "(x: CanBool) -> int"),
@@ -126,7 +127,7 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     (
         lambda x: x[0] if len(x) else (-x if int(x) else None),
         (
-            "[R, R2](x: CanLen & CanGetitem[Literal[0], R] & "
+            "[R, R2](x: CanSequence[Literal[0], R] & "
             "(CanInt | CanIndex) & CanNeg[R2]) -> R | R2 | None"
         ),
     ),
@@ -262,7 +263,11 @@ BINARY_CASES: list[tuple[Callable[[Any, Any], Any], str]] = [
     ),
     (
         lambda x, y: x[0] if len(x) else y,
-        "[T, R](x: CanLen & CanGetitem[Literal[0], R], y: T) -> R | T",
+        "[T, R](x: CanSequence[Literal[0], R], y: T) -> R | T",
+    ),
+    (
+        lambda x, y: x[y] if len(x) else None,
+        "[T, R](x: CanSequence[T, R], y: T) -> R | None",
     ),
     (
         lambda x, y: (x + y) if len(x) else y,
