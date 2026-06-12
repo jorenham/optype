@@ -1,5 +1,8 @@
 # ruff: noqa: FURB118
+# pyright: reportUnknownArgumentType=false, reportUnknownLambdaType=false
+# pyright: reportUnknownVariableType=false, reportUnusedParameter=false
 
+import functools
 import math
 import operator
 import subprocess  # noqa: S404
@@ -11,7 +14,7 @@ import pytest
 
 from optype.infer import InferError, InferWarning, infer
 from optype.infer._explore import _doc_params
-from optype.infer._ir import App, Lit, Name, Type, subtype
+from optype.infer._ir import App, Arg, Fn, Lit, Name, Type, subtype
 
 
 def _type_of[T](x: T) -> type[T]:
@@ -54,10 +57,10 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     (lambda x: int(x), "(x: CanInt | CanIndex) -> int"),  # noqa: PLW0108
     (lambda x: complex(x), "(x: CanComplex | CanFloat | CanIndex) -> complex"),  # noqa: PLW0108
     (operator.index, "(a: CanIndex) -> int"),
-    (lambda x: x(), "[R](x: CanCall[R]) -> R"),
-    (lambda x: x(1, 2), "[R](x: CanCall[Literal[1], Literal[2], R]) -> R"),
-    (lambda x: x(a=1), "[R](x: CanCall[a=Literal[1], R]) -> R"),
-    (lambda x: x(1, b=2), "[R](x: CanCall[Literal[1], b=Literal[2], R]) -> R"),
+    (lambda x: x(), "[R](x: () -> R) -> R"),
+    (lambda x: x(1, 2), "[R](x: (Literal[1], Literal[2]) -> R) -> R"),
+    (lambda x: x(a=1), "[R](x: (a: Literal[1]) -> R) -> R"),
+    (lambda x: x(1, b=2), "[R](x: (Literal[1], b: Literal[2]) -> R) -> R"),
     (lambda x: format(x, ">10"), "(x: CanFormat[Literal['>10']]) -> str"),
     (lambda x: f"{x}", "(x: CanFormat[Literal['']]) -> str"),
     (lambda x: x[0], "[R](x: CanGetitem[Literal[0], R]) -> R"),
@@ -231,6 +234,12 @@ BINARY_CASES: list[tuple[Callable[[Any, Any], Any], str]] = [
     ),
     (lambda x, y: x[y], "[T, R](x: CanGetitem[T, R], y: T) -> R"),
     (lambda x, y: y[str(x)], "[R](x: CanStr, y: CanGetitem[str, R]) -> R"),
+    # `sorted` discards the `key` results, so they are unconstrained; the explicit
+    # `object` keeps the last argument out of the return slot
+    (
+        lambda xs, key: sorted(xs, key=key),
+        "[R](xs: CanIter[CanNext[R]], key: (R) -> object) -> list[R]",
+    ),
     (lambda x, y: x, "[T](x: T, y: object) -> T"),  # noqa: ARG005
     (lambda x, y: (type(x), type(y)), "[T, U](x: T, y: U) -> tuple[type[T], type[U]]"),
     (
@@ -334,7 +343,7 @@ VARIADIC_CASES: list[tuple[Callable[..., Any], str]] = [
     # a variadic parameter whose every use is packed becomes a TypeVarTuple
     (lambda *args: args, "[*Ts](*args: *Ts) -> tuple[*Ts]"),
     (lambda *args: (args, 1), "[*Ts](*args: *Ts) -> tuple[tuple[*Ts], Literal[1]]"),
-    (_call_packed, "[*Ts, R](x: CanCall[tuple[*Ts], R], *args: *Ts) -> R"),
+    (_call_packed, "[*Ts, R](x: (tuple[*Ts]) -> R, *args: *Ts) -> R"),
     # a splat splices the TypeVarTuple into the surrounding tuple
     (lambda *args: (1, *args), "[*Ts](*args: *Ts) -> tuple[Literal[1], *Ts]"),
     (
@@ -466,7 +475,162 @@ DEFAULT_CASES: list[tuple[Callable[..., Any], str]] = [
 ]
 
 
-INFER_CASES = [*UNARY_CASES, *BINARY_CASES, *VARIADIC_CASES, *DEFAULT_CASES]
+def _self_return(x: Any) -> Any:  # noqa: ARG001
+    return _self_return
+
+
+def _fn_factory(n: Any) -> Any:
+    return lambda: _fn_factory(n)
+
+
+def _fn_default(x: Any = 0) -> Any:
+    return lambda: x
+
+
+def _add2(x: Any, y: Any) -> Any:
+    return x + y
+
+
+def _counter(start: Any) -> Any:
+    return (lambda: start), (lambda by: start + by)
+
+
+def _yield_fn(x: Any) -> Any:
+    yield lambda: x
+
+
+FUNCTION_CASES: list[tuple[Callable[..., Any], str]] = [
+    # a returned function is lazy, so it is explored with placeholders of its own
+    # and renders in signature syntax; its parameter spies are named like parameters
+    (lambda x: lambda y: (x, y), "[T, U](x: T) -> (y: U) -> tuple[T, U]"),
+    (lambda x: lambda: x, "[T](x: T) -> () -> T"),
+    (lambda x: lambda y: y, "[T](x: object) -> (y: T) -> T"),  # noqa: ARG005
+    (lambda x: lambda *, y: (x, y), "[T, U](x: T) -> (y: U) -> tuple[T, U]"),
+    (lambda x: lambda y=1: (x, y), "[T, U](x: T) -> (y: U = 1) -> tuple[T, U]"),
+    (
+        lambda x: lambda y: lambda z: (x, y, z),
+        "[T, U, V](x: T) -> (y: U) -> (z: V) -> tuple[T, U, V]",
+    ),
+    # an operation inside the returned function is required of the closed-over
+    # parameter, and is reflected onto its right-hand side like any other
+    (
+        lambda x: lambda y: x + y,
+        (
+            "[T, R](x: CanAdd[T, R]) -> (y: T) -> R\n"
+            "[T, R](x: T) -> (y: CanRAdd[T, R]) -> R"
+        ),
+    ),
+    (lambda x: lambda f: f(x), "[T, R](x: T) -> (f: (T) -> R) -> R"),
+    # a failed inner run rolls back its traces on the closed-over parameter, so
+    # an optionally probed `__len__` is no requirement, just like in a direct call
+    (lambda x: lambda: len(x), "(x: CanLen) -> () -> int"),
+    (lambda x: lambda: list(x), "[R](x: CanIter[CanNext[R]]) -> () -> list[R]"),
+    # a returned builtin or method descriptor explores like a direct `infer`,
+    # including the lenient fallback that pins a rejected defaulted parameter
+    (lambda: len, "() -> (obj: CanLen) -> int"),
+    (lambda: math.sqrt, "() -> (x: CanFloat | CanIndex) -> float"),
+    (lambda: str.upper, "() -> (self: str) -> str"),
+    (
+        lambda: str.split,
+        "() -> (self: str, sep: None = None, maxsplit: CanIndex = -1) -> list[Never]",
+    ),
+    (
+        lambda: dict.get,  # pyright: ignore[reportUnknownMemberType]
+        "[T]() -> (self: dict, key: CanHash, default: T = None) -> T",
+    ),
+    # a `functools.partial` explores with its bound arguments in place
+    (
+        lambda: functools.partial(_add2, 1),
+        "[R]() -> (y: CanRAdd[Literal[1], R]) -> R",
+    ),
+    (
+        lambda x: functools.partial(_add2, x),
+        (
+            "[T, R](x: CanAdd[T, R]) -> (y: T) -> R\n"
+            "[T, R](x: T) -> (y: CanRAdd[T, R]) -> R"
+        ),
+    ),
+    # a function within a returned container is explored as well, but a set member
+    # must stay hashable, so it is left as-is
+    (
+        lambda x: (lambda y: y, 1),  # noqa: ARG005
+        "[T](x: object) -> tuple[(y: T) -> T, Literal[1]]",
+    ),
+    (lambda x: [lambda: x], "[T](x: T) -> list[() -> T]"),
+    (lambda x: {"get": lambda: x}, "[T](x: T) -> dict[Literal['get'], () -> T]"),
+    (lambda x: {lambda: x}, "(x: object) -> set[function]"),
+    # ...and so is a function within the yields of a generator
+    (_yield_fn, "[T](x: T) -> Generator[() -> T]"),
+    (
+        _counter,
+        (
+            "[T: CanAdd[U, R], U, R](start: T) -> tuple[() -> T, (by: U) -> R]\n"
+            "[T, R](start: T) -> tuple[() -> T, (by: CanRAdd[T, R]) -> R]"
+        ),
+    ),
+    # a function type in a union is parenthesized; a covariant return type lets
+    # one union member absorb the other
+    (lambda x: (lambda: 1) if x else None, "(x: CanBool) -> (() -> int) | None"),
+    (lambda x: (lambda: True) if x else (lambda: 1), "(x: CanBool) -> () -> int"),
+    # a returned function returning a generator or a packed `*args` traces through
+    (
+        lambda x: lambda: (i for i in x),
+        "[R](x: CanIter[CanNext[R]]) -> () -> Generator[R]",
+    ),
+    (lambda *args: lambda: args, "[*Ts](*args: *Ts) -> () -> tuple[*Ts]"),
+    # a recursive function (factory) has an inexpressible type, so it stays opaque,
+    # as do variadic parameters and a `partial` of a non-function
+    (_self_return, "(x: object) -> function"),
+    (_fn_factory, "(n: object) -> () -> function"),
+    (lambda x: lambda *args: x, "(x: object) -> function"),  # noqa: ARG005
+    (lambda f: functools.partial(f, 1), "(f: object) -> partial"),
+    (lambda: functools.partial(print, "a"), "() -> partial"),
+]
+
+ITERATOR_CASES: list[tuple[Callable[..., Any], str]] = [
+    # lazy builtin iterators are iterated like generators
+    (lambda x: map(str, x), "(x: CanIter[CanNext[CanStr]]) -> map[str]"),
+    (
+        lambda f, x: map(f, x),  # noqa: PLW0108
+        "[T, R](f: (T) -> R, x: CanIter[CanNext[T]]) -> map[R]",
+    ),
+    (
+        lambda x: map(lambda v: lambda: v, x),
+        "[R](x: CanIter[CanNext[R]]) -> map[() -> R]",
+    ),
+    (lambda x: filter(None, x), "[R: CanBool](x: CanIter[CanNext[R]]) -> filter[R]"),
+    (
+        lambda x, y: zip(x, y),  # noqa: B905, PLW0108
+        "[R, R2](x: CanIter[CanNext[R]], y: CanIter[CanNext[R2]]) -> zip[tuple[R, R2]]",
+    ),
+    # `enumerate[R]` is parameterized by the element type, not the yielded pair
+    (lambda x: enumerate(x), "[R](x: CanIter[CanNext[R]]) -> enumerate[R]"),  # noqa: PLW0108
+    # only `zip` is covariant in typeshed, so an `enumerate` union does not absorb
+    (
+        lambda x: zip([FileNotFoundError()]) if x else zip([OSError()]),
+        "(x: CanBool) -> zip[tuple[OSError]]",
+    ),
+    (
+        lambda x: enumerate([True]) if x else enumerate([1]),
+        "(x: CanBool) -> enumerate[bool] | enumerate[int]",
+    ),
+    (lambda: map(str, [1, 2]), "() -> map[str]"),
+    (lambda: zip((), ()), "() -> zip[Never]"),  # noqa: B905
+    (
+        lambda x: ((i for i in x), 1),
+        "[R](x: CanIter[CanNext[R]]) -> tuple[Generator[R], Literal[1]]",
+    ),
+]
+
+
+INFER_CASES = [
+    *UNARY_CASES,
+    *BINARY_CASES,
+    *VARIADIC_CASES,
+    *DEFAULT_CASES,
+    *FUNCTION_CASES,
+    *ITERATOR_CASES,
+]
 
 
 @pytest.mark.parametrize(
@@ -557,6 +721,24 @@ SUBTYPE_CASES: list[tuple[Any, Any, bool]] = [
     # type is covariant
     (App("type", (Type(bool),)), App("type", (Type(int),)), True),
     (App("type", (Type(int),)), App("type", (Type(bool),)), False),
+    # a function's parameters are contravariant, its return type is covariant
+    (Fn((), Type(bool)), Fn((), Type(int)), True),
+    (Fn((), Type(int)), Fn((), Type(bool)), False),
+    (
+        Fn((Arg("x", Type(int)),), Type(int)),
+        Fn((Arg("x", Type(bool)),), Type(int)),
+        True,
+    ),
+    (
+        Fn((Arg("x", Type(bool)),), Type(int)),
+        Fn((Arg("x", Type(int)),), Type(int)),
+        False,
+    ),
+    (Fn((), Type(int)), Fn((Arg("x", Type(int)),), Type(int)), False),
+    # `zip` is covariant in typeshed; `map`, `filter`, and `enumerate` are invariant
+    (App("zip", (Type(bool),)), App("zip", (Type(int),)), True),
+    (App("map", (Type(bool),)), App("map", (Type(int),)), False),
+    (App("enumerate", (Type(bool),)), App("enumerate", (Type(int),)), False),
 ]
 
 
@@ -653,8 +835,10 @@ def test_infer_async() -> None:
         async with x as y:
             return y
 
+    # the `__aexit__` awaitable resolves to an unused, and so unconstrained, result
     assert infer(async_with) == (
-        "[R](x: CanAEnter[CanAwait[R]] & CanAExit[None, None, None, CanAwait]) -> R"
+        "[R](x: CanAEnter[CanAwait[R]] & "
+        "CanAExit[None, None, None, CanAwait[object]]) -> R"
     )
 
     async def async_for(x: Any) -> Any:
@@ -732,6 +916,33 @@ def test_infer_generator_yields() -> None:
     assert infer(loop) == "[R](x: CanAdd[Literal[1], R]) -> Generator[R]"
 
 
+def test_returned_function_default() -> None:
+    # a typevar default reaches through the returned function's body
+    assert infer(_fn_default) == "[T = Literal[0]](x: T = 0) -> () -> T"
+
+
+def test_returned_function_async() -> None:
+    # an inner coroutine function is driven to completion, like the outer one
+    async def make(x: Any) -> Any:  # noqa: RUF029
+        async def inner(y: Any) -> Any:  # noqa: RUF029
+            return (x, y)
+
+        return inner
+
+    assert infer(make) == "[T, U](x: T) -> (y: U) -> tuple[T, U]"
+
+
+def test_returned_function_mutual_recursion() -> None:
+    # mutually recursive functions terminate; the cycle stays opaque
+    def ping(x: Any) -> Any:  # noqa: ARG001
+        return pong
+
+    def pong(x: Any) -> Any:  # noqa: ARG001
+        return ping
+
+    assert infer(ping) == "(x: object) -> (x: object) -> function"
+
+
 def test_infer_empty_container() -> None:
     # empty containers parametrize with `Never`; the empty tuple is `tuple[()]`
     def returns(value: Any) -> Callable[[], Any]:
@@ -776,12 +987,12 @@ def test_infer_ufunc_in_function() -> None:
 def test_infer_array_function() -> None:
     np = pytest.importorskip("numpy")
     # NEP-18 functions (np.mean, np.strings.upper, ...) dispatch via __array_function__
-    sig = "[R](a: CanArrayFunction[CanCall[Any, R], R]) -> R"
+    sig = "[R](a: CanArrayFunction[(Any) -> R, R]) -> R"
     assert infer(np.mean) == sig
     assert infer(np.sum) == sig
     # the func type's arity tracks the required positional params (a, b)
     assert infer(np.outer) == (
-        "[R](a: CanArrayFunction[CanCall[Any, Any, R], R], b: object) -> R"
+        "[R](a: CanArrayFunction[(Any, Any) -> R, R], b: object) -> R"
     )
 
 
@@ -872,10 +1083,16 @@ def test_set_name() -> None:
 NO_PROTOCOL_CASES: list[Callable[[Any], Any]] = [
     lambda x: x.foo,
     _set_attr,
+    # an inexpressible operation inside a returned function fails just as honestly
+    lambda x: lambda y: y.foo,  # noqa: ARG005  # pyright: ignore[reportUnknownMemberType]
 ]
 
 
-@pytest.mark.parametrize("func", NO_PROTOCOL_CASES, ids=["getattr", "setattr"])
+@pytest.mark.parametrize(
+    "func",
+    NO_PROTOCOL_CASES,
+    ids=["getattr", "setattr", "returned"],
+)
 def test_no_protocol(func: Callable[[Any], Any]) -> None:
     with pytest.raises(InferError, match="no protocol"):
         infer(func)
@@ -921,6 +1138,12 @@ def test_cli_variadic() -> None:
     out = _run_cli("-m", "optype", "infer", "lambda *args: args")
     assert out.returncode == 0
     assert out.stdout.strip() == "[*Ts](*args: *Ts) -> tuple[*Ts]"
+
+
+def test_cli_returned_function() -> None:
+    out = _run_cli("-m", "optype", "infer", "lambda x: lambda y: (x, y)")
+    assert out.returncode == 0
+    assert out.stdout.strip() == "[T, U](x: T) -> (y: U) -> tuple[T, U]"
 
 
 def test_cli_usage() -> None:

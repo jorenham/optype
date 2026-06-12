@@ -113,6 +113,15 @@ $ optype infer "lambda x: reversed(x)"
 [R](x: CanReversed[R]) -> R
 ```
 
+A call dispatches through `__call__`, but a parameter that is called renders in
+signature syntax rather than as `CanCall` or `Callable`, with any keyword arguments
+as named parameters:
+
+```console
+$ optype infer "lambda f: f(1, b=2)"
+[R](f: (Literal[1], b: Literal[2]) -> R) -> R
+```
+
 ## Classes
 
 `type` reads the class directly instead of dispatching through a dunder, but every
@@ -287,7 +296,7 @@ $ optype infer "async def f(xs): return [x async for x in xs]"
 '[R](x: CanAEnter[CanAwait[R]] & CanAExit[None, None, None, CanAwait]) -> R'
 ```
 
-## Generators
+## Generators and lazy iterators
 
 A generator is lazy, so it is iterated to collect the types it yields:
 
@@ -300,6 +309,62 @@ $ optype infer "def f(): yield None; yield 1"
 
 $ optype infer "async def f(xs): return (x async for x in xs)"
 [R](xs: CanAIter[CanANext[CanAwait[R]]]) -> AsyncGenerator[R]
+```
+
+Lazy builtin iterators (`map`, `filter`, `zip`, and `enumerate`) are iterated the same
+way, and a callable argument is traced right through them:
+
+```console
+$ optype infer "lambda x: map(str, x)"
+(x: CanIter[CanNext[CanStr]]) -> map[str]
+
+$ optype infer "lambda f, x: map(f, x)"
+[T, R](f: (T) -> R, x: CanIter[CanNext[T]]) -> map[R]
+```
+
+## Returned functions
+
+A returned function is lazy too, so it is explored with placeholders of its own, and
+its type renders in the same signature syntax:
+
+```console
+$ optype infer "lambda x: lambda y: (x, y)"
+[T, U](x: T) -> (y: U) -> tuple[T, U]
+```
+
+An operation inside the returned function is required of the closed-over parameter,
+and overloads reflect as usual:
+
+```console
+$ optype infer "lambda x: lambda y: x + y"
+[T, R](x: CanAdd[T, R]) -> (y: T) -> R
+[T, R](x: T) -> (y: CanRAdd[T, R]) -> R
+```
+
+This applies to anything function-like: builtins, method descriptors, and a
+`functools.partial` (explored with its bound arguments in place), also from within a
+returned container:
+
+```console
+$ optype infer "lambda: str.upper"
+() -> (self: str) -> str
+
+$ optype infer "import functools
+def add(x, y): return x + y
+lambda: functools.partial(add, 1)"
+[R]() -> (y: CanRAdd[Literal[1], R]) -> R
+
+$ optype infer "def counter(start): return (lambda: start), (lambda by: start + by)"
+[T: CanAdd[U, R], U, R](start: T) -> tuple[() -> T, (by: U) -> R]
+[T, R](start: T) -> tuple[() -> T, (by: CanRAdd[T, R]) -> R]
+```
+
+A recursive function (factory) has an inexpressible type, so it stays an opaque
+`function`, as does one with variadic parameters:
+
+```console
+$ optype infer "def f(x): return f"
+(x: object) -> function
 ```
 
 ## Containers
@@ -367,13 +432,16 @@ A [NEP 18](https://numpy.org/neps/nep-0018-array-function-protocol.html) functio
 
 ```console
 $ optype infer "import numpy as np; np.mean"
-[R](a: CanArrayFunction[CanCall[Any, R], R]) -> R
+[R](a: CanArrayFunction[(Any) -> R, R]) -> R
 ```
 
 ## Limitations
 
 `infer` calls the function, so it only works on functions that are safe to run with
-placeholder arguments (no real side effects, no reliance on concrete values).
+placeholder arguments (no real side effects, no reliance on concrete values). This
+extends to anything it returns: a returned function is called with placeholders of its
+own, and a returned lazy iterator is iterated. A returned function that raises during
+this exploration is not treated as an error: its type stays an opaque `function`.
 
 When `infer` can't handle the input, it raises `InferError` (a `NotImplementedError`
 subclass). That's the case for operations without a matching protocol, and for
@@ -389,9 +457,8 @@ The number of explored branches is capped, so a function with many of them gets 
 signature that only covers the explored ones, along with an `InferWarning`.
 
 It can only observe operations that go through a dunder method. Anything that inspects a
-parameter at the C level is invisible, so a parameter passed to `type()`, `id()`,
-`isinstance()`, or an identity check (`is`) is reported as `object` rather than its real
-requirement.
+parameter at the C level is invisible, so a parameter passed to `id()`, `isinstance()`,
+or an identity check (`is`) is reported as `object` rather than its real requirement.
 
 !!! warning "Generic bounds"
 

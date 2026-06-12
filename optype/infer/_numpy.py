@@ -76,5 +76,5 @@ def _required_args(func: _AnyFunc) -> int | None:
 def array_function_type(func: _AnyFunc, ret: str) -> str:
     """Render `CanArrayFunction` with the dispatched function's arity."""
     n = _required_args(func)
-    args = ["Any"] * n if n is not None else ["..."]
-    return f"CanArrayFunction[CanCall[{', '.join([*args, ret])}], {ret}]"
+    args = ", ".join(["Any"] * n) if n is not None else "..."
+    return f"CanArrayFunction[({args}) -> {ret}, {ret}]"
