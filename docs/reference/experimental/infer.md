@@ -113,6 +113,15 @@ $ optype infer "lambda x: reversed(x)"
 [R](x: CanReversed[R]) -> R
 ```
 
+A call dispatches through `__call__`, but a parameter that is called renders in
+signature syntax rather than as `CanCall` or `Callable`, with any keyword arguments
+as named parameters:
+
+```console
+$ optype infer "lambda f: f(1, b=2)"
+[R](f: (Literal[1], b: Literal[2]) -> R) -> R
+```
+
 ## Classes
 
 `type` reads the class directly instead of dispatching through a dunder, but every
@@ -287,7 +296,7 @@ $ optype infer "async def f(xs): return [x async for x in xs]"
 '[R](x: CanAEnter[CanAwait[R]] & CanAExit[None, None, None, CanAwait]) -> R'
 ```
 
-## Generators
+## Generators and lazy iterators
 
 A generator is lazy, so it is iterated to collect the types it yields:
 
@@ -310,7 +319,7 @@ $ optype infer "lambda x: map(str, x)"
 (x: CanIter[CanNext[CanStr]]) -> map[str]
 
 $ optype infer "lambda f, x: map(f, x)"
-[T, R](f: CanCall[T, R], x: CanIter[CanNext[T]]) -> map[R]
+[T, R](f: (T) -> R, x: CanIter[CanNext[T]]) -> map[R]
 ```
 
 ## Returned functions
@@ -423,7 +432,7 @@ A [NEP 18](https://numpy.org/neps/nep-0018-array-function-protocol.html) functio
 
 ```console
 $ optype infer "import numpy as np; np.mean"
-[R](a: CanArrayFunction[CanCall[Any, R], R]) -> R
+[R](a: CanArrayFunction[(Any) -> R, R]) -> R
 ```
 
 ## Limitations
@@ -447,9 +456,8 @@ The number of explored branches is capped, so a function with many of them gets 
 signature that only covers the explored ones, along with an `InferWarning`.
 
 It can only observe operations that go through a dunder method. Anything that inspects a
-parameter at the C level is invisible, so a parameter passed to `type()`, `id()`,
-`isinstance()`, or an identity check (`is`) is reported as `object` rather than its real
-requirement.
+parameter at the C level is invisible, so a parameter passed to `id()`, `isinstance()`,
+or an identity check (`is`) is reported as `object` rather than its real requirement.
 
 !!! warning "Generic bounds"
 

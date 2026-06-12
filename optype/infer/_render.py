@@ -122,6 +122,11 @@ def _resolve(trace: _TraceItem) -> _Op:
     raise InferError(msg)
 
 
+def _or_object(node: _ir.Node | None) -> _ir.Node:
+    """The node itself, or `object` for an unconstrained (`None`) one."""
+    return _ir.Name(_OBJECT) if node is None else node
+
+
 def _analyze(
     params: Sequence[_SpyObject],
     results: Iterable[object],
@@ -350,7 +355,7 @@ class _Renderer:
             parts.append(node)
         if (out := _ir.inter(parts)) is None and returned:
             # an unused result is unconstrained, but omitting it would leave the
-            # last argument in the return slot, e.g. the `R` of `CanCall[T, R]`
+            # last argument in the return slot, e.g. the `R` of `(T) -> R`
             out = _ir.Name(_OBJECT)
         return out
 
@@ -358,8 +363,7 @@ class _Renderer:
         if isinstance(proto, tuple):  # coercion protocols, which record no args
             return _ir.Union(tuple(map(_ir.Name, proto)))
         if proto == "CanArrayFunction":
-            ret = self.returns(members)
-            ret_str = _ir.render(ret) if ret is not None else _OBJECT
+            ret_str = _ir.render(_or_object(self.returns(members)))
             func = cast("_AnyFunc", members[0].args[0])
             return _ir.Name(_numpy.array_function_type(func, ret_str))
         args: list[_ir.Node | _ir.Arg] = [
@@ -372,7 +376,10 @@ class _Renderer:
             for key in members[0].kwargs
             if (kw := self.union(m.kwargs[key] for m in members)) is not None
         ]
-        if (ret := self.returns(members)) is not None:
+        ret = self.returns(members)
+        if proto == "CanCall":
+            return _ir.Fn(tuple(args), _or_object(ret))
+        if ret is not None:
             args.append(ret)
         return _ir.App(proto, tuple(args))
 
@@ -395,8 +402,7 @@ class _Renderer:
     def _slot(self, spy: _SpyObject) -> _ir.Node:
         if (var := self._vars.get(id(spy))) is not None:
             return _ir.Name(var)
-        node = self.spy(spy)
-        return node if node is not None else _ir.Name(_OBJECT)
+        return _or_object(self.spy(spy))
 
     def slot(self, spy: _SpyObject) -> str:
         return _ir.render(self._slot(spy))

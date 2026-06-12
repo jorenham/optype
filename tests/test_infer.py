@@ -57,10 +57,10 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     (lambda x: int(x), "(x: CanInt | CanIndex) -> int"),  # noqa: PLW0108
     (lambda x: complex(x), "(x: CanComplex | CanFloat | CanIndex) -> complex"),  # noqa: PLW0108
     (operator.index, "(a: CanIndex) -> int"),
-    (lambda x: x(), "[R](x: CanCall[R]) -> R"),
-    (lambda x: x(1, 2), "[R](x: CanCall[Literal[1], Literal[2], R]) -> R"),
-    (lambda x: x(a=1), "[R](x: CanCall[a=Literal[1], R]) -> R"),
-    (lambda x: x(1, b=2), "[R](x: CanCall[Literal[1], b=Literal[2], R]) -> R"),
+    (lambda x: x(), "[R](x: () -> R) -> R"),
+    (lambda x: x(1, 2), "[R](x: (Literal[1], Literal[2]) -> R) -> R"),
+    (lambda x: x(a=1), "[R](x: (a: Literal[1]) -> R) -> R"),
+    (lambda x: x(1, b=2), "[R](x: (Literal[1], b: Literal[2]) -> R) -> R"),
     (lambda x: format(x, ">10"), "(x: CanFormat[Literal['>10']]) -> str"),
     (lambda x: f"{x}", "(x: CanFormat[Literal['']]) -> str"),
     (lambda x: x[0], "[R](x: CanGetitem[Literal[0], R]) -> R"),
@@ -238,7 +238,7 @@ BINARY_CASES: list[tuple[Callable[[Any, Any], Any], str]] = [
     # `object` keeps the last argument out of the return slot
     (
         lambda xs, key: sorted(xs, key=key),
-        "[R](xs: CanIter[CanNext[R]], key: CanCall[R, object]) -> list[R]",
+        "[R](xs: CanIter[CanNext[R]], key: (R) -> object) -> list[R]",
     ),
     (lambda x, y: x, "[T](x: T, y: object) -> T"),  # noqa: ARG005
     (lambda x, y: (type(x), type(y)), "[T, U](x: T, y: U) -> tuple[type[T], type[U]]"),
@@ -343,7 +343,7 @@ VARIADIC_CASES: list[tuple[Callable[..., Any], str]] = [
     # a variadic parameter whose every use is packed becomes a TypeVarTuple
     (lambda *args: args, "[*Ts](*args: *Ts) -> tuple[*Ts]"),
     (lambda *args: (args, 1), "[*Ts](*args: *Ts) -> tuple[tuple[*Ts], Literal[1]]"),
-    (_call_packed, "[*Ts, R](x: CanCall[tuple[*Ts], R], *args: *Ts) -> R"),
+    (_call_packed, "[*Ts, R](x: (tuple[*Ts]) -> R, *args: *Ts) -> R"),
     # a splat splices the TypeVarTuple into the surrounding tuple
     (lambda *args: (1, *args), "[*Ts](*args: *Ts) -> tuple[Literal[1], *Ts]"),
     (
@@ -516,7 +516,7 @@ FUNCTION_CASES: list[tuple[Callable[..., Any], str]] = [
             "[T, R](x: T) -> (y: CanRAdd[T, R]) -> R"
         ),
     ),
-    (lambda x: lambda f: f(x), "[T, R](x: T) -> (f: CanCall[T, R]) -> R"),
+    (lambda x: lambda f: f(x), "[T, R](x: T) -> (f: (T) -> R) -> R"),
     # a failed inner run rolls back its traces on the closed-over parameter, so
     # an optionally probed `__len__` is no requirement, just like in a direct call
     (lambda x: lambda: len(x), "(x: CanLen) -> () -> int"),
@@ -577,7 +577,7 @@ ITERATOR_CASES: list[tuple[Callable[..., Any], str]] = [
     (lambda x: map(str, x), "(x: CanIter[CanNext[CanStr]]) -> map[str]"),
     (
         lambda f, x: map(f, x),  # noqa: PLW0108
-        "[T, R](f: CanCall[T, R], x: CanIter[CanNext[T]]) -> map[R]",
+        "[T, R](f: (T) -> R, x: CanIter[CanNext[T]]) -> map[R]",
     ),
     (lambda x: filter(None, x), "[R: CanBool](x: CanIter[CanNext[R]]) -> filter[R]"),
     (
@@ -959,12 +959,12 @@ def test_infer_ufunc_in_function() -> None:
 def test_infer_array_function() -> None:
     np = pytest.importorskip("numpy")
     # NEP-18 functions (np.mean, np.strings.upper, ...) dispatch via __array_function__
-    sig = "[R](a: CanArrayFunction[CanCall[Any, R], R]) -> R"
+    sig = "[R](a: CanArrayFunction[(Any) -> R, R]) -> R"
     assert infer(np.mean) == sig
     assert infer(np.sum) == sig
     # the func type's arity tracks the required positional params (a, b)
     assert infer(np.outer) == (
-        "[R](a: CanArrayFunction[CanCall[Any, Any, R], R], b: object) -> R"
+        "[R](a: CanArrayFunction[(Any, Any) -> R, R], b: object) -> R"
     )
 
 

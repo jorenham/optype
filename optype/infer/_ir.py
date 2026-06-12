@@ -58,7 +58,7 @@ class Name:
 
 @dataclass(frozen=True, slots=True)
 class Arg:
-    """A keyword-labeled type argument, e.g. the `a=Literal[1]` in `CanCall`."""
+    """A keyword-labeled parameter, e.g. `a: Literal[1]` in `(a: Literal[1]) -> R`."""
 
     key: str
     value: Node
@@ -74,10 +74,15 @@ class App:
 
 @dataclass(frozen=True, slots=True)
 class Fn:
-    """A function type in signature syntax, e.g. `(x: T) -> R`."""
+    """A function type in signature syntax, e.g. `(x: T) -> R` or `(T) -> R`."""
 
-    params: tuple[Arg, ...]
+    params: tuple[Node | Arg, ...]
     ret: Node
+
+
+def _param_type(param: "Node | Arg") -> "Node":
+    """The type of a (possibly keyword-labeled) parameter."""
+    return param.value if isinstance(param, Arg) else param
 
 
 @dataclass(frozen=True, slots=True)
@@ -135,7 +140,7 @@ def subtype(sub: Node | Arg, sup: Node | Arg) -> bool:
                 len(params) == len(wider_params)
                 and subtype(ret, wider_ret)
                 and all(
-                    subtype(wide.value, param.value)
+                    subtype(_param_type(wide), _param_type(param))
                     for param, wide in zip(params, wider_params, strict=True)
                 )
             )
@@ -219,7 +224,10 @@ def render(node: Node) -> str:
             ]
             out = f"{base}[{', '.join(parts)}]" if parts else base
         case Fn(params, ret):
-            decls = ", ".join(f"{p.key}: {render(p.value)}" for p in params)
+            decls = ", ".join(
+                f"{p.key}: {render(p.value)}" if isinstance(p, Arg) else render(p)
+                for p in params
+            )
             out = f"({decls}) -> {render(ret)}"
         case Not(part):
             inner = render(part)
