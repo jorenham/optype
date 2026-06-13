@@ -19,6 +19,7 @@ __all__ = [
     "HasModule",
     "HasName",
     "HasNames",
+    "HasObjclass",
     "HasQualname",
     "HasSelf",
     "HasSlots",
@@ -38,6 +39,7 @@ type _TypeParams = tuple[TypeVar | ParamSpec | TypeVarTuple, ...]
 _ObjectT_co = TypeVar("_ObjectT_co", default=object, covariant=True)
 _FuncT_co = TypeVar("_FuncT_co", bound=Callable[..., object], covariant=True)
 _TypeParamsT = TypeVar("_TypeParamsT", bound=_TypeParams, default=_TypeParams)
+_TypeT_co = TypeVar("_TypeT_co", bound=type, covariant=True, default=type)
 
 type __AnyMapping = Mapping[str, object]
 type __AnyDict = dict[str, Any]
@@ -182,3 +184,9 @@ class HasSelf(Protocol[_ObjectT_co]):
 @runtime_checkable
 class HasCode(Protocol):
     __code__: types.CodeType
+
+
+@runtime_checkable
+class HasObjclass(Protocol[_TypeT_co]):
+    @property
+    def __objclass__(self, /) -> _TypeT_co: ...

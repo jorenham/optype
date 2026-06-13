@@ -280,10 +280,10 @@ known-third-party = ["numpy"]
 
 [tool.ruff.lint.pylint]
 allow-dunder-method-names = [
-  # instance methods
-  "__self__",
-  # classmethods
+  # methods
   "__func__",
+  "__objclass__",
+  "__self__",
   "__wrapped__",
   # `dlpack`
   "__dlpack__",
