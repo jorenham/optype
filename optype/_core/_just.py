@@ -94,6 +94,15 @@ class _JustMeta(_ProtocolMeta, Generic[_ObjectT]):
     def __instancecheck__(self, instance: object) -> TypeIs[_ObjectT]:
         return self.__subclasscheck__(type(instance))
 
+    def __instancecheck_str__(self, instance: object) -> str:
+        expected = self.__just_class__
+        actual = type(instance)
+        return (
+            f"instance has type {actual.__qualname__!r}, "
+            f"but {self.__qualname__} requires exactly "
+            f"{expected.__qualname__!r} (subclasses are not accepted)"
+        )
+
     @override
     def __subclasscheck__(self, subclass: Any) -> TypeIs[type[_ObjectT]]:
         tp = self.__just_class__
