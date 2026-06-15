@@ -54,7 +54,11 @@ def test_all_public() -> None:
     assert protos_can | protos_has | protos_does | protos_just == protos_all
 
 
-@pytest.mark.parametrize("cls", get_protocols(_can))
+# `__subclasscheck__` clashes with `ABCMeta`, so it can't be `@runtime_checkable`
+_NOT_RUNTIME_CHECKABLE = frozenset({_can.CanSubclasscheck})
+
+
+@pytest.mark.parametrize("cls", get_protocols(_can) - _NOT_RUNTIME_CHECKABLE)
 def test_can_runtime_checkable(cls: type) -> None:
     """Ensure that all `Can*` protocols are `@runtime_checkable`."""
     assert is_runtime_protocol(cls)

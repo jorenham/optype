@@ -96,6 +96,7 @@ __all__ = [
     "CanIXorSame",
     "CanIXorSelf",
     "CanIndex",
+    "CanInstancecheck",
     "CanInt",
     "CanInvert",
     "CanInvertSelf",
@@ -177,6 +178,7 @@ __all__ = [
     "CanSub",
     "CanSubSame",
     "CanSubSelf",
+    "CanSubclasscheck",
     "CanTruediv",
     "CanTruedivSame",
     "CanTruedivSelf",
@@ -497,6 +499,20 @@ class CanDelete(Protocol[_T_contra]):
 @runtime_checkable
 class CanSetName(Protocol[_T_contra]):
     def __set_name__(self, cls: type[_T_contra], name: str, /) -> _Ignored: ...
+
+
+# Class checks
+
+
+@runtime_checkable
+class CanInstancecheck(Protocol):
+    def __instancecheck__(self, instance: object, /) -> bool: ...
+
+
+# not `@runtime_checkable`: a `__subclasscheck__` member shadows the one that
+# `ABCMeta` invokes internally during `isinstance`, so the check would crash
+class CanSubclasscheck(Protocol):
+    def __subclasscheck__(self, subclass: type, /) -> bool: ...
 
 
 # Collection type operands.
