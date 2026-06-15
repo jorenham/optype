@@ -10,6 +10,11 @@ type _Args = tuple[object, ...]
 type _Kwargs = dict[str, object]
 
 
+def _internal(attr: str) -> bool:
+    """Whether `attr` is a spy's own `__optype*` bookkeeping attribute."""
+    return attr.startswith("__optype")
+
+
 class _Fork(BaseException): ...
 
 
@@ -77,7 +82,7 @@ class _SpyType(type):
     """The metaclass of every spy's unique class, so class attribute access records."""
 
     def __getattr__(cls, attr: str, /) -> "_SpyObject | None":
-        if attr.startswith("__optype"):
+        if _internal(attr):
             return None
 
         if (owner := _class_spy(cls)) is None:
@@ -90,7 +95,7 @@ class _SpyType(type):
     @override
     def __setattr__(cls, attr: str, value: object, /) -> None:
         # recorded without mutating, so forked reruns stay clean
-        if attr.startswith("__optype") or (owner := _class_spy(cls)) is None:
+        if _internal(attr) or (owner := _class_spy(cls)) is None:
             return super().__setattr__(attr, value)
 
         args = attr, value
@@ -98,7 +103,7 @@ class _SpyType(type):
 
     @override
     def __delattr__(cls, attr: str, /) -> None:
-        if attr.startswith("__optype") or (owner := _class_spy(cls)) is None:
+        if _internal(attr) or (owner := _class_spy(cls)) is None:
             return super().__delattr__(attr)
 
         return owner.__optype_trace_add__(_Marker.CLASS_DELATTR, (attr,), {}, None)
@@ -120,21 +125,21 @@ class _SpyObject(_Spy, metaclass=_SpyType):
         # every spy gets a class of its own, so that `type(spy)` identifies the spy
         unique = cast("type[Self]", type("_SpyObject", (cls,), {}))
         self = super().__new__(unique)
-        unique.__optype_instance__ = self
+        type.__setattr__(unique, "__optype_instance__", self)
         return self
 
     ###
 
     def __getattr__(self, attr: str, /) -> "_SpyObject | None":
         # TODO: specialize for known special dunder attrs, e.g. `__name__: str`
-        if attr.startswith("__optype"):
+        if _internal(attr):
             return None
 
         return self.__optype_trace_add__("__getattr__", (attr,), {}, _SpyObject())
 
     @override
     def __setattr__(self, attr: str, value: object, /) -> None:
-        if attr.startswith("__optype"):
+        if _internal(attr):
             return super().__setattr__(attr, value)
 
         return self.__optype_trace_add__("__setattr__", (attr, value), {}, None)
@@ -175,18 +180,6 @@ class _SpyObject(_Spy, metaclass=_SpyType):
     def __ne__(self, other: object, /) -> "_SpyObject":  # type:ignore[override] # pyright:ignore[reportIncompatibleMethodOverride] # ty:ignore[invalid-method-override]
         return self.__optype_trace_add__("__ne__", (other,), {}, _SpyObject())
 
-    def __lt__(self, other: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__lt__", (other,), {}, _SpyObject())
-
-    def __le__(self, other: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__le__", (other,), {}, _SpyObject())
-
-    def __gt__(self, other: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__gt__", (other,), {}, _SpyObject())
-
-    def __ge__(self, other: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__ge__", (other,), {}, _SpyObject())
-
     ###
 
     @override
@@ -215,8 +208,12 @@ class _SpyObject(_Spy, metaclass=_SpyType):
     ###
 
     # TODO: __mro_entries__
-    # TODO: __instancecheck__
-    # TODO: __subclasscheck__
+
+    def __instancecheck__(self, _instance: object, /) -> bool:
+        return self.__optype_trace_add__("__instancecheck__", (), {}, _decide())
+
+    def __subclasscheck__(self, _subclass: object, /) -> bool:
+        return self.__optype_trace_add__("__subclasscheck__", (), {}, _decide())
 
     ###
 
@@ -265,149 +262,6 @@ class _SpyObject(_Spy, metaclass=_SpyType):
 
     ###
 
-    def __add__(self, rhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__add__", (rhs,), {}, _SpyObject())
-
-    def __sub__(self, rhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__sub__", (rhs,), {}, _SpyObject())
-
-    def __mul__(self, rhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__mul__", (rhs,), {}, _SpyObject())
-
-    def __matmul__(self, rhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__matmul__", (rhs,), {}, _SpyObject())
-
-    def __truediv__(self, rhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__truediv__", (rhs,), {}, _SpyObject())
-
-    def __floordiv__(self, rhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__floordiv__", (rhs,), {}, _SpyObject())
-
-    def __mod__(self, rhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__mod__", (rhs,), {}, _SpyObject())
-
-    def __divmod__(self, rhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__divmod__", (rhs,), {}, _SpyObject())
-
-    def __pow__(self, rhs: object, /, *args: object) -> "_SpyObject":
-        return self.__optype_trace_add__("__pow__", (rhs, *args), {}, _SpyObject())
-
-    def __lshift__(self, rhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__lshift__", (rhs,), {}, _SpyObject())
-
-    def __rshift__(self, rhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__rshift__", (rhs,), {}, _SpyObject())
-
-    def __and__(self, rhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__and__", (rhs,), {}, _SpyObject())
-
-    def __xor__(self, rhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__xor__", (rhs,), {}, _SpyObject())
-
-    def __or__(self, rhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__or__", (rhs,), {}, _SpyObject())
-
-    ###
-
-    def __radd__(self, lhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__radd__", (lhs,), {}, _SpyObject())
-
-    def __rsub__(self, lhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__rsub__", (lhs,), {}, _SpyObject())
-
-    def __rmul__(self, lhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__rmul__", (lhs,), {}, _SpyObject())
-
-    def __rmatmul__(self, lhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__rmatmul__", (lhs,), {}, _SpyObject())
-
-    def __rtruediv__(self, lhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__rtruediv__", (lhs,), {}, _SpyObject())
-
-    def __rfloordiv__(self, lhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__rfloordiv__", (lhs,), {}, _SpyObject())
-
-    def __rmod__(self, lhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__rmod__", (lhs,), {}, _SpyObject())
-
-    def __rdivmod__(self, lhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__rdivmod__", (lhs,), {}, _SpyObject())
-
-    def __rpow__(self, lhs: object, /, *args: object) -> "_SpyObject":
-        return self.__optype_trace_add__("__rpow__", (lhs, *args), {}, _SpyObject())
-
-    def __rlshift__(self, lhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__rlshift__", (lhs,), {}, _SpyObject())
-
-    def __rrshift__(self, lhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__rrshift__", (lhs,), {}, _SpyObject())
-
-    def __rand__(self, lhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__rand__", (lhs,), {}, _SpyObject())
-
-    def __rxor__(self, lhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__rxor__", (lhs,), {}, _SpyObject())
-
-    def __ror__(self, lhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__ror__", (lhs,), {}, _SpyObject())
-
-    ###
-
-    def __iadd__(self, rhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__iadd__", (rhs,), {}, _SpyObject())
-
-    def __isub__(self, rhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__isub__", (rhs,), {}, _SpyObject())
-
-    def __imul__(self, rhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__imul__", (rhs,), {}, _SpyObject())
-
-    def __imatmul__(self, rhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__imatmul__", (rhs,), {}, _SpyObject())
-
-    def __itruediv__(self, rhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__itruediv__", (rhs,), {}, _SpyObject())
-
-    def __ifloordiv__(self, rhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__ifloordiv__", (rhs,), {}, _SpyObject())
-
-    def __imod__(self, rhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__imod__", (rhs,), {}, _SpyObject())
-
-    def __ipow__(self, rhs: object, /, *args: object) -> "_SpyObject":
-        return self.__optype_trace_add__("__ipow__", (rhs, *args), {}, _SpyObject())
-
-    def __ilshift__(self, rhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__ilshift__", (rhs,), {}, _SpyObject())
-
-    def __irshift__(self, rhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__irshift__", (rhs,), {}, _SpyObject())
-
-    def __iand__(self, rhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__iand__", (rhs,), {}, _SpyObject())
-
-    def __ixor__(self, rhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__ixor__", (rhs,), {}, _SpyObject())
-
-    def __ior__(self, rhs: object, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__ior__", (rhs,), {}, _SpyObject())
-
-    ###
-
-    def __neg__(self, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__neg__", (), {}, _SpyObject())
-
-    def __pos__(self, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__pos__", (), {}, _SpyObject())
-
-    def __abs__(self, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__abs__", (), {}, _SpyObject())
-
-    def __invert__(self, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__invert__", (), {}, _SpyObject())
-
-    ###
-
     def __complex__(self, /) -> complex:
         return self.__optype_trace_add__("__complex__", (), {}, 0j)
 
@@ -419,20 +273,6 @@ class _SpyObject(_Spy, metaclass=_SpyType):
 
     def __index__(self, /) -> int:
         return self.__optype_trace_add__("__index__", (), {}, int(_decide()))
-
-    ###
-
-    def __round__(self, /, *args: object) -> "_SpyObject":
-        return self.__optype_trace_add__("__round__", args, {}, _SpyObject())
-
-    def __trunc__(self, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__trunc__", (), {}, _SpyObject())
-
-    def __floor__(self, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__floor__", (), {}, _SpyObject())
-
-    def __ceil__(self, /) -> "_SpyObject":
-        return self.__optype_trace_add__("__ceil__", (), {}, _SpyObject())
 
     ###
 
@@ -503,6 +343,78 @@ class _SpyObject(_Spy, metaclass=_SpyType):
 
     def __aexit__(self, /, *args: object) -> "_SpyObject":
         return self.__optype_trace_add__("__aexit__", args, {}, _SpyObject())
+
+
+# Operators that record their positional args and return a fresh spy. Generated onto
+# the type (not synthesized in `__getattr__`) because special-method lookup skips it.
+_TRACED_OPS = (
+    "__neg__",
+    "__pos__",
+    "__abs__",
+    "__invert__",
+    "__round__",
+    "__trunc__",
+    "__floor__",
+    "__ceil__",
+    "__lt__",
+    "__le__",
+    "__gt__",
+    "__ge__",
+    "__add__",
+    "__sub__",
+    "__mul__",
+    "__matmul__",
+    "__truediv__",
+    "__floordiv__",
+    "__mod__",
+    "__divmod__",
+    "__pow__",
+    "__lshift__",
+    "__rshift__",
+    "__and__",
+    "__xor__",
+    "__or__",
+    "__radd__",
+    "__rsub__",
+    "__rmul__",
+    "__rmatmul__",
+    "__rtruediv__",
+    "__rfloordiv__",
+    "__rmod__",
+    "__rdivmod__",
+    "__rpow__",
+    "__rlshift__",
+    "__rrshift__",
+    "__rand__",
+    "__rxor__",
+    "__ror__",
+    "__iadd__",
+    "__isub__",
+    "__imul__",
+    "__imatmul__",
+    "__itruediv__",
+    "__ifloordiv__",
+    "__imod__",
+    "__ipow__",
+    "__ilshift__",
+    "__irshift__",
+    "__iand__",
+    "__ixor__",
+    "__ior__",
+)
+
+
+def _traced_op(name: str) -> _AnyFunc:
+    def op(self: _SpyObject, /, *args: object) -> _SpyObject:
+        return self.__optype_trace_add__(name, args, {}, _SpyObject())
+
+    op.__name__ = op.__qualname__ = name
+    return op
+
+
+for _name in _TRACED_OPS:
+    # bypass the metaclass: `_class_spy` isn't defined yet, and this isn't a trace
+    type.__setattr__(_SpyObject, _name, _traced_op(_name))  # noqa: PLC2801
 
 
 # Free functions, not methods: a method would be an unrecorded hole in the proxy.
