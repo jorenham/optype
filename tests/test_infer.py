@@ -1278,6 +1278,17 @@ def test_dynamic_attr_name() -> None:
         infer(lambda x, y: getattr(x, str(y)))
 
 
+def test_instance_subclass_check() -> None:
+    assert infer(lambda x: isinstance(0, x)) == "(x: CanInstancecheck) -> bool"
+    assert infer(lambda x: issubclass(int, x)) == "(x: CanSubclasscheck) -> bool"
+    assert infer(lambda x, y: isinstance(y, x)) == (
+        "(x: CanInstancecheck, y: object) -> bool"
+    )
+    assert infer(lambda x, y: issubclass(y, x)) == (
+        "(x: CanSubclasscheck, y: object) -> bool"
+    )
+
+
 def _set_name(x: Any) -> object:
     class C:
         attr: Any = x
