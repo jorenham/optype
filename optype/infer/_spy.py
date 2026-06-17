@@ -209,11 +209,13 @@ class _SpyObject(_Spy, metaclass=_SpyType):
 
     # TODO: __mro_entries__
 
-    def __instancecheck__(self, _instance: object, /) -> bool:
-        return self.__optype_trace_add__("__instancecheck__", (), {}, _decide())
+    def __instancecheck__(self, instance: object, /) -> bool:
+        out = _decide()
+        return self.__optype_trace_add__("__instancecheck__", (instance,), {}, out)
 
-    def __subclasscheck__(self, _subclass: object, /) -> bool:
-        return self.__optype_trace_add__("__subclasscheck__", (), {}, _decide())
+    def __subclasscheck__(self, subclass: object, /) -> bool:
+        out = _decide()
+        return self.__optype_trace_add__("__subclasscheck__", (subclass,), {}, out)
 
     ###
 

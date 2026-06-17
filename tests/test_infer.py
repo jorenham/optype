@@ -1289,6 +1289,17 @@ def test_instance_subclass_check() -> None:
     )
 
 
+def test_instance_subclass_check_typeis() -> None:
+    # the first positional parameter is the checked value, so the result narrows it
+    assert infer(lambda x, y: isinstance(x, y)) == (
+        "[T](x: object, y: type[T]) -> TypeIs[T]"
+    )
+    # `issubclass` rejects a non-class first argument, so `x` is `type`, not `object`
+    assert infer(lambda x, y: issubclass(x, y)) == (
+        "[T](x: type, y: type[T]) -> TypeIs[type[T]]"
+    )
+
+
 def _set_name(x: Any) -> object:
     class C:
         attr: Any = x

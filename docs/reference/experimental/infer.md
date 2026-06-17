@@ -226,6 +226,28 @@ $ optype infer "lambda x: int if x else bool"
 (x: CanBool) -> type[int]
 ```
 
+## Type guards
+
+An `isinstance` or `issubclass` check on the first positional parameter narrows it to a
+[`TypeIs`](https://docs.python.org/3/library/typing.html#typing.TypeIs) instead of a bare
+`bool` (`issubclass` rejects a non-class, so its `x` starts from `type`):
+
+```console
+$ optype infer "lambda x, y: isinstance(x, y)"
+[T](x: object, y: type[T]) -> TypeIs[T]
+
+$ optype infer "lambda x, y: issubclass(x, y)"
+[T](x: type, y: type[T]) -> TypeIs[type[T]]
+```
+
+A check on any other value stays a `bool`, with the class reported as `CanInstancecheck`
+or `CanSubclasscheck`:
+
+```console
+$ optype infer "lambda x, y: isinstance(y, x)"
+(x: CanInstancecheck, y: object) -> bool
+```
+
 ## Branches
 
 Both sides of a conditional are explored, so the parameter has to satisfy every branch
@@ -554,8 +576,11 @@ The number of explored branches is capped, so a function with many of them gets 
 signature that only covers the explored ones, along with an `InferWarning`.
 
 It can only observe operations that go through a dunder method. Anything that inspects a
-parameter at the C level is invisible, so a parameter passed to `id()`, `isinstance()`,
-or an identity check (`is`) is reported as `object` rather than its real requirement.
+parameter at the C level is invisible, so a parameter passed to `id()`, the instance
+argument of `isinstance()`/`issubclass()`, or an identity check (`is`) is reported as
+`object` rather than its real requirement. The class argument of those checks *is*
+observed, and narrows the instance when it is the first positional parameter (see
+[Type guards](#type-guards)).
 
 !!! warning "Generic bounds"
 

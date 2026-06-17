@@ -35,6 +35,7 @@ _PARAM_PREFIX: dict[_ParameterKind, str] = {
     Parameter.VAR_POSITIONAL: "*",
     Parameter.VAR_KEYWORD: "**",
 }
+_POSITIONAL = frozenset({Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD})
 
 _TYPEVARS = "TUVWXYZ"
 _TYPEVAR_TUPLE = "*Ts"
@@ -48,6 +49,7 @@ _WRITE = "-"  # contravariant: the attribute only has to accept the value
 _DUNDER_ATTR_READ = frozenset({"__getattr__", "__getattribute__"})
 _DUNDER_ATTR_WRITE = frozenset({"__delattr__", "__setattr__"})
 _DUNDER_ATTR = _DUNDER_ATTR_READ | _DUNDER_ATTR_WRITE
+_DUNDER_CHECK = frozenset({"__instancecheck__", "__subclasscheck__"})
 _DUNDER_CLASS_ATTR = frozenset({
     _Marker.CLASS_DELATTR,
     _Marker.CLASS_GETATTR,
@@ -112,6 +114,15 @@ class _Op(NamedTuple):
     classvar: bool = False  # a class-level attribute, i.e. a `ClassVar` member
 
 
+class _Guard(NamedTuple):
+    """A `type[T]` parameter that narrows the first one, i.e. a `TypeIs[T]` return."""
+
+    checker: _SpyObject
+    target: _SpyObject
+    subclass: bool  # `issubclass` narrows to `type[T]`, `isinstance` to `T`
+    var: str = ""  # the narrowed type's typevar `T`, assigned once the guard is unique
+
+
 def _resolve(trace: _TraceItem) -> _Op:
     if trace.attr in _DUNDER_ATTR or trace.attr in _DUNDER_CLASS_ATTR:
         name = trace.args[0]
@@ -132,6 +143,11 @@ def _resolve(trace: _TraceItem) -> _Op:
         # binds the assigned value's type, which a bounded `Has*` could reject
         return _Op("Has", trace.args[1:], {}, trace.return_, name)
 
+    # the recorded checked value drives `TypeIs` detection, but the protocol itself is
+    # nullary, so it renders as a bare `CanInstancecheck`/`CanSubclasscheck`
+    if trace.attr in _DUNDER_CHECK:
+        return _Op(_DUNDER_CAN_MAP[trace.attr], (), {}, trace.return_)
+
     # checked before _DUNDER_CAN_MAP, which also contains the coercion dunders
     if trace.attr in _COERCION_PROTOS:
         return _Op(_COERCION_PROTOS[trace.attr], (), {}, trace.return_)
@@ -142,6 +158,12 @@ def _resolve(trace: _TraceItem) -> _Op:
 
     msg = f"no protocol for {trace.attr!r}"
     raise InferError(msg)
+
+
+def _without_checks(items: Iterable[_TraceItem]) -> list[_TraceItem]:
+    # a membership check records its checked value to drive `TypeIs`, but that value is
+    # not a structural requirement, so it must not count toward typevar pooling
+    return [item for item in items if item.attr not in _DUNDER_CHECK]
 
 
 def _or_object(node: _ir.Node | None) -> _ir.Node:
@@ -177,7 +199,7 @@ def _analyze(
             continue
         seen.add(id(spy))
         order.append(spy)
-        for op in traces[id(spy)]:
+        for op in _without_checks(traces[id(spy)]):
             for value in (*op.args, *op.kwargs.values()):
                 if (arg := as_spy(value)) is not None:
                     appear[id(arg)] += 1
@@ -195,7 +217,7 @@ def _ret_keys(
     keys: dict[int, _RetKey] = {}
     args: set[int] = set()
     for owner in order:
-        for item in traces[id(owner)]:
+        for item in _without_checks(traces[id(owner)]):
             for value in (*item.args, *item.kwargs.values()):
                 if (arg := as_spy(value)) is not None:
                     args.add(id(arg))
@@ -381,6 +403,56 @@ class _Renderer:
         unnamed = [spy for spy in self._pool if id(spy) not in self._vars]
         for i, spy in enumerate(unnamed):
             self._vars[id(spy)] = _TYPEVARS[i] if i < len(_TYPEVARS) else f"T{i}"
+
+        self._guard = self._detect_guard(params)
+
+    def _fresh_var(self) -> str:
+        used = set(self._vars.values())
+        i = 0
+        while (var := _TYPEVARS[i] if i < len(_TYPEVARS) else f"T{i}") in used:
+            i += 1
+        return var
+
+    def _narrow_target(self, params: Mapping[str, Parameter]) -> _SpyObject | None:
+        # a `TypeIs` only narrows the first positional parameter
+        for name, p in params.items():
+            if p.kind in _POSITIONAL:
+                spy = self._spies.get(name)
+                return _own_spy(spy) if spy is not None else None
+        return None
+
+    def _guard_for(self, owner: _SpyObject, target: _SpyObject) -> _Guard | None:
+        checks = [it for it in self._traces[id(owner)] if it.attr in _DUNDER_CHECK]
+        if not checks or len({it.attr for it in checks}) != 1:
+            return None  # mixed `isinstance`/`issubclass`: no single narrowed type
+
+        if not all(as_spy(it.args[0]) is target for it in checks):
+            return None
+
+        return _Guard(owner, target, checks[0].attr == "__subclasscheck__")
+
+    def _detect_guard(self, params: Mapping[str, Parameter]) -> _Guard | None:
+        target = self._narrow_target(params)
+        if target is None or any(type(r) is not bool for r in self._results):
+            return None
+
+        found: _Guard | None = None
+        for spy in self._spies.values():
+            if (guard := self._guard_for(_own_spy(spy), target)) is None:
+                continue
+
+            if found is not None:
+                return None  # ambiguous: more than one narrowable check
+
+            found = guard
+
+        if found is None:
+            return None
+
+        # the checker renders as `type[T]`, never as its own typevar
+        self._vars.pop(id(found.checker), None)
+        self._pool = [spy for spy in self._pool if spy is not found.checker]
+        return found._replace(var=self._fresh_var())
 
     def _name_results(self, order: Iterable[_SpyObject], param_ids: set[int]) -> None:
         ret_keys, arg_ids = _ret_keys(order, self._traces)
@@ -631,6 +703,10 @@ class _Renderer:
         return _ir.App("tuple", tuple(elems))
 
     def return_types(self) -> str:
+        if (guard := self._guard) is not None:
+            inner = _ir.Name(guard.var)
+            narrowed = _ir.App("type", (inner,)) if guard.subclass else inner
+            return _ir.render(_ir.App("TypeIs", (narrowed,)))
         return _ir.render(self._union_type(self._results))
 
     def render(
@@ -653,6 +729,8 @@ class _Renderer:
             # PEP 696 requires defaulted type parameters to come last
             ordered.sort(key=lambda spy: id(spy) in defaulted)
         typevars = [self.typevar(spy, defaulted, negate=negate) for spy in ordered]
+        if (guard := self._guard) is not None:
+            typevars.insert(0, guard.var)
         generics = f"[{', '.join(typevars)}]" if typevars else ""
         params = ", ".join(
             decl
@@ -660,6 +738,20 @@ class _Renderer:
             if (decl := self._param(name, defaults, negate=negate)) is not None
         )
         return f"{generics}({params}) -> {self.return_types()}"
+
+    def _guard_slot(self, spy: _SpyObject) -> _ir.Node | None:
+        if (guard := self._guard) is None:
+            return None
+        if spy is guard.checker:
+            # the narrowed type's class, i.e. the `type[T]` of a `TypeIs[T]` guard
+            return _ir.App("type", (_ir.Name(guard.var),))
+        if guard.subclass and spy is guard.target:
+            # `issubclass` rejects a non-class first argument
+            node: _ir.Node = _ir.Type(type)
+            if (extra := self.spy(spy)) is not None:
+                node = _ir.inter((node, extra)) or node
+            return node
+        return None
 
     def _param(self, name: str, defaults: _Defaults, *, negate: bool) -> str | None:
         # a positional-only parameter cannot be passed by keyword, so no name shows
@@ -670,6 +762,8 @@ class _Renderer:
         if (spy := self._spies.get(name)) is None:
             # an omitted parameter binds its default, so passing it behaves the same
             node = self.union((defaults[name],)) or _ir.Name(_NEVER)
+            return f"{label}{_ir.render(node)}{_suffix(defaults, name)}"
+        if (node := self._guard_slot(spy)) is not None:
             return f"{label}{_ir.render(node)}{_suffix(defaults, name)}"
         slot = self.slot(spy)
         if negate and name in defaults:
