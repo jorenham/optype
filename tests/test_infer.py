@@ -1280,6 +1280,14 @@ def test_target_exception_partial() -> None:
     assert infer(f) == "(x: CanBool) -> int"
 
 
+def test_large_tuple_widens() -> None:
+    # a long concrete tuple (like `random.getstate`) widens instead of listing literals
+    def f() -> tuple[int, ...]:
+        return tuple(range(50))
+
+    assert infer(f) == "() -> tuple[int, ...]"
+
+
 def test_self_referential_result() -> None:
     # a cyclic result is a recursive type, tied off with a self-bounded typevar
     def f() -> list[object]:
