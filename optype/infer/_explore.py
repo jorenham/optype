@@ -270,6 +270,11 @@ def _next(result: object) -> object:
     return out
 
 
+def _rollback(marks: Iterable[tuple[_SpyObject, int]]) -> None:
+    for spy, length in marks:
+        del spy.__optype_trace__[length:]
+
+
 def _explore[T](
     func: Callable[..., T] | Callable[..., Coroutine[Any, None, T]],
     args: Sequence[object],
@@ -298,8 +303,12 @@ def _explore[T](
                 dropped = True
         except _AbsentError:
             # the dunder is genuinely needed, so this run (and its marker) never was
-            for spy, length in marks:
-                del spy.__optype_trace__[length:]
+            _rollback(marks)
+        except (InferError, IndexError, KeyError, TypeError, ValueError):
+            raise  # signals the driver acts on, not a rejected run
+        except Exception:  # noqa: BLE001
+            # the target rejected these spy values (assert, zero-division, ...); skip
+            _rollback(marks)
         finally:
             _fork.reset(token)
     if not results:
