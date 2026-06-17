@@ -19,7 +19,7 @@ import pytest
 
 from optype.infer import InferError, InferWarning, infer
 from optype.infer._explore import _doc_params
-from optype.infer._ir import App, Arg, Fn, Lit, Name, Type, subtype
+from optype.infer._ir import App, Arg, Fn, Lit, Name, Node, Type, render, subtype, union
 
 
 def _type_of[T](x: T) -> type[T]:
@@ -1288,6 +1288,41 @@ def test_large_tuple_widens() -> None:
     assert infer(f) == "() -> tuple[int, ...]"
 
 
+def test_union_tuple_collapse() -> None:
+    # a wide union of same-arity tuples (like `colorsys.hls_to_rgb`) collapses per
+    # position; a small one keeps its correlation
+    def pair(i: int) -> App:
+        return App("tuple", (Name(f"A{i}"), Name(f"B{i}")))
+
+    def triple(i: int) -> App:
+        return App("tuple", (Name(f"C{i}"), Name(f"D{i}"), Name(f"E{i}")))
+
+    def rendered(nodes: list[Node], *, tuples: bool) -> str:
+        node = union(nodes, tuples=tuples)
+        assert node is not None
+        return render(node)
+
+    cols2 = " | ".join(f"A{i}" for i in range(9)), " | ".join(f"B{i}" for i in range(9))
+    wide2 = f"tuple[{cols2[0]}, {cols2[1]}]"
+
+    small: list[Node] = [pair(0), pair(1)]
+    assert rendered(small, tuples=True) == "tuple[A0, B0] | tuple[A1, B1]"
+
+    wide: list[Node] = [pair(i) for i in range(9)]
+    assert rendered(wide, tuples=True) == wide2
+    assert rendered(wide, tuples=False).count("tuple[") == 9
+
+    # each arity collapses on its own; a wider triple group folds independently
+    cols3 = tuple(" | ".join(f"{p}{i}" for i in range(9)) for p in "CDE")
+    mixed = wide + [triple(i) for i in range(9)]
+    assert rendered(mixed, tuples=True) == f"{wide2} | tuple[{', '.join(cols3)}]"
+
+    # a non-tuple member and a variadic tuple stay untouched beside the collapse
+    assert rendered([*wide, Name("X")], tuples=True) == f"{wide2} | X"
+    variadic = App("tuple", (Name("V"), Name("...")))
+    assert rendered([*wide, variadic], tuples=True) == f"{wide2} | tuple[V, ...]"
+
+
 def test_self_referential_result() -> None:
     # a cyclic result is a recursive type, tied off with a self-bounded typevar
     def f() -> list[object]:
@@ -1339,6 +1374,37 @@ def test_deeply_nested_result() -> None:
 
     with pytest.raises(InferError, match="deeply"):
         infer(f)
+
+
+def test_structural_dedup() -> None:
+    # every forked run re-derives `a = x * 2` and then `a + 1` / `a + 2`; the fresh
+    # placeholders for these repeated subexpressions collapse onto one type parameter
+    # each, not one per run (which is what made e.g. `colorsys.hls_to_rgb` explode)
+    def f(x: Any) -> object:
+        a = x * 2
+        return (a + 1) if x else (a + 2) if a else a
+
+    assert infer(f) == (
+        "[R, R2: CanBool](x: CanMul[Literal[2], R2 & CanAdd[Literal[1, 2], R]"
+        " & CanBool] & CanBool) -> R | R2"
+    )
+
+
+def test_dedup_different_operands() -> None:
+    # `x[y]` and `x[z]` share an op-shape, so they collapse onto one return typevar
+    def f(x: Any, y: Any, z: Any) -> object:
+        return x[y] if x else x[z]
+
+    assert infer(f) == "[T, U, R](x: CanBool & CanGetitem[T | U, R], y: T, z: U) -> R"
+
+    # merged results may be traced (`.foo`), which the old untraced-only guard blocked
+    def g(x: Any, y: Any, z: Any) -> object:
+        p = x[y] if x else x[z]
+        return p.foo
+
+    assert infer(g) == (
+        "[T, U, R](x: CanBool & CanGetitem[T | U, Has['foo', +R]], y: T, z: U) -> R"
+    )
 
 
 def test_not_callable() -> None:

@@ -179,8 +179,63 @@ def _absorb(nodes: list[Node]) -> list[Node]:
     return merged
 
 
-def union(parts: Iterable[Node]) -> Node | None:
-    """The simplified flat union of `parts`, unwrapped if singular, or `None`."""
+_UNION_TUPLE_LIMIT = 8  # keep positional correlation below this; collapse a wider union
+
+
+def _fixed_tuple_arity(node: Node) -> int | None:
+    """The arity of a fixed-length `tuple[...]`, or `None` if not one."""
+    if not isinstance(node, App) or node.base != "tuple" or not node.args:
+        return None
+    if any(
+        isinstance(arg, Arg)
+        or (isinstance(arg, Name) and (arg.name == "..." or arg.name.startswith("*")))
+        for arg in node.args
+    ):
+        return None  # a variadic `tuple[X, ...]` or `tuple[*Ts]` has no fixed arity
+    return len(node.args)
+
+
+def _collapse_tuples(nodes: list[Node]) -> list[Node]:
+    """Merge each large group of same-arity tuples into one per-position union.
+
+    `tuple[A, B] | tuple[C, D]` widens to `tuple[A | C, B | D]`; only a group wider
+    than `_UNION_TUPLE_LIMIT` collapses, so a small union keeps its positional
+    correlation (e.g. `tuple[int, str] | tuple[str, int]`).
+    """
+    groups: dict[int, list[App]] = {}
+    for node in nodes:
+        if isinstance(node, App) and (arity := _fixed_tuple_arity(node)) is not None:
+            groups.setdefault(arity, []).append(node)
+    collapse = {a for a, group in groups.items() if len(group) > _UNION_TUPLE_LIMIT}
+    if not collapse:
+        return nodes
+
+    out: list[Node] = []
+    done: set[int] = set()
+    for node in nodes:
+        arity = _fixed_tuple_arity(node)
+        if arity is None or arity not in collapse:
+            out.append(node)
+            continue
+        if arity in done:
+            continue
+        done.add(arity)
+        group = groups[arity]
+        # `_fixed_tuple_arity` already excluded any `Arg`, so `_param_type` is a no-op
+        columns = (
+            union([_param_type(g.args[i]) for g in group], tuples=True) or Name("Never")
+            for i in range(arity)
+        )
+        out.append(App("tuple", tuple(columns)))
+    return out
+
+
+def union(parts: Iterable[Node], *, tuples: bool = False) -> Node | None:
+    """The simplified flat union of `parts`, unwrapped if singular, or `None`.
+
+    With `tuples=True`, a wide union of same-arity tuples collapses per position;
+    pass it only in covariant positions, where widening a tuple stays sound.
+    """
     flat: dict[Node, None] = {}
     for part in parts:
         if isinstance(part, Union):
@@ -190,6 +245,8 @@ def union(parts: Iterable[Node]) -> Node | None:
     if not flat:
         return None
     nodes = _absorb(list(flat))
+    if tuples:
+        nodes = _collapse_tuples(nodes)
     return nodes[0] if len(nodes) == 1 else Union(tuple(nodes))
 
 
