@@ -3,7 +3,7 @@
 from collections.abc import Collection, Generator, Iterable, Mapping
 from inspect import Parameter
 from itertools import chain
-from typing import NamedTuple, cast
+from typing import NamedTuple, NewType, cast
 
 from ._spy import _SpyObject
 
@@ -25,20 +25,41 @@ class _Fn(NamedTuple):
     results: list[object]
 
 
+# the shared identity of a recursive `_Rec` binder and its `_RecRef` uses
+_RecVar = NewType("_RecVar", object)
+
+
+class _Rec(NamedTuple):
+    """A result that reaches itself, rendered as a recursive typevar bound."""
+
+    var: _RecVar  # the identity shared with this binder's `_RecRef` uses
+    body: object
+
+
+class _RecRef(NamedTuple):
+    """A reference to the enclosing `_Rec` binder of the same `var`."""
+
+    var: _RecVar
+
+
 def _children(value: object) -> Iterable[object]:
     """The values directly contained in an explored result."""
     match value:
         case _Gen():
-            return value.yielded
+            out: Iterable[object] = value.yielded
         case _Fn():
-            return value.results
+            out = value.results
+        case _Rec():
+            out = (value.body,)
+        case _RecRef():
+            out = ()
         case tuple() | list() | set() | frozenset():
-            return cast("Collection[object]", value)
+            out = cast("Collection[object]", value)
         case Mapping():  # `dict`, and the `frozendict` builtin on Python 3.15+
-            mapping = cast("Mapping[object, object]", value)
-            return chain.from_iterable(mapping.items())
+            out = chain.from_iterable(cast("Mapping[object, object]", value).items())
         case _:
-            return ()
+            out = ()
+    return out
 
 
 def _walk(value: object) -> Generator[object]:

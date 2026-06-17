@@ -473,6 +473,14 @@ $ optype infer "lambda x: frozendict({'k': x + 1})"
 [R](x: CanAdd[Literal[1], R]) -> frozendict[Literal['k'], R]
 ```
 
+A container that holds itself is a recursive type. The cycle is detected by identity
+and tied off as a typevar bounded by its own structure:
+
+```console
+$ optype infer "def f(): x = []; x.append(x); return x"
+[R: list[R]]() -> R
+```
+
 ## Unions
 
 A union member that is a subtype of another member is absorbed into it, following the

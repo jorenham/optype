@@ -39,7 +39,7 @@ from ._spy import (
     _SpyStr,
     _TraceItem,
 )
-from ._values import _Fn, _Gen, _walk, fn_spies
+from ._values import _Fn, _Gen, _Rec, _RecRef, _RecVar, _walk, fn_spies
 
 __all__ = (
     "_Recon",
@@ -240,34 +240,41 @@ def _explore_func(func: _AnyFunc) -> object:
     return _Fn(params, spies, fixed, _declared_defaults(params), results)
 
 
-def _next(result: object) -> object:
+def _next(result: object, path: dict[int, _RecVar | None] | None = None) -> object:
     # a function (or iterator) within the yields or a container is explored as well
+    path = {} if path is None else path
+    rid = id(result)
+    if rid in path:
+        # reuse this ancestor's binder, or create it on the first back-edge
+        path[rid] = var = path[rid] or _RecVar(object())
+        return _RecRef(var)
+    path[rid] = None  # marks the ancestor chain; a `_RecVar` once reached again
     cls = type(result)
     if isgenerator(result):
-        out = _Gen([_next(v) for v in _yields(result)], "Generator")
+        out = _Gen([_next(v, path) for v in _yields(result)], "Generator")
     elif isasyncgen(result):
-        out = _Gen([_next(v) for v in _yields(_sync(result))], "AsyncGenerator")
+        out = _Gen([_next(v, path) for v in _yields(_sync(result))], "AsyncGenerator")
     elif cls in _ITERATOR_TYPES:
         values = _yields(cast("Iterable[object]", result))
         if cls is enumerate:
             # `enumerate[R]` is parameterized by the element type, not the yields
             values = [item for _, item in cast("list[tuple[int, object]]", values)]
-        out = _Gen([_next(v) for v in values], cls.__name__)
+        out = _Gen([_next(v, path) for v in values], cls.__name__)
     elif isinstance(_unwrap(result), _FUNCTION_TYPES):
         out = _explore_func(cast("_AnyFunc", result))
     else:
         # pyright fails miserably here when narrowing types
         match result:
             case tuple():
-                out = tuple(map(_next, result))  # pyright:ignore[reportUnknownArgumentType]
+                out = tuple(_next(item, path) for item in result)  # pyright:ignore[reportUnknownArgumentType,reportUnknownVariableType]
             case list():
-                out = [_next(item) for item in result]  # pyright:ignore[reportUnknownArgumentType,reportUnknownVariableType]
+                out = [_next(item, path) for item in result]  # pyright:ignore[reportUnknownArgumentType,reportUnknownVariableType]
             case Mapping():
                 # the keys must stay hashable, so only the values recurse
-                out = cls({key: _next(value) for key, value in result.items()})  # type:ignore[call-arg] # pyright:ignore[reportCallIssue,reportUnknownVariableType]
+                out = cls({key: _next(value, path) for key, value in result.items()})  # type:ignore[call-arg] # pyright:ignore[reportCallIssue,reportUnknownVariableType]
             case _:
                 out = result
-    return out
+    return _Rec(var, out) if (var := path.pop(rid)) is not None else out
 
 
 def _rollback(marks: Iterable[tuple[_SpyObject, int]]) -> None:
