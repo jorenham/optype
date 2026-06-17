@@ -1248,6 +1248,15 @@ def test_fork_truncation_warning() -> None:
         infer(f)
 
 
+def test_typevar_limit() -> None:
+    # thousands of typevars (as numeric loops in e.g. colorsys produce) report cleanly
+    def f(x: Any) -> tuple[Any, ...]:
+        return tuple(getattr(x, f"a{i}") for i in range(30))
+
+    with pytest.raises(InferError, match="type parameters"):
+        infer(f)
+
+
 def test_not_callable() -> None:
     not_callable: Any = 42
     with pytest.raises(InferError, match="not a callable"):

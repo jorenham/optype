@@ -40,6 +40,7 @@ _TYPEVARS = "TUVWXYZ"
 _TYPEVAR_TUPLE = "*Ts"
 _NEVER = "Never"
 _OBJECT = "object"
+_TYPEVAR_LIMIT = 26  # a signature needing more typevars is unreadable, not useful
 
 # the attribute polarity sigils of the fictional inline `Has['name', T]` form
 _READ = "+"  # covariant: a read-only property suffices
@@ -649,6 +650,9 @@ class _Renderer:
             if (node := self.union((value,))) is not None
         }
         ordered = self._pool + self._result_spies
+        if len(ordered) > _TYPEVAR_LIMIT:  # a numeric loop can spawn thousands
+            msg = f"more than {_TYPEVAR_LIMIT} type parameters"
+            raise InferError(msg)
         if not negate:
             # PEP 696 requires defaulted type parameters to come last
             ordered.sort(key=lambda spy: id(spy) in defaulted)
