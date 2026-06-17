@@ -27,7 +27,7 @@ from ._spy import (
     _TraceItem,
     as_spy,
 )
-from ._values import _children, _Fn, _Gen, _walk, fn_spies
+from ._values import _children, _Fn, _Gen, _Rec, _RecRef, _RecVar, _walk, fn_spies
 from optype._core import _can, _has
 from optype.inspect import get_protocol_members
 
@@ -226,13 +226,14 @@ def _packed_uses(value: object, spy: _SpyObject, count: int) -> Generator[bool]:
             if value is spy:
                 yield False
             return
-        case tuple() if not isinstance(value, _Gen | _Fn):
+        case tuple() if not isinstance(value, _Gen | _Fn | _Rec | _RecRef):
             tup = cast("tuple[object, ...]", value)
             if runs := _spy_runs(tup, spy):
                 yield runs == [count]
             items = (item for item in tup if item is not spy)
         case _:
             items = _children(value)
+
     for item in items:
         yield from _packed_uses(item, spy, count)
 
@@ -324,9 +325,33 @@ def _merge_combined(parts: list[_ir.Node]) -> list[_ir.Node]:
     return parts
 
 
+def _result_var(index: int) -> str:
+    """The `index`-th return typevar name: `R`, `R2`, `R3`, ..."""
+    return "R" if not index else f"R{index + 1}"
+
+
 @final
 class _Renderer:
     """Render an inferred `def` signature from the recorded spy traces."""
+
+    _spies: Mapping[str, _SpyObject]
+    _fixed: Mapping[str, object]
+    _results: list[object]
+    _traces: _Traces
+
+    _prefix: dict[str, str]
+    _nameless: set[str]
+    _optional: set[str]
+    _varpos: _SpyObject | None
+
+    _vars: _Vars
+
+    _result_spies: list[_SpyObject]
+
+    _rec_vars: dict[_RecVar, str]
+    _rec_body: dict[_RecVar, object]
+
+    _pool: list[_SpyObject]
 
     def __init__(
         self,
@@ -348,7 +373,7 @@ class _Renderer:
             for name, p in params.items()
             if p.default is not Parameter.empty or p.kind in _PARAM_PREFIX
         }
-        self._varpos = next(
+        self._varpos = next(  # ty:ignore[invalid-assignment]
             (
                 spies[name]
                 for name, p in params.items()
@@ -362,12 +387,25 @@ class _Renderer:
         order, appear = _analyze(param_spies, results, traces)
         param_ids = {id(spy) for spy in param_spies}
 
-        self._vars: _Vars = {}
+        self._vars = {}
         varpos = self._varpos
         if varpos is not None and _all_packed(varpos, results, traces, count):
             self._vars[id(varpos)] = _TYPEVAR_TUPLE
-        self._result_spies: list[_SpyObject] = []
+
+        self._result_spies = []
         self._name_results(order, param_ids)
+
+        self._rec_body = {
+            node.var: node.body
+            for result in results
+            for node in _walk(result)
+            if isinstance(node, _Rec)
+        }
+        base = len(self._result_spies)
+        self._rec_vars = {
+            var: _result_var(base + i) for i, var in enumerate(self._rec_body)
+        }
+
         self._pool = [
             spy for spy in param_spies if appear[id(spy)] >= 2 or id(spy) in self._vars
         ]
@@ -378,6 +416,7 @@ class _Renderer:
             and id(spy) not in param_ids
             and id(spy) not in self._vars
         ]
+
         unnamed = [spy for spy in self._pool if id(spy) not in self._vars]
         for i, spy in enumerate(unnamed):
             self._vars[id(spy)] = _TYPEVARS[i] if i < len(_TYPEVARS) else f"T{i}"
@@ -399,8 +438,7 @@ class _Renderer:
                 if key is not None and key in shared:
                     self._vars[id(spy)] = shared[key]
                     continue
-                n = len(self._result_spies)
-                var = "R" if not n else f"R{n + 1}"
+                var = _result_var(len(self._result_spies))
                 self._vars[id(spy)] = var
                 self._result_spies.append(spy)
                 if key is not None:
@@ -530,10 +568,12 @@ class _Renderer:
         return decl
 
     def return_type(self, result: object) -> _ir.Node:
-
+        node: _ir.Node
         match result:
+            case _RecRef() | _Rec():
+                node = _ir.Name(self._rec_vars[result.var])
             case _SpyObject() if (spy := as_spy(result)) is not None:
-                node: _ir.Node = _ir.Name(self._vars.get(id(spy), _OBJECT))
+                node = _ir.Name(self._vars.get(id(spy), _OBJECT))
             case _SpyStr():
                 node = _ir.Type(str)
             case _SpyBytes():
@@ -653,6 +693,15 @@ class _Renderer:
             # PEP 696 requires defaulted type parameters to come last
             ordered.sort(key=lambda spy: id(spy) in defaulted)
         typevars = [self.typevar(spy, defaulted, negate=negate) for spy in ordered]
+
+        # a recursive typevar carries no default, so it precedes the defaulted tail
+        deferred = 0 if negate else sum(id(spy) in defaulted for spy in ordered)
+        cut = len(ordered) - deferred
+        typevars[cut:cut] = [
+            f"{name}: {_ir.render(self.return_type(self._rec_body[var]))}"
+            for var, name in self._rec_vars.items()
+        ]
+
         generics = f"[{', '.join(typevars)}]" if typevars else ""
         params = ", ".join(
             decl

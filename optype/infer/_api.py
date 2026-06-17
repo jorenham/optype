@@ -18,7 +18,7 @@ from ._explore import (
 )
 from ._render import _Defaults, _Names, signatures
 from ._spy import _AnyFunc, _TraceItem
-from ._values import _Fn, _Gen
+from ._values import _Fn, _Gen, _Rec
 
 
 def _select(params: Iterable[str | int], names: _Names) -> _Names:
@@ -56,6 +56,8 @@ def _bind(value: object, binding: Mapping[int, object]) -> object:
         case _Fn():
             bound = [_bind(item, binding) for item in value.results]
             out = value._replace(results=bound)
+        case _Rec():
+            out = value._replace(body=_bind(value.body, binding))
         case tuple() if type(value) is tuple:  # pyright: ignore[reportUnknownArgumentType]
             tup = cast("tuple[object, ...]", value)
             out = tuple(_bind(item, binding) for item in tup)
@@ -144,19 +146,7 @@ def _defaults(
     return {}, False, overloads
 
 
-def infer(func: _AnyFunc, /, *params: str | int) -> str:
-    """Infer the `optype` protocol(s) required of `func`'s parameters.
-
-    Pass parameter names or positions to report only those parameters.
-
-    >>> print(infer(lambda x: x + 1))
-    [R](x: CanAdd[Literal[1], R]) -> R
-
-    Raises:
-        InferError: If `func` is not supported, such as a non-callable, an
-            operation without a matching protocol, or a parameter that requires
-            a value that no placeholder can provide.
-    """
+def _infer(func: _AnyFunc, params: tuple[str | int, ...]) -> str:
     if nin := _numpy.ufunc_nin(func):
         names = _numpy.ufunc_params(nin)
         return _numpy.infer_ufunc(func, names, _select(params, names))
@@ -174,3 +164,22 @@ def infer(func: _AnyFunc, /, *params: str | int) -> str:
     defaults, negate, overloads = _defaults(func, parameters, selected, recon)
     lines = signatures(recon, parameters, selected, defaults, negate=negate)
     return "\n".join(dict.fromkeys((*overloads, *lines)))
+
+
+def infer(func: _AnyFunc, /, *params: str | int) -> str:
+    """Infer the `optype` protocol(s) required of `func`'s parameters.
+
+    Pass parameter names or positions to report only those parameters.
+
+    >>> print(infer(lambda x: x + 1))
+    [R](x: CanAdd[Literal[1], R]) -> R
+
+    Raises:
+        InferError: If `func` is not supported, such as a non-callable, an
+            operation without a matching protocol, or a parameter that requires
+            a value that no placeholder can provide.
+    """
+    try:
+        return _infer(func, params)
+    except RecursionError as exc:
+        raise InferError("the result is nested too deeply") from exc

@@ -1267,6 +1267,59 @@ def test_target_exception_partial() -> None:
     assert infer(f) == "(x: CanBool) -> int"
 
 
+def test_self_referential_result() -> None:
+    # a cyclic result is a recursive type, tied off with a self-bounded typevar
+    def f() -> list[object]:
+        a: list[object] = []
+        a.append(a)
+        return a
+
+    assert infer(f) == "[R: list[R]]() -> R"
+
+
+def test_self_referential_result_nested() -> None:
+    # the cycle is detected by identity through any depth of intermediate containers
+    def f() -> list[object]:
+        a: list[object] = []
+        b: list[object] = [a]
+        a.append(b)
+        return a
+
+    assert infer(f) == "[R: list[list[R]]]() -> R"
+
+
+def test_self_referential_result_mixed() -> None:
+    # a recursive container alongside a parameter and a result typevar
+    def f(x: Any) -> list[object]:
+        a: list[object] = []
+        a.extend((a, x + 1))
+        return a
+
+    assert infer(f) == "[R, R2: list[R2 | R]](x: CanAdd[Literal[1], R]) -> R2"
+
+
+def test_self_referential_result_defaulted() -> None:
+    # PEP 696: the defaultless recursive typevar must precede the defaulted one
+    def f(x: Any = 1) -> list[object]:
+        a: list[object] = []
+        a.extend((a, x))
+        return a
+
+    assert infer(f) == "[R: list[R | T], T = Literal[1]](x: T = 1) -> R"
+
+
+def test_deeply_nested_result() -> None:
+    # a finite result too deep for the call stack is reported, not crashed on
+    def f() -> list[object]:
+        x: list[object] = []
+        for _ in range(sys.getrecursionlimit() * 2):
+            x = [x]
+        return x
+
+    with pytest.raises(InferError, match="deeply"):
+        infer(f)
+
+
 def test_not_callable() -> None:
     not_callable: Any = 42
     with pytest.raises(InferError, match="not a callable"):
