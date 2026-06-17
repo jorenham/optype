@@ -532,8 +532,8 @@ class _Renderer:
     def return_type(self, result: object) -> _ir.Node:
 
         match result:
-            case _SpyObject():
-                node: _ir.Node = _ir.Name(self._vars.get(id(_own_spy(result)), _OBJECT))
+            case _SpyObject() if (spy := as_spy(result)) is not None:
+                node: _ir.Node = _ir.Name(self._vars.get(id(spy), _OBJECT))
             case _SpyStr():
                 node = _ir.Type(str)
             case _SpyBytes():
