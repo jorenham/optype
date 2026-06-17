@@ -40,6 +40,7 @@ _TYPEVARS = "TUVWXYZ"
 _TYPEVAR_TUPLE = "*Ts"
 _NEVER = "Never"
 _OBJECT = "object"
+_TUPLE_LIMIT = 16
 
 # the attribute polarity sigils of the fictional inline `Has['name', T]` form
 _READ = "+"  # covariant: a read-only property suffices
@@ -666,6 +667,9 @@ class _Renderer:
 
             if all(item is spy for item in items):
                 return _ir.App("tuple", (self.return_type(spy), _ir.Name("...")))
+
+        if len(items) > _TUPLE_LIMIT:  # e.g. `random.getstate`
+            return _ir.App("tuple", (self._union_type(items), _ir.Name("...")))
 
         elems = (self.union((item,)) or _ir.Name(_NEVER) for item in items)
         return _ir.App("tuple", tuple(elems))
