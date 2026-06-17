@@ -1248,6 +1248,25 @@ def test_fork_truncation_warning() -> None:
         infer(f)
 
 
+def test_target_exception_skipped() -> None:
+    # a non-protocol error from the target marks a failed run; it never escapes
+    def f(x: Any) -> None:  # noqa: ARG001
+        raise AssertionError
+
+    with pytest.raises(InferError, match="completion"):
+        infer(f)
+
+
+def test_target_exception_partial() -> None:
+    # only the branch that raises is dropped; the surviving branch still infers
+    def f(x: Any) -> int:
+        if not x:
+            raise ZeroDivisionError
+        return 1
+
+    assert infer(f) == "(x: CanBool) -> int"
+
+
 def test_not_callable() -> None:
     not_callable: Any = 42
     with pytest.raises(InferError, match="not a callable"):
