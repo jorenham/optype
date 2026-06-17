@@ -1267,6 +1267,17 @@ def test_target_exception_partial() -> None:
     assert infer(f) == "(x: CanBool) -> int"
 
 
+def test_run_step_budget() -> None:
+    # a run looping on a spy value (as `random.choice` does on `len() == 0`) is bounded
+    def f(x: Any) -> int:
+        n = len(x)
+        while n == 0:
+            pass
+        return 1
+
+    assert infer(f) == "(x: CanLen) -> int"
+
+
 def test_not_callable() -> None:
     not_callable: Any = 42
     with pytest.raises(InferError, match="not a callable"):

@@ -2,6 +2,7 @@
 
 import keyword
 import re
+import sys
 import warnings
 from collections.abc import (
     AsyncGenerator,
@@ -18,6 +19,7 @@ from contextvars import ContextVar
 from functools import partial
 from inspect import Parameter, isasyncgen, iscoroutine, isgenerator, signature
 from itertools import islice
+from threading import get_ident
 from types import (
     BuiltinFunctionType,
     FunctionType,
@@ -25,7 +27,7 @@ from types import (
     MethodType,
     WrapperDescriptorType,
 )
-from typing import Any, cast
+from typing import Any, cast, final
 
 from ._errors import InferError, InferWarning
 from ._spy import (
@@ -61,6 +63,8 @@ _YIELD_LIMIT = 64
 # large indices stay within reach
 _VARIADIC_COUNTS = (2, 3, 4, 5, 6, 7, 8, 16, 32, 64, 128, 256, 512, 1024)
 _KWARGS_LIMIT = 8  # max injected `**kwargs` keys
+_STEP_LIMIT = 1_000_000  # max branches a single run may take before it counts as stuck
+_MONITOR_TOOLS = 6  # `sys.monitoring` supports tool ids 0..5
 
 type _Traces = dict[int, list[_TraceItem]]
 
@@ -275,6 +279,58 @@ def _rollback(marks: Iterable[tuple[_SpyObject, int]]) -> None:
         del spy.__optype_trace__[length:]
 
 
+class _Timeout(BaseException):
+    """A run exceeded its step budget; like `_Fork`, it bypasses `except Exception`."""
+
+
+@final
+class _StepBudget:
+    """Abort a run after `_STEP_LIMIT` branches, via `sys.monitoring` `JUMP` events.
+
+    A spy's `__len__` may return `0`, sending e.g. `random.choice` into an endless
+    loop that no spy operation can bound. `JUMP` fires once per loop back-edge, so
+    straight-line code is barely affected. Monitoring is interpreter-wide: the
+    callback ignores other threads, and a run goes unguarded if no tool id is free.
+    """
+
+    def __init__(self) -> None:
+        mon = sys.monitoring
+        self._tool: int | None = next(
+            (i for i in range(_MONITOR_TOOLS) if mon.get_tool(i) is None),
+            None,
+        )
+        self._thread = get_ident()
+        self._n = 0
+        if self._tool is not None:
+            mon.use_tool_id(self._tool, "optype.infer")
+            mon.register_callback(self._tool, mon.events.JUMP, self._on_jump)
+            mon.set_events(self._tool, mon.events.JUMP)
+
+    def _on_jump(self, _code: object, _from: int, _to: int, /) -> object:
+        if (tool := self._tool) is None or get_ident() != self._thread:
+            return None
+        self._n += 1
+        if self._n <= _STEP_LIMIT:
+            return None
+        sys.monitoring.set_events(tool, 0)  # stop before the unwind is itself traced
+        raise _Timeout
+
+    def reset(self) -> None:
+        if self._tool is not None:
+            mon = sys.monitoring
+            if not mon.get_events(self._tool):  # re-arm if a prior trip disarmed it
+                mon.set_events(self._tool, mon.events.JUMP)
+            self._n = 0
+
+    def close(self) -> None:
+        mon = sys.monitoring
+        if (tool := self._tool) is not None:
+            mon.set_events(tool, 0)
+            mon.register_callback(tool, mon.events.JUMP, None)
+            mon.free_tool_id(tool)
+            self._tool = None
+
+
 def _explore[T](
     func: Callable[..., T] | Callable[..., Coroutine[Any, None, T]],
     args: Sequence[object],
@@ -283,34 +339,40 @@ def _explore[T](
     results: list[T] = []
     stack: list[list[bool]] = [[]]
     dropped = False
-    for _ in range(_RUN_LIMIT):  # caps the exponential blowup of independent forks
-        if not stack:
-            break
-        plan = stack.pop()
-        # a failed run must also roll back its traces on the closed-over spies
-        marks = [
-            (spy, len(spy.__optype_trace__))
-            for spy in _reachable((*args, *kwds.values(), *_closed_over(func)))
-        ]
-        token = _fork.set(iter(plan))
-        try:
-            result = func(*args, **kwds)
-            results.append(_await(result) if iscoroutine(result) else cast("T", result))
-        except _Fork:
-            if len(plan) < _FORK_LIMIT:
-                stack.extend(([*plan, False], [*plan, True]))
-            else:
-                dropped = True
-        except _AbsentError:
-            # the dunder is genuinely needed, so this run (and its marker) never was
-            _rollback(marks)
-        except (InferError, IndexError, KeyError, TypeError, ValueError):
-            raise  # signals the driver acts on, not a rejected run
-        except Exception:  # noqa: BLE001
-            # the target rejected these spy values (assert, zero-division, ...); skip
-            _rollback(marks)
-        finally:
-            _fork.reset(token)
+    budget = _StepBudget()
+    try:
+        for _ in range(_RUN_LIMIT):  # caps the exponential blowup of independent forks
+            if not stack:
+                break
+            plan = stack.pop()
+            # a failed run must also roll back its traces on the closed-over spies
+            marks = [
+                (spy, len(spy.__optype_trace__))
+                for spy in _reachable((*args, *kwds.values(), *_closed_over(func)))
+            ]
+            token = _fork.set(iter(plan))
+            budget.reset()
+            try:
+                result = func(*args, **kwds)
+                got = _await(result) if iscoroutine(result) else cast("T", result)
+                results.append(got)
+            except _Fork:
+                if len(plan) < _FORK_LIMIT:
+                    stack.extend(([*plan, False], [*plan, True]))
+                else:
+                    dropped = True
+            except (_AbsentError, _Timeout):
+                # an absent dunder, or a run stuck looping on a spy value: it never was
+                _rollback(marks)
+            except (InferError, IndexError, KeyError, TypeError, ValueError):
+                raise  # signals the driver acts on, not a rejected run
+            except Exception:  # noqa: BLE001
+                # the target rejected these spy values (assert, zero-division, ...)
+                _rollback(marks)
+            finally:
+                _fork.reset(token)
+    finally:
+        budget.close()
     if not results:
         raise InferError("the function never ran to completion")
     if dropped or stack:
