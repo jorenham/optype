@@ -8,6 +8,7 @@ from typing import Any, ClassVar, NamedTuple, Self, cast, final, override
 type _AnyFunc = Callable[..., object]
 type _Args = tuple[object, ...]
 type _Kwargs = dict[str, object]
+type _Memo = tuple[object, int | None] | None  # (fork plan, value); None value = absent
 
 
 def _internal(attr: str) -> bool:
@@ -41,6 +42,29 @@ def _decide() -> bool:
         return True
     if (value := next(plan, None)) is None:
         raise _Fork
+    return value
+
+
+def _decide_stable(spy: "_SpyObject", attr: str, /, *, optional: bool = False) -> int:
+    # memoized per run (keyed by the fork plan) so repeats agree; else two disagreeing
+    # `len(seq)` send e.g. `random.choice` into a non-terminating `_randbelow(0)`
+
+    slot = f"__optype_{attr.strip('_')}__"
+    plan = _fork.get()
+
+    memo: _Memo = getattr(spy, slot)
+    if memo is not None and memo[0] is plan:
+        if memo[1] is None:
+            raise _AbsentError
+        return memo[1]
+
+    if optional and not _decide():
+        setattr(spy, slot, (plan, None))
+        spy.__optype_trace_add__(_Marker.ABSENT, (attr,), {}, None)
+        raise _AbsentError
+
+    value = spy.__optype_trace_add__(attr, (), {}, int(_decide()))
+    setattr(spy, slot, (plan, value))
     return value
 
 
@@ -223,12 +247,8 @@ class _SpyObject(_Spy, metaclass=_SpyType):
     ###
 
     def __len__(self, /) -> int:
-        # `len()` is often probed optionally (e.g. `list()` via `length_hint`), so
-        # also fork on its presence; the absent branch raises like a missing dunder
-        if not _decide():
-            self.__optype_trace_add__(_Marker.ABSENT, ("__len__",), {}, None)
-            raise _AbsentError
-        return self.__optype_trace_add__("__len__", (), {}, _decide())
+        # `len()` may be probed optionally (e.g. `list()` via `length_hint`)
+        return _decide_stable(self, "__len__", optional=True)
 
     # no need for `__length_hint__`
 
@@ -269,10 +289,10 @@ class _SpyObject(_Spy, metaclass=_SpyType):
         return self.__optype_trace_add__("__float__", (), {}, 0.0)
 
     def __int__(self, /) -> int:
-        return self.__optype_trace_add__("__int__", (), {}, int(_decide()))
+        return _decide_stable(self, "__int__")
 
     def __index__(self, /) -> int:
-        return self.__optype_trace_add__("__index__", (), {}, int(_decide()))
+        return _decide_stable(self, "__index__")
 
     ###
 

@@ -7,6 +7,8 @@ import builtins
 import functools
 import math
 import operator
+import random
+import secrets
 import subprocess  # noqa: S404
 import sys
 import weakref
@@ -1237,6 +1239,17 @@ def test_fork_explosion() -> None:
 
     with pytest.raises(InferError, match="completion"):
         infer(f)
+
+
+@pytest.mark.parametrize(
+    "choose",
+    [random.choice, secrets.choice],  # noqa: S311
+    ids=["random", "secrets"],
+)
+def test_infer_choice_does_not_hang(choose: Callable[..., Any]) -> None:
+    # issue #667: a consistent `len()` keeps random's empty-range loop unreachable
+    with pytest.raises(InferError):
+        infer(choose)
 
 
 def test_fork_truncation_warning() -> None:
