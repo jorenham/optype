@@ -1,5 +1,6 @@
 """Run a function against spy placeholders and record what happens."""
 
+import keyword
 import re
 import warnings
 from collections.abc import (
@@ -108,9 +109,13 @@ def _doc_params(func: _AnyFunc) -> list[str] | None:
     if not name:
         return None
     for match in _RE_DOC_SIGNATURE.finditer(func.__doc__ or ""):
-        if match[1] == name:
-            params = match[2].replace("[", "").replace("]", "")
-            return _RE_DOC_PARAM.findall(params) or None
+        if match[1] != name:
+            continue
+        params = match[2].replace("[", "").replace("]", "")
+        names = _RE_DOC_PARAM.findall(params)
+        # a usage example like `reduce(lambda x, y: ...)` yields keywords, not params
+        if names and not any(map(keyword.iskeyword, names)):
+            return names
     return None
 
 

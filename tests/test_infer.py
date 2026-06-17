@@ -1262,6 +1262,10 @@ def test_doc_params() -> None:
     f.__doc__ = "no signature line here"
     assert _doc_params(f) is None
 
+    # a usage example, not a signature: its keyword arg is no parameter name
+    f.__doc__ = "Apply f. For example, f(lambda x, y: x + y, [1, 2, 3])."
+    assert _doc_params(f) is None
+
 
 def test_doc_signature() -> None:
     # builtins like `int` have no signature; fall back to the docstring
