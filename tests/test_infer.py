@@ -9,6 +9,7 @@ import math
 import operator
 import subprocess  # noqa: S404
 import sys
+import weakref
 from collections.abc import Callable
 from typing import Any
 
@@ -1298,6 +1299,11 @@ def _set_name(x: Any) -> object:
 
 def test_set_name() -> None:
     assert infer(_set_name) == "(x: CanSetName[type, Literal['attr']]) -> type"
+
+
+def test_weakref_proxy() -> None:
+    # a `weakref.proxy` forwards `__class__`, so it must not be mistaken for a spy
+    assert infer(weakref.proxy) == "(object) -> CallableProxyType"
 
 
 def _run_cli(*args: str) -> subprocess.CompletedProcess[str]:

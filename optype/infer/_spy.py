@@ -435,7 +435,10 @@ def _own_spy(spy: _SpyObject) -> _SpyObject:
 
 def as_spy(value: object) -> _SpyObject | None:
     """The (first-of-its-class) spy itself, or the spy whose class it is, if any."""
-    return _own_spy(value) if isinstance(value, _SpyObject) else _class_spy(value)
+    # a `weakref.proxy` forwards `__class__`, so verify its real class is a spy's
+    if isinstance(value, _SpyObject) and _class_spy(type(value)) is not None:
+        return _own_spy(value)
+    return _class_spy(value)
 
 
 def _element_of(spy: _SpyObject) -> _SpyObject:
