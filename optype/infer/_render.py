@@ -97,7 +97,6 @@ _COERCION_PROTOS = {
 }
 
 type _Vars = dict[int, str]
-type _RetKey = tuple[int, str, object, tuple[str, ...]]
 type _Proto = str | tuple[str, ...]  # a tuple is rendered as a union of protocols
 
 type _Names = Sequence[str]
@@ -188,30 +187,62 @@ def _analyze(
     return order, appear
 
 
-def _ret_keys(
-    order: Iterable[_SpyObject],
-    traces: _Traces,
-) -> tuple[dict[int, _RetKey], set[int]]:
-    """The shape of the op that returned each spy, and the spies used as args."""
-    keys: dict[int, _RetKey] = {}
-    args: set[int] = set()
+type _Producer = Mapping[int, tuple[_SpyObject, _TraceItem]]
+
+
+def _shape(spy: _SpyObject, made_by: _Producer, keys: dict[int, object]) -> object:
+    """A structural key over op-shape, not operands: `x[y]` and `x[z]` share one."""
+    sid = id(spy)
+    if sid in keys:
+        return keys[sid]
+    keys[sid] = sid  # a parameter or leaf is its own key
+    if (made := made_by.get(sid)) is not None:
+        owner, item = made
+        # an attribute name replaces the fixed arity: `x.spam` is not `x.ham`
+        attr = item.attr
+        arity: object = (
+            item.args[0]
+            if attr in _DUNDER_ATTR or attr in _DUNDER_CLASS_ATTR
+            else len(item.args)
+        )
+        owner_key = _shape(owner, made_by, keys)
+        keys[sid] = "op", owner_key, attr, arity, tuple(sorted(item.kwargs))
+    return keys[sid]
+
+
+def _representatives(order: Sequence[_SpyObject], traces: _Traces) -> dict[int, int]:
+    """Map each spy to a representative: the same operation on an owner of the same
+    shape shares one, so the fresh placeholder each forked run allocates for a
+    repeated subexpression collapses onto it instead of spawning a type parameter.
+    """
+    # a result is always a fresh spy, so a parameter never appears here and stays a leaf
+    made_by: dict[int, tuple[_SpyObject, _TraceItem]] = {}
     for owner in order:
         for item in traces[id(owner)]:
-            for value in (*item.args, *item.kwargs.values()):
-                if (arg := as_spy(value)) is not None:
-                    args.add(id(arg))
-
             if isinstance(item.return_, _SpyObject):
-                # an attribute name replaces the fixed arity: `x.spam` is not `x.ham`
-                shape = (
-                    item.args[0]
-                    if item.attr in _DUNDER_ATTR or item.attr in _DUNDER_CLASS_ATTR
-                    else len(item.args)
-                )
-                key = id(owner), item.attr, shape, tuple(sorted(item.kwargs))
-                keys[id(item.return_)] = key
+                made_by.setdefault(id(item.return_), (owner, item))
 
-    return keys, args
+    keys: dict[int, object] = {}
+    rep: dict[object, int] = {}  # structural key -> the first spy that had it
+    reps: dict[int, int] = {}
+    for spy in order:
+        reps[id(spy)] = rep.setdefault(_shape(spy, made_by, keys), id(spy))
+    return reps
+
+
+def _group_traces(
+    named: Iterable[int],
+    reps: dict[int, int],
+    traces: _Traces,
+) -> _Traces:
+    """Each representative's bound: the traces of every named spy that shares it.
+
+    Only named spies merge; an inline one still renders its constraints where used.
+    """
+    merged: _Traces = {}
+    for spy_id in named:
+        merged.setdefault(reps.get(spy_id, spy_id), []).extend(traces.get(spy_id, ()))
+    return merged
 
 
 def _spy_runs(items: Iterable[object], spy: _SpyObject) -> list[int]:
@@ -345,7 +376,9 @@ class _Renderer:
     _optional: set[str]
     _varpos: _SpyObject | None
 
+    _reps: dict[int, int]
     _vars: _Vars
+    _named: dict[int, str]
 
     _result_spies: list[_SpyObject]
 
@@ -353,6 +386,7 @@ class _Renderer:
     _rec_body: dict[_RecVar, object]
 
     _pool: list[_SpyObject]
+    _group_traces: _Traces
 
     def __init__(
         self,
@@ -387,14 +421,16 @@ class _Renderer:
         param_spies = [*spies.values(), *fn_spies(results)]
         order, appear = _analyze(param_spies, results, traces)
         param_ids = {id(spy) for spy in param_spies}
+        self._reps = reps = _representatives(order, traces)
 
         self._vars = {}
+        self._named = {}  # representative id -> name
         varpos = self._varpos
         if varpos is not None and _all_packed(varpos, results, traces, count):
             self._vars[id(varpos)] = _TYPEVAR_TUPLE
 
         self._result_spies = []
-        self._name_results(order, param_ids)
+        self._name_results(param_ids, reps)
 
         self._rec_body = {
             node.var: node.body
@@ -418,34 +454,44 @@ class _Renderer:
             and id(spy) not in self._vars
         ]
 
-        unnamed = [spy for spy in self._pool if id(spy) not in self._vars]
-        for i, spy in enumerate(unnamed):
-            self._vars[id(spy)] = _TYPEVARS[i] if i < len(_TYPEVARS) else f"T{i}"
+        # one type parameter per distinct expression: duplicates reuse its name
+        pool: list[_SpyObject] = []
+        n = 0
+        for spy in self._pool:
+            rep = reps.get(id(spy), id(spy))
+            if (var := self._named.get(rep)) is None:
+                var = self._vars.get(id(spy))  # a `*Ts` variadic keeps its name
+                if var is None:
+                    var = _TYPEVARS[n] if n < len(_TYPEVARS) else f"T{n}"
+                    n += 1
+                self._named[rep] = var
+                pool.append(spy)
+            self._vars[id(spy)] = var
+        self._pool = pool
+        self._group_traces = _group_traces(self._vars, reps, traces)
 
-    def _name_results(self, order: Iterable[_SpyObject], param_ids: set[int]) -> None:
-        ret_keys, arg_ids = _ret_keys(order, self._traces)
-        shared: dict[_RetKey, str] = {}
+    def _name_results(self, param_ids: set[int], reps: dict[int, int]) -> None:
         for result in self._results:
             for spy in _return_spies(result):
-                if id(spy) in param_ids or id(spy) in self._vars:
+                sid = id(spy)
+                if sid in param_ids or sid in self._vars:
                     continue
-                # untraced results of same-shaped ops that are never passed as an
-                # argument are interchangeable, so they share a typevar
-                key = (
-                    ret_keys.get(id(spy))
-                    if not self._traces[id(spy)] and id(spy) not in arg_ids
-                    else None
-                )
-                if key is not None and key in shared:
-                    self._vars[id(spy)] = shared[key]
+                # results of one op-shape share a type parameter, even traced or reused
+                rep = reps.get(sid, sid)
+                if (var := self._named.get(rep)) is not None:
+                    self._vars[sid] = var
                     continue
                 var = _result_var(len(self._result_spies))
-                self._vars[id(spy)] = var
+                self._vars[sid] = var
                 self._result_spies.append(spy)
-                if key is not None:
-                    shared[key] = var
+                self._named[rep] = var
 
-    def union(self, values: Iterable[object]) -> _ir.Node | None:
+    def union(
+        self,
+        values: Iterable[object],
+        *,
+        tuples: bool = False,
+    ) -> _ir.Node | None:
         literals: list[object] = []
         parts: list[_ir.Node] = []
         for value in values:
@@ -458,7 +504,7 @@ class _Renderer:
         if literals:
             nodes.append(_ir.Lit(tuple(literals)))
         nodes.extend(dict.fromkeys(parts))
-        return _ir.union(nodes)
+        return _ir.union(nodes, tuples=tuples)
 
     def returns(self, members: Iterable[_Op]) -> _ir.Node | None:
         named: list[str] = []
@@ -559,7 +605,8 @@ class _Renderer:
         negate: bool = False,
     ) -> str:
         var = self._vars[id(spy)]
-        node = self.spy(spy)
+        rep = self._reps.get(id(spy), id(spy))
+        node = self.traces(self._group_traces.get(rep, ()))
         default = defaulted.get(id(spy))
         if negate and default is not None:
             node = _ir.exclude(node, default)
@@ -592,7 +639,7 @@ class _Renderer:
     def _union_type(self, values: Iterable[object]) -> _ir.Node:
         """The deduplicated union of the types of `values`, or `Never` if empty."""
         parts = dict.fromkeys(map(self.return_type, values))
-        return _ir.union(parts) or _ir.Name(_NEVER)
+        return _ir.union(parts, tuples=True) or _ir.Name(_NEVER)
 
     def _function(self, fn: _Fn) -> _ir.Node:
         """The signature-syntax type of an explored function result."""
@@ -636,11 +683,11 @@ class _Renderer:
                 return _ir.App("type", (inner,))
             case Mapping():
                 mapping = cast("Mapping[object, object]", result)
-                key = self.union(mapping) or _ir.Name(_NEVER)
-                val = self.union(mapping.values()) or _ir.Name(_NEVER)
+                key = self.union(mapping, tuples=True) or _ir.Name(_NEVER)
+                val = self.union(mapping.values(), tuples=True) or _ir.Name(_NEVER)
                 return _ir.App(cls.__name__, (key, val))
             case list() | set() | frozenset():
-                inner = self.union(cast("Collection[object]", result))
+                inner = self.union(cast("Collection[object]", result), tuples=True)
                 return _ir.App(cls.__name__, (inner or _ir.Name(_NEVER),))
             case tuple() if cls is tuple:
                 return (
