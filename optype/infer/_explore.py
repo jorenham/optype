@@ -37,7 +37,9 @@ from ._spy import (
     _own_spy,
     _SpyObject,
     _SpyStr,
+    _starved,
     _TraceItem,
+    _yields as _yield_budget,
 )
 from ._values import _Fn, _Gen, _Rec, _RecRef, _RecVar, _walk, fn_spies
 
@@ -61,6 +63,8 @@ _YIELD_LIMIT = 64
 # large indices stay within reach
 _VARIADIC_COUNTS = (2, 3, 4, 5, 6, 7, 8, 16, 32, 64, 128, 256, 512, 1024)
 _KWARGS_LIMIT = 8  # max injected `**kwargs` keys
+# the iterator yield budgets to try for a splat into a fixed-arity call, e.g. divmod
+_YIELD_COUNTS = 2, 3, 4, 5, 6, 7, 8, 16, 32, 64
 
 type _Traces = dict[int, list[_TraceItem]]
 
@@ -380,15 +384,27 @@ def _explore_spies(
     omit: Collection[str] = (),
     fix: Collection[str] = (),
 ) -> _Recon:
-    # rerun with fresh spies whenever the variadic placeholders come up short
     kinds = {p.kind for p in params.values()}
+
     counts = iter(_VARIADIC_COUNTS)
     count = next(counts)
+
+    # rerun with new spies when the variadic placeholders/iterator yield budget runs out
+    budgets = iter(_YIELD_COUNTS)
+    budget = 1
+
     keys: list[str] = []
+
     # registering `func` itself keeps a returned self-reference from recursing
     token = _exploring.set(_exploring.get() | {_explore_key(func)})
+
+    yield_token = _yield_budget.set(budget)
+    starve_token = _starved.set(False)
     try:
         while True:
+            _yield_budget.set(budget)
+            _starved.set(False)
+
             # a fresh `self` instance per attempt, so a mutated one cannot leak
             fixed = _fixed_self(func, params) | {n: params[n].default for n in fix}
             spies, args, kwds = _placeholders(params, count, keys, omit, fixed)
@@ -408,15 +424,20 @@ def _explore_spies(
                     raise InferError(msg) from exc
                 keys.append(key)
             except (IndexError, TypeError, ValueError) as exc:
-                if Parameter.VAR_POSITIONAL not in kinds:
+                if Parameter.VAR_POSITIONAL in kinds:
+                    if (count := next(counts, 0)) == 0:
+                        msg = f"ran out of `*args` placeholders ({exc})"
+                        raise InferError(msg) from exc
+                # a call like `divmod(*x)` may have failed only because the iterator
+                # handed it too few values; if so, try again with more, else give up
+                elif not _starved.get() or (budget := next(budgets, 0)) == 0:
                     raise
-                if (count := next(counts, 0)) == 0:
-                    msg = f"ran out of `*args` placeholders ({exc})"
-                    raise InferError(msg) from exc
             else:
                 traces = _snapshot((*spies.values(), *fn_spies(results)))
                 return spies, traces, results, count, fixed
     finally:
+        _starved.reset(starve_token)
+        _yield_budget.reset(yield_token)
         _exploring.reset(token)
 
 

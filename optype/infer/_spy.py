@@ -1,5 +1,7 @@
 """Recording proxy objects that trace the operations performed on them."""
 
+import dis
+import sys
 from collections.abc import Callable, Generator, Iterator
 from contextvars import ContextVar
 from enum import StrEnum
@@ -35,6 +37,50 @@ class _Marker(StrEnum):
 
 
 _fork: ContextVar[Iterator[bool] | None] = ContextVar("_fork", default=None)
+
+# the yield count for a splatted-call iterator whose arity no bytecode pins: the
+# fallback that `_explore_spies` grows until the fixed-arity call succeeds
+_yields: ContextVar[int] = ContextVar("_yields", default=1)
+# set when a growable splatted-call iterator hits the budget, so `_explore_spies` only
+# grows the budget when a fixed-arity splat actually came up short
+_starved: ContextVar[bool] = ContextVar("_starved", default=False)
+
+
+def _instruction_arg(code: bytes, i: int) -> int:
+    arg = code[i + 1]
+    shift = 8
+    j = i - 2
+    while j >= 0 and dis.opname[code[j]] == "EXTENDED_ARG":
+        arg |= code[j + 1] << shift
+        shift += 8
+        j -= 2
+    return arg
+
+
+def _iter_context() -> "tuple[int | None, bool]":
+    """The fixed arity the caller's unpack demands, and whether it splats into a call.
+
+    `UNPACK_SEQUENCE`/`UNPACK_EX` pin an exact arity; `CALL_FUNCTION_EX` (`f(*x)`) has
+    no local arity signal, so its iterator grows via the `_yields` budget instead.
+    """
+    try:
+        frame = sys._getframe(2)  # _iter_context -> __iter__ -> the consuming frame  # noqa: SLF001
+    except ValueError:
+        return None, False
+    if (i := frame.f_lasti) < 0:
+        return None, False
+    code = frame.f_code.co_code
+    match dis.opname[code[i]]:
+        case "UNPACK_SEQUENCE":
+            return _instruction_arg(code, i), False
+        case "UNPACK_EX":
+            # low byte: items before the star, high byte: after; +1 feeds the star
+            arg = _instruction_arg(code, i)
+            return (arg & 0xFF) + (arg >> 8) + 1, False
+        case "CALL_FUNCTION_EX":
+            return None, True
+        case _:
+            return None, False
 
 
 def _decide() -> bool:
@@ -136,6 +182,8 @@ class _SpyType(type):
 class _SpyObject(_Spy, metaclass=_SpyType):
     __optype_element__: "_SpyObject | None" = None
     __optype_iterator__: bool = False
+    __optype_arity__: "int | None" = None
+    __optype_growable__: bool = False
     # spies are descriptors (`__get__`), so only ever read through the class `__dict__`
     __optype_instance__: "ClassVar[_SpyObject | None]" = None
 
@@ -264,9 +312,19 @@ class _SpyObject(_Spy, metaclass=_SpyType):
     # no need for `__missing__`
 
     def __iter__(self, /) -> "_SpyObject":
+        arity, growable = _iter_context()
+
         if self.__optype_iterator__:
+            if arity is not None:
+                self.__optype_arity__ = arity
+            if growable:
+                self.__optype_growable__ = True
             return self  # an iterator is its own iterable (idempotent `iter()`)
-        return self.__optype_trace_add__("__iter__", (), {}, _iterator_of(self))
+
+        out = _iterator_of(self)
+        out.__optype_arity__ = arity
+        out.__optype_growable__ = growable
+        return self.__optype_trace_add__("__iter__", (), {}, out)
 
     def __reversed__(self, /) -> "_SpyObject":
         return self.__optype_trace_add__("__reversed__", (), {}, _iterator_of(self))
@@ -276,7 +334,13 @@ class _SpyObject(_Spy, metaclass=_SpyType):
 
     # return `Any` instead of `_SpyObject` to avoid an LSP error for `__dir__`
     def __next__(self, /) -> Any:
-        if any(item.attr == "__next__" for item in self.__optype_trace__):
+        # count from the trace, not a field, so a forked run's rollback is reflected
+        served = sum(1 for item in self.__optype_trace__ if item.attr == "__next__")
+        arity, growable = self.__optype_arity__, self.__optype_growable__
+        limit = arity if arity is not None else _yields.get() if growable else 1
+        if served >= limit:
+            if growable and arity is None:
+                _starved.set(True)
             raise StopIteration
         return self.__optype_trace_add__("__next__", (), {}, _element_of(self))
 
