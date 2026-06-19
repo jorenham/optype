@@ -1,5 +1,6 @@
 """Run a function against spy placeholders and record what happens."""
 
+import gc
 import keyword
 import re
 import warnings
@@ -40,6 +41,7 @@ from ._spy import (
     _starved,
     _TraceItem,
     _yield_budget,
+    as_spy,
 )
 from ._values import _Fn, _Gen, _Rec, _RecRef, _RecVar, _walk, fn_spies
 
@@ -47,14 +49,16 @@ __all__ = (
     "_Recon",
     "_Traces",
     "_declared_defaults",
-    "_doc_params",
+    "_doc_signatures",
     "_explore_lenient",
     "_explore_spies",
+    "_parameter_forms",
     "_parameters",
 )
 
 _RE_DOC_SIGNATURE = re.compile(r"\b(\w+)\(([^)]*)\)")
 _RE_DOC_PARAM = re.compile(r"(?:^|,)\s*\**([a-zA-Z_]\w*)")
+_RE_DOC_ARROW = re.compile(r"\s*->")
 
 _FORK_LIMIT = 64
 _RUN_LIMIT = 256
@@ -109,30 +113,60 @@ def _snapshot(params: Iterable[_SpyObject]) -> _Traces:
     return traces
 
 
-def _doc_params(func: _AnyFunc) -> list[str] | None:
-    name = getattr(func, "__name__", "")
-    if not name:
-        return None
-    for match in _RE_DOC_SIGNATURE.finditer(func.__doc__ or ""):
-        if match[1] != name:
-            continue
-        params = match[2].replace("[", "").replace("]", "")
-        names = _RE_DOC_PARAM.findall(params)
-        # a usage example like `reduce(lambda x, y: ...)` yields keywords, not params
-        if names and not any(map(keyword.iskeyword, names)):
-            return names
+def _doc_param_names(group: str) -> list[str] | None:
+    params = group.replace("[", "").replace("]", "")
+    names = _RE_DOC_PARAM.findall(params)
+    # a usage example like `reduce(lambda x, y: ...)` yields keywords, not params
+    if names and not any(map(keyword.iskeyword, names)):
+        return names
     return None
 
 
-def _parameters(func: _AnyFunc) -> Mapping[str, Parameter]:
+def _doc_signatures(func: _AnyFunc) -> list[list[str]]:
+    """Every documented call form's parameter names, by arity (one per arity).
+
+    Arrow-annotated forms (`name(...) -> ret`) are the real overloads; a docstring's
+    usage examples lack the arrow. When none are annotated (e.g. `next`, `slice`),
+    fall back to the first form. Same-arity forms infer the same structure, so only
+    the first of each arity is kept (its parameter names win).
+    """
+    name = getattr(func, "__name__", "")
+    if not name:
+        return []
+    doc = func.__doc__ or ""
+    arrow_forms: list[list[str]] = []
+    first: list[str] | None = None
+    for match in _RE_DOC_SIGNATURE.finditer(doc):
+        if match[1] != name or (names := _doc_param_names(match[2])) is None:
+            continue
+        if first is None:
+            first = names
+        if _RE_DOC_ARROW.match(doc, match.end()):
+            arrow_forms.append(names)
+    forms = arrow_forms or ([first] if first is not None else [])
+    by_arity: dict[int, list[str]] = {}
+    for f in forms:
+        by_arity.setdefault(len(f), f)
+    return list(by_arity.values())
+
+
+def _parameter_forms(func: _AnyFunc) -> list[Mapping[str, Parameter]]:
+    # the parameters of every call form: the real signature's, else the docstring's
     try:
-        return signature(func).parameters
+        return [signature(func).parameters]
     except TypeError as exc:  # not callable
         raise InferError(str(exc)) from exc
     except ValueError as exc:  # no signature
-        if (names := _doc_params(func)) is None:
+        if not (forms := _doc_signatures(func)):
             raise InferError(str(exc)) from exc
-        return {n: Parameter(n, Parameter.POSITIONAL_OR_KEYWORD) for n in names}
+        return [
+            {n: Parameter(n, Parameter.POSITIONAL_OR_KEYWORD) for n in names}
+            for names in forms
+        ]
+
+
+def _parameters(func: _AnyFunc) -> Mapping[str, Parameter]:
+    return _parameter_forms(func)[0]  # the first call form
 
 
 def _declared_defaults(params: Mapping[str, Parameter]) -> dict[str, object]:
@@ -179,6 +213,20 @@ def _sync[T](agen: AsyncGenerator[T, Any]) -> Generator[T]:
 
 # lazy builtin iterators with a single type argument
 _ITERATOR_TYPES = frozenset({enumerate, filter, map, zip})
+
+# the lazy iterator returned by the 2-argument `iter(callable, sentinel)`
+_CALLABLE_ITERATOR = type(iter(int, None))
+
+
+def _ref0_is_callable() -> bool:
+    # `iter(callable, sentinel)` keeps the callable as its first gc referent on CPython
+    def probe() -> None: ...
+
+    refs = gc.get_referents(iter(probe, object()))
+    return len(refs) == 2 and refs[0] is probe
+
+
+_CALLABLE_FIRST = _ref0_is_callable()
 
 _FUNCTION_TYPES = (
     FunctionType,
@@ -265,21 +313,41 @@ def _next(result: object, path: dict[int, _RecVar | None] | None = None) -> obje
             # `enumerate[R]` is parameterized by the element type, not the yields
             values = [item for _, item in cast("list[tuple[int, object]]", values)]
         out = _Gen([_next(v, path) for v in values], cls.__name__)
+    elif (
+        cls is _CALLABLE_ITERATOR
+        and _CALLABLE_FIRST
+        and len(refs := gc.get_referents(result)) == 2
+        and (fn := as_spy(refs[0])) is not None
+    ):
+        # `iter(callable, sentinel)`: call the callable for the element type; iterating
+        # would stop at the sentinel and pollute it. Referent 0 is the callable (per
+        # `_CALLABLE_FIRST`; not a spy-search, since the sentinel may be a spy too).
+        # Calling `fn()` is deliberate: the recorded `__call__` is what renders the
+        # parameter as `() -> R`, as `_explore_spies` snapshots after this runs.
+        out = _Gen([_next(fn(), path)], "Iterator")
     elif isinstance(_unwrap(result), _FUNCTION_TYPES):
         out = _explore_func(cast("_AnyFunc", result))
     else:
-        # pyright fails miserably here when narrowing types
-        match result:
-            case tuple():
-                out = tuple(_next(item, path) for item in result)  # pyright:ignore[reportUnknownArgumentType,reportUnknownVariableType]
-            case list():
-                out = [_next(item, path) for item in result]  # pyright:ignore[reportUnknownArgumentType,reportUnknownVariableType]
-            case Mapping():
-                # the keys must stay hashable, so only the values recurse
-                out = cls({key: _next(value, path) for key, value in result.items()})  # type:ignore[call-arg] # pyright:ignore[reportCallIssue,reportUnknownVariableType]
-            case _:
-                out = result
+        out = _next_container(cls, result, path)
     return _Rec(var, out) if (var := path.pop(rid)) is not None else out
+
+
+def _next_container(
+    cls: type[object],
+    result: object,
+    path: dict[int, _RecVar | None],
+) -> object:
+    # pyright fails miserably here when narrowing types
+    match result:
+        case tuple():
+            return tuple(_next(item, path) for item in result)  # pyright:ignore[reportUnknownArgumentType,reportUnknownVariableType]
+        case list():
+            return [_next(item, path) for item in result]  # pyright:ignore[reportUnknownArgumentType,reportUnknownVariableType]
+        case Mapping():
+            # the keys must stay hashable, so only the values recurse
+            return cls({key: _next(value, path) for key, value in result.items()})  # type:ignore[call-arg] # pyright:ignore[reportCallIssue,reportUnknownVariableType]
+        case _:
+            return result
 
 
 def _rollback(marks: Iterable[tuple[_SpyObject, int]]) -> None:

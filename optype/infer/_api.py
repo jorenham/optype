@@ -13,12 +13,16 @@ from ._explore import (
     _declared_defaults,
     _explore_lenient,
     _explore_spies,
-    _parameters,
+    _parameter_forms,
     _Recon,
 )
 from ._render import _Defaults, _Names, signatures
 from ._spy import _AnyFunc, _TraceItem
 from ._values import _Fn, _Gen, _Rec
+
+
+class _SelectError(ValueError):
+    """A selected parameter or position is absent from a particular call form."""
 
 
 def _select(params: Iterable[str | int], names: _Names) -> _Names:
@@ -27,13 +31,13 @@ def _select(params: Iterable[str | int], names: _Names) -> _Names:
         if isinstance(p, int):
             if not -len(names) <= p < len(names):
                 msg = f"no parameter at position {p}"
-                raise ValueError(msg)
+                raise _SelectError(msg)
             selected.append(names[p])
         elif p in names:
             selected.append(p)
         else:
             msg = f"unknown parameter {p!r}"
-            raise ValueError(msg)
+            raise _SelectError(msg)
     return selected or names
 
 
@@ -146,12 +150,11 @@ def _defaults(
     return {}, False, overloads
 
 
-def _infer(func: _AnyFunc, params: tuple[str | int, ...]) -> str:
-    if nin := _numpy.ufunc_nin(func):
-        names = _numpy.ufunc_params(nin)
-        return _numpy.infer_ufunc(func, names, _select(params, names))
-
-    parameters = _parameters(func)
+def _infer_form(
+    func: _AnyFunc,
+    parameters: Mapping[str, Parameter],
+    params: tuple[str | int, ...],
+) -> list[str]:
     selected = _select(params, list(parameters))
     try:
         recon, fallback = _explore_lenient(func, parameters)
@@ -160,10 +163,42 @@ def _infer(func: _AnyFunc, params: tuple[str | int, ...]) -> str:
     if fallback:
         # the rejected parameters render from their defaults; skip the probing
         lines = signatures(recon, parameters, selected, fallback)
-        return "\n".join(dict.fromkeys(lines))
+        return list(dict.fromkeys(lines))
     defaults, negate, overloads = _defaults(func, parameters, selected, recon)
     lines = signatures(recon, parameters, selected, defaults, negate=negate)
-    return "\n".join(dict.fromkeys((*overloads, *lines)))
+    return list(dict.fromkeys((*overloads, *lines)))
+
+
+def _infer(func: _AnyFunc, params: tuple[str | int, ...]) -> str:
+    if nin := _numpy.ufunc_nin(func):
+        names = _numpy.ufunc_params(nin)
+        return _numpy.infer_ufunc(func, names, _select(params, names))
+
+    forms = _parameter_forms(func)
+    if len(forms) == 1:
+        # a lone form's error is the result's; the loop below only tolerates a failed
+        # form because another may still match
+        return "\n".join(_infer_form(func, forms[0], params))
+
+    # one overload per documented form: an unsatisfiable form is dropped and a
+    # `_SelectError` filters one out, but an unexpected error still propagates
+    lines: list[str] = []
+    reasons: list[str] = []
+    misses: list[str] = []
+    for parameters in forms:
+        try:
+            lines += _infer_form(func, parameters, params)
+        except _SelectError as exc:
+            misses.append(str(exc))
+        except InferError as exc:
+            reasons.append(str(exc))
+    if lines:
+        return "\n".join(dict.fromkeys(lines))
+    if reasons:
+        raise InferError("; ".join(dict.fromkeys(reasons)))
+    if misses:
+        raise _SelectError("; ".join(dict.fromkeys(misses)))
+    raise InferError("no inferable call form")
 
 
 def infer(func: _AnyFunc, /, *params: str | int) -> str:
