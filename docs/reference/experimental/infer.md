@@ -438,6 +438,17 @@ $ optype infer "lambda f, x: map(f, x)"
 [T, R](f: (T) -> R, x: CanIter[CanNext[T]]) -> map[R]
 ```
 
+Iteration yields two elements, so a callable that compares them, like `sorted` or `max`,
+traces the comparison too:
+
+```console
+$ optype infer "lambda xs: sorted(xs)"
+[R: CanLt[R, CanBool]](xs: CanIter[CanNext[R]]) -> list[R]
+
+$ optype infer "lambda xs: max(xs)"
+[R: CanGt[R, CanBool]](xs: CanIter[CanNext[R]]) -> R
+```
+
 ## Unpacking
 
 An unpacking iterates the parameter, and every target shares one element type, like

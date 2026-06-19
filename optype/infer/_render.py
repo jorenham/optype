@@ -2,7 +2,7 @@
 
 import builtins
 import sys
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Collection, Generator, Iterable, Mapping, Sequence
 from inspect import Parameter, _ParameterKind
 from itertools import groupby
@@ -386,6 +386,7 @@ class _Renderer:
     _rec_body: dict[_RecVar, object]
 
     _pool: list[_SpyObject]
+    _param_spies: list[_SpyObject]
     _group_traces: _Traces
 
     def __init__(
@@ -468,7 +469,55 @@ class _Renderer:
                 pool.append(spy)
             self._vars[id(spy)] = var
         self._pool = pool
+        self._param_spies = param_spies
         self._group_traces = _group_traces(self._vars, reps, traces)
+        self._inline_single_use()
+
+    def _inline_single_use(self) -> None:
+        # a bounded typevar referenced once and absent from the return carries no more
+        # than its bound, so it inlines back into the one spot that uses it
+
+        vars_, reps = self._vars, self._reps
+
+        bounds = {
+            rep: self.traces(self._group_traces.get(rep, ())) for rep in self._named
+        }
+        rendered = [
+            *(self._slot(spy) for spy in self._param_spies),
+            *(node for node in bounds.values() if node is not None),
+            self._union_type(self._results),
+        ]
+        counts = Counter(name for node in rendered for name in _ir.names(node))
+
+        pool_vars = {
+            var: reps.get(sid, sid)
+            for spy in self._pool
+            if (var := vars_[sid := id(spy)]) != _TYPEVAR_TUPLE
+        }
+        inline = {
+            var
+            for var, rep in pool_vars.items()
+            if counts[var] == 1 and bounds[rep] is not None
+        }
+        if not inline:
+            return
+
+        # renumber the survivors back to a gapless `T, U, V, ...`
+        remap = {
+            old: _TYPEVARS[n] if n < len(_TYPEVARS) else f"T{n}"
+            for n, old in enumerate(var for var in pool_vars if var not in inline)
+        }
+
+        self._vars = {
+            sid: remap.get(var, var) for sid, var in vars_.items() if var not in inline
+        }
+        self._pool = [spy for spy in self._pool if id(spy) in self._vars]
+        self._named = {
+            rep: remap.get(var, var)
+            for rep, var in self._named.items()
+            if var not in inline
+        }
+        self._group_traces = _group_traces(self._vars, reps, self._traces)
 
     def _name_results(self, param_ids: set[int], reps: dict[int, int]) -> None:
         for result in self._results:
