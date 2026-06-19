@@ -1,6 +1,6 @@
 """A minimal algebraic representation of inferred type expressions."""
 
-from collections.abc import Iterable
+from collections.abc import Generator, Iterable
 from dataclasses import dataclass
 from typing import override
 
@@ -273,6 +273,25 @@ def _prefix(op: str, part: Node) -> str:
     """Format a prefix-operated type, parenthesized where precedence requires."""
     inner = render(part)
     return f"{op}({inner})" if isinstance(part, Union | Inter | Fn) else op + inner
+
+
+def names(node: Node | Arg) -> Generator[str]:
+    # every type-name leaf, in order, so typevar uses can be counted
+    match node:
+        case Name(name):
+            yield name
+        case Arg(value=value):
+            yield from names(value)
+        case App(args=parts) | Union(parts) | Inter(parts):
+            for part in parts:
+                yield from names(part)
+        case Fn(params, ret):
+            for part in (*params, ret):
+                yield from names(part)
+        case Not(part) | Polarity(part=part):
+            yield from names(part)
+        case Lit() | Type():
+            return
 
 
 def render(node: Node) -> str:

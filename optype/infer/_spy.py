@@ -45,14 +45,18 @@ class _Marker(StrEnum):
 
 _fork: ContextVar[Iterator[bool] | None] = ContextVar("_fork", default=None)
 
-# the yield count for a splatted-call iterator whose arity no bytecode pins: the
-# fallback that `_explore_spies` grows until the fixed-arity call succeeds
+# the yield count for a splatted-call iterator whose arity no bytecode pins: the exact
+# arity the splat demands, which `_explore_spies` grows into until the call succeeds
 _yield_budget: ContextVar[int] = ContextVar("_yield_budget", default=1)
 # set when a growable splatted-call iterator hits the budget, so `_explore_spies` only
 # grows the budget when a fixed-arity splat actually came up short
 _starved: ContextVar[bool] = ContextVar("_starved", default=False)
 
-# the caller's bytecode is a CPython detail; elsewhere fall back to one element
+# one element exercises no pairwise op, so `sorted`/`min` never reach their elements'
+# `__lt__` (#686); a pair suffices, and `_render` inlines the extra typevar away
+_DEFAULT_YIELD = 2
+
+# the caller's bytecode is a CPython detail; elsewhere fall back to two elements
 _CPYTHON = sys.implementation.name == "cpython"
 
 
@@ -384,7 +388,13 @@ class _SpyObject(_Spy, metaclass=_SpyType):
         # count from the trace, not a field, so a forked run's rollback is reflected
         served = sum(1 for item in self.__optype_trace__ if item.attr == "__next__")
         arity, growable = self.__optype_arity__, self.__optype_growable__
-        limit = arity if arity is not None else _yield_budget.get() if growable else 1
+        limit = (
+            arity
+            if arity is not None
+            else _yield_budget.get()
+            if growable
+            else _DEFAULT_YIELD
+        )
         if served >= limit:
             if growable and arity is None:
                 _starved.set(True)

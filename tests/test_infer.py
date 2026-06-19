@@ -206,10 +206,19 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
         lambda x: {i: str(i) for i in x},
         "[R: CanStr & CanHash](x: CanIter[CanNext[R]]) -> dict[R, str]",
     ),
+    # `0 + a + b` reflects two ways: the total keeps adding (`T` recurs in its bound)
+    # or is absorbed right (`T` is used once, so it inlines)
     (
         lambda x: sum(x),
-        "[R](x: CanIter[CanNext[CanRAdd[Literal[0], R]]]) -> R",
+        (
+            "[T: CanRAdd[Literal[0], CanAdd[T, R]], R](x: CanIter[CanNext[T]]) -> R\n"
+            "[R](x: CanIter[CanNext[CanRAdd[Literal[0] | R, R]]]) -> R"
+        ),
     ),
+    # comparing reducers reach `__lt__`/`__gt__` only once the iterator yields a pair
+    (lambda x: sorted(x), "[R: CanLt[R, CanBool]](x: CanIter[CanNext[R]]) -> list[R]"),
+    (lambda x: min(x), "[R: CanLt[R, CanBool]](x: CanIter[CanNext[R]]) -> R"),
+    (lambda x: max(x), "[R: CanGt[R, CanBool]](x: CanIter[CanNext[R]]) -> R"),
     (lambda x: (x + 1, x + 1), "[R](x: CanAdd[Literal[1], R]) -> tuple[R, R]"),
     (lambda x: (x + 1, x + 2), "[R](x: CanAdd[Literal[1, 2], R]) -> tuple[R, R]"),
     (
@@ -353,11 +362,10 @@ BINARY_CASES: list[tuple[Callable[[Any, Any], Any], str]] = [
     ),
     (lambda x, y: x[y], "[T, R](x: CanGetitem[T, R], y: T) -> R"),
     (lambda x, y: y[str(x)], "[R](x: CanStr, y: CanGetitem[str, R]) -> R"),
-    # `sorted` discards the `key` results, so they are unconstrained; the explicit
-    # `object` keeps the last argument out of the return slot
+    # `sorted` compares the `key` results, so they must be mutually `<`-comparable
     (
         lambda xs, key: sorted(xs, key=key),
-        "[R](xs: CanIter[CanNext[R]], key: (R) -> object) -> list[R]",
+        "[T, R](xs: CanIter[CanNext[R]], key: (R) -> T & CanLt[T, CanBool]) -> list[R]",
     ),
     (lambda x, y: x, "[T](x: T, y: object) -> T"),  # noqa: ARG005
     (lambda x, y: (type(x), type(y)), "[T, U](x: T, y: U) -> tuple[type[T], type[U]]"),
@@ -1152,6 +1160,15 @@ def test_infer_generator() -> None:
     )
 
 
+def test_inline_renumbers_survivors() -> None:
+    # `str`'s element is single-use and inlines away; the surviving `map(g, y)`
+    # typevar, first named `U`, must renumber to `T` to keep the parameters gapless
+    assert infer(lambda x, g, y: (map(str, x), map(g, y))) == (
+        "[T, R](x: CanIter[CanNext[CanStr]], g: (T) -> R, y: CanIter[CanNext[T]])"
+        " -> tuple[map[str], map[R]]"
+    )
+
+
 def test_infer_generator_yields() -> None:
     # heterogeneous yields are sampled and unioned; an empty generator yields Never
     def hetero() -> Any:
@@ -1337,11 +1354,15 @@ def test_unpack_mixed_splat() -> None:
 
 
 def test_unpack_splat_no_budget_leak() -> None:
-    # the splat's budget must not leak to `sum(z)`: a 2nd element would chain
-    # `0 + a + b`, surfacing a `CanAdd` (#683)
-    sig = infer(lambda x, y, z: (divmod(*divmod(x, y)), sum(z)))  # type: ignore[misc]
-    assert "CanAdd" not in sig
-    assert "CanRAdd" in sig  # `z`'s constraint is still inferred, just not doubled
+    # the splat's grown budget (here 3) must not leak to `sum(z)`; isolated, `z` keeps
+    # the default yield of 2, so its `CanAdd` chain stays one level deep (#683, #686)
+    assert infer(lambda x, z: (_takes3(*x), sum(z))) == (
+        "[T: CanRAdd[Literal[0], CanAdd[T, R2]], R, R2]"
+        "(x: CanIter[CanNext[R]], z: CanIter[CanNext[T]]) -> tuple[R, R2]\n"
+        "[R, R2]"
+        "(x: CanIter[CanNext[R]], z: CanIter[CanNext[CanRAdd[Literal[0] | R2, R2]]])"
+        " -> tuple[R, R2]"
+    )
 
 
 def test_unpack_splat_gap_arity() -> None:
