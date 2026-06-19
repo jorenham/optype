@@ -442,6 +442,22 @@ def _takes3(a: Any, _b: Any, _c: Any, /) -> Any:
     return a
 
 
+def _takes9(
+    a: Any,
+    _b: Any,
+    _c: Any,
+    _d: Any,
+    _e: Any,
+    _f: Any,
+    _g: Any,
+    _h: Any,
+    _i: Any,
+    /,
+) -> Any:
+    # exactly 9 positional parameters; its arity falls in a former yield-budget gap
+    return a
+
+
 def _spread(*args: Any) -> Any:
     return _takes3(*args)
 
@@ -1298,6 +1314,33 @@ def test_unpack_splat_no_budget_leak() -> None:
     # `0 + a + b`, surfacing a `CanAdd` (#683)
     sig = infer(lambda x, y, z: (divmod(*divmod(x, y)), sum(z)))  # type: ignore[misc]
     assert "CanAdd" not in sig
+    assert "CanRAdd" in sig  # `z`'s constraint is still inferred, just not doubled
+
+
+def test_unpack_splat_gap_arity() -> None:
+    # a splat into a 9-ary call lands on a budget the old sparse range skipped (#683)
+    assert infer(lambda x: _takes9(*x)) == "[R](x: CanIter[CanNext[R]]) -> R"
+
+
+def test_unpack_args_and_splat() -> None:
+    # `*args` and a growable splat coexist: each grows its own budget instead of the
+    # `*args` retry starving the splat of yields (#683)
+    def f(*args: Any) -> Any:
+        return divmod(*divmod(args[0], args[1]))  # type: ignore[misc]
+
+    sig = infer(f)
+    assert "CanDivmod" in sig
+    assert "CanRDivmod" in sig
+
+
+def test_unpack_splat_error_not_masked() -> None:
+    # a non-arity error from a splat target must surface as-is, not be buried under a
+    # bogus "got N args" after needlessly climbing the whole yield budget (#683)
+    def picky(_a: Any) -> Any:
+        raise ValueError("domain error")
+
+    with pytest.raises(InferError, match="domain error"):
+        infer(lambda x: picky(*x))
 
 
 def test_variadic_mixed() -> None:

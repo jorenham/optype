@@ -5,6 +5,8 @@ import sys
 from collections.abc import Callable, Generator, Iterator
 from contextvars import ContextVar
 from enum import StrEnum
+from functools import lru_cache
+from types import CodeType
 from typing import Any, ClassVar, NamedTuple, Self, cast, final, override
 
 type _AnyFunc = Callable[..., object]
@@ -40,10 +42,19 @@ _fork: ContextVar[Iterator[bool] | None] = ContextVar("_fork", default=None)
 
 # the yield count for a splatted-call iterator whose arity no bytecode pins: the
 # fallback that `_explore_spies` grows until the fixed-arity call succeeds
-_yields: ContextVar[int] = ContextVar("_yields", default=1)
+_yield_budget: ContextVar[int] = ContextVar("_yield_budget", default=1)
 # set when a growable splatted-call iterator hits the budget, so `_explore_spies` only
 # grows the budget when a fixed-arity splat actually came up short
 _starved: ContextVar[bool] = ContextVar("_starved", default=False)
+
+# the caller's bytecode is a CPython detail; elsewhere fall back to one element
+_CPYTHON = sys.implementation.name == "cpython"
+
+
+@lru_cache(maxsize=256)
+def _co_code(code: CodeType) -> bytes:
+    # `co_code` rebuilds a deoptimized copy on each access, so cache it per code object
+    return code.co_code
 
 
 def _instruction_arg(code: bytes, i: int) -> int:
@@ -57,19 +68,23 @@ def _instruction_arg(code: bytes, i: int) -> int:
     return arg
 
 
-def _iter_context() -> "tuple[int | None, bool]":
+def _iter_context() -> tuple[int | None, bool]:
     """The fixed arity the caller's unpack demands, and whether it splats into a call.
 
     `UNPACK_SEQUENCE`/`UNPACK_EX` pin an exact arity; `CALL_FUNCTION_EX` (`f(*x)`) has
-    no local arity signal, so its iterator grows via the `_yields` budget instead.
+    no local arity signal, so its iterator grows via the `_yield_budget` instead.
     """
+    if not _CPYTHON:
+        return None, False
+
     try:
         frame = sys._getframe(2)  # _iter_context -> __iter__ -> the consuming frame  # noqa: SLF001
     except ValueError:
+        frame = None
+    if frame is None or (i := frame.f_lasti) < 0:
         return None, False
-    if (i := frame.f_lasti) < 0:
-        return None, False
-    code = frame.f_code.co_code
+
+    code = _co_code(frame.f_code)
     match dis.opname[code[i]]:
         case "UNPACK_SEQUENCE":
             return _instruction_arg(code, i), False
@@ -337,7 +352,7 @@ class _SpyObject(_Spy, metaclass=_SpyType):
         # count from the trace, not a field, so a forked run's rollback is reflected
         served = sum(1 for item in self.__optype_trace__ if item.attr == "__next__")
         arity, growable = self.__optype_arity__, self.__optype_growable__
-        limit = arity if arity is not None else _yields.get() if growable else 1
+        limit = arity if arity is not None else _yield_budget.get() if growable else 1
         if served >= limit:
             if growable and arity is None:
                 _starved.set(True)

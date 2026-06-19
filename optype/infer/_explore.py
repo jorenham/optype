@@ -39,7 +39,7 @@ from ._spy import (
     _SpyStr,
     _starved,
     _TraceItem,
-    _yields as _yield_budget,
+    _yield_budget,
 )
 from ._values import _Fn, _Gen, _Rec, _RecRef, _RecVar, _walk, fn_spies
 
@@ -63,8 +63,9 @@ _YIELD_LIMIT = 64
 # large indices stay within reach
 _VARIADIC_COUNTS = (2, 3, 4, 5, 6, 7, 8, 16, 32, 64, 128, 256, 512, 1024)
 _KWARGS_LIMIT = 8  # max injected `**kwargs` keys
-# the iterator yield budgets to try for a splat into a fixed-arity call, e.g. divmod
-_YIELD_COUNTS = 2, 3, 4, 5, 6, 7, 8, 16, 32, 64
+# yield budgets to try for a splat into a fixed-arity call (e.g. `divmod`): an exact
+# arity is needed, so these stay contiguous; a sparse range would skip valid arities
+_YIELD_COUNTS = tuple(range(2, 17))
 
 type _Traces = dict[int, list[_TraceItem]]
 
@@ -303,6 +304,8 @@ def _explore[T](
             (spy, len(spy.__optype_trace__))
             for spy in _reachable((*args, *kwds.values(), *_closed_over(func)))
         ]
+        # `_starved` is a per-run splat signal, so a prior run cannot leak into this one
+        _starved.set(False)
         token = _fork.set(iter(plan))
         try:
             result = func(*args, **kwds)
@@ -403,7 +406,6 @@ def _explore_spies(
     try:
         while True:
             _yield_budget.set(budget)
-            _starved.set(False)
 
             # a fresh `self` instance per attempt, so a mutated one cannot leak
             fixed = _fixed_self(func, params) | {n: params[n].default for n in fix}
@@ -424,13 +426,19 @@ def _explore_spies(
                     raise InferError(msg) from exc
                 keys.append(key)
             except (IndexError, TypeError, ValueError) as exc:
-                if Parameter.VAR_POSITIONAL in kinds:
+                # a too-short splat raises `TypeError`; gate on it so the target's own
+                # error (e.g. a `ValueError`) can't churn the budget and bury itself
+                if (
+                    isinstance(exc, TypeError)
+                    and _starved.get()
+                    and (budget := next(budgets, 0)) != 0
+                ):
+                    pass
+                elif Parameter.VAR_POSITIONAL in kinds:
                     if (count := next(counts, 0)) == 0:
                         msg = f"ran out of `*args` placeholders ({exc})"
                         raise InferError(msg) from exc
-                # a call like `divmod(*x)` may have failed only because the iterator
-                # handed it too few values; if so, try again with more, else give up
-                elif not _starved.get() or (budget := next(budgets, 0)) == 0:
+                else:
                     raise
             else:
                 traces = _snapshot((*spies.values(), *fn_spies(results)))
