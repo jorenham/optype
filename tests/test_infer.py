@@ -144,6 +144,10 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
         "[T: CanGt[Literal[0], CanBool] & CanNeg[R], R](x: T) -> T | R",
     ),
     (lambda x: -x if x else x, "[T: CanBool & CanNeg[R], R](x: T) -> R | T"),
+    # `and` returns an operand: falsy `x` yields `x`, truthy `x` yields `not x`
+    (lambda x: x and not x, "[T: CanBool](x: T) -> bool | T"),  # noqa: SIM220
+    # `bool` is stable per run, so the `and` is always falsy and `foo` is unreachable
+    (lambda x: x.foo() if (x and not x) else x, "[T: CanBool](x: T) -> T"),  # noqa: SIM220
     (
         lambda x: (x + 1) if x else (x - 1),
         (
@@ -364,6 +368,27 @@ BINARY_CASES: list[tuple[Callable[[Any, Any], Any], str]] = [
     (lambda x, y: x or y, "[T: CanBool, U](x: T, y: U) -> T | U"),
     (lambda x, y: x if x in y else y, "[T, U: CanContains[T]](x: T, y: U) -> T | U"),
     (lambda x, y: x and y, "[T: CanBool, U](x: T, y: U) -> U | T"),
+    # a predicate is stable per run, so a self-contradicting guard never traces `foo`
+    (
+        lambda x, y: y.foo() if (y in x and y not in x) else x,
+        "[T: CanContains[U], U](x: T, y: U) -> T",
+    ),
+    (
+        lambda x, y: y.foo() if (isinstance(y, x) and not isinstance(y, x)) else x,
+        "[T: CanInstancecheck](x: T, y: object) -> T",
+    ),
+    (
+        lambda x, y: y.foo() if (issubclass(y, x) and not issubclass(y, x)) else x,
+        "[T: CanSubclasscheck](x: T, y: object) -> T",
+    ),
+    # distinct operands stay independent, so this guard is satisfiable and traces `foo`
+    (
+        lambda x, y: y.foo() if (y in x and 0 not in x) else x,
+        (
+            "[T: CanContains[Literal[0] | U], U: Has['foo', () -> +R], R]"
+            "(x: T, y: U) -> T | R"
+        ),
+    ),
     (
         lambda x, y: -x if x else -y if y else x,
         "[T: CanBool & CanNeg[R], R, R2](x: T, y: CanBool & CanNeg[R2]) -> R | R2 | T",
@@ -1357,10 +1382,11 @@ def test_variadic_mixed() -> None:
 
 def test_fork_explosion() -> None:
     # exploration is budgeted: a function that forks on every run raises (timely)
-    # instead of exhaustively walking all 2**100 decision paths
+    # instead of exhaustively walking all 2**100 decision paths. Distinct `x[i]` spies
+    # each fork independently, since one spy's `bool` is stable per run.
     def f(x: Any) -> Any:
-        for _ in range(100):
-            bool(x)
+        for i in range(100):
+            bool(x[i])
         return x
 
     with pytest.raises(InferError, match="completion"):
@@ -1379,9 +1405,10 @@ def test_infer_choice_does_not_hang(choose: Callable[..., Any]) -> None:
 
 
 def test_fork_truncation_warning() -> None:
-    # when the budget runs out before every branch was explored, it warns
+    # when the budget runs out before every branch was explored, it warns. Distinct
+    # `x[i]` spies each fork on `bool`; a single spy's truthiness is stable per run.
     def f(x: Any) -> Any:
-        return [bool(x) for _ in range(10)]
+        return [bool(x[i]) for i in range(10)]
 
     with pytest.warns(InferWarning, match="branch"):
         infer(f)

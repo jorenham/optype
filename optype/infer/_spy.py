@@ -12,7 +12,12 @@ from typing import Any, ClassVar, NamedTuple, Self, cast, final, override
 type _AnyFunc = Callable[..., object]
 type _Args = tuple[object, ...]
 type _Kwargs = dict[str, object]
-type _Memo = tuple[object, int | None] | None  # (fork plan, value); None value = absent
+type _Memo = tuple[object, int | None]  # (fork plan, value); None value = absent
+type _KeyedMemo = tuple[object, dict[int, tuple[object, int]]]
+
+
+def _slot(attr: str) -> str:
+    return f"__optype_{attr.strip('_')}__"
 
 
 def _internal(attr: str) -> bool:
@@ -110,10 +115,10 @@ def _decide_stable(spy: "_SpyObject", attr: str, /, *, optional: bool = False) -
     # memoized per run (keyed by the fork plan) so repeats agree; else two disagreeing
     # `len(seq)` send e.g. `random.choice` into a non-terminating `_randbelow(0)`
 
-    slot = f"__optype_{attr.strip('_')}__"
+    slot = _slot(attr)
     plan = _fork.get()
 
-    memo: _Memo = getattr(spy, slot)
+    memo: _Memo | None = getattr(spy, slot)
     if memo is not None and memo[0] is plan:
         if memo[1] is None:
             raise _AbsentError
@@ -127,6 +132,35 @@ def _decide_stable(spy: "_SpyObject", attr: str, /, *, optional: bool = False) -
     value = spy.__optype_trace_add__(attr, (), {}, int(_decide()))
     setattr(spy, slot, (plan, value))
     return value
+
+
+def _decide_keyed(
+    spy: "_SpyObject",
+    attr: str,
+    item: object,
+    /,
+    *,
+    keep_arg: bool,
+) -> bool:
+    # per-operand variant of `_decide_stable`: `y in x` forks once per distinct `y`, so
+    # `y in x and y not in x` agrees within a run while `a in x` and `b in x` stay free.
+    # the cache retains `item` so its `id` can't be reused by a later distinct operand
+    slot = _slot(attr)
+    plan = _fork.get()
+
+    cache: dict[int, tuple[object, int]]
+    memo: _KeyedMemo | None = getattr(spy, slot)
+    if memo is not None and memo[0] is plan:
+        cache = memo[1]
+    else:
+        cache = {}
+        setattr(spy, slot, (plan, cache))
+
+    key = id(item)
+    if key not in cache:
+        args = (item,) if keep_arg else ()
+        cache[key] = item, spy.__optype_trace_add__(attr, args, {}, int(_decide()))
+    return bool(cache[key][1])
 
 
 class _TraceItem(NamedTuple):
@@ -274,7 +308,7 @@ class _SpyObject(_Spy, metaclass=_SpyType):
         return self.__optype_trace_add__("__hash__", (), {}, super().__hash__())
 
     def __bool__(self, /) -> bool:
-        return self.__optype_trace_add__("__bool__", (), {}, _decide())
+        return bool(_decide_stable(self, "__bool__"))
 
     ###
 
@@ -294,13 +328,11 @@ class _SpyObject(_Spy, metaclass=_SpyType):
 
     ###
 
-    # TODO: __mro_entries__
+    def __instancecheck__(self, instance: object, /) -> bool:
+        return _decide_keyed(self, "__instancecheck__", instance, keep_arg=False)
 
-    def __instancecheck__(self, _instance: object, /) -> bool:
-        return self.__optype_trace_add__("__instancecheck__", (), {}, _decide())
-
-    def __subclasscheck__(self, _subclass: object, /) -> bool:
-        return self.__optype_trace_add__("__subclasscheck__", (), {}, _decide())
+    def __subclasscheck__(self, subclass: object, /) -> bool:
+        return _decide_keyed(self, "__subclasscheck__", subclass, keep_arg=False)
 
     ###
 
@@ -345,7 +377,7 @@ class _SpyObject(_Spy, metaclass=_SpyType):
         return self.__optype_trace_add__("__reversed__", (), {}, _iterator_of(self))
 
     def __contains__(self, item: object, /) -> bool:
-        return self.__optype_trace_add__("__contains__", (item,), {}, _decide())
+        return _decide_keyed(self, "__contains__", item, keep_arg=True)
 
     # return `Any` instead of `_SpyObject` to avoid an LSP error for `__dir__`
     def __next__(self, /) -> Any:
