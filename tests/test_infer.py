@@ -11,14 +11,16 @@ import random
 import secrets
 import subprocess  # noqa: S404
 import sys
+import warnings
 import weakref
 from collections.abc import Callable
+from inspect import Parameter
 from typing import Any
 
 import pytest
 
-from optype.infer import InferError, InferWarning, infer
-from optype.infer._explore import _doc_params
+from optype.infer import InferError, InferWarning, _api, infer
+from optype.infer._explore import _doc_signatures, _parameter_forms
 from optype.infer._ir import App, Arg, Fn, Lit, Name, Node, Type, render, subtype, union
 
 
@@ -1537,23 +1539,158 @@ def test_not_callable() -> None:
         infer(not_callable)
 
 
-def test_doc_params() -> None:
+def test_doc_signatures() -> None:
     def f() -> None: ...
 
-    f.__doc__ = "f(a, b=1, [c]) -> z"
-    assert _doc_params(f) == ["a", "b", "c"]
+    f.__doc__ = "f(a) -> z\nf(a, b) -> z"
+    assert _doc_signatures(f) == [["a"], ["a", "b"]]
 
-    f.__doc__ = "no signature line here"
-    assert _doc_params(f) is None
+    # defaults and optional-bracket groups reduce to bare parameter names
+    f.__doc__ = "f(a, b=1, [c]) -> z"
+    assert _doc_signatures(f) == [["a", "b", "c"]]
+
+    # same-arity forms render identically, so only the first is kept
+    f.__doc__ = "f(a) -> z\nf(b) -> z\nf(c, d) -> z"
+    assert _doc_signatures(f) == [["a"], ["c", "d"]]
+
+    # no arrow: fall back to the first form (e.g. `next`, `slice`)
+    f.__doc__ = "f(a, b)\nFor example, f(x, y)."
+    assert _doc_signatures(f) == [["a", "b"]]
 
     # a usage example, not a signature: its keyword arg is no parameter name
     f.__doc__ = "Apply f. For example, f(lambda x, y: x + y, [1, 2, 3])."
-    assert _doc_params(f) is None
+    assert _doc_signatures(f) == []
+
+    f.__doc__ = "no signature line here"
+    assert _doc_signatures(f) == []
 
 
 def test_doc_signature() -> None:
-    # builtins like `int` have no signature; fall back to the docstring
-    assert infer(int) == "(x: CanInt | CanIndex) -> int"
+    # builtins like `int` have no signature; fall back to the docstring. The
+    # unsatisfiable `int(x, base)` form is dropped silently, without a warning.
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", InferWarning)
+        assert infer(int) == "(x: CanInt | CanIndex) -> int"
+
+
+def _needs_doc(func: Callable[..., object]) -> pytest.MarkDecorator:
+    # some Python builds strip the call-form lines from a builtin's docstring, leaving
+    # no parameters to recover; only assert the output where the build provides them
+    return pytest.mark.skipif(
+        not _doc_signatures(func),
+        reason=f"{getattr(func, '__name__', func)!r} docstring carries no call forms",
+    )
+
+
+def test_iter() -> None:
+    # the callable_iterator enrichment, independent of `iter`'s own docstring
+    assert infer(lambda f, s: iter(f, s)) == "[R](f: () -> R, s: object) -> Iterator[R]"
+    # the callable is the first argument, not the sentinel: a non-spy callable can't
+    # be probed, so the element type is left opaque rather than blamed on the sentinel
+    assert infer(lambda s: iter(int, s)) == "(s: object) -> callable_iterator"
+
+
+@_needs_doc(iter)
+def test_iter_overloads() -> None:
+    assert infer(iter) == (
+        "[R](iterable: CanIter[R]) -> R\n"
+        "[R](callable: () -> R, sentinel: object) -> Iterator[R]"
+    )
+
+
+@_needs_doc(max)
+@_needs_doc(min)
+def test_max_min() -> None:
+    assert infer(max) == (
+        "[T, U: CanGt[T, CanBool], V: CanGt[U | T, CanBool]]"
+        "(iterable: T, default: U, key: V) -> V | U | T\n"
+        "[T, U: CanGt[T, CanBool], V: CanGt[U | T, CanBool], "
+        "W: CanGt[V | U | T, CanBool]]"
+        "(arg1: T, arg2: U, args: V, key: W) -> W | V | U | T"
+    )
+    assert infer(min) == (
+        "[T, U: CanLt[T, CanBool], V: CanLt[U | T, CanBool]]"
+        "(iterable: T, default: U, key: V) -> V | U | T\n"
+        "[T, U: CanLt[T, CanBool], V: CanLt[U | T, CanBool], "
+        "W: CanLt[V | U | T, CanBool]]"
+        "(arg1: T, arg2: U, args: V, key: W) -> W | V | U | T"
+    )
+
+
+@_needs_doc(max)
+def test_select_filters_forms() -> None:
+    # `iterable` belongs to the first form only; the second is filtered out silently,
+    # not reported as a form with "no satisfying placeholder"
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", InferWarning)
+        assert infer(max, "iterable") == (
+            "[T, U: CanGt[T, CanBool], V: CanGt[U | T, CanBool]]"
+            "(iterable: T) -> V | U | T"
+        )
+    # a name in no form is still a clean selection error
+    with pytest.raises(ValueError, match="unknown parameter"):
+        infer(max, "zzz")
+
+
+@pytest.mark.parametrize(
+    ("func", "expected"),
+    [
+        # forms differing only in parameter name collapse to one (mapping/iterable/...)
+        pytest.param(
+            dict,
+            (
+                "[R: CanHash, R2](mapping: Has['keys', () -> +CanIter[CanNext[R]]]"
+                " & CanGetitem[R, R2]) -> dict[R, R2]"
+            ),
+            marks=_needs_doc(dict),
+        ),
+        pytest.param(str, "(object: CanStr) -> str", marks=_needs_doc(str)),
+        pytest.param(range, "(stop: CanIndex) -> range", marks=_needs_doc(range)),
+        pytest.param(
+            bytes,
+            "(iterable_of_ints: CanBytes) -> bytes",
+            marks=_needs_doc(bytes),
+        ),
+        # the second form raises during exploration and drops out
+        pytest.param(type, "[T](object: T) -> type[T]", marks=_needs_doc(type)),
+        # no arrow forms in the docstring: the single fallback form
+        pytest.param(
+            next,
+            "[R](iterator: CanNext[R], default: object) -> R",
+            marks=_needs_doc(next),
+        ),
+        pytest.param(slice, "(stop: object) -> slice", marks=_needs_doc(slice)),
+    ],
+)
+def test_single_form_builtins(func: Callable[..., Any], expected: str) -> None:
+    # the unsatisfiable forms are omitted silently; that silence is asserted below
+    assert infer(func) == expected
+
+
+@pytest.mark.skipif(
+    len(_parameter_forms(str)) < 2,
+    reason="this build's str docstring exposes a single call form",
+)
+def test_omitted_form_silent() -> None:
+    # dropping a form no placeholder can satisfy is routine, not warning-worthy
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", InferWarning)
+        assert infer(str) == "(object: CanStr) -> str"
+
+
+def test_all_forms_unsatisfiable(monkeypatch: pytest.MonkeyPatch) -> None:
+    # every form fails exploration and yields no line: the reasons surface as one error
+    def boom(*_args: object) -> object:
+        raise TypeError("boom")
+
+    pos = Parameter.POSITIONAL_OR_KEYWORD
+    forms = [
+        {"a": Parameter("a", pos)},
+        {"a": Parameter("a", pos), "b": Parameter("b", pos)},
+    ]
+    monkeypatch.setattr(_api, "_parameter_forms", lambda _func: forms)
+    with pytest.raises(InferError, match="boom"):
+        infer(boom)
 
 
 def test_type() -> None:

@@ -66,6 +66,25 @@ $ optype infer "lambda x: -x + x"
 [T, R](x: CanNeg[T] & CanRAdd[T, R]) -> R
 ```
 
+A builtin without an `inspect.signature` recovers its parameters from the docstring,
+reporting each documented call form as an overload:
+
+```console
+$ optype infer "iter"
+[R](iterable: CanIter[R]) -> R
+[R](callable: () -> R, sentinel: object) -> Iterator[R]
+```
+
+Unsatisfiable forms are dropped and same-arity forms collapse into one. The docstring is
+also lossy: it marks neither `*args` nor the keyword-only `*`, so both become plain
+positionals. Read these forms as the shape of the call, not a faithful signature:
+
+```console
+$ optype infer "max"
+[T, U: CanGt[T, CanBool], V: CanGt[U | T, CanBool]](iterable: T, default: U, key: V) -> V | U | T
+[T, U: CanGt[T, CanBool], V: CanGt[U | T, CanBool], W: CanGt[V | U | T, CanBool]](arg1: T, arg2: U, args: V, key: W) -> W | V | U | T
+```
+
 ## Intersections
 
 Python has no intersection types, so the `&` is not valid Python: both requirements
