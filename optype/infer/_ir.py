@@ -4,7 +4,7 @@ from collections.abc import Generator, Iterable
 from dataclasses import dataclass
 from typing import override
 
-type Node = Lit | Type | Name | App | Fn | Union | Inter | Not | Polarity
+type Node = Lit | Type | Name | App | Fn | Union | Inter | Not | Polarity | Unpack
 
 _NOT = "~"  # the type complement prefix
 
@@ -100,6 +100,13 @@ class Polarity:
 
 
 @dataclass(frozen=True, slots=True)
+class Unpack:
+    """A PEP 646 unpacking, e.g. a `*tuple[T, ...]` variadic callable parameter."""
+
+    part: Node
+
+
+@dataclass(frozen=True, slots=True)
 class Union:
     """A `|`-union of two or more types."""
 
@@ -151,6 +158,8 @@ def subtype(sub: Node | Arg, sup: Node | Arg) -> bool:
                     for param, wide in zip(params, wider_params, strict=True)
                 )
             )
+        case Unpack(part), Unpack(wider):
+            result = subtype(part, wider)
         case _:
             result = False
     return result
@@ -288,7 +297,7 @@ def names(node: Node | Arg) -> Generator[str]:
         case Fn(params, ret):
             for part in (*params, ret):
                 yield from names(part)
-        case Not(part) | Polarity(part=part):
+        case Not(part) | Polarity(part=part) | Unpack(part):
             yield from names(part)
         case Lit() | Type():
             return
@@ -324,6 +333,8 @@ def render(node: Node) -> str:
             out = _prefix(_NOT, part)
         case Polarity(sign, part):
             out = _prefix(sign, part)
+        case Unpack(part):
+            out = _prefix("*", part)
         case Union(parts) | Inter(parts):
             sep, dual = (" | ", Inter) if isinstance(node, Union) else (" & ", Union)
             out = sep.join(

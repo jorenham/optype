@@ -40,6 +40,7 @@ _TYPEVARS = "TUVWXYZ"
 _TYPEVAR_TUPLE = "*Ts"
 _NEVER = "Never"
 _OBJECT = "object"
+_ELLIPSIS = "..."
 _TUPLE_LIMIT = 16
 
 # the attribute polarity sigils of the fictional inline `Has['name', T]` form
@@ -370,6 +371,7 @@ class _Renderer:
     _fixed: Mapping[str, object]
     _results: list[object]
     _traces: _Traces
+    _count: int  # the `*args` placeholder count used during exploration
 
     _prefix: dict[str, str]
     _nameless: set[str]
@@ -399,6 +401,7 @@ class _Renderer:
         self._spies = spies
         self._results = results
         self._traces = traces
+        self._count = count
 
         self._prefix = {n: _PARAM_PREFIX.get(p.kind, "") for n, p in params.items()}
         self._nameless = {
@@ -576,6 +579,34 @@ class _Renderer:
             out = _ir.Name(_OBJECT)
         return out
 
+    def _collapse_varargs(
+        self,
+        members: Sequence[_Op],
+        pos: list[_ir.Node],
+    ) -> list[_ir.Node]:
+        # the variadic spreads `count` copies of one spy: the placeholder (`f(*args)`)
+        # or its iterated element (`map`); collapse the trailing run to `*tuple[T, ...]`
+        varpos = self._varpos
+        call_args = members[0].args
+        if varpos is None or not call_args:
+            return pos
+
+        tail = call_args[-1]
+        if not isinstance(tail, _SpyObject) or (
+            tail is not varpos and tail is not varpos.__optype_element__
+        ):
+            return pos
+
+        # require every call to splat the same trailing run, else order would decide
+        count = self._count
+        if not all(
+            m.args[-1] is tail and _spy_runs(m.args, tail)[-1] == count for m in members
+        ):
+            return pos
+
+        inner = _ir.App("tuple", (self.return_type(tail), _ir.Name(_ELLIPSIS)))
+        return [*pos[: len(pos) - count], _ir.Unpack(inner)]
+
     def group(self, proto: _Proto, members: Sequence[_Op]) -> _ir.Node:
         if isinstance(proto, tuple):  # coercion protocols, which record no args
             return _ir.Union(tuple(map(_ir.Name, proto)))
@@ -601,7 +632,8 @@ class _Renderer:
         ret = self.returns(members)
 
         if proto == "CanCall":
-            return _ir.Fn(args, _or_object(ret))
+            call_pos = self._collapse_varargs(members, pos)
+            return _ir.Fn((*call_pos, *args[len(pos) :]), _or_object(ret))
 
         if (attr := members[0].attr) is not None:
             # a read is covariant (a property suffices) and a write contravariant
@@ -762,10 +794,10 @@ class _Renderer:
                 return _ir.App("tuple", tuple(parts))
 
             if all(item is spy for item in items):
-                return _ir.App("tuple", (self.return_type(spy), _ir.Name("...")))
+                return _ir.App("tuple", (self.return_type(spy), _ir.Name(_ELLIPSIS)))
 
         if len(items) > _TUPLE_LIMIT:  # e.g. `random.getstate`
-            return _ir.App("tuple", (self._union_type(items), _ir.Name("...")))
+            return _ir.App("tuple", (self._union_type(items), _ir.Name(_ELLIPSIS)))
 
         elems = (self.union((item,)) or _ir.Name(_NEVER) for item in items)
         return _ir.App("tuple", tuple(elems))
