@@ -783,7 +783,7 @@ ITERATOR_CASES: list[tuple[Callable[..., Any], str]] = [
         lambda x: ((i for i in x), 1),
         "[R](x: CanIter[CanNext[R]]) -> tuple[Generator[R], Literal[1]]",
     ),
-    # a fixed-arity unpack reads its arity from the caller's bytecode frame (#683)
+    # fixed-size unpacking (#683)
     (_unpack_pair, "[R](x: CanIter[CanNext[R]]) -> tuple[R, R]"),
     (_unpack_triple, "[R](x: CanIter[CanNext[R]]) -> tuple[R, R, R]"),
     (_unpack_star, "[R](x: CanIter[CanNext[R]]) -> tuple[R, list[R]]"),
@@ -799,7 +799,7 @@ ITERATOR_CASES: list[tuple[Callable[..., Any], str]] = [
         lambda x: {k: v for k, v in x},  # noqa: C416
         "[R: CanHash](x: CanIter[CanNext[CanIter[CanNext[R]]]]) -> dict[R, R]",
     ),
-    # a splat into a fixed-arity call grows the yield budget until the call fits (#683)
+    # a splat into a fixed-arity call (#683)
     (
         lambda x, y: divmod(*divmod(x, y)),  # type: ignore[misc]
         (
@@ -814,19 +814,6 @@ ITERATOR_CASES: list[tuple[Callable[..., Any], str]] = [
         (
             "[T, R](x: CanDivmod[T, CanIter[CanNext[R]]], y: T) -> tuple[R, R]\n"
             "[T, R](x: T, y: CanRDivmod[T, CanIter[CanNext[R]]]) -> tuple[R, R]"
-        ),
-    ),
-    # the splat's grown budget must not leak to a co-occurring `sum`: `z` stays a plain
-    # single-element iterable, exactly as `lambda z: sum(z)` infers it (#683)
-    (
-        lambda x, y, z: (divmod(*divmod(x, y)), sum(z)),  # type: ignore[misc]
-        (
-            "[T, U: CanDivmod[U, R], R, R2]"
-            "(x: CanDivmod[T, CanIter[CanNext[U]]], y: T, "
-            "z: CanIter[CanNext[CanRAdd[Literal[0], R2]]]) -> tuple[R, R2]\n"
-            "[T, U: CanRDivmod[U, R], R, R2]"
-            "(x: T, y: CanRDivmod[T, CanIter[CanNext[U]]], "
-            "z: CanIter[CanNext[CanRAdd[Literal[0], R2]]]) -> tuple[R, R2]"
         ),
     ),
 ]
@@ -1298,12 +1285,19 @@ def test_variadic_exhausted() -> None:
 
 
 def test_unpack_mixed_splat() -> None:
-    # one global yield budget cannot satisfy two splats of different fixed arities
+    # two splats of different fixed arities can't share one budget
     def f(a: Any, b: Any) -> Any:
         return divmod(*a), _takes3(*b)  # type: ignore[misc]
 
     with pytest.raises(InferError):
         infer(f)
+
+
+def test_unpack_splat_no_budget_leak() -> None:
+    # the splat's budget must not leak to `sum(z)`: a 2nd element would chain
+    # `0 + a + b`, surfacing a `CanAdd` (#683)
+    sig = infer(lambda x, y, z: (divmod(*divmod(x, y)), sum(z)))  # type: ignore[misc]
+    assert "CanAdd" not in sig
 
 
 def test_variadic_mixed() -> None:
