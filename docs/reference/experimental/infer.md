@@ -272,6 +272,17 @@ $ optype infer "lambda x: 0 < x < 10"
 [R, R2: CanBool](x: CanGt[Literal[0], R2 & CanBool] & CanLt[Literal[10], R]) -> R | R2
 ```
 
+A predicate is assumed stable within a single call, so repeating it on the same operand
+agrees rather than branching again. A self-contradicting guard is therefore never
+satisfiable, and its body is left untraced:
+
+```console
+$ optype infer "lambda x: x.foo() if (x and not x) else x"
+[T: CanBool](x: T) -> T
+```
+
+Distinct operands stay independent, so `a in x` and `b in x` still branch separately.
+
 ## Variadic parameters
 
 A `*args` parameter that is only passed around as a whole is inferred as a
