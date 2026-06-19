@@ -408,6 +408,22 @@ $ optype infer "lambda f, x: map(f, x)"
 [T, R](f: (T) -> R, x: CanIter[CanNext[T]]) -> map[R]
 ```
 
+## Unpacking
+
+An unpacking iterates the parameter, and every target shares one element type, like
+`*args`; a starred target collects the rest into a `list`:
+
+```console
+$ optype infer "def f(x): a, b = x; return a, b"
+[R](x: CanIter[CanNext[R]]) -> tuple[R, R]
+
+$ optype infer "def f(x): a, *b = x; return a, b"
+[R](x: CanIter[CanNext[R]]) -> tuple[R, list[R]]
+
+$ optype infer "lambda x: {k: v for k, v in x}"
+[R: CanHash](x: CanIter[CanNext[CanIter[CanNext[R]]]]) -> dict[R, R]
+```
+
 ## Returned functions
 
 A returned function is lazy too, so it is explored with placeholders of its own, and

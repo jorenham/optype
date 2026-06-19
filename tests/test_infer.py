@@ -442,6 +442,22 @@ def _takes3(a: Any, _b: Any, _c: Any, /) -> Any:
     return a
 
 
+def _takes9(
+    a: Any,
+    _b: Any,
+    _c: Any,
+    _d: Any,
+    _e: Any,
+    _f: Any,
+    _g: Any,
+    _h: Any,
+    _i: Any,
+    /,
+) -> Any:
+    # exactly 9 positional parameters; its arity falls in a former yield-budget gap
+    return a
+
+
 def _spread(*args: Any) -> Any:
     return _takes3(*args)
 
@@ -718,6 +734,38 @@ FUNCTION_CASES: list[tuple[Callable[..., Any], str]] = [
     (lambda: functools.partial(print, "a"), "() -> partial"),
 ]
 
+
+def _unpack_pair(x: Any) -> Any:
+    a, b = x
+    return a, b
+
+
+def _unpack_triple(x: Any) -> Any:
+    a, b, c = x
+    return a, b, c
+
+
+def _unpack_star(x: Any) -> Any:
+    a, *b = x
+    return a, b
+
+
+def _unpack_iter(x: Any) -> Any:
+    a, b = iter(x)
+    return a, b
+
+
+def _divmod_unpack(x: Any, y: Any) -> Any:
+    div, mod = divmod(x, y)
+    return div, mod
+
+
+def _unpack_two_seqs(x: Any, y: Any) -> Any:
+    a, b = x
+    c, d, e = y
+    return a, b, c, d, e
+
+
 ITERATOR_CASES: list[tuple[Callable[..., Any], str]] = [
     # lazy builtin iterators are iterated like generators
     (lambda x: map(str, x), "(x: CanIter[CanNext[CanStr]]) -> map[str]"),
@@ -750,6 +798,39 @@ ITERATOR_CASES: list[tuple[Callable[..., Any], str]] = [
     (
         lambda x: ((i for i in x), 1),
         "[R](x: CanIter[CanNext[R]]) -> tuple[Generator[R], Literal[1]]",
+    ),
+    # fixed-size unpacking (#683)
+    (_unpack_pair, "[R](x: CanIter[CanNext[R]]) -> tuple[R, R]"),
+    (_unpack_triple, "[R](x: CanIter[CanNext[R]]) -> tuple[R, R, R]"),
+    (_unpack_star, "[R](x: CanIter[CanNext[R]]) -> tuple[R, list[R]]"),
+    (_unpack_iter, "[R](x: CanIter[CanNext[R]]) -> tuple[R, R]"),
+    (
+        _unpack_two_seqs,
+        (
+            "[R, R2](x: CanIter[CanNext[R]], y: CanIter[CanNext[R2]]) "
+            "-> tuple[R, R, R2, R2, R2]"
+        ),
+    ),
+    (
+        lambda x: {k: v for k, v in x},  # noqa: C416
+        "[R: CanHash](x: CanIter[CanNext[CanIter[CanNext[R]]]]) -> dict[R, R]",
+    ),
+    # a splat into a fixed-arity call (#683)
+    (
+        lambda x, y: divmod(*divmod(x, y)),  # type: ignore[misc]
+        (
+            "[T, U: CanDivmod[U, R], R]"
+            "(x: CanDivmod[T, CanIter[CanNext[U]]], y: T) -> R\n"
+            "[T, U: CanRDivmod[U, R], R]"
+            "(x: T, y: CanRDivmod[T, CanIter[CanNext[U]]]) -> R"
+        ),
+    ),
+    (
+        _divmod_unpack,
+        (
+            "[T, R](x: CanDivmod[T, CanIter[CanNext[R]]], y: T) -> tuple[R, R]\n"
+            "[T, R](x: T, y: CanRDivmod[T, CanIter[CanNext[R]]]) -> tuple[R, R]"
+        ),
     ),
 ]
 
@@ -1217,6 +1298,49 @@ def test_variadic_exhausted() -> None:
     # placeholder growth is bounded; running out reports cleanly
     with pytest.raises(InferError, match="placeholder"):
         infer(lambda *args: args[10_000])
+
+
+def test_unpack_mixed_splat() -> None:
+    # two splats of different fixed arities can't share one budget
+    def f(a: Any, b: Any) -> Any:
+        return divmod(*a), _takes3(*b)  # type: ignore[misc]
+
+    with pytest.raises(InferError):
+        infer(f)
+
+
+def test_unpack_splat_no_budget_leak() -> None:
+    # the splat's budget must not leak to `sum(z)`: a 2nd element would chain
+    # `0 + a + b`, surfacing a `CanAdd` (#683)
+    sig = infer(lambda x, y, z: (divmod(*divmod(x, y)), sum(z)))  # type: ignore[misc]
+    assert "CanAdd" not in sig
+    assert "CanRAdd" in sig  # `z`'s constraint is still inferred, just not doubled
+
+
+def test_unpack_splat_gap_arity() -> None:
+    # a splat into a 9-ary call lands on a budget the old sparse range skipped (#683)
+    assert infer(lambda x: _takes9(*x)) == "[R](x: CanIter[CanNext[R]]) -> R"
+
+
+def test_unpack_args_and_splat() -> None:
+    # `*args` and a growable splat coexist: each grows its own budget instead of the
+    # `*args` retry starving the splat of yields (#683)
+    def f(*args: Any) -> Any:
+        return divmod(*divmod(args[0], args[1]))  # type: ignore[misc]
+
+    sig = infer(f)
+    assert "CanDivmod" in sig
+    assert "CanRDivmod" in sig
+
+
+def test_unpack_splat_error_not_masked() -> None:
+    # a non-arity error from a splat target must surface as-is, not be buried under a
+    # bogus "got N args" after needlessly climbing the whole yield budget (#683)
+    def picky(_a: Any) -> Any:
+        raise ValueError("domain error")
+
+    with pytest.raises(InferError, match="domain error"):
+        infer(lambda x: picky(*x))
 
 
 def test_variadic_mixed() -> None:

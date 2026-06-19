@@ -37,7 +37,9 @@ from ._spy import (
     _own_spy,
     _SpyObject,
     _SpyStr,
+    _starved,
     _TraceItem,
+    _yield_budget,
 )
 from ._values import _Fn, _Gen, _Rec, _RecRef, _RecVar, _walk, fn_spies
 
@@ -61,6 +63,9 @@ _YIELD_LIMIT = 64
 # large indices stay within reach
 _VARIADIC_COUNTS = (2, 3, 4, 5, 6, 7, 8, 16, 32, 64, 128, 256, 512, 1024)
 _KWARGS_LIMIT = 8  # max injected `**kwargs` keys
+# yield budgets to try for a splat into a fixed-arity call (e.g. `divmod`): an exact
+# arity is needed, so these stay contiguous; a sparse range would skip valid arities
+_YIELD_COUNTS = tuple(range(2, 17))
 
 type _Traces = dict[int, list[_TraceItem]]
 
@@ -299,6 +304,8 @@ def _explore[T](
             (spy, len(spy.__optype_trace__))
             for spy in _reachable((*args, *kwds.values(), *_closed_over(func)))
         ]
+        # `_starved` is a per-run splat signal, so a prior run cannot leak into this one
+        _starved.set(False)
         token = _fork.set(iter(plan))
         try:
             result = func(*args, **kwds)
@@ -380,15 +387,26 @@ def _explore_spies(
     omit: Collection[str] = (),
     fix: Collection[str] = (),
 ) -> _Recon:
-    # rerun with fresh spies whenever the variadic placeholders come up short
     kinds = {p.kind for p in params.values()}
+
     counts = iter(_VARIADIC_COUNTS)
     count = next(counts)
+
+    # rerun with new spies when the variadic placeholders/iterator yield budget runs out
+    budgets = iter(_YIELD_COUNTS)
+    budget = 1
+
     keys: list[str] = []
+
     # registering `func` itself keeps a returned self-reference from recursing
     token = _exploring.set(_exploring.get() | {_explore_key(func)})
+
+    yield_token = _yield_budget.set(budget)
+    starve_token = _starved.set(False)
     try:
         while True:
+            _yield_budget.set(budget)
+
             # a fresh `self` instance per attempt, so a mutated one cannot leak
             fixed = _fixed_self(func, params) | {n: params[n].default for n in fix}
             spies, args, kwds = _placeholders(params, count, keys, omit, fixed)
@@ -408,15 +426,26 @@ def _explore_spies(
                     raise InferError(msg) from exc
                 keys.append(key)
             except (IndexError, TypeError, ValueError) as exc:
-                if Parameter.VAR_POSITIONAL not in kinds:
+                # a too-short splat raises `TypeError`; gate on it so the target's own
+                # error (e.g. a `ValueError`) can't churn the budget and bury itself
+                if (
+                    isinstance(exc, TypeError)
+                    and _starved.get()
+                    and (budget := next(budgets, 0)) != 0
+                ):
+                    pass
+                elif Parameter.VAR_POSITIONAL in kinds:
+                    if (count := next(counts, 0)) == 0:
+                        msg = f"ran out of `*args` placeholders ({exc})"
+                        raise InferError(msg) from exc
+                else:
                     raise
-                if (count := next(counts, 0)) == 0:
-                    msg = f"ran out of `*args` placeholders ({exc})"
-                    raise InferError(msg) from exc
             else:
                 traces = _snapshot((*spies.values(), *fn_spies(results)))
                 return spies, traces, results, count, fixed
     finally:
+        _starved.reset(starve_token)
+        _yield_budget.reset(yield_token)
         _exploring.reset(token)
 
 
