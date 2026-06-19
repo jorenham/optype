@@ -309,6 +309,18 @@ $ optype infer "lambda **kwargs: kwargs"
 [T](**kwargs: T) -> dict[str, T]
 ```
 
+A variadic spread into a callable collapses into a single `*tuple[T, ...]`, so its
+arity tracks the variadic rather than the placeholder count. This also covers element
+spreads like `map` (whose signature and `strict` flag require Python 3.14):
+
+```console
+$ optype infer "lambda f, *args: f(*args)"
+[T, R](f: (*tuple[T, ...]) -> R, *args: T) -> R
+
+$ optype infer "map"
+[T, U, R]((T, *tuple[U, ...]) -> R, CanIter[CanNext[T]], *iterables: CanIter[CanNext[U]], strict: CanBool = False) -> map[R]
+```
+
 ## Parameter defaults
 
 [PEP 696](https://peps.python.org/pep-0696/) type parameter defaults are used when

@@ -497,6 +497,10 @@ def _spread(*args: Any) -> Any:
     return _takes3(*args)
 
 
+def _call_spread(f: Any, *args: Any) -> Any:
+    return f(*args)
+
+
 def _kwargs_key(**kwargs: Any) -> Any:
     return kwargs["key"]
 
@@ -547,6 +551,8 @@ VARIADIC_CASES: list[tuple[Callable[..., Any], str]] = [
     (lambda *args: (args[0], len(args)), "[T](*args: T) -> tuple[T, Literal[2]]"),
     (_var_kwargs, "[T](**kwargs: T) -> dict[str, T]"),
     (_sum_kwargs, "[R](**kwargs: CanRAdd[Literal[0], R]) -> R"),
+    # a variadic spread into a callable collapses to `*tuple[T, ...]` (gh-687)
+    (_call_spread, "[T, R](f: (*tuple[T, ...]) -> R, *args: T) -> R"),
 ]
 
 
@@ -807,6 +813,11 @@ ITERATOR_CASES: list[tuple[Callable[..., Any], str]] = [
     (
         lambda f, x: map(f, x),
         "[T, R](f: (T) -> R, x: CanIter[CanNext[T]]) -> map[R]",
+    ),
+    # the variadic iterables collapse into a `*tuple[T, ...]` mapper (gh-687)
+    (
+        lambda f, *iterables: map(f, *iterables),
+        "[T, R](f: (*tuple[T, ...]) -> R, *iterables: CanIter[CanNext[T]]) -> map[R]",
     ),
     (
         lambda x: map(lambda v: lambda: v, x),
