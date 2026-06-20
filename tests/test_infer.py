@@ -1071,9 +1071,7 @@ def test_method_descriptor() -> None:
     assert infer(object.__str__) == "(object) -> str"
     assert infer(dict[Any, Any].get) == "[T = None](dict, CanHash, T = None) -> T"
     # `memoryview()` is constructed from a spy through its `__buffer__`
-    assert infer(memoryview.tobytes) == (
-        "(memoryview, order: Literal['C'] = 'C') -> bytes"
-    )
+    assert infer(memoryview.tobytes) == "(memoryview, order: str = 'C') -> bytes"
 
 
 def test_method_descriptor_fixed_defaults() -> None:
@@ -1083,9 +1081,11 @@ def test_method_descriptor_fixed_defaults() -> None:
         "(str, sep: None = None, maxsplit: CanIndex = -1) -> list[Never]"
     )
     assert infer(bytes.decode) == (
-        "(bytes, encoding: Literal['utf-8'] = 'utf-8', "
-        "errors: Literal['strict'] = 'strict') -> str"
+        "(bytes, encoding: str = 'utf-8', errors: str = 'strict') -> str"
     )
+    # a rejected default widens to its type, both for the parameter and where the
+    # value flows on (the `format_spec` reaches `value.__format__`)
+    assert infer(format) == "(CanFormat[str], str = '') -> str"
 
 
 def test_method_descriptor_unsupported() -> None:

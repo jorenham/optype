@@ -36,6 +36,7 @@ from ._spy import (
     _fork,
     _Marker,
     _own_spy,
+    _SpyBytes,
     _SpyObject,
     _SpyStr,
     _starved,
@@ -160,6 +161,15 @@ def _parameters(func: _AnyFunc) -> Mapping[str, Parameter]:
 def _declared_defaults(params: Mapping[str, Parameter]) -> dict[str, object]:
     """The declared parameter defaults, by name."""
     return {n: p.default for n, p in params.items() if p.default is not Parameter.empty}
+
+
+def _typed_default(value: object) -> object:
+    """A rejected default's type is known, but its value is not, so widen it."""
+    if isinstance(value, str):
+        return _SpyStr(value)
+    if isinstance(value, bytes):
+        return _SpyBytes(value)
+    return value
 
 
 def _await[R](coro: Coroutine[Any, Any, R]) -> R:
@@ -495,7 +505,9 @@ def _explore_spies(
             _yield_budget.set(budget)
 
             # a fresh `self` instance per attempt, so a mutated one cannot leak
-            fixed = _fixed_self(func, params) | {n: params[n].default for n in fix}
+            fixed = _fixed_self(func, params) | {
+                n: _typed_default(params[n].default) for n in fix
+            }
             spies, args, kwds = _placeholders(params, count, keys, omit, fixed)
             try:
                 results, deprecated = _explore(func, args, kwds)
@@ -562,4 +574,7 @@ def _explore_lenient(
         with suppress(Exception):
             exploration = _explore_spies(func, params, fix=fix - {name})
             fix.discard(name)
-    return exploration, defaults
+    # a still-fixed default widens to its type; a promoted one keeps its literal
+    return exploration, {
+        name: exploration.fixed.get(name, value) for name, value in defaults.items()
+    }
