@@ -66,7 +66,7 @@ def twice[R](x: RMul2[R]) -> R:
 ```
 
 You don't have to work this out by hand. The experimental
-[`optype infer`](reference/experimental/infer.md) command derives the same signature
+[`optype infer`](infer.md) command derives the same signature
 straight from the implementation:
 
 ```console
