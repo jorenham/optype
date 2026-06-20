@@ -1566,8 +1566,16 @@ def test_target_exception_skipped() -> None:
     def f(x: Any) -> None:  # noqa: ARG001
         raise AssertionError
 
-    with pytest.raises(InferError, match="completion"):
+    with pytest.raises(InferError, match="completion") as excinfo:
         infer(f)
+    assert isinstance(excinfo.value.__cause__, AssertionError)
+
+
+def test_target_exception_cause() -> None:
+    # when no run completes, the target's last exception is chained as the cause
+    with pytest.raises(InferError, match="completion") as excinfo:
+        infer(lambda: 0 / 0)
+    assert isinstance(excinfo.value.__cause__, ZeroDivisionError)
 
 
 def test_target_exception_partial() -> None:

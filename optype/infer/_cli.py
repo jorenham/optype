@@ -28,4 +28,6 @@ def run(*args: str) -> None:
     try:
         print(infer(eval(code, namespace), *params))
     except (InferError, ValueError) as exc:
-        sys.exit(f"{type(exc).__name__}: {exc}")
+        cause = exc.__cause__
+        detail = f" ({type(cause).__name__}: {cause})" if cause is not None else ""
+        sys.exit(f"{type(exc).__name__}: {exc}{detail}")

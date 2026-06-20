@@ -663,8 +663,9 @@ the fallback branch is never taken.
 When `infer` can't handle the input, it raises `InferError` (a `NotImplementedError`
 subclass). That's the case for operations without a matching protocol, such as an
 attribute access whose name is not statically known (a computed `getattr`), and for
-arguments that aren't callable to begin with. Exceptions raised from within the
-function itself aren't caught.
+arguments that aren't callable to begin with. A function that never runs to completion,
+such as `lambda: 0 / 0`, raises `InferError` chained from the triggering exception
+(`__cause__`).
 
 Variadic parameters are explored with a few placeholders, retried with more after an
 out-of-range index, a failed unpacking, or a missing `**kwargs` key, and reported as an

@@ -355,6 +355,7 @@ def _explore[T](
     results: list[T] = []
     stack: list[list[bool]] = [[]]
     dropped = False
+    last_exc: Exception | None = None
     for _ in range(_RUN_LIMIT):  # caps the exponential blowup of independent forks
         if not stack:
             break
@@ -380,13 +381,14 @@ def _explore[T](
             _rollback(marks)
         except (InferError, IndexError, KeyError, TypeError, ValueError):
             raise  # signals the driver acts on, not a rejected run
-        except Exception:  # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001
             # the target rejected these spy values (assert, zero-division, ...); skip
+            last_exc = exc
             _rollback(marks)
         finally:
             _fork.reset(token)
     if not results:
-        raise InferError("the function never ran to completion")
+        raise InferError("the function never ran to completion") from last_exc
     if dropped or stack:
         warnings.warn("not every branch was explored", InferWarning, stacklevel=3)
     return results
