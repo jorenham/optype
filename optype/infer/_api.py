@@ -63,7 +63,14 @@ def _bind_exploration(exp: _Exploration, defaults: _Defaults) -> _Exploration:
     }
     kept = {name: spy for name, spy in spies.items() if name not in defaults}
     bound_results = [_bind(result, binding) for result in exp.results]
-    return _Exploration(kept, bound, bound_results, exp.var_count, exp.fixed)
+    return _Exploration(
+        kept,
+        bound,
+        bound_results,
+        exp.var_count,
+        exp.fixed,
+        exp.deprecated,
+    )
 
 
 def _defaults(

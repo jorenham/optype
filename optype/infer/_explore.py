@@ -69,6 +69,7 @@ class _Exploration(NamedTuple):
     results: list[object]
     var_count: int  # the `*args` placeholder count
     fixed: Mapping[str, object]  # parameters passed as-is, not spies
+    deprecated: str | None = None  # a `DeprecationWarning` message raised when called
 
 
 def _reachable(params: Iterable[object]) -> Generator[_SpyObject]:
@@ -347,12 +348,34 @@ def _rollback(marks: Iterable[tuple[_SpyObject, int]]) -> None:
         del spy.__optype_trace__[length:]
 
 
+def _run[T](
+    func: Callable[..., T] | Callable[..., Coroutine[Any, None, T]],
+    args: Iterable[object],
+    kwds: Mapping[str, object],
+) -> tuple[T, str | None]:
+    """Call `func`, returning its (awaited) result and any deprecation message.
+
+    A `DeprecationWarning` is recorded, not raised, so a `@deprecated` callable runs.
+    """
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.filterwarnings("always", category=DeprecationWarning)
+        result = func(*args, **kwds)
+        value = _await(result) if iscoroutine(result) else cast("T", result)
+
+    message = next(
+        (str(w.message) for w in caught if issubclass(w.category, DeprecationWarning)),
+        None,
+    )
+    return value, message
+
+
 def _explore[T](
     func: Callable[..., T] | Callable[..., Coroutine[Any, None, T]],
     args: Sequence[object],
     kwds: Mapping[str, object],
-) -> list[T]:
+) -> tuple[list[T], str | None]:
     results: list[T] = []
+    deprecated: str | None = None
     stack: list[list[bool]] = [[]]
     dropped = False
     last_exc: Exception | None = None
@@ -368,9 +391,11 @@ def _explore[T](
         # `_starved` is a per-run splat signal, so a prior run cannot leak into this one
         _starved.set(False)
         token = _fork.set(iter(plan))
+
         try:
-            result = func(*args, **kwds)
-            results.append(_await(result) if iscoroutine(result) else cast("T", result))
+            result, message = _run(func, args, kwds)
+            results.append(result)
+            deprecated = deprecated or message
         except _Fork:
             if len(plan) < _FORK_LIMIT:
                 stack.extend(([*plan, False], [*plan, True]))
@@ -391,7 +416,7 @@ def _explore[T](
         raise InferError("the function never ran to completion") from last_exc
     if dropped or stack:
         warnings.warn("not every branch was explored", InferWarning, stacklevel=3)
-    return results
+    return results, deprecated
 
 
 def _fixed_self(func: _AnyFunc, params: Mapping[str, Parameter]) -> dict[str, object]:
@@ -473,7 +498,8 @@ def _explore_spies(
             fixed = _fixed_self(func, params) | {n: params[n].default for n in fix}
             spies, args, kwds = _placeholders(params, count, keys, omit, fixed)
             try:
-                results: list[object] = [_next(r) for r in _explore(func, args, kwds)]
+                results, deprecated = _explore(func, args, kwds)
+                results = [_next(r) for r in results]
             except KeyError as exc:
                 key = exc.args[0] if exc.args else None
                 if (
@@ -503,8 +529,14 @@ def _explore_spies(
                 else:
                     raise
             else:
-                traces = _snapshot((*spies.values(), *fn_spies(results)))
-                return _Exploration(spies, traces, results, count, fixed)
+                return _Exploration(
+                    spies,
+                    _snapshot((*spies.values(), *fn_spies(results))),
+                    results,
+                    count,
+                    fixed,
+                    deprecated,
+                )
     finally:
         _starved.reset(starve_token)
         _yield_budget.reset(yield_token)

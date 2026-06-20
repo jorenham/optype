@@ -741,7 +741,11 @@ def signatures(
     traces, results = exploration.traces, exploration.results
     roots = [*exploration.spies.values(), *fn_spies(results)]
     reflected = reflect(roots, traces)
-    return [
+    lines = [
         _Renderer(exploration, params, t).render(selected, defaults, negate=negate)
         for t in (traces, reflected)
     ]
+    if exploration.deprecated is not None:
+        head = f"@deprecated({exploration.deprecated!r})"
+        lines = [f"{head}\n{line}" for line in lines]
+    return lines
