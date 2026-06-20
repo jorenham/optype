@@ -20,6 +20,9 @@ extra_javascript = ["scripts/posthog.js"]
 "Getting Started" = "getting-started.md"
 
 [[project.nav]]
+"Type Inference" = "infer.md"
+
+[[project.nav]]
 "Reference" = [
   "reference/index.md",
   { "Core Types" = ["reference/core/just.md", "reference/core/conversion.md", "reference/core/relations.md", "reference/core/binary.md", "reference/core/reflected.md", "reference/core/inplace.md", "reference/core/unary.md", "reference/core/rounding.md", "reference/core/callables.md", "reference/core/iteration.md", "reference/core/awaitables.md", "reference/core/async-iteration.md", "reference/core/containers.md", "reference/core/attributes.md", "reference/core/context.md", "reference/core/descriptors.md", "reference/core/metaclasses.md", "reference/core/buffer.md"] },

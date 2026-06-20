@@ -28,7 +28,7 @@
   &middot;
   <a href="https://jorenham.github.io/optype/reference/"><strong>API Reference</strong></a>
   &middot;
-  <a href="https://jorenham.github.io/optype/reference/experimental/infer/"><strong>Type Inference</strong></a>
+  <a href="https://jorenham.github.io/optype/infer/"><strong>Type Inference</strong></a>
   &middot;
   <a href="https://github.com/jorenham/optype/releases"><strong>Changelog</strong></a>
 </p>
