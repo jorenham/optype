@@ -21,7 +21,21 @@ import pytest
 
 from optype.infer import InferError, InferWarning, _api, infer
 from optype.infer._explore import _doc_signatures, _parameter_forms
-from optype.infer._ir import App, Arg, Fn, Lit, Name, Node, Type, render, subtype, union
+from optype.infer._ir import (
+    App,
+    Arg,
+    Dots,
+    Fn,
+    Lit,
+    Name,
+    Node,
+    Type,
+    names,
+    render,
+    subtype,
+    union,
+)
+from optype.infer._numpy import array_function_node
 
 
 def _type_of[T](x: T) -> type[T]:
@@ -1354,6 +1368,24 @@ def test_infer_array_function() -> None:
     )
 
 
+def test_array_function_node() -> None:
+    # a structured `App`, not a string: one `Any` per required positional parameter
+    ret = Name("R")
+
+    def f(a: object, b: object) -> object: ...
+
+    node = array_function_node(f, ret)
+    assert node == App("CanArrayFunction", (Fn((Name("Any"), Name("Any")), ret), ret))
+    assert render(node) == "CanArrayFunction[(Any, Any) -> R, R]"
+    # being structured, `names` reaches the inner typevar a bare string would hide
+    assert list(names(node)) == ["Any", "Any", "R", "R"]
+
+    # a variadic dispatched function has no fixed arity, rendering as `(...)`
+    def g(*args: object) -> object: ...
+
+    assert render(array_function_node(g, ret)) == "CanArrayFunction[(...) -> R, R]"
+
+
 @pytest.mark.parametrize("selector", ["nope", 9, -9])
 def test_unknown_param(selector: str | int) -> None:
     with pytest.raises(ValueError, match="parameter"):
@@ -1515,7 +1547,7 @@ def test_union_tuple_collapse() -> None:
 
     # a non-tuple member and a variadic tuple stay untouched beside the collapse
     assert rendered([*wide, Name("X")], tuples=True) == f"{wide2} | X"
-    variadic = App("tuple", (Name("V"), Name("...")))
+    variadic = App("tuple", (Name("V"), Dots()))
     assert rendered([*wide, variadic], tuples=True) == f"{wide2} | tuple[V, ...]"
 
 

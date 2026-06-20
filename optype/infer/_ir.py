@@ -2,21 +2,30 @@
 
 from collections.abc import Generator, Iterable
 from dataclasses import dataclass
-from typing import override
+from typing import assert_never, override
 
-type Node = Lit | Type | Name | App | Fn | Union | Inter | Not | Polarity | Unpack
+type Node = (
+    Lit | Type | Name | App | Fn | Union | Inter | Not | Polarity | Unpack | Dots
+)
 
 _NOT = "~"  # the type complement prefix
+_OR = "|"  # the union separator
+_AND = "&"  # the intersection separator
+_DOTS = "..."  # the `...` ellipsis
 
-# variance per type argument ("+" co, "-" contra); the last entry repeats variadically
+# the shared polarity sigils: covariant (read-only) and contravariant (write-only)
+COVARIANT = "+"
+CONTRAVARIANT = "-"
+
+# variance per type argument; the last entry repeats variadically
 _VARIANCES = {
-    "AsyncGenerator": "+-",
-    "Generator": "+-+",
-    "frozenset": "+",
-    "tuple": "+",
-    "type": "+",
+    "AsyncGenerator": COVARIANT + CONTRAVARIANT,
+    "Generator": COVARIANT + CONTRAVARIANT + COVARIANT,
+    "frozenset": COVARIANT,
+    "tuple": COVARIANT,
+    "type": COVARIANT,
     # `enumerate`, `filter`, and `map` are invariant in typeshed; only `zip` is not
-    "zip": "+",
+    "zip": COVARIANT,
 }
 
 
@@ -79,7 +88,7 @@ class Fn:
     ret: Node
 
 
-def _param_type(param: "Node | Arg") -> "Node":
+def _param_type(param: Node | Arg) -> Node:
     """The type of a (possibly keyword-labeled) parameter."""
     return param.value if isinstance(param, Arg) else param
 
@@ -101,9 +110,14 @@ class Polarity:
 
 @dataclass(frozen=True, slots=True)
 class Unpack:
-    """A PEP 646 unpacking, e.g. a `*tuple[T, ...]` variadic callable parameter."""
+    """A PEP 646 unpacking, e.g. `*tuple[T, ...]` or a `*Ts` typevar tuple."""
 
     part: Node
+
+
+@dataclass(frozen=True, slots=True)
+class Dots:
+    """The `...` ellipsis, as in `tuple[X, ...]` or a `(...) -> R` parameter list."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -125,11 +139,11 @@ def tuple_node(parts: Iterable[Node]) -> App:
 
 
 def tuple_node_variadic(element: Node) -> App:
-    return tuple_node((element, Name("...")))
+    return tuple_node((element, Dots()))
 
 
 def subtype(sub: Node | Arg, sup: Node | Arg) -> bool:
-    """Whether `sub` is assignable to `sup`, as far as can be told from the nodes."""
+    """Whether `sub` is a subtype of `sup`, as far as can be told from the nodes."""
     if sub == sup or sub == Name("Never") or sup in {Name("object"), Type(object)}:
         return True
     match sub, sup:
@@ -150,7 +164,7 @@ def subtype(sub: Node | Arg, sup: Node | Arg) -> bool:
                 and len(args) == len(wider_args)
                 and all(
                     subtype(arg, wide)
-                    if variances[min(i, len(variances) - 1)] == "+"
+                    if variances[min(i, len(variances) - 1)] == COVARIANT
                     else subtype(wide, arg)
                     for i, (arg, wide) in enumerate(zip(args, wider_args, strict=True))
                 )
@@ -203,11 +217,7 @@ def _fixed_tuple_arity(node: Node) -> int | None:
     """The arity of a fixed-length `tuple[...]`, or `None` if not one."""
     if not isinstance(node, App) or node.base != "tuple" or not node.args:
         return None
-    if any(
-        isinstance(arg, Arg)
-        or (isinstance(arg, Name) and (arg.name == "..." or arg.name.startswith("*")))
-        for arg in node.args
-    ):
+    if any(isinstance(arg, Arg | Dots | Unpack) for arg in node.args):
         return None  # a variadic `tuple[X, ...]` or `tuple[*Ts]` has no fixed arity
     return len(node.args)
 
@@ -307,8 +317,52 @@ def names(node: Node | Arg) -> Generator[str]:
                 yield from names(part)
         case Not(part) | Polarity(part=part) | Unpack(part):
             yield from names(part)
-        case Lit() | Type():
+        case Lit() | Type() | Dots():
             return
+
+
+def _render_type(cls: type) -> str:
+    prefix = "np." if cls.__module__.partition(".")[0] == "numpy" else ""
+    return prefix + cls.__name__
+
+
+def _render_app(base: str, args: tuple[Node | Arg, ...]) -> str:
+    if base == "tuple" and not args:
+        return "tuple[()]"
+    parts = [
+        f"{arg.key}={render(arg.value)}" if isinstance(arg, Arg) else render(arg)
+        for arg in args
+    ]
+    return f"{base}[{', '.join(parts)}]" if parts else base
+
+
+def _render_fn(params: tuple[Node | Arg, ...], ret: Node) -> str:
+    decls = ", ".join(
+        (f"{p.key}: " if p.key else "") + f"{render(p.value)}{p.suffix}"
+        if isinstance(p, Arg)
+        else render(p)
+        for p in params
+    )
+    return f"({decls}) -> {render(ret)}"
+
+
+def _render_prefix(node: Not | Polarity | Unpack) -> str:
+    match node:
+        case Polarity(sign, part):
+            return _prefix(sign, part)
+        case Not(part):
+            return _prefix(_NOT, part)
+        case Unpack(part):
+            return _prefix("*", part)
+        case _:
+            assert_never(node)
+
+
+def _render_union(parts: tuple[Node, ...], sep: str, dual: type[Node]) -> str:
+    return f" {sep} ".join(
+        f"({render(part)})" if isinstance(part, (dual, Fn)) else render(part)
+        for part in parts
+    )
 
 
 def render(node: Node) -> str:
@@ -317,36 +371,19 @@ def render(node: Node) -> str:
         case Lit(values):
             out = f"Literal[{', '.join(map(repr, values))}]"
         case Type(cls):
-            prefix = "np." if cls.__module__.partition(".")[0] == "numpy" else ""
-            out = prefix + cls.__name__
+            out = _render_type(cls)
         case Name(name):
             out = name
+        case Dots():
+            out = _DOTS
         case App(base, args):
-            parts = [
-                f"{arg.key}={render(arg.value)}"
-                if isinstance(arg, Arg)
-                else render(arg)
-                for arg in args
-            ]
-            out = f"{base}[{', '.join(parts)}]" if parts else base
+            out = _render_app(base, args)
         case Fn(params, ret):
-            decls = ", ".join(
-                (f"{p.key}: " if p.key else "") + f"{render(p.value)}{p.suffix}"
-                if isinstance(p, Arg)
-                else render(p)
-                for p in params
-            )
-            out = f"({decls}) -> {render(ret)}"
-        case Not(part):
-            out = _prefix(_NOT, part)
-        case Polarity(sign, part):
-            out = _prefix(sign, part)
-        case Unpack(part):
-            out = _prefix("*", part)
-        case Union(parts) | Inter(parts):
-            sep, dual = (" | ", Inter) if isinstance(node, Union) else (" & ", Union)
-            out = sep.join(
-                f"({render(part)})" if isinstance(part, dual | Fn) else render(part)
-                for part in parts
-            )
+            out = _render_fn(params, ret)
+        case Not() | Polarity() | Unpack():
+            out = _render_prefix(node)
+        case Union(parts):
+            out = _render_union(parts, _OR, Inter)
+        case Inter(parts):
+            out = _render_union(parts, _AND, Union)
     return out

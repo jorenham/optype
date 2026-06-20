@@ -174,6 +174,9 @@ class _TraceItem(NamedTuple):
     return_: object
 
 
+type _Traces = dict[int, list[_TraceItem]]
+
+
 class _Spy:
     __optype_trace__: list[_TraceItem]
 

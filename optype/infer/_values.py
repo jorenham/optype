@@ -1,6 +1,6 @@
 """The composite shapes of explored results, and the traversal over them."""
 
-from collections.abc import Collection, Generator, Iterable, Mapping
+from collections.abc import Callable, Collection, Generator, Iterable, Mapping
 from inspect import Parameter
 from itertools import chain
 from typing import NamedTuple, NewType, cast
@@ -66,6 +66,51 @@ def _walk(value: object) -> Generator[object]:
     yield value
     for child in _children(value):
         yield from _walk(child)
+
+
+def map_values(value: object, leaf: Callable[[object], object]) -> object:
+    """Rebuild `value` with each non-composite leaf replaced via `leaf`.
+
+    Recurses into the same shapes as `_children`, but a `tuple` subclass (namedtuple)
+    is a leaf, and a `dict` subclass (e.g. `defaultdict`) collapses to a plain `dict`.
+    """
+    match value:
+        case _Gen():
+            yielded = [map_values(item, leaf) for item in value.yielded]
+            out: object = value._replace(yielded=yielded)
+        case _Fn():
+            results = [map_values(item, leaf) for item in value.results]
+            out = value._replace(results=results)
+        case _Rec():
+            out = value._replace(body=map_values(value.body, leaf))
+        case _RecRef():
+            out = value
+        case tuple() if type(value) is tuple:  # pyright: ignore[reportUnknownArgumentType]
+            tup = cast("tuple[object, ...]", value)
+            out = tuple(map_values(item, leaf) for item in tup)
+        case list():
+            out = [map_values(item, leaf) for item in cast("list[object]", value)]
+        case set() | frozenset():
+            items = {
+                map_values(item, leaf) for item in cast("Collection[object]", value)
+            }
+            out = frozenset(items) if isinstance(value, frozenset) else items
+        case Mapping():  # `dict`, and the `frozendict` builtin on Python 3.15+
+            mapping = cast("Mapping[object, object]", value)
+            rebuilt = {
+                map_values(k, leaf): map_values(v, leaf) for k, v in mapping.items()
+            }
+            if isinstance(value, dict):
+                out = rebuilt  # any `dict` subclass collapses to a plain `dict`
+            else:  # the `frozendict` builtin rebuilds as itself
+                ctor = cast(
+                    "Callable[[dict[object, object]], object]",
+                    type(value),  # pyright: ignore[reportUnknownArgumentType]
+                )
+                out = ctor(rebuilt)
+        case _:
+            out = leaf(value)
+    return out
 
 
 def fn_spies(results: Iterable[object]) -> Generator[_SpyObject]:
