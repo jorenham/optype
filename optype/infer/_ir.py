@@ -120,6 +120,14 @@ class Inter:
     parts: tuple[Node, ...]
 
 
+def tuple_node(parts: Iterable[Node]) -> App:
+    return App("tuple", tuple(parts))
+
+
+def tuple_node_variadic(element: Node) -> App:
+    return tuple_node((element, Name("...")))
+
+
 def subtype(sub: Node | Arg, sup: Node | Arg) -> bool:
     """Whether `sub` is assignable to `sup`, as far as can be told from the nodes."""
     if sub == sup or sub == Name("Never") or sup in {Name("object"), Type(object)}:
@@ -235,7 +243,7 @@ def _collapse_tuples(nodes: list[Node]) -> list[Node]:
             union([_param_type(g.args[i]) for g in group], tuples=True) or Name("Never")
             for i in range(arity)
         )
-        out.append(App("tuple", tuple(columns)))
+        out.append(tuple_node(columns))
     return out
 
 

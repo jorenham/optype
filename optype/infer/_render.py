@@ -40,7 +40,6 @@ _TYPEVARS = "TUVWXYZ"
 _TYPEVAR_TUPLE = "*Ts"
 _NEVER = "Never"
 _OBJECT = "object"
-_ELLIPSIS = "..."
 _TUPLE_LIMIT = 16
 
 # the attribute polarity sigils of the fictional inline `Has['name', T]` form
@@ -604,7 +603,7 @@ class _Renderer:
         ):
             return pos
 
-        inner = _ir.App("tuple", (self.return_type(tail), _ir.Name(_ELLIPSIS)))
+        inner = _ir.tuple_node_variadic(self.return_type(tail))
         return [*pos[: len(pos) - count], _ir.Unpack(inner)]
 
     def group(self, proto: _Proto, members: Sequence[_Op]) -> _ir.Node:
@@ -722,6 +721,10 @@ class _Renderer:
         parts = dict.fromkeys(map(self.return_type, values))
         return _ir.union(parts, tuples=True) or _ir.Name(_NEVER)
 
+    def _value_type(self, value: object) -> _ir.Node:
+        """The type of a single `value`, or `Never` if unconstrained."""
+        return self.union((value,)) or _ir.Name(_NEVER)
+
     def _function(self, fn: _Fn) -> _ir.Node:
         """The signature-syntax type of an explored function result."""
         params = tuple(
@@ -740,7 +743,7 @@ class _Renderer:
         value = fn.fixed[name]
         if name in fn.defaults:
             # a pinned default renders as its value, like the outer parameters do
-            return self.union((value,)) or _ir.Name(_NEVER)
+            return self._value_type(value)
         return _ir.Type(type(value))  # a method descriptor's pinned `self`
 
     def _class_of(self, cls: type[Any]) -> _ir.Node | None:
@@ -781,26 +784,32 @@ class _Renderer:
 
     def _tuple(self, items: tuple[object, ...]) -> _ir.Node:
         spy = self._varpos
-        if spy is not None and any(item is spy for item in items):
-            if self._vars.get(id(spy)) == _TYPEVAR_TUPLE:
+        if spy is not None:
+            if (
+                any(item is spy for item in items)
+                and self._vars.get(id(spy)) == _TYPEVAR_TUPLE
+            ):
                 # every use is packed, so the placeholders splat into a single `*Ts`
                 start = next(i for i, item in enumerate(items) if item is spy)
-                parts = [
-                    self.union((item,)) or _ir.Name(_NEVER)
-                    for item in items
-                    if item is not spy
-                ]
+                parts = [self._value_type(item) for item in items if item is not spy]
                 parts.insert(start, _ir.Name(_TYPEVAR_TUPLE))
-                return _ir.App("tuple", tuple(parts))
+                return _ir.tuple_node(parts)
 
-            if all(item is spy for item in items):
-                return _ir.App("tuple", (self.return_type(spy), _ir.Name(_ELLIPSIS)))
+            # a uniform spread is `tuple[T, ...]`: the placeholder (`(*args,)`) at any
+            # length, or its zipped element (`zip(*args)`) only at the full count
+            full_count = len(items) == self._count
+            for target, exact in ((spy, False), (spy.__optype_element__, True)):
+                if (
+                    target is not None
+                    and (full_count or not exact)
+                    and all(item is target for item in items)
+                ):
+                    return _ir.tuple_node_variadic(self.return_type(target))
 
         if len(items) > _TUPLE_LIMIT:  # e.g. `random.getstate`
-            return _ir.App("tuple", (self._union_type(items), _ir.Name(_ELLIPSIS)))
+            return _ir.tuple_node_variadic(self._union_type(items))
 
-        elems = (self.union((item,)) or _ir.Name(_NEVER) for item in items)
-        return _ir.App("tuple", tuple(elems))
+        return _ir.tuple_node(self._value_type(item) for item in items)
 
     def return_types(self) -> str:
         return _ir.render(self._union_type(self._results))
@@ -850,7 +859,7 @@ class _Renderer:
             return f"{label}{_ir.render(_ir.Type(type(self._fixed[name])))}"
         if (spy := self._spies.get(name)) is None:
             # an omitted parameter binds its default, so passing it behaves the same
-            node = self.union((defaults[name],)) or _ir.Name(_NEVER)
+            node = self._value_type(defaults[name])
             return f"{label}{_ir.render(node)}{_suffix(defaults, name)}"
         slot = self.slot(spy)
         if negate and name in defaults:

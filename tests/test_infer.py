@@ -828,6 +828,17 @@ ITERATOR_CASES: list[tuple[Callable[..., Any], str]] = [
         lambda x, y: zip(x, y),  # noqa: B905
         "[R, R2](x: CanIter[CanNext[R]], y: CanIter[CanNext[R2]]) -> zip[tuple[R, R2]]",
     ),
+    # a variadic `*iterables` makes the zipped tuple homogeneous and variadic (gh-688)
+    (
+        lambda *iterables: zip(*iterables),  # noqa: B905
+        "[R](*iterables: CanIter[CanNext[R]]) -> zip[tuple[R, ...]]",
+    ),
+    # known limitation: a fixed tuple of count-many variadic elements is
+    # indistinguishable from a `zip(*a)` spread, so it collapses to `tuple[R, ...]`
+    (
+        lambda *a: (next(iter(a[0])), next(iter(a[0]))),
+        "[R](*a: CanIter[CanNext[R]]) -> tuple[R, ...]",
+    ),
     # `enumerate[R]` is parameterized by the element type, not the yielded pair
     (lambda x: enumerate(x), "[R](x: CanIter[CanNext[R]]) -> enumerate[R]"),
     # only `zip` is covariant in typeshed, so an `enumerate` union does not absorb

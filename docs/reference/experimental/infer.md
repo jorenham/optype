@@ -450,6 +450,18 @@ $ optype infer "lambda f, x: map(f, x)"
 [T, R](f: (T) -> R, x: CanIter[CanNext[T]]) -> map[R]
 ```
 
+`zip` tuples its iterables together, so the element type tracks how many there are: a
+fixed call is a fixed-length tuple, and the variadic builtin is a homogeneous
+`tuple[R, ...]`:
+
+```console
+$ optype infer "lambda x, y: zip(x, y)"
+[R, R2](x: CanIter[CanNext[R]], y: CanIter[CanNext[R2]]) -> zip[tuple[R, R2]]
+
+$ optype infer "zip"
+[R](*iterables: CanIter[CanNext[R]], strict: CanBool = False) -> zip[tuple[R, ...]]
+```
+
 Iteration yields two elements, so a callable that compares them, like `sorted` or `max`,
 traces the comparison too:
 
