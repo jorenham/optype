@@ -1290,6 +1290,13 @@ def test_infer_empty_container() -> None:
     assert infer(returns([[]])) == "() -> list[list[Never]]"
 
 
+def test_infer_ellipsis() -> None:
+    # the `...` value is `EllipsisType`, never its unusable `ellipsis` `__name__`
+    assert infer(lambda: ...) == "() -> EllipsisType"
+    assert infer(lambda x: (x, ...)) == "[T](x: T) -> tuple[T, EllipsisType]"
+    assert infer(lambda: [..., ...]) == "() -> list[EllipsisType]"
+
+
 @pytest.mark.skipif(sys.version_info < (3, 15), reason="requires Python 3.15+")
 def test_infer_frozendict() -> None:
     frozendict: Any = getattr(builtins, "frozendict", None)
