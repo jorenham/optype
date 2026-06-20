@@ -4,6 +4,8 @@ from collections.abc import Iterable, Sequence
 from inspect import Parameter, signature
 from typing import cast
 
+# `from . import` would import the package itself, which imports this module
+import optype.infer._ir as _ir
 from ._spy import _AnyFunc
 
 DUNDER_CAN_MAP = {
@@ -61,6 +63,7 @@ def infer_ufunc(func: _AnyFunc, names: Sequence[str], selected: Iterable[str]) -
 
 
 def _required_args(func: _AnyFunc) -> int | None:
+    """The positional arity of `func`, or `None` if it has none or is variadic."""
     try:
         params = signature(func).parameters.values()
     except (TypeError, ValueError):
@@ -73,8 +76,10 @@ def _required_args(func: _AnyFunc) -> int | None:
     )
 
 
-def array_function_type(func: _AnyFunc, ret: str) -> str:
+def array_function_node(func: _AnyFunc, ret: _ir.Node) -> _ir.Node:
     """Render `CanArrayFunction` with the dispatched function's arity."""
     n = _required_args(func)
-    args = ", ".join(["Any"] * n) if n is not None else "..."
-    return f"CanArrayFunction[({args}) -> {ret}, {ret}]"
+    sig: tuple[_ir.Node, ...] = (
+        (_ir.Dots(),) if n is None else tuple(_ir.Name("Any") for _ in range(n))
+    )
+    return _ir.App("CanArrayFunction", (_ir.Fn(sig, ret), ret))

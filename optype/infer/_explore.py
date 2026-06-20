@@ -26,7 +26,7 @@ from types import (
     MethodType,
     WrapperDescriptorType,
 )
-from typing import Any, cast
+from typing import Any, NamedTuple, cast
 
 from ._errors import InferError, InferWarning
 from ._spy import (
@@ -39,22 +39,11 @@ from ._spy import (
     _SpyObject,
     _SpyStr,
     _starved,
-    _TraceItem,
+    _Traces,
     _yield_budget,
     as_spy,
 )
 from ._values import _Fn, _Gen, _Rec, _RecRef, _RecVar, _walk, fn_spies
-
-__all__ = (
-    "_Recon",
-    "_Traces",
-    "_declared_defaults",
-    "_doc_signatures",
-    "_explore_lenient",
-    "_explore_spies",
-    "_parameter_forms",
-    "_parameters",
-)
 
 _RE_DOC_SIGNATURE = re.compile(r"\b(\w+)\(([^)]*)\)")
 _RE_DOC_PARAM = re.compile(r"(?:^|,)\s*\**([a-zA-Z_]\w*)")
@@ -71,17 +60,15 @@ _KWARGS_LIMIT = 8  # max injected `**kwargs` keys
 # arity is needed, so these stay contiguous; a sparse range would skip valid arities
 _YIELD_COUNTS = tuple(range(2, 17))
 
-type _Traces = dict[int, list[_TraceItem]]
 
-# the spies, their traces, the results, the `*args` placeholder count, and the fixed
-# parameter values (passed as-is instead of a spy)
-type _Recon = tuple[
-    Mapping[str, _SpyObject],
-    _Traces,
-    list[object],
-    int,
-    Mapping[str, object],
-]
+class _Exploration(NamedTuple):
+    """What one exploration of a function against spy placeholders produced."""
+
+    spies: Mapping[str, _SpyObject]
+    traces: _Traces
+    results: list[object]
+    var_count: int  # the `*args` placeholder count
+    fixed: Mapping[str, object]  # parameters passed as-is, not spies
 
 
 def _reachable(params: Iterable[object]) -> Generator[_SpyObject]:
@@ -286,11 +273,16 @@ def _explore_func(func: _AnyFunc) -> object:
         params = _parameters(func)
         if any(p.kind in _VARIADIC_KINDS for p in params.values()):
             return func  # variadic parameters are not expressible (yet)
-        recon, _ = _explore_lenient(func, params)
+        exploration, _ = _explore_lenient(func, params)
     except Exception:  # noqa: BLE001  # an unexplorable function stays opaque
         return func
-    spies, _, results, _, fixed = recon
-    return _Fn(params, spies, fixed, _declared_defaults(params), results)
+    return _Fn(
+        params,
+        exploration.spies,
+        exploration.fixed,
+        _declared_defaults(params),
+        exploration.results,
+    )
 
 
 def _next(result: object, path: dict[int, _RecVar | None] | None = None) -> object:
@@ -454,7 +446,7 @@ def _explore_spies(
     params: Mapping[str, Parameter],
     omit: Collection[str] = (),
     fix: Collection[str] = (),
-) -> _Recon:
+) -> _Exploration:
     kinds = {p.kind for p in params.values()}
 
     counts = iter(_VARIADIC_COUNTS)
@@ -510,7 +502,7 @@ def _explore_spies(
                     raise
             else:
                 traces = _snapshot((*spies.values(), *fn_spies(results)))
-                return spies, traces, results, count, fixed
+                return _Exploration(spies, traces, results, count, fixed)
     finally:
         _starved.reset(starve_token)
         _yield_budget.reset(yield_token)
@@ -520,7 +512,7 @@ def _explore_spies(
 def _explore_lenient(
     func: _AnyFunc,
     params: Mapping[str, Parameter],
-) -> tuple[_Recon, Mapping[str, object]]:
+) -> tuple[_Exploration, Mapping[str, object]]:
     # if a spy placeholder is rejected, fall back to fixing the defaulted parameters,
     # and also return every parameter default for rendering
     try:
@@ -531,9 +523,9 @@ def _explore_lenient(
             raise
     # start from the all-fixed baseline and greedily promote one spy at a time
     fix = set(defaults)
-    recon = _explore_spies(func, params, fix=fix)
+    exploration = _explore_spies(func, params, fix=fix)
     for name in defaults:
         with suppress(Exception):
-            recon = _explore_spies(func, params, fix=fix - {name})
+            exploration = _explore_spies(func, params, fix=fix - {name})
             fix.discard(name)
-    return recon, defaults
+    return exploration, defaults

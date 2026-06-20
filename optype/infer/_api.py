@@ -1,24 +1,21 @@
 """The `infer` entry point: explore, probe the defaults, render."""
 
-import builtins
-import sys
-from collections.abc import Collection, Iterable, Mapping
+from collections.abc import Iterable, Mapping
 from inspect import Parameter
-from typing import cast
 
 # `from . import` would import the package itself, which imports this module
 import optype.infer._numpy as _numpy
 from ._errors import InferError
 from ._explore import (
     _declared_defaults,
+    _Exploration,
     _explore_lenient,
     _explore_spies,
     _parameter_forms,
-    _Recon,
 )
 from ._render import _Defaults, _Names, signatures
 from ._spy import _AnyFunc, _TraceItem
-from ._values import _Fn, _Gen, _Rec
+from ._values import map_values
 
 
 class _SelectError(ValueError):
@@ -43,44 +40,12 @@ def _select(params: Iterable[str | int], names: _Names) -> _Names:
 
 def _bind(value: object, binding: Mapping[int, object]) -> object:
     """A deep copy of `value` with every bound spy replaced by its binding."""
-    if sys.version_info >= (3, 15):
-        # this getattr is workaround for pyrefly (1.0.0)
-        frozendict_ = getattr(builtins, "frozendict")  # noqa: B009
-        if isinstance(value, frozendict_):
-            return frozendict_({
-                _bind(k, binding): _bind(v, binding)
-                # this cast is a workaround for pyright  (1.1.410)
-                for k, v in cast("Mapping[object, object]", value).items()
-            })
-
-    match value:
-        case _Gen():
-            yielded = [_bind(item, binding) for item in value.yielded]
-            out: object = value._replace(yielded=yielded)
-        case _Fn():
-            bound = [_bind(item, binding) for item in value.results]
-            out = value._replace(results=bound)
-        case _Rec():
-            out = value._replace(body=_bind(value.body, binding))
-        case tuple() if type(value) is tuple:  # pyright: ignore[reportUnknownArgumentType]
-            tup = cast("tuple[object, ...]", value)
-            out = tuple(_bind(item, binding) for item in tup)
-        case list():
-            out = [_bind(item, binding) for item in cast("list[object]", value)]
-        case set() | frozenset():
-            items = {_bind(item, binding) for item in cast("Collection[object]", value)}
-            out = frozenset(items) if isinstance(value, frozenset) else items
-        case dict():
-            mapping = cast("Mapping[object, object]", value)
-            out = {_bind(k, binding): _bind(v, binding) for k, v in mapping.items()}
-        case _:
-            out = binding.get(id(value), value)
-    return out
+    return map_values(value, lambda v: binding.get(id(v), v))
 
 
-def _bind_recon(recon: _Recon, defaults: _Defaults) -> _Recon:
-    """The recon as it would look with every defaulted parameter omitted."""
-    spies, traces, results, count, fixed = recon
+def _bind_exploration(exp: _Exploration, defaults: _Defaults) -> _Exploration:
+    """The exploration as it would look with every defaulted parameter omitted."""
+    spies = exp.spies
     binding = {id(spies[name]): value for name, value in defaults.items()}
     # so that a `type(spy)` result becomes `type(default)`
     binding |= {id(type(spies[name])): type(value) for name, value in defaults.items()}
@@ -94,17 +59,18 @@ def _bind_recon(recon: _Recon, defaults: _Defaults) -> _Recon:
             )
             for item in items
         ]
-        for spy_id, items in traces.items()
+        for spy_id, items in exp.traces.items()
     }
     kept = {name: spy for name, spy in spies.items() if name not in defaults}
-    return kept, bound, [_bind(result, binding) for result in results], count, fixed
+    bound_results = [_bind(result, binding) for result in exp.results]
+    return _Exploration(kept, bound, bound_results, exp.var_count, exp.fixed)
 
 
 def _defaults(
     func: _AnyFunc,
     params: Mapping[str, Parameter],
     selected: _Names,
-    recon: _Recon,
+    exploration: _Exploration,
 ) -> tuple[_Defaults, bool, list[str]]:
     """The parameter defaults if expressible as typevar defaults, else overloads.
 
@@ -132,7 +98,8 @@ def _defaults(
     except Exception:  # noqa: BLE001
         return {}, False, []
 
-    if signatures(_bind_recon(recon, defaults), required, names) == observed:
+    omitted_defaults = _bind_exploration(exploration, defaults)
+    if signatures(omitted_defaults, required, names) == observed:
         return defaults, False, []
 
     overloads = signatures(omitted, params, selected, defaults)
@@ -157,15 +124,15 @@ def _infer_form(
 ) -> list[str]:
     selected = _select(params, list(parameters))
     try:
-        recon, fallback = _explore_lenient(func, parameters)
+        exploration, fallback = _explore_lenient(func, parameters)
     except (IndexError, TypeError, ValueError) as exc:
         raise InferError(str(exc)) from exc
     if fallback:
         # the rejected parameters render from their defaults; skip the probing
-        lines = signatures(recon, parameters, selected, fallback)
+        lines = signatures(exploration, parameters, selected, fallback)
         return list(dict.fromkeys(lines))
-    defaults, negate, overloads = _defaults(func, parameters, selected, recon)
-    lines = signatures(recon, parameters, selected, defaults, negate=negate)
+    defaults, negate, overloads = _defaults(func, parameters, selected, exploration)
+    lines = signatures(exploration, parameters, selected, defaults, negate=negate)
     return list(dict.fromkeys((*overloads, *lines)))
 
 
