@@ -1,5 +1,6 @@
 """A minimal algebraic representation of inferred type expressions."""
 
+import types
 from collections.abc import Generator, Iterable
 from dataclasses import dataclass
 from typing import assert_never, override
@@ -322,6 +323,8 @@ def names(node: Node | Arg) -> Generator[str]:
 
 
 def _render_type(cls: type) -> str:
+    if cls is types.EllipsisType:
+        return "EllipsisType"
     prefix = "np." if cls.__module__.partition(".")[0] == "numpy" else ""
     return prefix + cls.__name__
 
