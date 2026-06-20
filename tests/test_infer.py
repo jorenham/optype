@@ -38,6 +38,11 @@ from optype.infer._ir import (
 )
 from optype.infer._numpy import array_function_node
 
+if sys.version_info >= (3, 13):
+    from warnings import deprecated
+else:
+    from typing_extensions import deprecated
+
 
 def _type_of[T](x: T) -> type[T]:
     return type(x)
@@ -1103,6 +1108,59 @@ def test_ternary_pow() -> None:
     assert infer(f) == (
         "[T, R, U = None](x: CanPow[T, U, R], y: T, z: U = None) -> R\n"
         "[T, R](x: T, y: CanRPow[T, R]) -> R"
+    )
+
+
+def test_deprecated() -> None:
+    # a `@deprecated` callable's `DeprecationWarning` becomes an `@deprecated` marker
+    @deprecated("Use bar instead")
+    def foo(x: Any) -> Any:
+        return x + 1
+
+    assert infer(foo) == (  # pyright: ignore[reportDeprecated]
+        "@deprecated('Use bar instead')\n[R](x: CanAdd[Literal[1], R]) -> R"
+    )
+
+
+def test_deprecated_warn() -> None:
+    # a plain `warnings.warn(..., DeprecationWarning)` counts too
+    def foo(x: Any) -> Any:
+        warnings.warn("deprecated", DeprecationWarning, stacklevel=2)
+        return x + 1
+
+    assert infer(foo) == (
+        "@deprecated('deprecated')\n[R](x: CanAdd[Literal[1], R]) -> R"
+    )
+
+
+def test_deprecated_overload() -> None:
+    # only the call forms that raise the warning are marked: omitting `y` stays quiet
+    def foo(x: Any, y: Any = None) -> Any:
+        if y is None:
+            return x + 1
+        warnings.warn("y is deprecated", DeprecationWarning, stacklevel=2)
+        return x + y
+
+    assert infer(foo) == (
+        "[R](x: CanAdd[Literal[1], R], y: None = None) -> R\n"
+        "@deprecated('y is deprecated')\n"
+        "[T: ~None, R](x: CanAdd[T, R], y: T) -> R\n"
+        "@deprecated('y is deprecated')\n"
+        "[T, R](x: T, y: CanRAdd[T, R] & ~None) -> R"
+    )
+
+
+def test_deprecated_operator() -> None:
+    # both the forward and reflected overloads are marked
+    @deprecated("old op")
+    def foo(x: Any, y: Any) -> Any:
+        return x * y
+
+    assert infer(foo) == (  # pyright: ignore[reportDeprecated]
+        "@deprecated('old op')\n"
+        "[T, R](x: CanMul[T, R], y: T) -> R\n"
+        "@deprecated('old op')\n"
+        "[T, R](x: T, y: CanRMul[T, R]) -> R"
     )
 
 

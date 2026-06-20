@@ -394,6 +394,39 @@ def f(x=MISSING): return [] if x is MISSING else x"
 [T: ~MISSING](x: T) -> T
 ```
 
+## Deprecation
+
+A call that emits a [PEP 702](https://peps.python.org/pep-0702/) `DeprecationWarning` is
+reported with an `@deprecated` marker carrying the warning's message. This covers both the
+`@deprecated` decorator and a plain `warnings.warn(..., DeprecationWarning)` in the body:
+
+```console
+$ optype infer "from warnings import deprecated
+@deprecated('Use bar instead')
+def foo(x): return x + 1"
+@deprecated('Use bar instead')
+[R](x: CanAdd[Literal[1], R]) -> R
+```
+
+The warning has to actually fire, so only the overloads that raise it are marked. Omitting a
+default that takes a quiet branch leaves that overload unmarked:
+
+```console
+$ optype infer "import warnings
+def f(x, y=None):
+    if y is None: return x + 1
+    warnings.warn('y is deprecated', DeprecationWarning)
+    return x + y"
+[R](x: CanAdd[Literal[1], R], y: None = None) -> R
+@deprecated('y is deprecated')
+[T: ~None, R](x: CanAdd[T, R], y: T) -> R
+@deprecated('y is deprecated')
+[T, R](x: T, y: CanRAdd[T, R] & ~None) -> R
+```
+
+Only `DeprecationWarning` is recognized (not `PendingDeprecationWarning`, nor a
+`@deprecated(..., category=...)` override), and a numpy ufunc is never marked.
+
 ## Methods
 
 Anything callable can be inferred: not just functions, but also builtins (like
