@@ -322,9 +322,20 @@ def names(node: Node | Arg) -> Generator[str]:
             return
 
 
+# the two `types` members that alias another's type, so each type maps to one name
+_TYPE_ALIASES = "LambdaType", "BuiltinMethodType"
+
+# cpython-internal `__name__`s (`ModuleType.__name__ == "module"`) to importable names
+_TYPES_NAMES: dict[type, str] = {
+    tp: name
+    for name, tp in vars(types).items()
+    if isinstance(tp, type) and tp.__name__ != name and name not in _TYPE_ALIASES
+}
+
+
 def _render_type(cls: type) -> str:
-    if cls is types.EllipsisType:
-        return "EllipsisType"
+    if alias := _TYPES_NAMES.get(cls):
+        return alias
     prefix = "np." if cls.__module__.partition(".")[0] == "numpy" else ""
     return prefix + cls.__name__
 

@@ -14,7 +14,8 @@ import sys
 import warnings
 import weakref
 from collections.abc import Callable
-from inspect import Parameter
+from inspect import Parameter, currentframe
+from types import MappingProxyType
 from typing import Any
 
 import pytest
@@ -760,7 +761,7 @@ FUNCTION_CASES: list[tuple[Callable[..., Any], str]] = [
     ),
     (lambda x: [lambda: x], "[T](x: T) -> list[() -> T]"),
     (lambda x: {"get": lambda: x}, "[T](x: T) -> dict[Literal['get'], () -> T]"),
-    (lambda x: {lambda: x}, "(x: object) -> set[function]"),
+    (lambda x: {lambda: x}, "(x: object) -> set[FunctionType]"),
     # ...and so is a function within the yields of a generator
     (_yield_fn, "[T](x: T) -> Generator[() -> T]"),
     (
@@ -782,9 +783,9 @@ FUNCTION_CASES: list[tuple[Callable[..., Any], str]] = [
     (lambda *args: lambda: args, "[*Ts](*args: *Ts) -> () -> tuple[*Ts]"),
     # a recursive function (factory) has an inexpressible type, so it stays opaque,
     # as do variadic parameters and a `partial` of a non-function
-    (_self_return, "(x: object) -> function"),
-    (_fn_factory, "(n: object) -> () -> function"),
-    (lambda x: lambda *args: x, "(x: object) -> function"),  # noqa: ARG005
+    (_self_return, "(x: object) -> FunctionType"),
+    (_fn_factory, "(n: object) -> () -> FunctionType"),
+    (lambda x: lambda *args: x, "(x: object) -> FunctionType"),  # noqa: ARG005
     (lambda f: functools.partial(f, 1), "(f: object) -> partial"),
     (lambda: functools.partial(print, "a"), "() -> partial"),
 ]
@@ -1274,7 +1275,7 @@ def test_returned_function_mutual_recursion() -> None:
     def pong(x: Any) -> Any:  # noqa: ARG001
         return ping
 
-    assert infer(ping) == "(x: object) -> (x: object) -> function"
+    assert infer(ping) == "(x: object) -> (x: object) -> FunctionType"
 
 
 def test_infer_empty_container() -> None:
@@ -1295,6 +1296,17 @@ def test_infer_ellipsis() -> None:
     assert infer(lambda: ...) == "() -> EllipsisType"
     assert infer(lambda x: (x, ...)) == "[T](x: T) -> tuple[T, EllipsisType]"
     assert infer(lambda: [..., ...]) == "() -> list[EllipsisType]"
+
+
+def test_infer_types_aliases() -> None:
+    # render by the importable `types` name, not the cpython-internal `__name__`
+    assert infer(lambda: math) == "() -> ModuleType"
+    assert infer(lambda: (lambda: 0).__code__) == "() -> CodeType"
+    assert infer(lambda: currentframe()) == "() -> FrameType"
+    assert infer(lambda: type.__dict__["__dict__"]) == "() -> GetSetDescriptorType"
+    assert infer(lambda: MappingProxyType({"k": 1})) == (
+        "() -> MappingProxyType[Literal['k'], Literal[1]]"
+    )
 
 
 class _MyGeneric[T]: ...  # module-level, so its name resolves
