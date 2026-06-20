@@ -626,13 +626,13 @@ class _Renderer:
                 val = self._value_union(mapping.values(), tuples=True) or _ir.Name(
                     _NEVER,
                 )
-                return _ir.App(cls.__name__, (key, val))
+                return _ir.App(_ir.render(_ir.Type(cls)), (key, val))
             case list() | set() | frozenset():
                 inner = self._value_union(
                     cast("Collection[object]", result),
                     tuples=True,
                 )
-                return _ir.App(cls.__name__, (inner or _ir.Name(_NEVER),))
+                return _ir.App(_ir.render(_ir.Type(cls)), (inner or _ir.Name(_NEVER),))
             case tuple() if cls is tuple:
                 return (
                     self._tuple(cast("tuple[object, ...]", result))

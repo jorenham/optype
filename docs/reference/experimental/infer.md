@@ -200,6 +200,14 @@ $ optype infer "def f(x): del x.spam"
 (x: Has['spam']) -> None
 ```
 
+A builtin object renders by its importable `types` name, so a module is `ModuleType`, a
+code object `CodeType`, etc.
+
+```console
+$ optype infer "def f(): return f.__code__"
+() -> CodeType
+```
+
 ## Classes
 
 `type` reads the class directly instead of dispatching through a dunder, but every
