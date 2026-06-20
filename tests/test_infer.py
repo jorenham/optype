@@ -1297,6 +1297,59 @@ def test_infer_ellipsis() -> None:
     assert infer(lambda: [..., ...]) == "() -> list[EllipsisType]"
 
 
+class _MyGeneric[T]: ...  # module-level, so its name resolves
+
+
+def test_infer_generic_alias() -> None:
+    # a subscripted generic denotes the type it spells, not its `GenericAlias` runtime
+    assert infer(lambda: list[int]) == "() -> type[list[int]]"
+    assert infer(lambda: dict[str, int]) == "() -> type[dict[str, int]]"
+    assert infer(lambda: tuple[int, ...]) == "() -> type[tuple[int, ...]]"
+    assert infer(lambda: list[int | None]) == "() -> type[list[int | None]]"
+    assert infer(lambda: list[dict[str, int]]) == "() -> type[list[dict[str, int]]]"
+    assert infer(lambda x: (x, list[int])) == "[T](x: T) -> tuple[T, type[list[int]]]"
+    # a user-defined generic (`typing._GenericAlias`) unwraps like a builtin one
+    assert infer(lambda: _MyGeneric[int]) == "() -> type[_MyGeneric[int]]"
+    assert infer(lambda: list[_MyGeneric[int]]) == "() -> type[list[_MyGeneric[int]]]"
+
+
+def test_infer_generic_alias_union() -> None:
+    # a union has no `type[...]` form; `type[int | str]` means `type[int] | type[str]`
+    assert infer(lambda: int | str) == "() -> TypeForm[int | str]"
+    assert infer(lambda: int | None) == "() -> TypeForm[int | None]"
+
+
+def test_infer_generic_alias_callable() -> None:
+    # a `Callable` has no `type[...]` form either; `TypeForm` over the arrow form
+    assert infer(lambda: Callable[[int], str]) == "() -> TypeForm[(int) -> str]"
+    assert infer(lambda: Callable[..., str]) == "() -> TypeForm[(...) -> str]"
+    assert infer(lambda: list[Callable[[int], str]]) == (
+        "() -> type[list[(int) -> str]]"
+    )
+
+
+def test_infer_generic_alias_unnameable() -> None:
+    # an unnameable origin or argument keeps the unhelpful but honest `GenericAlias`
+    def make_builtin() -> Callable[[], Any]:
+        class Local: ...
+
+        return lambda: list[Local]
+
+    def make_callable() -> Callable[[], Any]:
+        class Local: ...
+
+        return lambda: Callable[[int], Local]
+
+    def make_user() -> Callable[[], Any]:
+        class Local: ...
+
+        return lambda: _MyGeneric[Local]
+
+    assert infer(make_builtin()) == "() -> GenericAlias"
+    assert infer(make_callable()) == "() -> GenericAlias"
+    assert infer(make_user()) == "() -> GenericAlias"
+
+
 @pytest.mark.skipif(sys.version_info < (3, 15), reason="requires Python 3.15+")
 def test_infer_frozendict() -> None:
     frozendict: Any = getattr(builtins, "frozendict", None)

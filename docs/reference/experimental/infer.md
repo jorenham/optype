@@ -245,6 +245,30 @@ $ optype infer "lambda x: int if x else bool"
 (x: CanBool) -> type[int]
 ```
 
+A subscripted generic keeps its arguments, builtin or user-defined:
+
+```console
+$ optype infer "lambda: list[int]"
+() -> type[list[int]]
+
+$ optype infer "lambda: dict[str, int]"
+() -> type[dict[str, int]]
+```
+
+A union or `Callable` has no `type[...]` form, so it renders as a `TypeForm`
+([PEP 747](https://peps.python.org/pep-0747/)):
+
+```console
+$ optype infer "lambda: int | str"
+() -> TypeForm[int | str]
+
+$ optype infer "from collections.abc import Callable
+lambda: Callable[[int], str]"
+() -> TypeForm[(int) -> str]
+```
+
+An origin or argument that doesn't resolve by name keeps the bare `GenericAlias`.
+
 ## Branches
 
 Both sides of a conditional are explored, so the parameter has to satisfy every branch

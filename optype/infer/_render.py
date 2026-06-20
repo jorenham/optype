@@ -2,8 +2,9 @@
 
 import builtins
 import sys
+import types
 from collections import Counter
-from collections.abc import Collection, Iterable, Mapping, Sequence
+from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from inspect import Parameter, _ParameterKind
 from typing import Any, cast, final
 
@@ -34,6 +35,7 @@ from ._spy import (
     as_spy,
 )
 from ._values import _Fn, _Gen, _Rec, _RecRef, _RecVar, _walk, fn_spies
+from optype.inspect import is_generic_alias, is_union_type
 
 _PARAM_PREFIX: dict[_ParameterKind, str] = {
     Parameter.VAR_POSITIONAL: "*",
@@ -45,6 +47,9 @@ _TYPEVAR_TUPLE_NAME = "Ts"  # the PEP 646 typevar-tuple binder, used as `*Ts`
 _NEVER = "Never"
 _OBJECT = "object"
 _TUPLE_LIMIT = 16
+
+# `object`-typed so the `is` check isn't flagged (`Callable` is a special form)
+_CALLABLE_ORIGIN: object = Callable
 
 # the attribute polarity sigils of the fictional inline `Has['name', T]` form
 _READ = _ir.COVARIANT  # a read-only property suffices
@@ -565,11 +570,56 @@ class _Renderer:
             return _ir.Type(cls)
         return None  # a local class has no nameable type, so it stays a bare `type`
 
+    def _type_expr(self, value: object) -> _ir.Node | None:
+        """The type a value *is*, not the type *of* it: `list[int]` -> `list[int]`."""
+        if isinstance(value, type):
+            return self._class_of(value)
+        if is_union_type(value):  # `int | str` and `typing.Union[int, str]` alike
+            parts = self._type_args(value.__args__)
+            return None if parts is None else _ir.union(parts)
+        if is_generic_alias(value):  # builtin `list[int]` and user `Foo[int]` alike
+            if value.__origin__ is _CALLABLE_ORIGIN:
+                # `Callable`'s `__args__` is a flat `(*params, ret)`, not a type row
+                return self._callable_type(value.__args__)
+            origin = self._type_expr(value.__origin__)
+            args = self._type_args(value.__args__)
+            if isinstance(origin, _ir.Type) and args is not None:
+                return _ir.App(_ir.render(origin), tuple(args))
+        return None
+
+    def _callable_type(self, args: tuple[object, ...]) -> _ir.Node | None:
+        """A `Callable[...]` value as the `(params) -> ret` form rendered elsewhere."""
+        *params, ret = args  # `_type_args` renders a `Callable[..., R]`'s `...` too
+        ret_node = self._type_expr(ret)
+        param_nodes = self._type_args(params)
+        if ret_node is None or param_nodes is None:
+            return None
+        return _ir.Fn(tuple(param_nodes), ret_node)
+
+    def _type_args(self, values: Sequence[object]) -> list[_ir.Node] | None:
+        """Every type argument as an annotation node, or `None` if any is unnameable."""
+        args: list[_ir.Node] = []
+        for value in values:
+            node = _ir.Dots() if value is ... else self._type_expr(value)
+            if node is None:
+                return None
+            args.append(node)
+        return args
+
     def _container(self, result: object) -> _ir.Node:
+        if (inner := self._type_expr(result)) is not None:
+            # `type[...]` for a class, `TypeForm[...]` for a union or `Callable`
+            class_form = isinstance(result, type) or (
+                is_generic_alias(result) and result.__origin__ is not _CALLABLE_ORIGIN
+            )
+            return _ir.App("type" if class_form else "TypeForm", (inner,))
+
+        if is_generic_alias(result):
+            # an unnameable origin or argument keeps the honest, if unhelpful, alias
+            return _ir.Type(types.GenericAlias)
+
         cls = type(result)
         match result:
-            case type() if (inner := self._class_of(result)) is not None:
-                return _ir.App("type", (inner,))
             case Mapping():
                 mapping = cast("Mapping[object, object]", result)
                 key = self._value_union(mapping, tuples=True) or _ir.Name(_NEVER)
