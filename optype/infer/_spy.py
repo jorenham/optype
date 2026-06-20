@@ -196,12 +196,12 @@ class _Spy:
 
 @final
 class _SpyStr(str, _Spy):
-    __slots__ = ()  # pyrefly:ignore[implicit-any-attribute]
+    __slots__ = ()
 
 
 @final
 class _SpyBytes(bytes, _Spy):
-    __slots__ = ()  # pyrefly:ignore[implicit-any-attribute]
+    __slots__ = ()
 
 
 class _SpyType(type):
