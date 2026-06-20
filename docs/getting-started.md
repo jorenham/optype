@@ -25,22 +25,32 @@ However, this has several problems:
 3. **Type transformation**: `twice((1, 2)) == (1, 2, 1, 2)` changes from a 2-tuple to a 4-tuple
 4. **Limited to known types**: It doesn't account for custom types with `__rmul__` methods
 
+## Inferring the Type
+
+`optype` comes with an `infer` command that derives a function's signature for you:
+
+```console
+$ optype infer "def twice(x): return 2 * x"
+[R](x: CanRMul[Literal[2], R]) -> R
+```
+
+The rest of this guide explains where that type comes from.
+
 ## The optype Solution
 
-`optype` provides protocols for special methods. For multiplication, we can use `CanRMul[T, R]`:
+`CanRMul[Literal[2], R]` describes the `__rmul__` method that `2 * x` calls on `x`:
 
-- `T` is the type of the left operand (in `2 * x`, this is `Literal[2]`)
-- `R` is the return type of `__rmul__`
+- `Literal[2]` is the left operand
+- `R` is the return type of `x.__rmul__`
+
+Written out in full:
 
 ```python
 from typing import Literal
 import optype as op
 
-type Two = Literal[2]
-type RMul2[R] = op.CanRMul[Two, R]
 
-
-def twice[R](x: RMul2[R]) -> R:
+def twice[R](x: op.CanRMul[Literal[2], R]) -> R:
     return 2 * x
 ```
 
@@ -51,7 +61,18 @@ twice(2)  # -> int
 twice(3.14)  # -> float
 twice("I")  # -> str (because 'I' * 2 == 'II')
 twice(True)  # -> int (because 2 * True == 2)
-twice((42, True))  # -> tuple[int, bool, int, bool]
+twice((42, True))  # -> tuple[Literal[42, True], ...]
+```
+
+You can alias it for readability:
+
+```python
+type Two = Literal[2]
+type RMul2[R] = op.CanRMul[Two, R]
+
+
+def twice[R](x: RMul2[R]) -> R:
+    return 2 * x
 ```
 
 ## Working with Custom Types
