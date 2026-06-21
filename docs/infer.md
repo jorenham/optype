@@ -709,11 +709,19 @@ out-of-range index, a failed unpacking, or a missing `**kwargs` key, and reporte
 reports their count, and `args` and `kwargs` are never empty.
 
 The number of explored branches is capped, so a function with many of them gets a
-signature that only covers the explored ones, along with an `InferWarning`.
+signature that only covers the explored ones, along with an `InferWarning` that
+categorizes each coverage gap (the branch or run budget) and names the affected call
+form. The `optype infer` command prints these to standard error, leaving the signature
+alone on standard output. Pass `strict=True` to raise an `InferError` instead of
+returning a provisional signature.
 
 It can only observe operations that go through a dunder method. Anything that inspects a
 parameter at the C level is invisible, so a parameter passed to `id()`, `isinstance()`,
 or an identity check (`is`) is reported as `object` rather than its real requirement.
+A branch taken on the concrete magnitude of a derived integer is invisible for the same
+reason: a spy reports `len`, `int`, or `index` as a small placeholder value, so a path
+gated on it (`len(x) > 5`, or work done only on a loop's fifth element) is not explored,
+and the requirements behind it are missed.
 
 !!! warning "Generic bounds"
 

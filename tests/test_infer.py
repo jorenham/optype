@@ -21,7 +21,7 @@ from typing import Any
 import pytest
 
 from optype.infer import InferError, InferWarning, _api, infer
-from optype.infer._explore import _doc_signatures, _parameter_forms
+from optype.infer._explore import _doc_signatures, _Gap, _GapKind, _parameter_forms
 from optype.infer._ir import (
     App,
     Arg,
@@ -1619,6 +1619,39 @@ def test_fork_truncation_warning() -> None:
         infer(f)
 
 
+def _budget_exhausting(x: Any) -> Any:
+    return [bool(x[i]) for i in range(10)]
+
+
+def test_gap_names_form() -> None:
+    # the warning categorizes the gap and names the affected call form
+    with pytest.warns(InferWarning, match=r"run budget exhausted in \(x\)"):
+        infer(_budget_exhausting)
+
+
+def test_strict_raises_on_gap() -> None:
+    # the same incompleteness that warns by default fails closed under `strict`
+    with pytest.warns(InferWarning):
+        assert isinstance(infer(_budget_exhausting), str)
+    with pytest.raises(InferError, match="not exhaustively explored"):
+        infer(_budget_exhausting, strict=True)
+
+
+def test_strict_silent_when_complete() -> None:
+    # an exhaustively explored function neither warns nor raises under `strict`
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", InferWarning)
+        result = infer(lambda x: x + 1, strict=True)
+    assert result == "[R](x: CanAdd[Literal[1], R]) -> R"
+
+
+def test_gap_message_and_dedup() -> None:
+    assert _Gap(_GapKind.RUN_BUDGET, "(x)").message() == "run budget exhausted in (x)"
+    assert _Gap(_GapKind.BRANCH_BUDGET).message() == "branch budget exhausted"
+    # frozen and slotted, so equal gaps collapse in a set
+    assert len({_Gap(_GapKind.RUN_BUDGET), _Gap(_GapKind.RUN_BUDGET)}) == 1
+
+
 def test_target_exception_skipped() -> None:
     # a non-protocol error from the target marks a failed run; it never escapes
     def f(x: Any) -> None:  # noqa: ARG001
@@ -2029,3 +2062,12 @@ def test_cli_infer_error() -> None:
     out = _run_cli("-m", "optype", "infer", "lambda x, y: getattr(x, str(y))")
     assert out.returncode == 1
     assert out.stderr.startswith("InferError: no protocol")
+
+
+def test_cli_warns_on_stderr() -> None:
+    # an incomplete exploration keeps the signature on stdout and the warning on stderr
+    out = _run_cli("-m", "optype", "infer", "lambda x: [bool(x[i]) for i in range(10)]")
+    assert out.returncode == 0
+    assert out.stdout.startswith("(x: CanGetitem")
+    assert "warning:" in out.stderr
+    assert "branch" in out.stderr

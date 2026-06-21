@@ -23,7 +23,7 @@ more.
 ## `infer`
 
 ```python
-def infer(func, /, *params: str | int) -> str: ...
+def infer(func, /, *params: str | int, strict: bool = False) -> str: ...
 ```
 
 Infer the `optype` protocol(s) required of `func`'s parameters, returned as the inferred
@@ -42,7 +42,9 @@ Pass parameter names or positions to report only those parameters:
 '[T, R](x: CanGetitem[T, R]) -> R'
 ```
 
-Raises [`InferError`](#infererror) when `func` is not supported.
+Raises [`InferError`](#infererror) when `func` is not supported. When exploration is
+incomplete it emits an [`InferWarning`](#inferwarning) and still returns a provisional
+signature; pass `strict=True` to raise an `InferError` instead.
 
 ## `InferError`
 
@@ -53,5 +55,8 @@ parameter that requires a value no placeholder can provide.
 ## `InferWarning`
 
 A subclass of `RuntimeWarning`, emitted when `infer` could not explore the function
-exhaustively, such as when the branch budget runs out. The returned signature then only
-covers the explored forms.
+exhaustively, such as when the branch or run budget runs out. The message categorizes
+each coverage gap and names the affected call form, and the returned signature then only
+covers the explored paths. The `optype infer` command prints the warning to standard
+error, leaving the signature alone on standard output. Pass `strict=True` to `infer` to
+raise an [`InferError`](#infererror) instead.

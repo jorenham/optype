@@ -4,6 +4,7 @@ cache-dir = "../../.ruff_cache"
 [lint.per-file-ignores]
 "_api.py" = ["PLR0402"]
 "_cli.py" = ["S102", "S307", "T201"]
+"_explore.py" = ["PLR0914"]
 "_numpy.py" = ["PLR0402"]
 "_protocols.py" = ["PLR0402"]
 "_render.py" = ["PLR0402"]

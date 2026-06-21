@@ -2,8 +2,9 @@
 
 import ast
 import sys
+import warnings
 
-from optype.infer import InferError, infer
+from optype.infer import InferError, InferWarning, infer
 
 
 def run(*args: str) -> None:
@@ -26,8 +27,15 @@ def run(*args: str) -> None:
     exec(compile(ast.Module(body[:-1], []), "<expr>", "exec"), namespace)
     code = compile(ast.Expression(last.value), "<expr>", "eval")
     try:
-        print(infer(eval(code, namespace), *params))
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", InferWarning)
+            signature = infer(eval(code, namespace), *params)
     except (InferError, ValueError) as exc:
         cause = exc.__cause__
         detail = f" ({type(cause).__name__}: {cause})" if cause is not None else ""
         sys.exit(f"{type(exc).__name__}: {exc}{detail}")
+
+    print(signature)
+    for entry in caught:
+        if issubclass(entry.category, InferWarning):
+            print(f"warning: {entry.message}", file=sys.stderr)
