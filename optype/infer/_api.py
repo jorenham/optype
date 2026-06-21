@@ -1,16 +1,18 @@
 """The `infer` entry point: explore, probe the defaults, render."""
 
+import warnings
 from collections.abc import Iterable, Mapping
 from inspect import Parameter
 
 # `from . import` would import the package itself, which imports this module
 import optype.infer._numpy as _numpy
-from ._errors import InferError
+from ._errors import InferError, InferWarning
 from ._explore import (
     _declared_defaults,
     _Exploration,
     _explore_lenient,
     _explore_spies,
+    _Gap,
     _parameter_forms,
 )
 from ._render import _Defaults, _Names, signatures
@@ -70,6 +72,7 @@ def _bind_exploration(exp: _Exploration, defaults: _Defaults) -> _Exploration:
         exp.var_count,
         exp.fixed,
         exp.deprecated,
+        exp.gaps,
     )
 
 
@@ -128,12 +131,16 @@ def _infer_form(
     func: _AnyFunc,
     parameters: Mapping[str, Parameter],
     params: tuple[str | int, ...],
+    gaps: set[_Gap],
 ) -> list[str]:
     selected = _select(params, list(parameters))
     try:
         exploration, fallback = _explore_lenient(func, parameters)
     except (IndexError, TypeError, ValueError) as exc:
         raise InferError(str(exc)) from exc
+    if exploration.gaps:
+        where = f"({', '.join(parameters)})"
+        gaps.update(_Gap(g.kind, g.where or where) for g in exploration.gaps)
     if fallback:
         # the rejected parameters render from their defaults; skip the probing
         lines = signatures(exploration, parameters, selected, fallback)
@@ -143,7 +150,7 @@ def _infer_form(
     return list(dict.fromkeys((*overloads, *lines)))
 
 
-def _infer(func: _AnyFunc, params: tuple[str | int, ...]) -> str:
+def _infer(func: _AnyFunc, params: tuple[str | int, ...], gaps: set[_Gap]) -> str:
     if nin := _numpy.ufunc_nin(func):
         names = _numpy.ufunc_params(nin)
         return _numpy.infer_ufunc(func, names, _select(params, names))
@@ -152,7 +159,7 @@ def _infer(func: _AnyFunc, params: tuple[str | int, ...]) -> str:
     if len(forms) == 1:
         # a lone form's error is the result's; the loop below only tolerates a failed
         # form because another may still match
-        return "\n".join(_infer_form(func, forms[0], params))
+        return "\n".join(_infer_form(func, forms[0], params, gaps))
 
     # one overload per documented form: an unsatisfiable form is dropped and a
     # `_SelectError` filters one out, but an unexpected error still propagates
@@ -161,7 +168,7 @@ def _infer(func: _AnyFunc, params: tuple[str | int, ...]) -> str:
     misses: list[str] = []
     for parameters in forms:
         try:
-            lines += _infer_form(func, parameters, params)
+            lines += _infer_form(func, parameters, params, gaps)
         except _SelectError as exc:
             misses.append(str(exc))
         except InferError as exc:
@@ -175,7 +182,7 @@ def _infer(func: _AnyFunc, params: tuple[str | int, ...]) -> str:
     raise InferError("no inferable call form")
 
 
-def infer(func: _AnyFunc, /, *params: str | int) -> str:
+def infer(func: _AnyFunc, /, *params: str | int, strict: bool = False) -> str:
     """Infer the `optype` protocol(s) required of `func`'s parameters.
 
     Pass parameter names or positions to report only those parameters.
@@ -183,12 +190,27 @@ def infer(func: _AnyFunc, /, *params: str | int) -> str:
     >>> print(infer(lambda x: x + 1))
     [R](x: CanAdd[Literal[1], R]) -> R
 
+    Because `infer` runs the function against placeholders, it can only observe
+    the paths those placeholders drive. When exploration is incomplete it emits an
+    `InferWarning` naming the affected call form; pass `strict=True` to raise an
+    `InferError` instead of returning a provisional signature.
+
     Raises:
         InferError: If `func` is not supported, such as a non-callable, an
             operation without a matching protocol, or a parameter that requires
-            a value that no placeholder can provide.
+            a value that no placeholder can provide; or, with `strict=True`, if
+            the function could not be explored exhaustively.
     """
+    gaps: set[_Gap] = set()
     try:
-        return _infer(func, params)
+        result = _infer(func, params, gaps)
     except RecursionError as exc:
         raise InferError("the result is nested too deeply") from exc
+    if gaps:
+        detail = "; ".join(sorted(g.message() for g in gaps))
+        if strict:
+            msg = f"not exhaustively explored: {detail}"
+            raise InferError(msg)
+        msg = f"not every branch was explored: {detail}"
+        warnings.warn(msg, InferWarning, stacklevel=2)
+    return result
