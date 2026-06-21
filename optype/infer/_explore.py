@@ -1,8 +1,6 @@
 """Run a function against spy placeholders and record what happens."""
 
 import gc
-import keyword
-import re
 import warnings
 from collections.abc import (
     AsyncGenerator,
@@ -47,10 +45,6 @@ from ._spy import (
 )
 from ._values import _Fn, _Gen, _Rec, _RecRef, _RecVar, _walk, fn_spies
 
-_RE_DOC_SIGNATURE = re.compile(r"\b(\w+)\(([^)]*)\)")
-_RE_DOC_PARAM = re.compile(r"(?:^|,)\s*\**([a-zA-Z_]\w*)")
-_RE_DOC_ARROW = re.compile(r"\s*->")
-
 _FORK_LIMIT = 64
 _RUN_LIMIT = 256
 _YIELD_LIMIT = 64
@@ -58,8 +52,8 @@ _YIELD_LIMIT = 64
 # large indices stay within reach
 _VARIADIC_COUNTS = (2, 3, 4, 5, 6, 7, 8, 16, 32, 64, 128, 256, 512, 1024)
 _KWARGS_LIMIT = 8  # max injected `**kwargs` keys
-# yield budgets to try for a splat into a fixed-arity call (e.g. `divmod`): an exact
-# arity is needed, so these stay contiguous; a sparse range would skip valid arities
+# yield budgets to try for a star-unpack into a fixed-arity call (e.g. `divmod`): an
+# exact arity is needed, so these stay contiguous; a sparse range would skip valid ones
 _YIELD_COUNTS = tuple(range(2, 17))
 
 
@@ -111,60 +105,11 @@ def _snapshot(params: Iterable[_SpyObject]) -> _Traces:
     return traces
 
 
-def _doc_param_names(group: str) -> list[str] | None:
-    params = group.replace("[", "").replace("]", "")
-    names = _RE_DOC_PARAM.findall(params)
-    # a usage example like `reduce(lambda x, y: ...)` yields keywords, not params
-    if names and not any(map(keyword.iskeyword, names)):
-        return names
-    return None
-
-
-def _doc_signatures(func: _AnyFunc) -> list[list[str]]:
-    """Every documented call form's parameter names, by arity (one per arity).
-
-    Arrow-annotated forms (`name(...) -> ret`) are the real overloads; a docstring's
-    usage examples lack the arrow. When none are annotated (e.g. `next`, `slice`),
-    fall back to the first form. Same-arity forms infer the same structure, so only
-    the first of each arity is kept (its parameter names win).
-    """
-    name = getattr(func, "__name__", "")
-    if not name:
-        return []
-    doc = func.__doc__ or ""
-    arrow_forms: list[list[str]] = []
-    first: list[str] | None = None
-    for match in _RE_DOC_SIGNATURE.finditer(doc):
-        if match[1] != name or (names := _doc_param_names(match[2])) is None:
-            continue
-        if first is None:
-            first = names
-        if _RE_DOC_ARROW.match(doc, match.end()):
-            arrow_forms.append(names)
-    forms = arrow_forms or ([first] if first is not None else [])
-    by_arity: dict[int, list[str]] = {}
-    for f in forms:
-        by_arity.setdefault(len(f), f)
-    return list(by_arity.values())
-
-
-def _parameter_forms(func: _AnyFunc) -> list[Mapping[str, Parameter]]:
-    # the parameters of every call form: the real signature's, else the docstring's
-    try:
-        return [signature(func).parameters]
-    except TypeError as exc:  # not callable
-        raise InferError(str(exc)) from exc
-    except ValueError as exc:  # no signature
-        if not (forms := _doc_signatures(func)):
-            raise InferError(str(exc)) from exc
-        return [
-            {n: Parameter(n, Parameter.POSITIONAL_OR_KEYWORD) for n in names}
-            for names in forms
-        ]
-
-
 def _parameters(func: _AnyFunc) -> Mapping[str, Parameter]:
-    return _parameter_forms(func)[0]  # the first call form
+    try:
+        return signature(func).parameters
+    except (TypeError, ValueError) as exc:  # not callable, or no signature
+        raise InferError(str(exc)) from exc
 
 
 def _declared_defaults(params: Mapping[str, Parameter]) -> dict[str, object]:
@@ -407,7 +352,7 @@ def _explore[T](
             (spy, len(spy.__optype_trace__))
             for spy in _reachable((*args, *kwds.values(), *_closed_over(func)))
         ]
-        # `_starved` is a per-run splat signal, so a prior run cannot leak into this one
+        # `_starved` is a per-run star-unpack flag, so no prior run leaks into this one
         _starved.set(False)
         token = _fork.set(iter(plan))
 
@@ -547,8 +492,8 @@ def _explore_spies(
                     raise InferError(msg) from exc
                 keys.append(key)
             except (IndexError, TypeError, ValueError) as exc:
-                # a too-short splat raises `TypeError`; gate on it so the target's own
-                # error (e.g. a `ValueError`) can't churn the budget and bury itself
+                # a too-short star-unpack raises `TypeError`; gate on it so the target's
+                # own error (e.g. a `ValueError`) can't churn the budget and bury itself
                 if (
                     isinstance(exc, TypeError)
                     and _starved.get()

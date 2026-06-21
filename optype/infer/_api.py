@@ -11,7 +11,7 @@ from ._analyze import (
     absent_verdict,
     dispatch_candidates,
     requires_only_presence,
-    returns_ground,
+    returns_concrete,
 )
 from ._errors import InferError, InferWarning
 from ._explore import (
@@ -20,7 +20,7 @@ from ._explore import (
     _explore_lenient,
     _explore_spies,
     _GapKind,
-    _parameter_forms,
+    _parameters,
 )
 from ._render import (
     _Defaults,
@@ -45,7 +45,7 @@ class _Gap:
 
 
 class _SelectError(ValueError):
-    """A selected parameter or position is absent from a particular call form."""
+    """A selected parameter or position is absent from the signature."""
 
 
 def _select(params: Iterable[str | int], names: _Names) -> _Names:
@@ -184,8 +184,8 @@ def _dispatch_overloads(
         return baseline
     if (
         widens
-        and returns_ground(exploration.results)
-        and returns_ground(variant.results)
+        and returns_concrete(exploration.results)
+        and returns_concrete(variant.results)
     ):
         return union_signature(exploration, variant, params, selected)
     tail = widened_signature(variant, params, selected)
@@ -222,31 +222,8 @@ def _infer(func: _AnyFunc, params: tuple[str | int, ...], gaps: set[_Gap]) -> st
         names = _numpy.ufunc_params(nin)
         return _numpy.infer_ufunc(func, names, _select(params, names))
 
-    forms = _parameter_forms(func)
-    if len(forms) == 1:
-        # a lone form's error is the result's; the loop below only tolerates a failed
-        # form because another may still match
-        return "\n".join(_infer_form(func, forms[0], params, gaps))
-
-    # one overload per documented form: an unsatisfiable form is dropped and a
-    # `_SelectError` filters one out, but an unexpected error still propagates
-    lines: list[str] = []
-    reasons: list[str] = []
-    misses: list[str] = []
-    for parameters in forms:
-        try:
-            lines += _infer_form(func, parameters, params, gaps)
-        except _SelectError as exc:
-            misses.append(str(exc))
-        except InferError as exc:
-            reasons.append(str(exc))
-    if lines:
-        return "\n".join(dict.fromkeys(lines))
-    if reasons:
-        raise InferError("; ".join(dict.fromkeys(reasons)))
-    if misses:
-        raise _SelectError("; ".join(dict.fromkeys(misses)))
-    raise InferError("no inferable call form")
+    parameters = _parameters(func)
+    return "\n".join(_infer_form(func, parameters, params, gaps))
 
 
 def infer(func: _AnyFunc, /, *params: str | int, strict: bool = False) -> str:

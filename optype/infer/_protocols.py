@@ -9,9 +9,8 @@ from ._spy import _Args, _Kwargs, _Marker, _Spy, _TraceItem
 from optype._core import _can, _has
 from optype.inspect import get_protocol_members
 
-_DUNDER_ATTR_READ = frozenset({"__getattr__", "__getattribute__"})
 _DUNDER_ATTR_WRITE = frozenset({"__delattr__", "__setattr__"})
-_DUNDER_ATTR = _DUNDER_ATTR_READ | _DUNDER_ATTR_WRITE
+_DUNDER_ATTR = frozenset({"__getattr__", "__getattribute__"}) | _DUNDER_ATTR_WRITE
 _DUNDER_CLASS_ATTR = frozenset({
     _Marker.CLASS_DELATTR,
     _Marker.CLASS_GETATTR,
