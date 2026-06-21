@@ -460,14 +460,22 @@ class _Renderer:
 
     def traces(self, items: Iterable[_TraceItem]) -> _ir.Node | None:
         items = list(items)
-        # a surviving absence marker proves the dunder was only probed optionally
-        optional = {item.args[0] for item in items if item.attr == _Marker.ABSENT}
+        # an absence marker means the op was optional; an attribute probe keys on its
+        # name, so it spares the other reads
+        optional = {item.args for item in items if item.attr == _Marker.ABSENT}
         groups: dict[
             tuple[_Proto, str | None, bool, int, tuple[str, ...]],
             list[_Op],
         ] = {}
         for item in items:
-            if item.attr == _Marker.ABSENT or item.attr in optional:
+            if item.attr == _Marker.ABSENT:
+                continue
+            probed = (
+                ("__getattr__", item.args[0])
+                if item.attr == "__getattr__" and item.args
+                else (item.attr,)
+            )
+            if probed in optional:
                 continue
             op = resolve(item)
             key = op.proto, op.attr, op.classvar, len(op.args), tuple(sorted(op.kwargs))
@@ -677,6 +685,7 @@ class _Renderer:
         defaults: _Defaults | None = None,
         *,
         negate: bool = False,
+        ret: _ir.Node | None = None,
     ) -> str:
         defaults = defaults or {}
         defaulted = {
@@ -701,14 +710,18 @@ class _Renderer:
         ]
 
         generics = f"[{', '.join(typevars)}]" if typevars else ""
-        params = ", ".join(
-            decl
-            for name in selected
-            if (decl := self._param(name, defaults, negate=negate)) is not None
-        )
-        return f"{generics}({params}) -> {self.return_types()}"
+        decls = (self._param(name, defaults, negate=negate) for name in selected)
+        params = ", ".join(decl for decl in decls if decl is not None)
+        returns = self.return_types() if ret is None else _ir.render(ret)
+        return f"{generics}({params}) -> {returns}"
 
-    def _param(self, name: str, defaults: _Defaults, *, negate: bool) -> str | None:
+    def _param(
+        self,
+        name: str,
+        defaults: _Defaults,
+        *,
+        negate: bool,
+    ) -> str | None:
         # a positional-only parameter cannot be passed by keyword, so no name shows
         label = "" if name in self._nameless else f"{self._prefix[name]}{name}: "
         if name in self._fixed and name not in self._optional:
@@ -730,6 +743,15 @@ class _Renderer:
         return f"{label}{_ir.render(node)}{_suffix(defaults, name)}"
 
 
+def _renderers(
+    exploration: _Exploration,
+    params: Mapping[str, Parameter],
+) -> list[_Renderer]:
+    traces, results = exploration.traces, exploration.results
+    reflected = reflect([*exploration.spies.values(), *fn_spies(results)], traces)
+    return [_Renderer(exploration, params, t) for t in (traces, reflected)]
+
+
 def signatures(
     exploration: _Exploration,
     params: Mapping[str, Parameter],
@@ -738,14 +760,47 @@ def signatures(
     *,
     negate: bool = False,
 ) -> list[str]:
-    traces, results = exploration.traces, exploration.results
-    roots = [*exploration.spies.values(), *fn_spies(results)]
-    reflected = reflect(roots, traces)
     lines = [
-        _Renderer(exploration, params, t).render(selected, defaults, negate=negate)
-        for t in (traces, reflected)
+        r.render(selected, defaults, negate=negate)
+        for r in _renderers(exploration, params)
     ]
     if exploration.deprecated is not None:
         head = f"@deprecated({exploration.deprecated!r})"
         lines = [f"{head}\n{line}" for line in lines]
     return lines
+
+
+def widened_signature(
+    exploration: _Exploration,
+    params: Mapping[str, Parameter],
+    selected: _Names,
+) -> list[str]:
+    """The fallback overload for a value dispatch, deduplicated: the parameter as the
+    absent branch leaves it, the return widened to `object` (the only sound supertype of
+    an arbitrary present return).
+
+    Empty if a signature still declares a type parameter: a pinned return cannot bind
+    one, so a parameter-only typevar would dangle. The lines carry no `@deprecated`
+    prefix, so a leading `[` is an unambiguous generic.
+    """
+    lines = [
+        r.render(selected, ret=_ir.Name(_OBJECT))
+        for r in _renderers(exploration, params)
+    ]
+    if any(line.startswith("[") for line in lines):
+        return []
+    return list(dict.fromkeys(lines))
+
+
+def union_signature(
+    exploration: _Exploration,
+    variant: _Exploration,
+    params: Mapping[str, Parameter],
+    selected: _Names,
+) -> list[str]:
+    """The single overload for a presence dispatch whose return ignores the attribute's
+    value: the parameter (forced absent in `variant`) widens to `object`, and the return
+    unions the present and absent branches (so a `hasattr` predicate renders `bool`).
+    """
+    combined = variant._replace(results=[*exploration.results, *variant.results])
+    return signatures(combined, params, selected)
