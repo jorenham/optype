@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import assert_never, override
 
 type Node = (
-    Lit | Type | Name | App | Fn | Union | Inter | Not | Polarity | Unpack | Dots
+    Lit | Type | Name | App | Fn | Union | Inter | Not | Variance | Unpack | Dots
 )
 
 _NOT = "~"  # the type complement prefix
@@ -14,7 +14,7 @@ _OR = "|"  # the union separator
 _AND = "&"  # the intersection separator
 _DOTS = "..."  # the `...` ellipsis
 
-# the shared polarity sigils: covariant (read-only) and contravariant (write-only)
+# the shared variance signs: covariant (read-only) and contravariant (write-only)
 COVARIANT = "+"
 CONTRAVARIANT = "-"
 
@@ -102,8 +102,8 @@ class Not:
 
 
 @dataclass(frozen=True, slots=True)
-class Polarity:
-    """A polarity-marked type: covariant (read-only) or contravariant (write-only)."""
+class Variance:
+    """A variance-marked type: covariant (read-only) or contravariant (write-only)."""
 
     sign: str
     part: Node
@@ -316,7 +316,7 @@ def names(node: Node | Arg) -> Generator[str]:
         case Fn(params, ret):
             for part in (*params, ret):
                 yield from names(part)
-        case Not(part) | Polarity(part=part) | Unpack(part):
+        case Not(part) | Variance(part=part) | Unpack(part):
             yield from names(part)
         case Lit() | Type() | Dots():
             return
@@ -360,9 +360,9 @@ def _render_fn(params: tuple[Node | Arg, ...], ret: Node) -> str:
     return f"({decls}) -> {render(ret)}"
 
 
-def _render_prefix(node: Not | Polarity | Unpack) -> str:
+def _render_prefix(node: Not | Variance | Unpack) -> str:
     match node:
-        case Polarity(sign, part):
+        case Variance(sign, part):
             return _prefix(sign, part)
         case Not(part):
             return _prefix(_NOT, part)
@@ -394,7 +394,7 @@ def render(node: Node) -> str:
             out = _render_app(base, args)
         case Fn(params, ret):
             out = _render_fn(params, ret)
-        case Not() | Polarity() | Unpack():
+        case Not() | Variance() | Unpack():
             out = _render_prefix(node)
         case Union(parts):
             out = _render_union(parts, _OR, Inter)

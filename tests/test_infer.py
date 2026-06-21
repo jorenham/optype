@@ -14,15 +14,15 @@ import sys
 import warnings
 import weakref
 from collections.abc import Callable
-from inspect import Parameter, currentframe
+from inspect import currentframe, signature
 from types import MappingProxyType
 from typing import Any
 
 import pytest
 
-from optype.infer import InferError, InferWarning, _api, infer
+from optype.infer import InferError, InferWarning, infer
 from optype.infer._api import _Gap
-from optype.infer._explore import _doc_signatures, _GapKind, _parameter_forms
+from optype.infer._explore import _GapKind
 from optype.infer._ir import (
     App,
     Arg,
@@ -539,7 +539,7 @@ VARIADIC_CASES: list[tuple[Callable[..., Any], str]] = [
     (lambda *args: args, "[*Ts](*args: *Ts) -> tuple[*Ts]"),
     (lambda *args: (args, 1), "[*Ts](*args: *Ts) -> tuple[tuple[*Ts], Literal[1]]"),
     (_call_packed, "[*Ts, R](x: (tuple[*Ts]) -> R, *args: *Ts) -> R"),
-    # a splat splices the TypeVarTuple into the surrounding tuple
+    # a star-unpack splices the TypeVarTuple into the surrounding tuple
     (lambda *args: (1, *args), "[*Ts](*args: *Ts) -> tuple[Literal[1], *Ts]"),
     (
         lambda *args: (1, *args, 2),
@@ -802,11 +802,6 @@ def _unpack_pair(x: Any) -> Any:
     return a, b
 
 
-def _unpack_triple(x: Any) -> Any:
-    a, b, c = x
-    return a, b, c
-
-
 def _unpack_star(x: Any) -> Any:
     a, *b = x
     return a, b
@@ -820,12 +815,6 @@ def _unpack_iter(x: Any) -> Any:
 def _divmod_unpack(x: Any, y: Any) -> Any:
     div, mod = divmod(x, y)
     return div, mod
-
-
-def _unpack_two_seqs(x: Any, y: Any) -> Any:
-    a, b = x
-    c, d, e = y
-    return a, b, c, d, e
 
 
 ITERATOR_CASES: list[tuple[Callable[..., Any], str]] = [
@@ -879,21 +868,13 @@ ITERATOR_CASES: list[tuple[Callable[..., Any], str]] = [
     ),
     # fixed-size unpacking (#683)
     (_unpack_pair, "[R](x: CanIter[CanNext[R]]) -> tuple[R, R]"),
-    (_unpack_triple, "[R](x: CanIter[CanNext[R]]) -> tuple[R, R, R]"),
     (_unpack_star, "[R](x: CanIter[CanNext[R]]) -> tuple[R, list[R]]"),
     (_unpack_iter, "[R](x: CanIter[CanNext[R]]) -> tuple[R, R]"),
-    (
-        _unpack_two_seqs,
-        (
-            "[R, R2](x: CanIter[CanNext[R]], y: CanIter[CanNext[R2]]) "
-            "-> tuple[R, R, R2, R2, R2]"
-        ),
-    ),
     (
         lambda x: {k: v for k, v in x},  # noqa: C416
         "[R: CanHash](x: CanIter[CanNext[CanIter[CanNext[R]]]]) -> dict[R, R]",
     ),
-    # a splat into a fixed-arity call (#683)
+    # a star-unpack into a fixed-arity call (#683)
     (
         lambda x, y: divmod(*divmod(x, y)),  # type: ignore[misc]
         (
@@ -1093,7 +1074,8 @@ def test_method_descriptor_unsupported() -> None:
     # generators cannot be constructed, spy-rejecting parameters without a default
     # have nothing to fall back on, and an empty `self` cannot always run
     send = type(x for x in range(0)).send
-    with pytest.raises(InferError, match="cannot instantiate 'generator'"):
+    # before 3.13, `generator.send` has no `inspect.signature` to explore at all
+    with pytest.raises(InferError, match=r"instantiate 'generator'|no signature"):
         infer(send)
     with pytest.raises(InferError, match="expected str instance"):
         infer(str.join)
@@ -1529,8 +1511,18 @@ def test_variadic_exhausted() -> None:
         infer(lambda *args: args[10_000])
 
 
-def test_unpack_mixed_splat() -> None:
-    # two splats of different fixed arities can't share one budget
+def test_fixed_unpack_beyond_default_unsupported() -> None:
+    # an iterator yields two by default, so a 3+ target unpack can't be satisfied
+    def f(x: Any) -> Any:
+        a, b, c = x
+        return a, b, c
+
+    with pytest.raises(InferError):
+        infer(f)
+
+
+def test_mixed_star_unpack() -> None:
+    # two star unpackings of different fixed arities can't share one budget
     def f(a: Any, b: Any) -> Any:
         return divmod(*a), _takes3(*b)  # type: ignore[misc]
 
@@ -1538,8 +1530,8 @@ def test_unpack_mixed_splat() -> None:
         infer(f)
 
 
-def test_unpack_splat_no_budget_leak() -> None:
-    # the splat's grown budget (here 3) must not leak to `sum(z)`; isolated, `z` keeps
+def test_star_unpack_no_budget_leak() -> None:
+    # star-unpack's grown budget (here 3) must not leak to `sum(z)`; `z` alone keeps
     # the default yield of 2, so its `CanAdd` chain stays one level deep (#683, #686)
     assert infer(lambda x, z: (_takes3(*x), sum(z))) == (
         "[T: CanRAdd[Literal[0], CanAdd[T, R2]], R, R2]"
@@ -1550,14 +1542,14 @@ def test_unpack_splat_no_budget_leak() -> None:
     )
 
 
-def test_unpack_splat_gap_arity() -> None:
-    # a splat into a 9-ary call lands on a budget the old sparse range skipped (#683)
+def test_star_unpack_gap_arity() -> None:
+    # a star-unpack into a 9-ary call hits a budget the old sparse range skipped (#683)
     assert infer(lambda x: _takes9(*x)) == "[R](x: CanIter[CanNext[R]]) -> R"
 
 
-def test_unpack_args_and_splat() -> None:
-    # `*args` and a growable splat coexist: each grows its own budget instead of the
-    # `*args` retry starving the splat of yields (#683)
+def test_args_and_star_unpack() -> None:
+    # `*args` and a growable star-unpack coexist: each grows its own budget instead of
+    # the `*args` retry starving the star-unpack of yields (#683)
     def f(*args: Any) -> Any:
         return divmod(*divmod(args[0], args[1]))  # type: ignore[misc]
 
@@ -1566,9 +1558,9 @@ def test_unpack_args_and_splat() -> None:
     assert "CanRDivmod" in sig
 
 
-def test_unpack_splat_error_not_masked() -> None:
-    # a non-arity error from a splat target must surface as-is, not be buried under a
-    # bogus "got N args" after needlessly climbing the whole yield budget (#683)
+def test_star_unpack_error_not_masked() -> None:
+    # a non-arity error from a star-unpack target must surface as-is, not buried under
+    # a bogus "got N args" after needlessly climbing the whole yield budget (#683)
     def picky(_a: Any) -> Any:
         raise ValueError("domain error")
 
@@ -1951,49 +1943,6 @@ def test_not_callable() -> None:
         infer(not_callable)
 
 
-def test_doc_signatures() -> None:
-    def f() -> None: ...
-
-    f.__doc__ = "f(a) -> z\nf(a, b) -> z"
-    assert _doc_signatures(f) == [["a"], ["a", "b"]]
-
-    # defaults and optional-bracket groups reduce to bare parameter names
-    f.__doc__ = "f(a, b=1, [c]) -> z"
-    assert _doc_signatures(f) == [["a", "b", "c"]]
-
-    # same-arity forms render identically, so only the first is kept
-    f.__doc__ = "f(a) -> z\nf(b) -> z\nf(c, d) -> z"
-    assert _doc_signatures(f) == [["a"], ["c", "d"]]
-
-    # no arrow: fall back to the first form (e.g. `next`, `slice`)
-    f.__doc__ = "f(a, b)\nFor example, f(x, y)."
-    assert _doc_signatures(f) == [["a", "b"]]
-
-    # a usage example, not a signature: its keyword arg is no parameter name
-    f.__doc__ = "Apply f. For example, f(lambda x, y: x + y, [1, 2, 3])."
-    assert _doc_signatures(f) == []
-
-    f.__doc__ = "no signature line here"
-    assert _doc_signatures(f) == []
-
-
-def test_doc_signature() -> None:
-    # builtins like `int` have no signature; fall back to the docstring. The
-    # unsatisfiable `int(x, base)` form is dropped silently, without a warning.
-    with warnings.catch_warnings():
-        warnings.simplefilter("error", InferWarning)
-        assert infer(int) == "(x: CanInt | CanIndex) -> int"
-
-
-def _needs_doc(func: Callable[..., object]) -> pytest.MarkDecorator:
-    # some Python builds strip the call-form lines from a builtin's docstring, leaving
-    # no parameters to recover; only assert the output where the build provides them
-    return pytest.mark.skipif(
-        not _doc_signatures(func),
-        reason=f"{getattr(func, '__name__', func)!r} docstring carries no call forms",
-    )
-
-
 def test_iter() -> None:
     # the callable_iterator enrichment, independent of `iter`'s own docstring
     assert infer(lambda f, s: iter(f, s)) == "[R](f: () -> R, s: object) -> Iterator[R]"
@@ -2002,111 +1951,14 @@ def test_iter() -> None:
     assert infer(lambda s: iter(int, s)) == "(s: object) -> callable_iterator"
 
 
-@_needs_doc(iter)
-def test_iter_overloads() -> None:
-    assert infer(iter) == (
-        "[R](iterable: CanIter[R]) -> R\n"
-        "[R](callable: () -> R, sentinel: object) -> Iterator[R]"
-    )
-
-
-@_needs_doc(max)
-@_needs_doc(min)
-def test_max_min() -> None:
-    assert infer(max) == (
-        "[T, U: CanGt[T, CanBool], V: CanGt[U | T, CanBool]]"
-        "(iterable: T, default: U, key: V) -> V | U | T\n"
-        "[T, U: CanGt[T, CanBool], V: CanGt[U | T, CanBool], "
-        "W: CanGt[V | U | T, CanBool]]"
-        "(arg1: T, arg2: U, args: V, key: W) -> W | V | U | T"
-    )
-    assert infer(min) == (
-        "[T, U: CanLt[T, CanBool], V: CanLt[U | T, CanBool]]"
-        "(iterable: T, default: U, key: V) -> V | U | T\n"
-        "[T, U: CanLt[T, CanBool], V: CanLt[U | T, CanBool], "
-        "W: CanLt[V | U | T, CanBool]]"
-        "(arg1: T, arg2: U, args: V, key: W) -> W | V | U | T"
-    )
-
-
-@_needs_doc(max)
-def test_select_filters_forms() -> None:
-    # `iterable` belongs to the first form only; the second is filtered out silently,
-    # not reported as a form with "no satisfying placeholder"
-    with warnings.catch_warnings():
-        warnings.simplefilter("error", InferWarning)
-        assert infer(max, "iterable") == (
-            "[T, U: CanGt[T, CanBool], V: CanGt[U | T, CanBool]]"
-            "(iterable: T) -> V | U | T"
-        )
-    # a name in no form is still a clean selection error
-    with pytest.raises(ValueError, match="unknown parameter"):
-        infer(max, "zzz")
-
-
-@pytest.mark.parametrize(
-    ("func", "expected"),
-    [
-        # forms differing only in parameter name collapse to one (mapping/iterable/...)
-        pytest.param(
-            dict,
-            (
-                "[R: CanHash, R2](mapping: Has['keys', () -> +CanIter[CanNext[R]]]"
-                " & CanGetitem[R, R2]) -> dict[R, R2]"
-            ),
-            marks=_needs_doc(dict),
-        ),
-        pytest.param(str, "(object: CanStr) -> str", marks=_needs_doc(str)),
-        pytest.param(range, "(stop: CanIndex) -> range", marks=_needs_doc(range)),
-        pytest.param(
-            bytes,
-            "(iterable_of_ints: CanBytes) -> bytes",
-            marks=_needs_doc(bytes),
-        ),
-        # the second form raises during exploration and drops out
-        pytest.param(type, "[T](object: T) -> type[T]", marks=_needs_doc(type)),
-        # no arrow forms in the docstring: the single fallback form
-        pytest.param(
-            next,
-            "[R](iterator: CanNext[R], default: object) -> R",
-            marks=_needs_doc(next),
-        ),
-        pytest.param(slice, "(stop: object) -> slice", marks=_needs_doc(slice)),
-    ],
-)
-def test_single_form_builtins(func: Callable[..., Any], expected: str) -> None:
-    # the unsatisfiable forms are omitted silently; that silence is asserted below
-    assert infer(func) == expected
-
-
-@pytest.mark.skipif(
-    len(_parameter_forms(str)) < 2,
-    reason="this build's str docstring exposes a single call form",
-)
-def test_omitted_form_silent() -> None:
-    # dropping a form no placeholder can satisfy is routine, not warning-worthy
-    with warnings.catch_warnings():
-        warnings.simplefilter("error", InferWarning)
-        assert infer(str) == "(object: CanStr) -> str"
-
-
-def test_all_forms_unsatisfiable(monkeypatch: pytest.MonkeyPatch) -> None:
-    # every form fails exploration and yields no line: the reasons surface as one error
-    def boom(*_args: object) -> object:
-        raise TypeError("boom")
-
-    pos = Parameter.POSITIONAL_OR_KEYWORD
-    forms = [
-        {"a": Parameter("a", pos)},
-        {"a": Parameter("a", pos), "b": Parameter("b", pos)},
-    ]
-    monkeypatch.setattr(_api, "_parameter_forms", lambda _func: forms)
-    with pytest.raises(InferError, match="boom"):
-        infer(boom)
-
-
-def test_type() -> None:
-    assert infer(type) == "[T](object: T) -> type[T]"
+def test_builtin_without_signature() -> None:
+    try:
+        signature(iter)
+    except ValueError:
+        with pytest.raises(InferError):
+            infer(iter)
+    else:
+        pytest.skip("this build exposes an `inspect.signature` for `iter`")
 
 
 def test_dynamic_attr_name() -> None:

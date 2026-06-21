@@ -51,7 +51,7 @@ _TUPLE_LIMIT = 16
 # `object`-typed so the `is` check isn't flagged (`Callable` is a special form)
 _CALLABLE_ORIGIN: object = Callable
 
-# the attribute polarity sigils of the fictional inline `Has['name', T]` form
+# the attribute variance signs of the fictional inline `Has['name', T]` form
 _READ = _ir.COVARIANT  # a read-only property suffices
 _WRITE = _ir.CONTRAVARIANT  # the attribute only has to accept the value
 
@@ -69,7 +69,7 @@ def _sign_read(ret: _ir.Node) -> _ir.Node:
     """Mark a read covariant; a callable signs its return type instead: a method."""
     if isinstance(ret, _ir.Fn):
         return _ir.Fn(ret.params, _sign_read(ret.ret))
-    return ret if ret == _ir.Name(_OBJECT) else _ir.Polarity(_READ, ret)
+    return ret if ret == _ir.Name(_OBJECT) else _ir.Variance(_READ, ret)
 
 
 def _is_sentinel(x: object, /) -> bool:
@@ -405,7 +405,7 @@ class _Renderer:
         ):
             return pos
 
-        # require every call to splat the same trailing run, else order would decide
+        # require every call to star-unpack the same trailing run, else order decides
         count = self._count
         if not all(
             m.args[-1] is tail and spy_runs(m.args, tail)[-1] == count for m in members
@@ -446,7 +446,7 @@ class _Renderer:
         if (attr := members[0].attr) is not None:
             # a read is covariant (a property suffices) and a write contravariant
             # (the attribute only has to accept the value); existence renders bare
-            signed: tuple[_ir.Node, ...] = tuple(_ir.Polarity(_WRITE, a) for a in pos)
+            signed: tuple[_ir.Node, ...] = tuple(_ir.Variance(_WRITE, a) for a in pos)
             if ret is not None and ret != _ir.Name(_OBJECT):
                 signed = *signed, _sign_read(ret)
             if members[0].classvar:
@@ -654,7 +654,7 @@ class _Renderer:
         spy = self._varpos
         if spy is not None:
             if any(item is spy for item in items) and self._vartuple:
-                # every use is packed, so the placeholders splat into a single `*Ts`
+                # every use is packed, so the placeholders unpack into a single `*Ts`
                 start = next(i for i, item in enumerate(items) if item is spy)
                 parts = [self._value_type(item) for item in items if item is not spy]
                 parts.insert(start, _ir.Unpack(_ir.Name(_TYPEVAR_TUPLE_NAME)))

@@ -83,7 +83,7 @@ def requires_only_presence(
     )
 
 
-def returns_ground(results: Iterable[object]) -> bool:
+def returns_concrete(results: Iterable[object]) -> bool:
     """Whether no result carries a spy, so the return is a concrete type."""
     return all(next(return_spies(r), None) is None for r in results)
 

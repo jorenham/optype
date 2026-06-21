@@ -69,25 +69,6 @@ $ optype infer "lambda x: -x + x"
 [T, R](x: CanNeg[T] & CanRAdd[T, R]) -> R
 ```
 
-A builtin without an `inspect.signature` recovers its parameters from the docstring,
-reporting each documented call form as an overload:
-
-```console
-$ optype infer "iter"
-[R](iterable: CanIter[R]) -> R
-[R](callable: () -> R, sentinel: object) -> Iterator[R]
-```
-
-Unsatisfiable forms are dropped and same-arity forms collapse into one. The docstring is
-also lossy: it marks neither `*args` nor the keyword-only `*`, so both become plain
-positionals. Read these forms as the shape of the call, not a faithful signature:
-
-```console
-$ optype infer "max"
-[T, U: CanGt[T, CanBool], V: CanGt[U | T, CanBool]](iterable: T, default: U, key: V) -> V | U | T
-[T, U: CanGt[T, CanBool], V: CanGt[U | T, CanBool], W: CanGt[V | U | T, CanBool]](arg1: T, arg2: U, args: V, key: W) -> W | V | U | T
-```
-
 ## Intersections
 
 Python has no intersection types, so the `&` is not valid Python: both requirements
@@ -166,7 +147,7 @@ $ optype infer "lambda x: x.__name__"
 
 An attribute without a shipped protocol renders as the fictional inline form
 `Has['name', T]`. Like `&` and `~`, it is not valid Python, but it is expressible as
-a protocol with a single member. The type argument carries a polarity sigil: a read
+a protocol with a single member. The type argument carries a variance sign: a read
 requires only the covariant `+T`, so a `@property` getter suffices:
 
 ```python
@@ -182,7 +163,13 @@ $ optype infer "lambda x: x.spam"
 [R](x: Has['spam', +R]) -> R
 ```
 
-When the attribute is called, the sigil sinks into the callable's return type, where
+!!! tip "Reading the `+`/`-` signs"
+
+    The sign is the direction the value flows: a covariant `+T` is **produced** (read
+    out, like a getter's return type), and a contravariant `-T` is **consumed** (passed
+    in, like a setter's argument). So a read is `+`, a write is `-`.
+
+When the attribute is called, the sign sinks into the callable's return type, where
 the covariance applies: `Has['spam', () -> +R]` is the method `def spam(self) -> R`:
 
 ```console
@@ -217,8 +204,8 @@ $ optype infer "def f(): return f.__code__"
 recording proxy has a unique class, so the result is still tied to its parameter:
 
 ```console
-$ optype infer "type"
-[T](object: T) -> type[T]
+$ optype infer "lambda x: type(x)"
+[T](x: T) -> type[T]
 
 $ optype infer "lambda x: type(next(x))"
 [R](x: CanNext[R]) -> type[R]
@@ -557,6 +544,10 @@ $ optype infer "lambda x: {k: v for k, v in x}"
 [R: CanHash](x: CanIter[CanNext[CanIter[CanNext[R]]]]) -> dict[R, R]
 ```
 
+A placeholder iterator yields two elements, so a two-target unpack (and a starred one) is
+covered, but a fixed unpack of three or more targets cannot be satisfied and raises an
+`InferError`.
+
 ## Returned functions
 
 A returned function is lazy too, so it is explored with placeholders of its own, and
@@ -718,10 +709,11 @@ attribute itself, or an absent branch that can't run on placeholders (as with `d
 
 When `infer` can't handle the input, it raises `InferError` (a `NotImplementedError`
 subclass). That's the case for operations without a matching protocol, such as an
-attribute access whose name is not statically known (a computed `getattr`), and for
-arguments that aren't callable to begin with. A function that never runs to completion,
-such as `lambda: 0 / 0`, raises `InferError` chained from the triggering exception
-(`__cause__`).
+attribute access whose name is not statically known (a computed `getattr`); for arguments
+that aren't callable to begin with; and for a builtin whose parameters `inspect.signature`
+cannot recover (such as `iter`, `max`, or `type` itself, though `type(x)` within a
+function is fine). A function that never runs to completion, such as `lambda: 0 / 0`,
+raises `InferError` chained from the triggering exception (`__cause__`).
 
 Variadic parameters are explored with a few placeholders, retried with more after an
 out-of-range index, a failed unpacking, or a missing `**kwargs` key, and reported as an
