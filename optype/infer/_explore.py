@@ -16,7 +16,6 @@ from collections.abc import (
 )
 from contextlib import suppress
 from contextvars import ContextVar
-from dataclasses import dataclass
 from enum import StrEnum
 from functools import partial
 from inspect import Parameter, isasyncgen, iscoroutine, isgenerator, signature
@@ -71,17 +70,6 @@ class _GapKind(StrEnum):
     RUN_BUDGET = "run budget exhausted"
 
 
-@dataclass(frozen=True, slots=True)
-class _Gap:
-    """A coverage gap: a path the exploration left unexplored."""
-
-    kind: _GapKind
-    where: str = ""  # the affected call form, e.g. "(x, y)"
-
-    def message(self) -> str:
-        return f"{self.kind}{f' in {self.where}' if self.where else ''}"
-
-
 class _Exploration(NamedTuple):
     """What one exploration of a function against spy placeholders produced."""
 
@@ -91,7 +79,7 @@ class _Exploration(NamedTuple):
     var_count: int  # the `*args` placeholder count
     fixed: Mapping[str, object]  # parameters passed as-is, not spies
     deprecated: str | None = None  # a `DeprecationWarning` message raised when called
-    gaps: frozenset[_Gap] = frozenset()  # the paths left unexplored
+    gaps: frozenset[_GapKind] = frozenset()  # kinds of unexplored path
 
 
 def _reachable(params: Iterable[object]) -> Generator[_SpyObject]:
@@ -404,7 +392,7 @@ def _explore[T](
     func: Callable[..., T] | Callable[..., Coroutine[Any, None, T]],
     args: Sequence[object],
     kwds: Mapping[str, object],
-) -> tuple[list[T], str | None, frozenset[_Gap]]:
+) -> tuple[list[T], str | None, frozenset[_GapKind]]:
     results: list[T] = []
     deprecated: str | None = None
     stack: list[list[bool]] = [[]]
@@ -446,7 +434,7 @@ def _explore[T](
     if not results:
         raise InferError("the function never ran to completion") from last_exc
     hits = (dropped, _GapKind.BRANCH_BUDGET), (bool(stack), _GapKind.RUN_BUDGET)
-    gaps = frozenset(_Gap(kind) for hit, kind in hits if hit)
+    gaps = frozenset(kind for hit, kind in hits if hit)
     return results, deprecated, gaps
 
 
@@ -499,13 +487,24 @@ def _placeholders(
     return spies, args, kwds
 
 
+def _force_absent(
+    spies: Mapping[str, _SpyObject],
+    absent: Mapping[str, Collection[str]],
+) -> None:
+    for name, attrs in absent.items():
+        if (spy := spies.get(name)) is not None:
+            spy.__optype_absent__ = frozenset(attrs)
+
+
 def _explore_spies(
     func: _AnyFunc,
     params: Mapping[str, Parameter],
     omit: Collection[str] = (),
     fix: Collection[str] = (),
+    absent: Mapping[str, Collection[str]] | None = None,
 ) -> _Exploration:
     kinds = {p.kind for p in params.values()}
+    forced_absent = absent or {}
 
     counts = iter(_VARIADIC_COUNTS)
     count = next(counts)
@@ -530,6 +529,7 @@ def _explore_spies(
                 n: _typed_default(params[n].default) for n in fix
             }
             spies, args, kwds = _placeholders(params, count, keys, omit, fixed)
+            _force_absent(spies, forced_absent)
             try:
                 results, deprecated, gaps = _explore(func, args, kwds)
                 results = [_next(r) for r in results]

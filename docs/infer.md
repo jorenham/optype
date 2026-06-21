@@ -692,9 +692,29 @@ placeholder arguments (no real side effects, no reliance on concrete values). Th
 extends to anything it returns: a returned function is called with placeholders of its
 own, and a returned lazy iterator is iterated. A returned function that raises during
 this exploration is not treated as an error: its type stays an opaque `function`.
-An attribute probe with a fallback, such as `hasattr` or `getattr` with a default,
-reports the attribute as a requirement anyway: a placeholder has every attribute, so
-the fallback branch is never taken.
+
+A single-parameter function that dispatches on an attribute's presence (`hasattr`,
+`getattr` with a default, or `try`/`except AttributeError`) is explored again with the
+attribute forced absent, to reach the branch a placeholder otherwise hides. Because the
+attribute is tolerated rather than required, the parameter widens past `Has[...]`. When
+the return ignores the attribute's value, a single overload covers it, its return the
+union of both branches (so a `hasattr` predicate accepts any object and returns `bool`);
+when the present branch returns the value, that overload stays over an `object` fallback
+(the only sound supertype of an arbitrary present return):
+
+```pycon
+>>> print(infer(lambda x: hasattr(x, "spam")))
+(x: object) -> bool
+>>> print(infer(lambda x: 0 if hasattr(x, "spam") else 1))
+(x: object) -> int
+>>> print(infer(lambda x: getattr(x, "spam", None)))
+[R](x: Has['spam', +R]) -> R
+(x: object) -> object
+```
+
+Anything else keeps the strict baseline that requires the attribute: more than one
+parameter, several presence-tests at once, a present branch that needs more than the
+attribute itself, or an absent branch that can't run on placeholders (as with `dict`).
 
 When `infer` can't handle the input, it raises `InferError` (a `NotImplementedError`
 subclass). That's the case for operations without a matching protocol, such as an
@@ -709,19 +729,15 @@ out-of-range index, a failed unpacking, or a missing `**kwargs` key, and reporte
 reports their count, and `args` and `kwargs` are never empty.
 
 The number of explored branches is capped, so a function with many of them gets a
-signature that only covers the explored ones, along with an `InferWarning` that
-categorizes each coverage gap (the branch or run budget) and names the affected call
-form. The `optype infer` command prints these to standard error, leaving the signature
-alone on standard output. Pass `strict=True` to raise an `InferError` instead of
-returning a provisional signature.
+signature that only covers the explored ones, along with an `InferWarning` that names the
+gap and the affected call form. The CLI prints it to standard error; `strict=True` raises
+an `InferError` instead.
 
 It can only observe operations that go through a dunder method. Anything that inspects a
 parameter at the C level is invisible, so a parameter passed to `id()`, `isinstance()`,
-or an identity check (`is`) is reported as `object` rather than its real requirement.
-A branch taken on the concrete magnitude of a derived integer is invisible for the same
-reason: a spy reports `len`, `int`, or `index` as a small placeholder value, so a path
-gated on it (`len(x) > 5`, or work done only on a loop's fifth element) is not explored,
-and the requirements behind it are missed.
+or an identity check (`is`) is reported as `object` rather than its real requirement. The
+same blind spot hides a branch on a derived integer: `len`, `int`, and `index` return a
+small placeholder, so `len(x) > 5` is never explored.
 
 !!! warning "Generic bounds"
 

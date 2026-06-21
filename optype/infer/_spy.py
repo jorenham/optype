@@ -240,6 +240,7 @@ class _SpyObject(_Spy, metaclass=_SpyType):
     __optype_iterator__: bool = False
     __optype_arity__: "int | None" = None
     __optype_growable__: bool = False
+    __optype_absent__: "frozenset[str]" = frozenset()
     # spies are descriptors (`__get__`), so only ever read through the class `__dict__`
     __optype_instance__: "ClassVar[_SpyObject | None]" = None
 
@@ -263,6 +264,10 @@ class _SpyObject(_Spy, metaclass=_SpyType):
         if _internal(attr):
             return None
 
+        if attr in self.__optype_absent__:
+            # the marker survives only if a completing run tolerates the absence
+            self.__optype_trace_add__(_Marker.ABSENT, ("__getattr__", attr), {}, None)
+            raise AttributeError(attr)
         return self.__optype_trace_add__("__getattr__", (attr,), {}, _SpyObject())
 
     @override

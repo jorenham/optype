@@ -21,7 +21,8 @@ from typing import Any
 import pytest
 
 from optype.infer import InferError, InferWarning, _api, infer
-from optype.infer._explore import _doc_signatures, _Gap, _GapKind, _parameter_forms
+from optype.infer._api import _Gap
+from optype.infer._explore import _doc_signatures, _GapKind, _parameter_forms
 from optype.infer._ir import (
     App,
     Arg,
@@ -1609,22 +1610,13 @@ def test_infer_choice_does_not_hang(choose: Callable[..., Any]) -> None:
         infer(choose)
 
 
-def test_fork_truncation_warning() -> None:
-    # when the budget runs out before every branch was explored, it warns. Distinct
-    # `x[i]` spies each fork on `bool`; a single spy's truthiness is stable per run.
-    def f(x: Any) -> Any:
-        return [bool(x[i]) for i in range(10)]
-
-    with pytest.warns(InferWarning, match="branch"):
-        infer(f)
-
-
 def _budget_exhausting(x: Any) -> Any:
     return [bool(x[i]) for i in range(10)]
 
 
-def test_gap_names_form() -> None:
-    # the warning categorizes the gap and names the affected call form
+def test_fork_truncation_warning() -> None:
+    # when the budget runs out before every branch was explored, the warning categorizes
+    # the gap and names the affected form. Distinct `x[i]` spies each fork on `bool`.
     with pytest.warns(InferWarning, match=r"run budget exhausted in \(x\)"):
         infer(_budget_exhausting)
 
@@ -1633,7 +1625,7 @@ def test_strict_raises_on_gap() -> None:
     # the same incompleteness that warns by default fails closed under `strict`
     with pytest.warns(InferWarning):
         assert isinstance(infer(_budget_exhausting), str)
-    with pytest.raises(InferError, match="not exhaustively explored"):
+    with pytest.raises(InferError, match="incomplete exploration"):
         infer(_budget_exhausting, strict=True)
 
 
@@ -1646,10 +1638,157 @@ def test_strict_silent_when_complete() -> None:
 
 
 def test_gap_message_and_dedup() -> None:
-    assert _Gap(_GapKind.RUN_BUDGET, "(x)").message() == "run budget exhausted in (x)"
-    assert _Gap(_GapKind.BRANCH_BUDGET).message() == "branch budget exhausted"
+    gap = _Gap(_GapKind.RUN_BUDGET, "(x)")
+    assert gap.message() == "run budget exhausted in (x)"
     # frozen and slotted, so equal gaps collapse in a set
-    assert len({_Gap(_GapKind.RUN_BUDGET), _Gap(_GapKind.RUN_BUDGET)}) == 1
+    assert len({gap, _Gap(_GapKind.RUN_BUDGET, "(x)")}) == 1
+
+
+def test_dispatch_hasattr_collapses_to_object() -> None:
+    # `hasattr` tolerates absence, so the attribute is not a requirement
+    assert infer(lambda x: hasattr(x, "a")) == "(x: object) -> bool"
+
+
+def test_dispatch_try_except_bool_collapses_to_object() -> None:
+    # a `try`/`except AttributeError` that returns a bool is also a presence predicate
+    def f(x: Any) -> Any:
+        try:
+            x.value  # noqa: B018
+        except AttributeError:
+            return False
+        return True
+
+    assert infer(f) == "(x: object) -> bool"
+
+
+def test_dispatch_negated_predicate_collapses_to_object() -> None:
+    # the inverted polarity (`False` present, `True` absent) is still a bool predicate
+    assert infer(lambda x: not hasattr(x, "a")) == "(x: object) -> bool"
+
+
+def test_dispatch_presence_independent_return_collapses() -> None:
+    # the return ignores the attribute's value, so one overload with the unioned return
+    # of both branches covers it, rather than an `object` fallback
+    assert infer(lambda x: 1 if hasattr(x, "a") else 2) == "(x: object) -> int"
+
+
+def test_dispatch_getattr_default_widens_fallback() -> None:
+    # a value dispatch keeps two overloads, but the fallback's return widens to a sound
+    # supertype of the present `R` (`object`), so the overloads no longer overlap
+    def f(x: Any) -> Any:
+        return getattr(x, "value", None)
+
+    assert infer(f) == "[R](x: Has['value', +R]) -> R\n(x: object) -> object"
+
+
+def test_dispatch_try_except_value_widens_fallback() -> None:
+    def f(x: Any) -> Any:
+        try:
+            return x.value
+        except AttributeError:
+            return 0
+
+    assert infer(f) == "[R](x: Has['value', +R]) -> R\n(x: object) -> object"
+
+
+def test_dispatch_required_attribute_unchanged() -> None:
+    # a directly-used attribute has no fallback, so its absent variant raises and is
+    # dropped; the attribute stays a hard requirement
+    assert infer(lambda x: x.a) == "[R](x: Has['a', +R]) -> R"
+
+
+def test_dispatch_conditional_use_no_overload() -> None:
+    # `y.foo` is used in one branch of an unrelated fork, not dispatched on; forcing it
+    # absent completes via the other branch but leaves no tolerated-absence marker
+    def f(x: Any, y: Any) -> Any:
+        return x if 0 in x else y.foo()
+
+    assert infer(f) == (
+        "[T: CanContains[Literal[0]], R](x: T, y: Has['foo', () -> +R]) -> T | R"
+    )
+
+
+def test_dispatch_independent_dispatches_keep_baseline() -> None:
+    # two presence-tests on one parameter don't compose soundly, so the strict baseline
+    # (requiring both) is kept rather than overloads that resolve wrongly for mixed x
+    def f(x: Any) -> Any:
+        return hasattr(x, "a"), hasattr(x, "b")
+
+    assert infer(f) == (
+        "(x: Has['a'] & Has['b']) -> tuple[Literal[True], Literal[True]]"
+    )
+
+
+def test_dispatch_multi_parameter_keeps_baseline() -> None:
+    # a dispatch on a multi-parameter function isn't collapsed or widened (the fallback
+    # can't be rendered soundly without losing the other parameters), so the baseline
+    # stays; `y`'s own `a` is unaffected by forcing `x`'s `a` absent
+    def f(x: Any, y: Any) -> Any:
+        return hasattr(x, "a"), y.a
+
+    assert infer(f) == ("[R](x: Has['a'], y: Has['a', +R]) -> tuple[Literal[True], R]")
+
+
+def test_dispatch_value_from_parameter_keeps_baseline() -> None:
+    # the absent branch derives its value from the parameter (`x.b`), so a widened
+    # fallback would orphan that typevar; the strict baseline is kept instead
+    def f(x: Any) -> Any:
+        return hasattr(x, "a") or x.b
+
+    assert infer(f) == "(x: Has['a']) -> bool"
+
+
+def test_dispatch_fallback_keeps_unconditional_requirement() -> None:
+    # the `value` absence marker must not suppress the absent branch's `fallback` read
+    def f(x: Any) -> Any:
+        try:
+            return x.value
+        except AttributeError:
+            x.fallback  # noqa: B018
+            return 0
+
+    assert infer(f) == "[R](x: Has['value', +R]) -> R\n(x: Has['fallback']) -> object"
+
+
+def test_dispatch_value_capability_keeps_baseline() -> None:
+    # the present branch constrains the value (`+ 1`), so an `object` fallback would
+    # admit a `value` that cannot add; the sound baseline is kept
+    def f(x: Any) -> Any:
+        return getattr(x, "value", 0) + 1
+
+    assert infer(f) == "[R](x: Has['value', +CanAdd[Literal[1], R]]) -> R"
+
+
+def test_dispatch_present_extra_requirement_keeps_baseline() -> None:
+    # the present branch also requires `b`, so widening to `object` would be unsound
+    def f(x: Any) -> Any:
+        if hasattr(x, "a"):
+            _ = x.b
+            return True
+        return False
+
+    assert infer(f) == "(x: Has['a'] & Has['b']) -> bool"
+
+
+def test_dispatch_no_budget_warning_for_plain_reads() -> None:
+    # reading many attributes is not a dispatch, so it must not trip the dispatch budget
+    def f(x: Any) -> Any:
+        return x.a, x.b, x.c, x.d, x.e, x.f, x.g, x.h, x.i
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        assert isinstance(infer(f), str)
+    assert isinstance(infer(f, strict=True), str)
+
+
+def test_dispatch_multi_parameter_no_budget_warning() -> None:
+    # a multi-parameter function never dispatches, so attribute reads cannot truncate
+    def f(x: Any, y: Any) -> Any:
+        return x.a, x.b, x.c, x.d, x.e, x.f, x.g, x.h, x.i, y
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        assert isinstance(infer(f), str)
 
 
 def test_target_exception_skipped() -> None:
@@ -2070,4 +2209,4 @@ def test_cli_warns_on_stderr() -> None:
     assert out.returncode == 0
     assert out.stdout.startswith("(x: CanGetitem")
     assert "warning:" in out.stderr
-    assert "branch" in out.stderr
+    assert "incomplete exploration" in out.stderr

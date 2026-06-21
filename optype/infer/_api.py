@@ -2,22 +2,46 @@
 
 import warnings
 from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
 from inspect import Parameter
 
 # `from . import` would import the package itself, which imports this module
 import optype.infer._numpy as _numpy
+from ._analyze import (
+    absent_verdict,
+    dispatch_candidates,
+    requires_only_presence,
+    returns_ground,
+)
 from ._errors import InferError, InferWarning
 from ._explore import (
     _declared_defaults,
     _Exploration,
     _explore_lenient,
     _explore_spies,
-    _Gap,
+    _GapKind,
     _parameter_forms,
 )
-from ._render import _Defaults, _Names, signatures
+from ._render import (
+    _Defaults,
+    _Names,
+    signatures,
+    union_signature,
+    widened_signature,
+)
 from ._spy import _AnyFunc, _TraceItem
 from ._values import map_values
+
+
+@dataclass(frozen=True, slots=True)
+class _Gap:
+    """A coverage gap at a call form."""
+
+    kind: _GapKind
+    where: str  # the call form, e.g. "(x, y)"
+
+    def message(self) -> str:
+        return f"{self.kind} in {self.where}"
 
 
 class _SelectError(ValueError):
@@ -127,6 +151,47 @@ def _defaults(
     return {}, False, overloads
 
 
+def _dispatch_overloads(
+    func: _AnyFunc,
+    params: Mapping[str, Parameter],
+    selected: _Names,
+    exploration: _Exploration,
+    baseline: list[str],
+) -> list[str]:
+    """The overloads for a presence-test on a single parameter's attribute.
+
+    Forcing the attribute absent surfaces the branch a placeholder hides. If the return
+    ignores the attribute's value, one overload covers it: the parameter widens to
+    `object`, the return unions both branches. If the present branch returns the value,
+    that overload stays over an `object` fallback. Otherwise the `baseline` holds.
+    """
+    candidates = (
+        dispatch_candidates(exploration.spies, exploration.traces)
+        if len(params) == 1
+        else ()
+    )
+    if len(candidates) != 1:
+        return baseline
+    ((param, name),) = candidates
+    if not requires_only_presence(exploration.spies, exploration.traces, param, name):
+        return baseline
+    try:
+        variant = _explore_spies(func, params, absent={param: (name,)})
+    except Exception:  # noqa: BLE001
+        return baseline
+    widens = absent_verdict(variant.spies, variant.traces, param, name)
+    if widens is None:
+        return baseline
+    if (
+        widens
+        and returns_ground(exploration.results)
+        and returns_ground(variant.results)
+    ):
+        return union_signature(exploration, variant, params, selected)
+    tail = widened_signature(variant, params, selected)
+    return baseline + tail if tail else baseline
+
+
 def _infer_form(
     func: _AnyFunc,
     parameters: Mapping[str, Parameter],
@@ -134,19 +199,21 @@ def _infer_form(
     gaps: set[_Gap],
 ) -> list[str]:
     selected = _select(params, list(parameters))
+    where = f"({', '.join(parameters)})"
     try:
         exploration, fallback = _explore_lenient(func, parameters)
     except (IndexError, TypeError, ValueError) as exc:
         raise InferError(str(exc)) from exc
-    if exploration.gaps:
-        where = f"({', '.join(parameters)})"
-        gaps.update(_Gap(g.kind, g.where or where) for g in exploration.gaps)
+    gaps.update(_Gap(kind, where) for kind in exploration.gaps)
     if fallback:
         # the rejected parameters render from their defaults; skip the probing
         lines = signatures(exploration, parameters, selected, fallback)
         return list(dict.fromkeys(lines))
     defaults, negate, overloads = _defaults(func, parameters, selected, exploration)
     lines = signatures(exploration, parameters, selected, defaults, negate=negate)
+    if not defaults and not overloads:
+        # dispatch only when defaults didn't already split the form
+        lines = _dispatch_overloads(func, parameters, selected, exploration, lines)
     return list(dict.fromkeys((*overloads, *lines)))
 
 
@@ -190,10 +257,8 @@ def infer(func: _AnyFunc, /, *params: str | int, strict: bool = False) -> str:
     >>> print(infer(lambda x: x + 1))
     [R](x: CanAdd[Literal[1], R]) -> R
 
-    Because `infer` runs the function against placeholders, it can only observe
-    the paths those placeholders drive. When exploration is incomplete it emits an
-    `InferWarning` naming the affected call form; pass `strict=True` to raise an
-    `InferError` instead of returning a provisional signature.
+    When exploration is incomplete it emits an `InferWarning` naming the affected
+    call form; pass `strict=True` to raise an `InferError` instead.
 
     Raises:
         InferError: If `func` is not supported, such as a non-callable, an
@@ -208,9 +273,8 @@ def infer(func: _AnyFunc, /, *params: str | int, strict: bool = False) -> str:
         raise InferError("the result is nested too deeply") from exc
     if gaps:
         detail = "; ".join(sorted(g.message() for g in gaps))
+        msg = f"incomplete exploration: {detail}"
         if strict:
-            msg = f"not exhaustively explored: {detail}"
             raise InferError(msg)
-        msg = f"not every branch was explored: {detail}"
         warnings.warn(msg, InferWarning, stacklevel=2)
     return result

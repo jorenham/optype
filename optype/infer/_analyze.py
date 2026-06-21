@@ -6,7 +6,7 @@ from itertools import groupby
 from typing import cast
 
 from ._protocols import _DUNDER_ATTR, _DUNDER_CAN_R, _DUNDER_CLASS_ATTR
-from ._spy import _own_spy, _SpyObject, _TraceItem, _Traces, as_spy
+from ._spy import _Marker, _own_spy, _Spy, _SpyObject, _TraceItem, _Traces, as_spy
 from ._values import _children, _Fn, _Gen, _Rec, _RecRef, _walk
 
 type _Producer = Mapping[int, tuple[_SpyObject, _TraceItem]]
@@ -17,6 +17,75 @@ def return_spies(value: object) -> Generator[_SpyObject]:
     for node in _walk(value):
         if (spy := as_spy(node)) is not None:
             yield spy
+
+
+def dispatch_candidates(
+    spies: Mapping[str, _SpyObject],
+    traces: _Traces,
+) -> list[tuple[str, str]]:
+    """The `(parameter, attribute)` reads on `spies`, to probe for presence-dispatch."""
+    return list(
+        dict.fromkeys(
+            (param, name)
+            for param, spy in spies.items()
+            for item in traces.get(id(spy), ())
+            if item.attr == "__getattr__" and item.args
+            if isinstance(name := item.args[0], str) and not isinstance(name, _Spy)
+        ),
+    )
+
+
+def _param_traces(
+    spies: Mapping[str, _SpyObject],
+    traces: _Traces,
+    param: str,
+) -> Sequence[_TraceItem]:
+    """The recorded ops on `param`'s spy, empty if it has none."""
+    spy = spies.get(param)
+    return () if spy is None else traces.get(id(spy), ())
+
+
+def absent_verdict(
+    spies: Mapping[str, _SpyObject],
+    traces: _Traces,
+    param: str,
+    name: str,
+) -> bool | None:
+    """How forcing `name` absent resolves `param`, from one scan of its trace.
+
+    `None`: absence not tolerated, no dispatch. `True`: only the absence remains, widen
+    to `object`. `False`: a present-branch read survives, keep an `object` fallback.
+    """
+    items = _param_traces(spies, traces, param)
+    marker = "__getattr__", name
+    if not any(item.attr == _Marker.ABSENT and item.args == marker for item in items):
+        return None
+    return all(item.attr == _Marker.ABSENT for item in items)
+
+
+def requires_only_presence(
+    spies: Mapping[str, _SpyObject],
+    traces: _Traces,
+    param: str,
+    name: str,
+) -> bool:
+    """Whether `param`'s sole requirement is the bare presence of `name`.
+
+    Every op must read `name` and never constrain its value, so widening the parameter
+    past `Has[name]` drops nothing a caller would have to satisfy.
+    """
+    items = _param_traces(spies, traces, param)
+    return bool(items) and all(
+        item.attr == "__getattr__"
+        and item.args == (name,)
+        and not traces.get(id(item.return_))
+        for item in items
+    )
+
+
+def returns_ground(results: Iterable[object]) -> bool:
+    """Whether no result carries a spy, so the return is a concrete type."""
+    return all(next(return_spies(r), None) is None for r in results)
 
 
 def _trace_order(params: Sequence[_SpyObject], traces: _Traces) -> list[_SpyObject]:
