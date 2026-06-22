@@ -7,6 +7,7 @@ from typing import cast
 # `from . import` would import the package itself, which imports this module
 import optype.infer._ir as _ir
 from ._spy import _AnyFunc
+from ._values import VARIADIC_KINDS
 
 DUNDER_CAN_MAP = {
     "__array_ufunc__": "CanArrayUFunc",
@@ -23,8 +24,6 @@ _DTYPE_RANK: dict[str, int] = {
     char: rank for rank, (chars, _) in enumerate(_DTYPE_KINDS) for char in chars
 }
 _DTYPE_ALIASES = [alias for _, alias in _DTYPE_KINDS]
-
-_PARAM_VAR = frozenset({Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD})
 
 
 def ufunc_nin(func: _AnyFunc) -> int | None:
@@ -68,7 +67,7 @@ def _required_args(func: _AnyFunc) -> int | None:
         params = signature(func).parameters.values()
     except (TypeError, ValueError):
         return None
-    if any(p.kind in _PARAM_VAR for p in params):
+    if any(p.kind in VARIADIC_KINDS for p in params):
         return None
     return sum(
         p.kind is not Parameter.KEYWORD_ONLY and p.default is Parameter.empty

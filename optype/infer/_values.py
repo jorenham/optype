@@ -1,11 +1,33 @@
-"""The composite shapes of explored results, and the traversal over them."""
+"""The shared data shapes of an exploration: its record, and the explored results."""
 
 from collections.abc import Callable, Collection, Generator, Iterable, Mapping
+from enum import StrEnum
 from inspect import Parameter
 from itertools import chain
 from typing import NamedTuple, NewType, cast
 
-from ._spy import _SpyObject
+from ._spy import _SpyObject, _Traces
+
+VARIADIC_KINDS = frozenset({Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD})
+
+
+class GapKind(StrEnum):
+    """A reason the exploration could not cover every path."""
+
+    BRANCH_BUDGET = "branch budget exhausted"
+    RUN_BUDGET = "run budget exhausted"
+
+
+class Exploration(NamedTuple):
+    """What one exploration of a function against spy placeholders produced."""
+
+    spies: Mapping[str, _SpyObject]
+    traces: _Traces
+    results: list[object]
+    var_count: int  # the `*args` placeholder count
+    fixed: Mapping[str, object]  # parameters passed as-is, not spies
+    deprecated: str | None = None  # a `DeprecationWarning` message raised when called
+    gaps: frozenset[GapKind] = frozenset()  # kinds of unexplored path
 
 
 class _Gen(NamedTuple):

@@ -14,7 +14,6 @@ from collections.abc import (
 )
 from contextlib import suppress
 from contextvars import ContextVar
-from enum import StrEnum
 from functools import partial
 from inspect import Parameter, isasyncgen, iscoroutine, isgenerator, signature
 from itertools import islice
@@ -25,7 +24,7 @@ from types import (
     MethodType,
     WrapperDescriptorType,
 )
-from typing import Any, NamedTuple, cast
+from typing import Any, cast
 
 from ._errors import InferError
 from ._spy import (
@@ -43,7 +42,18 @@ from ._spy import (
     _yield_budget,
     as_spy,
 )
-from ._values import _Fn, _Gen, _Rec, _RecRef, _RecVar, _walk, fn_spies
+from ._values import (
+    VARIADIC_KINDS,
+    Exploration,
+    GapKind,
+    _Fn,
+    _Gen,
+    _Rec,
+    _RecRef,
+    _RecVar,
+    _walk,
+    fn_spies,
+)
 
 _FORK_LIMIT = 64
 _RUN_LIMIT = 256
@@ -55,25 +65,6 @@ _KWARGS_LIMIT = 8  # max injected `**kwargs` keys
 # yield budgets to try for a star-unpack into a fixed-arity call (e.g. `divmod`): an
 # exact arity is needed, so these stay contiguous; a sparse range would skip valid ones
 _YIELD_COUNTS = tuple(range(2, 17))
-
-
-class _GapKind(StrEnum):
-    """A reason the exploration could not cover every path."""
-
-    BRANCH_BUDGET = "branch budget exhausted"
-    RUN_BUDGET = "run budget exhausted"
-
-
-class _Exploration(NamedTuple):
-    """What one exploration of a function against spy placeholders produced."""
-
-    spies: Mapping[str, _SpyObject]
-    traces: _Traces
-    results: list[object]
-    var_count: int  # the `*args` placeholder count
-    fixed: Mapping[str, object]  # parameters passed as-is, not spies
-    deprecated: str | None = None  # a `DeprecationWarning` message raised when called
-    gaps: frozenset[_GapKind] = frozenset()  # kinds of unexplored path
 
 
 def _reachable(params: Iterable[object]) -> Generator[_SpyObject]:
@@ -112,7 +103,7 @@ def _parameters(func: _AnyFunc) -> Mapping[str, Parameter]:
         raise InferError(str(exc)) from exc
 
 
-def _declared_defaults(params: Mapping[str, Parameter]) -> dict[str, object]:
+def declared_defaults(params: Mapping[str, Parameter]) -> dict[str, object]:
     """The declared parameter defaults, by name."""
     return {n: p.default for n, p in params.items() if p.default is not Parameter.empty}
 
@@ -187,7 +178,6 @@ _FUNCTION_TYPES = (
     MethodDescriptorType,
     WrapperDescriptorType,
 )
-_VARIADIC_KINDS = frozenset({Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD})
 
 # the (unwrapped) functions currently being explored, see `_explore_key`
 _exploring: ContextVar[frozenset[int]] = ContextVar("_exploring", default=frozenset())
@@ -236,16 +226,16 @@ def _explore_func(func: _AnyFunc) -> object:
         return func  # a recursive function type is inexpressible
     try:
         params = _parameters(func)
-        if any(p.kind in _VARIADIC_KINDS for p in params.values()):
+        if any(p.kind in VARIADIC_KINDS for p in params.values()):
             return func  # variadic parameters are not expressible (yet)
-        exploration, _ = _explore_lenient(func, params)
+        exploration, _ = explore_lenient(func, params)
     except Exception:  # noqa: BLE001  # an unexplorable function stays opaque
         return func
     return _Fn(
         params,
         exploration.spies,
         exploration.fixed,
-        _declared_defaults(params),
+        declared_defaults(params),
         exploration.results,
     )
 
@@ -280,7 +270,7 @@ def _next(result: object, path: dict[int, _RecVar | None] | None = None) -> obje
         # would stop at the sentinel and pollute it. Referent 0 is the callable (per
         # `_CALLABLE_FIRST`; not a spy-search, since the sentinel may be a spy too).
         # Calling `fn()` is deliberate: the recorded `__call__` is what renders the
-        # parameter as `() -> R`, as `_explore_spies` snapshots after this runs.
+        # parameter as `() -> R`, as `explore_spies` snapshots after this runs.
         out = _Gen([_next(fn(), path)], "Iterator")
     elif isinstance(_unwrap(result), _FUNCTION_TYPES):
         out = _explore_func(cast("_AnyFunc", result))
@@ -337,7 +327,7 @@ def _explore[T](
     func: Callable[..., T] | Callable[..., Coroutine[Any, None, T]],
     args: Sequence[object],
     kwds: Mapping[str, object],
-) -> tuple[list[T], str | None, frozenset[_GapKind]]:
+) -> tuple[list[T], str | None, frozenset[GapKind]]:
     results: list[T] = []
     deprecated: str | None = None
     stack: list[list[bool]] = [[]]
@@ -378,7 +368,7 @@ def _explore[T](
             _fork.reset(token)
     if not results:
         raise InferError("the function never ran to completion") from last_exc
-    hits = (dropped, _GapKind.BRANCH_BUDGET), (bool(stack), _GapKind.RUN_BUDGET)
+    hits = (dropped, GapKind.BRANCH_BUDGET), (bool(stack), GapKind.RUN_BUDGET)
     gaps = frozenset(kind for hit, kind in hits if hit)
     return results, deprecated, gaps
 
@@ -441,13 +431,13 @@ def _force_absent(
             spy.__optype_absent__ = frozenset(attrs)
 
 
-def _explore_spies(
+def explore_spies(
     func: _AnyFunc,
     params: Mapping[str, Parameter],
     omit: Collection[str] = (),
     fix: Collection[str] = (),
     absent: Mapping[str, Collection[str]] | None = None,
-) -> _Exploration:
+) -> Exploration:
     kinds = {p.kind for p in params.values()}
     forced_absent = absent or {}
 
@@ -507,7 +497,7 @@ def _explore_spies(
                 else:
                     raise
             else:
-                return _Exploration(
+                return Exploration(
                     spies,
                     _snapshot((*spies.values(), *fn_spies(results))),
                     results,
@@ -522,24 +512,24 @@ def _explore_spies(
         _exploring.reset(token)
 
 
-def _explore_lenient(
+def explore_lenient(
     func: _AnyFunc,
     params: Mapping[str, Parameter],
-) -> tuple[_Exploration, Mapping[str, object]]:
+) -> tuple[Exploration, Mapping[str, object]]:
     # if a spy placeholder is rejected, fall back to fixing the defaulted parameters,
     # and also return every parameter default for rendering
     try:
-        return _explore_spies(func, params), {}
+        return explore_spies(func, params), {}
     except (TypeError, ValueError):
-        defaults = _declared_defaults(params)
+        defaults = declared_defaults(params)
         if not defaults:
             raise
     # start from the all-fixed baseline and greedily promote one spy at a time
     fix = set(defaults)
-    exploration = _explore_spies(func, params, fix=fix)
+    exploration = explore_spies(func, params, fix=fix)
     for name in defaults:
         with suppress(Exception):
-            exploration = _explore_spies(func, params, fix=fix - {name})
+            exploration = explore_spies(func, params, fix=fix - {name})
             fix.discard(name)
     # a still-fixed default widens to its type; a promoted one keeps its literal
     return exploration, {
