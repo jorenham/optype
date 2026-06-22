@@ -7,6 +7,7 @@ from collections import Counter
 from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from inspect import Parameter, _ParameterKind
 from typing import Any, cast, final
+from weakref import WeakMethod
 
 # `from . import` would import the package itself, which imports this module
 import optype.infer._ir as _ir
@@ -20,8 +21,7 @@ from ._analyze import (
     return_spies,
     spy_runs,
 )
-from ._explore import _Exploration
-from ._protocols import _Op, _Proto, resolve
+from ._protocols import Op, Proto, resolve
 from ._spy import (
     _AnyFunc,
     _class_spy,
@@ -34,7 +34,16 @@ from ._spy import (
     _Traces,
     as_spy,
 )
-from ._values import _Fn, _Gen, _Rec, _RecRef, _RecVar, _walk, fn_spies
+from ._values import (
+    Exploration,
+    _Fn,
+    _Gen,
+    _Rec,
+    _RecRef,
+    _RecVar,
+    _walk,
+    fn_spies,
+)
 from optype.inspect import is_generic_alias, is_union_type
 
 _PARAM_PREFIX: dict[_ParameterKind, str] = {
@@ -56,8 +65,8 @@ _READ = _ir.COVARIANT  # a read-only property suffices
 _WRITE = _ir.CONTRAVARIANT  # the attribute only has to accept the value
 
 type _Vars = dict[int, str]
-type _Names = Sequence[str]
-type _Defaults = Mapping[str, object]
+type Names = Sequence[str]
+type Defaults = Mapping[str, object]
 
 
 def _or_object(node: _ir.Node | None) -> _ir.Node:
@@ -77,7 +86,7 @@ def _is_sentinel(x: object, /) -> bool:
     return sys.version_info >= (3, 15) and isinstance(x, getattr(builtins, "sentinel"))  # noqa: B009
 
 
-def _suffix(defaults: _Defaults, name: str) -> str:
+def _suffix(defaults: Defaults, name: str) -> str:
     """The ` = <default>` suffix of a defaulted parameter, in stub style."""
     if name not in defaults:
         return ""
@@ -163,9 +172,11 @@ class _Renderer:
     _param_spies: list[_SpyObject]
     _group_traces: _Traces
 
+    _typer: "_ResultTyper"  # renders explored result values into type nodes
+
     def __init__(
         self,
-        exploration: _Exploration,
+        exploration: Exploration,
         params: Mapping[str, Parameter],
         traces: _Traces,
     ) -> None:
@@ -178,6 +189,15 @@ class _Renderer:
 
         self._configure(params)
         self._assign_typevars()
+        # the typer shares the live `_vars` map (mutated in place while inlining)
+        self._typer = _ResultTyper(
+            vars_=self._vars,
+            rec_vars=self._rec_vars,
+            slot=self._slot,
+            varpos=self._varpos,
+            vartuple=self._vartuple,
+            count=self._count,
+        )
         self._inline_single_use()
 
     def _configure(self, params: Mapping[str, Parameter]) -> None:
@@ -292,7 +312,7 @@ class _Renderer:
         rendered = [
             *(self._slot(spy) for spy in self._param_spies),
             *(node for node in bounds.values() if node is not None),
-            self._type_union(self._results),
+            self._typer.type_union(self._results),
         ]
         counts = Counter(name for node in rendered for name in _ir.names(node))
 
@@ -316,9 +336,12 @@ class _Renderer:
             for n, old in enumerate(var for var in pool_vars if var not in inline)
         }
 
-        self._vars = {
+        # mutate `_vars` in place so the typer's shared reference stays current
+        survivors = {
             sid: remap.get(var, var) for sid, var in vars_.items() if var not in inline
         }
+        self._vars.clear()
+        self._vars.update(survivors)
         self._declared_spies = [
             spy for spy in self._declared_spies if id(spy) in self._vars
         ]
@@ -345,28 +368,7 @@ class _Renderer:
                 self._result_spies.append(spy)
                 self._named[rep] = var
 
-    def _value_union(
-        self,
-        values: Iterable[object],
-        *,
-        tuples: bool = False,
-    ) -> _ir.Node | None:
-        """The union of `values` as literals; `_type_union` widens them to types."""
-        literals: list[object] = []
-        parts: list[_ir.Node] = []
-        for value in values:
-            if isinstance(value, int | str | bytes) and not isinstance(value, _Spy):
-                literals.append(value)
-            else:
-                parts.append(self.return_type(value))
-
-        nodes: list[_ir.Node] = []
-        if literals:
-            nodes.append(_ir.Lit(tuple(literals)))
-        nodes.extend(dict.fromkeys(parts))
-        return _ir.union(nodes, tuples=tuples)
-
-    def returns(self, members: Iterable[_Op]) -> _ir.Node | None:
+    def returns(self, members: Iterable[Op]) -> _ir.Node | None:
         named: list[str] = []
         items: list[_TraceItem] = []
         returned = False
@@ -389,7 +391,7 @@ class _Renderer:
 
     def _collapse_varargs(
         self,
-        members: Sequence[_Op],
+        members: Sequence[Op],
         pos: list[_ir.Node],
     ) -> list[_ir.Node]:
         # the variadic spreads `count` copies of one spy: the placeholder (`f(*args)`)
@@ -412,10 +414,10 @@ class _Renderer:
         ):
             return pos
 
-        inner = _ir.tuple_node_variadic(self.return_type(tail))
+        inner = _ir.tuple_node_variadic(self._typer.return_type(tail))
         return [*pos[: len(pos) - count], _ir.Unpack(inner)]
 
-    def group(self, proto: _Proto, members: Sequence[_Op]) -> _ir.Node:
+    def group(self, proto: Proto, members: Sequence[Op]) -> _ir.Node:
         if isinstance(proto, tuple):  # coercion protocols, which record no args
             return _ir.Union(tuple(map(_ir.Name, proto)))
 
@@ -427,14 +429,15 @@ class _Renderer:
         pos = [
             arg
             for i in range(len(members[0].args))
-            if (arg := self._value_union(m.args[i] for m in members)) is not None
+            if (arg := self._typer.value_union(m.args[i] for m in members)) is not None
         ]
         args = (
             *pos,
             *(
                 _ir.Arg(key, kw)
                 for key in members[0].kwargs
-                if (kw := self._value_union(m.kwargs[key] for m in members)) is not None
+                if (kw := self._typer.value_union(m.kwargs[key] for m in members))
+                is not None
             ),
         )
         ret = self.returns(members)
@@ -464,8 +467,8 @@ class _Renderer:
         # name, so it spares the other reads
         optional = {item.args for item in items if item.attr == _Marker.ABSENT}
         groups: dict[
-            tuple[_Proto, str | None, bool, int, tuple[str, ...]],
-            list[_Op],
+            tuple[Proto, str | None, bool, int, tuple[str, ...]],
+            list[Op],
         ] = {}
         for item in items:
             if item.attr == _Marker.ABSENT:
@@ -513,6 +516,122 @@ class _Renderer:
             decl += f" = {_ir.render(default)}"
         return decl
 
+    def return_types(self) -> str:
+        return _ir.render(self._typer.type_union(self._results))
+
+    def render(
+        self,
+        selected: Names,
+        defaults: Defaults | None = None,
+        *,
+        negate: bool = False,
+        ret: _ir.Node | None = None,
+    ) -> str:
+        defaults = defaults or {}
+        defaulted = {
+            spy_id: node
+            for name, value in defaults.items()
+            if (spy := self._spies.get(name)) is not None
+            if (spy_id := id(spy)) in self._vars
+            if (node := self._typer.value_union((value,))) is not None
+        }
+        ordered = self._declared_spies + self._result_spies
+        if not negate:
+            # PEP 696 requires defaulted type parameters to come last
+            ordered.sort(key=lambda spy: id(spy) in defaulted)
+        typevars = [self.typevar(spy, defaulted, negate=negate) for spy in ordered]
+
+        # a recursive typevar carries no default, so it precedes the defaulted tail
+        deferred = 0 if negate else sum(id(spy) in defaulted for spy in ordered)
+        cut = len(ordered) - deferred
+        typevars[cut:cut] = [
+            f"{name}: {_ir.render(self._typer.return_type(self._rec_body[var]))}"
+            for var, name in self._rec_vars.items()
+        ]
+
+        generics = f"[{', '.join(typevars)}]" if typevars else ""
+        decls = (self._param(name, defaults, negate=negate) for name in selected)
+        params = ", ".join(decl for decl in decls if decl is not None)
+        returns = self.return_types() if ret is None else _ir.render(ret)
+        return f"{generics}({params}) -> {returns}"
+
+    def _param(
+        self,
+        name: str,
+        defaults: Defaults,
+        *,
+        negate: bool,
+    ) -> str | None:
+        # a positional-only parameter cannot be passed by keyword, so no name shows
+        label = "" if name in self._nameless else f"{self._prefix[name]}{name}: "
+        if name in self._fixed and name not in self._optional:
+            # a fixed parameter without a default is a method descriptor's `self`
+            return f"{label}{_ir.render(_ir.Type(type(self._fixed[name])))}"
+        if (spy := self._spies.get(name)) is None:
+            # an omitted parameter binds its default, so passing it behaves the same
+            node = self._typer.value_type(defaults[name])
+            return f"{label}{_ir.render(node)}{_suffix(defaults, name)}"
+        node = self._slot(spy)
+        if negate and name in defaults:
+            if id(spy) not in self._vars and (
+                mark := self._typer.value_union((defaults[name],))
+            ):
+                node = _ir.exclude(self.spy(spy), mark)
+            return f"{label}{_ir.render(node)}"
+        if node == _ir.Name(_OBJECT) and name in self._optional:
+            return None
+        return f"{label}{_ir.render(node)}{_suffix(defaults, name)}"
+
+
+@final
+class _ResultTyper:
+    """Render an explored runtime value as a type node, against the renderer's binding.
+
+    Bridges back via the `slot` callback (and the shared live `_vars`), so renderer and
+    typer are mutually recursive.
+    """
+
+    def __init__(  # noqa: PLR0913
+        self,
+        *,
+        vars_: _Vars,
+        rec_vars: dict[_RecVar, str],
+        slot: Callable[[_SpyObject], _ir.Node],
+        varpos: _SpyObject | None,
+        vartuple: bool,
+        count: int,
+    ) -> None:
+        self._vars = vars_  # the live map the renderer mutates while inlining
+        self._rec_vars = rec_vars
+        # Weak, not strong: a renderer<->typer cycle delays the `_fixed` spies to cyclic
+        # GC, where a buffer-exporting spy's C-level `__release_buffer__` lookup fails
+        # uncatchably. See `test_buffer_spy_finalizes_without_cycle`.
+        self._slot = WeakMethod(slot)
+        self._varpos = varpos
+        self._vartuple = vartuple
+        self._count = count
+
+    def value_union(
+        self,
+        values: Iterable[object],
+        *,
+        tuples: bool = False,
+    ) -> _ir.Node | None:
+        """The union of `values` as literals; `type_union` widens them to types."""
+        literals: list[object] = []
+        parts: list[_ir.Node] = []
+        for value in values:
+            if isinstance(value, int | str | bytes) and not isinstance(value, _Spy):
+                literals.append(value)
+            else:
+                parts.append(self.return_type(value))
+
+        nodes: list[_ir.Node] = []
+        if literals:
+            nodes.append(_ir.Lit(tuple(literals)))
+        nodes.extend(dict.fromkeys(parts))
+        return _ir.union(nodes, tuples=tuples)
+
     def return_type(self, result: object) -> _ir.Node:
         node: _ir.Node
         match result:
@@ -525,7 +644,7 @@ class _Renderer:
             case _SpyBytes():
                 node = _ir.Type(bytes)
             case _Gen():
-                node = _ir.App(result.kind, (self._type_union(result.yielded),))
+                node = _ir.App(result.kind, (self.type_union(result.yielded),))
             case _Fn():
                 node = self._function(result)
             case _ if result is None or _is_sentinel(result):
@@ -534,14 +653,14 @@ class _Renderer:
                 node = self._container(result)
         return node
 
-    def _type_union(self, values: Iterable[object]) -> _ir.Node:
+    def type_union(self, values: Iterable[object]) -> _ir.Node:
         """The deduplicated union of the types of `values`, or `Never` if empty."""
         parts = dict.fromkeys(map(self.return_type, values))
         return _ir.union(parts, tuples=True) or _ir.Name(_NEVER)
 
-    def _value_type(self, value: object) -> _ir.Node:
+    def value_type(self, value: object) -> _ir.Node:
         """The type of a single `value`, or `Never` if unconstrained."""
-        return self._value_union((value,)) or _ir.Name(_NEVER)
+        return self.value_union((value,)) or _ir.Name(_NEVER)
 
     def _function(self, fn: _Fn) -> _ir.Node:
         """The signature-syntax type of an explored function result."""
@@ -553,15 +672,17 @@ class _Renderer:
             )
             for name, p in fn.params.items()
         )
-        return _ir.Fn(params, self._type_union(fn.results))
+        return _ir.Fn(params, self.type_union(fn.results))
 
     def _fn_param(self, fn: _Fn, name: str) -> _ir.Node:
         if (spy := fn.spies.get(name)) is not None:
-            return self._slot(spy)
+            slot = self._slot()  # the renderer outlives every typer call
+            assert slot is not None
+            return slot(spy)
         value = fn.fixed[name]
         if name in fn.defaults:
             # a pinned default renders as its value, like the outer parameters do
-            return self._value_type(value)
+            return self.value_type(value)
         return _ir.Type(type(value))  # a method descriptor's pinned `self`
 
     def _class_of(self, cls: type[Any]) -> _ir.Node | None:
@@ -630,13 +751,13 @@ class _Renderer:
         match result:
             case Mapping():
                 mapping = cast("Mapping[object, object]", result)
-                key = self._value_union(mapping, tuples=True) or _ir.Name(_NEVER)
-                val = self._value_union(mapping.values(), tuples=True) or _ir.Name(
+                key = self.value_union(mapping, tuples=True) or _ir.Name(_NEVER)
+                val = self.value_union(mapping.values(), tuples=True) or _ir.Name(
                     _NEVER,
                 )
                 return _ir.App(_ir.render(_ir.Type(cls)), (key, val))
             case list() | set() | frozenset():
-                inner = self._value_union(
+                inner = self.value_union(
                     cast("Collection[object]", result),
                     tuples=True,
                 )
@@ -656,7 +777,7 @@ class _Renderer:
             if any(item is spy for item in items) and self._vartuple:
                 # every use is packed, so the placeholders unpack into a single `*Ts`
                 start = next(i for i, item in enumerate(items) if item is spy)
-                parts = [self._value_type(item) for item in items if item is not spy]
+                parts = [self.value_type(item) for item in items if item is not spy]
                 parts.insert(start, _ir.Unpack(_ir.Name(_TYPEVAR_TUPLE_NAME)))
                 return _ir.tuple_node(parts)
 
@@ -672,79 +793,13 @@ class _Renderer:
                     return _ir.tuple_node_variadic(self.return_type(target))
 
         if len(items) > _TUPLE_LIMIT:  # e.g. `random.getstate`
-            return _ir.tuple_node_variadic(self._type_union(items))
+            return _ir.tuple_node_variadic(self.type_union(items))
 
-        return _ir.tuple_node(self._value_type(item) for item in items)
-
-    def return_types(self) -> str:
-        return _ir.render(self._type_union(self._results))
-
-    def render(
-        self,
-        selected: _Names,
-        defaults: _Defaults | None = None,
-        *,
-        negate: bool = False,
-        ret: _ir.Node | None = None,
-    ) -> str:
-        defaults = defaults or {}
-        defaulted = {
-            spy_id: node
-            for name, value in defaults.items()
-            if (spy := self._spies.get(name)) is not None
-            if (spy_id := id(spy)) in self._vars
-            if (node := self._value_union((value,))) is not None
-        }
-        ordered = self._declared_spies + self._result_spies
-        if not negate:
-            # PEP 696 requires defaulted type parameters to come last
-            ordered.sort(key=lambda spy: id(spy) in defaulted)
-        typevars = [self.typevar(spy, defaulted, negate=negate) for spy in ordered]
-
-        # a recursive typevar carries no default, so it precedes the defaulted tail
-        deferred = 0 if negate else sum(id(spy) in defaulted for spy in ordered)
-        cut = len(ordered) - deferred
-        typevars[cut:cut] = [
-            f"{name}: {_ir.render(self.return_type(self._rec_body[var]))}"
-            for var, name in self._rec_vars.items()
-        ]
-
-        generics = f"[{', '.join(typevars)}]" if typevars else ""
-        decls = (self._param(name, defaults, negate=negate) for name in selected)
-        params = ", ".join(decl for decl in decls if decl is not None)
-        returns = self.return_types() if ret is None else _ir.render(ret)
-        return f"{generics}({params}) -> {returns}"
-
-    def _param(
-        self,
-        name: str,
-        defaults: _Defaults,
-        *,
-        negate: bool,
-    ) -> str | None:
-        # a positional-only parameter cannot be passed by keyword, so no name shows
-        label = "" if name in self._nameless else f"{self._prefix[name]}{name}: "
-        if name in self._fixed and name not in self._optional:
-            # a fixed parameter without a default is a method descriptor's `self`
-            return f"{label}{_ir.render(_ir.Type(type(self._fixed[name])))}"
-        if (spy := self._spies.get(name)) is None:
-            # an omitted parameter binds its default, so passing it behaves the same
-            node = self._value_type(defaults[name])
-            return f"{label}{_ir.render(node)}{_suffix(defaults, name)}"
-        node = self._slot(spy)
-        if negate and name in defaults:
-            if id(spy) not in self._vars and (
-                mark := self._value_union((defaults[name],))
-            ):
-                node = _ir.exclude(self.spy(spy), mark)
-            return f"{label}{_ir.render(node)}"
-        if node == _ir.Name(_OBJECT) and name in self._optional:
-            return None
-        return f"{label}{_ir.render(node)}{_suffix(defaults, name)}"
+        return _ir.tuple_node(self.value_type(item) for item in items)
 
 
 def _renderers(
-    exploration: _Exploration,
+    exploration: Exploration,
     params: Mapping[str, Parameter],
 ) -> list[_Renderer]:
     traces, results = exploration.traces, exploration.results
@@ -753,10 +808,10 @@ def _renderers(
 
 
 def signatures(
-    exploration: _Exploration,
+    exploration: Exploration,
     params: Mapping[str, Parameter],
-    selected: _Names,
-    defaults: _Defaults | None = None,
+    selected: Names,
+    defaults: Defaults | None = None,
     *,
     negate: bool = False,
 ) -> list[str]:
@@ -771,9 +826,9 @@ def signatures(
 
 
 def widened_signature(
-    exploration: _Exploration,
+    exploration: Exploration,
     params: Mapping[str, Parameter],
-    selected: _Names,
+    selected: Names,
 ) -> list[str]:
     """The fallback overload for a value dispatch, deduplicated: the parameter as the
     absent branch leaves it, the return widened to `object` (the only sound supertype of
@@ -793,10 +848,10 @@ def widened_signature(
 
 
 def union_signature(
-    exploration: _Exploration,
-    variant: _Exploration,
+    exploration: Exploration,
+    variant: Exploration,
     params: Mapping[str, Parameter],
-    selected: _Names,
+    selected: Names,
 ) -> list[str]:
     """The single overload for a presence dispatch whose return ignores the attribute's
     value: the parameter (forced absent in `variant`) widens to `object`, and the return

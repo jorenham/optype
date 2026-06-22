@@ -5,6 +5,7 @@
 
 import builtins
 import functools
+import gc
 import math
 import operator
 import random
@@ -22,7 +23,6 @@ import pytest
 
 from optype.infer import InferError, InferWarning, infer
 from optype.infer._api import _Gap
-from optype.infer._explore import _GapKind
 from optype.infer._ir import (
     App,
     Arg,
@@ -38,6 +38,7 @@ from optype.infer._ir import (
     union,
 )
 from optype.infer._numpy import array_function_node
+from optype.infer._values import GapKind
 
 if sys.version_info >= (3, 13):
     from warnings import deprecated
@@ -1056,6 +1057,25 @@ def test_method_descriptor() -> None:
     assert infer(memoryview.tobytes) == "(memoryview, order: str = 'C') -> bytes"
 
 
+def test_buffer_spy_finalizes_without_cycle() -> None:
+    # A cycle that holds a buffer-exporting spy until cyclic GC makes its C-level
+    # `__release_buffer__` lookup fail as an unraisable. Guards the weak typer->renderer
+    # link; a strong ref would regress this silently (pytest ignores unraisables).
+    captured: list[object] = []
+    hook = sys.unraisablehook
+    sys.unraisablehook = lambda args: captured.append(args.err_msg)
+    enabled = gc.isenabled()
+    gc.disable()
+    try:
+        infer(memoryview.tobytes)
+        gc.collect()
+    finally:
+        if enabled:
+            gc.enable()
+        sys.unraisablehook = hook
+    assert not captured
+
+
 def test_method_descriptor_fixed_defaults() -> None:
     # a defaulted parameter whose spy the function rejects passes its default
     # instead, while the accepting parameters stay structural
@@ -1630,10 +1650,10 @@ def test_strict_silent_when_complete() -> None:
 
 
 def test_gap_message_and_dedup() -> None:
-    gap = _Gap(_GapKind.RUN_BUDGET, "(x)")
+    gap = _Gap(GapKind.RUN_BUDGET, "(x)")
     assert gap.message() == "run budget exhausted in (x)"
     # frozen and slotted, so equal gaps collapse in a set
-    assert len({gap, _Gap(_GapKind.RUN_BUDGET, "(x)")}) == 1
+    assert len({gap, _Gap(GapKind.RUN_BUDGET, "(x)")}) == 1
 
 
 def test_dispatch_hasattr_collapses_to_object() -> None:

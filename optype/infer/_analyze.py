@@ -5,7 +5,7 @@ from collections.abc import Generator, Iterable, Mapping, Sequence
 from itertools import groupby
 from typing import cast
 
-from ._protocols import _DUNDER_ATTR, _DUNDER_CAN_R, _DUNDER_CLASS_ATTR
+from ._protocols import DUNDER_ATTR, DUNDER_CAN_R, DUNDER_CLASS_ATTR
 from ._spy import _Marker, _own_spy, _Spy, _SpyObject, _TraceItem, _Traces, as_spy
 from ._values import _children, _Fn, _Gen, _Rec, _RecRef, _walk
 
@@ -138,7 +138,7 @@ def _shape(spy: _SpyObject, made_by: _Producer, keys: dict[int, object]) -> obje
         attr = item.attr
         arity: object = (
             item.args[0]
-            if attr in _DUNDER_ATTR or attr in _DUNDER_CLASS_ATTR
+            if attr in DUNDER_ATTR or attr in DUNDER_CLASS_ATTR
             else len(item.args)
         )
         owner_key = _shape(owner, made_by, keys)
@@ -242,7 +242,7 @@ def reflect(params: Sequence[_SpyObject], traces: _Traces) -> _Traces:
         keep: list[_TraceItem] = []
         for item in traces[id(spy)]:
             rhs = item.args[0] if item.args else None
-            if item.attr in _DUNDER_CAN_R and isinstance(rhs, _SpyObject):
+            if item.attr in DUNDER_CAN_R and isinstance(rhs, _SpyObject):
                 reflected = _TraceItem("__r" + item.attr[2:], (spy,), {}, item.return_)
                 added[id(_own_spy(rhs))].append(reflected)
             else:

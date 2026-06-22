@@ -46,9 +46,9 @@ class _Marker(StrEnum):
 _fork: ContextVar[Iterator[bool] | None] = ContextVar("_fork", default=None)
 
 # the yield count for a star-unpack iterator (`f(*x)`) whose arity no bytecode pins:
-# the arity it needs, which `_explore_spies` grows into until the call works
+# the arity it needs, which `explore_spies` grows into until the call works
 _yield_budget: ContextVar[int] = ContextVar("_yield_budget", default=1)
-# set when a growable star-unpack iterator hits the budget, so `_explore_spies` only
+# set when a growable star-unpack iterator hits the budget, so `explore_spies` only
 # grows the budget when a fixed-arity star unpacking actually came up short
 _starved: ContextVar[bool] = ContextVar("_starved", default=False)
 
