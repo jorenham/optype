@@ -16,7 +16,7 @@ def run(*args: str) -> None:
 
     body = ast.parse(source).body
     last = body[-1] if body else None
-    if isinstance(last, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
+    if isinstance(last, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
         # append a reference to the definition so it becomes the final expression
         body = ast.parse(f"{source}\n{last.name}").body
         last = body[-1]

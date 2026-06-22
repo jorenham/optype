@@ -218,7 +218,7 @@ def _fixed_tuple_arity(node: Node) -> int | None:
     """The arity of a fixed-length `tuple[...]`, or `None` if not one."""
     if not isinstance(node, App) or node.base != "tuple" or not node.args:
         return None
-    if any(isinstance(arg, Arg | Dots | Unpack) for arg in node.args):
+    if any(isinstance(arg, (Arg, Dots, Unpack)) for arg in node.args):
         return None  # a variadic `tuple[X, ...]` or `tuple[*Ts]` has no fixed arity
     return len(node.args)
 
@@ -300,7 +300,7 @@ def inter(parts: Iterable[Node]) -> Node | None:
 def _prefix(op: str, part: Node) -> str:
     """Format a prefix-operated type, parenthesized where precedence requires."""
     inner = render(part)
-    return f"{op}({inner})" if isinstance(part, Union | Inter | Fn) else op + inner
+    return f"{op}({inner})" if isinstance(part, (Union, Inter, Fn)) else op + inner
 
 
 def names(node: Node | Arg) -> Generator[str]:

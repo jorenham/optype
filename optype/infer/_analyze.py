@@ -194,7 +194,7 @@ def _packed_uses(value: object, spy: _SpyObject, count: int) -> Generator[bool]:
             if value is spy:
                 yield False
             return
-        case tuple() if not isinstance(value, _Gen | _Fn | _Rec | _RecRef):
+        case tuple() if not isinstance(value, (_Gen, _Fn, _Rec, _RecRef)):
             tup = cast("tuple[object, ...]", value)
             if runs := spy_runs(tup, spy):
                 yield runs == [count]

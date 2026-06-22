@@ -374,7 +374,10 @@ def _explore[T](
 
 
 def _fixed_self(func: _AnyFunc, params: Mapping[str, Parameter]) -> dict[str, object]:
-    if not isinstance(func, MethodDescriptorType | WrapperDescriptorType) or not params:
+    if (
+        not isinstance(func, (MethodDescriptorType, WrapperDescriptorType))
+        or not params
+    ):
         return {}
     cls = func.__objclass__
     # a spy argument satisfies constructors that need a buffer/index/iterable/...
