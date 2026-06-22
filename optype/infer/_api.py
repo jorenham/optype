@@ -3,7 +3,7 @@
 import warnings
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from inspect import Parameter
+from inspect import Parameter, signature
 
 # `from . import` would import the package itself, which imports this module
 import optype.infer._numpy as _numpy
@@ -20,7 +20,6 @@ from ._explore import (
     _explore_lenient,
     _explore_spies,
     _GapKind,
-    _parameters,
 )
 from ._render import (
     _Defaults,
@@ -29,6 +28,7 @@ from ._render import (
     union_signature,
     widened_signature,
 )
+from ._signature import probe_signatures
 from ._spy import _AnyFunc, _TraceItem
 from ._values import map_values
 
@@ -192,7 +192,7 @@ def _dispatch_overloads(
     return baseline + tail if tail else baseline
 
 
-def _infer_form(
+def _overloads(
     func: _AnyFunc,
     parameters: Mapping[str, Parameter],
     params: tuple[str | int, ...],
@@ -217,13 +217,34 @@ def _infer_form(
     return list(dict.fromkeys((*overloads, *lines)))
 
 
+def _candidate_parameters(func: _AnyFunc) -> list[dict[str, Parameter]]:
+    try:
+        return [dict(signature(func).parameters)]
+    except TypeError as exc:  # not callable
+        raise InferError(str(exc)) from exc
+    except ValueError as exc:  # callable but no signature (e.g. a C builtin)
+        if (probed := probe_signatures(func)) is None:
+            raise InferError(str(exc)) from exc
+        return probed
+
+
 def _infer(func: _AnyFunc, params: tuple[str | int, ...], gaps: set[_Gap]) -> str:
     if nin := _numpy.ufunc_nin(func):
         names = _numpy.ufunc_params(nin)
         return _numpy.infer_ufunc(func, names, _select(params, names))
 
-    parameters = _parameters(func)
-    return "\n".join(_infer_form(func, parameters, params, gaps))
+    lines: list[str] = []
+    last: Exception | None = None
+    for parameters in _candidate_parameters(func):
+        try:
+            lines += _overloads(func, parameters, params, gaps)
+        except (InferError, ValueError) as exc:
+            # a candidate arity may fail exploration (e.g. `int`'s base); drop it,
+            # re-raising below only if no candidate produced anything
+            last = exc
+    if not lines and last is not None:
+        raise last
+    return "\n".join(dict.fromkeys(lines))
 
 
 def infer(func: _AnyFunc, /, *params: str | int, strict: bool = False) -> str:

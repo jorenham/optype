@@ -1955,10 +1955,30 @@ def test_builtin_without_signature() -> None:
     try:
         signature(iter)
     except ValueError:
-        with pytest.raises(InferError):
-            infer(iter)
+        pass
     else:
         pytest.skip("this build exposes an `inspect.signature` for `iter`")
+    # the arity probe recovers a signatureless builtin instead of raising, exploring
+    # each accepted arity as a separate overload
+    assert infer(iter) == "[R](CanIter[R]) -> R\n[R](() -> R, object) -> Iterator[R]"
+
+
+def test_builtin_type() -> None:
+    # the metaclass `type` has no `inspect.signature`; the probe recovers its 1-argument
+    # form (the 3-argument metaclass call needs typed placeholders, out of scope)
+    assert infer(type) == "[T](T) -> type[T]"
+
+
+def test_builtin_variadic() -> None:
+    # an arity accepted all the way to the probe cap is rendered as `*args`
+    assert infer(min) == "[T, U: CanLt[T | U, CanBool]](T, *args: U) -> U | T"
+
+
+def test_builtin_typed_argument() -> None:
+    # `getattr` needs a real `str` name that an object spy cannot supply, so no arity
+    # explores and it raises rather than inferring a bogus signature
+    with pytest.raises(InferError):
+        infer(getattr)
 
 
 def test_dynamic_attr_name() -> None:
@@ -2040,6 +2060,13 @@ def test_cli_returned_function() -> None:
     out = _run_cli("-m", "optype", "infer", "lambda x: lambda y: (x, y)")
     assert out.returncode == 0
     assert out.stdout.strip() == "[T, U](x: T) -> (y: U) -> tuple[T, U]"
+
+
+def test_cli_builtin() -> None:
+    # a signatureless builtin is recovered by the arity probe instead of erroring out
+    out = _run_cli("-m", "optype", "infer", "type")
+    assert out.returncode == 0
+    assert out.stdout.strip() == "[T](T) -> type[T]"
 
 
 def test_cli_usage() -> None:
