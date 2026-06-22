@@ -94,7 +94,7 @@ def _suffix(defaults: Defaults, name: str) -> str:
     simple = (
         value is None
         or _is_sentinel(value)  # a sentinel's repr is its declared name
-        or isinstance(value, int | float | complex | str | bytes)
+        or isinstance(value, (int, float, complex, str, bytes))
     )
     return f" = {value!r}" if simple else " = ..."
 
@@ -621,7 +621,7 @@ class _ResultTyper:
         literals: list[object] = []
         parts: list[_ir.Node] = []
         for value in values:
-            if isinstance(value, int | str | bytes) and not isinstance(value, _Spy):
+            if isinstance(value, (int, str, bytes)) and not isinstance(value, _Spy):
                 literals.append(value)
             else:
                 parts.append(self.return_type(value))
