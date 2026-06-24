@@ -31,10 +31,14 @@ class Exploration(NamedTuple):
 
 
 class _Gen(NamedTuple):
-    """An explored generator or lazy iterator result, e.g. `Generator[R]`."""
+    """An explored generator, iterator, or coroutine result, e.g. `Generator[R]`."""
 
     yielded: list[object]
     kind: str
+
+
+# the `_Gen.kind` of an awaited coroutine, rendered as `Coroutine[object, None, R]`
+COROUTINE = "Coroutine"
 
 
 class _Fn(NamedTuple):

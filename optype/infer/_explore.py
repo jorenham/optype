@@ -43,6 +43,7 @@ from ._spy import (
     as_spy,
 )
 from ._values import (
+    COROUTINE,
     VARIADIC_KINDS,
     Exploration,
     GapKind,
@@ -58,13 +59,17 @@ from ._values import (
 _FORK_LIMIT = 64
 _RUN_LIMIT = 256
 _YIELD_LIMIT = 64
+_KWARGS_LIMIT = 8  # max injected `**kwargs` keys
+
 # the `*args` placeholder counts to try: exact arities first, then doubling so that
 # large indices stay within reach
 _VARIADIC_COUNTS = (2, 3, 4, 5, 6, 7, 8, 16, 32, 64, 128, 256, 512, 1024)
-_KWARGS_LIMIT = 8  # max injected `**kwargs` keys
 # yield budgets to try for a star-unpack into a fixed-arity call (e.g. `divmod`): an
 # exact arity is needed, so these stay contiguous; a sparse range would skip valid ones
 _YIELD_COUNTS = tuple(range(2, 17))
+
+# the `next`-like builtins, which return their trailing argument when exhausted
+_NEXT_BUILTINS = frozenset({next, anext})
 
 
 def _reachable(params: Iterable[object]) -> Generator[_SpyObject]:
@@ -254,11 +259,14 @@ def _next(result: object, path: dict[int, _RecVar | None] | None = None) -> obje
         out = _Gen([_next(v, path) for v in _yields(result)], "Generator")
     elif isasyncgen(result):
         out = _Gen([_next(v, path) for v in _yields(_sync(result))], "AsyncGenerator")
+    elif isinstance(result, Coroutine):
+        # a returned coroutine value (e.g. 2-arg `anext`'s `anext_awaitable`)
+        out = _Gen([_next(_await(result), path)], COROUTINE)
     elif cls in _ITERATOR_TYPES:
-        values = _yields(cast("Iterable[object]", result))
+        values = _yields(cast("Iterable[Any]", result))
         if cls is enumerate:
             # `enumerate[R]` is parameterized by the element type, not the yields
-            values = [item for _, item in cast("list[tuple[int, object]]", values)]
+            values = [item for _, item in values]
         out = _Gen([_next(v, path) for v in values], cls.__name__)
     elif (
         cls is _CALLABLE_ITERATOR
@@ -295,6 +303,29 @@ def _next_container(
             return cls({key: _next(value, path) for key, value in result.items()})  # type:ignore[call-arg] # pyright:ignore[reportCallIssue,reportUnknownVariableType]
         case _:
             return result
+
+
+def _with_next_default(
+    func: _AnyFunc,
+    spies: Mapping[str, _SpyObject],
+    results: list[object],
+) -> list[object]:
+    # `next`/`anext` return `default` on an exhaustion branch the spies never reach
+    if func not in _NEXT_BUILTINS or (default := spies.get("_1")) is None:
+        return results
+
+    # `anext` resolves through an awaitable, so the default unions inside the coroutine
+    merged: list[object] = []
+    awaitable = False
+    for r in results:
+        if isinstance(r, _Gen) and r.kind == COROUTINE:
+            awaitable = True
+            merged.append(_Gen([*r.yielded, default], COROUTINE))
+        else:
+            merged.append(r)
+
+    # `next` returns the value directly, so the default joins as a sibling result
+    return merged if awaitable else [*results, default]
 
 
 def _rollback(marks: Iterable[tuple[_SpyObject, int]]) -> None:
@@ -470,7 +501,7 @@ def explore_spies(
             _force_absent(spies, forced_absent)
             try:
                 results, deprecated, gaps = _explore(func, args, kwds)
-                results = [_next(r) for r in results]
+                results = _with_next_default(func, spies, [_next(r) for r in results])
             except KeyError as exc:
                 key = exc.args[0] if exc.args else None
                 if (
