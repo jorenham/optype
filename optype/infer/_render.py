@@ -53,8 +53,11 @@ _PARAM_PREFIX: dict[_ParameterKind, str] = {
 
 _TYPEVARS = "TUVWXYZ"
 _TYPEVAR_TUPLE_NAME = "Ts"  # the PEP 646 typevar-tuple binder, used as `*Ts`
+
+_ANY = "Any"
 _NEVER = "Never"
 _OBJECT = "object"
+
 _TUPLE_LIMIT = 16
 
 # `object`-typed so the `is` check isn't flagged (`Callable` is a special form)
@@ -633,7 +636,6 @@ class _ResultTyper:
         return _ir.union(nodes, tuples=tuples)
 
     def return_type(self, result: object) -> _ir.Node:
-        node: _ir.Node
         match result:
             case _RecRef() | _Rec():
                 node = _ir.Name(self._rec_vars[result.var])
@@ -643,6 +645,11 @@ class _ResultTyper:
                 node = _ir.Type(str)
             case _SpyBytes():
                 node = _ir.Type(bytes)
+            case _Gen(kind="Coroutine"):
+                # `Coroutine` has no defaults, so its yield and send types render too
+                any_ = _ir.Name(_ANY)
+                out = self.type_union(result.yielded)
+                node = _ir.App("Coroutine", (any_, any_, out))
             case _Gen():
                 node = _ir.App(result.kind, (self.type_union(result.yielded),))
             case _Fn():

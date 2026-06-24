@@ -254,11 +254,14 @@ def _next(result: object, path: dict[int, _RecVar | None] | None = None) -> obje
         out = _Gen([_next(v, path) for v in _yields(result)], "Generator")
     elif isasyncgen(result):
         out = _Gen([_next(v, path) for v in _yields(_sync(result))], "AsyncGenerator")
+    elif isinstance(result, Coroutine):
+        # a returned coroutine value (e.g. 2-arg `anext`'s `anext_awaitable`)
+        out = _Gen([_next(_await(result), path)], "Coroutine")
     elif cls in _ITERATOR_TYPES:
-        values = _yields(cast("Iterable[object]", result))
+        values = _yields(cast("Iterable[Any]", result))
         if cls is enumerate:
             # `enumerate[R]` is parameterized by the element type, not the yields
-            values = [item for _, item in cast("list[tuple[int, object]]", values)]
+            values = [item for _, item in values]
         out = _Gen([_next(v, path) for v in values], cls.__name__)
     elif (
         cls is _CALLABLE_ITERATOR

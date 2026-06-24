@@ -1236,6 +1236,14 @@ def test_infer_async() -> None:
     assert infer(async_for) == "[R](x: CanAIter[CanANext[CanAwait[R]]]) -> R"
 
 
+def test_infer_anext() -> None:
+    # 2-arg `anext` returns a coroutine to await, so it renders as `Coroutine`
+    assert infer(anext) == (
+        "[R](CanANext[R]) -> R\n"
+        "[R](CanANext[CanAwait[R]], object) -> Coroutine[Any, Any, R]"
+    )
+
+
 def test_infer_generator() -> None:
     # generator expressions are lazy, so they are iterated to trace what they yield
     def gen(xs: Any) -> Any:
