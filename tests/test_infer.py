@@ -1240,7 +1240,7 @@ def test_infer_anext() -> None:
     # 2-arg `anext` returns a coroutine resolving to the value or the default
     assert infer(anext) == (
         "[R](CanANext[R]) -> R\n"
-        "[T, R](CanANext[CanAwait[R]], T) -> Coroutine[Any, Any, R | T]"
+        "[T, R](CanANext[CanAwait[R]], T) -> Coroutine[object, None, R | T]"
     )
 
 

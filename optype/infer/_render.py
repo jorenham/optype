@@ -55,7 +55,6 @@ _PARAM_PREFIX: dict[_ParameterKind, str] = {
 _TYPEVARS = "TUVWXYZ"
 _TYPEVAR_TUPLE_NAME = "Ts"  # the PEP 646 typevar-tuple binder, used as `*Ts`
 
-_ANY = "Any"
 _NEVER = "Never"
 _OBJECT = "object"
 
@@ -647,10 +646,10 @@ class _ResultTyper:
             case _SpyBytes():
                 node = _ir.Type(bytes)
             case _Gen() if result.kind == COROUTINE:
-                # `Coroutine` has no defaults, so its yield and send types render too
-                any_ = _ir.Name(_ANY)
+                # an awaitable yields objects and is driven with `None`, as `CanAwait`
                 out = self.type_union(result.yielded)
-                node = _ir.App(COROUTINE, (any_, any_, out))
+                yields, sends = _ir.Name(_OBJECT), _ir.Name("None")
+                node = _ir.App(COROUTINE, (yields, sends, out))
             case _Gen():
                 node = _ir.App(result.kind, (self.type_union(result.yielded),))
             case _Fn():

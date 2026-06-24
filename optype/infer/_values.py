@@ -37,7 +37,7 @@ class _Gen(NamedTuple):
     kind: str
 
 
-# the `_Gen.kind` of an awaited coroutine, rendered as `Coroutine[Any, Any, R]`
+# the `_Gen.kind` of an awaited coroutine, rendered as `Coroutine[object, None, R]`
 COROUTINE = "Coroutine"
 
 
