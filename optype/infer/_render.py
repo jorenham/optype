@@ -35,6 +35,7 @@ from ._spy import (
     as_spy,
 )
 from ._values import (
+    COROUTINE,
     Exploration,
     _Fn,
     _Gen,
@@ -645,11 +646,11 @@ class _ResultTyper:
                 node = _ir.Type(str)
             case _SpyBytes():
                 node = _ir.Type(bytes)
-            case _Gen(kind="Coroutine"):
+            case _Gen() if result.kind == COROUTINE:
                 # `Coroutine` has no defaults, so its yield and send types render too
                 any_ = _ir.Name(_ANY)
                 out = self.type_union(result.yielded)
-                node = _ir.App("Coroutine", (any_, any_, out))
+                node = _ir.App(COROUTINE, (any_, any_, out))
             case _Gen():
                 node = _ir.App(result.kind, (self.type_union(result.yielded),))
             case _Fn():

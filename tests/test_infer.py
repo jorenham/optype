@@ -1237,11 +1237,16 @@ def test_infer_async() -> None:
 
 
 def test_infer_anext() -> None:
-    # 2-arg `anext` returns a coroutine to await, so it renders as `Coroutine`
+    # 2-arg `anext` returns a coroutine resolving to the value or the default
     assert infer(anext) == (
         "[R](CanANext[R]) -> R\n"
-        "[R](CanANext[CanAwait[R]], object) -> Coroutine[Any, Any, R]"
+        "[T, R](CanANext[CanAwait[R]], T) -> Coroutine[Any, Any, R | T]"
     )
+
+
+def test_infer_next_default() -> None:
+    # 2-arg `next` returns the value or the default on exhaustion
+    assert infer(next) == ("[R](CanNext[R]) -> R\n[T, R](CanNext[R], T) -> R | T")
 
 
 def test_infer_generator() -> None:

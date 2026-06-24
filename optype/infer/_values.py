@@ -37,6 +37,10 @@ class _Gen(NamedTuple):
     kind: str
 
 
+# the `_Gen.kind` of an awaited coroutine, rendered as `Coroutine[Any, Any, R]`
+COROUTINE = "Coroutine"
+
+
 class _Fn(NamedTuple):
     """An explored function result, rendered in signature syntax."""
 
