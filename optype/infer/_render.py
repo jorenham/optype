@@ -645,13 +645,8 @@ class _ResultTyper:
                 node = _ir.Type(str)
             case _SpyBytes():
                 node = _ir.Type(bytes)
-            case _Gen() if result.kind == COROUTINE:
-                # an awaitable yields objects and is driven with `None`, as `CanAwait`
-                out = self.type_union(result.yielded)
-                yields, sends = _ir.Name(_OBJECT), _ir.Name("None")
-                node = _ir.App(COROUTINE, (yields, sends, out))
             case _Gen():
-                node = _ir.App(result.kind, (self.type_union(result.yielded),))
+                node = self._generator_type(result)
             case slice():
                 node = _ir.App(
                     _ir.render(_ir.Type(slice)),
@@ -668,6 +663,16 @@ class _ResultTyper:
             case _:
                 node = self._container(result)
         return node
+
+    def _generator_type(self, result: _Gen) -> _ir.Node:
+        if result.kind == COROUTINE:
+            # an awaitable yields objects and is sent `None`, as `CanAwait`
+            out = self.type_union(result.yielded)
+            return _ir.App(COROUTINE, (_ir.Name(_OBJECT), _ir.Name("None"), out))
+        if not result.yielded and result.kind.startswith("itertools."):
+            # element type unrecoverable, so drop the misleading `[Never]` arg
+            return _ir.Name(result.kind)
+        return _ir.App(result.kind, (self.type_union(result.yielded),))
 
     def type_union(self, values: Iterable[object]) -> _ir.Node:
         """The deduplicated union of the types of `values`, or `Never` if empty."""
