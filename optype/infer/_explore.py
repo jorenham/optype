@@ -354,7 +354,7 @@ def _run[T](
     return value, message
 
 
-def _explore[T](
+def _explore[T](  # noqa: C901
     func: Callable[..., T] | Callable[..., Coroutine[Any, None, T]],
     args: Sequence[object],
     kwds: Mapping[str, object],
@@ -363,7 +363,10 @@ def _explore[T](
     deprecated: str | None = None
     stack: list[list[bool]] = [[]]
     dropped = False
+
     last_exc: Exception | None = None
+    value_exc: ValueError | None = None
+
     for _ in range(_RUN_LIMIT):  # caps the exponential blowup of independent forks
         if not stack:
             break
@@ -389,16 +392,25 @@ def _explore[T](
         except _AbsentError:
             # the dunder is genuinely needed, so this run (and its marker) never was
             _rollback(marks)
-        except (InferError, IndexError, KeyError, TypeError, ValueError):
+        except (InferError, IndexError, KeyError, TypeError):
             raise  # signals the driver acts on, not a rejected run
+        except ValueError as exc:
+            # a forked value the target rejected (e.g. `range`'s zero step); defer
+            value_exc = exc
+            _rollback(marks)
         except Exception as exc:  # noqa: BLE001
             # the target rejected these spy values (assert, zero-division, ...); skip
             last_exc = exc
             _rollback(marks)
         finally:
             _fork.reset(token)
+
     if not results:
+        if value_exc is not None:
+            raise value_exc
+
         raise InferError("the function never ran to completion") from last_exc
+
     hits = (dropped, GapKind.BRANCH_BUDGET), (bool(stack), GapKind.RUN_BUDGET)
     gaps = frozenset(kind for hit, kind in hits if hit)
     return results, deprecated, gaps

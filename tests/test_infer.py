@@ -2002,6 +2002,14 @@ def test_builtin_type() -> None:
     assert infer(type) == "[T](T) -> type[T]"
 
 
+def test_builtin_range() -> None:
+    assert infer(range) == (
+        "(CanIndex) -> range\n"
+        "(CanIndex, CanIndex) -> range\n"
+        "(CanIndex, CanIndex, CanIndex) -> range"
+    )
+
+
 def test_builtin_variadic() -> None:
     # an arity accepted all the way to the probe cap is rendered as `*args`
     assert infer(min) == "[T, U: CanLt[T | U, CanBool]](T, *args: U) -> U | T"
