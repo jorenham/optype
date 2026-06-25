@@ -77,7 +77,7 @@ doc = [
 lint = [
   "dprint-py==0.53.1.0",
   "ruff==0.15.17",
-  "sp-repo-review[cli]==2026.4.4",
+  "sp-repo-review[cli]==2026.6.18",
 ]
 test = [
   { include-group = "extra" },
@@ -89,10 +89,10 @@ test = [
 type = [
   { include-group = "extra" },
   { include-group = "test" },
-  "basedpyright==1.39.7",
+  "basedpyright==1.39.8",
   "mypy[faster-cache]==2.1.0",
-  "pyrefly==1.0.0",
-  "ty==0.0.48",
+  "pyrefly==1.1.0",
+  "ty==0.0.50",
 ]
 dev = [
   { include-group = "extra" },
