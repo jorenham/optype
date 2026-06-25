@@ -6,6 +6,7 @@
 import builtins
 import functools
 import gc
+import itertools
 import math
 import operator
 import random
@@ -863,6 +864,53 @@ ITERATOR_CASES: list[tuple[Callable[..., Any], str]] = [
     ),
     (lambda: map(str, [1, 2]), "() -> map[str]"),
     (lambda: zip((), ()), "() -> zip[Never]"),  # noqa: B905
+    # generic `itertools` iterators (#722)
+    (
+        lambda xs: itertools.chain(xs),
+        "[R](xs: CanIter[CanNext[R]]) -> itertools.chain[R]",
+    ),
+    (
+        lambda *xss: itertools.chain(*xss),
+        "[R](*xss: CanIter[CanNext[R]]) -> itertools.chain[R]",
+    ),
+    (
+        lambda xs: itertools.cycle(xs),
+        "[R](xs: CanIter[CanNext[R]]) -> itertools.cycle[R]",
+    ),
+    (
+        lambda xs, sel: itertools.compress(xs, sel),
+        (
+            "[R](xs: CanIter[CanNext[R]], sel: CanIter[CanNext[CanBool]]) "
+            "-> itertools.compress[R]"
+        ),
+    ),
+    (
+        lambda f, xs: itertools.takewhile(f, xs),
+        "[R](f: (R) -> CanBool, xs: CanIter[CanNext[R]]) -> itertools.takewhile[R]",
+    ),
+    (
+        lambda xs: itertools.pairwise(xs),
+        "[R](xs: CanIter[CanNext[R]]) -> itertools.pairwise[tuple[R, R]]",
+    ),
+    (
+        lambda *xss: itertools.zip_longest(*xss),
+        "[R](*xss: CanIter[CanNext[R]]) -> itertools.zip_longest[tuple[R, ...]]",
+    ),
+    # `tee` yields `Iterator`, not `_tee` (#722); the list avoids `tee`'s `__copy__`
+    # shortcut, which varies across CPython 3.12 patches
+    (
+        lambda x: itertools.tee([x]),
+        "[T](x: T) -> tuple[Iterator[T], Iterator[T]]",
+    ),
+    # an unrecoverable element type renders bare (#722)
+    (
+        lambda f, xs: itertools.dropwhile(f, xs),
+        "[T](f: (T) -> CanBool, xs: CanIter[CanNext[T]]) -> itertools.dropwhile",
+    ),
+    (
+        lambda f, xs: itertools.filterfalse(f, xs),
+        "[T](f: (T) -> CanBool, xs: CanIter[CanNext[T]]) -> itertools.filterfalse",
+    ),
     (
         lambda x: ((i for i in x), 1),
         "[R](x: CanIter[CanNext[R]]) -> tuple[Generator[R], Literal[1]]",

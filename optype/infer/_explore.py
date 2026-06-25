@@ -1,6 +1,7 @@
 """Run a function against spy placeholders and record what happens."""
 
 import gc
+import itertools
 import warnings
 from collections.abc import (
     AsyncGenerator,
@@ -9,6 +10,7 @@ from collections.abc import (
     Coroutine,
     Generator,
     Iterable,
+    Iterator,
     Mapping,
     Sequence,
 )
@@ -16,7 +18,6 @@ from contextlib import suppress
 from contextvars import ContextVar
 from functools import partial
 from inspect import Parameter, isasyncgen, iscoroutine, isgenerator, signature
-from itertools import islice
 from types import (
     BuiltinFunctionType,
     FunctionType,
@@ -70,6 +71,30 @@ _YIELD_COUNTS = tuple(range(2, 17))
 
 # the `next`-like builtins, which return their trailing argument when exhausted
 _NEXT_BUILTINS = frozenset({next, anext})
+
+# single-arg lazy iterators, mapped to their rendered name; itertools entries are
+# derived from the module, so new ones register automatically
+_ITERATOR_TYPES: dict[type, str] = (
+    {  # type: ignore[assignment]
+        enumerate: "enumerate",
+        filter: "filter",
+        map: "map",
+        zip: "zip",
+    }
+    | {
+        cls: f"itertools.{cls.__qualname__}"
+        for name, cls in vars(itertools).items()
+        if isinstance(cls, type)
+        and issubclass(cls, Iterator)
+        and not name.startswith("_")
+        and cls is not itertools.groupby  # 2 type args
+    }
+    # typeshed types `tee()` as `tuple[Iterator[T], ...]`
+    | {type(itertools.tee(())[0]): "Iterator"}
+)
+
+# the lazy iterator returned by the 2-argument `iter(callable, sentinel)`
+_CALLABLE_ITERATOR = type(iter(int, None))
 
 
 def _reachable(params: Iterable[object]) -> Generator[_SpyObject]:
@@ -142,7 +167,7 @@ def _yield_key(value: object) -> tuple[str, *tuple[str, ...]]:
 def _yields[T](values: Iterable[T]) -> list[T]:
     seen: set[tuple[str, ...]] = set()
     out: list[T] = []
-    for value in islice(values, _YIELD_LIMIT):
+    for value in itertools.islice(values, _YIELD_LIMIT):
         if (key := _yield_key(value)) in seen:
             break
         seen.add(key)
@@ -157,13 +182,6 @@ def _sync[T](agen: AsyncGenerator[T, Any]) -> Generator[T]:
             yield _await(anext(agen))
         except StopAsyncIteration:
             return
-
-
-# lazy builtin iterators with a single type argument
-_ITERATOR_TYPES = frozenset({enumerate, filter, map, zip})
-
-# the lazy iterator returned by the 2-argument `iter(callable, sentinel)`
-_CALLABLE_ITERATOR = type(iter(int, None))
 
 
 def _ref0_is_callable() -> bool:
@@ -262,12 +280,12 @@ def _next(result: object, path: dict[int, _RecVar | None] | None = None) -> obje
     elif isinstance(result, Coroutine):
         # a returned coroutine value (e.g. 2-arg `anext`'s `anext_awaitable`)
         out = _Gen([_next(_await(result), path)], COROUTINE)
-    elif cls in _ITERATOR_TYPES:
+    elif (kind := _ITERATOR_TYPES.get(cls)) is not None:
         values = _yields(cast("Iterable[Any]", result))
         if cls is enumerate:
             # `enumerate[R]` is parameterized by the element type, not the yields
             values = [item for _, item in values]
-        out = _Gen([_next(v, path) for v in values], cls.__name__)
+        out = _Gen([_next(v, path) for v in values], kind)
     elif (
         cls is _CALLABLE_ITERATOR
         and _CALLABLE_FIRST
