@@ -652,6 +652,15 @@ class _ResultTyper:
                 node = _ir.App(COROUTINE, (yields, sends, out))
             case _Gen():
                 node = _ir.App(result.kind, (self.type_union(result.yielded),))
+            case slice():
+                node = _ir.App(
+                    _ir.render(_ir.Type(slice)),
+                    (
+                        self.value_type(result.start),
+                        self.value_type(result.stop),
+                        self.value_type(result.step),
+                    ),
+                )
             case _Fn():
                 node = self._function(result)
             case _ if result is None or _is_sentinel(result):

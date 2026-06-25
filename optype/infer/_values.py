@@ -83,6 +83,8 @@ def _children(value: object) -> Iterable[object]:
             out = cast("Collection[object]", value)
         case Mapping():  # `dict`, and the `frozendict` builtin on Python 3.15+
             out = chain.from_iterable(cast("Mapping[object, object]", value).items())
+        case slice():
+            out = value.start, value.stop, value.step
         case _:
             out = ()
     return out
@@ -94,7 +96,7 @@ def _walk(value: object) -> Generator[object]:
         yield from _walk(child)
 
 
-def map_values(value: object, leaf: Callable[[object], object]) -> object:
+def map_values(value: object, leaf: Callable[[object], object]) -> object:  # noqa: C901
     """Rebuild `value` with each non-composite leaf replaced via `leaf`.
 
     Recurses into the same shapes as `_children`, but a `tuple` subclass (namedtuple)
@@ -134,6 +136,12 @@ def map_values(value: object, leaf: Callable[[object], object]) -> object:
                     type(value),  # pyright: ignore[reportUnknownArgumentType]
                 )
                 out = ctor(rebuilt)
+        case slice():
+            out = slice(
+                map_values(value.start, leaf),
+                map_values(value.stop, leaf),
+                map_values(value.step, leaf),
+            )
         case _:
             out = leaf(value)
     return out

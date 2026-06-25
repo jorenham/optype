@@ -2010,6 +2010,14 @@ def test_builtin_range() -> None:
     )
 
 
+def test_builtin_slice() -> None:
+    assert infer(slice) == (
+        "[T](T) -> slice[None, T, None]\n"
+        "[T, U](T, U) -> slice[T, U, None]\n"
+        "[T, U, V](T, U, V) -> slice[T, U, V]"
+    )
+
+
 def test_builtin_variadic() -> None:
     # an arity accepted all the way to the probe cap is rendered as `*args`
     assert infer(min) == "[T, U: CanLt[T | U, CanBool]](T, *args: U) -> U | T"
