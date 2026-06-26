@@ -155,6 +155,7 @@ class _Renderer:
     _results: list[object]
     _traces: _Traces
     _count: int  # the `*args` placeholder count used during exploration
+    _tuple_params: frozenset[str]  # params that also accept `tuple[<bound>, ...]`
 
     _prefix: dict[str, str]
     _nameless: set[str]
@@ -189,6 +190,7 @@ class _Renderer:
         self._traces = traces
         self._count = exploration.var_count
         self._fixed = exploration.fixed
+        self._tuple_params = exploration.tuple_params
 
         self._configure(params)
         self._assign_typevars()
@@ -581,6 +583,9 @@ class _Renderer:
             ):
                 node = _ir.exclude(self.spy(spy), mark)
             return f"{label}{_ir.render(node)}"
+        if name in self._tuple_params and id(spy) not in self._vars:
+            # a typevar keeps its binding, so only an inlined bound widens to the union
+            node = _ir.union([node, _ir.tuple_node_variadic(node)]) or node
         if node == _ir.Name(_OBJECT) and name in self._optional:
             return None
         return f"{label}{_ir.render(node)}{_suffix(defaults, name)}"

@@ -39,6 +39,7 @@ from ._spy import (
     _SpyObject,
     _SpyStr,
     _starved,
+    _TraceItem,
     _Traces,
     _yield_budget,
     as_spy,
@@ -641,3 +642,51 @@ def explore_lenient(
     return exploration, {
         name: exploration.fixed.get(name, value) for name, value in defaults.items()
     }
+
+
+def _op_shape(items: Iterable[_TraceItem]) -> frozenset[str]:
+    return frozenset(item.attr for item in items if not isinstance(item.attr, _Marker))
+
+
+# dunders `tuple` delegates to its elements (`repr`, `hash`, ...), not distribution
+_TUPLE_DUNDERS = frozenset(
+    name for klass in tuple.__mro__ for name in vars(klass) if name.startswith("__")
+)
+
+
+def explore_tuple_params(
+    func: _AnyFunc,
+    params: Mapping[str, Parameter],
+    exploration: Exploration,
+) -> frozenset[str]:
+    """The parameters that also accept a homogeneous `tuple[<bound>, ...]`.
+
+    `isinstance`'s tuple recursion is a C-level check no spy sees, so each parameter is
+    re-explored as a real tuple of spies: it distributes when its elements get its ops.
+    """
+    tuple_params: set[str] = set()
+    for name, spy in exploration.spies.items():
+        param = params.get(name)
+        if param is None or param.kind in VARIADIC_KINDS:
+            continue
+        bare_shape = _op_shape(exploration.traces.get(id(spy), ()))
+        if not bare_shape or not bare_shape.isdisjoint(_TUPLE_DUNDERS):
+            continue
+
+        spies, args, kwds = _placeholders(params, 2, [], (), exploration.fixed)
+        if (target := spies.get(name)) is None:
+            continue
+        elems = (_SpyObject(), _SpyObject())
+        args = [elems if a is target else a for a in args]
+        kwds = {key: elems if value is target else value for key, value in kwds.items()}
+        try:
+            # a bare run: results aren't re-explored, so no recursion guard is needed
+            _explore(func, args, kwds)
+        except Exception:  # noqa: BLE001, S112
+            continue
+        traces = _snapshot(elems)
+        # an element skipped by short-circuit isn't traced; check only those that ran
+        elem_shapes = [s for e in elems if (s := _op_shape(traces.get(id(e), ())))]
+        if elem_shapes and all(s == bare_shape for s in elem_shapes):
+            tuple_params.add(name)
+    return frozenset(tuple_params)

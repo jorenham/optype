@@ -59,6 +59,7 @@ def _bind_exploration(exp: Exploration, defaults: Defaults) -> Exploration:
         exp.fixed,
         exp.deprecated,
         exp.gaps,
+        frozenset(name for name in exp.tuple_params if name not in defaults),
     )
 
 

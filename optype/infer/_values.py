@@ -28,6 +28,7 @@ class Exploration(NamedTuple):
     fixed: Mapping[str, object]  # parameters passed as-is, not spies
     deprecated: str | None = None  # a `DeprecationWarning` message raised when called
     gaps: frozenset[GapKind] = frozenset()  # kinds of unexplored path
+    tuple_params: frozenset[str] = frozenset()  # params also accepting a tuple of self
 
 
 class _Gen(NamedTuple):

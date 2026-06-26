@@ -8,7 +8,7 @@ from inspect import Parameter, signature
 # `from . import` would import the package itself, which imports this module
 import optype.infer._numpy as _numpy
 from ._errors import InferError, InferWarning
-from ._explore import explore_lenient
+from ._explore import explore_lenient, explore_tuple_params
 from ._overloads import dispatch_overloads, resolve_defaults
 from ._render import Names, signatures
 from ._signature import probe_signatures
@@ -64,6 +64,9 @@ def _form_signatures(
         # the rejected parameters render from their defaults; skip the probing
         lines = signatures(exploration, parameters, selected, fallback)
         return list(dict.fromkeys(lines))
+    exploration = exploration._replace(
+        tuple_params=explore_tuple_params(func, parameters, exploration),
+    )
     defaults, negate, overloads = resolve_defaults(
         func,
         parameters,
