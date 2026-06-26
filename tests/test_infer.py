@@ -1195,6 +1195,8 @@ def test_method_descriptor_unsupported() -> None:
         infer(str.join)
     with pytest.raises(InferError, match="pop from empty list"):
         infer(list[Any].pop)
+    with pytest.raises(InferError, match="dictionary is empty"):
+        infer(dict.popitem)
 
 
 def test_ternary_pow() -> None:
