@@ -467,7 +467,8 @@ class _Renderer:
         return _ir.App(proto, args)
 
     def traces(self, items: Iterable[_TraceItem]) -> _ir.Node | None:
-        items = list(items)
+        # dedup the re-collected return-chain items so they can't blow up (#734)
+        items = list({id(item): item for item in items}.values())
         # an absence marker means the op was optional; an attribute probe keys on its
         # name, so it spares the other reads
         optional = {item.args for item in items if item.attr == _Marker.ABSENT}

@@ -4,12 +4,14 @@
 # pyright: reportUnusedParameter=false
 
 import builtins
+import difflib
 import functools
 import gc
 import itertools
 import math
 import operator
 import random
+import re
 import secrets
 import subprocess  # noqa: S404
 import sys
@@ -1168,6 +1170,18 @@ def test_buffer_spy_finalizes_without_cycle() -> None:
             gc.enable()
         sys.unraisablehook = hook
     assert not captured
+
+
+def test_rich_return_chains_terminate() -> None:
+    # #734: a deep return chain used to blow up into millions of trace items
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", InferWarning)
+        scanner = infer(getattr(re, "Scanner"))  # noqa: B009
+        matches = infer(difflib.get_close_matches)
+    assert scanner.splitlines()[-1].endswith("-> Scanner")
+    lines = matches.splitlines()
+    assert lines
+    assert all("list[" in line.rsplit("->", 1)[-1] for line in lines)
 
 
 def test_method_descriptor_fixed_defaults() -> None:
