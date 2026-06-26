@@ -56,6 +56,17 @@ _starved: ContextVar[bool] = ContextVar("_starved", default=False)
 # `__lt__` (#686); a pair suffices, and `_render` inlines the extra typevar away
 _DEFAULT_YIELD = 2
 
+# `_explore._run` unpacks a real arg list, so a spy `__iter__` charged to its frame is a
+# C builtin iterating internally, not a growable star-unpack (#723)
+_driver_code: CodeType | None = None
+
+
+def set_driver_code[T: Callable[..., object]](fn: T, /) -> T:
+    global _driver_code  # noqa: PLW0603
+    _driver_code = fn.__code__  # ty: ignore[unresolved-attribute]
+    return fn
+
+
 # star-unpack detection reads caller bytecode (CPython detail); else it never fires
 _CPYTHON = sys.implementation.name == "cpython"
 
@@ -79,7 +90,7 @@ def _iter_is_star_unpack() -> bool:
         frame = sys._getframe(2)  # _iter_is_star_unpack -> __iter__ -> consuming frame  # noqa: SLF001
     except ValueError:
         frame = None
-    if frame is None or (i := frame.f_lasti) < 0:
+    if frame is None or (i := frame.f_lasti) < 0 or frame.f_code is _driver_code:
         return False
 
     return dis.opname[_co_code(frame.f_code)[i]] == "CALL_FUNCTION_EX"
