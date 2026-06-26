@@ -761,6 +761,54 @@ FUNCTION_CASES: list[tuple[Callable[..., Any], str]] = [
             "[T, R](x: T) -> (y: CanRAdd[T, R]) -> R"
         ),
     ),
+    # generic `functools` wrappers, parameterized by the wrapped return type (#724)
+    (
+        lambda f: functools.partial(f, 1),
+        "[R](f: (Literal[1]) -> R) -> functools.partial[R]",
+    ),
+    (
+        lambda f, x: functools.partial(f, x),
+        "[T, R](f: (T) -> R, x: T) -> functools.partial[R]",
+    ),
+    (
+        lambda f: functools.partialmethod(f, 1),
+        "[R](f: (Literal[1]) -> R) -> functools.partialmethod[R]",
+    ),
+    (
+        lambda f: functools.cached_property(f),
+        "[R](f: (object) -> R) -> functools.cached_property[R]",
+    ),
+    # the wrapper classes themselves: `func` is a callable, not `object`. `partial` is
+    # a C type whose signature is only introspectable on 3.13+; older versions probe
+    # arities and miss `**keywords`
+    (
+        functools.partial,
+        (
+            "[T, U, R]((*tuple[T, ...], U) -> R, *args: T, **keywords: U) "
+            "-> functools.partial[R]"
+            if sys.version_info >= (3, 13)
+            else "[T, R]((*tuple[T, ...]) -> R, *args: T) -> functools.partial[R]"
+        ),
+    ),
+    (
+        functools.partialmethod,
+        (
+            "[T, U, R]((*tuple[T, ...], U) -> R, *args: T, **keywords: U) "
+            "-> functools.partialmethod[R]"
+        ),
+    ),
+    (
+        functools.cached_property,
+        "[R](func: (object) -> R) -> functools.cached_property[R]",
+    ),
+    # a non-spy callable can't be called for its return, so the bare wrapper renders
+    (lambda: functools.partial(print, "a"), "() -> functools.partial"),
+    # but a `partial` of an explorable real function keeps its reduced call signature,
+    # rendered as a callable rather than as `functools.partial[R]`
+    (
+        lambda: functools.partial(divmod, 10),
+        "[R]() -> (CanRDivmod[Literal[10], R]) -> R",
+    ),
     # a function within a returned container is explored as well, but a set member
     # must stay hashable, so it is left as-is
     (
@@ -790,12 +838,10 @@ FUNCTION_CASES: list[tuple[Callable[..., Any], str]] = [
     ),
     (lambda *args: lambda: args, "[*Ts](*args: *Ts) -> () -> tuple[*Ts]"),
     # a recursive function (factory) has an inexpressible type, so it stays opaque,
-    # as do variadic parameters and a `partial` of a non-function
+    # as do variadic parameters
     (_self_return, "(x: object) -> FunctionType"),
     (_fn_factory, "(n: object) -> () -> FunctionType"),
     (lambda x: lambda *args: x, "(x: object) -> FunctionType"),  # noqa: ARG005
-    (lambda f: functools.partial(f, 1), "(f: object) -> partial"),
-    (lambda: functools.partial(print, "a"), "() -> partial"),
 ]
 
 
