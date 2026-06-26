@@ -42,6 +42,7 @@ from ._spy import (
     _Traces,
     _yield_budget,
     as_spy,
+    set_driver_code,
 )
 from ._values import (
     COROUTINE,
@@ -391,6 +392,7 @@ def _rollback(marks: Iterable[tuple[_SpyObject, int]]) -> None:
         del spy.__optype_trace__[length:]
 
 
+@set_driver_code
 def _run[T](
     func: Callable[..., T] | Callable[..., Coroutine[Any, None, T]],
     args: Iterable[object],

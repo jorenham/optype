@@ -2117,6 +2117,41 @@ def test_builtin_variadic() -> None:
     assert infer(min) == "[T, U: CanLt[T | U, CanBool]](T, *args: U) -> U | T"
 
 
+def test_functools_reduce() -> None:
+    # the iterable must yield a pair so `reduce` actually calls the function (#723)
+    if sys.version_info >= (3, 15):
+        # `reduce` gained a signature with an `initial` sentinel default
+        assert infer(functools.reduce) == (
+            "[T, R]((T, T) -> R, CanIter[CanNext[T]],"
+            " initial: _initial_missing = _initial_missing) -> R\n"
+            "[T: ~_initial_missing, U, R]"
+            "((T | R, U) -> R, CanIter[CanNext[U]], initial: T) -> R"
+        )
+    else:
+        assert infer(functools.reduce) == (
+            "[T, R]((T, T) -> R, CanIter[CanNext[T]]) -> R\n"
+            "[T, U, R]((T | R, U) -> R, CanIter[CanNext[U]], T) -> R"
+        )
+
+
+def test_builtin_sorted() -> None:
+    # the iterable yields a pair, so the elements reach `__lt__` and the `key` result
+    # carries its own comparison constraint (#723)
+    assert infer(sorted) == (
+        "[R: CanLt[R, CanBool]]"
+        "(CanIter[CanNext[R]], key: None = None, reverse: Literal[False] = False)"
+        " -> list[R]\n"
+        "[R: CanLt[R, CanBool]]"
+        "(CanIter[CanNext[R]], key: None = None, reverse: CanBool) -> list[R]\n"
+        "[T, R]"
+        "(CanIter[CanNext[R]], key: (R) -> T & CanLt[T, CanBool],"
+        " reverse: Literal[False] = False) -> list[R]\n"
+        "[T, R]"
+        "(CanIter[CanNext[R]], key: (R) -> T & CanLt[T, CanBool], reverse: CanBool)"
+        " -> list[R]"
+    )
+
+
 def test_builtin_typed_argument() -> None:
     # `getattr` needs a real `str` name that an object spy cannot supply, so no arity
     # explores and it raises rather than inferring a bogus signature
