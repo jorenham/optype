@@ -669,8 +669,8 @@ class _ResultTyper:
             # an awaitable yields objects and is sent `None`, as `CanAwait`
             out = self.type_union(result.yielded)
             return _ir.App(COROUTINE, (_ir.Name(_OBJECT), _ir.Name("None"), out))
-        if not result.yielded and result.kind.startswith("itertools."):
-            # element type unrecoverable, so drop the misleading `[Never]` arg
+        if not result.yielded and "." in result.kind:
+            # a qualified (`itertools`/`functools`) kind drops the misleading `[Never]`
             return _ir.Name(result.kind)
         return _ir.App(result.kind, (self.type_union(result.yielded),))
 

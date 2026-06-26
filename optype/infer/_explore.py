@@ -1,5 +1,6 @@
 """Run a function against spy placeholders and record what happens."""
 
+import functools
 import gc
 import itertools
 import warnings
@@ -16,7 +17,6 @@ from collections.abc import (
 )
 from contextlib import suppress
 from contextvars import ContextVar
-from functools import partial
 from inspect import Parameter, isasyncgen, iscoroutine, isgenerator, signature
 from types import (
     BuiltinFunctionType,
@@ -95,6 +95,13 @@ _ITERATOR_TYPES: dict[type, str] = (
 
 # the lazy iterator returned by the 2-argument `iter(callable, sentinel)`
 _CALLABLE_ITERATOR = type(iter(int, None))
+
+# generic `functools` wrappers, by rendered name. `singledispatchmethod` is absent:
+# its `__init__` eagerly calls `singledispatch`, which a spy callable cannot satisfy
+_WRAPPER_TYPES: dict[type, str] = {
+    cls: f"functools.{cls.__qualname__}"
+    for cls in (functools.partial, functools.partialmethod, functools.cached_property)
+}
 
 
 def _reachable(params: Iterable[object]) -> Generator[_SpyObject]:
@@ -208,7 +215,7 @@ _exploring: ContextVar[frozenset[int]] = ContextVar("_exploring", default=frozen
 
 def _unwrap(obj: object) -> object:
     """The underlying callable of (nested) `functools.partial` wrappers."""
-    while isinstance(obj, partial):
+    while isinstance(obj, functools.partial):
         obj = obj.func
     return obj
 
@@ -227,7 +234,7 @@ def _closed_over(func: object, seen: set[int] | None = None) -> Generator[object
         return
     seen.add(id(func))
     values: list[object] = []
-    while isinstance(func, partial):
+    while isinstance(func, functools.partial):
         values += func.args
         values += func.keywords.values()
         func = func.func
@@ -261,6 +268,37 @@ def _explore_func(func: _AnyFunc) -> object:
         declared_defaults(params),
         exploration.results,
     )
+
+
+def _wrapped_return(result: object) -> object | None:
+    # only a spy is safe to call; a real callable (e.g. `print`) would actually run
+    if (fn := as_spy(getattr(result, "func", None))) is None:
+        return None
+
+    # `cached_property` has no `.args`: its getter binds the instance
+    args = getattr(result, "args", (_SpyObject(),))
+    return fn(*args, **getattr(result, "keywords", {}))
+
+
+def _wrapper(
+    cls: type,
+    name: str,
+    result: object,
+    path: dict[int, _RecVar | None],
+) -> object:
+    """A generic `functools` wrapper, parameterized by the wrapped return type."""
+
+    # a `partial` of a real function keeps its richer call signature; exploring a
+    # spy-wrapped one would pollute the spy with signature probes
+    if (
+        cls is functools.partial
+        and isinstance(_unwrap(result), _FUNCTION_TYPES)
+        and isinstance(explored := _explore_func(cast("_AnyFunc", result)), _Fn)
+    ):
+        return explored
+
+    ret = _wrapped_return(result)
+    return _Gen([] if ret is None else [_next(ret, path)], name)
 
 
 def _next(result: object, path: dict[int, _RecVar | None] | None = None) -> object:
@@ -298,6 +336,8 @@ def _next(result: object, path: dict[int, _RecVar | None] | None = None) -> obje
         # Calling `fn()` is deliberate: the recorded `__call__` is what renders the
         # parameter as `() -> R`, as `explore_spies` snapshots after this runs.
         out = _Gen([_next(fn(), path)], "Iterator")
+    elif (name := _WRAPPER_TYPES.get(cls)) is not None:
+        out = _wrapper(cls, name, result, path)
     elif isinstance(_unwrap(result), _FUNCTION_TYPES):
         out = _explore_func(cast("_AnyFunc", result))
     else:
