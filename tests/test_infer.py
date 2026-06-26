@@ -2166,14 +2166,40 @@ def test_dynamic_attr_name() -> None:
 
 
 def test_instance_subclass_check() -> None:
-    assert infer(lambda x: isinstance(0, x)) == "(x: CanInstancecheck) -> bool"
-    assert infer(lambda x: issubclass(int, x)) == "(x: CanSubclasscheck) -> bool"
+    # isinstance/issubclass recurse into a tuple classinfo, so the param widens (#716)
+    assert infer(lambda x: isinstance(0, x)) == (
+        "(x: CanInstancecheck | tuple[CanInstancecheck, ...]) -> bool"
+    )
+    assert infer(lambda x: issubclass(int, x)) == (
+        "(x: CanSubclasscheck | tuple[CanSubclasscheck, ...]) -> bool"
+    )
     assert infer(lambda x, y: isinstance(y, x)) == (
-        "(x: CanInstancecheck, y: object) -> bool"
+        "(x: CanInstancecheck | tuple[CanInstancecheck, ...], y: object) -> bool"
     )
     assert infer(lambda x, y: issubclass(y, x)) == (
-        "(x: CanSubclasscheck, y: object) -> bool"
+        "(x: CanSubclasscheck | tuple[CanSubclasscheck, ...], y: object) -> bool"
     )
+
+
+def test_instance_subclass_check_builtin() -> None:
+    assert infer(isinstance) == (
+        "(object, CanInstancecheck | tuple[CanInstancecheck, ...]) -> bool"
+    )
+    assert infer(issubclass) == (
+        "(object, CanSubclasscheck | tuple[CanSubclasscheck, ...]) -> bool"
+    )
+
+
+def test_instance_check_no_overwiden() -> None:
+    # a returned classinfo is a typevar (no widening); `in`/`len` do not distribute
+    assert (
+        infer(
+            lambda x, y: y.foo() if (isinstance(y, x) and not isinstance(y, x)) else x,
+        )
+        == "[T: CanInstancecheck](x: T, y: object) -> T"
+    )
+    assert infer(lambda x: 0 in x) == "(x: CanContains[Literal[0]]) -> bool"
+    assert infer(lambda x: len(x)) == "(x: CanLen) -> int"
 
 
 def _set_name(x: Any) -> object:
