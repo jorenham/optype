@@ -57,7 +57,7 @@ def _form_signatures(
     where = f"({', '.join(parameters)})"
     try:
         exploration, fallback = explore_lenient(func, parameters)
-    except (IndexError, TypeError, ValueError) as exc:
+    except (IndexError, KeyError, TypeError, ValueError) as exc:
         raise InferError(str(exc)) from exc
     gaps.update(_Gap(kind, where) for kind in exploration.gaps)
     if fallback:
