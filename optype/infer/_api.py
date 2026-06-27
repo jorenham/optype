@@ -7,6 +7,7 @@ from inspect import Parameter, signature
 
 # `from . import` would import the package itself, which imports this module
 import optype.infer._numpy as _numpy
+from ._backend import TERSE, Backend
 from ._errors import InferError, InferWarning
 from ._explore import explore_lenient, explore_tuple_params
 from ._overloads import dispatch_overloads, resolve_defaults
@@ -52,6 +53,8 @@ def _form_signatures(
     parameters: Mapping[str, Parameter],
     params: tuple[str | int, ...],
     gaps: set[_Gap],
+    *,
+    backend: Backend = TERSE,
 ) -> list[str]:
     selected = _select(params, list(parameters))
     where = f"({', '.join(parameters)})"
@@ -62,7 +65,7 @@ def _form_signatures(
     gaps.update(_Gap(kind, where) for kind in exploration.gaps)
     if fallback:
         # the rejected parameters render from their defaults; skip the probing
-        lines = signatures(exploration, parameters, selected, fallback)
+        lines = signatures(exploration, parameters, selected, fallback, backend=backend)
         return list(dict.fromkeys(lines))
     exploration = exploration._replace(
         tuple_params=explore_tuple_params(func, parameters, exploration),
@@ -72,11 +75,26 @@ def _form_signatures(
         parameters,
         selected,
         exploration,
+        backend=backend,
     )
-    lines = signatures(exploration, parameters, selected, defaults, negate=negate)
+    lines = signatures(
+        exploration,
+        parameters,
+        selected,
+        defaults,
+        negate=negate,
+        backend=backend,
+    )
     if not defaults and not overloads:
         # dispatch only when defaults didn't already split the form
-        lines = dispatch_overloads(func, parameters, selected, exploration, lines)
+        lines = dispatch_overloads(
+            func,
+            parameters,
+            selected,
+            exploration,
+            lines,
+            backend=backend,
+        )
     return list(dict.fromkeys((*overloads, *lines)))
 
 
@@ -91,16 +109,22 @@ def _candidate_parameters(func: _AnyFunc) -> list[dict[str, Parameter]]:
         return probed
 
 
-def _infer(func: _AnyFunc, params: tuple[str | int, ...], gaps: set[_Gap]) -> str:
+def _infer(
+    func: _AnyFunc,
+    params: tuple[str | int, ...],
+    gaps: set[_Gap],
+    *,
+    backend: Backend = TERSE,
+) -> str:
     if nin := _numpy.ufunc_nin(func):
         names = _numpy.ufunc_params(nin)
-        return _numpy.infer_ufunc(func, names, _select(params, names))
+        return _numpy.infer_ufunc(func, names, _select(params, names), backend=backend)
 
     lines: list[str] = []
     last: Exception | None = None
     for parameters in _candidate_parameters(func):
         try:
-            lines += _form_signatures(func, parameters, params, gaps)
+            lines += _form_signatures(func, parameters, params, gaps, backend=backend)
         except (InferError, ValueError) as exc:
             # a candidate arity may fail exploration (e.g. `int`'s base); drop it,
             # re-raising below only if no candidate produced anything
@@ -110,7 +134,13 @@ def _infer(func: _AnyFunc, params: tuple[str | int, ...], gaps: set[_Gap]) -> st
     return "\n".join(dict.fromkeys(lines))
 
 
-def infer(func: _AnyFunc, /, *params: str | int, strict: bool = False) -> str:
+def infer(
+    func: _AnyFunc,
+    /,
+    *params: str | int,
+    strict: bool = False,
+    backend: Backend = TERSE,
+) -> str:
     """Infer the `optype` protocol(s) required of `func`'s parameters.
 
     Pass parameter names or positions to report only those parameters.
@@ -121,6 +151,8 @@ def infer(func: _AnyFunc, /, *params: str | int, strict: bool = False) -> str:
     When exploration is incomplete it emits an `InferWarning` naming the affected
     call form; pass `strict=True` to raise an `InferError` instead.
 
+    Pass a `Backend` to control rendering.
+
     Raises:
         InferError: If `func` is not supported, such as a non-callable, an
             operation without a matching protocol, or a parameter that requires
@@ -129,7 +161,7 @@ def infer(func: _AnyFunc, /, *params: str | int, strict: bool = False) -> str:
     """
     gaps: set[_Gap] = set()
     try:
-        result = _infer(func, params, gaps)
+        result = _infer(func, params, gaps, backend=backend)
     except RecursionError as exc:
         raise InferError("the result is nested too deeply") from exc
     if gaps:

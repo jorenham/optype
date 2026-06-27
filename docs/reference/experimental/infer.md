@@ -23,7 +23,9 @@ more.
 ## `infer`
 
 ```python
-def infer(func, /, *params: str | int, strict: bool = False) -> str: ...
+def infer(
+    func, /, *params: str | int, strict: bool = False, backend: Backend = TERSE
+) -> str: ...
 ```
 
 Infer the `optype` protocol(s) required of `func`'s parameters, returned as the inferred
@@ -45,6 +47,22 @@ Pass parameter names or positions to report only those parameters:
 Raises [`InferError`](#infererror) when `func` is not supported. When exploration is
 incomplete it emits an [`InferWarning`](#inferwarning) and still returns a provisional
 signature; pass `strict=True` to raise an `InferError` instead.
+
+Pass a [`backend`](#backend) to control how the signature is rendered.
+
+## `Backend`
+
+A `Protocol` with one method, `render(sig: Signature) -> str`. The default `TERSE`
+backend emits the compact form shown above; any object with a matching `render` works:
+
+```pycon
+>>> from optype.infer import TERSE, infer
+>>> class Upper:
+...     def render(self, sig, /):
+...         return TERSE.render(sig).upper()
+>>> infer(lambda x: x + 1, backend=Upper())
+'[R](X: CANADD[LITERAL[1], R]) -> R'
+```
 
 ## `InferError`
 

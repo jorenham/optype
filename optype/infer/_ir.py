@@ -1,18 +1,15 @@
-"""A minimal algebraic representation of inferred type expressions."""
+"""A minimal algebraic representation of inferred type expressions and signatures."""
 
+import builtins
+import sys
 import types
 from collections.abc import Generator, Iterable
 from dataclasses import dataclass
-from typing import assert_never, override
+from typing import override
 
 type Node = (
     Lit | Type | Name | App | Fn | Union | Inter | Not | Variance | Unpack | Dots
 )
-
-_NOT = "~"  # the type complement prefix
-_OR = "|"  # the union separator
-_AND = "&"  # the intersection separator
-_DOTS = "..."  # the `...` ellipsis
 
 # the shared variance signs: covariant (read-only) and contravariant (write-only)
 COVARIANT = "+"
@@ -70,7 +67,7 @@ class Arg:
 
     key: str | None
     value: Node
-    suffix: str = ""  # an optional ` = <default>` display suffix
+    default: tuple[object] | None = None  # the boxed default value, if any
 
 
 @dataclass(frozen=True, slots=True)
@@ -133,6 +130,37 @@ class Inter:
     """An `&`-intersection of two or more types."""
 
     parts: tuple[Node, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class TypeParam:
+    """One PEP 695 type parameter: `T`, `T: Bound`, `T = Default`, or `*Ts`."""
+
+    name: str
+    bound: Node | None = None
+    default: Node | None = None
+    unpack: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class Param:
+    """One signature parameter: a prefix, name, type, and optional default suffix."""
+
+    name: str
+    node: Node
+    prefix: str = ""  # "", "*", or "**"
+    nameless: bool = False  # positional-only
+    default: tuple[object] | None = None  # the boxed default value, if any
+
+
+@dataclass(frozen=True, slots=True)
+class Signature:
+    """A fully analyzed, backend-agnostic `def` signature."""
+
+    type_params: tuple[TypeParam, ...]
+    params: tuple[Param, ...]
+    ret: Node
+    deprecated: str | None = None  # the `@deprecated` message, if any
 
 
 def tuple_node(parts: Iterable[Node]) -> App:
@@ -302,12 +330,6 @@ def inter(parts: Iterable[Node]) -> Node | None:
     return next(iter(flat)) if len(flat) == 1 else Inter(tuple(flat))
 
 
-def _prefix(op: str, part: Node) -> str:
-    """Format a prefix-operated type, parenthesized where precedence requires."""
-    inner = render(part)
-    return f"{op}({inner})" if isinstance(part, (Union, Inter, Fn)) else op + inner
-
-
 def names(node: Node | Arg) -> Generator[str]:
     # every type-name leaf, in order, so typevar uses can be counted
     match node:
@@ -338,71 +360,14 @@ _TYPES_NAMES: dict[type, str] = {
 }
 
 
-def _render_type(cls: type) -> str:
+def is_sentinel(x: object, /) -> bool:
+    # the getattr works around a pyrefly (1.0.0) bug
+    return sys.version_info >= (3, 15) and isinstance(x, getattr(builtins, "sentinel"))  # noqa: B009
+
+
+def type_name(cls: type) -> str:
+    """The canonical importable name of a type."""
     if alias := _TYPES_NAMES.get(cls):
         return alias
     prefix = "np." if cls.__module__.partition(".")[0] == "numpy" else ""
     return prefix + cls.__name__
-
-
-def _render_app(base: str, args: tuple[Node | Arg, ...]) -> str:
-    if base == "tuple" and not args:
-        return "tuple[()]"
-    parts = [
-        f"{arg.key}={render(arg.value)}" if isinstance(arg, Arg) else render(arg)
-        for arg in args
-    ]
-    return f"{base}[{', '.join(parts)}]" if parts else base
-
-
-def _render_fn(params: tuple[Node | Arg, ...], ret: Node) -> str:
-    decls = ", ".join(
-        (f"{p.key}: " if p.key else "") + f"{render(p.value)}{p.suffix}"
-        if isinstance(p, Arg)
-        else render(p)
-        for p in params
-    )
-    return f"({decls}) -> {render(ret)}"
-
-
-def _render_prefix(node: Not | Variance | Unpack) -> str:
-    match node:
-        case Variance(sign, part):
-            return _prefix(sign, part)
-        case Not(part):
-            return _prefix(_NOT, part)
-        case Unpack(part):
-            return _prefix("*", part)
-        case _:
-            assert_never(node)
-
-
-def _render_union(parts: tuple[Node, ...], sep: str, dual: type[Node]) -> str:
-    return f" {sep} ".join(
-        f"({render(part)})" if isinstance(part, (dual, Fn)) else render(part)
-        for part in parts
-    )
-
-
-def render(node: Node) -> str:
-    """Format a type expression, parenthesized where precedence requires."""
-    match node:
-        case Lit(values):
-            out = f"Literal[{', '.join(map(repr, values))}]"
-        case Type(cls):
-            out = _render_type(cls)
-        case Name(name):
-            out = name
-        case Dots():
-            out = _DOTS
-        case App(base, args):
-            out = _render_app(base, args)
-        case Fn(params, ret):
-            out = _render_fn(params, ret)
-        case Not() | Variance() | Unpack():
-            out = _render_prefix(node)
-        case Union(parts):
-            out = _render_union(parts, _OR, Inter)
-        case Inter(parts):
-            out = _render_union(parts, _AND, Union)
-    return out

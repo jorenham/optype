@@ -24,7 +24,7 @@ from typing import Any
 
 import pytest
 
-from optype.infer import InferError, InferWarning, infer
+from optype.infer import TERSE, Backend, InferError, InferWarning, infer
 from optype.infer._api import _Gap
 from optype.infer._ir import (
     App,
@@ -34,9 +34,9 @@ from optype.infer._ir import (
     Lit,
     Name,
     Node,
+    Signature,
     Type,
     names,
-    render,
     subtype,
     union,
 )
@@ -1662,6 +1662,11 @@ def test_infer_array_function() -> None:
     )
 
 
+def render_node(node: Node) -> str:
+    # the backend renders signatures only, so a bare node renders as its return slot
+    return TERSE.render(Signature((), (), node)).removeprefix("() -> ")
+
+
 def test_array_function_node() -> None:
     # a structured `App`, not a string: one `Any` per required positional parameter
     ret = Name("R")
@@ -1670,14 +1675,32 @@ def test_array_function_node() -> None:
 
     node = array_function_node(f, ret)
     assert node == App("CanArrayFunction", (Fn((Name("Any"), Name("Any")), ret), ret))
-    assert render(node) == "CanArrayFunction[(Any, Any) -> R, R]"
+    assert render_node(node) == "CanArrayFunction[(Any, Any) -> R, R]"
     # being structured, `names` reaches the inner typevar a bare string would hide
     assert list(names(node)) == ["Any", "Any", "R", "R"]
 
     # a variadic dispatched function has no fixed arity, rendering as `(...)`
     def g(*args: object) -> object: ...
 
-    assert render(array_function_node(g, ret)) == "CanArrayFunction[(...) -> R, R]"
+    assert render_node(array_function_node(g, ret)) == "CanArrayFunction[(...) -> R, R]"
+
+
+def test_infer_backend() -> None:
+    def f(x: Any) -> object:
+        return x + 1
+
+    # the default is the terse backend, so passing it explicitly changes nothing
+    assert infer(f, backend=TERSE) == infer(f) == "[R](x: CanAdd[Literal[1], R]) -> R"
+
+    # a structurally-typed custom `Backend`, wrapping another, reaches rendering
+    class _Loud:
+        base: Backend = TERSE
+
+        def render(self, sig: Signature, /) -> str:
+            return self.base.render(sig).upper()
+
+    backend: Backend = _Loud()
+    assert infer(f, backend=backend) == "[R](X: CANADD[LITERAL[1], R]) -> R"
 
 
 @pytest.mark.parametrize("selector", ["nope", 9, -9])
@@ -2011,7 +2034,7 @@ def test_union_tuple_collapse() -> None:
     def rendered(nodes: list[Node], *, tuples: bool) -> str:
         node = union(nodes, tuples=tuples)
         assert node is not None
-        return render(node)
+        return render_node(node)
 
     cols2 = " | ".join(f"A{i}" for i in range(9)), " | ".join(f"B{i}" for i in range(9))
     wide2 = f"tuple[{cols2[0]}, {cols2[1]}]"
