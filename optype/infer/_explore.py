@@ -425,7 +425,7 @@ def _explore[T](  # noqa: C901
     stack: list[list[bool]] = [[]]
     dropped = False
 
-    last_exc: Exception | None = None
+    last_exc: BaseException | None = None
     value_exc: ValueError | None = None
 
     for _ in range(_RUN_LIMIT):  # caps the exponential blowup of independent forks
@@ -459,8 +459,8 @@ def _explore[T](  # noqa: C901
             # a forked value the target rejected (e.g. `range`'s zero step); defer
             value_exc = exc
             _rollback(marks)
-        except Exception as exc:  # noqa: BLE001
-            # the target rejected these spy values (assert, zero-division, ...); skip
+        except (Exception, SystemExit) as exc:  # noqa: BLE001
+            # the target rejected these spy values or exited (e.g. `exit()`); skip
             last_exc = exc
             _rollback(marks)
         finally:

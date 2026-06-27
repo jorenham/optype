@@ -2342,3 +2342,26 @@ def test_cli_warns_on_stderr() -> None:
     assert out.stdout.startswith("(x: CanGetitem")
     assert "warning:" in out.stderr
     assert "incomplete exploration" in out.stderr
+
+
+def test_cli_exit() -> None:
+    # a callable that raises SystemExit when probed errors cleanly, not silently
+    out = _run_cli("-m", "optype", "infer", "exit")
+    assert out.returncode == 1
+    assert out.stderr.startswith("InferError:")
+
+
+def test_cli_quit() -> None:
+    out = _run_cli("-m", "optype", "infer", "quit")
+    assert out.returncode == 1
+    assert out.stderr.startswith("InferError:")
+
+
+def test_infer_systemexit() -> None:
+    # a SystemExit during a run is a rejected run, like any other raise, not a leak
+    class _Exiter:
+        def __call__(self, code: int = 0) -> None:
+            raise SystemExit(code)
+
+    with pytest.raises(InferError):
+        infer(_Exiter())
