@@ -14,6 +14,7 @@ from ._analyze import (
     requires_only_presence,
     returns_concrete,
 )
+from ._backend import TERSE, Backend
 from ._explore import declared_defaults, explore_spies
 from ._render import (
     Defaults,
@@ -68,6 +69,8 @@ def resolve_defaults(
     params: Mapping[str, Parameter],
     selected: Names,
     exploration: Exploration,
+    *,
+    backend: Backend = TERSE,
 ) -> tuple[Defaults, bool, list[str]]:
     """The parameter defaults if expressible as typevar defaults, else overloads.
 
@@ -91,15 +94,15 @@ def resolve_defaults(
     try:
         omitted = explore_spies(func, params, omit=defaults)
         # the comparison must see every required parameter, regardless of selection
-        observed = signatures(omitted, required, names)
+        observed = signatures(omitted, required, names, backend=backend)
     except Exception:  # noqa: BLE001
         return {}, False, []
 
     omitted_defaults = _bind_exploration(exploration, defaults)
-    if signatures(omitted_defaults, required, names) == observed:
+    if signatures(omitted_defaults, required, names, backend=backend) == observed:
         return defaults, False, []
 
-    overloads = signatures(omitted, params, selected, defaults)
+    overloads = signatures(omitted, params, selected, defaults, backend=backend)
 
     if len(defaults) == 1:
         return defaults, True, overloads
@@ -109,17 +112,25 @@ def resolve_defaults(
             variant = explore_spies(func, params, omit={name})
         except Exception:  # noqa: BLE001, S112
             continue
-        overloads += signatures(variant, params, selected, {name: value})
+        overloads += signatures(
+            variant,
+            params,
+            selected,
+            {name: value},
+            backend=backend,
+        )
 
     return {}, False, overloads
 
 
-def dispatch_overloads(
+def dispatch_overloads(  # noqa: PLR0913
     func: _AnyFunc,
     params: Mapping[str, Parameter],
     selected: Names,
     exploration: Exploration,
     baseline: list[str],
+    *,
+    backend: Backend = TERSE,
 ) -> list[str]:
     """The overloads for a presence-test on a single parameter's attribute.
 
@@ -150,6 +161,6 @@ def dispatch_overloads(
         and returns_concrete(exploration.results)
         and returns_concrete(variant.results)
     ):
-        return union_signature(exploration, variant, params, selected)
-    tail = widened_signature(variant, params, selected)
+        return union_signature(exploration, variant, params, selected, backend=backend)
+    tail = widened_signature(variant, params, selected, backend=backend)
     return baseline + tail if tail else baseline

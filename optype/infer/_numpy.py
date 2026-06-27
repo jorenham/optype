@@ -6,6 +6,7 @@ from typing import cast
 
 # `from . import` would import the package itself, which imports this module
 import optype.infer._ir as _ir
+from ._backend import TERSE, Backend
 from ._spy import _AnyFunc
 from ._values import VARIADIC_KINDS
 
@@ -49,16 +50,27 @@ def _ufunc_dtype(func: _AnyFunc, i: int) -> str | None:
     return _DTYPE_ALIASES[max(ranks)] if ranks else None
 
 
-def infer_ufunc(func: _AnyFunc, names: Sequence[str], selected: Iterable[str]) -> str:
+def infer_ufunc(
+    func: _AnyFunc,
+    names: Sequence[str],
+    selected: Iterable[str],
+    *,
+    backend: Backend = TERSE,
+) -> str:
     """Render a ufunc signature from its `.types` dtype table."""
-    parts: list[str] = []
+    params: list[_ir.Param] = []
     for name in selected:
         i = names.index(name)
-        arms: list[str] = ["CanArrayUFunc[np.ufunc, R]"] if i == 0 else []
+        arms: list[_ir.Node] = (
+            [_ir.App("CanArrayUFunc", (_ir.Name("np.ufunc"), _ir.Name("R")))]
+            if i == 0
+            else []
+        )
         if dtype := _ufunc_dtype(func, i):
-            arms.append(dtype)
-        parts.append(f"{name}: {' | '.join(arms) or 'object'}")
-    return f"[R]({', '.join(parts)}) -> R"
+            arms.append(_ir.Name(dtype))
+        params.append(_ir.Param(name, _ir.union(arms) or _ir.Name("object")))
+    sig = _ir.Signature((_ir.TypeParam("R"),), tuple(params), _ir.Name("R"))
+    return backend.render(sig)
 
 
 def _required_args(func: _AnyFunc) -> int | None:

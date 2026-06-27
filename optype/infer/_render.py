@@ -1,6 +1,5 @@
 """Render the recorded spy traces as a PEP 695 signature."""
 
-import builtins
 import sys
 import types
 from collections import Counter
@@ -20,6 +19,7 @@ from ._analyze import (
     return_spies,
     spy_runs,
 )
+from ._backend import TERSE, Backend
 from ._protocols import Op, Proto, resolve
 from ._spy import (
     _AnyFunc,
@@ -83,22 +83,9 @@ def _sign_read(ret: _ir.Node) -> _ir.Node:
     return ret if ret == _ir.Name(_OBJECT) else _ir.Variance(_READ, ret)
 
 
-def _is_sentinel(x: object, /) -> bool:
-    # the getattr is a workaround for a pyrefly (1.0.0) bug
-    return sys.version_info >= (3, 15) and isinstance(x, getattr(builtins, "sentinel"))  # noqa: B009
-
-
-def _suffix(defaults: Defaults, name: str) -> str:
-    """The ` = <default>` suffix of a defaulted parameter, in stub style."""
-    if name not in defaults:
-        return ""
-    value = defaults[name]
-    simple = (
-        value is None
-        or _is_sentinel(value)  # a sentinel's repr is its declared name
-        or isinstance(value, (int, float, complex, str, bytes))
-    )
-    return f" = {value!r}" if simple else " = ..."
+def _default(defaults: Defaults, name: str) -> tuple[object] | None:
+    """The boxed default value of `name`, or `None` if it has none."""
+    return (defaults[name],) if name in defaults else None
 
 
 _CLEAN_EXIT = _ir.App("CanExit", (_ir.Name("None"),) * 3)
@@ -149,6 +136,7 @@ def _typevar_name(n: int) -> str:
 class _Renderer:
     """Render an inferred `def` signature from the recorded spy traces."""
 
+    _backend: Backend
     _spies: Mapping[str, _SpyObject]
     _fixed: Mapping[str, object]
     _results: list[object]
@@ -182,8 +170,10 @@ class _Renderer:
         exploration: Exploration,
         params: Mapping[str, Parameter],
         traces: _Traces,
+        backend: Backend = TERSE,
     ) -> None:
         # `traces` is the map to render: the raw exploration traces or the reflected one
+        self._backend = backend
         self._spies = exploration.spies
         self._results = exploration.results
         self._traces = traces
@@ -507,31 +497,27 @@ class _Renderer:
         defaulted: Mapping[int, _ir.Node],
         *,
         negate: bool = False,
-    ) -> str:
+    ) -> _ir.TypeParam:
         var = self._vars[id(spy)]
         if self._vartuple and spy is self._varpos:
-            return f"*{var}"  # a PEP 646 typevar tuple takes no bound or default
+            # a PEP 646 typevar tuple takes no bound or default
+            return _ir.TypeParam(var, unpack=True)
         rep = self._reps.get(id(spy), id(spy))
         node = self.traces(self._group_traces.get(rep, ()))
         default = defaulted.get(id(spy))
         if negate and default is not None:
             node = _ir.exclude(node, default)
-        decl = f"{var}: {_ir.render(node)}" if node is not None else var
-        if not negate and default is not None:
-            decl += f" = {_ir.render(default)}"
-        return decl
+        return _ir.TypeParam(var, bound=node, default=None if negate else default)
 
-    def return_types(self) -> str:
-        return _ir.render(self._typer.type_union(self._results))
-
-    def render(
+    def signature(
         self,
         selected: Names,
         defaults: Defaults | None = None,
         *,
         negate: bool = False,
         ret: _ir.Node | None = None,
-    ) -> str:
+        deprecated: str | None = None,
+    ) -> _ir.Signature:
         defaults = defaults or {}
         defaulted = {
             spy_id: node
@@ -544,21 +530,46 @@ class _Renderer:
         if not negate:
             # PEP 696 requires defaulted type parameters to come last
             ordered.sort(key=lambda spy: id(spy) in defaulted)
-        typevars = [self.typevar(spy, defaulted, negate=negate) for spy in ordered]
+        type_params = [self.typevar(spy, defaulted, negate=negate) for spy in ordered]
 
         # a recursive typevar carries no default, so it precedes the defaulted tail
         deferred = 0 if negate else sum(id(spy) in defaulted for spy in ordered)
         cut = len(ordered) - deferred
-        typevars[cut:cut] = [
-            f"{name}: {_ir.render(self._typer.return_type(self._rec_body[var]))}"
+        type_params[cut:cut] = [
+            _ir.TypeParam(name, bound=self._typer.return_type(self._rec_body[var]))
             for var, name in self._rec_vars.items()
         ]
 
-        generics = f"[{', '.join(typevars)}]" if typevars else ""
-        decls = (self._param(name, defaults, negate=negate) for name in selected)
-        params = ", ".join(decl for decl in decls if decl is not None)
-        returns = self.return_types() if ret is None else _ir.render(ret)
-        return f"{generics}({params}) -> {returns}"
+        params = [
+            param
+            for name in selected
+            if (param := self._param(name, defaults, negate=negate)) is not None
+        ]
+        ret_node = self._typer.type_union(self._results) if ret is None else ret
+        return _ir.Signature(
+            tuple(type_params),
+            tuple(params),
+            ret_node,
+            deprecated,
+        )
+
+    def render(
+        self,
+        selected: Names,
+        defaults: Defaults | None = None,
+        *,
+        negate: bool = False,
+        ret: _ir.Node | None = None,
+        deprecated: str | None = None,
+    ) -> str:
+        sig = self.signature(
+            selected,
+            defaults,
+            negate=negate,
+            ret=ret,
+            deprecated=deprecated,
+        )
+        return self._backend.render(sig)
 
     def _param(
         self,
@@ -566,29 +577,31 @@ class _Renderer:
         defaults: Defaults,
         *,
         negate: bool,
-    ) -> str | None:
+    ) -> _ir.Param | None:
         # a positional-only parameter cannot be passed by keyword, so no name shows
-        label = "" if name in self._nameless else f"{self._prefix[name]}{name}: "
+        nameless = name in self._nameless
+        prefix = self._prefix[name]
         if name in self._fixed and name not in self._optional:
             # a fixed parameter without a default is a method descriptor's `self`
-            return f"{label}{_ir.render(_ir.Type(type(self._fixed[name])))}"
+            node = _ir.Type(type(self._fixed[name]))
+            return _ir.Param(name, node, prefix, nameless)
         if (spy := self._spies.get(name)) is None:
             # an omitted parameter binds its default, so passing it behaves the same
             node = self._typer.value_type(defaults[name])
-            return f"{label}{_ir.render(node)}{_suffix(defaults, name)}"
+            return _ir.Param(name, node, prefix, nameless, _default(defaults, name))
         node = self._slot(spy)
         if negate and name in defaults:
             if id(spy) not in self._vars and (
                 mark := self._typer.value_union((defaults[name],))
             ):
                 node = _ir.exclude(self.spy(spy), mark)
-            return f"{label}{_ir.render(node)}"
+            return _ir.Param(name, node, prefix, nameless)
         if name in self._tuple_params and id(spy) not in self._vars:
             # a typevar keeps its binding, so only an inlined bound widens to the union
             node = _ir.union([node, _ir.tuple_node_variadic(node)]) or node
         if node == _ir.Name(_OBJECT) and name in self._optional:
             return None
-        return f"{label}{_ir.render(node)}{_suffix(defaults, name)}"
+        return _ir.Param(name, node, prefix, nameless, _default(defaults, name))
 
 
 @final
@@ -651,7 +664,7 @@ class _ResultTyper:
                 node = self._generator_type(result)
             case slice():
                 node = _ir.App(
-                    _ir.render(_ir.Type(slice)),
+                    _ir.type_name(slice),
                     (
                         self.value_type(result.start),
                         self.value_type(result.stop),
@@ -660,7 +673,7 @@ class _ResultTyper:
                 )
             case _Fn():
                 node = self._function(result)
-            case _ if result is None or _is_sentinel(result):
+            case _ if result is None or _ir.is_sentinel(result):
                 node = _ir.Name(repr(result))
             case _:
                 node = self._container(result)
@@ -691,7 +704,7 @@ class _ResultTyper:
             _ir.Arg(
                 None if p.kind is Parameter.POSITIONAL_ONLY else name,
                 self._fn_param(fn, name),
-                _suffix(fn.defaults, name),
+                _default(fn.defaults, name),
             )
             for name, p in fn.params.items()
         )
@@ -735,7 +748,7 @@ class _ResultTyper:
             origin = self._type_expr(value.__origin__)
             args = self._type_args(value.__args__)
             if isinstance(origin, _ir.Type) and args is not None:
-                return _ir.App(_ir.render(origin), tuple(args))
+                return _ir.App(_ir.type_name(origin.cls), tuple(args))
         return None
 
     def _callable_type(self, args: tuple[object, ...]) -> _ir.Node | None:
@@ -778,13 +791,13 @@ class _ResultTyper:
                 val = self.value_union(mapping.values(), tuples=True) or _ir.Name(
                     _NEVER,
                 )
-                return _ir.App(_ir.render(_ir.Type(cls)), (key, val))
+                return _ir.App(_ir.type_name(cls), (key, val))
             case list() | set() | frozenset():
                 inner = self.value_union(
                     cast("Collection[object]", result),
                     tuples=True,
                 )
-                return _ir.App(_ir.render(_ir.Type(cls)), (inner or _ir.Name(_NEVER),))
+                return _ir.App(_ir.type_name(cls), (inner or _ir.Name(_NEVER),))
             case tuple() if cls is tuple:
                 return (
                     self._tuple(cast("tuple[object, ...]", result))
@@ -824,50 +837,50 @@ class _ResultTyper:
 def _renderers(
     exploration: Exploration,
     params: Mapping[str, Parameter],
+    *,
+    backend: Backend = TERSE,
 ) -> list[_Renderer]:
     traces, results = exploration.traces, exploration.results
     reflected = reflect([*exploration.spies.values(), *fn_spies(results)], traces)
-    return [_Renderer(exploration, params, t) for t in (traces, reflected)]
+    return [_Renderer(exploration, params, t, backend) for t in (traces, reflected)]
 
 
-def signatures(
+def signatures(  # noqa: PLR0913
     exploration: Exploration,
     params: Mapping[str, Parameter],
     selected: Names,
     defaults: Defaults | None = None,
     *,
     negate: bool = False,
+    backend: Backend = TERSE,
 ) -> list[str]:
-    lines = [
-        r.render(selected, defaults, negate=negate)
-        for r in _renderers(exploration, params)
+    return [
+        r.render(selected, defaults, negate=negate, deprecated=exploration.deprecated)
+        for r in _renderers(exploration, params, backend=backend)
     ]
-    if exploration.deprecated is not None:
-        head = f"@deprecated({exploration.deprecated!r})"
-        lines = [f"{head}\n{line}" for line in lines]
-    return lines
 
 
 def widened_signature(
     exploration: Exploration,
     params: Mapping[str, Parameter],
     selected: Names,
+    *,
+    backend: Backend = TERSE,
 ) -> list[str]:
     """The fallback overload for a value dispatch, deduplicated: the parameter as the
     absent branch leaves it, the return widened to `object` (the only sound supertype of
     an arbitrary present return).
 
     Empty if a signature still declares a type parameter: a pinned return cannot bind
-    one, so a parameter-only typevar would dangle. The lines carry no `@deprecated`
-    prefix, so a leading `[` is an unambiguous generic.
+    one, so a parameter-only typevar would dangle.
     """
-    lines = [
-        r.render(selected, ret=_ir.Name(_OBJECT))
-        for r in _renderers(exploration, params)
+    sigs = [
+        r.signature(selected, ret=_ir.Name(_OBJECT))
+        for r in _renderers(exploration, params, backend=backend)
     ]
-    if any(line.startswith("[") for line in lines):
+    if any(sig.type_params for sig in sigs):
         return []
-    return list(dict.fromkeys(lines))
+    return list(dict.fromkeys(backend.render(sig) for sig in sigs))
 
 
 def union_signature(
@@ -875,10 +888,12 @@ def union_signature(
     variant: Exploration,
     params: Mapping[str, Parameter],
     selected: Names,
+    *,
+    backend: Backend = TERSE,
 ) -> list[str]:
     """The single overload for a presence dispatch whose return ignores the attribute's
     value: the parameter (forced absent in `variant`) widens to `object`, and the return
     unions the present and absent branches (so a `hasattr` predicate renders `bool`).
     """
     combined = variant._replace(results=[*exploration.results, *variant.results])
-    return signatures(combined, params, selected)
+    return signatures(combined, params, selected, backend=backend)
