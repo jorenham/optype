@@ -413,11 +413,9 @@ class _SpyObject(_Spy, metaclass=_SpyType):
 
     ###
 
+    # no `__release_buffer__`: its slot lookup fails uncatchably under cyclic GC (#739)
     def __buffer__(self, flags: int, /) -> memoryview:
         return self.__optype_trace_add__("__buffer__", (flags,), {}, memoryview(b""))
-
-    def __release_buffer__(self, buffer: memoryview, /) -> None:
-        return self.__optype_trace_add__("__release_buffer__", (buffer,), {}, None)
 
     ###
 

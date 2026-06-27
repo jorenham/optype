@@ -41,6 +41,7 @@ from optype.infer._ir import (
     union,
 )
 from optype.infer._numpy import array_function_node
+from optype.infer._spy import _SpyObject, _TraceItem
 from optype.infer._values import GapKind
 
 if sys.version_info >= (3, 13):
@@ -1159,21 +1160,25 @@ def test_method_descriptor() -> None:
     assert infer(memoryview.tobytes) == "(memoryview, order: str = 'C') -> bytes"
 
 
-def test_buffer_spy_finalizes_without_cycle() -> None:
-    # A cycle that holds a buffer-exporting spy until cyclic GC makes its C-level
-    # `__release_buffer__` lookup fail as an unraisable. Guards the weak typer->renderer
-    # link; a strong ref would regress this silently (pytest ignores unraisables).
+def test_buffer_spy_release_silent_under_cyclic_gc() -> None:
+    # #739: a buffer-exporting spy is reclaimed by cyclic GC, which may tear down its
+    # class MRO before the held memoryview's `__release_buffer__` lookup
     captured: list[object] = []
     hook = sys.unraisablehook
     sys.unraisablehook = lambda args: captured.append(args.err_msg)
-    enabled = gc.isenabled()
-    gc.disable()
     try:
+        spies = []
+        mv = None
+        for _ in range(256):
+            spy = _SpyObject()
+            mv = memoryview(spy)
+            spy.__optype_trace__.append(_TraceItem("hold", (mv,), {}, mv))
+            spies.append(spy)
+        del spies, mv
+        gc.collect()
         infer(memoryview.tobytes)
         gc.collect()
     finally:
-        if enabled:
-            gc.enable()
         sys.unraisablehook = hook
     assert not captured
 
