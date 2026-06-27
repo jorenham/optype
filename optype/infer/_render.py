@@ -7,7 +7,6 @@ from collections import Counter
 from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from inspect import Parameter, _ParameterKind
 from typing import Any, cast, final
-from weakref import WeakMethod
 
 # `from . import` would import the package itself, which imports this module
 import optype.infer._ir as _ir
@@ -612,10 +611,7 @@ class _ResultTyper:
     ) -> None:
         self._vars = vars_  # the live map the renderer mutates while inlining
         self._rec_vars = rec_vars
-        # Weak, not strong: a renderer<->typer cycle delays the `_fixed` spies to cyclic
-        # GC, where a buffer-exporting spy's C-level `__release_buffer__` lookup fails
-        # uncatchably. See `test_buffer_spy_finalizes_without_cycle`.
-        self._slot = WeakMethod(slot)
+        self._slot = slot
         self._varpos = varpos
         self._vartuple = vartuple
         self._count = count
@@ -703,9 +699,7 @@ class _ResultTyper:
 
     def _fn_param(self, fn: _Fn, name: str) -> _ir.Node:
         if (spy := fn.spies.get(name)) is not None:
-            slot = self._slot()  # the renderer outlives every typer call
-            assert slot is not None
-            return slot(spy)
+            return self._slot(spy)
         value = fn.fixed[name]
         if name in fn.defaults:
             # a pinned default renders as its value, like the outer parameters do
