@@ -1546,6 +1546,20 @@ def test_infer_generic_alias_unnameable() -> None:
     assert infer(make_user()) == "() -> GenericAlias"
 
 
+type _AliasUnion = int | str
+type _AliasGeneric = list[int]
+type _AliasScalar = int
+
+
+def test_infer_type_alias() -> None:
+    # a `TypeAliasType` denotes the type it spells, like a generic alias does
+    assert infer(lambda: _AliasUnion) == "() -> TypeForm[int | str]"
+    assert infer(lambda: _AliasGeneric) == "() -> type[list[int]]"
+    assert infer(lambda: _AliasScalar) == "() -> type[int]"
+    # an alias nested in a generic unwraps recursively
+    assert infer(lambda: list[_AliasUnion]) == "() -> type[list[int | str]]"
+
+
 @pytest.mark.skipif(sys.version_info < (3, 15), reason="requires Python 3.15+")
 def test_infer_frozendict() -> None:
     frozendict: Any = getattr(builtins, "frozendict", None)

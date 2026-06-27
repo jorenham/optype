@@ -45,7 +45,7 @@ from ._values import (
     _walk,
     fn_spies,
 )
-from optype.inspect import is_generic_alias, is_union_type
+from optype.inspect import _get_alias, is_generic_alias, is_union_type
 
 _PARAM_PREFIX: dict[_ParameterKind, str] = {
     Parameter.VAR_POSITIONAL: "*",
@@ -728,6 +728,7 @@ class _ResultTyper:
 
     def _type_expr(self, value: object) -> _ir.Node | None:
         """The type a value *is*, not the type *of* it: `list[int]` -> `list[int]`."""
+        value = _get_alias(value)
         if isinstance(value, type):
             return self._class_of(value)
         if is_union_type(value):  # `int | str` and `typing.Union[int, str]` alike
@@ -763,6 +764,7 @@ class _ResultTyper:
         return args
 
     def _container(self, result: object) -> _ir.Node:
+        result = _get_alias(result)
         if (inner := self._type_expr(result)) is not None:
             # `type[...]` for a class, `TypeForm[...]` for a union or `Callable`
             class_form = isinstance(result, type) or (
