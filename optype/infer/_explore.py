@@ -95,6 +95,15 @@ _ITERATOR_TYPES: dict[type, str] = (
     | {type(itertools.tee(())[0]): "Iterator"}
 )
 
+# predicate filters that preserve the element type; a stably-truthy spy predicate makes
+# `dropwhile`/`filterfalse` drop every element, so the element comes from the source
+_FILTER_TYPES = frozenset({
+    filter,
+    itertools.dropwhile,
+    itertools.filterfalse,
+    itertools.takewhile,
+})
+
 # the lazy iterator returned by the 2-argument `iter(callable, sentinel)`
 _CALLABLE_ITERATOR = type(iter(int, None))
 
@@ -303,7 +312,15 @@ def _wrapper(
     return _Gen([] if ret is None else [_next(ret, path)], name)
 
 
-def _next(result: object, path: dict[int, _RecVar | None] | None = None) -> object:
+def _source_element(result: object) -> _SpyObject | None:
+    # the shared element spy of a predicate filter's wrapped source iterator
+    for ref in gc.get_referents(result):
+        if isinstance(ref, _SpyObject) and ref.__optype_iterator__:
+            return ref.__optype_element__
+    return None
+
+
+def _next(result: object, path: dict[int, _RecVar | None] | None = None) -> object:  # noqa: C901
     # a function (or iterator) within the yields or a container is explored as well
     path = {} if path is None else path
     rid = id(result)
@@ -325,6 +342,10 @@ def _next(result: object, path: dict[int, _RecVar | None] | None = None) -> obje
         if cls is enumerate:
             # `enumerate[R]` is parameterized by the element type, not the yields
             values = [item for _, item in values]
+        elif not values and cls in _FILTER_TYPES:
+            # the predicate dropped every element; the element type is the source's
+            element = _source_element(result)
+            values = [element] if element is not None else values
         out = _Gen([_next(v, path) for v in values], kind)
     elif (
         cls is _CALLABLE_ITERATOR

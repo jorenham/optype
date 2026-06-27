@@ -1,14 +1,11 @@
-"""The render-backend interface and the default terse implementation.
+"""The default terse renderer: compact, but not valid Python."""
 
-A `Backend` turns the structured `Signature` that `_render` builds into text. The
-default `TerseBackend` produces the historical terse form, e.g.
-`[R](x: CanAdd[Literal[1], R]) -> R`; a future backend can emit valid Python instead.
-"""
-
-from typing import Final, Protocol, assert_never, final
+from collections.abc import Sequence
+from typing import Final, assert_never, final
 
 # `from optype.infer import _ir` would re-enter the package, which imports this module
 import optype.infer._ir as _ir  # noqa: PLR0402
+from ._base import Backend, default_text
 
 _NOT = "~"  # the type complement prefix
 _OR = "|"  # the union separator
@@ -17,25 +14,14 @@ _DOTS = "..."  # the `...` ellipsis
 _STAR = "*"  # the unpack and typevar-tuple prefix
 
 
-class Backend(Protocol):
-    def render(self, sig: _ir.Signature, /) -> str: ...
-
-
-def _default_text(value: object) -> str:
-    """The default's source text, in stub style: a literal `repr`, else `...`."""
-    simple = (
-        value is None
-        or _ir.is_sentinel(value)  # a sentinel's repr is its declared name
-        or isinstance(value, (int, float, complex, str, bytes))
-    )
-    return repr(value) if simple else _DOTS
-
-
 @final
 class TerseBackend:
     """The historical terse renderer; not valid Python, but compact."""
 
-    def render(self, sig: _ir.Signature, /) -> str:
+    def render(self, sigs: Sequence[_ir.Signature], /) -> str:
+        return "\n".join(dict.fromkeys(map(self._line, sigs)))
+
+    def _line(self, sig: _ir.Signature, /) -> str:
         type_params = ", ".join(map(self._type_param, sig.type_params))
         type_params = f"[{type_params}]" if sig.type_params else ""
         params = ", ".join(map(self._param, sig.params))
@@ -89,7 +75,7 @@ class TerseBackend:
         label = f"{param.key}: " if param.key else ""
         decl = f"{label}{self._render_node(param.value)}"
         if param.default is not None:
-            decl += f" = {_default_text(param.default[0])}"
+            decl += f" = {default_text(param.default[0])}"
         return decl
 
     def _fn(self, params: tuple[_ir.Node | _ir.Arg, ...], ret: _ir.Node) -> str:
@@ -142,7 +128,7 @@ class TerseBackend:
         label = "" if param.nameless else f"{param.prefix}{param.name}: "
         decl = f"{label}{self._render_node(param.node)}"
         if param.default is not None:
-            decl += f" = {_default_text(param.default[0])}"
+            decl += f" = {default_text(param.default[0])}"
         return decl
 
 

@@ -3,6 +3,7 @@
 # pyright: reportUnknownMemberType=false, reportUnknownVariableType=false
 # pyright: reportUnusedParameter=false
 
+import ast
 import builtins
 import difflib
 import functools
@@ -19,13 +20,15 @@ import warnings
 import weakref
 from collections.abc import Callable
 from inspect import currentframe, signature
+from pathlib import Path
 from types import MappingProxyType
 from typing import Any
 
 import pytest
 
-from optype.infer import TERSE, Backend, InferError, InferWarning, infer
+from optype.infer import InferError, InferWarning, infer
 from optype.infer._api import _Gap
+from optype.infer._backends import TERSE
 from optype.infer._ir import (
     App,
     Arg,
@@ -954,11 +957,11 @@ ITERATOR_CASES: list[tuple[Callable[..., Any], str]] = [
     # an unrecoverable element type renders bare (#722)
     (
         lambda f, xs: itertools.dropwhile(f, xs),
-        "[T](f: (T) -> CanBool, xs: CanIter[CanNext[T]]) -> itertools.dropwhile",
+        "[R](f: (R) -> CanBool, xs: CanIter[CanNext[R]]) -> itertools.dropwhile[R]",
     ),
     (
         lambda f, xs: itertools.filterfalse(f, xs),
-        "[T](f: (T) -> CanBool, xs: CanIter[CanNext[T]]) -> itertools.filterfalse",
+        "[R](f: (R) -> CanBool, xs: CanIter[CanNext[R]]) -> itertools.filterfalse[R]",
     ),
     (
         lambda x: ((i for i in x), 1),
@@ -992,7 +995,7 @@ ITERATOR_CASES: list[tuple[Callable[..., Any], str]] = [
 ]
 
 
-INFER_CASES = [
+INFER_CASES: list[tuple[Callable[..., object], str]] = [
     *UNARY_CASES,
     *BINARY_CASES,
     *VARIADIC_CASES,
@@ -1664,7 +1667,7 @@ def test_infer_array_function() -> None:
 
 def render_node(node: Node) -> str:
     # the backend renders signatures only, so a bare node renders as its return slot
-    return TERSE.render(Signature((), (), node)).removeprefix("() -> ")
+    return TERSE.render([Signature((), (), node)]).removeprefix("() -> ")
 
 
 def test_array_function_node() -> None:
@@ -1689,18 +1692,201 @@ def test_infer_backend() -> None:
     def f(x: Any) -> object:
         return x + 1
 
-    # the default is the terse backend, so passing it explicitly changes nothing
-    assert infer(f, backend=TERSE) == infer(f) == "[R](x: CanAdd[Literal[1], R]) -> R"
+    # "terse" is the default, so passing it explicitly changes nothing
+    assert infer(f, backend="terse") == infer(f) == "[R](x: CanAdd[Literal[1], R]) -> R"
+    assert infer(f, backend="compat") == (
+        "from typing import Literal\n"
+        "from optype import CanAdd\n\n"
+        "def f[R](x: CanAdd[Literal[1], R]) -> R: ..."
+    )
 
-    # a structurally-typed custom `Backend`, wrapping another, reaches rendering
-    class _Loud:
-        base: Backend = TERSE
 
-        def render(self, sig: Signature, /) -> str:
-            return self.base.render(sig).upper()
+def _compat(source: str) -> str:
+    """Infer `source`'s final expression (or definition) with the compat backend."""
+    body = ast.parse(source).body
+    last = body[-1]
+    if isinstance(last, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+        body = ast.parse(f"{source}\n{last.name}").body
+        last = body[-1]
+    assert isinstance(last, ast.Expr)
+    namespace: dict[str, object] = {}
+    exec(compile(ast.Module(body[:-1], []), "<expr>", "exec"), namespace)  # noqa: S102
+    func = eval(compile(ast.Expression(last.value), "<expr>", "eval"), namespace)  # noqa: S307
+    return infer(func, backend="compat")
 
-    backend: Backend = _Loud()
-    assert infer(f, backend=backend) == "[R](X: CANADD[LITERAL[1], R]) -> R"
+
+# one representative input per construct, paired with its valid-Python `.pyi` rendering
+COMPAT_CASES: list[tuple[str, str]] = [
+    (
+        "lambda x: x + 1",
+        (
+            "from typing import Literal\n"
+            "from optype import CanAdd\n\n"
+            "def f[R](x: CanAdd[Literal[1], R]) -> R: ..."
+        ),
+    ),
+    (
+        "lambda x, y: x * y",
+        (
+            "from typing import overload\n"
+            "from optype import CanMul, CanRMul\n\n"
+            "@overload\n"
+            "def f[T, R](x: CanMul[T, R], y: T) -> R: ...\n"
+            "@overload\n"
+            "def f[T, R](x: T, y: CanRMul[T, R]) -> R: ..."
+        ),
+    ),
+    (
+        # an intersection becomes a combined protocol, used as a substituted bound
+        "lambda x: x if x > 0 else -x",
+        (
+            "from typing import Literal, Protocol\n"
+            "from optype import CanBool, CanGt, CanNeg\n\n"
+            "class CanGtNeg[T]"
+            "(CanGt[Literal[0], CanBool], CanNeg[T], Protocol): ...\n\n"
+            "def f[R](x: CanGtNeg[R]) -> CanGtNeg[R] | R: ..."
+        ),
+    ),
+    (
+        # a self-referential bound becomes a self-referential protocol
+        "lambda xs: sorted(xs)",
+        (
+            "from typing import Protocol\n"
+            "from optype import CanBool, CanIter, CanLt, CanNext\n\n"
+            "class CanLt2(CanLt[CanLt2, CanBool], Protocol): ...\n\n"
+            "def f(xs: CanIter[CanNext[CanLt2]]) -> list[CanLt2]: ..."
+        ),
+    ),
+    (
+        # the inline `Has['spam', +R]` read becomes a `@property` protocol
+        "lambda x: x.spam",
+        (
+            "from typing import Protocol\n\n"
+            "class HasSpam[T](Protocol):\n"
+            "    @property\n"
+            "    def spam(self) -> T: ...\n\n"
+            "def f[R](x: HasSpam[R]) -> R: ..."
+        ),
+    ),
+    (
+        "lambda x: x.spam()",
+        (
+            "from typing import Protocol\n\n"
+            "class HasSpam[T](Protocol):\n"
+            "    def spam(self) -> T: ...\n\n"
+            "def f[R](x: HasSpam[R]) -> R: ..."
+        ),
+    ),
+    (
+        # a positional callable parameter renders as `Callable`
+        "lambda f, x: map(f, x)",
+        (
+            "from collections.abc import Callable\n"
+            "from optype import CanIter, CanNext\n\n"
+            "def f[T, R](f: Callable[[T], R], x: CanIter[CanNext[T]]) -> map[R]: ..."
+        ),
+    ),
+    (
+        # a keyword callable parameter renders as a `__call__` protocol
+        "lambda f: f(1, b=2)",
+        (
+            "from typing import Literal, Protocol\n\n"
+            "class CanCallP[T](Protocol):\n"
+            "    def __call__(self, _0: Literal[1], /, b: Literal[2]) -> T: ...\n\n"
+            "def f[R](f: CanCallP[R]) -> R: ..."
+        ),
+    ),
+    (
+        # the `~None` complement is dropped: overloads are matched in order
+        "def f(x=None): return [] if x is None else x",
+        (
+            "from typing import Never, overload\n\n"
+            "@overload\n"
+            "def f(x: None = None) -> list[Never]: ...\n"
+            "@overload\n"
+            "def f[T](x: T) -> T: ..."
+        ),
+    ),
+    (
+        "def f(x=0): return x",
+        "from typing import Literal\n\ndef f[T = Literal[0]](x: T = 0) -> T: ...",
+    ),
+    ("lambda *args: args", "def f[*Ts](*args: *Ts) -> tuple[*Ts]: ..."),
+    ("str.upper", "def f(_0: str, /) -> str: ..."),
+]
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    COMPAT_CASES,
+    ids=[src for src, _ in COMPAT_CASES],
+)
+def test_compat(source: str, expected: str) -> None:
+    assert _compat(source) == expected
+
+
+def _basedpyright(path: Path) -> subprocess.CompletedProcess[str]:
+    # run from `path` so the stubs are checked in isolation from the project's settings
+    return subprocess.run(
+        ["basedpyright", "."],  # noqa: S607
+        cwd=path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def test_compat_typechecks(tmp_path: Path) -> None:
+    # each rendered stub must be valid, self-contained, type-checkable Python
+    for i, (source, _) in enumerate(COMPAT_CASES):
+        (tmp_path / f"case_{i}.pyi").write_text(f"{_compat(source)}\n")
+    out = _basedpyright(tmp_path)
+    assert out.returncode == 0, out.stdout
+
+
+# terse renderings whose compat stub does not type-check: each faithfully renders an
+# inference the type system (or the shipped `optype` API) cannot express, not a backend
+# bug. See docs/reference/experimental/infer.md.
+_COMPAT_DIVERGENT = frozenset({
+    # the shipped protocol's typevar bound is an alias the renderer cannot reproduce
+    "[R](x: HasTypeParams[R]) -> R",
+    # combining two `Has` protocols (or the same attribute twice) is inexpressible
+    "[R, R2](x: HasName[R] & HasQualname[R2]) -> tuple[R, R2]",
+    "[R, R2](x: Has['spam', +R] & Has['spam', ClassVar[+R2]]) -> tuple[R, R2]",
+    # a generic the inference left unparametrized (reportMissingTypeArgument)
+    "[T]() -> (dict, CanHash, T = None) -> T",
+    "() -> functools.partial",
+})
+
+
+def test_compat_renders_corpus() -> None:
+    # every terse case must lower and print without error
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", InferWarning)
+        for func, terse in INFER_CASES:
+            assert infer(func, backend="compat"), terse
+
+
+def test_compat_corpus_typechecks(tmp_path: Path) -> None:
+    # render every terse case through compat and type-check the lot at once
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", InferWarning)
+        rendered = [
+            (terse, infer(func, backend="compat")) for func, terse in INFER_CASES
+        ]
+    terse_of = {f"case_{i:03d}": terse for i, (terse, _) in enumerate(rendered)}
+    for i, (_, stub) in enumerate(rendered):
+        (tmp_path / f"case_{i:03d}.pyi").write_text(f"{stub}\n")
+
+    out = _basedpyright(tmp_path)
+    failing = {
+        case
+        for line in out.stdout.splitlines()
+        if "error:" in line
+        for case in re.findall(r"case_\d+", line)
+    }
+    unexpected = sorted(n for n in failing if terse_of[n] not in _COMPAT_DIVERGENT)
+    assert not unexpected, f"{unexpected}\n{out.stdout}"
 
 
 @pytest.mark.parametrize("selector", ["nope", 9, -9])
@@ -2314,6 +2500,22 @@ def test_cli_subcommand() -> None:
     out = _run_cli("-m", "optype", "infer", "lambda x: x * 2")
     assert out.returncode == 0
     assert out.stdout.strip() == "[R](x: CanMul[Literal[2], R]) -> R"
+
+
+def test_cli_format_compat() -> None:
+    out = _run_cli("-m", "optype.infer", "--format", "compat", "lambda x: x + 1")
+    assert out.returncode == 0
+    assert out.stdout.strip() == (
+        "from typing import Literal\n"
+        "from optype import CanAdd\n\n"
+        "def f[R](x: CanAdd[Literal[1], R]) -> R: ..."
+    )
+
+
+def test_cli_format_invalid() -> None:
+    out = _run_cli("-m", "optype.infer", "--format", "json", "lambda x: x")
+    assert out.returncode != 0
+    assert "terse, compat" in out.stderr
 
 
 def test_cli_def() -> None:

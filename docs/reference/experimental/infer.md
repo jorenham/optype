@@ -24,7 +24,11 @@ more.
 
 ```python
 def infer(
-    func, /, *params: str | int, strict: bool = False, backend: Backend = TERSE
+    func,
+    /,
+    *params: str | int,
+    strict: bool = False,
+    backend: Literal["terse", "compat"] = "terse",
 ) -> str: ...
 ```
 
@@ -48,21 +52,28 @@ Raises [`InferError`](#infererror) when `func` is not supported. When exploratio
 incomplete it emits an [`InferWarning`](#inferwarning) and still returns a provisional
 signature; pass `strict=True` to raise an `InferError` instead.
 
-Pass a [`backend`](#backend) to control how the signature is rendered.
+Set `backend` to control how the signature is rendered: the default `"terse"` emits the
+compact form shown above, or [`"compat"`](#compat) for valid, type-checkable Python.
 
-## `Backend`
+## `"compat"`
 
-A `Protocol` with one method, `render(sig: Signature) -> str`. The default `TERSE`
-backend emits the compact form shown above; any object with a matching `render` works:
+`backend="compat"` (or `--format compat` on the command line) renders the result as a
+self-contained, type-checkable `.pyi`-style stub: imports, any synthesized helper
+`Protocol`s, and `@overload`-decorated `def`s.
 
-```pycon
->>> from optype.infer import TERSE, infer
->>> class Upper:
-...     def render(self, sig, /):
-...         return TERSE.render(sig).upper()
->>> infer(lambda x: x + 1, backend=Upper())
-'[R](X: CANADD[LITERAL[1], R]) -> R'
+```console
+$ optype infer --format compat "lambda x: x + 1"
+from typing import Literal
+from optype import CanAdd
+
+def f[R](x: CanAdd[Literal[1], R]) -> R: ...
 ```
+
+Constructs the typing spec cannot express are lowered: an intersection or the inline
+`Has['name', T]` form becomes a `Protocol`, a typevar-referencing bound becomes a
+(possibly self-referential) `Protocol`, and the `~` complement is dropped. A few
+inferences still fall outside the type system, such as a non-generic protocol read as
+generic, or a same-attribute intersection.
 
 ## `InferError`
 
