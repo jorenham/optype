@@ -652,6 +652,14 @@ $ optype infer "lambda x: [FileNotFoundError()] if x else [OSError()]"
 (x: CanBool) -> list[FileNotFoundError] | list[OSError]
 ```
 
+An *empty* container is the exception: its only inhabitant is the empty instance, which
+is a member of every same-base container, so it is absorbed even when invariant:
+
+```console
+$ optype infer "lambda x: [None] if x else []"
+(x: CanBool) -> list[None]
+```
+
 ## NumPy
 
 !!! info
