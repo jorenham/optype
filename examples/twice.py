@@ -13,7 +13,7 @@ def twice[Y](x: op.CanRMul[Two, Y], /) -> Y:
 # %%
 assert_type(twice(True), int)
 assert_type(twice(1 / 137), float)
-assert_type(twice(str(-1 / 12)), str)  # pyrefly: ignore[assert-type]
+assert_type(twice(str(-1 / 12)), str)
 assert_type(twice([object()]), list[object])
 
 
