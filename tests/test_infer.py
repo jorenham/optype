@@ -1086,6 +1086,12 @@ SUBTYPE_CASES: list[tuple[Any, Any, bool]] = [
     (App("tuple", (Type(bool), Lit((1,)))), App("tuple", (Type(int),) * 2), True),
     (App("tuple", (Type(bool),)), App("tuple", (Type(int),) * 2), False),
     (App("list", (Type(bool),)), App("list", (Type(int),)), False),
+    # an empty container is the bottom of its base, even when invariant
+    (App("list", (Name("Never"),)), App("list", (Type(int),)), True),
+    (App("list", (Type(int),)), App("list", (Name("Never"),)), False),
+    (App("set", (Name("Never"),)), App("set", (Type(int),)), True),
+    (App("dict", (Name("Never"),) * 2), App("dict", (Type(str), Type(int))), True),
+    (App("list", (Name("Never"),)), App("set", (Type(int),)), False),
     # type is covariant
     (App("type", (Type(bool),)), App("type", (Type(int),)), True),
     (App("type", (Type(int),)), App("type", (Type(bool),)), False),
@@ -1473,6 +1479,19 @@ def test_infer_empty_container() -> None:
     assert infer(returns(set())) == "() -> set[Never]"
     assert infer(returns(frozenset())) == "() -> frozenset[Never]"
     assert infer(returns([[]])) == "() -> list[list[Never]]"
+
+
+def test_infer_empty_container_union() -> None:
+    # an empty container is absorbed by a non-empty sibling, even when invariant
+    assert infer(lambda x: [None] if x else []) == "(x: CanBool) -> list[None]"
+    assert infer(lambda x: {None} if x else set()) == "(x: CanBool) -> set[None]"
+    assert infer(lambda x: {None: None} if x else {}) == (
+        "(x: CanBool) -> dict[None, None]"
+    )
+    # a non-empty invariant container is still not absorbed
+    assert infer(lambda x: [1] if x else ["1"]) == (
+        "(x: CanBool) -> list[Literal[1]] | list[Literal['1']]"
+    )
 
 
 def test_infer_ellipsis() -> None:

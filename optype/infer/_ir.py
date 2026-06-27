@@ -160,14 +160,19 @@ def subtype(sub: Node | Arg, sup: Node | Arg) -> bool:
             result = issubclass(cls, wider)
         case App(base, args), App(wider, wider_args) if base == wider:
             variances = _VARIANCES.get(base, "")
-            result = (
-                bool(variances)
-                and len(args) == len(wider_args)
-                and all(
-                    subtype(arg, wide)
-                    if variances[min(i, len(variances) - 1)] == COVARIANT
-                    else subtype(wide, arg)
-                    for i, (arg, wide) in enumerate(zip(args, wider_args, strict=True))
+            result = len(args) == len(wider_args) and (
+                # an all-`Never` container holds only `[]`, a member of any same base
+                (bool(args) and all(arg == Name("Never") for arg in args))
+                or (
+                    bool(variances)
+                    and all(
+                        subtype(arg, wide)
+                        if variances[min(i, len(variances) - 1)] == COVARIANT
+                        else subtype(wide, arg)
+                        for i, (arg, wide) in enumerate(
+                            zip(args, wider_args, strict=True),
+                        )
+                    )
                 )
             )
         case Fn(params, ret), Fn(wider_params, wider_ret):
