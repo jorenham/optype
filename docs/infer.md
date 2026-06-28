@@ -773,6 +773,13 @@ or an identity check (`is`) is reported as `object` rather than its real require
 same blind spot hides a branch on a derived integer: `len`, `int`, and `index` return a
 small placeholder, so `len(x) > 5` is never explored.
 
+A native callable (a C builtin, method descriptor, or callable object) can fault the
+interpreter outright during exploration rather than raise. Where `os.fork` is available,
+inferring one runs in a forked child, so such a crash surfaces as an `InferError` instead
+of taking the host process down. The error names the signal and the last spy operation
+before the fault. A pure-Python function that internally calls a crashing C function is
+not isolated.
+
 !!! warning "Generic bounds"
 
     An inferred typevar bound can itself be generic, such as `[T: CanAdd[T, R], R]` where

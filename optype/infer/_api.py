@@ -3,14 +3,14 @@
 import warnings
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from inspect import Parameter, signature
+from inspect import Parameter, isfunction, ismethod, signature
 
-# `from . import` would import the package itself, which imports this module
 import optype.infer._numpy as _numpy
 from ._backends import BACKENDS, BackendName
-from ._errors import InferError, InferWarning
+from ._errors import WARN_SKIP_PREFIX, InferError, InferWarning
 from ._explore import explore_lenient, explore_tuple_params
 from ._ir import Signature
+from ._isolate import isolate
 from ._overloads import dispatch_overloads, resolve_defaults
 from ._render import Names, signatures
 from ._signature import probe_signatures
@@ -107,12 +107,33 @@ def _infer(
         try:
             sigs += _form_signatures(func, parameters, params, gaps)
         except (InferError, ValueError) as exc:
-            # a candidate arity may fail exploration (e.g. `int`'s base); drop it,
-            # re-raising below only if no candidate produced anything
-            last = exc
+            last = exc  # re-raised below only if no arity produces anything
     if not sigs and last is not None:
         raise last
     return sigs
+
+
+def _infer_render(
+    func: _AnyFunc,
+    params: tuple[str | int, ...],
+    *,
+    strict: bool,
+    backend: BackendName,
+) -> str:
+    gaps: set[_Gap] = set()
+    try:
+        sigs = _infer(func, params, gaps)
+    except RecursionError as exc:
+        raise InferError("the result is nested too deeply") from exc
+
+    if gaps:
+        detail = "; ".join(sorted(g.message() for g in gaps))
+        msg = f"incomplete exploration: {detail}"
+        if strict:
+            raise InferError(msg)
+        warnings.warn(msg, InferWarning, skip_file_prefixes=(WARN_SKIP_PREFIX,))
+
+    return BACKENDS[backend].render(sigs)
 
 
 def infer(
@@ -140,16 +161,10 @@ def infer(
             operation without a matching protocol, or a parameter that requires
             a value that no placeholder can provide; or, with `strict=True`, if
             the function could not be explored exhaustively.
-    """
-    gaps: set[_Gap] = set()
-    try:
-        sigs = _infer(func, params, gaps)
-    except RecursionError as exc:
-        raise InferError("the result is nested too deeply") from exc
-    if gaps:
-        detail = "; ".join(sorted(g.message() for g in gaps))
-        msg = f"incomplete exploration: {detail}"
-        if strict:
-            raise InferError(msg)
-        warnings.warn(msg, InferWarning, stacklevel=2)
-    return BACKENDS[backend].render(sigs)
+    """  # noqa: DOC502
+
+    def render() -> str:
+        return _infer_render(func, params, strict=strict, backend=backend)
+
+    # functions/methods only raise; isolate the rest, which can fault in C (#738)
+    return render() if isfunction(func) or ismethod(func) else isolate(render)

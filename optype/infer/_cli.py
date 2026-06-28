@@ -88,7 +88,8 @@ def run(*args: str) -> None:
     except (InferError, ValueError) as exc:
         cause = exc.__cause__
         detail = f" ({type(cause).__name__}: {cause})" if cause is not None else ""
-        sys.exit(f"{type(exc).__name__}: {exc}{detail}")
+        notes = "".join(f"\n  {note}" for note in getattr(exc, "__notes__", ()))
+        sys.exit(f"{type(exc).__name__}: {exc}{detail}{notes}")
 
     if _color.want_color(sys.stdout, color):
         signature = _color.highlight(signature)
