@@ -4,14 +4,32 @@ import ast
 import sys
 import warnings
 
+from ._backends import BackendName
 from optype.infer import InferError, InferWarning, infer
 
 
-def run(*args: str) -> None:
-    if not args:
-        sys.exit("usage: optype infer EXPR [PARAM ...]")
+def _format(args: tuple[str, ...]) -> tuple[BackendName, list[str]]:
+    """Split off a leading `--format {terse,compat}`, defaulting to terse."""
+    rest = list(args)
+    name = "terse"
+    if rest and rest[0] == "--format":
+        name, rest = (rest[1] if len(rest) > 1 else ""), rest[2:]
+    elif rest and rest[0].startswith("--format="):
+        name, rest = rest[0].removeprefix("--format="), rest[1:]
+    # return the literal, not `name`: not every type checker narrows `str` to the name
+    if name == "terse":
+        return "terse", rest
+    if name == "compat":
+        return "compat", rest
+    sys.exit("--format must be one of: terse, compat")
 
-    source, *selectors = args
+
+def run(*args: str) -> None:
+    backend, rest = _format(args)
+    if not rest:
+        sys.exit("usage: optype infer [--format {terse,compat}] EXPR [PARAM ...]")
+
+    source, *selectors = rest
     params = [int(s) if s.removeprefix("-").isdigit() else s for s in selectors]
 
     body = ast.parse(source).body
@@ -29,7 +47,7 @@ def run(*args: str) -> None:
     try:
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always", InferWarning)
-            signature = infer(eval(code, namespace), *params)
+            signature = infer(eval(code, namespace), *params, backend=backend)
     except (InferError, ValueError) as exc:
         cause = exc.__cause__
         detail = f" ({type(cause).__name__}: {cause})" if cause is not None else ""

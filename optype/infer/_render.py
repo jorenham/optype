@@ -19,7 +19,6 @@ from ._analyze import (
     return_spies,
     spy_runs,
 )
-from ._backend import TERSE, Backend
 from ._protocols import Op, Proto, resolve
 from ._spy import (
     _AnyFunc,
@@ -51,7 +50,6 @@ _PARAM_PREFIX: dict[_ParameterKind, str] = {
     Parameter.VAR_KEYWORD: "**",
 }
 
-_TYPEVARS = "TUVWXYZ"
 _TYPEVAR_TUPLE_NAME = "Ts"  # the PEP 646 typevar-tuple binder, used as `*Ts`
 
 _NEVER = "Never"
@@ -127,16 +125,10 @@ def _result_var(index: int) -> str:
     return "R" if not index else f"R{index + 1}"
 
 
-def _typevar_name(n: int) -> str:
-    """The `n`-th generic parameter name: `T, U, ..., Z`, then `T7, T8, ...`."""
-    return _TYPEVARS[n] if n < len(_TYPEVARS) else f"T{n}"
-
-
 @final
 class _Renderer:
     """Render an inferred `def` signature from the recorded spy traces."""
 
-    _backend: Backend
     _spies: Mapping[str, _SpyObject]
     _fixed: Mapping[str, object]
     _results: list[object]
@@ -170,10 +162,8 @@ class _Renderer:
         exploration: Exploration,
         params: Mapping[str, Parameter],
         traces: _Traces,
-        backend: Backend = TERSE,
     ) -> None:
         # `traces` is the map to render: the raw exploration traces or the reflected one
-        self._backend = backend
         self._spies = exploration.spies
         self._results = exploration.results
         self._traces = traces
@@ -288,7 +278,7 @@ class _Renderer:
             if (var := self._named.get(rep)) is None:
                 var = self._vars.get(id(spy))  # a `*Ts` variadic keeps its name
                 if var is None:
-                    var = _typevar_name(n)
+                    var = _ir.typevar_name(n)
                     n += 1
                 self._named[rep] = var
                 self._declared_spies.append(spy)
@@ -326,7 +316,7 @@ class _Renderer:
 
         # renumber the survivors back to a gapless `T, U, V, ...`
         remap = {
-            old: _typevar_name(n)
+            old: _ir.typevar_name(n)
             for n, old in enumerate(var for var in pool_vars if var not in inline)
         }
 
@@ -552,24 +542,6 @@ class _Renderer:
             ret_node,
             deprecated,
         )
-
-    def render(
-        self,
-        selected: Names,
-        defaults: Defaults | None = None,
-        *,
-        negate: bool = False,
-        ret: _ir.Node | None = None,
-        deprecated: str | None = None,
-    ) -> str:
-        sig = self.signature(
-            selected,
-            defaults,
-            negate=negate,
-            ret=ret,
-            deprecated=deprecated,
-        )
-        return self._backend.render(sig)
 
     def _param(
         self,
@@ -837,26 +809,28 @@ class _ResultTyper:
 def _renderers(
     exploration: Exploration,
     params: Mapping[str, Parameter],
-    *,
-    backend: Backend = TERSE,
 ) -> list[_Renderer]:
     traces, results = exploration.traces, exploration.results
     reflected = reflect([*exploration.spies.values(), *fn_spies(results)], traces)
-    return [_Renderer(exploration, params, t, backend) for t in (traces, reflected)]
+    return [_Renderer(exploration, params, t) for t in (traces, reflected)]
 
 
-def signatures(  # noqa: PLR0913
+def signatures(
     exploration: Exploration,
     params: Mapping[str, Parameter],
     selected: Names,
     defaults: Defaults | None = None,
     *,
     negate: bool = False,
-    backend: Backend = TERSE,
-) -> list[str]:
+) -> list[_ir.Signature]:
     return [
-        r.render(selected, defaults, negate=negate, deprecated=exploration.deprecated)
-        for r in _renderers(exploration, params, backend=backend)
+        r.signature(
+            selected,
+            defaults,
+            negate=negate,
+            deprecated=exploration.deprecated,
+        )
+        for r in _renderers(exploration, params)
     ]
 
 
@@ -864,23 +838,19 @@ def widened_signature(
     exploration: Exploration,
     params: Mapping[str, Parameter],
     selected: Names,
-    *,
-    backend: Backend = TERSE,
-) -> list[str]:
-    """The fallback overload for a value dispatch, deduplicated: the parameter as the
-    absent branch leaves it, the return widened to `object` (the only sound supertype of
-    an arbitrary present return).
+) -> list[_ir.Signature]:
+    """The fallback overload for a value dispatch: the parameter as the absent branch
+    leaves it, the return widened to `object` (the only sound supertype of an arbitrary
+    present return).
 
     Empty if a signature still declares a type parameter: a pinned return cannot bind
     one, so a parameter-only typevar would dangle.
     """
     sigs = [
         r.signature(selected, ret=_ir.Name(_OBJECT))
-        for r in _renderers(exploration, params, backend=backend)
+        for r in _renderers(exploration, params)
     ]
-    if any(sig.type_params for sig in sigs):
-        return []
-    return list(dict.fromkeys(backend.render(sig) for sig in sigs))
+    return [] if any(sig.type_params for sig in sigs) else sigs
 
 
 def union_signature(
@@ -888,12 +858,10 @@ def union_signature(
     variant: Exploration,
     params: Mapping[str, Parameter],
     selected: Names,
-    *,
-    backend: Backend = TERSE,
-) -> list[str]:
+) -> list[_ir.Signature]:
     """The single overload for a presence dispatch whose return ignores the attribute's
     value: the parameter (forced absent in `variant`) widens to `object`, and the return
     unions the present and absent branches (so a `hasattr` predicate renders `bool`).
     """
     combined = variant._replace(results=[*exploration.results, *variant.results])
-    return signatures(combined, params, selected, backend=backend)
+    return signatures(combined, params, selected)

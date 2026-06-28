@@ -6,7 +6,6 @@ from typing import cast
 
 # `from . import` would import the package itself, which imports this module
 import optype.infer._ir as _ir
-from ._backend import TERSE, Backend
 from ._spy import _AnyFunc
 from ._values import VARIADIC_KINDS
 
@@ -54,10 +53,8 @@ def infer_ufunc(
     func: _AnyFunc,
     names: Sequence[str],
     selected: Iterable[str],
-    *,
-    backend: Backend = TERSE,
-) -> str:
-    """Render a ufunc signature from its `.types` dtype table."""
+) -> list[_ir.Signature]:
+    """The ufunc signature from its `.types` dtype table."""
     params: list[_ir.Param] = []
     for name in selected:
         i = names.index(name)
@@ -69,8 +66,7 @@ def infer_ufunc(
         if dtype := _ufunc_dtype(func, i):
             arms.append(_ir.Name(dtype))
         params.append(_ir.Param(name, _ir.union(arms) or _ir.Name("object")))
-    sig = _ir.Signature((_ir.TypeParam("R"),), tuple(params), _ir.Name("R"))
-    return backend.render(sig)
+    return [_ir.Signature((_ir.TypeParam("R"),), tuple(params), _ir.Name("R"))]
 
 
 def _required_args(func: _AnyFunc) -> int | None:

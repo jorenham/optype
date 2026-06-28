@@ -14,8 +14,8 @@ from ._analyze import (
     requires_only_presence,
     returns_concrete,
 )
-from ._backend import TERSE, Backend
 from ._explore import declared_defaults, explore_spies
+from ._ir import Signature
 from ._render import (
     Defaults,
     Names,
@@ -69,15 +69,13 @@ def resolve_defaults(
     params: Mapping[str, Parameter],
     selected: Names,
     exploration: Exploration,
-    *,
-    backend: Backend = TERSE,
-) -> tuple[Defaults, bool, list[str]]:
+) -> tuple[Defaults, bool, list[Signature]]:
     """The parameter defaults if expressible as typevar defaults, else overloads.
 
     Omitting the defaulted parameters must behave like substituting their values
     into the generic signature; the function is rerun without them to check. On a
-    mismatch the omitted calls are reported as separate overload lines, and a
-    single defaulted parameter's type is excluded from the generic signature.
+    mismatch the omitted calls are reported as separate overloads, and a single
+    defaulted parameter's type is excluded from the generic signature.
     """
     defaults = declared_defaults(params)
     kinds = {p.kind for p in params.values()}
@@ -94,15 +92,15 @@ def resolve_defaults(
     try:
         omitted = explore_spies(func, params, omit=defaults)
         # the comparison must see every required parameter, regardless of selection
-        observed = signatures(omitted, required, names, backend=backend)
+        observed = signatures(omitted, required, names)
     except Exception:  # noqa: BLE001
         return {}, False, []
 
     omitted_defaults = _bind_exploration(exploration, defaults)
-    if signatures(omitted_defaults, required, names, backend=backend) == observed:
+    if signatures(omitted_defaults, required, names) == observed:
         return defaults, False, []
 
-    overloads = signatures(omitted, params, selected, defaults, backend=backend)
+    overloads = signatures(omitted, params, selected, defaults)
 
     if len(defaults) == 1:
         return defaults, True, overloads
@@ -112,26 +110,18 @@ def resolve_defaults(
             variant = explore_spies(func, params, omit={name})
         except Exception:  # noqa: BLE001, S112
             continue
-        overloads += signatures(
-            variant,
-            params,
-            selected,
-            {name: value},
-            backend=backend,
-        )
+        overloads += signatures(variant, params, selected, {name: value})
 
     return {}, False, overloads
 
 
-def dispatch_overloads(  # noqa: PLR0913
+def dispatch_overloads(
     func: _AnyFunc,
     params: Mapping[str, Parameter],
     selected: Names,
     exploration: Exploration,
-    baseline: list[str],
-    *,
-    backend: Backend = TERSE,
-) -> list[str]:
+    baseline: list[Signature],
+) -> list[Signature]:
     """The overloads for a presence-test on a single parameter's attribute.
 
     Forcing the attribute absent surfaces the branch a placeholder hides. If the return
@@ -161,6 +151,6 @@ def dispatch_overloads(  # noqa: PLR0913
         and returns_concrete(exploration.results)
         and returns_concrete(variant.results)
     ):
-        return union_signature(exploration, variant, params, selected, backend=backend)
-    tail = widened_signature(variant, params, selected, backend=backend)
+        return union_signature(exploration, variant, params, selected)
+    tail = widened_signature(variant, params, selected)
     return baseline + tail if tail else baseline

@@ -371,3 +371,9 @@ def type_name(cls: type) -> str:
         return alias
     prefix = "np." if cls.__module__.partition(".")[0] == "numpy" else ""
     return prefix + cls.__name__
+
+
+def typevar_name(n: int) -> str:
+    """The `n`-th generic parameter name: `T, U, ..., Z`, then `T7, T8, ...`."""
+    letters = "TUVWXYZ"
+    return letters[n] if n < len(letters) else f"T{n}"

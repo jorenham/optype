@@ -49,6 +49,27 @@ $ optype infer "import math; math.sqrt"
 (CanFloat | CanIndex) -> float
 ```
 
+## Output formats
+
+The terse form above is compact but not valid Python. Pass `--format compat` (or
+`backend="compat"` to `infer`) to emit a self-contained, type-checkable `.pyi` stub
+instead:
+
+```console
+$ optype infer --format compat "lambda x, y: x * y"
+from typing import overload
+from optype import CanMul, CanRMul
+
+@overload
+def f[T, R](x: CanMul[T, R], y: T) -> R: ...
+@overload
+def f[T, R](x: T, y: CanRMul[T, R]) -> R: ...
+```
+
+The fictional forms below are lowered to valid Python: [intersections](#intersections)
+and the inline [`Has[...]`](#attributes) form become protocols, and the
+[`~` complement](#parameter-defaults) is dropped.
+
 ## Overloads
 
 A binary operator can dispatch to either operand, so it is reported as one overload per
