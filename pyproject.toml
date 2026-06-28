@@ -85,11 +85,12 @@ test = [
   "beartype>=0.22.9",
   "pytest>=9.0.3",
   "typing-extensions>=4.15.0",
+  # the compat-backend tests type-check the rendered stubs
+  "basedpyright==1.39.7",
 ]
 type = [
   { include-group = "extra" },
   { include-group = "test" },
-  "basedpyright==1.39.7",
   "mypy[faster-cache]==2.1.0",
   "pyrefly==1.0.0",
   "ty==0.0.48",

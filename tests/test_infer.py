@@ -7,13 +7,13 @@ import ast
 import builtins
 import difflib
 import functools
-import gc
 import itertools
 import math
 import operator
 import random
 import re
 import secrets
+import shutil
 import subprocess  # noqa: S404
 import sys
 import warnings
@@ -44,7 +44,6 @@ from optype.infer._ir import (
     union,
 )
 from optype.infer._numpy import array_function_node
-from optype.infer._spy import _SpyObject, _TraceItem
 from optype.infer._values import GapKind
 
 if sys.version_info >= (3, 13):
@@ -734,6 +733,12 @@ FUNCTION_CASES: list[tuple[Callable[..., Any], str]] = [
         ),
     ),
     (lambda x: lambda f: f(x), "[T, R](x: T) -> (f: (T) -> R) -> R"),
+    # a parameter that is both called and truthy-tested intersects a callable with a
+    # protocol; compat must lift the callable into a `__call__`, not a base class
+    (
+        lambda f, g, x: f(x) if g else g(x),
+        "[T, R, R2](f: (T) -> R, g: CanBool & ((T) -> R2), x: T) -> R | R2",
+    ),
     (
         lambda x: lambda y: y.foo,  # noqa: ARG005
         "[R](x: object) -> (y: Has['foo', +R]) -> R",
@@ -1163,27 +1168,43 @@ def test_method_descriptor() -> None:
     assert infer(memoryview.tobytes) == "(memoryview, order: str = 'C') -> bytes"
 
 
+# #739: a buffer-exporting spy reclaimed by cyclic GC may tear down its class MRO before
+# the held memoryview's `__release_buffer__` lookup. The fabricated cycle below collects
+# silently on every supported interpreter, but a rare CPython buffer/GC use-after-free
+# can still fault under some heap layouts, so run it isolated: a fault is then a clean
+# subprocess failure rather than a crash of the whole test session.
+_BUFFER_GC_SCRIPT = """
+import gc, sys
+from optype.infer import infer
+from optype.infer._spy import _SpyObject, _TraceItem
+
+captured = []
+sys.unraisablehook = lambda args: captured.append(args.err_msg)
+
+spies = []
+mv = None
+for _ in range(256):
+    spy = _SpyObject()
+    mv = memoryview(spy)
+    spy.__optype_trace__.append(_TraceItem("hold", (mv,), {}, mv))
+    spies.append(spy)
+del spies, mv
+gc.collect()
+infer(memoryview.tobytes)
+gc.collect()
+
+sys.exit(1 if captured else 0)
+"""
+
+
 def test_buffer_spy_release_silent_under_cyclic_gc() -> None:
-    # #739: a buffer-exporting spy is reclaimed by cyclic GC, which may tear down its
-    # class MRO before the held memoryview's `__release_buffer__` lookup
-    captured: list[object] = []
-    hook = sys.unraisablehook
-    sys.unraisablehook = lambda args: captured.append(args.err_msg)
-    try:
-        spies = []
-        mv = None
-        for _ in range(256):
-            spy = _SpyObject()
-            mv = memoryview(spy)
-            spy.__optype_trace__.append(_TraceItem("hold", (mv,), {}, mv))
-            spies.append(spy)
-        del spies, mv
-        gc.collect()
-        infer(memoryview.tobytes)
-        gc.collect()
-    finally:
-        sys.unraisablehook = hook
-    assert not captured
+    out = subprocess.run(  # noqa: S603
+        [sys.executable, "-c", _BUFFER_GC_SCRIPT],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert out.returncode == 0, out.stderr or out.stdout
 
 
 def test_rich_return_chains_terminate() -> None:
@@ -1797,6 +1818,19 @@ COMPAT_CASES: list[tuple[str, str]] = [
         ),
     ),
     (
+        # a callable intersected with a protocol lifts into a `__call__`, not a base
+        "lambda f, g, x: f(x) if g else g(x)",
+        (
+            "from collections.abc import Callable\n"
+            "from typing import Protocol\n"
+            "from optype import CanBool\n\n"
+            "class CanBool2[T, U](CanBool, Protocol):\n"
+            "    def __call__(self, _0: T, /) -> U: ...\n\n"
+            "def f[T, R, R2](f: Callable[[T], R], g: CanBool2[T, R2], x: T)"
+            " -> R | R2: ..."
+        ),
+    ),
+    (
         # the `~None` complement is dropped: overloads are matched in order
         "def f(x=None): return [] if x is None else x",
         (
@@ -1825,7 +1859,19 @@ def test_compat(source: str, expected: str) -> None:
     assert _compat(source) == expected
 
 
+@pytest.mark.parametrize("attr", ["a-b", "with space", "class"])
+def test_compat_non_identifier_attr(attr: str) -> None:
+    # a non-identifier attribute cannot name a protocol member, so compat rejects it
+    # rather than emit unparsable Python; the terse form still renders the fiction
+    func = eval(f"lambda x: getattr(x, {attr!r})")  # noqa: S307
+    assert infer(func) == f"[R](x: Has[{attr!r}, +R]) -> R"
+    with pytest.raises(InferError):
+        infer(func, backend="compat")
+
+
 def _basedpyright(path: Path) -> subprocess.CompletedProcess[str]:
+    if shutil.which("basedpyright") is None:
+        pytest.skip("basedpyright is not installed")
     # run from `path` so the stubs are checked in isolation from the project's settings
     return subprocess.run(
         ["basedpyright", "."],  # noqa: S607

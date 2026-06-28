@@ -50,7 +50,6 @@ _PARAM_PREFIX: dict[_ParameterKind, str] = {
     Parameter.VAR_KEYWORD: "**",
 }
 
-_TYPEVARS = "TUVWXYZ"
 _TYPEVAR_TUPLE_NAME = "Ts"  # the PEP 646 typevar-tuple binder, used as `*Ts`
 
 _NEVER = "Never"
@@ -124,11 +123,6 @@ def _merge_combined(parts: list[_ir.Node]) -> list[_ir.Node]:
 def _result_var(index: int) -> str:
     """The `index`-th return typevar name: `R`, `R2`, `R3`, ..."""
     return "R" if not index else f"R{index + 1}"
-
-
-def _typevar_name(n: int) -> str:
-    """The `n`-th generic parameter name: `T, U, ..., Z`, then `T7, T8, ...`."""
-    return _TYPEVARS[n] if n < len(_TYPEVARS) else f"T{n}"
 
 
 @final
@@ -284,7 +278,7 @@ class _Renderer:
             if (var := self._named.get(rep)) is None:
                 var = self._vars.get(id(spy))  # a `*Ts` variadic keeps its name
                 if var is None:
-                    var = _typevar_name(n)
+                    var = _ir.typevar_name(n)
                     n += 1
                 self._named[rep] = var
                 self._declared_spies.append(spy)
@@ -322,7 +316,7 @@ class _Renderer:
 
         # renumber the survivors back to a gapless `T, U, V, ...`
         remap = {
-            old: _typevar_name(n)
+            old: _ir.typevar_name(n)
             for n, old in enumerate(var for var in pool_vars if var not in inline)
         }
 

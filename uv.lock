@@ -487,6 +487,7 @@ lint = [
     { name = "sp-repo-review", extra = ["cli"] },
 ]
 test = [
+    { name = "basedpyright" },
     { name = "beartype", version = "0.22.9", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.15'" },
     { name = "beartype", version = "0.23.0", source = { git = "https://github.com/beartype/beartype.git?rev=4f5b8fb#4f5b8fb418745e9aa4adc2d4ffa1e7733a089dba" }, marker = "python_full_version >= '3.15'" },
     { name = "optype", extra = ["numpy"] },
@@ -544,6 +545,7 @@ lint = [
     { name = "sp-repo-review", extras = ["cli"], specifier = "==2026.4.4" },
 ]
 test = [
+    { name = "basedpyright", specifier = "==1.39.7" },
     { name = "beartype", marker = "python_full_version < '3.15'", specifier = ">=0.22.9" },
     { name = "beartype", marker = "python_full_version >= '3.15'", git = "https://github.com/beartype/beartype.git?rev=4f5b8fb" },
     { name = "optype", extras = ["numpy"] },

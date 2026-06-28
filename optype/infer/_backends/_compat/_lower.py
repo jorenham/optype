@@ -7,6 +7,7 @@ bounds, and keyword/defaulted callables. `docs/infer.md` is the source of truth.
 
 import ast
 import builtins
+import keyword
 import typing
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import replace
@@ -20,7 +21,6 @@ from ._model import (
     _Alias,
     _Attr,
     _bound_name,
-    _canon,
     _combine_name,
     _components,
     _cyclic,
@@ -40,6 +40,7 @@ from ._model import (
     _value,
 )
 from ._print import _OPTYPE, _import_of, _member_key, _type
+from optype.infer._errors import InferError
 
 __all__ = ("_Lowerer",)
 
@@ -267,10 +268,10 @@ class _Lowerer:
     ) -> _ir.App:
         """Register a helper `Protocol` (canonicalized for reuse) and apply it."""
         fv = _free_vars([*bases, *_member_nodes(members)], typevars)
-        m = {name: _ir.Name(_canon(i)) for i, name in enumerate(fv)}
+        m = {name: _ir.Name(_ir.typevar_name(i)) for i, name in enumerate(fv)}
         canon_bases = tuple(_subst(b, m) for b in bases)
         canon_members = tuple(_subst_member(mem, m) for mem in members)
-        canon_names = [_canon(i) for i in range(len(fv))]
+        canon_names = [_ir.typevar_name(i) for i in range(len(fv))]
         tp_bounds = _inherited_bounds(canon_bases, frozenset(canon_names))
         tps = tuple(_ir.TypeParam(c, tp_bounds.get(c)) for c in canon_names)
         key = (
@@ -292,10 +293,17 @@ class _Lowerer:
             return parts[0]
         unions = [p for p in parts if isinstance(p, _ir.Union)]
         if not unions:
-            candidate = (
-                _combine_name([p.base for p in parts if isinstance(p, _ir.App)]) or "P"
+            # a callable is not a valid base; it lifts into a `__call__` method instead
+            bases = [p for p in parts if not isinstance(p, _ir.Fn)]
+            members = tuple(
+                _Method("__call__", p.params, p.ret)
+                for p in parts
+                if isinstance(p, _ir.Fn)
             )
-            return self._proto_app(candidate, typevars, bases=parts)
+            candidate = (
+                _combine_name([p.base for p in bases if isinstance(p, _ir.App)]) or "P"
+            )
+            return self._proto_app(candidate, typevars, bases=bases, members=members)
         rest = [p for p in parts if not isinstance(p, _ir.Union)]
         variants = [
             self._combine([*rest, *picks], typevars)
@@ -313,6 +321,11 @@ class _Lowerer:
         attr = (
             ast.literal_eval(first.name) if isinstance(first, _ir.Name) else str(first)
         )
+        if not attr.isidentifier() or keyword.iskeyword(attr):
+            # a protocol member must be named for the real attribute, so a name that is
+            # not a valid identifier (e.g. from `getattr(x, "a-b")`) is inexpressible
+            msg = f"cannot render attribute {attr!r} as a protocol member"
+            raise InferError(msg)
         member = self._has_member(attr, signed, typevars, constraints)
         candidate = "Has" + attr[:1].upper() + attr[1:]
         return self._proto_app(candidate, typevars, members=(member,))
@@ -409,7 +422,7 @@ class _Lowerer:
                 if name in typevars and name not in group
             ),
         )
-        canon = [_canon(i) for i in range(len(free))]
+        canon = [_ir.typevar_name(i) for i in range(len(free))]
         rename: dict[str, _ir.Node] = {
             f: _ir.Name(canon[i]) for i, f in enumerate(free)
         }

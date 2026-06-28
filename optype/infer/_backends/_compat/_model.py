@@ -3,6 +3,7 @@
 `_Lowerer` builds these definitions; `_print` emits them.
 """
 
+import graphlib
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, replace
 
@@ -19,7 +20,6 @@ __all__ = (
     "_Module",
     "_Protocol",
     "_bound_name",
-    "_canon",
     "_combine_name",
     "_components",
     "_cyclic",
@@ -35,7 +35,6 @@ __all__ = (
     "_value",
 )
 
-_TYPEVARS = "TUVWXYZ"
 _OBJECT = _ir.Name("object")
 
 
@@ -147,10 +146,6 @@ def _free_vars(
     return list(seen)
 
 
-def _canon(i: int) -> str:
-    return _TYPEVARS[i] if i < len(_TYPEVARS) else f"T{i}"
-
-
 def _is_generic(node: _ir.Node, typevars: frozenset[str]) -> bool:
     """Whether `node` references any of the signature's type variables."""
     return not frozenset(_ir.names(node)).isdisjoint(typevars)
@@ -232,18 +227,6 @@ def _toposort(
     deps: Mapping[str, frozenset[str]],
 ) -> list[str]:
     """The acyclic `nodes` ordered so each follows the others it depends on."""
-    order: list[str] = []
-    seen: set[str] = set()
-
-    def visit(node: str) -> None:
-        if node in seen:
-            return
-        seen.add(node)
-        for other in sorted(deps.get(node, ())):
-            if other in nodes:
-                visit(other)
-        order.append(node)
-
-    for node in sorted(nodes):
-        visit(node)
-    return order
+    # sorted insertion keeps the order deterministic; `deps` is the predecessor map
+    graph = {node: deps.get(node, frozenset()) & nodes for node in sorted(nodes)}
+    return list(graphlib.TopologicalSorter(graph).static_order())

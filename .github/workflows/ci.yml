@@ -134,7 +134,7 @@ jobs:
 
       - name: install dependencies
         shell: bash
-        run: uv pip install --exact --group type "numpy==$NP_VERSION.*" .
+        run: uv pip install --exact --group test "numpy==$NP_VERSION.*" .
         env:
           NP_VERSION: ${{ matrix.np }}
 
