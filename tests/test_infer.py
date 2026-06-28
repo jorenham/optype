@@ -1892,6 +1892,51 @@ def test_compat_typechecks(tmp_path: Path) -> None:
     assert out.returncode == 0, out.stdout
 
 
+# `t''` is a syntax error before 3.14, so each source is compiled at runtime
+@pytest.mark.skipif(sys.version_info < (3, 14), reason="requires Python 3.14+")
+def test_infer_template_strings() -> None:
+    # a t-string result is the qualified, non-generic `Template`
+    assert infer(eval("lambda: t''")) == "() -> string.templatelib.Template"  # noqa: S307
+
+    # `Interpolation` is generic on its `.value`, tracked through a typevar
+    interp = eval("lambda x: t'{x}'.interpolations[0]")  # noqa: S307
+    assert infer(interp) == "[T](x: T) -> string.templatelib.Interpolation[T]"
+
+    literal = eval("lambda: t'{1}'.interpolations[0]")  # noqa: S307
+    assert infer(literal) == "() -> string.templatelib.Interpolation[int]"
+
+
+_TEMPLATE_COMPAT_CASES: list[tuple[str, str]] = [
+    (
+        "lambda: t''",
+        "import string.templatelib\n\ndef f() -> string.templatelib.Template: ...",
+    ),
+    (
+        "lambda x: t'{x}'.interpolations[0]",
+        (
+            "import string.templatelib\n\n"
+            "def f[T](x: T) -> string.templatelib.Interpolation[T]: ..."
+        ),
+    ),
+    (
+        "lambda: t'{1}'.interpolations[0]",
+        (
+            "import string.templatelib\n\n"
+            "def f() -> string.templatelib.Interpolation[int]: ..."
+        ),
+    ),
+]
+
+
+@pytest.mark.skipif(sys.version_info < (3, 14), reason="requires Python 3.14+")
+def test_compat_template_strings(tmp_path: Path) -> None:
+    for i, (source, expected) in enumerate(_TEMPLATE_COMPAT_CASES):
+        assert _compat(source) == expected
+        (tmp_path / f"case_{i}.pyi").write_text(f"{_compat(source)}\n")
+    out = _basedpyright(tmp_path)
+    assert out.returncode == 0, out.stdout
+
+
 # terse renderings whose compat stub does not type-check: each faithfully renders an
 # inference the type system (or the shipped `optype` API) cannot express, not a backend
 # bug. See docs/reference/experimental/infer.md.

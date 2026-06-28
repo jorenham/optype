@@ -64,8 +64,8 @@ def _import_of(name: str) -> tuple[str, str | None] | None:  # noqa: PLR0911
     A `None` member means the module is imported whole, as in `import numpy as np`.
     """
     if "." in name:
-        root = name.partition(".")[0]
-        return ("numpy", None) if root == "np" else (root, None)
+        module = "numpy" if name.partition(".")[0] == "np" else name.rpartition(".")[0]
+        return module, None
     if hasattr(builtins, name):
         return None
     if name in _ABC:

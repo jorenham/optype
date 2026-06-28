@@ -681,6 +681,19 @@ $ optype infer "lambda x: [None] if x else []"
 (x: CanBool) -> list[None]
 ```
 
+## Template strings
+
+A t-string (Python 3.14+) is a `string.templatelib.Template`, and an `Interpolation`
+tracks the type of its interpolated value:
+
+```console
+$ optype infer "lambda: t''"
+() -> string.templatelib.Template
+
+$ optype infer "lambda x: t'{x}'.interpolations[0]"
+[T](x: T) -> string.templatelib.Interpolation[T]
+```
+
 ## NumPy
 
 !!! info

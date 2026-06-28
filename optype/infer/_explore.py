@@ -3,6 +3,7 @@
 import functools
 import gc
 import itertools
+import sys
 import warnings
 from collections.abc import (
     AsyncGenerator,
@@ -113,6 +114,20 @@ _WRAPPER_TYPES: dict[type, str] = {
     cls: f"functools.{cls.__qualname__}"
     for cls in (functools.partial, functools.partialmethod, functools.cached_property)
 }
+
+# `string.templatelib` types (3.14+): rendered name, and the single-type-arg attr
+if sys.version_info >= (3, 14):
+    from string.templatelib import (
+        Interpolation as _Interpolation,
+        Template as _Template,
+    )
+
+    _TEMPLATE_TYPES: dict[type, tuple[str, str | None]] = {
+        _Template: ("string.templatelib.Template", None),
+        _Interpolation: ("string.templatelib.Interpolation", "value"),
+    }
+else:
+    _TEMPLATE_TYPES: dict[type, tuple[str, str | None]] = {}
 
 
 def _reachable(params: Iterable[object]) -> Generator[_SpyObject]:
@@ -361,6 +376,10 @@ def _next(result: object, path: dict[int, _RecVar | None] | None = None) -> obje
         out = _Gen([_next(fn(), path)], "Iterator")
     elif (name := _WRAPPER_TYPES.get(cls)) is not None:
         out = _wrapper(cls, name, result, path)
+    elif (tpl := _TEMPLATE_TYPES.get(cls)) is not None:
+        kind, attr = tpl
+        yields = [] if attr is None else [_next(getattr(result, attr), path)]
+        out = _Gen(yields, kind)
     elif isinstance(_unwrap(result), _FUNCTION_TYPES):
         out = _explore_func(cast("_AnyFunc", result))
     else:
