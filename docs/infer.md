@@ -607,11 +607,11 @@ $ optype infer "def counter(start): return (lambda: start), (lambda by: start + 
 ```
 
 A recursive function (factory) has an inexpressible type, so it stays an opaque
-`function`, as does one with variadic parameters:
+`FunctionType`, as does one with variadic parameters:
 
 ```console
 $ optype infer "def f(x): return f"
-(x: object) -> function
+(x: object) -> FunctionType
 ```
 
 ## Containers
@@ -724,7 +724,7 @@ $ optype infer "import numpy as np; np.mean"
 placeholder arguments (no real side effects, no reliance on concrete values). This
 extends to anything it returns: a returned function is called with placeholders of its
 own, and a returned lazy iterator is iterated. A returned function that raises during
-this exploration is not treated as an error: its type stays an opaque `function`.
+this exploration is not treated as an error: its type stays an opaque `FunctionType`.
 
 A single-parameter function that dispatches on an attribute's presence (`hasattr`,
 `getattr` with a default, or `try`/`except AttributeError`) is explored again with the
