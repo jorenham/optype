@@ -16,8 +16,10 @@ import random
 import re
 import secrets
 import shutil
+import signal
 import subprocess  # noqa: S404
 import sys
+import time
 import warnings
 import weakref
 from collections.abc import Callable
@@ -45,6 +47,7 @@ from optype.infer._ir import (
     subtype,
     union,
 )
+from optype.infer._isolate import isolate
 from optype.infer._numpy import array_function_node
 from optype.infer._values import GapKind
 
@@ -1171,10 +1174,11 @@ def test_method_descriptor() -> None:
 
 
 # #739: a buffer-exporting spy reclaimed by cyclic GC may tear down its class MRO before
-# the held memoryview's `__release_buffer__` lookup. The fabricated cycle below collects
-# silently on every supported interpreter, but a rare CPython buffer/GC use-after-free
-# can still fault under some heap layouts, so run it isolated: a fault is then a clean
-# subprocess failure rather than a crash of the whole test session.
+# the held memoryview's `__release_buffer__` lookup. Dropping `__release_buffer__` from
+# the spy keeps the fabricated cycle below collecting silently on every supported
+# interpreter, but a rare CPython buffer/GC use-after-free can still fault under some
+# heap layouts, so run it in a subprocess: a fault is then a clean subprocess failure
+# rather than a crash of the whole test session.
 _BUFFER_GC_SCRIPT = """
 import gc, sys
 from optype.infer import infer
@@ -1207,6 +1211,79 @@ def test_buffer_spy_release_silent_under_cyclic_gc() -> None:
         check=False,
     )
     assert out.returncode == 0, out.stderr or out.stdout
+
+
+fork_only = pytest.mark.skipif(not hasattr(os, "fork"), reason="requires os.fork")
+
+
+@fork_only
+def test_isolate_returns_value() -> None:
+    assert isolate(lambda: "ok") == "ok"
+
+
+@fork_only
+def test_isolate_reports_signal() -> None:
+    with pytest.raises(InferError) as excinfo:
+        isolate(lambda: signal.raise_signal(signal.SIGKILL))
+    assert any("SIGKILL (9)" in note for note in excinfo.value.__notes__)
+
+
+@fork_only
+def test_isolate_reports_silent_exit() -> None:
+    with pytest.raises(InferError, match="no result"):
+        isolate(lambda: os._exit(0))
+
+
+@fork_only
+def test_isolate_times_out(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("optype.infer._isolate._TIMEOUT", 0.1)
+    with pytest.raises(InferError, match="timed out"):
+        isolate(lambda: time.sleep(5))
+
+
+@fork_only
+def test_isolate_preserves_cause() -> None:
+    def work() -> None:
+        raise InferError("boom") from ValueError("root")
+
+    with pytest.raises(InferError, match="boom") as excinfo:
+        isolate(work)
+    assert isinstance(excinfo.value.__cause__, ValueError)
+
+
+@fork_only
+def test_isolate_forwards_warning() -> None:
+    def work() -> str:
+        warnings.warn("heads up", InferWarning, stacklevel=1)
+        return "ok"
+
+    with pytest.warns(InferWarning, match="heads up"):
+        assert isolate(work) == "ok"
+
+
+@fork_only
+def test_infer_isolates_native_crash() -> None:
+    # a native callable that faults is contained, not a session crash (#738)
+    class _Crash:
+        def __call__(self, x: object) -> None:  # noqa: ARG002
+            signal.raise_signal(signal.SIGKILL)
+
+    with pytest.raises(InferError):
+        infer(_Crash())
+
+
+@fork_only
+def test_infer_crash_reports_spy_state() -> None:
+    # the spy state note names the last operation before a native crash (#738)
+    class _Crash:
+        def __call__(self, x: object) -> None:
+            repr(x)
+            signal.raise_signal(signal.SIGSEGV)
+
+    with pytest.raises(InferError) as excinfo:
+        infer(_Crash())
+    notes = excinfo.value.__notes__
+    assert any("spy state: __repr__() -> spy" in note for note in notes)
 
 
 def test_rich_return_chains_terminate() -> None:

@@ -1,6 +1,7 @@
 """Recording proxy objects that trace the operations performed on them."""
 
 import dis
+import mmap
 import sys
 from collections.abc import Callable, Generator, Iterator
 from contextvars import ContextVar
@@ -65,6 +66,16 @@ def set_driver_code[T: Callable[..., object]](fn: T, /) -> T:
     global _driver_code  # noqa: PLW0603
     _driver_code = fn.__code__  # ty: ignore[unresolved-attribute]
     return fn
+
+
+# a shared buffer into which each spy operation writes itself, so the last action
+# survives a native crash for `_isolate` to report (#738)
+_state_buffer: mmap.mmap | None = None
+
+
+def set_state_buffer(buf: mmap.mmap | None, /) -> None:
+    global _state_buffer  # noqa: PLW0603
+    _state_buffer = buf
 
 
 # star-unpack detection reads caller bytecode (CPython detail); else it never fires
@@ -176,7 +187,10 @@ class _Spy:
         kwargs: _Kwargs,
         out: OutT,
     ) -> OutT:
-        self.__optype_trace__.append(_TraceItem(attr, args, kwargs, out))
+        item = _TraceItem(attr, args, kwargs, out)
+        self.__optype_trace__.append(item)
+        if _state_buffer is not None:
+            _record_state(item, _state_buffer)
         return out
 
     def __init__(self, /, *_args: object, **_kwargs: object) -> None:
@@ -191,6 +205,26 @@ class _SpyStr(str, _Spy):
 @final
 class _SpyBytes(bytes, _Spy):
     __slots__ = ()  # pyrefly:ignore[implicit-any-attribute]
+
+
+def _brief(value: object, /) -> str:
+    # never call a spy's own dunders while formatting it
+    if isinstance(value, _Spy):
+        return "spy"
+    try:
+        text = repr(value)
+    except Exception:  # noqa: BLE001
+        return type(value).__name__
+    return text if len(text) <= 32 else text[:31] + "..."
+
+
+def _record_state(item: _TraceItem, buf: mmap.mmap, /) -> None:
+    # the last completed op; a crash strikes between ops, in native code (#738)
+    call = f"{item.attr}({', '.join(_brief(a) for a in item.args)})"
+    ret = "" if item.return_ is None else f" -> {_brief(item.return_)}"
+    data = (call + ret).encode("utf-8", "replace")[: len(buf) - 1] + b"\x00"
+    buf.seek(0)
+    buf.write(data)
 
 
 class _SpyType(type):
