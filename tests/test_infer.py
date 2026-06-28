@@ -7,9 +7,11 @@ import ast
 import builtins
 import difflib
 import functools
+import io
 import itertools
 import math
 import operator
+import os
 import random
 import re
 import secrets
@@ -22,11 +24,11 @@ from collections.abc import Callable
 from inspect import currentframe, signature
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any
+from typing import Any, override
 
 import pytest
 
-from optype.infer import InferError, InferWarning, infer
+from optype.infer import InferError, InferWarning, _color, infer
 from optype.infer._api import _Gap
 from optype.infer._backends import TERSE
 from optype.infer._ir import (
@@ -2641,3 +2643,121 @@ def test_infer_systemexit() -> None:
 
     with pytest.raises(InferError):
         infer(_Exiter())
+
+
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def _run_cli_env(*args: str, **env: str) -> subprocess.CompletedProcess[str]:
+    base = {k: v for k, v in os.environ.items() if k not in {"NO_COLOR", "FORCE_COLOR"}}
+    return subprocess.run(  # noqa: S603
+        [sys.executable, *args],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=base | env,
+    )
+
+
+def test_cli_color_off_when_piped() -> None:
+    # a pipe is not a tty, so the default auto mode stays plain
+    out = _run_cli("-m", "optype.infer", "lambda x: x + 1")
+    assert out.returncode == 0
+    assert "\x1b[" not in out.stdout
+
+
+def test_cli_color_force() -> None:
+    out = _run_cli_env("-m", "optype.infer", "lambda x: x + 1", FORCE_COLOR="1")
+    assert out.returncode == 0
+    assert "\x1b[" in out.stdout
+    assert _ANSI_RE.sub("", out.stdout).strip() == "[R](x: CanAdd[Literal[1], R]) -> R"
+
+
+def test_cli_color_always_flag() -> None:
+    out = _run_cli("-m", "optype.infer", "--color", "always", "lambda x: x + 1")
+    assert out.returncode == 0
+    assert "\x1b[" in out.stdout
+
+
+def test_cli_color_never_beats_force() -> None:
+    args = ("-m", "optype.infer", "--color", "never", "lambda x: x + 1")
+    out = _run_cli_env(*args, FORCE_COLOR="1")
+    assert out.returncode == 0
+    assert "\x1b[" not in out.stdout
+
+
+def test_cli_no_color_beats_force() -> None:
+    args = ("-m", "optype.infer", "lambda x: x")
+    out = _run_cli_env(*args, NO_COLOR="1", FORCE_COLOR="1")
+    assert out.returncode == 0
+    assert "\x1b[" not in out.stdout
+
+
+def test_cli_color_compat() -> None:
+    args = ("-m", "optype.infer", "--format", "compat", "lambda x: x + 1")
+    out = _run_cli_env(*args, FORCE_COLOR="1")
+    assert out.returncode == 0
+    assert "\x1b[" in out.stdout
+    assert _ANSI_RE.sub("", out.stdout).strip() == (
+        "from typing import Literal\n"
+        "from optype import CanAdd\n\n"
+        "def f[R](x: CanAdd[Literal[1], R]) -> R: ..."
+    )
+
+
+def test_cli_color_invalid() -> None:
+    out = _run_cli("-m", "optype.infer", "--color", "json", "lambda x: x")
+    assert out.returncode != 0
+    assert "auto, always, never" in out.stderr
+
+
+class _Tty(io.StringIO):
+    @override
+    def isatty(self) -> bool:
+        return True
+
+
+def test_want_color_mode_overrides() -> None:
+    assert _color.want_color(io.StringIO(), "always")
+    assert not _color.want_color(_Tty(), "never")
+
+
+def test_want_color_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    monkeypatch.delenv("FORCE_COLOR", raising=False)
+    assert _color.want_color(_Tty())
+    assert not _color.want_color(io.StringIO())
+    monkeypatch.setenv("FORCE_COLOR", "1")
+    assert _color.want_color(io.StringIO())
+    monkeypatch.setenv("NO_COLOR", "1")
+    assert not _color.want_color(_Tty())
+
+
+def test_highlight_roundtrip() -> None:
+    samples = [
+        "[R](x: CanAdd[Literal[1], R]) -> R",
+        "[*Ts](*args: *Ts) -> tuple[*Ts]",
+        (
+            "from typing import Protocol, overload\n"
+            "@overload\n"
+            'def f[R](x: CanAdd[Literal[1], R], msg: str = "x") -> R: ...\n'
+            "class _H[T](Protocol):\n"
+            "    def __getattr__(self, k: str, /) -> int: ..."
+        ),
+    ]
+    for sig in samples:
+        assert _ANSI_RE.sub("", _color.highlight(sig)) == sig
+
+
+def _wrapped(token: str) -> bool:
+    out = _color.highlight(token)
+    return out != token and _ANSI_RE.sub("", out) == token
+
+
+def test_highlight_targets() -> None:
+    assert _wrapped("def")  # keyword
+    assert _wrapped("1")  # number
+    assert _wrapped('"x"')  # string literal
+    # names and soft keywords stay plain
+    assert _color.highlight("CanAdd") == "CanAdd"
+    assert _color.highlight("type") == "type"
