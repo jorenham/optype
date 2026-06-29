@@ -2,7 +2,7 @@
 
 import sys
 import types
-from collections import Counter
+from collections import Counter, defaultdict
 from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from inspect import Parameter, _ParameterKind
 from typing import Any, cast, final
@@ -56,6 +56,7 @@ _NEVER = "Never"
 _OBJECT = "object"
 
 _TUPLE_LIMIT = 16
+_LITERAL_LIMIT = 8
 
 # `object`-typed so the `is` check isn't flagged (`Callable` is a special form)
 _CALLABLE_ORIGIN: object = Callable
@@ -65,6 +66,10 @@ _READ = _ir.COVARIANT  # a read-only property suffices
 _WRITE = _ir.CONTRAVARIANT  # the attribute only has to accept the value
 
 type _Vars = dict[int, str]
+type _TypeParams = list[_ir.TypeParam]
+type _Params = list[_ir.Param]
+type _Sig = tuple[_TypeParams, _Params, _ir.Node]
+
 type Names = Sequence[str]
 type Defaults = Mapping[str, object]
 
@@ -536,6 +541,11 @@ class _Renderer:
             if (param := self._param(name, defaults, negate=negate)) is not None
         ]
         ret_node = self._typer.type_union(self._results) if ret is None else ret
+        type_params, params, ret_node = _collapse_recursive(
+            type_params,
+            params,
+            ret_node,
+        )
         return _ir.Signature(
             tuple(type_params),
             tuple(params),
@@ -617,7 +627,10 @@ class _ResultTyper:
                 parts.append(self.return_type(value))
 
         nodes: list[_ir.Node] = []
-        if literals:
+        if len(literals) > _LITERAL_LIMIT:
+            # an enumerated run (e.g. randbelow's 256 bytes) is noise; widen to types
+            nodes.extend(dict.fromkeys(_ir.Type(type(v)) for v in literals))
+        elif literals:
             nodes.append(_ir.Lit(tuple(literals)))
         nodes.extend(dict.fromkeys(parts))
         return _ir.union(nodes, tuples=tuples)
@@ -804,6 +817,144 @@ class _ResultTyper:
             return _ir.tuple_node_variadic(self.type_union(items))
 
         return _ir.tuple_node(self.value_type(item) for item in items)
+
+
+_LOOP_MIN = 3  # unrolled iterations a run needs before it is rerolled
+
+
+def _shift_edges(bounded: Mapping[str, _ir.Node]) -> dict[str, str]:
+    """`x -> y` when `bound(y)` is `bound(x)` shifted one unrolled iteration deeper.
+
+    `y` is the copy `x` becomes next time round the loop: it appears in `bound(x)`, the
+    two bounds are equal up to a renaming, and that renaming carries `y` onto another
+    bounded copy (so `y` is the recursion pointer, not a shared outer typevar).
+    """
+    edge: dict[str, str] = {}
+    for x, bound in bounded.items():
+        for y in dict.fromkeys(_ir.names(bound)):
+            if y == x or y not in bounded:
+                continue
+
+            mapping = _ir.alpha_equal(bound, bounded[y])
+            if mapping is not None and mapping.get(y) in bounded:
+                edge[x] = y
+                break
+    return edge
+
+
+def _gc_tvars(tparams: _TypeParams, params: _Params, ret: _ir.Node) -> _TypeParams:
+    """Drop type parameters no longer reachable from the parameters or return."""
+    by_name = {tp.name: tp for tp in tparams}
+    reach: set[str] = set()
+    stack = [name for p in params for name in _ir.names(p.node)]
+    stack += _ir.names(ret)
+    while stack:
+        if (name := stack.pop()) in reach:
+            continue
+
+        reach.add(name)
+        if (tp := by_name.get(name)) is not None:
+            stack += _ir.names(tp.bound) if tp.bound is not None else ()
+            stack += _ir.names(tp.default) if tp.default is not None else ()
+
+    return [tp for tp in tparams if tp.name in reach]
+
+
+def _rename_sig(
+    tparams: _TypeParams,
+    params: _Params,
+    ret: _ir.Node,
+    remap: Mapping[str, str],
+) -> _Sig:
+    """Apply a `Name` remap across a signature's type params, params, and return."""
+    tps = [
+        _ir.TypeParam(
+            remap.get(tp.name, tp.name),
+            None if tp.bound is None else _ir.rename(tp.bound, remap),
+            None if tp.default is None else _ir.rename(tp.default, remap),
+            tp.unpack,
+        )
+        for tp in tparams
+    ]
+    args = [
+        _ir.Param(
+            p.name,
+            _ir.rename(p.node, remap),
+            p.prefix,
+            p.nameless,
+            p.default,
+        )
+        for p in params
+    ]
+    return tps, args, _ir.rename(ret, remap)
+
+
+def _renumber_tvars(tparams: _TypeParams, params: _Params, ret: _ir.Node) -> _Sig:
+    """Renumber the surviving `T, U, V, ...` typevars gaplessly, in their order."""
+    remap: dict[str, str] = {}
+    n = 0
+    for tp in tparams:
+        if _ir.typevar_index(tp.name) is not None:
+            if (new := _ir.typevar_name(n)) != tp.name:
+                remap[tp.name] = new
+            n += 1
+
+    if not remap:
+        return tparams, params, ret
+    return _rename_sig(tparams, params, ret, remap)
+
+
+def _reroll_remap(
+    bounded: Mapping[str, _ir.Node],
+    edge: Mapping[str, str],
+) -> dict[str, str]:
+    """Group each run of shift edges onto its earliest-declared copy (`min` order).
+
+    A name has one outgoing `edge` at most, so its chain to a terminal is a run.
+    """
+    order = {name: i for i, name in enumerate(bounded)}
+
+    def terminal(name: str) -> str:
+        seen: set[str] = set()
+        while name in edge and name not in seen:
+            seen.add(name)
+            name = edge[name]
+        return name
+
+    runs: defaultdict[str, list[str]] = defaultdict(list)
+    for name in bounded:
+        runs[terminal(name)].append(name)
+
+    remap: dict[str, str] = {}
+    for members in runs.values():
+        if len(members) < _LOOP_MIN:
+            continue
+        lead = min(members, key=order.__getitem__)
+        remap.update({name: lead for name in members if name != lead})
+    return remap
+
+
+def _collapse_recursive(tparams: _TypeParams, params: _Params, ret: _ir.Node) -> _Sig:
+    """Fold each run of self-similar typevars onto one (mutually) recursive typevar.
+
+    The explorer unrolls a loop into a run `T -> U -> V -> ...` of identical bounds,
+    one per iteration. Collapsing the run onto its leading copy closes it into the
+    recursive type the loop denotes (cf. `sum`, `-x + x`) rather than an N-deep
+    transcript, and keeps coupled loop variables as mutual recursion.
+    """
+    bounded = {
+        tp.name: tp.bound for tp in tparams if tp.bound is not None and not tp.unpack
+    }
+    if len(bounded) < _LOOP_MIN or not (edge := _shift_edges(bounded)):
+        return tparams, params, ret
+
+    remap = _reroll_remap(bounded, edge)
+    if not remap:
+        return tparams, params, ret
+
+    kept = [tp for tp in tparams if tp.name not in remap]
+    tparams, params, ret = _rename_sig(kept, params, ret, remap)
+    return _renumber_tvars(_gc_tvars(tparams, params, ret), params, ret)
 
 
 def _renderers(
