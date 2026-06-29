@@ -6,6 +6,7 @@
 import ast
 import builtins
 import difflib
+import fractions
 import functools
 import io
 import itertools
@@ -41,14 +42,20 @@ from optype.infer._ir import (
     Lit,
     Name,
     Node,
+    Param,
     Signature,
     Type,
+    TypeParam,
+    Union,
+    alpha_equal,
     names,
+    rename,
     subtype,
     union,
 )
 from optype.infer._isolate import isolate
 from optype.infer._numpy import array_function_node
+from optype.infer._render import _collapse_recursive
 from optype.infer._values import GapKind
 
 if sys.version_info >= (3, 13):
@@ -1296,6 +1303,75 @@ def test_rich_return_chains_terminate() -> None:
     lines = matches.splitlines()
     assert lines
     assert all("list[" in line.rsplit("->", 1)[-1] for line in lines)
+
+
+def test_alpha_equal_and_rename() -> None:
+    # the fold's primitives: structural equality up to a consistent name bijection,
+    # and a simultaneous rename that drops union members which collapse together
+    a = App("CanAdd", (Name("A"), App("CanMul", (Name("B"), Name("A")))))
+    b = App("CanAdd", (Name("X"), App("CanMul", (Name("Y"), Name("X")))))
+    assert alpha_equal(a, b) == {"A": "X", "B": "Y"}
+    assert alpha_equal(a, App("CanAdd", (Name("X"), Name("X")))) is None
+    assert rename(a, {"A": "X", "B": "Y"}) == b
+    assert rename(Union((Name("A"), Name("B"))), {"A": "C", "B": "C"}) == Name("C")
+
+
+def test_collapse_recursive_reroll() -> None:
+    # #736: an unrolled loop's run of identical bounds folds to one recursive typevar
+    def link(leaf: str, nxt: str) -> Node:
+        return App("CanAdd", (Name(leaf), Name(nxt)))
+
+    type_params = [
+        TypeParam("T", link("T7", "U")),
+        TypeParam("U", link("T8", "V")),
+        TypeParam("V", link("T9", "W")),
+        TypeParam("W", link("T10", "T11")),  # the last copy points at the loop's exit
+        *(TypeParam(leaf) for leaf in ("T7", "T8", "T9", "T10", "T11")),
+    ]
+    params = [Param("x", Name("T"))]
+    folded, fparams, fret = _collapse_recursive(type_params, params, Name("T"))
+    # T, U, V, W collapse onto a single self-referential T; spent leaves are dropped
+    assert folded == [
+        TypeParam("T", App("CanAdd", (Name("U"), Name("T")))),
+        TypeParam("U"),  # the surviving per-iteration leaf, renumbered gaplessly
+    ]
+    assert fparams == params
+    assert fret == Name("T")
+
+
+def test_collapse_recursive_keeps_short_runs() -> None:
+    # #736: below the loop threshold, similar typevars are left intact (no false fold)
+    type_params = [
+        TypeParam("T", App("CanAdd", (Name("T7"), Name("U")))),
+        TypeParam("U", App("CanAdd", (Name("T8"), Name("T9")))),
+        *(TypeParam(leaf) for leaf in ("T7", "T8", "T9")),
+    ]
+    folded, _, _ = _collapse_recursive(type_params, [Param("x", Name("T"))], Name("T"))
+    assert folded == type_params
+
+
+# `Fraction.limit_denominator` calls `Fraction(self)`; only 3.14+ accepts a duck-typed
+# `as_integer_ratio` object there, so before then the spy is rejected, leaving nothing
+@pytest.mark.skipif(sys.version_info < (3, 14), reason="requires Python 3.14+")
+def test_loop_signature_folds() -> None:
+    # #736: a function whose loop the explorer unrolls used to emit a ~250-typevar,
+    # 80kb transcript; the run now folds into a small recursive signature
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", InferWarning)
+        out = infer(fractions.Fraction.limit_denominator)
+    assert len(out) < 10000  # was ~82kb
+    assert all(len(line) < 6000 for line in out.splitlines())  # no giant transcript
+
+
+def test_wide_literal_union_capped() -> None:
+    # #736: an enumerated run (randbelow samples 256 bytes) widens to its type, `int`,
+    # rather than a 256-member `Literal`
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", InferWarning)
+        out = infer(secrets.randbelow)
+    assert len(out) < 1200  # was ~3kb dominated by literal bytes
+    assert "int" in out
+    assert all(lit.count(",") < 8 for lit in re.findall(r"Literal\[([^\]]*)\]", out))
 
 
 def test_method_descriptor_fixed_defaults() -> None:

@@ -3,13 +3,15 @@
 import builtins
 import sys
 import types
-from collections.abc import Generator, Iterable
+from collections.abc import Generator, Iterable, Mapping
 from dataclasses import dataclass
 from typing import override
 
 type Node = (
     Lit | Type | Name | App | Fn | Union | Inter | Not | Variance | Unpack | Dots
 )
+type Term = Node | Arg
+type Terms = tuple[Term, ...]
 
 # the shared variance signs: covariant (read-only) and contravariant (write-only)
 COVARIANT = "+"
@@ -75,18 +77,18 @@ class App:
     """A (subscripted) named type, e.g. `CanAdd[Literal[1], R]`."""
 
     base: str
-    args: tuple[Node | Arg, ...]
+    args: Terms
 
 
 @dataclass(frozen=True, slots=True)
 class Fn:
     """A function type in signature syntax, e.g. `(x: T) -> R` or `(T) -> R`."""
 
-    params: tuple[Node | Arg, ...]
+    params: Terms
     ret: Node
 
 
-def _param_type(param: Node | Arg) -> Node:
+def _param_type(param: Term) -> Node:
     """The type of a (possibly keyword-labeled) parameter."""
     return param.value if isinstance(param, Arg) else param
 
@@ -171,7 +173,7 @@ def tuple_node_variadic(element: Node) -> App:
     return tuple_node((element, Dots()))
 
 
-def subtype(sub: Node | Arg, sup: Node | Arg) -> bool:
+def subtype(sub: Term, sup: Term) -> bool:
     """Whether `sub` is a subtype of `sup`, as far as can be told from the nodes."""
     if sub == sup or sub == Name("Never") or sup in {Name("object"), Type(object)}:
         return True
@@ -330,23 +332,70 @@ def inter(parts: Iterable[Node]) -> Node | None:
     return next(iter(flat)) if len(flat) == 1 else Inter(tuple(flat))
 
 
-def names(node: Node | Arg) -> Generator[str]:
+def names(node: Term) -> Generator[str]:
     # every type-name leaf, in order, so typevar uses can be counted
     match node:
         case Name(name):
             yield name
-        case Arg(value=value):
-            yield from names(value)
+        case Arg(value=part) | Not(part) | Variance(part=part) | Unpack(part):
+            yield from names(part)
         case App(args=parts) | Union(parts) | Inter(parts):
             for part in parts:
                 yield from names(part)
         case Fn(params, ret):
             for part in (*params, ret):
                 yield from names(part)
-        case Not(part) | Variance(part=part) | Unpack(part):
-            yield from names(part)
         case Lit() | Type() | Dots():
             return
+
+
+def rename(node: Node, m: Mapping[str, str]) -> Node:
+    """Simultaneously rename every `Name(n)` to `Name(m[n])`."""
+    if not m:
+        return node
+
+    match node:
+        case Name(name):
+            out = Name(m[name]) if name in m else node
+        case App(base, args):
+            out = App(base, tuple(_rename_term(arg, m) for arg in args))
+        case Fn(params, ret):
+            out = Fn(tuple(_rename_term(p, m) for p in params), rename(ret, m))
+        case Union(parts) | Inter(parts):
+            # renaming can collapse distinct members; drop the duplicates
+            renamed = tuple(dict.fromkeys(rename(p, m) for p in parts))
+            out = renamed[0] if len(renamed) == 1 else type(node)(renamed)
+        case Not(part) | Unpack(part):
+            out = type(node)(rename(part, m))
+        case Variance(sign, part):
+            out = Variance(sign, rename(part, m))
+        case _:
+            out = node
+    return out
+
+
+def _rename_term(term: Term, m: Mapping[str, str]) -> Term:
+    """`rename`, keeping any `Arg` wrapper of an `App`/`Fn` member."""
+    if isinstance(term, Arg):
+        return Arg(term.key, rename(term.value, m), term.default)
+    return rename(term, m)
+
+
+def _canonical_renaming(node: Node) -> dict[str, str]:
+    """Relabel each `Name` by first-occurrence order, to canonicalize via `rename`."""
+    m: dict[str, str] = {}
+    for name in names(node):
+        m.setdefault(name, f"\x00{len(m)}")
+    return m
+
+
+def alpha_equal(a: Node, b: Node) -> dict[str, str] | None:
+    """A `Name` bijection making `a` and `b` identical up to renaming, or `None`."""
+    ca, cb = _canonical_renaming(a), _canonical_renaming(b)
+    if rename(a, ca) != rename(b, cb):
+        return None
+    inv = {label: name for name, label in cb.items()}
+    return {name: inv[label] for name, label in ca.items()}
 
 
 # the two `types` members that alias another's type, so each type maps to one name
@@ -373,7 +422,16 @@ def type_name(cls: type) -> str:
     return prefix + cls.__name__
 
 
+_TVAR_LETTERS = "TUVWXYZ"
+
+
 def typevar_name(n: int) -> str:
     """The `n`-th generic parameter name: `T, U, ..., Z`, then `T7, T8, ...`."""
-    letters = "TUVWXYZ"
-    return letters[n] if n < len(letters) else f"T{n}"
+    return _TVAR_LETTERS[n] if n < len(_TVAR_LETTERS) else f"T{n}"
+
+
+def typevar_index(name: str) -> int | None:
+    """The index of a generated typevar `name` (`T..Z` or `T<n>`), or `None`."""
+    if len(name) == 1:
+        return _TVAR_LETTERS.index(name) if name in _TVAR_LETTERS else None
+    return int(name[1:]) if name[0] == "T" and name[1:].isdigit() else None
