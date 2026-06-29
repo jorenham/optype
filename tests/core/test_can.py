@@ -10,6 +10,7 @@ temporarily that invalid `optype` use will actually cause the typechecker
 (we only consider (based)pyright at the moment) to complain.
 """
 
+import sys
 import types
 from collections.abc import Collection, Iterable, Iterator
 from typing import TYPE_CHECKING
@@ -369,3 +370,15 @@ def test_can_round_float() -> None:
 
     r: op.CanRound[int, int, float] = x
     assert isinstance(r, op.CanRound)
+
+
+def test_can_rpow_int() -> None:
+    # https://github.com/jorenham/optype/issues/619
+    x: int = 42
+
+    r: op.CanRPow[int, int] = x
+    assert isinstance(r, op.CanRPow)
+
+    if sys.version_info >= (3, 14):
+        r3: op.CanRPow3[int, int, int] = x
+        assert isinstance(r3, op.CanRPow3)

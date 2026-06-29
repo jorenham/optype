@@ -1,3 +1,4 @@
+import sys
 from collections.abc import AsyncIterator, Callable, Iterable, Iterator
 from typing import Protocol, SupportsIndex, overload
 
@@ -593,6 +594,18 @@ class DoesPow(Protocol):
         mod: ModT,
         /,
     ) -> OutT: ...
+
+    if sys.version_info >= (3, 14):
+        # since Python 3.14, ternary `pow()` reflects onto `__rpow__`
+        @overload
+        def __call__[LeftT, ModT, OutT](
+            self,
+            base: LeftT,
+            exp: _c.CanRPow3[LeftT, ModT, OutT],
+            mod: ModT,
+            /,
+        ) -> OutT: ...
+
     @overload
     def __call__[LeftT, OutT](
         self,
@@ -763,12 +776,32 @@ class DoesRDivmod(Protocol):
 
 
 class DoesRPow(Protocol):
-    def __call__[LeftT, OutT](
-        self,
-        rhs: _c.CanRPow[LeftT, OutT],
-        lhs: LeftT,
-        /,
-    ) -> OutT: ...
+    if sys.version_info >= (3, 14):
+
+        @overload
+        def __call__[LeftT, OutT](
+            self,
+            rhs: _c.CanRPow[LeftT, OutT],
+            lhs: LeftT,
+            /,
+        ) -> OutT: ...
+        @overload
+        def __call__[LeftT, ModT, OutT](
+            self,
+            rhs: _c.CanRPow3[LeftT, ModT, OutT],
+            lhs: LeftT,
+            mod: ModT,
+            /,
+        ) -> OutT: ...
+
+    else:
+
+        def __call__[LeftT, OutT](
+            self,
+            rhs: _c.CanRPow[LeftT, OutT],
+            lhs: LeftT,
+            /,
+        ) -> OutT: ...
 
 
 class DoesRLshift(Protocol):

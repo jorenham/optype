@@ -1,5 +1,6 @@
 """Analysis passes over the recorded spy trace graph, ahead of rendering."""
 
+import sys
 from collections import Counter, defaultdict
 from collections.abc import Generator, Iterable, Mapping, Sequence
 from itertools import groupby
@@ -243,7 +244,9 @@ def reflect(params: Sequence[_SpyObject], traces: _Traces) -> _Traces:
         for item in traces[id(spy)]:
             rhs = item.args[0] if item.args else None
             if item.attr in DUNDER_CAN_R and isinstance(rhs, _SpyObject):
-                reflected = _TraceItem("__r" + item.attr[2:], (spy,), {}, item.return_)
+                # since Python 3.14, ternary `pow()` reflects with the modulo kept
+                rargs = (spy, *item.args[1:]) if sys.version_info >= (3, 14) else (spy,)
+                reflected = _TraceItem("__r" + item.attr[2:], rargs, {}, item.return_)
                 added[id(_own_spy(rhs))].append(reflected)
             else:
                 keep.append(item)
