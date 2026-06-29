@@ -96,6 +96,9 @@ def resolve(trace: _TraceItem) -> Op:
 
     if trace.attr in _DUNDER_CAN_MAP:
         proto = _DUNDER_CAN_MAP[trace.attr]
+        # a modulo arg makes `__rpow__` the 3-parameter `CanRPow3`, not `CanRPow`
+        if trace.attr == "__rpow__" and len(trace.args) > 1:
+            proto = "CanRPow3"
         return Op(proto, trace.args, trace.kwargs, trace.return_)
 
     msg = f"no protocol for {trace.attr!r}"

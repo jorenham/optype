@@ -151,6 +151,7 @@ __all__ = [
     "CanROr",
     "CanROrSelf",
     "CanRPow",
+    "CanRPow3",
     "CanRPowSelf",
     "CanRRshift",
     "CanRRshiftSelf",
@@ -1023,6 +1024,12 @@ class CanRDivmod(Protocol[_T_contra, _T_co]):
 @runtime_checkable
 class CanRPow(Protocol[_T_contra, _TT_co]):
     def __rpow__(self, lhs: _T_contra, /) -> _TT_co: ...
+
+
+@runtime_checkable
+class CanRPow3(Protocol[_T_contra, _V_contra, _T_int_co]):
+    # https://github.com/python/mypy/issues/10786
+    def __rpow__(self, lhs: _T_contra, mod: _V_contra, /) -> _T_int_co: ...  # type: ignore[misc]
 
 
 @runtime_checkable

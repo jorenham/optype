@@ -1404,14 +1404,21 @@ def test_method_descriptor_unsupported() -> None:
 
 
 def test_ternary_pow() -> None:
-    # the optional modulo is used forward but dropped from the reflected overload
     def f(x: Any, y: Any, z: Any = None) -> Any:
         return x.__pow__(y, z)  # noqa: PLC2801
 
-    assert infer(f) == (
-        "[T, R, U = None](x: CanPow[T, U, R], y: T, z: U = None) -> R\n"
-        "[T, R](x: T, y: CanRPow[T, R]) -> R"
-    )
+    if sys.version_info >= (3, 14):
+        # since Python 3.14, ternary `pow()` reflects with the modulo onto `CanRPow3`
+        assert infer(f) == (
+            "[T, R, U = None](x: CanPow[T, U, R], y: T, z: U = None) -> R\n"
+            "[T, R, U = None](x: T, y: CanRPow3[T, U, R], z: U = None) -> R"
+        )
+    else:
+        # before Python 3.14, the modulo is dropped from the reflected overload
+        assert infer(f) == (
+            "[T, R, U = None](x: CanPow[T, U, R], y: T, z: U = None) -> R\n"
+            "[T, R](x: T, y: CanRPow[T, R]) -> R"
+        )
 
 
 def test_deprecated() -> None:

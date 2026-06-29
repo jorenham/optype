@@ -2,7 +2,8 @@
 
 import math
 import operator as _o
-from typing import Final, cast, overload
+import sys
+from typing import Any, Final, cast, overload
 
 import optype._core._can as _c
 import optype._core._does as _d
@@ -255,9 +256,26 @@ def do_rdivmod[LeftT, OutT](a: _c.CanRDivmod[LeftT, OutT], b: LeftT, /) -> OutT:
     return divmod(b, a)
 
 
-def do_rpow[LeftT, OutT](a: _c.CanRPow[LeftT, OutT], b: LeftT, /) -> OutT:
-    """Same as `b ** a`."""
-    return b**a
+if sys.version_info >= (3, 14):
+
+    @overload
+    def do_rpow[LeftT, OutT](a: _c.CanRPow[LeftT, OutT], b: LeftT, /) -> OutT: ...
+    @overload
+    def do_rpow[LeftT, ModT, OutT](
+        a: _c.CanRPow3[LeftT, ModT, OutT],
+        b: LeftT,
+        m: ModT,
+        /,
+    ) -> OutT: ...
+    def do_rpow(a: Any, b: Any, m: Any = None, /) -> Any:
+        """Same as `b ** a` or `pow(b, a, m)`."""
+        return cast("Any", b**a if m is None else pow(b, a, m))
+
+else:
+
+    def do_rpow[LeftT, OutT](a: _c.CanRPow[LeftT, OutT], b: LeftT, /) -> OutT:
+        """Same as `b ** a`."""
+        return b**a
 
 
 def do_rlshift[LeftT, OutT](a: _c.CanRLshift[LeftT, OutT], b: LeftT, /) -> OutT:
