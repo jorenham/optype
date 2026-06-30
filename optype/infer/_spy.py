@@ -187,6 +187,7 @@ class _Spy:
         kwargs: _Kwargs,
         out: OutT,
     ) -> OutT:
+        _journal_touch(self)
         item = _TraceItem(attr, args, kwargs, out)
         self.__optype_trace__.append(item)
         if _state_buffer is not None:
@@ -195,6 +196,25 @@ class _Spy:
 
     def __init__(self, /, *_args: object, **_kwargs: object) -> None:
         self.__optype_trace__ = []
+
+
+# while a run explores, each touched spy's pre-run trace length, so `_explore` can
+# undo a rejected run by truncating only the spies it actually appended to
+_journal: ContextVar[dict[int, tuple[_Spy, int]] | None] = ContextVar(
+    "_journal",
+    default=None,
+)
+
+
+def _journal_touch(spy: _Spy) -> None:
+    if (marks := _journal.get()) is not None and id(spy) not in marks:
+        marks[id(spy)] = (spy, len(spy.__optype_trace__))
+
+
+def journal_rollback(marks: dict[int, tuple[_Spy, int]], /, *, undo: bool) -> None:
+    if undo:
+        for spy, length in marks.values():
+            del spy.__optype_trace__[length:]
 
 
 @final
@@ -271,6 +291,7 @@ class _SpyObject(_Spy, metaclass=_SpyType):
             # a `type(spy)(...)` sibling; the marker keeps it reachable from the spy
             self = super().__new__(cls)
             if (owner := _class_spy(cls)) is not None:
+                _journal_touch(owner)
                 owner.__optype_trace__.append(_TraceItem(_Marker.SIBLING, (), {}, self))
             return self
         # every spy gets a class of its own, so that `type(spy)` identifies the spy
