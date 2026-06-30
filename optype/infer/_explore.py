@@ -34,8 +34,10 @@ from ._spy import (
     _AnyFunc,
     _Fork,
     _fork,
+    _journal,
     _Marker,
     _own_spy,
+    _Spy,
     _SpyBytes,
     _SpyObject,
     _SpyStr,
@@ -44,6 +46,7 @@ from ._spy import (
     _Traces,
     _yield_budget,
     as_spy,
+    journal_rollback,
     set_driver_code,
 )
 from ._values import (
@@ -56,7 +59,6 @@ from ._values import (
     _Rec,
     _RecRef,
     _RecVar,
-    _walk,
     fn_spies,
 )
 
@@ -253,29 +255,6 @@ def _explore_key(func: object) -> int:
     return id(getattr(base, "__code__", base))
 
 
-def _closed_over(func: object, seen: set[int] | None = None) -> Generator[object]:
-    # every value a function can reach besides its arguments, transitively
-    seen = set() if seen is None else seen
-    if id(func) in seen:
-        return
-    seen.add(id(func))
-    values: list[object] = []
-    while isinstance(func, functools.partial):
-        values += func.args
-        values += func.keywords.values()
-        func = func.func
-    values += getattr(func, "__defaults__", None) or ()
-    values += (getattr(func, "__kwdefaults__", None) or {}).values()
-    for cell in getattr(func, "__closure__", None) or ():
-        with suppress(ValueError):  # an unset cell
-            values.append(cell.cell_contents)
-    for value in values:
-        for node in _walk(value):
-            yield node
-            if isinstance(_unwrap(node), _FUNCTION_TYPES):
-                yield from _closed_over(node, seen)
-
-
 def _explore_func(func: _AnyFunc) -> object:
     """Explore a returned function, so it renders in signature syntax."""
     if _explore_key(func) in _exploring.get():
@@ -428,11 +407,6 @@ def _with_next_default(
     return merged if awaitable else [*results, default]
 
 
-def _rollback(marks: Iterable[tuple[_SpyObject, int]]) -> None:
-    for spy, length in marks:
-        del spy.__optype_trace__[length:]
-
-
 @set_driver_code
 def _run[T](
     func: Callable[..., T] | Callable[..., Coroutine[Any, None, T]],
@@ -472,14 +446,13 @@ def _explore[T](  # noqa: C901
         if not stack:
             break
         plan = stack.pop()
-        # a failed run must also roll back its traces on the closed-over spies
-        marks = [
-            (spy, len(spy.__optype_trace__))
-            for spy in _reachable((*args, *kwds.values(), *_closed_over(func)))
-        ]
         # `_starved` is a per-run star-unpack flag, so no prior run leaks into this one
         _starved.set(False)
-        token = _fork.set(iter(plan))
+        fork_token = _fork.set(iter(plan))
+        # a rejected run rolls back its trace appends, including on closed-over spies
+        marks: dict[int, tuple[_Spy, int]] = {}
+        journal_token = _journal.set(marks)
+        undo = False
 
         try:
             result, message = _run(func, args, kwds)
@@ -492,19 +465,21 @@ def _explore[T](  # noqa: C901
                 dropped = True
         except _AbsentError:
             # the dunder is genuinely needed, so this run (and its marker) never was
-            _rollback(marks)
+            undo = True
         except (InferError, IndexError, KeyError, TypeError):
             raise  # signals the driver acts on, not a rejected run
         except ValueError as exc:
             # a forked value the target rejected (e.g. `range`'s zero step); defer
             value_exc = exc
-            _rollback(marks)
+            undo = True
         except (Exception, SystemExit) as exc:  # noqa: BLE001
             # the target rejected these spy values or exited (e.g. `exit()`); skip
             last_exc = exc
-            _rollback(marks)
+            undo = True
         finally:
-            _fork.reset(token)
+            _fork.reset(fork_token)
+            _journal.reset(journal_token)
+            journal_rollback(marks, undo=undo)
 
     if not results:
         if value_exc is not None:
