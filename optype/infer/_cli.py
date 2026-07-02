@@ -10,14 +10,17 @@ from ._color import ColorMode
 from optype.infer import InferError, InferWarning, infer
 
 
-def _format(args: tuple[str, ...]) -> tuple[BackendName, list[str]]:
-    """Split off a leading `--format {terse,compat}`, defaulting to terse."""
-    rest = list(args)
-    name = "terse"
-    if rest and rest[0] == "--format":
-        name, rest = (rest[1] if len(rest) > 1 else ""), rest[2:]
-    elif rest and rest[0].startswith("--format="):
-        name, rest = rest[0].removeprefix("--format="), rest[1:]
+def _flag_value(rest: list[str]) -> tuple[str, list[str]]:
+    """Split the value off a leading `--flag VALUE` or `--flag=VALUE`."""
+    _, eq, value = rest[0].partition("=")
+    if eq:
+        return value, rest[1:]
+    return (rest[1] if len(rest) > 1 else ""), rest[2:]
+
+
+def _format(rest: list[str]) -> tuple[BackendName, list[str]]:
+    """Split off a leading `--format {terse,compat}`."""
+    name, rest = _flag_value(rest)
     # return the literal, not `name`: not every type checker narrows `str` to the name
     if name == "terse":
         return "terse", rest
@@ -26,14 +29,9 @@ def _format(args: tuple[str, ...]) -> tuple[BackendName, list[str]]:
     sys.exit("--format must be one of: terse, compat")
 
 
-def _color_flag(args: tuple[str, ...]) -> tuple[ColorMode, list[str]]:
-    """Split off a leading `--color {auto,always,never}`, defaulting to auto."""
-    rest = list(args)
-    name = "auto"
-    if rest and rest[0] == "--color":
-        name, rest = (rest[1] if len(rest) > 1 else ""), rest[2:]
-    elif rest and rest[0].startswith("--color="):
-        name, rest = rest[0].removeprefix("--color="), rest[1:]
+def _color_flag(rest: list[str]) -> tuple[ColorMode, list[str]]:
+    """Split off a leading `--color {auto,always,never}`."""
+    name, rest = _flag_value(rest)
     if name == "auto":
         return "auto", rest
     if name == "always":
@@ -48,13 +46,14 @@ def _flags(args: tuple[str, ...]) -> tuple[BackendName, ColorMode, list[str]]:
     backend: BackendName = "terse"
     color: ColorMode = "auto"
     rest = list(args)
-    while rest and rest[0].startswith("--"):
-        if rest[0] == "--format" or rest[0].startswith("--format="):
-            backend, rest = _format(tuple(rest))
-        elif rest[0] == "--color" or rest[0].startswith("--color="):
-            color, rest = _color_flag(tuple(rest))
-        else:
-            break  # unrecognized flag: fall through to usage
+    while rest:
+        match rest[0].partition("=")[0]:
+            case "--format":
+                backend, rest = _format(rest)
+            case "--color":
+                color, rest = _color_flag(rest)
+            case _:
+                break  # unrecognized flag or the expression: fall through
     return backend, color, rest
 
 

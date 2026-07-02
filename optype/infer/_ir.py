@@ -173,9 +173,29 @@ def tuple_node_variadic(element: Node) -> App:
     return tuple_node((element, Dots()))
 
 
+_NEVER = Name("Never")
+_TOP = frozenset({Name("object"), Type(object)})
+
+
+def _subtype_args(base: str, args: Terms, wider: Terms) -> bool:
+    """Whether same-`base` applications relate, argument by argument."""
+    if len(args) != len(wider):
+        return False
+    # an all-`Never` container holds only `[]`, a member of any same base
+    if args and all(arg == _NEVER for arg in args):
+        return True
+    if not (variances := _VARIANCES.get(base, "")):
+        return False
+    signs = variances.ljust(len(args), variances[-1])
+    return all(
+        subtype(arg, wide) if sign == COVARIANT else subtype(wide, arg)
+        for arg, wide, sign in zip(args, wider, signs, strict=False)
+    )
+
+
 def subtype(sub: Term, sup: Term) -> bool:
     """Whether `sub` is a subtype of `sup`, as far as can be told from the nodes."""
-    if sub == sup or sub == Name("Never") or sup in {Name("object"), Type(object)}:
+    if sub == sup or sub == Name("Never") or sup in _TOP:
         return True
     match sub, sup:
         case Union(parts), _:
@@ -189,22 +209,7 @@ def subtype(sub: Term, sup: Term) -> bool:
         case Type(cls), Type(wider):
             result = issubclass(cls, wider)
         case App(base, args), App(wider, wider_args) if base == wider:
-            variances = _VARIANCES.get(base, "")
-            result = len(args) == len(wider_args) and (
-                # an all-`Never` container holds only `[]`, a member of any same base
-                (bool(args) and all(arg == Name("Never") for arg in args))
-                or (
-                    bool(variances)
-                    and all(
-                        subtype(arg, wide)
-                        if variances[min(i, len(variances) - 1)] == COVARIANT
-                        else subtype(wide, arg)
-                        for i, (arg, wide) in enumerate(
-                            zip(args, wider_args, strict=True),
-                        )
-                    )
-                )
-            )
+            result = _subtype_args(base, args, wider_args)
         case Fn(params, ret), Fn(wider_params, wider_ret):
             # parameters are contravariant (and positionally matched), the return
             # type is covariant
@@ -286,7 +291,7 @@ def _collapse_tuples(nodes: list[Node]) -> list[Node]:
         group = groups[arity]
         # `_fixed_tuple_arity` already excluded any `Arg`, so `_param_type` is a no-op
         columns = (
-            union([_param_type(g.args[i]) for g in group], tuples=True) or Name("Never")
+            union([_param_type(g.args[i]) for g in group], tuples=True) or _NEVER
             for i in range(arity)
         )
         out.append(tuple_node(columns))
