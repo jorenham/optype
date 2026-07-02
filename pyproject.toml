@@ -76,8 +76,8 @@ doc = [
 ]
 lint = [
   "dprint-py==0.53.1.0",
-  "ruff==0.15.17",
-  "sp-repo-review[cli]==2026.4.4",
+  "ruff==0.15.20",
+  "sp-repo-review[cli]==2026.6.18",
 ]
 test = [
   { include-group = "extra" },
@@ -86,14 +86,14 @@ test = [
   "pytest>=9.0.3",
   "typing-extensions>=4.15.0",
   # the compat-backend tests type-check the rendered stubs
-  "basedpyright==1.39.7",
+  "basedpyright==1.39.8",
 ]
 type = [
   { include-group = "extra" },
   { include-group = "test" },
   "mypy[faster-cache]==2.1.0",
-  "pyrefly==1.0.0",
-  "ty==0.0.48",
+  "pyrefly==1.1.1",
+  "ty==0.0.54",
 ]
 dev = [
   { include-group = "extra" },
