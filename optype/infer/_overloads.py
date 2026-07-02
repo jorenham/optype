@@ -19,6 +19,8 @@ from ._ir import Signature
 from ._render import (
     Defaults,
     Names,
+    _renderers,
+    _signatures,
     signatures,
     union_signature,
     widened_signature,
@@ -91,8 +93,9 @@ def resolve_defaults(
 
     try:
         omitted = explore_spies(func, params, omit=defaults)
+        omitted_renderers = _renderers(omitted, params)
         # the comparison must see every required parameter, regardless of selection
-        observed = signatures(omitted, required, names)
+        observed = _signatures(omitted_renderers, names, deprecated=omitted.deprecated)
     except Exception:  # noqa: BLE001
         return {}, False, []
 
@@ -100,7 +103,12 @@ def resolve_defaults(
     if signatures(omitted_defaults, required, names) == observed:
         return defaults, False, []
 
-    overloads = signatures(omitted, params, selected, defaults)
+    overloads = _signatures(
+        omitted_renderers,
+        selected,
+        defaults,
+        deprecated=omitted.deprecated,
+    )
 
     if len(defaults) == 1:
         return defaults, True, overloads

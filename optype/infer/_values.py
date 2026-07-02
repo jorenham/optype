@@ -6,7 +6,7 @@ from inspect import Parameter
 from itertools import chain
 from typing import NamedTuple, NewType, cast
 
-from ._spy import _SpyObject, _Traces
+from ._spy import _Spy, _SpyObject, _Traces
 
 VARIADIC_KINDS = frozenset({Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD})
 
@@ -71,6 +71,9 @@ class _RecRef(NamedTuple):
 
 def _children(value: object) -> Iterable[object]:
     """The values directly contained in an explored result."""
+    # a spy is a leaf; its unique class defeats the `Mapping` check's negative cache
+    if isinstance(value, _Spy):
+        return ()
     match value:
         case _Gen():
             out: Iterable[object] = value.yielded
@@ -97,12 +100,15 @@ def _walk(value: object) -> Generator[object]:
         yield from _walk(child)
 
 
-def map_values(value: object, leaf: Callable[[object], object]) -> object:  # noqa: C901
+def map_values(value: object, leaf: Callable[[object], object]) -> object:  # noqa: C901, PLR0912
     """Rebuild `value` with each non-composite leaf replaced via `leaf`.
 
     Recurses into the same shapes as `_children`, but a `tuple` subclass (namedtuple)
     is a leaf, and a `dict` subclass (e.g. `defaultdict`) collapses to a plain `dict`.
     """
+    # a spy is a leaf; see `_children`
+    if isinstance(value, _Spy):
+        return leaf(value)
     match value:
         case _Gen():
             yielded = [map_values(item, leaf) for item in value.yielded]

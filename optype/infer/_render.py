@@ -130,6 +130,11 @@ def _result_var(index: int) -> str:
     return "R" if not index else f"R{index + 1}"
 
 
+def _distinct[T](values: Iterable[T]) -> Collection[T]:
+    """Deduplicate by identity; holding the values keeps their ids from reuse."""
+    return {id(value): value for value in values}.values()
+
+
 @final
 class _Renderer:
     """Render an inferred `def` signature from the recorded spy traces."""
@@ -159,6 +164,8 @@ class _Renderer:
     _declared_spies: list[_SpyObject]
     _param_spies: list[_SpyObject]
     _group_traces: _Traces
+    _bound_nodes: dict[int, _ir.Node | None]  # rendered bound per representative
+    _ret_node: _ir.Node  # rendered return union, refreshed along with the bounds
 
     _typer: "_ResultTyper"  # renders explored result values into type nodes
 
@@ -187,6 +194,7 @@ class _Renderer:
             vartuple=self._vartuple,
             count=self._count,
         )
+        self._render_bounds()
         self._inline_single_use()
 
     def _configure(self, params: Mapping[str, Parameter]) -> None:
@@ -289,19 +297,24 @@ class _Renderer:
                 self._declared_spies.append(spy)
             self._vars[id(spy)] = var
 
+    def _render_bounds(self) -> None:
+        """Render and cache each named bound and the return union."""
+        self._bound_nodes = {
+            rep: self.traces(self._group_traces.get(rep, ())) for rep in self._named
+        }
+        self._ret_node = self._typer.type_union(self._results)
+
     def _inline_single_use(self) -> None:
         # a bounded typevar referenced once and absent from the return carries no more
         # than its bound, so it inlines back into the one spot that uses it
 
         vars_, reps = self._vars, self._reps
 
-        bounds = {
-            rep: self.traces(self._group_traces.get(rep, ())) for rep in self._named
-        }
+        bounds = self._bound_nodes
         rendered = [
             *(self._slot(spy) for spy in self._param_spies),
             *(node for node in bounds.values() if node is not None),
-            self._typer.type_union(self._results),
+            self._ret_node,
         ]
         counts = Counter(name for node in rendered for name in _ir.names(node))
 
@@ -340,6 +353,7 @@ class _Renderer:
             if var not in inline
         }
         self._group_traces = group_traces(self._vars, reps, self._traces)
+        self._render_bounds()  # the renaming invalidated the rendered nodes
 
     def _name_results(self, param_ids: set[int], reps: dict[int, int]) -> None:
         for result in self._results:
@@ -360,19 +374,17 @@ class _Renderer:
     def returns(self, members: Iterable[Op]) -> _ir.Node | None:
         named: list[str] = []
         items: list[_TraceItem] = []
-        returned = False
-        for m in members:
-            if not isinstance(m.ret, _SpyObject):
-                continue
-            returned = True
-            if (var := self._vars.get(id(m.ret))) is not None:
+        # a repeated op returns one spy; collect it once
+        rets = _distinct(r for m in members if isinstance(r := m.ret, _SpyObject))
+        for ret in rets:
+            if (var := self._vars.get(id(ret))) is not None:
                 named.append(var)
             else:
-                items.extend(self._traces[id(m.ret)])
+                items.extend(self._traces[id(ret)])
         parts: list[_ir.Node] = [_ir.Name(var) for var in dict.fromkeys(named)]
         if items and (node := self.traces(items)) is not None:
             parts.append(node)
-        if (out := _ir.inter(parts)) is None and returned:
+        if (out := _ir.inter(parts)) is None and rets:
             # an unused result is unconstrained, but omitting it would leave the
             # last argument in the return slot, e.g. the `R` of `(T) -> R`
             out = _ir.Name(_OBJECT)
@@ -452,7 +464,7 @@ class _Renderer:
 
     def traces(self, items: Iterable[_TraceItem]) -> _ir.Node | None:
         # dedup the re-collected return-chain items so they can't blow up (#734)
-        items = list({id(item): item for item in items}.values())
+        items = _distinct(items)
         # an absence marker means the op was optional; an attribute probe keys on its
         # name, so it spares the other reads
         optional = {item.args for item in items if item.attr == _Marker.ABSENT}
@@ -498,7 +510,12 @@ class _Renderer:
             # a PEP 646 typevar tuple takes no bound or default
             return _ir.TypeParam(var, unpack=True)
         rep = self._reps.get(id(spy), id(spy))
-        node = self.traces(self._group_traces.get(rep, ()))
+        if rep in self._bound_nodes:
+            node = self._bound_nodes[rep]
+        else:
+            node = self._bound_nodes[rep] = self.traces(
+                self._group_traces.get(rep, ()),
+            )
         default = defaulted.get(id(spy))
         if negate and default is not None:
             node = _ir.exclude(node, default)
@@ -540,7 +557,7 @@ class _Renderer:
             for name in selected
             if (param := self._param(name, defaults, negate=negate)) is not None
         ]
-        ret_node = self._typer.type_union(self._results) if ret is None else ret
+        ret_node = self._ret_node if ret is None else ret
         type_params, params, ret_node = _collapse_recursive(
             type_params,
             params,
@@ -619,12 +636,13 @@ class _ResultTyper:
     ) -> _ir.Node | None:
         """The union of `values` as literals; `type_union` widens them to types."""
         literals: list[object] = []
-        parts: list[_ir.Node] = []
+        others: list[object] = []
         for value in values:
             if isinstance(value, (int, str, bytes)) and not isinstance(value, _Spy):
                 literals.append(value)
             else:
-                parts.append(self.return_type(value))
+                others.append(value)
+        parts = [self.return_type(value) for value in _distinct(others)]
 
         nodes: list[_ir.Node] = []
         if len(literals) > _LITERAL_LIMIT:
@@ -676,7 +694,7 @@ class _ResultTyper:
 
     def type_union(self, values: Iterable[object]) -> _ir.Node:
         """The deduplicated union of the types of `values`, or `Never` if empty."""
-        parts = dict.fromkeys(map(self.return_type, values))
+        parts = dict.fromkeys(map(self.return_type, _distinct(values)))
         return _ir.union(parts, tuples=True) or _ir.Name(_NEVER)
 
     def value_type(self, value: object) -> _ir.Node:
@@ -963,7 +981,25 @@ def _renderers(
 ) -> list[_Renderer]:
     traces, results = exploration.traces, exploration.results
     reflected = reflect([*exploration.spies.values(), *fn_spies(results)], traces)
+    if reflected is traces:
+        # nothing reflected, so a second renderer would repeat the first verbatim
+        renderer = _Renderer(exploration, params, traces)
+        return [renderer, renderer]
     return [_Renderer(exploration, params, t) for t in (traces, reflected)]
+
+
+def _signatures(
+    renderers: Iterable[_Renderer],
+    selected: Names,
+    defaults: Defaults | None = None,
+    *,
+    negate: bool = False,
+    deprecated: str | None = None,
+) -> list[_ir.Signature]:
+    return [
+        r.signature(selected, defaults, negate=negate, deprecated=deprecated)
+        for r in renderers
+    ]
 
 
 def signatures(
@@ -974,15 +1010,13 @@ def signatures(
     *,
     negate: bool = False,
 ) -> list[_ir.Signature]:
-    return [
-        r.signature(
-            selected,
-            defaults,
-            negate=negate,
-            deprecated=exploration.deprecated,
-        )
-        for r in _renderers(exploration, params)
-    ]
+    return _signatures(
+        _renderers(exploration, params),
+        selected,
+        defaults,
+        negate=negate,
+        deprecated=exploration.deprecated,
+    )
 
 
 def widened_signature(

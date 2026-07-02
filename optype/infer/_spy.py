@@ -601,14 +601,17 @@ for _name in _TRACED_OPS:
 # Free functions, not methods: a method would be an unrecorded hole in the proxy.
 def _class_spy(cls: object) -> _SpyObject | None:
     """The spy whose unique class `cls` is, if any."""
-    if isinstance(cls, type) and issubclass(cls, _SpyObject):
+    # only a spy's unique class carries `__optype_instance__` in its own `__dict__`;
+    # the marker must point back into the mro, or it is a copy on some foreign class.
+    # gate on the exact metaclass: a foreign `__dict__` can be a metaclass property
+    if type(cls) is _SpyType:
         spy = cls.__dict__.get("__optype_instance__")
-        if isinstance(spy, _SpyObject):
+        if isinstance(spy, _SpyObject) and issubclass(cls, type(spy)):
             return spy
     return None
 
 
-def _own_spy(spy: _SpyObject) -> _SpyObject:
+def _own_spy(spy: _SpyObject) -> _SpyObject:  # pyright: ignore[reportUnusedFunction]  # cross-module
     """The first spy of `spy`'s class: `type(spy)()` siblings collapse onto it."""
     owner = _class_spy(type(spy))  # `or spy` would trace a `__bool__` on the owner
     return spy if owner is None else owner
@@ -617,8 +620,8 @@ def _own_spy(spy: _SpyObject) -> _SpyObject:
 def as_spy(value: object) -> _SpyObject | None:
     """The (first-of-its-class) spy itself, or the spy whose class it is, if any."""
     # a `weakref.proxy` forwards `__class__`, so verify its real class is a spy's
-    if isinstance(value, _SpyObject) and _class_spy(type(value)) is not None:
-        return _own_spy(value)
+    if isinstance(value, _SpyObject) and (owner := _class_spy(type(value))) is not None:
+        return owner
     return _class_spy(value)
 
 
