@@ -236,7 +236,9 @@ def all_packed(
 
 
 def reflect(params: Sequence[_SpyObject], traces: _Traces) -> _Traces:
-    """A copy of `traces` with each spy-spy binary op reflected onto its RHS."""
+    """A copy of `traces` with each spy-spy binary op reflected onto its RHS,
+    or `traces` itself when nothing reflects at all.
+    """
     kept: _Traces = dict(traces)
     added: defaultdict[int, list[_TraceItem]] = defaultdict(list)
     for spy in _trace_order(params, traces):
@@ -251,4 +253,6 @@ def reflect(params: Sequence[_SpyObject], traces: _Traces) -> _Traces:
             else:
                 keep.append(item)
         kept[id(spy)] = keep
+    if not added:
+        return traces
     return {spy_id: keep + added[spy_id] for spy_id, keep in kept.items()}

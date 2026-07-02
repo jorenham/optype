@@ -8,6 +8,7 @@ import builtins
 import difflib
 import fractions
 import functools
+import gc
 import io
 import itertools
 import math
@@ -31,7 +32,7 @@ from typing import Any, override
 
 import pytest
 
-from optype.infer import InferError, InferWarning, _color, infer
+from optype.infer import InferError, InferWarning, _color, _gc, infer
 from optype.infer._api import _Gap
 from optype.infer._backends import TERSE
 from optype.infer._ir import (
@@ -56,6 +57,7 @@ from optype.infer._ir import (
 from optype.infer._isolate import isolate
 from optype.infer._numpy import array_function_node
 from optype.infer._render import _collapse_recursive
+from optype.infer._spy import _SpyObject
 from optype.infer._values import GapKind
 
 if sys.version_info >= (3, 13):
@@ -1303,6 +1305,62 @@ def test_rich_return_chains_terminate() -> None:
     lines = matches.splitlines()
     assert lines
     assert all("list[" in line.rsplit("->", 1)[-1] for line in lines)
+
+
+def test_foreign_metaclass_dict_property() -> None:
+    # a foreign metaclass may define `__dict__` as a property that raises
+    def boom(_cls: type) -> Any:
+        raise RuntimeError("never")
+
+    meta = type("Meta", (type,), {"__dict__": property(boom)})
+    evil = meta("Evil", (), {})
+
+    assert infer(lambda x: x + evil) == "[R](x: CanAdd[Meta, R]) -> R"
+
+
+def test_finalizer_ops_discarded(monkeypatch: pytest.MonkeyPatch) -> None:
+    # a collected cycle's `__del__` touching a spy must not leave a phantom op
+    monkeypatch.setattr(_gc, "_PENDING_MAX", 100)
+
+    class Finalized:
+        def __init__(self, x: object) -> None:
+            self.x: object = x
+            self.me: object = self  # only the cyclic collector can free this
+
+        def __del__(self) -> None:
+            # `x` is also explored as a non-spy (e.g. a tuple), so probe first
+            if (phantom := getattr(self.x, "phantom", None)) is not None:
+                phantom()
+
+    def fn(x: object) -> object:
+        garbage = [Finalized(x) for _ in range(100)]
+        del garbage
+        return -x  # type: ignore[operator]  # pyright: ignore[reportOperatorIssue]  # ty:ignore[unsupported-operator]
+
+    assert infer(fn) == "[R](x: CanNeg[R]) -> R"
+
+
+def test_drained_spies_freed(monkeypatch: pytest.MonkeyPatch) -> None:
+    # the dead spy graph must not outlive inference, even when sweeps promoted it
+    monkeypatch.setattr(_gc, "_PENDING_MAX", 100)
+    gc.collect()
+
+    def fn(x: object) -> object:
+        garbage: list[list[object]] = [[] for _ in range(200)]
+        for cycle in garbage:
+            cycle.append(cycle)  # only the cyclic collector can free these
+        del garbage
+        return -x  # type: ignore[operator]  # pyright: ignore[reportOperatorIssue]  # ty:ignore[unsupported-operator]
+
+    infer(fn)
+    residue = [
+        cls
+        for cls in gc.get_objects()
+        if isinstance(cls, type)
+        and issubclass(cls, _SpyObject)
+        and cls is not _SpyObject
+    ]
+    assert not residue
 
 
 def test_alpha_equal_and_rename() -> None:

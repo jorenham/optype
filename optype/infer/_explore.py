@@ -29,6 +29,7 @@ from types import (
 from typing import Any, cast
 
 from ._errors import InferError
+from ._gc import drain_gc
 from ._spy import (
     _AbsentError,
     _AnyFunc,
@@ -429,6 +430,18 @@ def _run[T](
     return value, message
 
 
+def _drain() -> None:
+    # the drain runs the target's finalizers; discard any spy ops they record,
+    # or a rolled-back branch's `__del__` pollutes the trace
+    marks: dict[int, tuple[_Spy, int]] = {}
+    token = _journal.set(marks)
+    try:
+        drain_gc()
+    finally:
+        _journal.reset(token)
+        journal_rollback(marks, undo=True)
+
+
 def _explore[T](  # noqa: C901
     func: Callable[..., T] | Callable[..., Coroutine[Any, None, T]],
     args: Sequence[object],
@@ -480,6 +493,8 @@ def _explore[T](  # noqa: C901
             _fork.reset(fork_token)
             _journal.reset(journal_token)
             journal_rollback(marks, undo=undo)
+
+        _drain()
 
     if not results:
         if value_exc is not None:
