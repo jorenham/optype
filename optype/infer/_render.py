@@ -107,7 +107,7 @@ def _merge_combined(parts: list[_ir.Node]) -> list[_ir.Node]:
     `CanAsyncWith` is alike, but its declared parameters are the awaited results, so
     the `CanAwait` wrappers unwrap. `CanGetitem & CanLen` combines as `CanSequence`.
     """
-    for app in parts:
+    for app in [*parts]:  # iterate a snapshot; `parts` shrinks as pairs merge
         match app:
             case _ir.App("CanEnter", (entered,)):
                 partner = _CLEAN_EXIT

@@ -122,7 +122,7 @@ def _decide_stable(spy: "_SpyObject", attr: str, /, *, optional: bool = False) -
     slot = _slot(attr)
     plan = _fork.get()
 
-    memo: _Memo | None = getattr(spy, slot)
+    memo: _Memo | None = getattr(spy, slot, None)
     if memo is not None and memo[0] is plan:
         if memo[1] is None:
             raise _AbsentError
@@ -153,7 +153,7 @@ def _decide_keyed(
     plan = _fork.get()
 
     cache: dict[int, tuple[object, int]]
-    memo: _KeyedMemo | None = getattr(spy, slot)
+    memo: _KeyedMemo | None = getattr(spy, slot, None)
     if memo is not None and memo[0] is plan:
         cache = memo[1]
     else:
