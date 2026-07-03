@@ -3,6 +3,7 @@
 # pyright: reportUnknownMemberType=false, reportUnknownVariableType=false
 # pyright: reportUnusedParameter=false
 
+import abc
 import ast
 import builtins
 import difflib
@@ -1024,6 +1025,8 @@ INFER_CASES: list[tuple[Callable[..., object], str]] = [
     *DEFAULT_CASES,
     *FUNCTION_CASES,
     *ITERATOR_CASES,
+    # a stdlib class renders module-qualified (#775)
+    (abc.ABC, "() -> abc.ABC"),
 ]
 
 
@@ -1304,7 +1307,7 @@ def test_rich_return_chains_terminate() -> None:
         warnings.simplefilter("ignore", InferWarning)
         scanner = infer(getattr(re, "Scanner"))  # noqa: B009
         matches = infer(difflib.get_close_matches)
-    assert scanner.splitlines()[-1].endswith("-> Scanner")
+    assert scanner.splitlines()[-1].endswith("-> re.Scanner")
     lines = matches.splitlines()
     assert lines
     assert all("list[" in line.rsplit("->", 1)[-1] for line in lines)
@@ -1801,9 +1804,11 @@ def test_infer_generic_alias() -> None:
     assert infer(lambda: list[int | None]) == "() -> type[list[int | None]]"
     assert infer(lambda: list[dict[str, int]]) == "() -> type[list[dict[str, int]]]"
     assert infer(lambda x: (x, list[int])) == "[T](x: T) -> tuple[T, type[list[int]]]"
-    # a user-defined generic (`typing._GenericAlias`) unwraps like a builtin one
-    assert infer(lambda: _MyGeneric[int]) == "() -> type[_MyGeneric[int]]"
-    assert infer(lambda: list[_MyGeneric[int]]) == "() -> type[list[_MyGeneric[int]]]"
+    # a user-defined generic (`typing._GenericAlias`) unwraps like a builtin one,
+    # qualified by the module it is importable from (#775)
+    generic = f"{_MyGeneric.__module__}._MyGeneric"
+    assert infer(lambda: _MyGeneric[int]) == f"() -> type[{generic}[int]]"
+    assert infer(lambda: list[_MyGeneric[int]]) == f"() -> type[list[{generic}[int]]]"
 
 
 def test_infer_generic_alias_union() -> None:
@@ -1838,9 +1843,9 @@ def test_infer_generic_alias_unnameable() -> None:
 
         return lambda: _MyGeneric[Local]
 
-    assert infer(make_builtin()) == "() -> GenericAlias"
-    assert infer(make_callable()) == "() -> GenericAlias"
-    assert infer(make_user()) == "() -> GenericAlias"
+    assert infer(make_builtin()) == "() -> types.GenericAlias"
+    assert infer(make_callable()) == "() -> types.GenericAlias"
+    assert infer(make_user()) == "() -> types.GenericAlias"
 
 
 type _AliasUnion = int | str
@@ -2133,6 +2138,32 @@ COMPAT_CASES: list[tuple[str, str]] = [
             "from typing import Literal\n\n"
             "def f[T = Literal[http.HTTPStatus.NOT_FOUND]]"
             "(x: T = http.HTTPStatus.NOT_FOUND) -> T: ..."
+        ),
+    ),
+    (
+        # a stdlib class renders module-qualified, with its import (#775)
+        "import abc\nabc.ABC",
+        "import abc\n\ndef f() -> abc.ABC: ...",
+    ),
+    (
+        "import decimal\ndecimal.Decimal",
+        (
+            "import decimal\n\n"
+            "def f(value: str = '0', context: None = None) -> decimal.Decimal: ..."
+        ),
+    ),
+    (
+        # a private extension module defers to its public face (`_io` -> `io`)
+        "import io\nlambda: io.TextIOWrapper(io.BytesIO())",
+        "import io\n\ndef f() -> io.TextIOWrapper: ...",
+    ),
+    (
+        # a generic container base is qualified too, not the deprecated typing alias
+        "import collections\nlambda: collections.OrderedDict(a=1)",
+        (
+            "import collections\n"
+            "from typing import Literal\n\n"
+            "def f() -> collections.OrderedDict[Literal['a'], Literal[1]]: ..."
         ),
     ),
 ]
@@ -2952,7 +2983,7 @@ def test_set_name() -> None:
 
 def test_weakref_proxy() -> None:
     # a `weakref.proxy` forwards `__class__`, so it must not be mistaken for a spy
-    assert infer(weakref.proxy) == "(object) -> CallableProxyType"
+    assert infer(weakref.proxy) == "(object) -> weakref.CallableProxyType"
 
 
 def _run_cli(*args: str) -> subprocess.CompletedProcess[str]:

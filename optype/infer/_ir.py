@@ -419,12 +419,29 @@ def is_sentinel(x: object, /) -> bool:
     return sys.version_info >= (3, 15) and isinstance(x, getattr(builtins, "sentinel"))  # noqa: B009
 
 
+def _public_module(cls: type) -> str | None:
+    """The module `cls` is importable from, or `None` for a local class."""
+    if (module := cls.__module__) == "builtins":
+        return None
+
+    # a private extension module defers to its public face (`_io` -> `io`)
+    for candidate in (module.removeprefix("_"), module):
+        if getattr(sys.modules.get(candidate), cls.__name__, None) is cls:
+            return candidate
+
+    return None
+
+
 def type_name(cls: type) -> str:
     """The canonical importable name of a type."""
     if alias := _TYPES_NAMES.get(cls):
         return alias
-    prefix = "np." if cls.__module__.partition(".")[0] == "numpy" else ""
-    return prefix + cls.__name__
+
+    if cls.__module__.partition(".")[0] == "numpy":
+        return f"np.{cls.__name__}"
+
+    module = _public_module(cls)
+    return f"{module}.{cls.__name__}" if module else cls.__name__
 
 
 _TVAR_LETTERS = "TUVWXYZ"
