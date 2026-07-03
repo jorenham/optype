@@ -25,9 +25,9 @@ import time
 import warnings
 import weakref
 from collections.abc import Callable
-from inspect import currentframe, signature
+from inspect import Signature as PySignature, currentframe, signature
 from pathlib import Path
-from types import MappingProxyType
+from types import MappingProxyType, SimpleNamespace
 from typing import Any, override
 
 import pytest
@@ -57,6 +57,7 @@ from optype.infer._ir import (
 from optype.infer._isolate import isolate
 from optype.infer._numpy import array_function_node
 from optype.infer._render import _collapse_recursive
+from optype.infer._signature import parse_text_signature
 from optype.infer._spy import _SpyObject
 from optype.infer._values import GapKind
 
@@ -2691,6 +2692,95 @@ def test_builtin_variadic() -> None:
     assert infer(min) == "[T, U: CanLt[T | U, CanBool]](T, *args: U) -> U | T"
 
 
+def _text_candidates(text: str, *, bound: bool = False) -> list[str] | None:
+    func: Any = SimpleNamespace(__text_signature__=text)
+    if bound:
+        func.__self__ = object()
+    parsed = parse_text_signature(func)
+    if parsed is None:
+        return None
+    return [str(PySignature(list(c.values()))) for c in parsed]
+
+
+def test_text_signature_groups() -> None:
+    # the legacy find-family grammar: each optional group level is a candidate (#646)
+    assert _text_candidates("($self, sub[, start[, end]], /)") == [
+        "(self, sub, /)",
+        "(self, sub, start, /)",
+        "(self, sub, start, end, /)",
+    ]
+
+
+def test_text_signature_bound() -> None:
+    # a bound callable's `$` parameter is not part of the call signature
+    assert _text_candidates(
+        "($module, aiterator, default=<unrepresentable>, /)",
+        bound=True,
+    ) == ["(aiterator, /)", "(aiterator, default, /)"]
+
+
+def test_text_signature_omitted_default() -> None:
+    # omitting an unrepresentable default forces later parameters to keyword-only
+    assert _text_candidates("($self, /, sep=<unrepresentable>, bytes_per_sep=1)") == [
+        "(self, /, *, bytes_per_sep=1)",
+        "(self, /, sep, bytes_per_sep=1)",
+    ]
+
+
+def test_text_signature_leading_group() -> None:
+    # a leading (curses-style) group shifts the positional arity instead
+    assert _text_candidates("([y, x,] ch[, attr])") == [
+        "(ch)",
+        "(ch, attr)",
+        "(y, x, ch)",
+        "(y, x, ch, attr)",
+    ]
+
+
+def test_text_signature_kinds() -> None:
+    # literal defaults, `*args`, keyword-only, and `**kwargs` parse as-is
+    assert _text_candidates("($self, /, x=0, *args, key, **kwargs)") == [
+        "(self, /, x=0, *args, key, **kwargs)",
+    ]
+
+
+def test_text_signature_invalid() -> None:
+    for text in ("no parens", "(unclosed", "(a[, b)", "(a, a)", "(a, $b)", "(=1)"):
+        assert _text_candidates(text) is None, text
+
+
+def _skip_if_signature(func: Any) -> None:
+    try:
+        signature(func)
+    except ValueError:
+        pass
+    else:
+        pytest.skip(
+            f"this build exposes an `inspect.signature` for `{func.__qualname__}`",
+        )
+
+
+def test_builtin_dict_pop() -> None:
+    _skip_if_signature(dict.pop)
+    # the 2-parameter form never completes (`KeyError` on an empty `dict`)
+    assert infer(dict.pop) == "[T](dict, object, T) -> T"
+
+
+def test_builtin_bytes_hex() -> None:
+    _skip_if_signature(bytes.hex)
+    # the str-typed `sep` rejects placeholders; the sep-less candidate renders
+    assert infer(bytes.hex) == "(bytes, bytes_per_sep: CanIndex = 1) -> str"
+
+
+def test_builtin_str_index() -> None:
+    _skip_if_signature(str.index)
+    if getattr(str.index, "__text_signature__", None) is None:
+        pytest.skip("this build has no `__text_signature__` for `str.index`")
+    # the text signature parses (#646), but the str-typed `sub` rejects placeholders
+    with pytest.raises(InferError, match="must be str"):
+        infer(str.index)
+
+
 def test_functools_reduce() -> None:
     # the iterable must yield a pair so `reduce` actually calls the function (#723)
     if sys.version_info >= (3, 15):
@@ -2700,6 +2790,12 @@ def test_functools_reduce() -> None:
             " initial: _initial_missing = _initial_missing) -> R\n"
             "[T: ~_initial_missing, U, R]"
             "((T | R, U) -> R, CanIter[CanNext[U]], initial: T) -> R"
+        )
+    elif getattr(functools.reduce, "__text_signature__", None) is not None:
+        # Python 3.14: the text signature names `initial`, which the probe could not
+        assert infer(functools.reduce) == (
+            "[T, R]((T, T) -> R, CanIter[CanNext[T]]) -> R\n"
+            "[T, U, R]((T | R, U) -> R, CanIter[CanNext[U]], initial: T) -> R"
         )
     else:
         assert infer(functools.reduce) == (

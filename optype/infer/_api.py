@@ -14,7 +14,7 @@ from ._ir import Signature
 from ._isolate import isolate
 from ._overloads import dispatch_overloads, resolve_defaults
 from ._render import Names, signatures
-from ._signature import probe_signatures
+from ._signature import parse_text_signature, probe_signatures
 from ._spy import _AnyFunc
 from ._values import GapKind
 
@@ -88,9 +88,9 @@ def _candidate_parameters(func: _AnyFunc) -> list[dict[str, Parameter]]:
     except TypeError as exc:  # not callable
         raise InferError(str(exc)) from exc
     except ValueError as exc:  # callable but no signature (e.g. a C builtin)
-        if (probed := probe_signatures(func)) is None:
-            raise InferError(str(exc)) from exc
-        return probed
+        if candidates := parse_text_signature(func) or probe_signatures(func):
+            return candidates
+        raise InferError(str(exc)) from exc
 
 
 def _infer(

@@ -391,8 +391,9 @@ def _with_next_default(
     results: list[object],
 ) -> list[object]:
     # `next`/`anext` return `default` on an exhaustion branch the spies never reach
-    if func not in _NEXT_BUILTINS or (default := spies.get("_1")) is None:
+    if func not in _NEXT_BUILTINS or len(spies) < 2:
         return results
+    default = list(spies.values())[1]
 
     # `anext` resolves through an awaitable, so the default unions inside the coroutine
     merged: list[object] = []
