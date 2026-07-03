@@ -9,13 +9,13 @@ import builtins
 import types
 import typing
 from collections.abc import Sequence
-from typing import cast
+from typing import Literal, cast
 
 # `from optype.infer import _ir` would re-enter the package, which imports this module
 import optype.infer._ir as _ir  # noqa: PLR0402
 from ._model import _Alias, _Attr, _Func, _Member, _Method, _Protocol, _value
 from optype._core import _can, _has, _just
-from optype.infer._backends._base import default_text
+from optype.infer._backends._base import default_text, value_text
 
 __all__ = (
     "_OPTYPE",
@@ -42,6 +42,8 @@ _ABC = frozenset({
 _TYPING = frozenset({"Any", "ClassVar", "Literal", "Never", "Protocol", "overload"})
 _TYPING_EXT = frozenset({"TypeForm", "deprecated"})
 _OPTYPE = frozenset(_can.__all__) | frozenset(_has.__all__) | frozenset(_just.__all__)
+
+type _Prefix = Literal["", "*"]
 
 _numpy_names: frozenset[str] | None = None
 
@@ -94,7 +96,7 @@ def _type(node: _ir.Node, used: set[str] | None = None) -> str:  # noqa: C901, P
     match node:
         case _ir.Lit(values):
             rec("Literal")
-            return f"Literal[{', '.join(map(repr, values))}]"
+            return f"Literal[{', '.join(value_text(v, rec) for v in values)}]"
         case _ir.Type(cls):
             rec(name := _ir.type_name(cls))
             return name
@@ -164,7 +166,7 @@ def _params(params: Sequence[_ir.Param], used: set[str]) -> str:
         else:
             decl = f"{p.prefix}{p.name}: {_type(p.node, used)}"
         if p.default is not None and show[i]:
-            decl += f" = {default_text(p.default[0])}"
+            decl += f" = {default_text(p.default[0], used.add)}"
         items.append((decl, p.nameless))
     return _join_params(items)
 
@@ -186,21 +188,38 @@ def _default_mask(params: Sequence[_ir.Param]) -> list[bool]:
     return show
 
 
+def _prefixed_type(value: _ir.Node, used: set[str] | None) -> tuple[_Prefix, str]:
+    """A parameter's `(prefix, annotation)`; an unpack becomes a `*` parameter."""
+    match value:
+        case _ir.Unpack(_ir.App("tuple", (elem, _ir.Dots()))):
+            prefix, value = "*", _value(elem)
+        case _ir.Unpack():
+            prefix = "*"
+        case _:
+            prefix = ""
+    return prefix, _type(value, used)  # type:ignore[return-value]  # mypy fail
+
+
 def _call_params(
     params: Sequence[_ir.Node | _ir.Arg],
     used: set[str] | None = None,
 ) -> str:
+    rec = _noop if used is None else used.add
     auto = 0
     items: list[tuple[str, bool]] = []
     for p in params:
         if isinstance(p, _ir.Arg) and p.key:
             decl = f"{p.key}: {_type(p.value, used)}"
             if p.default is not None:
-                decl += f" = {default_text(p.default[0])}"
+                decl += f" = {default_text(p.default[0], rec)}"
             items.append((decl, False))
-        else:
-            items.append((f"_{auto}: {_type(_value(p), used)}", True))
-            auto += 1
+            continue
+
+        # a `*` parameter is not positional-only, so the `/` lands before it
+        prefix, ann = _prefixed_type(_value(p), used)
+        items.append((f"{prefix}_{auto}: {ann}", not prefix))
+        auto += 1
+
     return _join_params(items)
 
 
