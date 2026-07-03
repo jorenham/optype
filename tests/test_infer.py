@@ -6,9 +6,11 @@
 import ast
 import builtins
 import difflib
+import enum
 import fractions
 import functools
 import gc
+import http
 import io
 import itertools
 import math
@@ -1433,6 +1435,32 @@ def test_wide_literal_union_capped() -> None:
     assert all(lit.count(",") < 8 for lit in re.findall(r"Literal\[([^\]]*)\]", out))
 
 
+def test_enum_literal() -> None:
+    # #776: an importable enum member renders as its member path, not its repr
+    status = http.HTTPStatus.NOT_FOUND
+    assert infer(lambda x: x == status) == (
+        "[R](x: CanEq[Literal[HTTPStatus.NOT_FOUND], R]) -> R"
+    )
+
+    def d(x: http.HTTPStatus = status) -> http.HTTPStatus:
+        return x
+
+    assert infer(d) == (
+        "[T = Literal[HTTPStatus.NOT_FOUND]](x: T = HTTPStatus.NOT_FOUND) -> T"
+    )
+
+
+def test_enum_literal_inexpressible() -> None:
+    # #776: a composite flag and a local enum fall back to their plain data value
+    class Color(enum.IntEnum):
+        RED = 1
+
+    assert infer(lambda x: x == Color.RED) == "[R](x: CanEq[Literal[1], R]) -> R"
+
+    flags = re.IGNORECASE | re.MULTILINE
+    assert infer(lambda x: x != flags) == "[R](x: CanNe[Literal[10], R]) -> R"
+
+
 def test_method_descriptor_fixed_defaults() -> None:
     # a defaulted parameter whose spy the function rejects passes its default
     # instead, while the accepting parameters stay structural
@@ -2068,6 +2096,45 @@ COMPAT_CASES: list[tuple[str, str]] = [
     ),
     ("lambda *args: args", "def f[*Ts](*args: *Ts) -> tuple[*Ts]: ..."),
     ("str.upper", "def f(_0: str, /) -> str: ..."),
+    (
+        # a *args run forwarded into a method renders as a star parameter (#776)
+        "lambda x, f, *args: x.m(f, *args)",
+        (
+            "from typing import Protocol\n\n"
+            "class HasM[T, U, V](Protocol):\n"
+            "    def m(self, _0: T, /, *_1: U) -> V: ...\n\n"
+            "def f[T, U, R](x: HasM[T, U, R], f: T, *args: U) -> R: ..."
+        ),
+    ),
+    (
+        # a leading star parameter takes no `/`; a keyword after it is keyword-only
+        "lambda f, *args: f(*args, k=1)",
+        (
+            "from typing import Literal, Protocol\n\n"
+            "class CanCallP[T, U](Protocol):\n"
+            "    def __call__(self, *_0: T, k: Literal[1]) -> U: ...\n\n"
+            "def f[T, R](f: CanCallP[T, R], *args: T) -> R: ..."
+        ),
+    ),
+    (
+        # an enum member renders as its imported member path, not its repr (#776)
+        "import http\nlambda x: x == http.HTTPStatus.NOT_FOUND",
+        (
+            "import http\n"
+            "from typing import Literal\n"
+            "from optype import CanEq\n\n"
+            "def f[R](x: CanEq[Literal[http.HTTPStatus.NOT_FOUND], R]) -> R: ..."
+        ),
+    ),
+    (
+        "import http\ndef f(x=http.HTTPStatus.NOT_FOUND): return x",
+        (
+            "import http\n"
+            "from typing import Literal\n\n"
+            "def f[T = Literal[http.HTTPStatus.NOT_FOUND]]"
+            "(x: T = http.HTTPStatus.NOT_FOUND) -> T: ..."
+        ),
+    ),
 ]
 
 

@@ -5,7 +5,7 @@ from typing import Final, assert_never, final
 
 # `from optype.infer import _ir` would re-enter the package, which imports this module
 import optype.infer._ir as _ir  # noqa: PLR0402
-from ._base import Backend, default_text
+from ._base import Backend, default_text, value_text
 
 _NOT = "~"  # the type complement prefix
 _OR = "|"  # the union separator
@@ -34,7 +34,7 @@ class TerseBackend:
         """Format a type expression, parenthesized where precedence requires."""
         match node:
             case _ir.Lit(values):
-                out = f"Literal[{', '.join(map(repr, values))}]"
+                out = f"Literal[{', '.join(map(value_text, values))}]"
             case _ir.Type(cls):
                 out = _ir.type_name(cls)
             case _ir.Name(name):
