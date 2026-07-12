@@ -141,17 +141,17 @@ def test_empty_tuple() -> None:
 
 def test_empty_list() -> None:
     empty: opt.EmptyList = []
-    not_empty: opt.EmptyList = [0]  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    not_empty: opt.EmptyList = [0]  # type: ignore[list-item]  # pyright: ignore[reportAssignmentType]
 
 
 def test_empty_set() -> None:
     empty: opt.EmptySet = set()
-    not_empty: opt.EmptySet = {0}  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    not_empty: opt.EmptySet = {0}  # type: ignore[arg-type]  # pyright: ignore[reportAssignmentType]
 
 
 def test_empty_dict() -> None:
     empty: opt.EmptyDict = {}
-    not_empty: opt.EmptyDict = {0: 0}  # type: ignore[assignment,misc]  # pyright: ignore[reportAssignmentType]
+    not_empty: opt.EmptyDict = {0: 0}  # type: ignore[dict-item]  # pyright: ignore[reportAssignmentType]
 
 
 def test_empty_iterable() -> None:
