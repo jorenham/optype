@@ -27,6 +27,7 @@ import sys
 import time
 import warnings
 import weakref
+from collections import Counter
 from collections.abc import Callable
 from inspect import Signature as PySignature, currentframe, signature
 from pathlib import Path
@@ -1793,6 +1794,13 @@ def test_infer_types_aliases() -> None:
     )
 
 
+def test_infer_counter() -> None:
+    assert infer(lambda: Counter("ab")) == (
+        "() -> collections.Counter[Literal['a', 'b']]"
+    )
+    assert infer(lambda: Counter()) == "() -> collections.Counter[Never]"
+
+
 class _MyGeneric[T]: ...  # module-level, so its name resolves
 
 
@@ -2164,6 +2172,14 @@ COMPAT_CASES: list[tuple[str, str]] = [
             "import collections\n"
             "from typing import Literal\n\n"
             "def f() -> collections.OrderedDict[Literal['a'], Literal[1]]: ..."
+        ),
+    ),
+    (
+        "import collections\nlambda: collections.Counter(a=1)",
+        (
+            "import collections\n"
+            "from typing import Literal\n\n"
+            "def f() -> collections.Counter[Literal['a']]: ..."
         ),
     ),
 ]
