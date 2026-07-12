@@ -1,3 +1,5 @@
+import sys
+
 import optype as op
 from optype import _utils
 from optype._core import _do, _does
@@ -26,7 +28,11 @@ def test_static() -> None:
     _do_rfloordiv: _does.DoesRFloordiv = _do.do_rfloordiv
     _do_rmod: _does.DoesRMod = _do.do_rmod
     _do_rdivmod: _does.DoesRDivmod = _do.do_rdivmod
-    _do_rpow: _does.DoesRPow = _do.do_rpow
+
+    # pyrefly overload+protocol bug workaround
+    if sys.version_info < (3, 14):
+        _do_rpow: _does.DoesRPow = _do.do_rpow
+
     _do_rlshift: _does.DoesRLshift = _do.do_rlshift
     _do_rrshift: _does.DoesRRshift = _do.do_rrshift
     _do_rand: _does.DoesRAnd = _do.do_rand
