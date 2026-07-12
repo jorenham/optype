@@ -1,5 +1,5 @@
 [build-system]
-requires = ["uv_build>=0.11.19,<0.12.0"]
+requires = ["uv_build>=0.11.28,<0.12.0"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
@@ -86,7 +86,7 @@ test = [
   "pytest>=9.1.1",
   "typing-extensions>=4.15.0",
   # the compat-backend tests type-check the rendered stubs
-  "basedpyright==1.39.7",
+  "basedpyright==1.39.9",
 ]
 type = [
   { include-group = "extra" },
