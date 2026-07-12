@@ -114,7 +114,7 @@ do_repr: Final[_d.DoesRepr] = repr
 do_format: Final[_d.DoesFormat] = format
 
 # iteration
-do_next: Final[_d.DoesNext] = next
+do_next: Final[_d.DoesNext] = next  # pyrefly:ignore[bad-assignment]
 do_iter: Final[_d.DoesIter] = cast("_d.DoesIter", iter)
 
 # async iteration
@@ -202,7 +202,7 @@ do_matmul: Final[_d.DoesMatmul] = cast("_d.DoesMatmul", _o.matmul)
 do_truediv: Final[_d.DoesTruediv] = cast("_d.DoesTruediv", _o.truediv)
 do_floordiv: Final[_d.DoesFloordiv] = cast("_d.DoesFloordiv", _o.floordiv)
 do_mod: Final[_d.DoesMod] = cast("_d.DoesMod", _o.mod)
-do_divmod: Final[_d.DoesDivmod] = divmod
+do_divmod: Final[_d.DoesDivmod] = divmod  # pyrefly:ignore[bad-assignment]
 do_pow: Final[_d.DoesPow] = cast("_d.DoesPow", pow)
 do_lshift: Final[_d.DoesLshift] = cast("_d.DoesLshift", _o.lshift)
 do_rshift: Final[_d.DoesRshift] = cast("_d.DoesRshift", _o.rshift)

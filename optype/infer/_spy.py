@@ -219,12 +219,12 @@ def journal_rollback(marks: dict[int, tuple[_Spy, int]], /, *, undo: bool) -> No
 
 @final
 class _SpyStr(str, _Spy):
-    __slots__ = ()  # pyrefly:ignore[implicit-any-attribute]
+    __slots__ = ()
 
 
 @final
 class _SpyBytes(bytes, _Spy):
-    __slots__ = ()  # pyrefly:ignore[implicit-any-attribute]
+    __slots__ = ()
 
 
 def _brief(value: object, /) -> str:

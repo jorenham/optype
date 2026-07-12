@@ -108,7 +108,7 @@ class _JustMeta(_ProtocolMeta, Generic[_ObjectT]):
             from optype.types._typeforms import GenericType  # noqa: PLC0415
 
             while type(subclass) in {GenericType, GenericAlias}:
-                origin = subclass.__origin__
+                origin = subclass.__origin__  # pyrefly:ignore[implicit-any-variable]
                 if origin is Just:
                     (subclass,) = subclass.__args__
                 else:

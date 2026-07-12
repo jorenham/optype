@@ -92,7 +92,7 @@ type = [
   { include-group = "extra" },
   { include-group = "test" },
   "mypy[faster-cache]==2.2.0",
-  "pyrefly==1.0.0",
+  "pyrefly==1.2.0-dev.2",
   "ty==0.0.59",
 ]
 dev = [
