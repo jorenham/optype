@@ -791,10 +791,18 @@ class _ResultTyper:
             case Mapping():
                 mapping = cast("Mapping[object, object]", result)
                 key = self.value_union(mapping, tuples=True) or _ir.Name(_NEVER)
-                val = self.value_union(mapping.values(), tuples=True) or _ir.Name(
-                    _NEVER,
-                )
-                return _ir.App(_ir.type_name(cls), (key, val))
+                args: tuple[_ir.Node, ...]
+                if isinstance(result, Counter):
+                    args = (key,)
+                else:
+                    args = (
+                        key,
+                        (
+                            self.value_union(mapping.values(), tuples=True)
+                            or _ir.Name(_NEVER)
+                        ),
+                    )
+                return _ir.App(_ir.type_name(cls), args)
             case list() | set() | frozenset():
                 inner = self.value_union(
                     cast("Collection[object]", result),
