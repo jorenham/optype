@@ -75,9 +75,9 @@ doc = [
   "pygments==2.20.0",
 ]
 lint = [
-  "dprint-py==0.53.1.0",
-  "ruff==0.15.17",
-  "sp-repo-review[cli]==2026.4.4",
+  "dprint-py==0.55.1.4",
+  "ruff==0.15.21",
+  "sp-repo-review[cli]==2026.6.18",
 ]
 test = [
   { include-group = "extra" },
