@@ -172,13 +172,13 @@ def test_any_datetime64_array() -> None:
 
 def test_any_timedelta_array() -> None:
     v = dt.timedelta(0)
-    x = np.array(np.timedelta64(v))
+    x = np.array(np.timedelta64(v, "ms"))
     x_any: onp.AnyTimeDelta64Array = x
     assert np.issubdtype(x.dtype, np.timedelta64)
 
 
 def test_any_timedelta64_array() -> None:
-    x = np.array(np.timedelta64(0))
+    x = np.array(np.timedelta64(0, "ns"))
     x_any: onp.AnyTimeDelta64Array = x
     assert np.issubdtype(x.dtype, np.timedelta64)
 
