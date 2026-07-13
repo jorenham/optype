@@ -3,7 +3,7 @@
 import warnings
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from inspect import Parameter, isfunction, ismethod, signature
+from inspect import Parameter, signature
 
 import optype.infer._numpy as _numpy
 from ._backends import BACKENDS, BackendName
@@ -168,5 +168,5 @@ def infer(
     def render() -> str:
         return _infer_render(func, params, strict=strict, backend=backend)
 
-    # functions/methods only raise; isolate the rest, which can fault in C (#738)
-    return render() if isfunction(func) or ismethod(func) else isolate(render)
+    # even a pure-python function can reach native code that can segfault (#738, #763)
+    return isolate(render)
