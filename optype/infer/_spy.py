@@ -227,14 +227,21 @@ class _SpyBytes(bytes, _Spy):
     __slots__ = ()
 
 
-def _brief(value: object, /) -> str:
-    # never call a spy's own dunders while formatting it
+def _brief(value: Any, /) -> str:
+    # no arbitrary `repr` here: a container's repr reaches the dunders of its
+    # elements, recording phantom ops on any spy inside (#763)
     if isinstance(value, _Spy):
         return "spy"
-    try:
+
+    cls = type(value)  # pyright: ignore[reportUnknownVariableType]
+    if cls in {tuple, list}:
+        left, right = "()" if cls is tuple else "[]"
+        text = left + ", ".join(map(_brief, value)) + right
+    elif value is None or cls in {bool, int, float, complex, bytes, str}:
         text = repr(value)
-    except Exception:  # noqa: BLE001
-        return type(value).__name__
+    else:
+        text = cls.__name__
+
     return text if len(text) <= 32 else text[:31] + "..."
 
 

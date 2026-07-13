@@ -37,7 +37,7 @@ from typing import Any, override
 import pytest
 
 from optype.infer import InferError, InferWarning, _color, _gc, infer
-from optype.infer._api import _Gap
+from optype.infer._api import _Gap, _infer_render
 from optype.infer._backends import TERSE
 from optype.infer._ir import (
     App,
@@ -1289,6 +1289,17 @@ def test_infer_isolates_native_crash() -> None:
 
 
 @fork_only
+def test_infer_isolates_function_native_crash() -> None:
+    # gh-763: cython 3 compiles methods to real functions, so a `FunctionType`
+    # can fault in native code just like any other callable
+    def crash(x: object) -> None:  # noqa: ARG001
+        signal.raise_signal(signal.SIGSEGV)
+
+    with pytest.raises(InferError):
+        infer(crash)
+
+
+@fork_only
 def test_infer_crash_reports_spy_state() -> None:
     # the spy state note names the last operation before a native crash (#738)
     class _Crash:
@@ -1359,7 +1370,8 @@ def test_drained_spies_freed(monkeypatch: pytest.MonkeyPatch) -> None:
         del garbage
         return -x  # type: ignore[operator]  # pyright: ignore[reportOperatorIssue]  # ty:ignore[unsupported-operator]
 
-    infer(fn)
+    # the unisolated path: `infer` forks, which would hide host-side residue
+    _infer_render(fn, (), strict=False, backend="terse")
     residue = [
         cls
         for cls in gc.get_objects()
