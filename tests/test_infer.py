@@ -1252,7 +1252,7 @@ def test_isolate_reports_silent_exit() -> None:
 
 @fork_only
 def test_isolate_times_out(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr("optype.infer._isolate._TIMEOUT", 0.1)
+    monkeypatch.setattr("optype.infer._isolate._S_TIMEOUT", 0.1)
     with pytest.raises(InferError, match="timed out"):
         isolate(lambda: time.sleep(5))
 
@@ -1275,6 +1275,63 @@ def test_isolate_forwards_warning() -> None:
 
     with pytest.warns(InferWarning, match="heads up"):
         assert isolate(work) == "ok"
+
+
+@fork_only
+def test_isolate_contains_signal_to_own_group() -> None:
+    # gh-765: `os.kill(0, ...)` inside the target must not reach the host
+    seen: list[int] = []
+    previous = signal.signal(signal.SIGUSR1, lambda sig, _: seen.append(sig))
+
+    def work() -> str:
+        os.kill(0, signal.SIGUSR1)  # the child inherits (its own copy of) the handler
+        return "ok"
+
+    try:
+        assert isolate(work) == "ok"
+    finally:
+        signal.signal(signal.SIGUSR1, previous)
+    assert not seen
+
+
+@fork_only
+def test_isolate_forked_target_sends_once() -> None:
+    # gh-765: a target that forks must not let its fork race the result pipe
+    def work() -> str:
+        if (pid := os.fork()) == 0:
+            return "grandchild"
+        os.waitpid(pid, 0)
+        return "child"
+
+    assert isolate(work) == "child"
+
+
+@fork_only
+def test_isolate_kills_descendants() -> None:
+    # gh-765: an escaped fork of the target dies with the child's process group
+    def work() -> int:
+        if (pid := os.fork()) == 0:
+            time.sleep(60)
+            os._exit(0)
+        return pid
+
+    pid = isolate(work)
+    for _ in range(50):
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            break
+        time.sleep(0.1)
+    else:
+        os.kill(pid, signal.SIGKILL)
+        pytest.fail("the target's forked child outlived inference")
+
+
+@fork_only
+def test_isolate_reports_exit_code() -> None:
+    with pytest.raises(InferError, match="no result") as excinfo:
+        isolate(lambda: os._exit(7))
+    assert any("exit code: 7" in note for note in excinfo.value.__notes__)
 
 
 @fork_only

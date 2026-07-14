@@ -7,21 +7,29 @@ import mmap
 import multiprocessing as mp
 import os
 import signal
+import time
 import warnings
 from collections.abc import Callable
-from contextlib import closing
+from contextlib import closing, suppress
 from multiprocessing.connection import Connection
+from multiprocessing.process import BaseProcess
 
 import optype.infer._spy as _spy  # noqa: PLR0402
 from ._errors import WARN_SKIP_PREFIX, InferError
 
 _MAX_STATE_SIZE = 4096
-_TIMEOUT = 60.0  # seconds
+
+_S_TIMEOUT = 60.0
+_S_GRACE = 1.0
+_S_POLL = 0.01
 
 
 def _child(work: Callable[[], object], send: Connection, buf: mmap.mmap) -> None:
+    os.setsid()  # own session, so the target's `kill(0)`/`killpg` can't reach the host
+    pid = os.getpid()
     faulthandler.disable()  # report a native crash via InferError, not a C-level dump
     _spy.set_state_buffer(buf)
+
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         try:
@@ -30,6 +38,9 @@ def _child(work: Callable[[], object], send: Connection, buf: mmap.mmap) -> None
             payload, kind, cause = exc, "error", exc.__cause__
 
         warns = [(str(w.message), w.category) for w in caught]
+
+        if os.getpid() != pid:
+            os._exit(0)  # the target forked; only the original child may send
 
         try:
             send.send((kind, payload, cause, warns))
@@ -44,6 +55,33 @@ def _read_state(buf: mmap.mmap) -> str:
     return buf.read().split(b"\x00", 1)[0].decode("utf-8", "replace")
 
 
+def _wait_exit(pid: int) -> bool:
+    # `WNOWAIT` keeps the zombie, so the pid (= pgid) can't be recycled before the sweep
+    if not hasattr(os, "waitid"):
+        return True
+
+    flags = os.WEXITED | os.WNOHANG | os.WNOWAIT
+    for _ in range(round(_S_GRACE / _S_POLL)):
+        try:
+            if os.waitid(os.P_PID, pid, flags) is not None:
+                return True
+        except ChildProcessError:
+            return True
+
+        time.sleep(_S_POLL)
+
+    return False
+
+
+def _kill_tree(proc: BaseProcess) -> None:
+    # sweep before join: an unreaped child can't have its pid (= pgid) recycled
+    if proc.pid is not None:
+        with suppress(ProcessLookupError, PermissionError):
+            os.killpg(proc.pid, signal.SIGKILL)
+    proc.kill()
+    proc.join()
+
+
 def _crash_error(sig: int, state: str) -> InferError:
     exc = InferError("inference crashed the interpreter")
     try:
@@ -52,6 +90,22 @@ def _crash_error(sig: int, state: str) -> InferError:
         exc.add_note(f"signal: {sig}")
     if state:
         exc.add_note(f"spy state: {state}")
+    return exc
+
+
+def _no_result_error(proc: BaseProcess, buf: mmap.mmap, *, exited: bool) -> InferError:
+    code = proc.exitcode
+    state = _read_state(buf)
+    if exited and code and code < 0:
+        return _crash_error(-code, state)
+
+    exc = InferError("inference produced no result")
+    if state:
+        exc.add_note(f"spy state: {state}")
+    if exited:
+        exc.add_note(f"exit code: {code}")
+    else:
+        exc.add_note("the subprocess was killed after breaking its result pipe")
     return exc
 
 
@@ -79,22 +133,22 @@ def isolate[T](work: Callable[[], T]) -> T:
             # close the parent's write end so a dead child yields EOF, not a hang
             send.close()
 
-        if not recv.poll(_TIMEOUT):
-            proc.terminate()
-            proc.join()
+        if not recv.poll(_S_TIMEOUT):
+            _kill_tree(proc)
             raise InferError("inference timed out")
+
+        exited = True
         try:
             received = recv.recv()
         except Exception:
             # dead child: EOF or truncated pickle
             received = None
-        proc.join()
+            exited = proc.pid is not None and _wait_exit(proc.pid)
+
+        _kill_tree(proc)
 
         if received is None:
-            code = proc.exitcode
-            if code and code < 0:
-                raise _crash_error(-code, _read_state(buf))
-            raise InferError("inference produced no result")
+            raise _no_result_error(proc, buf, exited=exited)
 
         kind, payload, cause, warns = received
         for message, category in warns:
