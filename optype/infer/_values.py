@@ -1,10 +1,13 @@
 """The shared data shapes of an exploration: its record, and the explored results."""
 
-from collections.abc import Callable, Collection, Generator, Iterable, Mapping
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
+
+from collections.abc import Callable, Generator, Iterable, Mapping
+from contextvars import Context
 from enum import StrEnum
 from inspect import Parameter
 from itertools import chain
-from typing import NamedTuple, NewType, cast
+from typing import Any, NamedTuple, NewType
 
 from ._spy import _Spy, _SpyObject, _Traces
 
@@ -60,7 +63,7 @@ class _Rec(NamedTuple):
     """A result that reaches itself, rendered as a recursive typevar bound."""
 
     var: _RecVar  # the identity shared with this binder's `_RecRef` uses
-    body: object
+    body: Any
 
 
 class _RecRef(NamedTuple):
@@ -69,11 +72,12 @@ class _RecRef(NamedTuple):
     var: _RecVar
 
 
-def _children(value: object) -> Iterable[object]:
+def _children(value: Any) -> Iterable[Any]:
     """The values directly contained in an explored result."""
-    # a spy is a leaf; its unique class defeats the `Mapping` check's negative cache
     if isinstance(value, _Spy):
+        # a spy is a leaf; its unique class defeats the `Mapping` check's negative cache
         return ()
+
     match value:
         case _Gen():
             out: Iterable[object] = value.yielded
@@ -84,9 +88,11 @@ def _children(value: object) -> Iterable[object]:
         case _RecRef():
             out = ()
         case tuple() | list() | set() | frozenset():
-            out = cast("Collection[object]", value)
-        case Mapping():  # `dict`, and the `frozendict` builtin on Python 3.15+
-            out = chain.from_iterable(cast("Mapping[object, object]", value).items())
+            out = value
+        case Mapping() if not isinstance(value, Context):
+            # `dict` and `frozendict` (py315+); a `Context` is a leaf, since its items
+            # are just whatever context vars happen to be set (gh-769)
+            out = chain.from_iterable(value.items())
         case slice():
             out = value.start, value.stop, value.step
         case _:
@@ -100,15 +106,17 @@ def _walk(value: object) -> Generator[object]:
         yield from _walk(child)
 
 
-def map_values(value: object, leaf: Callable[[object], object]) -> object:  # noqa: C901, PLR0912
+def map_values(value: Any, leaf: Callable[[Any], Any]) -> Any:  # noqa: C901, PLR0912
     """Rebuild `value` with each non-composite leaf replaced via `leaf`.
 
     Recurses into the same shapes as `_children`, but a `tuple` subclass (namedtuple)
     is a leaf, and a `dict` subclass (e.g. `defaultdict`) collapses to a plain `dict`.
     """
-    # a spy is a leaf; see `_children`
+
     if isinstance(value, _Spy):
+        # a spy is a leaf; see `_children`
         return leaf(value)
+
     match value:
         case _Gen():
             yielded = [map_values(item, leaf) for item in value.yielded]
@@ -120,29 +128,26 @@ def map_values(value: object, leaf: Callable[[object], object]) -> object:  # no
             out = value._replace(body=map_values(value.body, leaf))
         case _RecRef():
             out = value
-        case tuple() if type(value) is tuple:  # pyright: ignore[reportUnknownArgumentType]
-            tup = cast("tuple[object, ...]", value)
-            out = tuple(map_values(item, leaf) for item in tup)
+        case tuple() if type(value) is tuple:
+            out = tuple(map_values(item, leaf) for item in value)
         case list():
-            out = [map_values(item, leaf) for item in cast("list[object]", value)]
+            out = [map_values(item, leaf) for item in value]
         case set() | frozenset():
-            items = {
-                map_values(item, leaf) for item in cast("Collection[object]", value)
-            }
+            items = {map_values(item, leaf) for item in value}
             out = frozenset(items) if isinstance(value, frozenset) else items
-        case Mapping():  # `dict`, and the `frozendict` builtin on Python 3.15+
-            mapping = cast("Mapping[object, object]", value)
+        case Mapping() if not isinstance(value, Context):
+            mapping = value
             rebuilt = {
                 map_values(k, leaf): map_values(v, leaf) for k, v in mapping.items()
             }
             if isinstance(value, dict):
                 out = rebuilt  # any `dict` subclass collapses to a plain `dict`
             else:  # the `frozendict` builtin rebuilds as itself
-                ctor = cast(
-                    "Callable[[dict[object, object]], object]",
-                    type(value),  # pyright: ignore[reportUnknownArgumentType]
-                )
-                out = ctor(rebuilt)
+                ctor = type(value)
+                try:
+                    out = ctor(rebuilt)  # type:ignore[call-arg]  # pyright:ignore[reportCallIssue]
+                except TypeError:
+                    out = mapping
         case slice():
             out = slice(
                 map_values(value.start, leaf),

@@ -3,10 +3,12 @@
 # ruff: noqa: BLE001
 
 import faulthandler
+import gc
 import mmap
 import multiprocessing as mp
 import os
 import signal
+import sys
 import time
 import warnings
 from collections.abc import Callable
@@ -109,6 +111,26 @@ def _no_result_error(proc: BaseProcess, buf: mmap.mmap, *, exited: bool) -> Infe
     return exc
 
 
+def _inline[T](work: Callable[[], T]) -> T:
+    """Run `work` in-process, containing exploration debris like a fork child would.
+
+    A leaked explored object (e.g. an unclosed event loop) can raise from its
+    deallocator, through a spy or a warnings-as-errors filter; in a fork child that
+    noise dies with the process, so it is muted here too (gh-769).
+    """
+
+    def mute(_: object, /) -> None: ...
+
+    hook = sys.unraisablehook
+    sys.unraisablehook = mute
+    try:
+        result = work()
+        gc.collect()  # finalize the explored garbage while the hook is muted
+    finally:
+        sys.unraisablehook = hook
+    return result
+
+
 def isolate[T](work: Callable[[], T]) -> T:
     """Run `work` in a forked subprocess so a native crash becomes an `InferError`.
 
@@ -116,7 +138,7 @@ def isolate[T](work: Callable[[], T]) -> T:
         InferError: If the child crashes, hangs past the timeout, or returns no result.
     """  # noqa: DOC501
     if not hasattr(os, "fork"):
-        return work()
+        return _inline(work)
 
     ctx = mp.get_context("fork")
     recv, send = ctx.Pipe(duplex=False)
@@ -128,7 +150,7 @@ def isolate[T](work: Callable[[], T]) -> T:
                 warnings.simplefilter("ignore", DeprecationWarning)
                 proc.start()
         except OSError:
-            return work()
+            return _inline(work)
         finally:
             # close the parent's write end so a dead child yields EOF, not a hang
             send.close()

@@ -1,5 +1,7 @@
 """Run a function against spy placeholders and record what happens."""
 
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
+
 import functools
 import gc
 import itertools
@@ -17,7 +19,7 @@ from collections.abc import (
     Sequence,
 )
 from contextlib import suppress
-from contextvars import ContextVar
+from contextvars import Context, ContextVar
 from inspect import Parameter, isasyncgen, iscoroutine, isgenerator, signature
 from types import (
     BuiltinFunctionType,
@@ -367,20 +369,19 @@ def _next(result: object, path: dict[int, _RecVar | None] | None = None) -> obje
     return _Rec(var, out) if (var := path.pop(rid)) is not None else out
 
 
-def _next_container(
-    cls: type[object],
-    result: object,
-    path: dict[int, _RecVar | None],
-) -> object:
-    # pyright fails miserably here when narrowing types
+def _next_container(cls: type, result: Any, path: dict[int, _RecVar | None]) -> Any:
     match result:
         case tuple():
-            return tuple(_next(item, path) for item in result)  # pyright:ignore[reportUnknownArgumentType,reportUnknownVariableType]
+            return tuple(_next(item, path) for item in result)
         case list():
-            return [_next(item, path) for item in result]  # pyright:ignore[reportUnknownArgumentType,reportUnknownVariableType]
-        case Mapping():
+            return [_next(item, path) for item in result]
+        case Mapping() if not isinstance(result, Context):
             # the keys must stay hashable, so only the values recurse
-            return cls({key: _next(value, path) for key, value in result.items()})  # type:ignore[call-arg] # pyright:ignore[reportCallIssue,reportUnknownVariableType]
+            items = {key: _next(value, path) for key, value in result.items()}
+            try:
+                return cls(items)
+            except TypeError:
+                return result
         case _:
             return result
 
