@@ -1,11 +1,12 @@
 """NumPy-specific inference: NEP 13 ufuncs and NEP 18 `__array_function__`."""
 
 from collections.abc import Iterable, Sequence
-from inspect import Parameter, signature
+from inspect import Parameter
 from typing import cast
 
 # `from . import` would import the package itself, which imports this module
 import optype.infer._ir as _ir
+from ._signature import signature
 from ._spy import _AnyFunc
 from ._values import VARIADIC_KINDS
 

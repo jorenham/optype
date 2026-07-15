@@ -3,7 +3,7 @@
 import warnings
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from inspect import Parameter, signature
+from inspect import Parameter
 
 import optype.infer._numpy as _numpy
 from ._backends import BACKENDS, BackendName
@@ -14,7 +14,7 @@ from ._ir import Signature
 from ._isolate import isolate
 from ._overloads import dispatch_overloads, resolve_defaults
 from ._render import Names, signatures
-from ._signature import parse_text_signature, probe_signatures
+from ._signature import parse_text_signature, probe_signatures, signature
 from ._spy import _AnyFunc
 from ._values import GapKind
 

@@ -20,7 +20,7 @@ from collections.abc import (
 )
 from contextlib import suppress
 from contextvars import Context, ContextVar
-from inspect import Parameter, isasyncgen, iscoroutine, isgenerator, signature
+from inspect import Parameter, isasyncgen, iscoroutine, isgenerator
 from types import (
     BuiltinFunctionType,
     FunctionType,
@@ -32,6 +32,7 @@ from typing import Any, cast
 
 from ._errors import InferError
 from ._gc import drain_gc
+from ._signature import signature
 from ._spy import (
     _AbsentError,
     _AnyFunc,
