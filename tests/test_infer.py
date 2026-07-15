@@ -2857,6 +2857,14 @@ def test_not_callable() -> None:
         infer(not_callable)
 
 
+@pytest.mark.skipif(sys.version_info < (3, 14), reason="requires PEP 649 annotations")
+def test_unresolvable_deferred_annotations() -> None:
+    # deferred annotations that don't resolve must not fail the signature (#768)
+    ns: dict[str, Any] = {}
+    exec("def f(x: Undefined = 42) -> Undefined: return x", ns)  # noqa: S102
+    assert infer(ns["f"]) == "[T = Literal[42]](x: T = 42) -> T"
+
+
 def test_iter() -> None:
     # the callable_iterator enrichment, independent of `iter`'s own docstring
     assert infer(lambda f, s: iter(f, s)) == "[R](f: () -> R, s: object) -> Iterator[R]"

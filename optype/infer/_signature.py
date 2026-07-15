@@ -10,11 +10,27 @@ and error: calling them with spy placeholders reveals which arities run the body
 import ast
 import itertools
 import re
+import sys
 from collections.abc import Iterator
 from inspect import Parameter
 from typing import Final, NamedTuple
 
 from ._spy import _AnyFunc, _Fork, _SpyObject
+
+if sys.version_info >= (3, 14):
+    import functools
+    import inspect
+
+    from annotationlib import Format
+
+    # PEP 649 annotations may not resolve in their own module, and `infer` only
+    # reads the parameter names, kinds, and defaults anyway
+    signature = functools.partial(
+        inspect.signature,
+        annotation_format=Format.FORWARDREF,
+    )
+else:
+    from inspect import signature as signature  # ruff:ignore[useless-import-alias]
 
 _MAX_PROBE_ARITY = 8
 
