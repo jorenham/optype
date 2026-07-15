@@ -32,6 +32,7 @@ from ._spy import (
     _TraceItem,
     _Traces,
     as_spy,
+    despy_class,
 )
 from ._values import (
     COROUTINE,
@@ -583,7 +584,7 @@ class _Renderer:
         prefix = self._prefix[name]
         if name in self._fixed and name not in self._optional:
             # a fixed parameter without a default is a method descriptor's `self`
-            node = _ir.Type(type(self._fixed[name]))
+            node = _ir.Type(despy_class(type(self._fixed[name])))
             return _ir.Param(name, node, prefix, nameless)
         if (spy := self._spies.get(name)) is None:
             # an omitted parameter binds its default, so passing it behaves the same
@@ -721,7 +722,7 @@ class _ResultTyper:
         if name in fn.defaults:
             # a pinned default renders as its value, like the outer parameters do
             return self.value_type(value)
-        return _ir.Type(type(value))  # a method descriptor's pinned `self`
+        return _ir.Type(despy_class(type(value)))  # a method descriptor's pinned `self`
 
     def _class_of(self, cls: type[Any]) -> _ir.Node | None:
         """The type of `cls`'s instances, if it is expressible."""

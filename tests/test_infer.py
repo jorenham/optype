@@ -19,6 +19,7 @@ import itertools
 import math
 import operator
 import os
+import pydoc
 import random
 import re
 import secrets
@@ -3053,6 +3054,32 @@ def test_dynamic_attr_name() -> None:
     # a spy-derived attribute name is not statically known
     with pytest.raises(InferError, match="no protocol"):
         infer(lambda x, y: getattr(x, str(y)))
+
+
+def test_dynamic_attr_name_class_name() -> None:
+    # a class-name-derived attribute simulates absence, so the fallback renders (#777)
+    assert infer(ast.NodeVisitor.visit) == (
+        "[T, R](self: Has['generic_visit', (T) -> +R], node: T) -> R"
+    )
+    assert "_Spy" not in infer(pydoc.TextRepr.repr1)
+
+
+def test_fixed_self_spy_class() -> None:
+    # the pinned `self` is a spy class, which renders as its first non-spy base (#777)
+    assert infer(type.__or__) == "(type, object) -> NotImplementedType"
+
+
+def test_deprecated_spy_identity() -> None:
+    # a message naming the spy's class substitutes the target's owner instead (#777)
+    class Legacy:
+        def old(self) -> None:
+            name = f"{self.__class__.__module__}.{self.__class__.__qualname__}"
+            warnings.warn(f"{name}.old()", DeprecationWarning, stacklevel=2)
+
+    out = infer(Legacy.old)
+    assert "_Spy" not in out
+    deprecated = f"@deprecated('{Legacy.__module__}.{Legacy.__qualname__}.old()')"
+    assert out.splitlines()[0] == deprecated
 
 
 def test_instance_subclass_check() -> None:

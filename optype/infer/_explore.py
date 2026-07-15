@@ -36,6 +36,7 @@ from ._signature import signature
 from ._spy import (
     _AbsentError,
     _AnyFunc,
+    _DynamicNameError,
     _Fork,
     _fork,
     _journal,
@@ -433,6 +434,19 @@ def _run[T](
     return value, message
 
 
+def _scrub_deprecated(message: str | None, func: _AnyFunc) -> str | None:
+    """Replace a leaked spy identity in `message` with the target's owner (#777)."""
+    name = _SpyObject.__name__
+    if message is None or name not in message:
+        return message
+
+    qualname: str = getattr(func, "__qualname__", "")
+    owner = qualname.rpartition(".")[0]
+    module: str = getattr(func, "__module__", None) or ""
+    full = f"{module}.{owner}" if module and owner else owner
+    return message.replace(f"{_SpyObject.__module__}.{name}", full).replace(name, owner)
+
+
 def _drain() -> None:
     # the drain runs the target's finalizers; discard any spy ops they record,
     # or a rolled-back branch's `__del__` pollutes the trace
@@ -473,7 +487,7 @@ def _explore[T](  # noqa: C901
         try:
             result, message = _run(func, args, kwds)
             results.append(result)
-            deprecated = deprecated or message
+            deprecated = deprecated or _scrub_deprecated(message, func)
         except _Fork:
             if len(plan) < _FORK_LIMIT:
                 stack.extend(([*plan, False], [*plan, True]))
@@ -503,7 +517,12 @@ def _explore[T](  # noqa: C901
         if value_exc is not None:
             raise value_exc
 
-        raise InferError("the function never ran to completion") from last_exc
+        msg = (
+            str(last_exc)
+            if isinstance(last_exc, _DynamicNameError)
+            else "the function never ran to completion"
+        )
+        raise InferError(msg) from last_exc
 
     hits = (dropped, GapKind.BRANCH_BUDGET), (bool(stack), GapKind.RUN_BUDGET)
     gaps = frozenset(kind for hit, kind in hits if hit)

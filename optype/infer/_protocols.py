@@ -5,7 +5,7 @@ from typing import NamedTuple
 # `from . import` would import the package itself, which imports this module
 import optype.infer._numpy as _numpy
 from ._errors import InferError
-from ._spy import _Args, _Kwargs, _Marker, _Spy, _TraceItem
+from ._spy import _Args, _dynamic_name, _Kwargs, _Marker, _TraceItem
 from optype._core import _can, _has
 from optype.inspect import get_protocol_members
 
@@ -73,7 +73,7 @@ class Op(NamedTuple):
 def resolve(trace: _TraceItem) -> Op:
     if trace.attr in DUNDER_ATTR or trace.attr in DUNDER_CLASS_ATTR:
         name = trace.args[0]
-        if not isinstance(name, str) or isinstance(name, _Spy):
+        if not isinstance(name, str) or _dynamic_name(name):
             msg = "no protocol for a dynamic attribute name"
             raise InferError(msg)
 
