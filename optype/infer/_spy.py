@@ -26,11 +26,31 @@ def _internal(attr: str) -> bool:
     return attr.startswith("__optype")
 
 
+def _dynamic_name(attr: str) -> bool:
+    """Whether `attr` is spy-derived, e.g. built from a spy's type name (#777)."""
+    if isinstance(attr, _Spy):
+        return True
+    low = attr.lower()
+    return any(name in low for name in _SPY_NAMES)
+
+
 class _Fork(BaseException): ...
 
 
 class _AbsentError(TypeError):
     """A simulated missing dunder; subclasses `TypeError` so probes suppress it."""
+
+
+class _DynamicNameError(AttributeError):
+    """A spy-derived attribute name; subclasses `AttributeError` so fallbacks run."""
+
+    # the parameter keeps `cls(*args)` reconstruction working, e.g. unpickling
+    def __init__(
+        self,
+        message: str = "no protocol for a dynamic attribute name",
+        /,
+    ) -> None:
+        super().__init__(message)
 
 
 class _Marker(StrEnum):
@@ -260,6 +280,8 @@ class _SpyType(type):
     def __getattr__(cls, attr: str, /) -> "_SpyObject | None":
         if _internal(attr):
             return None
+        if _dynamic_name(attr):
+            raise _DynamicNameError
 
         if (owner := _class_spy(cls)) is None:
             msg = f"type object {cls.__name__!r} has no attribute {attr!r}"
@@ -313,6 +335,8 @@ class _SpyObject(_Spy, metaclass=_SpyType):
         # TODO: specialize for known special dunder attrs, e.g. `__name__: str`
         if _internal(attr):
             return None
+        if _dynamic_name(attr):
+            raise _DynamicNameError
 
         if attr in self.__optype_absent__:
             # the marker survives only if a completing run tolerates the absence
@@ -533,6 +557,12 @@ class _SpyObject(_Spy, metaclass=_SpyType):
         return self.__optype_trace_add__("__aexit__", args, {}, _SpyObject())
 
 
+# the observable class names for `_dynamic_name`; not the broader `_Spy`, so a
+# genuine `*_spy*` attribute never matches
+_SPY_NAMES = tuple(
+    cls.__name__.lower() for cls in (_SpyStr, _SpyBytes, _SpyType, _SpyObject)
+)
+
 # Operators that record their positional args and return a fresh spy. Generated onto
 # the type (not synthesized in `__getattr__`) because special-method lookup skips it.
 _TRACED_OPS = (
@@ -622,6 +652,11 @@ def _own_spy(spy: _SpyObject) -> _SpyObject:  # pyright: ignore[reportUnusedFunc
     """The first spy of `spy`'s class: `type(spy)()` siblings collapse onto it."""
     owner = _class_spy(type(spy))  # `or spy` would trace a `__bool__` on the owner
     return spy if owner is None else owner
+
+
+def despy_class(cls: type, /) -> type:
+    """The first non-spy base of `cls`, so internal spy classes never render."""
+    return next(c for c in cls.__mro__ if c.__module__ != __name__)
 
 
 def as_spy(value: object) -> _SpyObject | None:
