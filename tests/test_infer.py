@@ -5,7 +5,9 @@
 
 import abc
 import ast
+import asyncio
 import builtins
+import contextvars
 import difflib
 import enum
 import fractions
@@ -27,7 +29,7 @@ import sys
 import time
 import warnings
 import weakref
-from collections import Counter
+from collections import Counter, defaultdict
 from collections.abc import Callable
 from inspect import Signature as PySignature, currentframe, signature
 from pathlib import Path
@@ -1868,6 +1870,33 @@ def test_infer_counter() -> None:
         "() -> collections.Counter[Literal['a', 'b']]"
     )
     assert infer(lambda: Counter()) == "() -> collections.Counter[Never]"
+
+
+def test_infer_context() -> None:
+    # gh-769: a `Context` renders bare, and `Context()` takes no arguments
+    ctx = contextvars.copy_context()
+    assert infer(lambda: ctx) == "() -> contextvars.Context"
+
+    def f(cb: Any, flag: Any = None) -> None:  # noqa: ARG001
+        cb(context=contextvars.copy_context())
+
+    assert infer(f) == "(cb: (context: contextvars.Context) -> object) -> None"
+
+    if sys.version_info >= (3, 14):
+        with warnings.catch_warnings():
+            # exploring `asyncio.run` leaves never-awaited coroutines behind
+            warnings.simplefilter("ignore")
+            infer(asyncio.run)  # the gh-769 report; output varies by Python version
+    else:
+        # `asyncio.run` rejects the spy coroutine before any loop method is called
+        with pytest.raises(InferError, match="a coroutine was expected"):
+            infer(asyncio.run)
+
+
+def test_infer_defaultdict() -> None:
+    # gh-769: a mapping whose ctor does not take items keeps its explored value
+    d = defaultdict(int, a=1)
+    assert infer(lambda: d) == "() -> collections.defaultdict[Literal['a'], Literal[1]]"
 
 
 class _MyGeneric[T]: ...  # module-level, so its name resolves

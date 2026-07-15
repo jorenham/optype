@@ -4,6 +4,7 @@ import sys
 import types
 from collections import Counter, defaultdict
 from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
+from contextvars import Context
 from inspect import Parameter, _ParameterKind
 from typing import Any, cast, final
 
@@ -788,7 +789,7 @@ class _ResultTyper:
 
         cls = type(result)
         match result:
-            case Mapping():
+            case Mapping() if not isinstance(result, Context):
                 mapping = cast("Mapping[object, object]", result)
                 key = self.value_union(mapping, tuples=True) or _ir.Name(_NEVER)
                 args: tuple[_ir.Node, ...]
