@@ -22,13 +22,11 @@ __all__ = (
     "_combine_name",
     "_components",
     "_cyclic",
-    "_free_vars",
+    "_free_tyvars",
     "_is_generic",
     "_is_protocol_node",
     "_member_nodes",
     "_strip_variance",
-    "_subst",
-    "_subst_arg",
     "_subst_member",
     "_toposort",
     "_value",
@@ -96,60 +94,26 @@ def _value(arg: _ir.Node | _ir.Arg) -> _ir.Node:
     return arg.value if isinstance(arg, _ir.Arg) else arg
 
 
-def _subst(node: _ir.Node, m: Mapping[str, _ir.Node]) -> _ir.Node:  # noqa: PLR0911
-    """Replace every `Name(n)` with `m[n]`, recursively, leaving the rest intact."""
-    if not m:
-        return node
-    match node:
-        case _ir.Name(name):
-            return m.get(name, node)
-        case _ir.App(base, args):
-            return _ir.App(base, tuple(_subst_arg(a, m) for a in args))
-        case _ir.Fn(params, ret):
-            return _ir.Fn(tuple(_subst_arg(p, m) for p in params), _subst(ret, m))
-        case _ir.Union(parts):
-            return _ir.Union(tuple(_subst(p, m) for p in parts))
-        case _ir.Inter(parts):
-            return _ir.Inter(tuple(_subst(p, m) for p in parts))
-        case _ir.Not(part):
-            return _ir.Not(_subst(part, m))
-        case _ir.Unpack(part):
-            return _ir.Unpack(_subst(part, m))
-        case _ir.Variance(sign, part):
-            return _ir.Variance(sign, _subst(part, m))
-        case _:
-            return node
-
-
-def _subst_arg(
-    arg: _ir.Node | _ir.Arg,
-    m: Mapping[str, _ir.Node],
-) -> _ir.Node | _ir.Arg:
-    if isinstance(arg, _ir.Arg):
-        return replace(arg, value=_subst(arg.value, m))
-    return _subst(arg, m)
-
-
-def _free_vars(
+def _free_tyvars(
     nodes: Iterable[_ir.Node | _ir.Arg],
-    typevars: frozenset[str],
+    tyvars: frozenset[str],
 ) -> list[str]:
     """The signature typevars referenced across `nodes`, in first-appearance order."""
     seen: dict[str, None] = {}
     for node in nodes:
         for name in _ir.names(node):
-            if name in typevars:
+            if name in tyvars:
                 seen.setdefault(name, None)
     return list(seen)
 
 
-def _is_generic(node: _ir.Node, typevars: frozenset[str]) -> bool:
+def _is_generic(node: _ir.Node, tyvars: frozenset[str]) -> bool:
     """Whether `node` references any of the signature's type variables."""
-    return not frozenset(_ir.names(node)).isdisjoint(typevars)
+    return not frozenset(_ir.names(node)).isdisjoint(tyvars)
 
 
 def _is_protocol_node(node: _ir.Node) -> bool:
-    return isinstance(node, _ir.App) and node.base.startswith(("Can", "Has", "Just"))
+    return isinstance(node, _ir.App) and node.origin.startswith(("Can", "Has", "Just"))
 
 
 def _combine_name(bases: Sequence[str]) -> str:
@@ -160,8 +124,8 @@ def _combine_name(bases: Sequence[str]) -> str:
     return "".join(bases)
 
 
-def _bound_name(bound: _ir.Node, tv: str) -> str:
-    return bound.base if isinstance(bound, _ir.App) else f"Bound{tv}"
+def _bound_name(bound: _ir.Node, tyvar: str) -> str:
+    return bound.origin if isinstance(bound, _ir.App) else f"Bound{tyvar}"
 
 
 def _strip_variance(node: _ir.Node) -> _ir.Node:
@@ -179,9 +143,9 @@ def _member_nodes(members: Iterable[_Member]) -> Iterable[_ir.Node | _ir.Arg]:
 
 def _subst_member(member: _Member, m: Mapping[str, _ir.Node]) -> _Member:
     if isinstance(member, _Attr):
-        return replace(member, type=_subst(member.type, m))
-    params = tuple(_subst_arg(p, m) for p in member.params)
-    return replace(member, params=params, ret=_subst(member.ret, m))
+        return replace(member, type=_ir.subst(member.type, m))
+    params = tuple(_ir.subst_term(p, m) for p in member.params)
+    return replace(member, params=params, ret=_ir.subst(member.ret, m))
 
 
 def _reachable(deps: Mapping[str, frozenset[str]], start: str) -> set[str]:

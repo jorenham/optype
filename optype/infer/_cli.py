@@ -66,7 +66,7 @@ def run(*args: str) -> None:
         )
 
     source, *selectors = rest
-    params = [int(s) if s.removeprefix("-").isdigit() else s for s in selectors]
+    selectors = [int(s) if s.removeprefix("-").isdigit() else s for s in selectors]
 
     body = ast.parse(source).body
     last = body[-1] if body else None
@@ -83,7 +83,7 @@ def run(*args: str) -> None:
     try:
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always", InferWarning)
-            signature = infer(eval(code, namespace), *params, backend=backend)
+            signature = infer(eval(code, namespace), *selectors, backend=backend)
     except (InferError, ValueError) as exc:
         cause = exc.__cause__
         detail = f" ({type(cause).__name__}: {cause})" if cause is not None else ""

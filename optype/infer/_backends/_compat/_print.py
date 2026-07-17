@@ -104,12 +104,12 @@ def _type(node: _ir.Node, used: set[str] | None = None) -> str:  # noqa: C901, P
         case _ir.App("tuple", ()):
             rec("tuple")
             return "tuple[()]"
-        case _ir.App(base, ()):
-            rec(base)
-            return base
-        case _ir.App(base, args):
-            rec(base)
-            return f"{base}[{', '.join(_type(_value(a), used) for a in args)}]"
+        case _ir.App(origin, ()):
+            rec(origin)
+            return origin
+        case _ir.App(origin, args):
+            rec(origin)
+            return f"{origin}[{', '.join(_type(_value(a), used) for a in args)}]"
         case _ir.Fn(params, ret):
             rec("Callable")
             inner = (
@@ -122,20 +122,29 @@ def _type(node: _ir.Node, used: set[str] | None = None) -> str:  # noqa: C901, P
             return " | ".join(_type(part, used) for part in parts)
         case _ir.Unpack(part):
             return f"*{_type(part, used)}"
-        case _:  # an Inter/Not/Variance survived lowering, which is a bug
+        case _:  # an Intersection/Not/Variance survived lowering, which is a bug
             msg = f"cannot render {node!r} as valid Python"
             raise AssertionError(msg)
 
 
-def _type_params(tps: Sequence[_ir.TypeParam], used: set[str] | None = None) -> str:
-    return f"[{', '.join(_type_param(tp, used) for tp in tps)}]" if tps else ""
+def _type_params(typars: Sequence[_ir.TypeParam], used: set[str] | None = None) -> str:
+    return (
+        f"[{', '.join(_type_param(typar, used) for typar in typars)}]" if typars else ""
+    )
 
 
-def _type_param(tp: _ir.TypeParam, used: set[str] | None = None) -> str:
-    if tp.unpack:
-        return f"*{tp.name}"
-    decl = f"{tp.name}: {_type(tp.bound, used)}" if tp.bound is not None else tp.name
-    return f"{decl} = {_type(tp.default, used)}" if tp.default is not None else decl
+def _type_param(typar: _ir.TypeParam, used: set[str] | None = None) -> str:
+    if typar.unpack:
+        return f"*{typar.name}"
+
+    decl = (
+        f"{typar.name}: {_type(typar.bound, used)}"
+        if typar.bound is not None
+        else typar.name
+    )
+    return (
+        f"{decl} = {_type(typar.default, used)}" if typar.default is not None else decl
+    )
 
 
 def _join_params(items: Sequence[tuple[str, bool]]) -> str:
