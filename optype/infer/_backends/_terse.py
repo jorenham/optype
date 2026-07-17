@@ -41,24 +41,24 @@ class TerseBackend:
                 out = name
             case _ir.Dots():
                 out = _DOTS
-            case _ir.App(base, args):
-                out = self._app(base, args)
+            case _ir.App(origin, args):
+                out = self._app(origin, args)
             case _ir.Fn(params, ret):
                 out = self._fn(params, ret)
             case _ir.Not() | _ir.Variance() | _ir.Unpack():
                 out = self._prefixed(node)
-            case _ir.Union() | _ir.Inter():
+            case _ir.Union() | _ir.Intersection():
                 out = self._infixed(node)
         return out
 
     def _prefix(self, op: str, part: _ir.Node) -> str:
         inner = self._render_node(part)
-        if isinstance(part, (_ir.Union, _ir.Inter, _ir.Fn)):
+        if isinstance(part, (_ir.Union, _ir.Intersection, _ir.Fn)):
             inner = f"({inner})"
         return f"{op}{inner}"
 
-    def _app(self, base: str, args: tuple[_ir.Node | _ir.Arg, ...]) -> str:
-        if base == "tuple" and not args:
+    def _app(self, origin: str, args: tuple[_ir.Node | _ir.Arg, ...]) -> str:
+        if origin == "tuple" and not args:
             parts = ["()"]
         else:
             parts = [
@@ -67,7 +67,7 @@ class TerseBackend:
                 else self._render_node(arg)
                 for arg in args
             ]
-        return f"{base}[{', '.join(parts)}]" if parts else base
+        return f"{origin}[{', '.join(parts)}]" if parts else origin
 
     def _arg(self, param: _ir.Node | _ir.Arg) -> str:
         if not isinstance(param, _ir.Arg):
@@ -95,11 +95,11 @@ class TerseBackend:
 
         return self._prefix(op, part)
 
-    def _infixed(self, node: _ir.Union | _ir.Inter) -> str:
+    def _infixed(self, node: _ir.Union | _ir.Intersection) -> str:
         match node:
             case _ir.Union(parts):
-                sep, dual = _OR, _ir.Inter
-            case _ir.Inter(parts):
+                sep, dual = _OR, _ir.Intersection
+            case _ir.Intersection(parts):
                 sep, dual = _AND, _ir.Union
             case _:
                 assert_never(node)
@@ -111,17 +111,17 @@ class TerseBackend:
             for part in parts
         )
 
-    def _type_param(self, tp: _ir.TypeParam) -> str:
-        if tp.unpack:
-            return f"{_STAR}{tp.name}"
+    def _type_param(self, typar: _ir.TypeParam) -> str:
+        if typar.unpack:
+            return f"{_STAR}{typar.name}"
 
         decl = (
-            f"{tp.name}: {self._render_node(tp.bound)}"
-            if tp.bound is not None
-            else tp.name
+            f"{typar.name}: {self._render_node(typar.bound)}"
+            if typar.bound is not None
+            else typar.name
         )
-        if tp.default is not None:
-            decl += f" = {self._render_node(tp.default)}"
+        if typar.default is not None:
+            decl += f" = {self._render_node(typar.default)}"
         return decl
 
     def _param(self, param: _ir.Param) -> str:

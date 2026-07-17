@@ -18,6 +18,9 @@ from ._signature import parse_text_signature, probe_signatures, signature
 from ._spy import _AnyFunc
 from ._values import GapKind
 
+# parameter names, positions, or empty for all
+type _Selectors = tuple[str | int, ...]
+
 
 @dataclass(frozen=True, slots=True)
 class _Gap:
@@ -30,9 +33,9 @@ class _Gap:
         return f"{self.kind} in {self.where}"
 
 
-def _select(params: Iterable[str | int], names: Names) -> Names:
+def _select(selectors: Iterable[str | int], names: Names) -> Names:
     selected: list[str] = []
-    for p in params:
+    for p in selectors:
         if isinstance(p, int):
             if not -len(names) <= p < len(names):
                 msg = f"no parameter at position {p}"
@@ -48,33 +51,31 @@ def _select(params: Iterable[str | int], names: Names) -> Names:
 
 def _form_signatures(
     func: _AnyFunc,
-    parameters: Mapping[str, Parameter],
-    params: tuple[str | int, ...],
+    params: Mapping[str, Parameter],
+    selectors: _Selectors,
     gaps: set[_Gap],
 ) -> list[Signature]:
-    selected = _select(params, list(parameters))
-    where = f"({', '.join(parameters)})"
+    selected = _select(selectors, list(params))
+    where = f"({', '.join(params)})"
     try:
-        exploration, fallback = explore_lenient(func, parameters)
+        exploration, fallback = explore_lenient(func, params)
     except (IndexError, KeyError, TypeError, ValueError) as exc:
         raise InferError(str(exc)) from exc
+
     gaps.update(_Gap(kind, where) for kind in exploration.gaps)
+
     if fallback:
         # the rejected parameters render from their defaults; skip the probing
-        return signatures(exploration, parameters, selected, fallback)
+        return signatures(exploration, params, selected, fallback)
+
     exploration = exploration._replace(
-        tuple_params=explore_tuple_params(func, parameters, exploration),
+        tuple_params=explore_tuple_params(func, params, exploration),
     )
-    defaults, negate, overloads = resolve_defaults(
-        func,
-        parameters,
-        selected,
-        exploration,
-    )
-    lines = signatures(exploration, parameters, selected, defaults, negate=negate)
+    defaults, negate, overloads = resolve_defaults(func, params, selected, exploration)
+    lines = signatures(exploration, params, selected, defaults, negate=negate)
     if not defaults and not overloads:
         # dispatch only when defaults didn't already split the form
-        lines = dispatch_overloads(func, parameters, selected, exploration, lines)
+        lines = dispatch_overloads(func, params, selected, exploration, lines)
     return [*overloads, *lines]
 
 
@@ -89,20 +90,16 @@ def _candidate_parameters(func: _AnyFunc) -> list[dict[str, Parameter]]:
         raise InferError(str(exc)) from exc
 
 
-def _infer(
-    func: _AnyFunc,
-    params: tuple[str | int, ...],
-    gaps: set[_Gap],
-) -> list[Signature]:
+def _infer(func: _AnyFunc, selectors: _Selectors, gaps: set[_Gap]) -> list[Signature]:
     if nin := _numpy.ufunc_nin(func):
         names = _numpy.ufunc_params(nin)
-        return _numpy.infer_ufunc(func, names, _select(params, names))
+        return _numpy.infer_ufunc(func, names, _select(selectors, names))
 
     sigs: list[Signature] = []
     last: Exception | None = None
-    for parameters in _candidate_parameters(func):
+    for params in _candidate_parameters(func):
         try:
-            sigs += _form_signatures(func, parameters, params, gaps)
+            sigs += _form_signatures(func, params, selectors, gaps)
         except (InferError, ValueError) as exc:
             last = exc  # re-raised below only if no arity produces anything
     if not sigs and last is not None:
@@ -112,7 +109,7 @@ def _infer(
 
 def _infer_render(
     func: _AnyFunc,
-    params: tuple[str | int, ...],
+    selectors: _Selectors,
     *,
     strict: bool,
     backend: BackendName,
@@ -120,7 +117,7 @@ def _infer_render(
     gaps: set[_Gap] = set()
     try:
         with pause_gc():
-            sigs = _infer(func, params, gaps)
+            sigs = _infer(func, selectors, gaps)
     except RecursionError as exc:
         raise InferError("the result is nested too deeply") from exc
 
@@ -137,7 +134,7 @@ def _infer_render(
 def infer(
     func: _AnyFunc,
     /,
-    *params: str | int,
+    *selectors: str | int,
     strict: bool = False,
     backend: BackendName = "terse",
 ) -> str:
@@ -162,7 +159,7 @@ def infer(
     """  # noqa: DOC502
 
     def render() -> str:
-        return _infer_render(func, params, strict=strict, backend=backend)
+        return _infer_render(func, selectors, strict=strict, backend=backend)
 
     # even a pure-python function can reach native code that can segfault (#738, #763)
     return isolate(render)

@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import Final, override
 
 type Node = (
-    Lit | Type | Name | App | Fn | Union | Inter | Not | Variance | Unpack | Dots
+    Lit | Type | Name | App | Fn | Union | Intersection | Not | Variance | Unpack | Dots
 )
 type Term = Node | Arg
 type Terms = tuple[Term, ...]
@@ -83,7 +83,7 @@ class Arg:
 class App:
     """A (subscripted) named type, e.g. `CanAdd[Literal[1], R]`."""
 
-    base: str
+    origin: str
     args: Terms
 
 
@@ -135,7 +135,7 @@ class Union:
 
 
 @dataclass(frozen=True, slots=True)
-class Inter:
+class Intersection:
     """An `&`-intersection of two or more types."""
 
     parts: tuple[Node, ...]
@@ -180,14 +180,14 @@ def tuple_node_variadic(element: Node) -> App:
     return tuple_node((element, Dots()))
 
 
-def _subtype_args(base: str, args: Terms, wider: Terms) -> bool:
-    """Whether same-`base` applications relate, argument by argument."""
+def _subtype_args(origin: str, args: Terms, wider: Terms) -> bool:
+    """Whether same-`origin` applications relate, argument by argument."""
     if len(args) != len(wider):
         return False
-    # an all-`Never` container holds only `[]`, a member of any same base
+    # an all-`Never` container holds only `[]`, a member of any same origin
     if args and all(arg == NEVER for arg in args):
         return True
-    if not (variances := _VARIANCES.get(base, "")):
+    if not (variances := _VARIANCES.get(origin, "")):
         return False
     signs = variances.ljust(len(args), variances[-1])
     return all(
@@ -214,8 +214,8 @@ def subtype(sub: Term, sup: Term) -> bool:
             result = all(isinstance(value, cls) for value in values)
         case Type(cls), Type(wider):
             result = issubclass(cls, wider)
-        case App(base, args), App(wider, wider_args) if base == wider:
-            result = _subtype_args(base, args, wider_args)
+        case App(origin, args), App(wider, wider_args) if origin == wider:
+            result = _subtype_args(origin, args, wider_args)
         case Fn(params, ret), Fn(wider_params, wider_ret):
             # parameters are contravariant (and positionally matched), the return
             # type is covariant
@@ -262,7 +262,7 @@ _UNION_TUPLE_LIMIT = 8  # keep positional correlation below this; collapse a wid
 
 def _fixed_tuple_arity(node: Node) -> int | None:
     """The arity of a fixed-length `tuple[...]`, or `None` if not one."""
-    if not isinstance(node, App) or node.base != "tuple" or not node.args:
+    if not isinstance(node, App) or node.origin != "tuple" or not node.args:
         return None
     if any(isinstance(arg, (Arg, Dots, Unpack)) for arg in node.args):
         return None  # a variadic `tuple[X, ...]` or `tuple[*Ts]` has no fixed arity
@@ -327,20 +327,20 @@ def union(parts: Iterable[Node], *, tuples: bool = False) -> Node | None:
 def exclude(base: Node | None, part: Node) -> Node:
     """The intersection of `base` (if any) with the complement of `part`."""
     neg = Not(part)
-    return neg if base is None else inter((base, neg)) or neg
+    return neg if base is None else intersection((base, neg)) or neg
 
 
-def inter(parts: Iterable[Node]) -> Node | None:
+def intersection(parts: Iterable[Node]) -> Node | None:
     """The flat intersection of `parts`, unwrapped if singular, or `None`."""
     flat: dict[Node, None] = {}
     for part in parts:
-        if isinstance(part, Inter):
+        if isinstance(part, Intersection):
             flat.update(dict.fromkeys(part.parts))
         else:
             flat[part] = None
     if not flat:
         return None
-    return next(iter(flat)) if len(flat) == 1 else Inter(tuple(flat))
+    return next(iter(flat)) if len(flat) == 1 else Intersection(tuple(flat))
 
 
 def names(node: Term) -> Generator[str]:
@@ -350,7 +350,7 @@ def names(node: Term) -> Generator[str]:
             yield name
         case Arg(value=part) | Not(part) | Variance(part=part) | Unpack(part):
             yield from names(part)
-        case App(args=parts) | Union(parts) | Inter(parts):
+        case App(args=parts) | Union(parts) | Intersection(parts):
             for part in parts:
                 yield from names(part)
         case Fn(params, ret):
@@ -360,36 +360,43 @@ def names(node: Term) -> Generator[str]:
             return
 
 
-def rename(node: Node, m: Mapping[str, str]) -> Node:
-    """Simultaneously rename every `Name(n)` to `Name(m[n])`."""
+def subst(node: Node, m: Mapping[str, Node], *, dedup: bool = False) -> Node:
+    """Replace every `Name(n)` with `m[n]`."""
     if not m:
         return node
 
     match node:
         case Name(name):
-            out = Name(m[name]) if name in m else node
-        case App(base, args):
-            out = App(base, tuple(_rename_term(arg, m) for arg in args))
+            out = m.get(name, node)
+        case App(origin, args):
+            out = App(origin, tuple(subst_term(a, m, dedup=dedup) for a in args))
         case Fn(params, ret):
-            out = Fn(tuple(_rename_term(p, m) for p in params), rename(ret, m))
-        case Union(parts) | Inter(parts):
-            # renaming can collapse distinct members; drop the duplicates
-            renamed = tuple(dict.fromkeys(rename(p, m) for p in parts))
-            out = renamed[0] if len(renamed) == 1 else type(node)(renamed)
+            terms = tuple(subst_term(p, m, dedup=dedup) for p in params)
+            out = Fn(terms, subst(ret, m, dedup=dedup))
+        case Union(parts) | Intersection(parts):
+            new = tuple(subst(p, m, dedup=dedup) for p in parts)
+            if dedup:
+                new = tuple(dict.fromkeys(new))
+            out = new[0] if dedup and len(new) == 1 else type(node)(new)
         case Not(part) | Unpack(part):
-            out = type(node)(rename(part, m))
+            out = type(node)(subst(part, m, dedup=dedup))
         case Variance(sign, part):
-            out = Variance(sign, rename(part, m))
+            out = Variance(sign, subst(part, m, dedup=dedup))
         case _:
             out = node
     return out
 
 
-def _rename_term(term: Term, m: Mapping[str, str]) -> Term:
-    """`rename`, keeping any `Arg` wrapper of an `App`/`Fn` member."""
+def subst_term(term: Term, m: Mapping[str, Node], *, dedup: bool = False) -> Term:
+    """`subst`, keeping any `Arg` wrapper of an `App`/`Fn` member."""
     if isinstance(term, Arg):
-        return Arg(term.key, rename(term.value, m), term.default)
-    return rename(term, m)
+        return Arg(term.key, subst(term.value, m, dedup=dedup), term.default)
+    return subst(term, m, dedup=dedup)
+
+
+def rename(node: Node, m: Mapping[str, str]) -> Node:
+    """Simultaneously rename every `Name(n)` to `Name(m[n])`."""
+    return subst(node, {old: Name(new) for old, new in m.items()}, dedup=True)
 
 
 def placeholder_name(n: int) -> str:
@@ -455,16 +462,16 @@ def type_name(cls: type) -> str:
     return f"{module}.{cls.__name__}" if module else cls.__name__
 
 
-_TVAR_LETTERS = "TUVWXYZ"
+_TYVAR_LETTERS = "TUVWXYZ"
 
 
-def typevar_name(n: int) -> str:
+def tyvar_name(n: int) -> str:
     """The `n`-th generic parameter name: `T, U, ..., Z`, then `T7, T8, ...`."""
-    return _TVAR_LETTERS[n] if n < len(_TVAR_LETTERS) else f"T{n}"
+    return _TYVAR_LETTERS[n] if n < len(_TYVAR_LETTERS) else f"T{n}"
 
 
-def typevar_index(name: str) -> int | None:
+def tyvar_index(name: str) -> int | None:
     """The index of a generated typevar `name` (`T..Z` or `T<n>`), or `None`."""
     if len(name) == 1:
-        return _TVAR_LETTERS.index(name) if name in _TVAR_LETTERS else None
+        return _TYVAR_LETTERS.index(name) if name in _TYVAR_LETTERS else None
     return int(name[1:]) if name[0] == "T" and name[1:].isdigit() else None
