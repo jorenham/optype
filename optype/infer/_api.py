@@ -30,23 +30,19 @@ class _Gap:
         return f"{self.kind} in {self.where}"
 
 
-class _SelectError(ValueError):
-    """A selected parameter or position is absent from the signature."""
-
-
 def _select(params: Iterable[str | int], names: Names) -> Names:
     selected: list[str] = []
     for p in params:
         if isinstance(p, int):
             if not -len(names) <= p < len(names):
                 msg = f"no parameter at position {p}"
-                raise _SelectError(msg)
+                raise ValueError(msg)
             selected.append(names[p])
         elif p in names:
             selected.append(p)
         else:
             msg = f"unknown parameter {p!r}"
-            raise _SelectError(msg)
+            raise ValueError(msg)
     return selected or names
 
 

@@ -11,7 +11,6 @@ from dataclasses import dataclass, replace
 import optype.infer._ir as _ir  # noqa: PLR0402
 
 __all__ = (
-    "_OBJECT",
     "_Alias",
     "_Attr",
     "_Func",
@@ -34,8 +33,6 @@ __all__ = (
     "_toposort",
     "_value",
 )
-
-_OBJECT = _ir.Name("object")
 
 
 @dataclass(frozen=True, slots=True)

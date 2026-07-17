@@ -7,6 +7,7 @@ parameter's attribute.
 
 from collections.abc import Mapping
 from inspect import Parameter
+from typing import NamedTuple
 
 from ._analyze import (
     absent_verdict,
@@ -22,11 +23,17 @@ from ._render import (
     _renderers,
     _signatures,
     signatures,
-    union_signature,
-    widened_signature,
+    union_signatures,
+    widened_signatures,
 )
 from ._spy import _AnyFunc, _TraceItem
 from ._values import Exploration, map_values
+
+
+class _ResolvedDefaults(NamedTuple):
+    defaults: Defaults
+    negate: bool
+    overloads: list[Signature]
 
 
 def _bind(value: object, binding: Mapping[int, object]) -> object:
@@ -71,7 +78,7 @@ def resolve_defaults(
     params: Mapping[str, Parameter],
     selected: Names,
     exploration: Exploration,
-) -> tuple[Defaults, bool, list[Signature]]:
+) -> _ResolvedDefaults:
     """The parameter defaults if expressible as typevar defaults, else overloads.
 
     Omitting the defaulted parameters must behave like substituting their values
@@ -86,7 +93,7 @@ def resolve_defaults(
         Parameter.VAR_POSITIONAL in kinds
         and any(params[n].kind is not Parameter.KEYWORD_ONLY for n in defaults)
     ):
-        return {}, False, []
+        return _ResolvedDefaults({}, False, [])
 
     required = {name: p for name, p in params.items() if name not in defaults}
     names = list(required)
@@ -97,11 +104,11 @@ def resolve_defaults(
         # the comparison must see every required parameter, regardless of selection
         observed = _signatures(omitted_renderers, names, deprecated=omitted.deprecated)
     except Exception:  # noqa: BLE001
-        return {}, False, []
+        return _ResolvedDefaults({}, False, [])
 
     omitted_defaults = _bind_exploration(exploration, defaults)
     if signatures(omitted_defaults, required, names) == observed:
-        return defaults, False, []
+        return _ResolvedDefaults(defaults, False, [])
 
     overloads = _signatures(
         omitted_renderers,
@@ -111,7 +118,7 @@ def resolve_defaults(
     )
 
     if len(defaults) == 1:
-        return defaults, True, overloads
+        return _ResolvedDefaults(defaults, True, overloads)
 
     for name, value in defaults.items():
         try:
@@ -120,7 +127,7 @@ def resolve_defaults(
             continue
         overloads += signatures(variant, params, selected, {name: value})
 
-    return {}, False, overloads
+    return _ResolvedDefaults({}, False, overloads)
 
 
 def dispatch_overloads(
@@ -159,6 +166,6 @@ def dispatch_overloads(
         and returns_concrete(exploration.results)
         and returns_concrete(variant.results)
     ):
-        return union_signature(exploration, variant, params, selected)
-    tail = widened_signature(variant, params, selected)
+        return union_signatures(exploration, variant, params, selected)
+    tail = widened_signatures(variant, params, selected)
     return baseline + tail if tail else baseline

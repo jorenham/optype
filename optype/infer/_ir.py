@@ -5,7 +5,7 @@ import sys
 import types
 from collections.abc import Generator, Iterable, Mapping
 from dataclasses import dataclass
-from typing import override
+from typing import Final, override
 
 type Node = (
     Lit | Type | Name | App | Fn | Union | Inter | Not | Variance | Unpack | Dots
@@ -61,6 +61,13 @@ class Name:
     """An opaque type expression, e.g. a typevar, a protocol, or `None`."""
 
     name: str
+
+
+OBJECT: Final[Name] = Name("object")
+NEVER: Final[Name] = Name("Never")
+NONE: Final[Name] = Name("None")
+
+_TOP = frozenset({OBJECT, Type(object)})
 
 
 @dataclass(frozen=True, slots=True)
@@ -173,16 +180,12 @@ def tuple_node_variadic(element: Node) -> App:
     return tuple_node((element, Dots()))
 
 
-_NEVER = Name("Never")
-_TOP = frozenset({Name("object"), Type(object)})
-
-
 def _subtype_args(base: str, args: Terms, wider: Terms) -> bool:
     """Whether same-`base` applications relate, argument by argument."""
     if len(args) != len(wider):
         return False
     # an all-`Never` container holds only `[]`, a member of any same base
-    if args and all(arg == _NEVER for arg in args):
+    if args and all(arg == NEVER for arg in args):
         return True
     if not (variances := _VARIANCES.get(base, "")):
         return False
@@ -195,8 +198,11 @@ def _subtype_args(base: str, args: Terms, wider: Terms) -> bool:
 
 def subtype(sub: Term, sup: Term) -> bool:
     """Whether `sub` is a subtype of `sup`, as far as can be told from the nodes."""
-    if sub == sup or sub == Name("Never") or sup in _TOP:
+
+    # a set would hash `sub`, which could have unhashable defaults
+    if sub in (sup, NEVER) or sup in _TOP:  # noqa: PLR6201
         return True
+
     match sub, sup:
         case Union(parts), _:
             result = all(subtype(part, sup) for part in parts)
@@ -291,7 +297,7 @@ def _collapse_tuples(nodes: list[Node]) -> list[Node]:
         group = groups[arity]
         # `_fixed_tuple_arity` already excluded any `Arg`, so `_param_type` is a no-op
         columns = (
-            union([_param_type(g.args[i]) for g in group], tuples=True) or _NEVER
+            union([_param_type(g.args[i]) for g in group], tuples=True) or NEVER
             for i in range(arity)
         )
         out.append(tuple_node(columns))
@@ -386,11 +392,16 @@ def _rename_term(term: Term, m: Mapping[str, str]) -> Term:
     return rename(term, m)
 
 
+def placeholder_name(n: int) -> str:
+    """A placeholder name that cannot collide with a real identifier."""
+    return f"\x00{n}"
+
+
 def _canonical_renaming(node: Node) -> dict[str, str]:
     """Relabel each `Name` by first-occurrence order, to canonicalize via `rename`."""
     m: dict[str, str] = {}
     for name in names(node):
-        m.setdefault(name, f"\x00{len(m)}")
+        m.setdefault(name, placeholder_name(len(m)))
     return m
 
 

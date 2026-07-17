@@ -7,6 +7,7 @@ bounds, and keyword/defaulted callables. `docs/infer.md` is the source of truth.
 
 import ast
 import builtins
+import functools
 import keyword
 import typing
 from collections.abc import Callable, Mapping, Sequence
@@ -17,7 +18,6 @@ from typing import final
 # `from optype.infer import _ir` would re-enter the package, which imports this module
 import optype.infer._ir as _ir  # noqa: PLR0402
 from ._model import (
-    _OBJECT,
     _Alias,
     _Attr,
     _bound_name,
@@ -55,9 +55,7 @@ def _bound_node(bound: object) -> _ir.Node | None:
     return None
 
 
-_param_bounds: dict[str, tuple[_ir.Node | None, ...] | None] = {}
-
-
+@functools.cache
 def _protocol_bounds(base: str) -> tuple[_ir.Node | None, ...] | None:
     """The per-argument typevar bounds of an `optype` protocol, or `None` if unknown.
 
@@ -67,17 +65,14 @@ def _protocol_bounds(base: str) -> tuple[_ir.Node | None, ...] | None:
     """
     if base not in _OPTYPE:
         return None
-    if base not in _param_bounds:
-        import optype  # noqa: PLC0415
 
-        cls = getattr(optype, base, None)
-        params = getattr(cls, "__parameters__", None)
-        _param_bounds[base] = (
-            None
-            if params is None
-            else tuple(_bound_node(getattr(p, "__bound__", None)) for p in params)
-        )
-    return _param_bounds[base]
+    import optype  # noqa: PLC0415
+
+    cls = getattr(optype, base, None)
+    params = getattr(cls, "__parameters__", None)
+    if params is None:
+        return None
+    return tuple(_bound_node(getattr(p, "__bound__", None)) for p in params)
 
 
 def _inherited_bounds(
@@ -139,7 +134,7 @@ class _Lowerer:
         default: dict[str, _ir.Node | None] = {}
         for tp in type_params:
             merged = self._merge_bound(tp.bound, constraints.get(tp.name), typevars)
-            bound[tp.name] = None if merged == _OBJECT else merged
+            bound[tp.name] = None if merged == _ir.OBJECT else merged
             default[tp.name] = (
                 None if tp.default is None else self._node(tp.default, typevars, {})
             )
@@ -189,11 +184,11 @@ class _Lowerer:
                 return self._fn(params, ret, typevars, constraints)
             case _ir.Union(parts):
                 lowered = [self._node(p, typevars, constraints) for p in parts]
-                return _ir.union(lowered) or _OBJECT
+                return _ir.union(lowered) or _ir.OBJECT
             case _ir.Inter(parts):
                 return self._inter(parts, typevars, constraints)
             case _ir.Not(_):
-                return _OBJECT
+                return _ir.OBJECT
             case _ir.Unpack(part):
                 return _ir.Unpack(self._node(part, typevars, constraints))
             case _ir.Variance(_, part):
@@ -288,7 +283,7 @@ class _Lowerer:
     def _combine(self, parts: Sequence[_ir.Node], typevars: frozenset[str]) -> _ir.Node:
         # an `(A | B) & C` distributes to `(A & C) | (B & C)`: a union cannot be a base
         if not parts:
-            return _OBJECT
+            return _ir.OBJECT
         if len(parts) == 1:
             return parts[0]
         unions = [p for p in parts if isinstance(p, _ir.Union)]
@@ -309,7 +304,7 @@ class _Lowerer:
             self._combine([*rest, *picks], typevars)
             for picks in product(*(u.parts for u in unions))
         ]
-        return _ir.union(variants) or _OBJECT
+        return _ir.union(variants) or _ir.OBJECT
 
     def _has(
         self,
@@ -347,7 +342,7 @@ class _Lowerer:
             inner = tuple(_value(a) for a in signed[0].args)
             return self._has_member(attr, inner, typevars, constraints, classvar=True)
         if not signed:
-            return _Attr(attr, _OBJECT, classvar=classvar)
+            return _Attr(attr, _ir.OBJECT, classvar=classvar)
         if len(signed) == 1 and isinstance(signed[0], _ir.Fn):
             fn = signed[0]
             ret = self._node(_strip_variance(fn.ret), typevars, constraints)
@@ -427,7 +422,7 @@ class _Lowerer:
             f: _ir.Name(canon[i]) for i, f in enumerate(free)
         }
         roles: dict[str, _ir.Node] = {
-            tv: _ir.Name(f"\0{i}") for i, tv in enumerate(members)
+            tv: _ir.Name(_ir.placeholder_name(i)) for i, tv in enumerate(members)
         }
         key = tuple(
             (_is_protocol_node(bound[tv]), _type(_subst(bound[tv], rename | roles)))

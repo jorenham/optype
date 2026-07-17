@@ -456,10 +456,10 @@ def _drain() -> None:
         drain_gc()
     finally:
         _journal.reset(token)
-        journal_rollback(marks, undo=True)
+        journal_rollback(marks)
 
 
-def _explore[T](  # noqa: C901
+def _explore[T](  # noqa: C901, PLR0912
     func: Callable[..., T] | Callable[..., Coroutine[Any, None, T]],
     args: Sequence[object],
     kwds: Mapping[str, object],
@@ -509,7 +509,8 @@ def _explore[T](  # noqa: C901
         finally:
             _fork.reset(fork_token)
             _journal.reset(journal_token)
-            journal_rollback(marks, undo=undo)
+            if undo:
+                journal_rollback(marks)
 
         _drain()
 

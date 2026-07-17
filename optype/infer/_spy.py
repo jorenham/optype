@@ -8,7 +8,16 @@ from contextvars import ContextVar
 from enum import StrEnum
 from functools import lru_cache
 from types import CodeType
-from typing import Any, ClassVar, NamedTuple, Self, cast, final, override
+from typing import (
+    Any,
+    ClassVar,
+    NamedTuple,
+    Self,
+    TypeGuard,
+    cast,
+    final,
+    override,
+)
 
 type _AnyFunc = Callable[..., object]
 type _Args = tuple[object, ...]
@@ -28,8 +37,11 @@ def _internal(attr: str) -> bool:
 
 def _dynamic_name(attr: str) -> bool:
     """Whether `attr` is spy-derived, e.g. built from a spy's type name (#777)."""
+
     if isinstance(attr, _Spy):
+        # e.g. `_SpyStr = str & _Spy`
         return True
+
     low = attr.lower()
     return any(name in low for name in _SPY_NAMES)
 
@@ -231,10 +243,9 @@ def _journal_touch(spy: _Spy) -> None:
         marks[id(spy)] = (spy, len(spy.__optype_trace__))
 
 
-def journal_rollback(marks: dict[int, tuple[_Spy, int]], /, *, undo: bool) -> None:
-    if undo:
-        for spy, length in marks.values():
-            del spy.__optype_trace__[length:]
+def journal_rollback(marks: dict[int, tuple[_Spy, int]], /) -> None:
+    for spy, length in marks.values():
+        del spy.__optype_trace__[length:]
 
 
 @final
@@ -657,6 +668,14 @@ def _own_spy(spy: _SpyObject) -> _SpyObject:  # pyright: ignore[reportUnusedFunc
 def despy_class(cls: type, /) -> type:
     """The first non-spy base of `cls`, so internal spy classes never render."""
     return next(c for c in cls.__mro__ if c.__module__ != __name__)
+
+
+def isinstance_not_spy[T](
+    obj: object,
+    cls_or_tuple: type[T] | tuple[type[T], ...],
+    /,
+) -> TypeGuard[T]:
+    return isinstance(obj, cls_or_tuple) and not isinstance(obj, _Spy)
 
 
 def as_spy(value: object) -> _SpyObject | None:

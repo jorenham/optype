@@ -7,7 +7,15 @@ from itertools import groupby
 from typing import cast
 
 from ._protocols import DUNDER_ATTR, DUNDER_CAN_R, DUNDER_CLASS_ATTR
-from ._spy import _Marker, _own_spy, _Spy, _SpyObject, _TraceItem, _Traces, as_spy
+from ._spy import (
+    _Marker,
+    _own_spy,
+    _SpyObject,
+    _TraceItem,
+    _Traces,
+    as_spy,
+    isinstance_not_spy,
+)
 from ._values import _children, _Fn, _Gen, _Rec, _RecRef, _walk
 
 type _Producer = Mapping[int, tuple[_SpyObject, _TraceItem]]
@@ -31,7 +39,7 @@ def dispatch_candidates(
             for param, spy in spies.items()
             for item in traces.get(id(spy), ())
             if item.attr == "__getattr__" and item.args
-            if isinstance(name := item.args[0], str) and not isinstance(name, _Spy)
+            if isinstance_not_spy(name := item.args[0], str)
         ),
     )
 

@@ -2,6 +2,7 @@
 
 # ruff: noqa: BLE001
 
+import enum
 import faulthandler
 import gc
 import mmap
@@ -19,6 +20,12 @@ from multiprocessing.process import BaseProcess
 import optype.infer._spy as _spy  # noqa: PLR0402
 from ._errors import WARN_SKIP_PREFIX, InferError
 
+
+class _Status(enum.Enum):
+    OK = enum.auto()
+    ERROR = enum.auto()
+
+
 _MAX_STATE_SIZE = 4096
 
 _S_TIMEOUT = 60.0
@@ -35,9 +42,9 @@ def _child(work: Callable[[], object], send: Connection, buf: mmap.mmap) -> None
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         try:
-            payload, kind, cause = work(), "ok", None
+            payload, status, cause = work(), _Status.OK, None
         except BaseException as exc:
-            payload, kind, cause = exc, "error", exc.__cause__
+            payload, status, cause = exc, _Status.ERROR, exc.__cause__
 
         warns = [(str(w.message), w.category) for w in caught]
 
@@ -45,11 +52,11 @@ def _child(work: Callable[[], object], send: Connection, buf: mmap.mmap) -> None
             os._exit(0)  # the target forked; only the original child may send
 
         try:
-            send.send((kind, payload, cause, warns))
+            send.send((status, payload, cause, warns))
         except Exception:
             # a spy in the exception won't pickle
-            fallback = payload if kind == "ok" else InferError(str(payload))
-            send.send((kind, fallback, None, warns))
+            fallback = payload if status is _Status.OK else InferError(str(payload))
+            send.send((status, fallback, None, warns))
 
 
 def _read_state(buf: mmap.mmap) -> str:
@@ -172,11 +179,11 @@ def isolate[T](work: Callable[[], T]) -> T:
         if received is None:
             raise _no_result_error(proc, buf, exited=exited)
 
-        kind, payload, cause, warns = received
+        status, payload, cause, warns = received
         for message, category in warns:
             warnings.warn(message, category, skip_file_prefixes=(WARN_SKIP_PREFIX,))
 
-        if kind == "error":
+        if status is _Status.ERROR:
             raise payload from cause
 
         return payload
