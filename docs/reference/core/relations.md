@@ -42,7 +42,10 @@ right-hand side operand, denoted here as `x`.
         <td><code>do_lt</code></td>
         <td><code>DoesLt</code></td>
         <td><code>__lt__</code></td>
-        <td><code>CanLt[-T, +R = bool]</code></td>
+        <td>
+            <code>CanLt[-T, +R = bool]</code><br>
+            <code>CanLtSame[-T = Never, +R = bool]</code>
+        </td>
     </tr>
     <tr>
         <td><code>_ <= x</code></td>
@@ -50,7 +53,10 @@ right-hand side operand, denoted here as `x`.
         <td><code>do_le</code></td>
         <td><code>DoesLe</code></td>
         <td><code>__le__</code></td>
-        <td><code>CanLe[-T, +R = bool]</code></td>
+        <td>
+            <code>CanLe[-T, +R = bool]</code><br>
+            <code>CanLeSame[-T = Never, +R = bool]</code>
+        </td>
     </tr>
     <tr>
         <td><code>_ > x</code></td>
@@ -58,7 +64,10 @@ right-hand side operand, denoted here as `x`.
         <td><code>do_gt</code></td>
         <td><code>DoesGt</code></td>
         <td><code>__gt__</code></td>
-        <td><code>CanGt[-T, +R = bool]</code></td>
+        <td>
+            <code>CanGt[-T, +R = bool]</code><br>
+            <code>CanGtSame[-T = Never, +R = bool]</code>
+        </td>
     </tr>
     <tr>
         <td><code>_ >= x</code></td>
@@ -66,6 +75,9 @@ right-hand side operand, denoted here as `x`.
         <td><code>do_ge</code></td>
         <td><code>DoesGe</code></td>
         <td><code>__ge__</code></td>
-        <td><code>CanGe[-T, +R = bool]</code></td>
+        <td>
+            <code>CanGe[-T, +R = bool]</code><br>
+            <code>CanGeSame[-T = Never, +R = bool]</code>
+        </td>
     </tr>
 </table>
