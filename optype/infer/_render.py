@@ -6,7 +6,7 @@ from collections import Counter, defaultdict
 from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from contextvars import Context
 from inspect import Parameter, _ParameterKind
-from typing import Any, cast, final
+from typing import Any, NamedTuple, cast, final
 
 # `from . import` would import the package itself, which imports this module
 import optype.infer._ir as _ir
@@ -25,7 +25,6 @@ from ._spy import (
     _AnyFunc,
     _class_spy,
     _Marker,
-    _Spy,
     _SpyBytes,
     _SpyObject,
     _SpyStr,
@@ -33,6 +32,7 @@ from ._spy import (
     _Traces,
     as_spy,
     despy_class,
+    isinstance_not_spy,
 )
 from ._values import (
     COROUTINE,
@@ -53,9 +53,6 @@ _PARAM_PREFIX: dict[_ParameterKind, str] = {
 }
 
 _TYPEVAR_TUPLE_NAME = "Ts"  # the PEP 646 typevar-tuple binder, used as `*Ts`
-
-_NEVER = "Never"
-_OBJECT = "object"
 
 _TUPLE_LIMIT = 16
 _LITERAL_LIMIT = 8
@@ -78,14 +75,14 @@ type Defaults = Mapping[str, object]
 
 def _or_object(node: _ir.Node | None) -> _ir.Node:
     """The node itself, or `object` for an unconstrained (`None`) one."""
-    return _ir.Name(_OBJECT) if node is None else node
+    return _ir.OBJECT if node is None else node
 
 
 def _sign_read(ret: _ir.Node) -> _ir.Node:
     """Mark a read covariant; a callable signs its return type instead: a method."""
     if isinstance(ret, _ir.Fn):
         return _ir.Fn(ret.params, _sign_read(ret.ret))
-    return ret if ret == _ir.Name(_OBJECT) else _ir.Variance(_READ, ret)
+    return ret if ret == _ir.OBJECT else _ir.Variance(_READ, ret)
 
 
 def _default(defaults: Defaults, name: str) -> tuple[object] | None:
@@ -93,10 +90,10 @@ def _default(defaults: Defaults, name: str) -> tuple[object] | None:
     return (defaults[name],) if name in defaults else None
 
 
-_CLEAN_EXIT = _ir.App("CanExit", (_ir.Name("None"),) * 3)
+_CLEAN_EXIT = _ir.App("CanExit", (_ir.NONE,) * 3)
 _CLEAN_AEXIT = _ir.App(
     "CanAExit",
-    (*(_ir.Name("None"),) * 3, _ir.App("CanAwait", (_ir.Name(_OBJECT),))),
+    (*(_ir.NONE,) * 3, _ir.App("CanAwait", (_ir.OBJECT,))),
 )
 _LEN = _ir.App("CanLen", ())
 
@@ -113,10 +110,10 @@ def _merge_combined(parts: list[_ir.Node]) -> list[_ir.Node]:
         match app:
             case _ir.App("CanEnter", (entered,)):
                 partner = _CLEAN_EXIT
-                merged = _ir.App("CanWith", (entered, _ir.Name(_OBJECT)))
+                merged = _ir.App("CanWith", (entered, _ir.OBJECT))
             case _ir.App("CanAEnter", (_ir.App("CanAwait", (entered,)),)):
                 partner = _CLEAN_AEXIT
-                merged = _ir.App("CanAsyncWith", (entered, _ir.Name(_OBJECT)))
+                merged = _ir.App("CanAsyncWith", (entered, _ir.OBJECT))
             case _ir.App("CanGetitem", (key, value)):
                 partner = _LEN
                 merged = _ir.App("CanSequence", (key, value))
@@ -125,6 +122,16 @@ def _merge_combined(parts: list[_ir.Node]) -> list[_ir.Node]:
         if partner in parts:
             parts = [merged if p is app else p for p in parts if p != partner]
     return parts
+
+
+class _OpShape(NamedTuple):
+    """An op modulo its operands; same-shape ops merge into one protocol."""
+
+    proto: Proto
+    attr: str | None
+    classvar: bool
+    arity: int
+    kwnames: tuple[str, ...]
 
 
 def _result_var(index: int) -> str:
@@ -389,7 +396,7 @@ class _Renderer:
         if (out := _ir.inter(parts)) is None and rets:
             # an unused result is unconstrained, but omitting it would leave the
             # last argument in the return slot, e.g. the `R` of `(T) -> R`
-            out = _ir.Name(_OBJECT)
+            out = _ir.OBJECT
         return out
 
     def _collapse_varargs(
@@ -453,7 +460,7 @@ class _Renderer:
             # a read is covariant (a property suffices) and a write contravariant
             # (the attribute only has to accept the value); existence renders bare
             signed: tuple[_ir.Node, ...] = tuple(_ir.Variance(_WRITE, a) for a in pos)
-            if ret is not None and ret != _ir.Name(_OBJECT):
+            if ret is not None and ret != _ir.OBJECT:
                 signed = *signed, _sign_read(ret)
             if members[0].classvar:
                 signed = (_ir.App("ClassVar", signed),)
@@ -470,10 +477,7 @@ class _Renderer:
         # an absence marker means the op was optional; an attribute probe keys on its
         # name, so it spares the other reads
         optional = {item.args for item in items if item.attr == _Marker.ABSENT}
-        groups: dict[
-            tuple[Proto, str | None, bool, int, tuple[str, ...]],
-            list[Op],
-        ] = {}
+        groups: dict[_OpShape, list[Op]] = {}
         for item in items:
             if item.attr == _Marker.ABSENT:
                 continue
@@ -485,9 +489,15 @@ class _Renderer:
             if probed in optional:
                 continue
             op = resolve(item)
-            key = op.proto, op.attr, op.classvar, len(op.args), tuple(sorted(op.kwargs))
+            key = _OpShape(
+                op.proto,
+                op.attr,
+                op.classvar,
+                len(op.args),
+                tuple(sorted(op.kwargs)),
+            )
             groups.setdefault(key, []).append(op)
-        parts = [self.group(key[0], group) for key, group in groups.items()]
+        parts = [self.group(key.proto, group) for key, group in groups.items()]
         return _ir.inter(_merge_combined(parts))
 
     def spy(self, spy: _SpyObject) -> _ir.Node | None:
@@ -512,12 +522,7 @@ class _Renderer:
             # a PEP 646 typevar tuple takes no bound or default
             return _ir.TypeParam(var, unpack=True)
         rep = self._reps.get(id(spy), id(spy))
-        if rep in self._bound_nodes:
-            node = self._bound_nodes[rep]
-        else:
-            node = self._bound_nodes[rep] = self.traces(
-                self._group_traces.get(rep, ()),
-            )
+        node = self._bound_nodes[rep]
         default = defaulted.get(id(spy))
         if negate and default is not None:
             node = _ir.exclude(node, default)
@@ -600,7 +605,7 @@ class _Renderer:
         if name in self._tuple_params and id(spy) not in self._vars:
             # a typevar keeps its binding, so only an inlined bound widens to the union
             node = _ir.union([node, _ir.tuple_node_variadic(node)]) or node
-        if node == _ir.Name(_OBJECT) and name in self._optional:
+        if node == _ir.OBJECT and name in self._optional:
             return None
         return _ir.Param(name, node, prefix, nameless, _default(defaults, name))
 
@@ -640,7 +645,7 @@ class _ResultTyper:
         literals: list[object] = []
         others: list[object] = []
         for value in values:
-            if isinstance(value, (int, str, bytes)) and not isinstance(value, _Spy):
+            if isinstance_not_spy(value, (int, str, bytes)):
                 literals.append(value)
             else:
                 others.append(value)
@@ -660,7 +665,8 @@ class _ResultTyper:
             case _RecRef() | _Rec():
                 node = _ir.Name(self._rec_vars[result.var])
             case _SpyObject() if (spy := as_spy(result)) is not None:
-                node = _ir.Name(self._vars.get(id(spy), _OBJECT))
+                var = self._vars.get(id(spy))
+                node = _ir.Name(var) if var is not None else _ir.OBJECT
             case _SpyStr():
                 node = _ir.Type(str)
             case _SpyBytes():
@@ -688,7 +694,7 @@ class _ResultTyper:
         if result.kind == COROUTINE:
             # an awaitable yields objects and is sent `None`, as `CanAwait`
             out = self.type_union(result.yielded)
-            return _ir.App(COROUTINE, (_ir.Name(_OBJECT), _ir.Name("None"), out))
+            return _ir.App(COROUTINE, (_ir.OBJECT, _ir.NONE, out))
         if not result.yielded and "." in result.kind:
             # a qualified (`itertools`/`functools`) kind drops the misleading `[Never]`
             return _ir.Name(result.kind)
@@ -697,11 +703,11 @@ class _ResultTyper:
     def type_union(self, values: Iterable[object]) -> _ir.Node:
         """The deduplicated union of the types of `values`, or `Never` if empty."""
         parts = dict.fromkeys(map(self.return_type, _distinct(values)))
-        return _ir.union(parts, tuples=True) or _ir.Name(_NEVER)
+        return _ir.union(parts, tuples=True) or _ir.NEVER
 
     def value_type(self, value: object) -> _ir.Node:
         """The type of a single `value`, or `Never` if unconstrained."""
-        return self.value_union((value,)) or _ir.Name(_NEVER)
+        return self.value_union((value,)) or _ir.NEVER
 
     def _function(self, fn: _Fn) -> _ir.Node:
         """The signature-syntax type of an explored function result."""
@@ -733,7 +739,7 @@ class _ResultTyper:
         if issubclass(cls, _SpyBytes):
             return _ir.Type(bytes)
         if cls is type(None):
-            return _ir.Name("None")
+            return _ir.NONE
         if getattr(sys.modules.get(cls.__module__), cls.__name__, None) is cls:
             return _ir.Type(cls)
         return None  # a local class has no nameable type, so it stays a bare `type`
@@ -792,17 +798,14 @@ class _ResultTyper:
         match result:
             case Mapping() if not isinstance(result, Context):
                 mapping = cast("Mapping[object, object]", result)
-                key = self.value_union(mapping, tuples=True) or _ir.Name(_NEVER)
+                key = self.value_union(mapping, tuples=True) or _ir.NEVER
                 args: tuple[_ir.Node, ...]
                 if isinstance(result, Counter):
                     args = (key,)
                 else:
                     args = (
                         key,
-                        (
-                            self.value_union(mapping.values(), tuples=True)
-                            or _ir.Name(_NEVER)
-                        ),
+                        self.value_union(mapping.values(), tuples=True) or _ir.NEVER,
                     )
                 return _ir.App(_ir.type_name(cls), args)
             case list() | set() | frozenset():
@@ -810,7 +813,7 @@ class _ResultTyper:
                     cast("Collection[object]", result),
                     tuples=True,
                 )
-                return _ir.App(_ir.type_name(cls), (inner or _ir.Name(_NEVER),))
+                return _ir.App(_ir.type_name(cls), (inner or _ir.NEVER,))
             case tuple() if cls is tuple:
                 return (
                     self._tuple(cast("tuple[object, ...]", result))
@@ -833,10 +836,13 @@ class _ResultTyper:
             # a uniform spread is `tuple[T, ...]`: the placeholder (`(*args,)`) at any
             # length, or its zipped element (`zip(*args)`) only at the full count
             full_count = len(items) == self._count
-            for target, exact in ((spy, False), (spy.__optype_element__, True)):
+            for target, needs_full_count in (
+                (spy, False),
+                (spy.__optype_element__, True),
+            ):
                 if (
                     target is not None
-                    and (full_count or not exact)
+                    and (full_count or not needs_full_count)
                     and all(item is target for item in items)
                 ):
                     return _ir.tuple_node_variadic(self.return_type(target))
@@ -991,6 +997,8 @@ def _renderers(
 ) -> list[_Renderer]:
     traces, results = exploration.traces, exploration.results
     reflected = reflect([*exploration.spies.values(), *fn_spies(results)], traces)
+    # always two entries: `resolve_defaults` compares signature lists elementwise, so
+    # a reflected and an unreflected exploration must produce equal-length lists
     if reflected is traces:
         # nothing reflected, so a second renderer would repeat the first verbatim
         renderer = _Renderer(exploration, params, traces)
@@ -1029,12 +1037,12 @@ def signatures(
     )
 
 
-def widened_signature(
+def widened_signatures(
     exploration: Exploration,
     params: Mapping[str, Parameter],
     selected: Names,
 ) -> list[_ir.Signature]:
-    """The fallback overload for a value dispatch: the parameter as the absent branch
+    """The fallback overloads for a value dispatch: the parameter as the absent branch
     leaves it, the return widened to `object` (the only sound supertype of an arbitrary
     present return).
 
@@ -1042,21 +1050,18 @@ def widened_signature(
     one, so a parameter-only typevar would dangle.
     """
     sigs = [
-        r.signature(selected, ret=_ir.Name(_OBJECT))
-        for r in _renderers(exploration, params)
+        r.signature(selected, ret=_ir.OBJECT) for r in _renderers(exploration, params)
     ]
     return [] if any(sig.type_params for sig in sigs) else sigs
 
 
-def union_signature(
+def union_signatures(
     exploration: Exploration,
     variant: Exploration,
     params: Mapping[str, Parameter],
     selected: Names,
 ) -> list[_ir.Signature]:
-    """The single overload for a presence dispatch whose return ignores the attribute's
-    value: the parameter (forced absent in `variant`) widens to `object`, and the return
-    unions the present and absent branches (so a `hasattr` predicate renders `bool`).
-    """
+    """Both branches as one overload: the parameter widens to `object`, and the
+    return unions the present and absent results (`hasattr` renders `bool`)."""
     combined = variant._replace(results=[*exploration.results, *variant.results])
     return signatures(combined, params, selected)

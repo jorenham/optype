@@ -6,10 +6,11 @@ needs no second traversal. `_type` doubles as the lowerer's canonical serializer
 """
 
 import builtins
+import functools
 import types
 import typing
 from collections.abc import Sequence
-from typing import Literal, cast
+from typing import Literal
 
 # `from optype.infer import _ir` would re-enter the package, which imports this module
 import optype.infer._ir as _ir  # noqa: PLR0402
@@ -45,19 +46,14 @@ _OPTYPE = frozenset(_can.__all__) | frozenset(_has.__all__) | frozenset(_just.__
 
 type _Prefix = Literal["", "*"]
 
-_numpy_names: frozenset[str] | None = None
 
-
+@functools.cache
 def _optype_numpy() -> frozenset[str]:
-    global _numpy_names  # noqa: PLW0603
-    if _numpy_names is None:
-        try:
-            import optype.numpy as onp  # noqa: PLC0415
-
-            _numpy_names = frozenset(cast("Sequence[str]", onp.__all__))
-        except Exception:  # noqa: BLE001 - numpy is optional and may be unimportable
-            _numpy_names = frozenset()
-    return _numpy_names
+    try:
+        import optype.numpy as onp  # noqa: PLC0415
+    except ImportError:  # numpy is optional
+        return frozenset()
+    return frozenset(onp.__all__)  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
 
 
 def _import_of(name: str) -> tuple[str, str | None] | None:  # noqa: PLR0911
