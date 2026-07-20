@@ -49,12 +49,14 @@ __all__ = [
     "CanFloordivSelf",
     "CanFormat",
     "CanGe",
+    "CanGeSame",
     "CanGet",
     "CanGetMissing",
     "CanGetattr",
     "CanGetattribute",
     "CanGetitem",
     "CanGt",
+    "CanGtSame",
     "CanHash",
     "CanIAdd",
     "CanIAddSame",
@@ -103,12 +105,14 @@ __all__ = [
     "CanIter",
     "CanIterSelf",
     "CanLe",
+    "CanLeSame",
     "CanLen",
     "CanLengthHint",
     "CanLshift",
     "CanLshiftSame",
     "CanLshiftSelf",
     "CanLt",
+    "CanLtSame",
     "CanMatmul",
     "CanMatmulSame",
     "CanMatmulSelf",
@@ -406,8 +410,22 @@ class CanLt(Protocol[_T_object_contra, _T_bool_co]):
 
 
 @runtime_checkable
+class CanLtSame(Protocol[_T_Never_contra, _T_bool_co]):
+    """CanLtSame[-T = Never, +R = bool] = CanLt[Self | T, R]"""
+
+    def __lt__(self, rhs: Self | _T_Never_contra, /) -> _T_bool_co: ...
+
+
+@runtime_checkable
 class CanLe(Protocol[_T_object_contra, _T_bool_co]):
     def __le__(self, rhs: _T_object_contra, /) -> _T_bool_co: ...
+
+
+@runtime_checkable
+class CanLeSame(Protocol[_T_Never_contra, _T_bool_co]):
+    """CanLeSame[-T = Never, +R = bool] = CanLe[Self | T, R]"""
+
+    def __le__(self, rhs: Self | _T_Never_contra, /) -> _T_bool_co: ...
 
 
 @runtime_checkable
@@ -416,8 +434,22 @@ class CanGt(Protocol[_T_object_contra, _T_bool_co]):
 
 
 @runtime_checkable
+class CanGtSame(Protocol[_T_Never_contra, _T_bool_co]):
+    """CanGtSame[-T = Never, +R = bool] = CanGt[Self | T, R]"""
+
+    def __gt__(self, rhs: Self | _T_Never_contra, /) -> _T_bool_co: ...
+
+
+@runtime_checkable
 class CanGe(Protocol[_T_object_contra, _T_bool_co]):
     def __ge__(self, rhs: _T_object_contra, /) -> _T_bool_co: ...
+
+
+@runtime_checkable
+class CanGeSame(Protocol[_T_Never_contra, _T_bool_co]):
+    """CanGeSame[-T = Never, +R = bool] = CanGe[Self | T, R]"""
+
+    def __ge__(self, rhs: Self | _T_Never_contra, /) -> _T_bool_co: ...
 
 
 # Callables
