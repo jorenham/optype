@@ -75,8 +75,8 @@ doc = [
   "pygments==2.20.0",
 ]
 lint = [
-  "dprint-py==0.55.1.4",
-  "ruff==0.15.21",
+  "dprint-py==0.55.2.0",
+  "ruff==0.15.22",
   "sp-repo-review[cli]==2026.6.18",
 ]
 test = [
@@ -91,9 +91,9 @@ test = [
 type = [
   { include-group = "extra" },
   { include-group = "test" },
-  "mypy[faster-cache]==2.2.0",
+  "mypy[faster-cache]==2.3.0",
   "pyrefly==1.2.0-dev.2",
-  "ty==0.0.59",
+  "ty==0.0.60",
 ]
 dev = [
   { include-group = "extra" },
