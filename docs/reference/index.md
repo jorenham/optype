@@ -131,6 +131,7 @@ NumPy-specific typing utilities (requires NumPy):
 - **[UFunc](numpy/ufunc.md)**: Universal functions
 - **[Type Aliases](numpy/aliases.md)**: Common type aliases
 - **[Low-level](numpy/low-level.md)**: Low-level NumPy interfaces
+- **[ctypeslib](numpy/ctypeslib.md)**: Typed `ctypes` aliases for NumPy scalar-like C types
 
 ## Type Variance Notation
 
