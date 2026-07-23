@@ -68,6 +68,8 @@ jobs:
             # Keep the comment body under GitHub's comment limit (~65k chars).
             DIFF_MAX=60000
 
+            echo "has-changes=true" >> "$GITHUB_OUTPUT"
+
             echo '<details>' >> comment.md
             echo '<summary>⚠️ Changes were detected when running mypy on open source projects</summary>' >> comment.md
             echo '' >> comment.md
@@ -80,6 +82,7 @@ jobs:
             echo '```' >> comment.md
             echo '</details>' >> comment.md
           else
+            echo "has-changes=false" >> "$GITHUB_OUTPUT"
             echo '✅ No ecosystem changes detected' >> comment.md
           fi
 
@@ -92,6 +95,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ steps.pr-number.outputs.pr-number }}
+          HAS_CHANGES: ${{ steps.generate-comment.outputs.has-changes }}
         run: |
           # Find existing comment by the bot containing the marker
           COMMENT_ID=$(
@@ -108,9 +112,11 @@ jobs:
               --method PATCH \
               "repos/$GITHUB_REPOSITORY/issues/comments/${COMMENT_ID}" \
               --field "body=@comment.md"
-          else
-            # Create new comment
+          elif [[ "$HAS_CHANGES" == "true" ]]; then
+            # Create a new comment only when there are ecosystem changes to report
             gh pr comment "${PR_NUMBER}" \
               --repo "$GITHUB_REPOSITORY" \
               --body-file comment.md
+          else
+            echo "no ecosystem changes"
           fi

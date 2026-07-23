@@ -1,0 +1,700 @@
+"""Recording proxy objects that trace the operations performed on them."""
+
+import dis
+import mmap
+import sys
+from collections.abc import Callable, Generator, Iterator
+from contextvars import ContextVar
+from enum import StrEnum
+from functools import lru_cache
+from types import CodeType
+from typing import (
+    Any,
+    ClassVar,
+    NamedTuple,
+    Self,
+    TypeGuard,
+    cast,
+    final,
+    override,
+)
+
+type _AnyFunc = Callable[..., object]
+type _Args = tuple[object, ...]
+type _Kwargs = dict[str, object]
+type _Memo = tuple[object, int | None]  # (fork plan, value); None value = absent
+type _KeyedMemo = tuple[object, dict[int, tuple[object, int]]]
+
+
+def _slot(attr: str) -> str:
+    return f"__optype_{attr.strip('_')}__"
+
+
+def _internal(attr: str) -> bool:
+    """Whether `attr` is a spy's own `__optype*` bookkeeping attribute."""
+    return attr.startswith("__optype")
+
+
+def _dynamic_name(attr: str) -> bool:
+    """Whether `attr` is spy-derived, e.g. built from a spy's type name (#777)."""
+
+    if isinstance(attr, _Spy):
+        # e.g. `_SpyStr = str & _Spy`
+        return True
+
+    low = attr.lower()
+    return any(name in low for name in _SPY_NAMES)
+
+
+class _Fork(BaseException): ...
+
+
+class _AbsentError(TypeError):
+    """A simulated missing dunder; subclasses `TypeError` so probes suppress it."""
+
+
+class _DynamicNameError(AttributeError):
+    """A spy-derived attribute name; subclasses `AttributeError` so fallbacks run."""
+
+    # the parameter keeps `cls(*args)` reconstruction working, e.g. unpickling
+    def __init__(
+        self,
+        message: str = "no protocol for a dynamic attribute name",
+        /,
+    ) -> None:
+        super().__init__(message)
+
+
+class _Marker(StrEnum):
+    """A pseudo-operation trace marker, not a real dunder."""
+
+    ABSENT = "__absent__"  # a simulated-missing dunder
+    SIBLING = "__sibling__"  # a `type(spy)(...)` instantiation
+
+    CLASS_DELATTR = "__class_delattr__"
+    CLASS_GETATTR = "__class_getattr__"
+    CLASS_SETATTR = "__class_setattr__"
+
+
+_fork: ContextVar[Iterator[bool] | None] = ContextVar("_fork", default=None)
+
+# the yield count for a star-unpack iterator (`f(*x)`) whose arity no bytecode pins:
+# the arity it needs, which `explore_spies` grows into until the call works
+_yield_budget: ContextVar[int] = ContextVar("_yield_budget", default=1)
+# set when a growable star-unpack iterator hits the budget, so `explore_spies` only
+# grows the budget when a fixed-arity star unpacking actually came up short
+_starved: ContextVar[bool] = ContextVar("_starved", default=False)
+
+# one element exercises no pairwise op, so `sorted`/`min` never reach their elements'
+# `__lt__` (#686); a pair suffices, and `_render` inlines the extra typevar away
+_DEFAULT_YIELD = 2
+
+# `_explore._run` unpacks a real arg list, so a spy `__iter__` charged to its frame is a
+# C builtin iterating internally, not a growable star-unpack (#723)
+_driver_code: CodeType | None = None
+
+
+def set_driver_code[T: Callable[..., object]](fn: T, /) -> T:
+    global _driver_code  # noqa: PLW0603
+    _driver_code = fn.__code__  # ty: ignore[unresolved-attribute]
+    return fn
+
+
+# a shared buffer into which each spy operation writes itself, so the last action
+# survives a native crash for `_isolate` to report (#738)
+_state_buffer: mmap.mmap | None = None
+
+
+def set_state_buffer(buf: mmap.mmap | None, /) -> None:
+    global _state_buffer  # noqa: PLW0603
+    _state_buffer = buf
+
+
+# star-unpack detection reads caller bytecode (CPython detail); else it never fires
+_CPYTHON = sys.implementation.name == "cpython"
+
+
+@lru_cache(maxsize=256)
+def _co_code(code: CodeType) -> bytes:
+    # `co_code` rebuilds a deoptimized copy on each access, so cache it per code object
+    return code.co_code
+
+
+def _iter_is_star_unpack() -> bool:
+    """Whether the caller iterates by star-unpacking into a call, as in `f(*x)`.
+
+    `CALL_FUNCTION_EX` has no local arity signal, so its iterator grows via the
+    `_yield_budget` until the call's arity is met.
+    """
+    if not _CPYTHON:
+        return False
+
+    try:
+        frame = sys._getframe(2)  # _iter_is_star_unpack -> __iter__ -> consuming frame  # noqa: SLF001
+    except ValueError:
+        frame = None
+    if frame is None or (i := frame.f_lasti) < 0 or frame.f_code is _driver_code:
+        return False
+
+    return dis.opname[_co_code(frame.f_code)[i]] == "CALL_FUNCTION_EX"
+
+
+def _decide() -> bool:
+    if (plan := _fork.get()) is None:
+        return True
+    if (value := next(plan, None)) is None:
+        raise _Fork
+    return value
+
+
+def _decide_stable(spy: "_SpyObject", attr: str, /, *, optional: bool = False) -> int:
+    # memoized per run (keyed by the fork plan) so repeats agree; else two disagreeing
+    # `len(seq)` send e.g. `random.choice` into a non-terminating `_randbelow(0)`
+
+    slot = _slot(attr)
+    plan = _fork.get()
+
+    memo: _Memo | None = getattr(spy, slot, None)
+    if memo is not None and memo[0] is plan:
+        if memo[1] is None:
+            raise _AbsentError
+        return memo[1]
+
+    if optional and not _decide():
+        setattr(spy, slot, (plan, None))
+        spy.__optype_trace_add__(_Marker.ABSENT, (attr,), {}, None)
+        raise _AbsentError
+
+    value = spy.__optype_trace_add__(attr, (), {}, int(_decide()))
+    setattr(spy, slot, (plan, value))
+    return value
+
+
+def _decide_keyed(
+    spy: "_SpyObject",
+    attr: str,
+    item: object,
+    /,
+    *,
+    keep_arg: bool,
+) -> bool:
+    # per-operand variant of `_decide_stable`: `y in x` forks once per distinct `y`, so
+    # `y in x and y not in x` agrees within a run while `a in x` and `b in x` stay free.
+    # the cache retains `item` so its `id` can't be reused by a later distinct operand
+    slot = _slot(attr)
+    plan = _fork.get()
+
+    cache: dict[int, tuple[object, int]]
+    memo: _KeyedMemo | None = getattr(spy, slot, None)
+    if memo is not None and memo[0] is plan:
+        cache = memo[1]
+    else:
+        cache = {}
+        setattr(spy, slot, (plan, cache))
+
+    key = id(item)
+    if key not in cache:
+        args = (item,) if keep_arg else ()
+        cache[key] = item, spy.__optype_trace_add__(attr, args, {}, int(_decide()))
+    return bool(cache[key][1])
+
+
+class _TraceItem(NamedTuple):
+    attr: str
+    args: _Args
+    kwargs: _Kwargs
+    return_: object
+
+
+type _Traces = dict[int, list[_TraceItem]]
+
+
+class _Spy:
+    __optype_trace__: list[_TraceItem]
+
+    def __optype_trace_add__[OutT](
+        self,
+        attr: str,
+        args: _Args,
+        kwargs: _Kwargs,
+        out: OutT,
+    ) -> OutT:
+        _journal_touch(self)
+        item = _TraceItem(attr, args, kwargs, out)
+        self.__optype_trace__.append(item)
+        if _state_buffer is not None:
+            _record_state(item, _state_buffer)
+        return out
+
+    def __init__(self, /, *_args: object, **_kwargs: object) -> None:
+        self.__optype_trace__ = []
+
+
+# while a run explores, each touched spy's pre-run trace length, so `_explore` can
+# undo a rejected run by truncating only the spies it actually appended to
+_journal: ContextVar[dict[int, tuple[_Spy, int]] | None] = ContextVar(
+    "_journal",
+    default=None,
+)
+
+
+def _journal_touch(spy: _Spy) -> None:
+    if (marks := _journal.get()) is not None and id(spy) not in marks:
+        marks[id(spy)] = (spy, len(spy.__optype_trace__))
+
+
+def journal_rollback(marks: dict[int, tuple[_Spy, int]], /) -> None:
+    for spy, length in marks.values():
+        del spy.__optype_trace__[length:]
+
+
+@final
+class _SpyStr(str, _Spy):
+    __slots__ = ()
+
+
+@final
+class _SpyBytes(bytes, _Spy):
+    __slots__ = ()
+
+
+def _brief(value: Any, /) -> str:
+    # no arbitrary `repr` here: a container's repr reaches the dunders of its
+    # elements, recording phantom ops on any spy inside (#763)
+    if isinstance(value, _Spy):
+        return "spy"
+
+    cls = type(value)  # pyright: ignore[reportUnknownVariableType]
+    if cls in {tuple, list}:
+        left, right = "()" if cls is tuple else "[]"
+        text = left + ", ".join(map(_brief, value)) + right
+    elif value is None or cls in {bool, int, float, complex, bytes, str}:
+        text = repr(value)
+    else:
+        text = cls.__name__
+
+    return text if len(text) <= 32 else text[:31] + "..."
+
+
+def _record_state(item: _TraceItem, buf: mmap.mmap, /) -> None:
+    # the last completed op; a crash strikes between ops, in native code (#738)
+    call = f"{item.attr}({', '.join(_brief(a) for a in item.args)})"
+    ret = "" if item.return_ is None else f" -> {_brief(item.return_)}"
+    data = (call + ret).encode("utf-8", "replace")[: len(buf) - 1] + b"\x00"
+    buf.seek(0)
+    buf.write(data)
+
+
+class _SpyType(type):
+    """The metaclass of every spy's unique class, so class attribute access records."""
+
+    def __getattr__(cls, attr: str, /) -> "_SpyObject | None":
+        if _internal(attr):
+            return None
+        if _dynamic_name(attr):
+            raise _DynamicNameError
+
+        if (owner := _class_spy(cls)) is None:
+            msg = f"type object {cls.__name__!r} has no attribute {attr!r}"
+            raise AttributeError(msg)
+
+        out = _SpyObject()
+        return owner.__optype_trace_add__(_Marker.CLASS_GETATTR, (attr,), {}, out)
+
+    @override
+    def __setattr__(cls, attr: str, value: object, /) -> None:
+        # recorded without mutating, so forked reruns stay clean
+        if _internal(attr) or (owner := _class_spy(cls)) is None:
+            return super().__setattr__(attr, value)
+
+        args = attr, value
+        return owner.__optype_trace_add__(_Marker.CLASS_SETATTR, args, {}, None)
+
+    @override
+    def __delattr__(cls, attr: str, /) -> None:
+        if _internal(attr) or (owner := _class_spy(cls)) is None:
+            return super().__delattr__(attr)
+
+        return owner.__optype_trace_add__(_Marker.CLASS_DELATTR, (attr,), {}, None)
+
+
+class _SpyObject(_Spy, metaclass=_SpyType):
+    __optype_element__: "_SpyObject | None" = None
+    __optype_iterator__: bool = False
+    __optype_growable__: bool = False
+    __optype_absent__: "frozenset[str]" = frozenset()
+    # spies are descriptors (`__get__`), so only ever read through the class `__dict__`
+    __optype_instance__: "ClassVar[_SpyObject | None]" = None
+
+    def __new__(cls, /, *_args: object, **_kwargs: object) -> "_SpyObject":
+        if cls is not _SpyObject:
+            # a `type(spy)(...)` sibling; the marker keeps it reachable from the spy
+            self = super().__new__(cls)
+            if (owner := _class_spy(cls)) is not None:
+                _journal_touch(owner)
+                owner.__optype_trace__.append(_TraceItem(_Marker.SIBLING, (), {}, self))
+            return self
+        # every spy gets a class of its own, so that `type(spy)` identifies the spy
+        unique = cast("type[Self]", type("_SpyObject", (cls,), {}))
+        self = super().__new__(unique)
+        type.__setattr__(unique, "__optype_instance__", self)
+        return self
+
+    ###
+
+    def __getattr__(self, attr: str, /) -> "_SpyObject | None":
+        # TODO: specialize for known special dunder attrs, e.g. `__name__: str`
+        if _internal(attr):
+            return None
+        if _dynamic_name(attr):
+            raise _DynamicNameError
+
+        if attr in self.__optype_absent__:
+            # the marker survives only if a completing run tolerates the absence
+            self.__optype_trace_add__(_Marker.ABSENT, ("__getattr__", attr), {}, None)
+            raise AttributeError(attr)
+        return self.__optype_trace_add__("__getattr__", (attr,), {}, _SpyObject())
+
+    @override
+    def __setattr__(self, attr: str, value: object, /) -> None:
+        if _internal(attr):
+            return super().__setattr__(attr, value)
+
+        return self.__optype_trace_add__("__setattr__", (attr, value), {}, None)
+
+    @override
+    def __delattr__(self, attr: str, /) -> None:
+        self.__optype_trace_add__("__delattr__", (attr,), {}, None)
+
+    @override
+    def __dir__(self, /) -> "_SpyObject":
+        # TODO: maybe return specialized `_SpyObject & Iterable[str]`
+        return self.__optype_trace_add__("__dir__", (), {}, _SpyObject())
+
+    ###
+
+    @override
+    def __repr__(self, /) -> _SpyStr:
+        return self.__optype_trace_add__("__repr__", (), {}, _SpyStr())
+
+    @override
+    def __str__(self, /) -> _SpyStr:
+        return self.__optype_trace_add__("__str__", (), {}, _SpyStr())
+
+    @override
+    def __format__(self, format_spec: str, /) -> _SpyStr:
+        return self.__optype_trace_add__("__format__", (format_spec,), {}, _SpyStr())
+
+    def __bytes__(self, /) -> _SpyBytes:
+        return self.__optype_trace_add__("__bytes__", (), {}, _SpyBytes())
+
+    ###
+
+    @override
+    def __eq__(self, other: object, /) -> "_SpyObject":  # type:ignore[override] # pyright:ignore[reportIncompatibleMethodOverride] # ty:ignore[invalid-method-override]
+        return self.__optype_trace_add__("__eq__", (other,), {}, _SpyObject())
+
+    @override
+    def __ne__(self, other: object, /) -> "_SpyObject":  # type:ignore[override] # pyright:ignore[reportIncompatibleMethodOverride] # ty:ignore[invalid-method-override]
+        return self.__optype_trace_add__("__ne__", (other,), {}, _SpyObject())
+
+    ###
+
+    @override
+    def __hash__(self, /) -> int:
+        return self.__optype_trace_add__("__hash__", (), {}, super().__hash__())
+
+    def __bool__(self, /) -> bool:
+        return bool(_decide_stable(self, "__bool__"))
+
+    ###
+
+    def __get__(self, instance: object, owner: type | None = None) -> "_SpyObject":
+        return self.__optype_trace_add__("__get__", (instance, owner), {}, _SpyObject())
+
+    def __set__(self, instance: object, value: object, /) -> None:
+        self.__optype_trace_add__("__set__", (instance, value), {}, None)
+
+    def __delete__(self, instance: object, /) -> None:
+        self.__optype_trace_add__("__delete__", (instance,), {}, None)
+
+    # TODO: __objclass__ -> _SpyType
+
+    def __set_name__(self, owner: type, name: str, /) -> None:
+        self.__optype_trace_add__("__set_name__", (owner, name), {}, None)
+
+    ###
+
+    def __instancecheck__(self, instance: object, /) -> bool:
+        return _decide_keyed(self, "__instancecheck__", instance, keep_arg=False)
+
+    def __subclasscheck__(self, subclass: object, /) -> bool:
+        return _decide_keyed(self, "__subclasscheck__", subclass, keep_arg=False)
+
+    ###
+
+    def __call__(self, /, *args: object, **kwargs: object) -> "_SpyObject":
+        return self.__optype_trace_add__("__call__", args, kwargs, _SpyObject())
+
+    ###
+
+    def __len__(self, /) -> int:
+        # `len()` may be probed optionally (e.g. `list()` via `length_hint`)
+        return _decide_stable(self, "__len__", optional=True)
+
+    # no need for `__length_hint__`
+
+    def __getitem__(self, key: object, /) -> "_SpyObject":
+        return self.__optype_trace_add__("__getitem__", (key,), {}, _SpyObject())
+
+    def __setitem__(self, key: object, value: object, /) -> None:
+        return self.__optype_trace_add__("__setitem__", (key, value), {}, None)
+
+    def __delitem__(self, key: object, /) -> None:
+        return self.__optype_trace_add__("__delitem__", (key,), {}, None)
+
+    # no need for `__missing__`
+
+    def __iter__(self, /) -> "_SpyObject":
+        growable = _iter_is_star_unpack()
+
+        if self.__optype_iterator__:
+            if growable:
+                self.__optype_growable__ = True
+            return self  # an iterator is its own iterable (idempotent `iter()`)
+
+        out = _iterator_of(self)
+        out.__optype_growable__ = growable
+        return self.__optype_trace_add__("__iter__", (), {}, out)
+
+    def __reversed__(self, /) -> "_SpyObject":
+        return self.__optype_trace_add__("__reversed__", (), {}, _iterator_of(self))
+
+    def __contains__(self, item: object, /) -> bool:
+        return _decide_keyed(self, "__contains__", item, keep_arg=True)
+
+    # return `Any` instead of `_SpyObject` to avoid an LSP error for `__dir__`
+    def __next__(self, /) -> Any:
+        # count from the trace, not a field, so a forked run's rollback is reflected
+        served = sum(1 for item in self.__optype_trace__ if item.attr == "__next__")
+        growable = self.__optype_growable__
+        limit = _yield_budget.get() if growable else _DEFAULT_YIELD
+        if served >= limit:
+            if growable:
+                _starved.set(True)
+            raise StopIteration
+        return self.__optype_trace_add__("__next__", (), {}, _element_of(self))
+
+    ###
+
+    def __complex__(self, /) -> complex:
+        return self.__optype_trace_add__("__complex__", (), {}, 0j)
+
+    def __float__(self, /) -> float:
+        return self.__optype_trace_add__("__float__", (), {}, 0.0)
+
+    def __int__(self, /) -> int:
+        return _decide_stable(self, "__int__")
+
+    def __index__(self, /) -> int:
+        return _decide_stable(self, "__index__")
+
+    ###
+
+    def __enter__(self, /) -> "_SpyObject":
+        return self.__optype_trace_add__("__enter__", (), {}, _SpyObject())
+
+    def __exit__(self, /, *args: object) -> None:
+        # TODO: maybe fork and return falsy/truthy in case of exception??
+        return self.__optype_trace_add__("__exit__", args, {}, None)
+
+    ###
+
+    # no `__release_buffer__`: its slot lookup fails uncatchably under cyclic GC (#739)
+    def __buffer__(self, flags: int, /) -> memoryview:
+        return self.__optype_trace_add__("__buffer__", (flags,), {}, memoryview(b""))
+
+    ###
+
+    # numpy looks these up on the type, so `__getattr__` won't do
+    def __array_ufunc__(
+        self,
+        ufunc: _AnyFunc,
+        method: str,
+        /,
+        *inputs: object,
+        **kwargs: object,
+    ) -> "_SpyObject":
+        return self.__optype_trace_add__("__array_ufunc__", (ufunc,), {}, _SpyObject())
+
+    def __array_function__(
+        self,
+        func: _AnyFunc,
+        types: object,
+        args: object,
+        kwargs: object,
+        /,
+    ) -> "_SpyObject":
+        return self.__optype_trace_add__(
+            "__array_function__",
+            (func,),
+            {},
+            _SpyObject(),
+        )
+
+    ###
+
+    def __await__(self, /) -> Generator[Any, None, "_SpyObject"]:
+        out = self.__optype_trace_add__("__await__", (), {}, _SpyObject())
+
+        def spy_generator() -> Generator[Any, None, "_SpyObject"]:
+            yield from ()
+            return out  # noqa: B901
+
+        return spy_generator()
+
+    def __aiter__(self, /) -> "_SpyObject":
+        return self.__optype_trace_add__("__aiter__", (), {}, _SpyObject())
+
+    def __anext__(self, /) -> "_SpyObject":
+        if any(item.attr == "__anext__" for item in self.__optype_trace__):
+            raise StopAsyncIteration
+        return self.__optype_trace_add__("__anext__", (), {}, _SpyObject())
+
+    def __aenter__(self, /) -> "_SpyObject":
+        return self.__optype_trace_add__("__aenter__", (), {}, _SpyObject())
+
+    def __aexit__(self, /, *args: object) -> "_SpyObject":
+        return self.__optype_trace_add__("__aexit__", args, {}, _SpyObject())
+
+
+# the observable class names for `_dynamic_name`; not the broader `_Spy`, so a
+# genuine `*_spy*` attribute never matches
+_SPY_NAMES = tuple(
+    cls.__name__.lower() for cls in (_SpyStr, _SpyBytes, _SpyType, _SpyObject)
+)
+
+# Operators that record their positional args and return a fresh spy. Generated onto
+# the type (not synthesized in `__getattr__`) because special-method lookup skips it.
+_TRACED_OPS = (
+    "__neg__",
+    "__pos__",
+    "__abs__",
+    "__invert__",
+    "__round__",
+    "__trunc__",
+    "__floor__",
+    "__ceil__",
+    "__lt__",
+    "__le__",
+    "__gt__",
+    "__ge__",
+    "__add__",
+    "__sub__",
+    "__mul__",
+    "__matmul__",
+    "__truediv__",
+    "__floordiv__",
+    "__mod__",
+    "__divmod__",
+    "__pow__",
+    "__lshift__",
+    "__rshift__",
+    "__and__",
+    "__xor__",
+    "__or__",
+    "__radd__",
+    "__rsub__",
+    "__rmul__",
+    "__rmatmul__",
+    "__rtruediv__",
+    "__rfloordiv__",
+    "__rmod__",
+    "__rdivmod__",
+    "__rpow__",
+    "__rlshift__",
+    "__rrshift__",
+    "__rand__",
+    "__rxor__",
+    "__ror__",
+    "__iadd__",
+    "__isub__",
+    "__imul__",
+    "__imatmul__",
+    "__itruediv__",
+    "__ifloordiv__",
+    "__imod__",
+    "__ipow__",
+    "__ilshift__",
+    "__irshift__",
+    "__iand__",
+    "__ixor__",
+    "__ior__",
+)
+
+
+def _traced_op(name: str) -> _AnyFunc:
+    def op(self: _SpyObject, /, *args: object) -> _SpyObject:
+        return self.__optype_trace_add__(name, args, {}, _SpyObject())
+
+    op.__name__ = op.__qualname__ = name
+    return op
+
+
+for _name in _TRACED_OPS:
+    # bypass the metaclass: `_class_spy` isn't defined yet, and this isn't a trace
+    type.__setattr__(_SpyObject, _name, _traced_op(_name))  # noqa: PLC2801
+
+
+# Free functions, not methods: a method would be an unrecorded hole in the proxy.
+def _class_spy(cls: object) -> _SpyObject | None:
+    """The spy whose unique class `cls` is, if any."""
+    # only a spy's unique class carries `__optype_instance__` in its own `__dict__`;
+    # the marker must point back into the mro, or it is a copy on some foreign class.
+    # gate on the exact metaclass: a foreign `__dict__` can be a metaclass property
+    if type(cls) is _SpyType:
+        spy = cls.__dict__.get("__optype_instance__")
+        if isinstance(spy, _SpyObject) and issubclass(cls, type(spy)):
+            return spy
+    return None
+
+
+def _own_spy(spy: _SpyObject) -> _SpyObject:  # pyright: ignore[reportUnusedFunction]  # cross-module
+    """The first spy of `spy`'s class: `type(spy)()` siblings collapse onto it."""
+    owner = _class_spy(type(spy))  # `or spy` would trace a `__bool__` on the owner
+    return spy if owner is None else owner
+
+
+def despy_class(cls: type, /) -> type:
+    """The first non-spy base of `cls`, so internal spy classes never render."""
+    return next(c for c in cls.__mro__ if c.__module__ != __name__)
+
+
+def isinstance_not_spy[T](
+    obj: object,
+    cls_or_tuple: type[T] | tuple[type[T], ...],
+    /,
+) -> TypeGuard[T]:
+    return isinstance(obj, cls_or_tuple) and not isinstance(obj, _Spy)
+
+
+def as_spy(value: object) -> _SpyObject | None:
+    """The (first-of-its-class) spy itself, or the spy whose class it is, if any."""
+    # a `weakref.proxy` forwards `__class__`, so verify its real class is a spy's
+    if isinstance(value, _SpyObject) and (owner := _class_spy(type(value))) is not None:
+        return owner
+    return _class_spy(value)
+
+
+def _element_of(spy: _SpyObject) -> _SpyObject:
+    if (element := spy.__optype_element__) is None:
+        element = _SpyObject()
+        spy.__optype_element__ = element  # ty:ignore[invalid-assignment]
+    return element
+
+
+def _iterator_of(spy: _SpyObject) -> _SpyObject:
+    iterator = _SpyObject()
+    iterator.__optype_element__ = _element_of(spy)  # ty:ignore[invalid-assignment]
+    iterator.__optype_iterator__ = True
+    return iterator

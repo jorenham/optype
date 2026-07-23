@@ -1,12 +1,9 @@
-from typing import Annotated, Generic, Literal, TypeVar
+from typing import Annotated, Literal
 
 __all__ = "AnnotatedAlias", "GenericType", "LiteralAlias", "UnionAlias"
 
 
-_T = TypeVar("_T")
-
-
-class _C(Generic[_T]): ...
+class _C[T]: ...
 
 
 # typing._GenericAlias

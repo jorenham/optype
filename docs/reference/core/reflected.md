@@ -109,6 +109,13 @@ They are named like the original, but prefixed with `CanR` prefix, i.e.
         </td>
     </tr>
     <tr>
+        <td><code>pow(x, _, m)</code></td>
+        <td><code>do_rpow</code></td>
+        <td><code>DoesRPow</code></td>
+        <td><code>__rpow__</code></td>
+        <td><code>CanRPow3[-T, -M, +R = int]</code></td>
+    </tr>
+    <tr>
         <td><code>x << _</code></td>
         <td><code>do_rlshift</code></td>
         <td><code>DoesRLshift</code></td>
@@ -162,12 +169,10 @@ They are named like the original, but prefixed with `CanR` prefix, i.e.
 
 !!! note
 
-    `CanRPow` corresponds to `CanPow2`; the 3-parameter "modulo" `pow` does not reflect
-    in Python.
+    `CanRPow` is dual to `CanPow2`.
 
-    According to the relevant [python docs][RPOW]:
-
-    > Note that ternary `pow()` will not try calling `__rpow__()` (the coercion
-    > rules would become too complicated).
+    The three-argument `pow(x, _, m)` did not reflect onto [`__rpow__`][RPOW] before
+    Python 3.14. Since then it reflects as `__rpow__(x, m)`, modeled by `CanRPow3`
+    (dual to `CanPow3`).
 
 [RPOW]: https://docs.python.org/3/reference/datamodel.html#object.__rpow__

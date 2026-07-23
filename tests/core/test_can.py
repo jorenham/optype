@@ -10,9 +10,11 @@ temporarily that invalid `optype` use will actually cause the typechecker
 (we only consider (based)pyright at the moment) to complain.
 """
 
+import sys
 import types
 from collections.abc import Collection, Iterable, Iterator
-from typing import Any, TypeAlias, TypeVar
+from datetime import date, datetime
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -20,8 +22,10 @@ import optype as op
 from optype._core import _can
 from optype.inspect import get_protocol_members, get_protocols
 
-_T_ReIter = TypeVar("_T_ReIter")
-CanReIter: TypeAlias = op.CanIter[op.CanIterSelf[_T_ReIter]]
+if TYPE_CHECKING:
+    from typing import Any
+
+type CanReIter[_T_ReIter] = op.CanIter[op.CanIterSelf[_T_ReIter]]
 
 
 def test_can_add_self_int() -> None:
@@ -53,6 +57,70 @@ def test_can_add_same_int() -> None:
     # https://github.com/facebook/pyrefly/issues/1783
     assert isinstance(x, op.CanAddSame)
     assert issubclass(int, op.CanAddSame)
+
+
+def test_can_lt_same_date() -> None:
+    """Ensure that `datetime.date` is assignable to `CanLtSame`."""
+    x = date(2006, 5, 4)
+
+    a0: op.CanLtSame = x
+    a1: op.CanLtSame[Any] = x
+    a2: op.CanLtSame[date] = x
+    a3: op.CanLtSame[datetime] = x
+
+    r0: op.CanLtSame[int] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    r1: op.CanLtSame[object] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+
+    assert isinstance(x, op.CanLtSame)
+    assert issubclass(date, op.CanLtSame)
+
+
+def test_can_le_same_date() -> None:
+    """Ensure that `datetime.date` is assignable to `CanLeSame`."""
+    x = date(2006, 5, 4)
+
+    a0: op.CanLeSame = x
+    a1: op.CanLeSame[Any] = x
+    a2: op.CanLeSame[date] = x
+    a3: op.CanLeSame[datetime] = x
+
+    r0: op.CanLeSame[int] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    r1: op.CanLeSame[object] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+
+    assert isinstance(x, op.CanLeSame)
+    assert issubclass(date, op.CanLeSame)
+
+
+def test_can_gt_same_date() -> None:
+    """Ensure that `datetime.date` is assignable to `CanGtSame`."""
+    x = date(2006, 5, 4)
+
+    a0: op.CanGtSame = x
+    a1: op.CanGtSame[Any] = x
+    a2: op.CanGtSame[date] = x
+    a3: op.CanGtSame[datetime] = x
+
+    r0: op.CanGtSame[int] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    r1: op.CanGtSame[object] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+
+    assert isinstance(x, op.CanGtSame)
+    assert issubclass(date, op.CanGtSame)
+
+
+def test_can_ge_same_date() -> None:
+    """Ensure that `datetime.date` is assignable to `CanGeSame`."""
+    x = date(2006, 5, 4)
+
+    a0: op.CanGeSame = x
+    a1: op.CanGeSame[Any] = x
+    a2: op.CanGeSame[date] = x
+    a3: op.CanGeSame[datetime] = x
+
+    r0: op.CanGeSame[int] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    r1: op.CanGeSame[object] = x  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+
+    assert isinstance(x, op.CanGeSame)
+    assert issubclass(date, op.CanGeSame)
 
 
 def test_iadd() -> None:
@@ -320,6 +388,8 @@ def test_can_same_self(cls: type) -> None:
     camelcase operation name.
     The `Can{}Same`, `Can{}Self`, and `Can{}` protocols should also have the same single
     member method.
+    The rich comparison protocols are the exception: they only have `Can{}` and
+    `Can{}Same` variants.
     """
     name = cls.__name__
     assert name.startswith("Can")
@@ -327,10 +397,22 @@ def test_can_same_self(cls: type) -> None:
 
     base = name.removesuffix("Same")
     assert hasattr(op, f"{base}")
-    assert hasattr(op, f"{base}Self")
     assert hasattr(op, f"{base}Same")
 
     stem = base.removeprefix("Can").removesuffix("Same")
+    if stem in {"Lt", "Le", "Gt", "Ge"}:
+        # rich comparisons have no `Self`, `I`, or `R` variants
+        assert not hasattr(op, f"{base}Self")
+        assert not hasattr(op, f"CanI{stem}")
+        assert not hasattr(op, f"CanR{stem}")
+
+        members_same = get_protocol_members(cls)
+        assert len(members_same) == 1, members_same
+        assert members_same == get_protocol_members(getattr(op, f"{base}"))
+        return
+
+    assert hasattr(op, f"{base}Self")
+
     if iop := (stem[0] == "I" and stem[1].isupper()):
         stem = stem[1:]
 
@@ -352,3 +434,30 @@ def test_can_same_self(cls: type) -> None:
 
     assert members_same == members_self
     assert members_same == members_base
+
+
+def test_can_round_float() -> None:
+    # https://github.com/jorenham/optype/issues/596
+
+    x: float = 1 / 137
+
+    r1: op.CanRound1[int] = x
+    assert isinstance(r1, op.CanRound1)
+
+    r2: op.CanRound2[int, float] = x
+    assert isinstance(r2, op.CanRound2)
+
+    r: op.CanRound[int, int, float] = x
+    assert isinstance(r, op.CanRound)
+
+
+def test_can_rpow_int() -> None:
+    # https://github.com/jorenham/optype/issues/619
+    x: int = 42
+
+    r: op.CanRPow[int, int] = x
+    assert isinstance(r, op.CanRPow)
+
+    if sys.version_info >= (3, 14):
+        r3: op.CanRPow3[int, int, int] = x
+        assert isinstance(r3, op.CanRPow3)

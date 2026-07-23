@@ -1,12 +1,12 @@
 import sys
 import types
 from collections.abc import Iterable
-from typing import Literal, TypeAlias, cast, get_args as _get_args, overload
+from typing import Literal, TypeAliasType, cast, get_args as _get_args, overload
 
 if sys.version_info >= (3, 13):
-    from typing import TypeAliasType, TypeIs, is_protocol
+    from typing import TypeIs, is_protocol
 else:
-    from typing_extensions import TypeAliasType, TypeIs, is_protocol
+    from typing_extensions import TypeIs, is_protocol
 
 
 from ._core import _can as _c
@@ -38,7 +38,7 @@ def __dir__() -> tuple[str, ...]:
 ###
 
 
-_ToIter: TypeAlias = Iterable[object] | _c.CanGetitem[int, object]
+type _ToIter = Iterable[object] | _c.CanGetitem[int, object]
 
 
 def is_iterable(obj: object, /) -> TypeIs[_ToIter]:
@@ -162,7 +162,7 @@ def is_runtime_protocol(type_expr: type | object, /) -> bool:
     Check if `type_expr` is a `typing[_extensions].Protocol` that's decorated
     with `typing[_extensions].runtime_checkable`.
     """
-    if isinstance(type_expr, AnnotatedAlias | TypeAliasType):
+    if isinstance(type_expr, (AnnotatedAlias, TypeAliasType)):
         type_expr = _get_alias(type_expr)
     return (
         bool(getattr(type_expr, "_is_runtime_protocol", False))
@@ -172,20 +172,20 @@ def is_runtime_protocol(type_expr: type | object, /) -> bool:
 
 
 def is_union_type(type_expr: type | object, /) -> TypeIs[types.UnionType | UnionAlias]:
-    if isinstance(type_expr, AnnotatedAlias | TypeAliasType):
+    if isinstance(type_expr, (AnnotatedAlias, TypeAliasType)):
         type_expr = _get_alias(type_expr)
-    return isinstance(type_expr, types.UnionType | UnionAlias)
+    return isinstance(type_expr, (types.UnionType, UnionAlias))
 
 
 def is_generic_alias(
     type_expr: type | object,
     /,
 ) -> TypeIs[GenericType | types.GenericAlias]:
-    if isinstance(type_expr, AnnotatedAlias | TypeAliasType):
+    if isinstance(type_expr, (AnnotatedAlias, TypeAliasType)):
         type_expr = _get_alias(type_expr)
     return (
-        isinstance(type_expr, GenericType | types.GenericAlias)
-        and not isinstance(type_expr, types.UnionType | UnionAlias)
+        isinstance(type_expr, (GenericType, types.GenericAlias))
+        and not isinstance(type_expr, (types.UnionType, UnionAlias))
     )  # fmt: skip
 
 
@@ -205,17 +205,17 @@ def get_args(tp: type | object, /) -> tuple[type | object, ...]:
         raise NotImplementedError("str")
 
     should_raise = True
-    if isinstance(tp, AnnotatedAlias | TypeAliasType):
+    if isinstance(tp, (AnnotatedAlias, TypeAliasType)):
         tp = _get_alias(tp)
         should_raise = False
 
-    if isinstance(tp, types.UnionType | UnionAlias | LiteralAlias):
+    if isinstance(tp, (types.UnionType, UnionAlias, LiteralAlias)):
         arg: object
         args: list[object] = []
         for arg in tp.__args__:
-            if isinstance(arg, TypeAliasType | AnnotatedAlias):
+            if isinstance(arg, (TypeAliasType, AnnotatedAlias)):
                 arg = _get_alias(arg)  # noqa: PLW2901
-            if isinstance(arg, types.UnionType | UnionAlias | LiteralAlias):
+            if isinstance(arg, (types.UnionType, UnionAlias, LiteralAlias)):
                 args.extend(get_args(arg))
             else:
                 args.append(arg)

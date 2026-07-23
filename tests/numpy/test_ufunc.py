@@ -1,19 +1,18 @@
 import math
 from collections.abc import Callable as Fn
-from typing import Any, Literal, LiteralString, TypeAlias, TypeVar, cast
+from typing import Any, Literal, LiteralString, cast
 
 import numpy as np
 
 from optype.numpy import CanArrayUFunc, UFunc
 
-_SCT = TypeVar("_SCT", bound=np.generic)
-_ScalarOrArray: TypeAlias = np.ndarray[Any, np.dtype[_SCT]] | _SCT
+type _ScalarOrArray[_SCT: np.generic] = np.ndarray[Any, np.dtype[_SCT]] | _SCT
 
-_N0: TypeAlias = Literal[0]
-_N1: TypeAlias = Literal[1]
-_N2: TypeAlias = Literal[2]
+type _N0 = Literal[0]
+type _N1 = Literal[1]
+type _N2 = Literal[2]
 
-_Any2: TypeAlias = tuple[Any, Any]
+type _Any2 = tuple[Any, Any]
 
 
 def test_anyufunc_ufunc_type() -> None:

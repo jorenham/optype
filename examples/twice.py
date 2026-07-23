@@ -1,25 +1,24 @@
 # %%
-from typing import Literal, TypeAlias, TypeVar, assert_type
+from typing import Literal, assert_type
 
 import optype as op
 
-Y = TypeVar("Y")
-Two: TypeAlias = Literal[2]
+type Two = Literal[2]
 
 
-def twice(x: op.CanRMul[Two, Y], /) -> Y:
+def twice[Y](x: op.CanRMul[Two, Y], /) -> Y:
     return 2 * x
 
 
 # %%
 assert_type(twice(True), int)
 assert_type(twice(1 / 137), float)
-assert_type(twice(str(-1 / 12)), str)  # pyrefly: ignore[assert-type]
+assert_type(twice(str(-1 / 12)), str)
 assert_type(twice([object()]), list[object])
 
 
 # %%
-def twice2(x: op.CanRMul[Two, Y] | op.CanMul[Two, Y], /) -> Y:
+def twice2[Y](x: op.CanRMul[Two, Y] | op.CanMul[Two, Y], /) -> Y:
     return 2 * x if isinstance(x, op.CanRMul) else x * 2
 
 

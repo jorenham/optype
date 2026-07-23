@@ -1,7 +1,7 @@
 import sys
 import types
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from typing import Any, Literal as L, Protocol, TypeAlias  # noqa: N817
+from typing import Any, Literal as L, Protocol  # noqa: N817
 
 if sys.version_info >= (3, 13):
     from typing import TypeVar, runtime_checkable
@@ -23,8 +23,8 @@ def __dir__() -> list[str]:
 ###
 
 
-_AnyFunc: TypeAlias = Callable[..., Any]
-_AnyArray: TypeAlias = np.ndarray[AnyShape, np.dtype[Any]]
+type _AnyFunc = Callable[..., Any]
+type _AnyArray = np.ndarray[AnyShape, np.dtype[Any]]
 
 _FT_co = TypeVar("_FT_co", bound=_AnyFunc, default=_AnyFunc, covariant=True)
 _NInT_co = TypeVar("_NInT_co", bound=int, default=int, covariant=True)
@@ -117,7 +117,7 @@ class UFunc(Protocol[_FT_co, _NInT_co, _NoutT_co, _SigT_co, _IdT_co]):
 _UFT_contra = TypeVar("_UFT_contra", bound=UFunc, default=np.ufunc, contravariant=True)
 _T_co = TypeVar("_T_co", default=Any, covariant=True)
 
-_MethodCommon: TypeAlias = L["__call__", "reduce", "reduceat", "accumulate", "outer"]
+type _MethodCommon = L["__call__", "reduce", "reduceat", "accumulate", "outer"]
 
 
 @runtime_checkable

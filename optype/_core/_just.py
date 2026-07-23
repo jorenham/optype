@@ -6,15 +6,15 @@ from typing import (
     Never,
     Protocol,
     Self,
-    TypeAlias,
     _ProtocolMeta,  # noqa: PLC2701
     final,
+    override,
 )
 
 if sys.version_info >= (3, 13):
-    from typing import TypeIs, TypeVar, override, runtime_checkable
+    from typing import TypeIs, TypeVar, runtime_checkable
 else:
-    from typing_extensions import TypeIs, TypeVar, override, runtime_checkable
+    from typing_extensions import TypeIs, TypeVar, runtime_checkable
 
 from ._can import CanFloat, CanIndex
 
@@ -37,11 +37,9 @@ def __dir__() -> list[str]:
 ###
 
 
-_T = TypeVar("_T")
-_TypeT = TypeVar("_TypeT", bound=type)
 _ObjectT = TypeVar("_ObjectT", default=object)
 
-_CanFloatOrIndex: TypeAlias = CanFloat | CanIndex
+type _CanFloatOrIndex = CanFloat | CanIndex
 
 
 ###
@@ -55,7 +53,7 @@ _CanFloatOrIndex: TypeAlias = CanFloat | CanIndex
 
 
 @final  # https://github.com/python/mypy/issues/17288
-class Just(Protocol[_T]):  # type: ignore[misc]
+class Just[T](Protocol):  # type: ignore[misc]
     """
     An invariant type "wrapper", where `Just[T]` only accepts instances of `T`, and but
     rejects instances of any strict subtypes of `T`.
@@ -72,22 +70,22 @@ class Just(Protocol[_T]):  # type: ignore[misc]
 
     @property
     @override
-    def __class__(self, /) -> type[_T]: ...  # pyrefly: ignore[bad-override]
+    def __class__(self, /) -> type[T]: ...  # pyrefly: ignore[bad-override]
     @__class__.setter
     @override
-    def __class__(self, t: type[_T], /) -> None: ...
+    def __class__(self, t: type[T], /) -> None: ...
 
 
 @final
 class _JustMeta(_ProtocolMeta, Generic[_ObjectT]):
     __just_class__: type[_ObjectT]  # pyright: ignore[reportUninitializedInstanceVariable]
 
-    def __new__(  # noqa: PYI019
-        mcls: type[_TypeT],
+    def __new__[TypeT: type](  # noqa: PYI019
+        mcls: type[TypeT],
         /,
         *args: *tuple[str, tuple[type, ...], dict[str, Any]],
         just: type[_ObjectT],
-    ) -> _TypeT:
+    ) -> TypeT:
         self = super().__new__(mcls, *args)  # type: ignore[misc]  # ty: ignore[invalid-super-argument]
         self.__just_class__ = just  # pyrefly: ignore[missing-attribute]
         return self
@@ -110,7 +108,7 @@ class _JustMeta(_ProtocolMeta, Generic[_ObjectT]):
             from optype.types._typeforms import GenericType  # noqa: PLC0415
 
             while type(subclass) in {GenericType, GenericAlias}:
-                origin = subclass.__origin__
+                origin = subclass.__origin__  # pyrefly:ignore[implicit-any-variable]
                 if origin is Just:
                     (subclass,) = subclass.__args__
                 else:

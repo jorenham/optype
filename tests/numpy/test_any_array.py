@@ -5,7 +5,6 @@ from typing import Final
 
 import numpy as np
 import pytest
-from numpy_typing_compat import long, ulong
 
 import optype.numpy as onp  # noqa: TC001
 from optype.numpy import _scalar as _sc, ctypeslib as _ct
@@ -15,7 +14,7 @@ from optype.numpy import _scalar as _sc, ctypeslib as _ct
 
 _UNSIGNED_INTEGER_NP: Final = {
     np.uint8, np.uint16, np.uint32, np.uint64, np.uintp,
-    np.ubyte, np.ushort, np.uintc, ulong, np.ulonglong,
+    np.ubyte, np.ushort, np.uintc, np.ulong, np.ulonglong,
 }  # fmt: skip
 _UNSIGNED_INTEGER_CT: Final = {
     ct.c_uint8, ct.c_uint16, ct.c_uint32, ct.c_uint64, ct.c_size_t,
@@ -24,7 +23,7 @@ _UNSIGNED_INTEGER_CT: Final = {
 UNSIGNED_INTEGER: Final = _UNSIGNED_INTEGER_NP | _UNSIGNED_INTEGER_CT
 _SIGNED_INTEGER_NP: Final = {
     np.int8, np.int16, np.int32, np.int64, np.intp,
-    np.byte, np.short, np.intc, long, np.longlong,
+    np.byte, np.short, np.intc, np.long, np.longlong,
 }  # fmt: skip
 _SIGNED_INTEGER_CT: Final = {
     ct.c_int8, ct.c_int16, ct.c_int32, ct.c_int64, ct.c_ssize_t,
@@ -51,7 +50,7 @@ CHARACTER: Final = STR | BYTES
 # https://github.com/jorenham/optype/issues/371
 VOID: Final = {np.void}
 FLEXIBLE: Final = VOID | CHARACTER
-BOOL: Final = {np.bool_, ct.c_bool, bool}
+BOOL: Final = {np.bool, ct.c_bool, bool}
 OBJECT: Final = {np.object_, ct.py_object}
 
 
@@ -173,13 +172,13 @@ def test_any_datetime64_array() -> None:
 
 def test_any_timedelta_array() -> None:
     v = dt.timedelta(0)
-    x = np.array(np.timedelta64(v))
+    x = np.array(np.timedelta64(v, "ms"))
     x_any: onp.AnyTimeDelta64Array = x
     assert np.issubdtype(x.dtype, np.timedelta64)
 
 
 def test_any_timedelta64_array() -> None:
-    x = np.array(np.timedelta64(0))
+    x = np.array(np.timedelta64(0, "ns"))
     x_any: onp.AnyTimeDelta64Array = x
     assert np.issubdtype(x.dtype, np.timedelta64)
 
@@ -224,10 +223,10 @@ def test_any_flexible_array(
 
 
 @pytest.mark.parametrize("sctype", BOOL, ids="{0.__module__}.{0.__qualname__}".format)
-def test_any_bool_array(sctype: type[bool | np.bool_ | _ct.Bool]) -> None:
+def test_any_bool_array(sctype: type[bool | np.bool | _ct.Bool]) -> None:
     x = np.array(sctype(True))
     x_any: onp.AnyBoolArray = x
-    assert np.issubdtype(x.dtype, np.bool_)
+    assert np.issubdtype(x.dtype, np.bool)
 
 
 @pytest.mark.parametrize("sctype", OBJECT)

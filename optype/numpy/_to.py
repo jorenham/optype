@@ -1,11 +1,19 @@
 import sys
-from collections.abc import Sequence as Seq
-from typing import Any, Literal, Protocol, TypeAlias
+from collections.abc import Callable, Sequence as Seq
+from typing import (
+    TYPE_CHECKING,
+    Annotated as Ann,
+    Any,
+    Literal,
+    Protocol,
+    TypeAliasType,
+    runtime_checkable,
+)
 
 if sys.version_info >= (3, 13):
-    from typing import TypeAliasType, TypeVar
+    from typing import TypeVar
 else:
-    from typing_extensions import TypeAliasType, TypeVar
+    from typing_extensions import TypeVar
 
 import numpy as np
 import numpy_typing_compat as nptc
@@ -111,8 +119,8 @@ def __dir__() -> list[str]:
 ###
 
 
-_PyBool: TypeAlias = bool | Literal[0, 1]  # 0 and 1 are sometimes used as bool values
-_PyScalar: TypeAlias = complex | bytes | str  # `complex` equivs `complex | float | int`
+type _PyBool = bool | Literal[0, 1]  # 0 and 1 are sometimes used as bool values
+type _PyScalar = complex | bytes | str  # `complex` equivs `complex | float | int`
 
 
 T = TypeVar("T", default=_PyScalar)
@@ -124,99 +132,72 @@ SCT_co = TypeVar("SCT_co", bound=np.generic, covariant=True)
 # (and aren't runtime checkable)
 
 
-_CanArrayStrict1D = TypeAliasType(
-    "_CanArrayStrict1D",
-    nptc.CanArray[tuple[int], np.dtype[SCT]],
-    type_params=(SCT,),
-)
-_CanArrayStrict2D = TypeAliasType(
-    "_CanArrayStrict2D",
-    nptc.CanArray[tuple[int, int], np.dtype[SCT]],
-    type_params=(SCT,),
-)
-_CanArrayStrict3D = TypeAliasType(
-    "_CanArrayStrict3D",
-    nptc.CanArray[tuple[int, int, int], np.dtype[SCT]],
-    type_params=(SCT,),
-)
-
-
+@runtime_checkable
 class _CanArrayND(Protocol[SCT_co]):
     def __len__(self, /) -> int: ...
     def __array__(self, /) -> np.ndarray[Any, np.dtype[SCT_co]]: ...
 
 
+@runtime_checkable
 class _CanArray(Protocol[SCT_co]):
     def __array__(self, /) -> np.ndarray[Any, np.dtype[SCT_co]]: ...
 
 
-_To1D1 = TypeAliasType("_To1D1", _CanArrayND[SCT] | Seq[SCT], type_params=(SCT,))
-_To1D2 = TypeAliasType("_To1D2", _CanArrayND[SCT] | Seq[T | SCT], type_params=(T, SCT))
+if TYPE_CHECKING:
+    _CanArrayStrict1D = TypeAliasType(  # noqa: UP040
+        "_CanArrayStrict1D",
+        nptc.CanArray[tuple[int], np.dtype[SCT]],
+        type_params=(SCT,),
+    )
+    _CanArrayStrict2D = TypeAliasType(  # noqa: UP040
+        "_CanArrayStrict2D",
+        nptc.CanArray[tuple[int, int], np.dtype[SCT]],
+        type_params=(SCT,),
+    )
+    _CanArrayStrict3D = TypeAliasType(  # noqa: UP040
+        "_CanArrayStrict3D",
+        nptc.CanArray[tuple[int, int, int], np.dtype[SCT]],
+        type_params=(SCT,),
+    )
 
-_To2D1 = TypeAliasType(
-    "_To2D1",
-    _CanArrayND[SCT] | Seq[_To1D1[SCT]],
-    type_params=(SCT,),
-)
-_To2D2 = TypeAliasType(
-    "_To2D2",
-    _CanArrayND[SCT] | Seq[_To1D2[T, SCT]],
-    type_params=(T, SCT),
-)
+else:
 
-_To3D1 = TypeAliasType(
-    "_To3D1",
-    _CanArrayND[SCT] | Seq[_To2D1[SCT]],
-    type_params=(SCT,),
-)
-_To3D2 = TypeAliasType(
-    "_To3D2",
-    _CanArrayND[SCT] | Seq[_To2D2[T, SCT]],
-    type_params=(T, SCT),
-)
+    @runtime_checkable
+    class _CanArrayStrict1D(Protocol[SCT_co]):
+        def __array__(self) -> np.ndarray[tuple[int], np.dtype[SCT_co]]: ...
 
-_ToND1 = TypeAliasType(
-    "_ToND1",
-    _CanArrayND[SCT] | SeqND[_CanArray[SCT]],
-    type_params=(SCT,),
-)
-_ToND2 = TypeAliasType(
-    "_ToND2",
-    _CanArrayND[SCT] | SeqND[T | _CanArray[SCT]],
-    type_params=(T, SCT),
-)
+    @runtime_checkable
+    class _CanArrayStrict2D(Protocol[SCT_co]):
+        def __array__(self) -> np.ndarray[tuple[int, int], np.dtype[SCT_co]]: ...
 
-_ToStrict1D1 = TypeAliasType(
-    "_ToStrict1D1",
-    _CanArrayStrict1D[SCT] | Seq[SCT],
-    type_params=(SCT,),
-)
-_ToStrict1D2 = TypeAliasType(
-    "_ToStrict1D2",
-    _CanArrayStrict1D[SCT] | Seq[T | SCT],
-    type_params=(T, SCT),
-)
+    @runtime_checkable
+    class _CanArrayStrict3D(Protocol[SCT_co]):
+        def __array__(self) -> np.ndarray[tuple[int, int, int], np.dtype[SCT_co]]: ...
 
-_ToStrict2D1 = TypeAliasType(
-    "_ToStrict2D1",
-    _CanArrayStrict2D[SCT] | Seq[_ToStrict1D1[SCT]],
-    type_params=(SCT,),
-)
-_ToStrict2D2 = TypeAliasType(
-    "_ToStrict2D2",
-    _CanArrayStrict2D[SCT] | Seq[_ToStrict1D2[T, SCT]],
-    type_params=(T, SCT),
+
+type _To1D1[SCT: np.generic] = _CanArrayND[SCT] | Seq[SCT]
+type _To1D2[T, SCT: np.generic] = _CanArrayND[SCT] | Seq[T | SCT]
+
+type _To2D1[SCT: np.generic] = _CanArrayND[SCT] | Seq[_To1D1[SCT]]
+type _To2D2[T, SCT: np.generic] = _CanArrayND[SCT] | Seq[_To1D2[T, SCT]]
+
+type _To3D1[SCT: np.generic] = _CanArrayND[SCT] | Seq[_To2D1[SCT]]
+type _To3D2[T, SCT: np.generic] = _CanArrayND[SCT] | Seq[_To2D2[T, SCT]]
+
+type _ToND1[SCT: np.generic] = _CanArrayND[SCT] | SeqND[_CanArray[SCT]]
+type _ToND2[T, SCT: np.generic] = _CanArrayND[SCT] | SeqND[T | _CanArray[SCT]]
+
+type _ToStrict1D1[SCT: np.generic] = _CanArrayStrict1D[SCT] | Seq[SCT]
+type _ToStrict1D2[T, SCT: np.generic] = _CanArrayStrict1D[SCT] | Seq[T | SCT]
+
+type _ToStrict2D1[SCT: np.generic] = _CanArrayStrict2D[SCT] | Seq[_ToStrict1D1[SCT]]
+type _ToStrict2D2[T, SCT: np.generic] = (
+    _CanArrayStrict2D[SCT] | Seq[_ToStrict1D2[T, SCT]]
 )
 
-_ToStrict3D1 = TypeAliasType(
-    "_ToStrict3D1",
-    _CanArrayStrict3D[SCT] | Seq[_ToStrict2D1[SCT]],
-    type_params=(SCT,),
-)
-_ToStrict3D2 = TypeAliasType(
-    "_ToStrict3D2",
-    _CanArrayStrict3D[SCT] | Seq[_ToStrict2D2[T, SCT]],
-    type_params=(T, SCT),
+type _ToStrict3D1[SCT: np.generic] = _CanArrayStrict3D[SCT] | Seq[_ToStrict2D1[SCT]]
+type _ToStrict3D2[T, SCT: np.generic] = (
+    _CanArrayStrict3D[SCT] | Seq[_ToStrict2D2[T, SCT]]
 )
 
 
@@ -225,419 +206,358 @@ _ToStrict3D2 = TypeAliasType(
 # TODO(jorenham): export & document
 # https://github.com/jorenham/optype/issues/373
 
-integer_co = TypeAliasType("integer_co", npc.integer | np.bool_)
-floating_co = TypeAliasType("floating_co", npc.floating | npc.integer | np.bool_)
-complexfloating_co = TypeAliasType("complexfloating_co", npc.number | np.bool_)
+type integer_co = npc.integer | np.bool  # noqa: PYI042
+type floating_co = npc.floating | npc.integer | np.bool  # noqa: PYI042
+type complexfloating_co = npc.number | np.bool  # noqa: PYI042
 
 # promotion rules with safe casting mode
-f16_co = TypeAliasType("f16_co", npc.floating16 | npc.integer8 | np.bool_)
-f32_co = TypeAliasType(
-    "f32_co",
-    npc.floating32 | npc.floating16 | npc.integer16 | npc.integer8 | np.bool_,
-)
-c64_co = TypeAliasType(
-    "c64_co",
-    npc.inexact32 | npc.number16 | npc.integer8 | np.bool_,
-)
-f64_co = TypeAliasType(
-    "f64_co",
-    npc.floating64 | npc.floating32 | npc.floating16 | npc.integer | np.bool_,
-)
-c128_co = TypeAliasType(
-    "c128_co",
-    npc.number64 | npc.number32 | npc.number16 | npc.integer | np.bool_,
-)
+type f16_co = npc.floating16 | npc.integer8 | np.bool  # noqa: PYI042
+type f32_co = npc.floating32 | npc.floating16 | npc.integer16 | npc.integer8 | np.bool  # noqa: PYI042
+type c64_co = npc.inexact32 | npc.number16 | npc.integer8 | np.bool  # noqa: PYI042
+type f64_co = npc.floating64 | npc.floating32 | npc.floating16 | npc.integer | np.bool  # noqa: PYI042
+type c128_co = npc.number64 | npc.number32 | npc.number16 | npc.integer | np.bool  # noqa: PYI042
 
+###
+
+# runtime type-checking compat
+
+if TYPE_CHECKING:
+    # we don't use float | int to avoid clutter in type-checker error output
+    py_float = float
+    py_complex = complex
+else:
+    py_float = float | int
+    py_complex = complex | py_float
 
 ###
 
 # scalar- and array-likes, with "coercible" shape-types
 
-ToScalar = TypeAliasType("ToScalar", _PyScalar | np.generic)
-ToArray1D = TypeAliasType("ToArray1D", _To1D2[T, SCT], type_params=(T, SCT))
-ToArray2D = TypeAliasType("ToArray2D", _To2D2[T, SCT], type_params=(T, SCT))
-ToArray3D = TypeAliasType("ToArray3D", _To3D2[T, SCT], type_params=(T, SCT))
-ToArrayND = TypeAliasType("ToArrayND", _ToND2[T, SCT], type_params=(T, SCT))
+type ToScalar = _PyScalar | np.generic
+ToArray1D = TypeAliasType("ToArray1D", _To1D2[T, SCT], type_params=(T, SCT))  # noqa: UP040
+ToArray2D = TypeAliasType("ToArray2D", _To2D2[T, SCT], type_params=(T, SCT))  # noqa: UP040
+ToArray3D = TypeAliasType("ToArray3D", _To3D2[T, SCT], type_params=(T, SCT))  # noqa: UP040
+ToArrayND = TypeAliasType("ToArrayND", _ToND2[T, SCT], type_params=(T, SCT))  # noqa: UP040
 
-ToFalse = TypeAliasType("ToFalse", nptc.LiteralFalse | Literal[0])
-ToTrue = TypeAliasType("ToTrue", nptc.LiteralTrue | Literal[1])
+type ToFalse = nptc.LiteralFalse | Literal[0]
+type ToTrue = nptc.LiteralTrue | Literal[1]
 
-ToJustFalse = TypeAliasType("ToJustFalse", nptc.LiteralFalse)
-ToJustTrue = TypeAliasType("ToJustTrue", nptc.LiteralTrue)
+type ToJustFalse = nptc.LiteralFalse
+type ToJustTrue = nptc.LiteralTrue
 
-ToBool = TypeAliasType("ToBool", _PyBool | np.bool_)
-ToBool1D = TypeAliasType("ToBool1D", _To1D2[_PyBool, np.bool_])
-ToBool2D = TypeAliasType("ToBool2D", _To2D2[_PyBool, np.bool_])
-ToBool3D = TypeAliasType("ToBool3D", _To3D2[_PyBool, np.bool_])
-ToBoolND = TypeAliasType("ToBoolND", _ToND2[_PyBool, np.bool_])
+type ToBool = _PyBool | np.bool
+type ToBool1D = _To1D2[_PyBool, np.bool]
+type ToBool2D = _To2D2[_PyBool, np.bool]
+type ToBool3D = _To3D2[_PyBool, np.bool]
+type ToBoolND = _ToND2[_PyBool, np.bool]
 
-ToInt = TypeAliasType("ToInt", int | integer_co)
-ToInt1D = TypeAliasType("ToInt1D", _To1D2[int, integer_co])
-ToInt2D = TypeAliasType("ToInt2D", _To2D2[int, integer_co])
-ToInt3D = TypeAliasType("ToInt3D", _To3D2[int, integer_co])
-ToIntND = TypeAliasType("ToIntND", _ToND2[int, integer_co])
+type ToInt = int | integer_co
+type ToInt1D = _To1D2[int, integer_co]
+type ToInt2D = _To2D2[int, integer_co]
+type ToInt3D = _To3D2[int, integer_co]
+type ToIntND = _ToND2[int, integer_co]
 
-ToFloat16 = TypeAliasType("ToFloat16", f16_co)
-ToFloat16_1D = TypeAliasType("ToFloat16_1D", _To1D1[f16_co])
-ToFloat16_2D = TypeAliasType("ToFloat16_2D", _To2D1[f16_co])
-ToFloat16_3D = TypeAliasType("ToFloat16_3D", _To3D1[f16_co])
-ToFloat16_ND = TypeAliasType("ToFloat16_ND", _ToND1[f16_co])
+type ToFloat16 = f16_co
+type ToFloat16_1D = _To1D1[f16_co]
+type ToFloat16_2D = _To2D1[f16_co]
+type ToFloat16_3D = _To3D1[f16_co]
+type ToFloat16_ND = _ToND1[f16_co]
 
-ToFloat32 = TypeAliasType("ToFloat32", f32_co)
-ToFloat32_1D = TypeAliasType("ToFloat32_1D", _To1D1[f32_co])
-ToFloat32_2D = TypeAliasType("ToFloat32_2D", _To2D1[f32_co])
-ToFloat32_3D = TypeAliasType("ToFloat32_3D", _To3D1[f32_co])
-ToFloat32_ND = TypeAliasType("ToFloat32_ND", _ToND1[f32_co])
+type ToFloat32 = f32_co
+type ToFloat32_1D = _To1D1[f32_co]
+type ToFloat32_2D = _To2D1[f32_co]
+type ToFloat32_3D = _To3D1[f32_co]
+type ToFloat32_ND = _ToND1[f32_co]
 
-ToFloat64 = TypeAliasType("ToFloat64", float | f64_co)
-ToFloat64_1D = TypeAliasType("ToFloat64_1D", _To1D2[float, f64_co])
-ToFloat64_2D = TypeAliasType("ToFloat64_2D", _To2D2[float, f64_co])
-ToFloat64_3D = TypeAliasType("ToFloat64_3D", _To3D2[float, f64_co])
-ToFloat64_ND = TypeAliasType("ToFloat64_ND", _ToND2[float, f64_co])
+type ToFloat64 = py_float | f64_co
+type ToFloat64_1D = _To1D2[py_float, f64_co]
+type ToFloat64_2D = _To2D2[py_float, f64_co]
+type ToFloat64_3D = _To3D2[py_float, f64_co]
+type ToFloat64_ND = _ToND2[py_float, f64_co]
 
-ToFloat = TypeAliasType("ToFloat", float | floating_co)
-ToFloat1D = TypeAliasType("ToFloat1D", _To1D2[float, floating_co])
-ToFloat2D = TypeAliasType("ToFloat2D", _To2D2[float, floating_co])
-ToFloat3D = TypeAliasType("ToFloat3D", _To3D2[float, floating_co])
-ToFloatND = TypeAliasType("ToFloatND", _ToND2[float, floating_co])
+type ToFloat = py_float | floating_co
+type ToFloat1D = _To1D2[py_float, floating_co]
+type ToFloat2D = _To2D2[py_float, floating_co]
+type ToFloat3D = _To3D2[py_float, floating_co]
+type ToFloatND = _ToND2[py_float, floating_co]
 
-ToComplex64 = TypeAliasType("ToComplex64", c64_co)
-ToComplex64_1D = TypeAliasType("ToComplex64_1D", _To1D1[c64_co])
-ToComplex64_2D = TypeAliasType("ToComplex64_2D", _To2D1[c64_co])
-ToComplex64_3D = TypeAliasType("ToComplex64_3D", _To3D1[c64_co])
-ToComplex64_ND = TypeAliasType("ToComplex64_ND", _ToND1[c64_co])
+type ToComplex64 = c64_co
+type ToComplex64_1D = _To1D1[c64_co]
+type ToComplex64_2D = _To2D1[c64_co]
+type ToComplex64_3D = _To3D1[c64_co]
+type ToComplex64_ND = _ToND1[c64_co]
 
-ToComplex128 = TypeAliasType("ToComplex128", complex | c128_co)
-ToComplex128_1D = TypeAliasType("ToComplex128_1D", _To1D2[complex, c128_co])
-ToComplex128_2D = TypeAliasType("ToComplex128_2D", _To2D2[complex, c128_co])
-ToComplex128_3D = TypeAliasType("ToComplex128_3D", _To3D2[complex, c128_co])
-ToComplex128_ND = TypeAliasType("ToComplex128_ND", _ToND2[complex, c128_co])
+type ToComplex128 = py_complex | c128_co
+type ToComplex128_1D = _To1D2[py_complex, c128_co]
+type ToComplex128_2D = _To2D2[py_complex, c128_co]
+type ToComplex128_3D = _To3D2[py_complex, c128_co]
+type ToComplex128_ND = _ToND2[py_complex, c128_co]
 
-ToComplex = TypeAliasType("ToComplex", complex | complexfloating_co)
-ToComplex1D = TypeAliasType("ToComplex1D", _To1D2[complex, complexfloating_co])
-ToComplex2D = TypeAliasType("ToComplex2D", _To2D2[complex, complexfloating_co])
-ToComplex3D = TypeAliasType("ToComplex3D", _To3D2[complex, complexfloating_co])
-ToComplexND = TypeAliasType("ToComplexND", _ToND2[complex, complexfloating_co])
+type ToComplex = py_complex | complexfloating_co
+type ToComplex1D = _To1D2[py_complex, complexfloating_co]
+type ToComplex2D = _To2D2[py_complex, complexfloating_co]
+type ToComplex3D = _To3D2[py_complex, complexfloating_co]
+type ToComplexND = _ToND2[py_complex, complexfloating_co]
 
 # scalar- and array-likes, with "just" that scalar type
 
-ToJustBool = TypeAliasType("ToJustBool", bool | np.bool_)
-ToJustBool1D = TypeAliasType("ToJustBool1D", _To1D2[bool, np.bool_])
-ToJustBool2D = TypeAliasType("ToJustBool2D", _To2D2[bool, np.bool_])
-ToJustBool3D = TypeAliasType("ToJustBool3D", _To3D2[bool, np.bool_])
-ToJustBoolND = TypeAliasType("ToJustBoolND", _ToND2[bool, np.bool_])
+type ToJustBool = bool | np.bool
+type ToJustBool1D = _To1D2[bool, np.bool]
+type ToJustBool2D = _To2D2[bool, np.bool]
+type ToJustBool3D = _To3D2[bool, np.bool]
+type ToJustBoolND = _ToND2[bool, np.bool]
 
-ToJustInt64 = TypeAliasType("ToJustInt64", JustInt | np.intp)
-ToJustInt64_1D = TypeAliasType("ToJustInt64_1D", _To1D2[JustInt, np.intp])
-ToJustInt64_2D = TypeAliasType("ToJustInt64_2D", _To2D2[JustInt, np.intp])
-ToJustInt64_3D = TypeAliasType("ToJustInt64_3D", _To3D2[JustInt, np.intp])
-ToJustInt64_ND = TypeAliasType("ToJustInt64_ND", _ToND2[JustInt, np.intp])
+type ToJustInt64 = JustInt | np.intp
+type ToJustInt64_1D = _To1D2[JustInt, np.intp]
+type ToJustInt64_2D = _To2D2[JustInt, np.intp]
+type ToJustInt64_3D = _To3D2[JustInt, np.intp]
+type ToJustInt64_ND = _ToND2[JustInt, np.intp]
 
-ToJustInt = TypeAliasType("ToJustInt", JustInt | npc.integer)
-ToJustInt1D = TypeAliasType("ToJustInt1D", _To1D2[JustInt, npc.integer])
-ToJustInt2D = TypeAliasType("ToJustInt2D", _To2D2[JustInt, npc.integer])
-ToJustInt3D = TypeAliasType("ToJustInt3D", _To3D2[JustInt, npc.integer])
-ToJustIntND = TypeAliasType("ToJustIntND", _ToND2[JustInt, npc.integer])
+type ToJustInt = JustInt | npc.integer
+type ToJustInt1D = _To1D2[JustInt, npc.integer]
+type ToJustInt2D = _To2D2[JustInt, npc.integer]
+type ToJustInt3D = _To3D2[JustInt, npc.integer]
+type ToJustIntND = _ToND2[JustInt, npc.integer]
 
-ToJustFloat16 = TypeAliasType("ToJustFloat16", npc.floating16)
-ToJustFloat16_1D = TypeAliasType("ToJustFloat16_1D", _To1D1[npc.floating16])
-ToJustFloat16_2D = TypeAliasType("ToJustFloat16_2D", _To2D1[npc.floating16])
-ToJustFloat16_3D = TypeAliasType("ToJustFloat16_3D", _To3D1[npc.floating16])
-ToJustFloat16_ND = TypeAliasType("ToJustFloat16_ND", _ToND1[npc.floating16])
+type ToJustFloat16 = npc.floating16
+type ToJustFloat16_1D = _To1D1[npc.floating16]
+type ToJustFloat16_2D = _To2D1[npc.floating16]
+type ToJustFloat16_3D = _To3D1[npc.floating16]
+type ToJustFloat16_ND = _ToND1[npc.floating16]
 
-ToJustFloat32 = TypeAliasType("ToJustFloat32", npc.floating32)
-ToJustFloat32_1D = TypeAliasType("ToJustFloat32_1D", _To1D1[npc.floating32])
-ToJustFloat32_2D = TypeAliasType("ToJustFloat32_2D", _To2D1[npc.floating32])
-ToJustFloat32_3D = TypeAliasType("ToJustFloat32_3D", _To3D1[npc.floating32])
-ToJustFloat32_ND = TypeAliasType("ToJustFloat32_ND", _ToND1[npc.floating32])
+type ToJustFloat32 = npc.floating32
+type ToJustFloat32_1D = _To1D1[npc.floating32]
+type ToJustFloat32_2D = _To2D1[npc.floating32]
+type ToJustFloat32_3D = _To3D1[npc.floating32]
+type ToJustFloat32_ND = _ToND1[npc.floating32]
 
-ToJustFloat64 = TypeAliasType("ToJustFloat64", JustFloat | npc.floating64)
-ToJustFloat64_1D = TypeAliasType("ToJustFloat64_1D", _To1D2[JustFloat, npc.floating64])
-ToJustFloat64_2D = TypeAliasType("ToJustFloat64_2D", _To2D2[JustFloat, npc.floating64])
-ToJustFloat64_3D = TypeAliasType("ToJustFloat64_3D", _To3D2[JustFloat, npc.floating64])
-ToJustFloat64_ND = TypeAliasType("ToJustFloat64_ND", _ToND2[JustFloat, npc.floating64])
+type ToJustFloat64 = JustFloat | npc.floating64
+type ToJustFloat64_1D = _To1D2[JustFloat, npc.floating64]
+type ToJustFloat64_2D = _To2D2[JustFloat, npc.floating64]
+type ToJustFloat64_3D = _To3D2[JustFloat, npc.floating64]
+type ToJustFloat64_ND = _ToND2[JustFloat, npc.floating64]
 
-ToJustLongDouble = TypeAliasType("ToJustLongDouble", npc.floating80)
-ToJustLongDouble1D = TypeAliasType("ToJustLongDouble1D", _To1D1[npc.floating80])
-ToJustLongDouble2D = TypeAliasType("ToJustLongDouble2D", _To2D1[npc.floating80])
-ToJustLongDouble3D = TypeAliasType("ToJustLongDouble3D", _To3D1[npc.floating80])
-ToJustLongDoubleND = TypeAliasType("ToJustLongDoubleND", _ToND1[npc.floating80])
+type ToJustLongDouble = npc.floating80
+type ToJustLongDouble1D = _To1D1[npc.floating80]
+type ToJustLongDouble2D = _To2D1[npc.floating80]
+type ToJustLongDouble3D = _To3D1[npc.floating80]
+type ToJustLongDoubleND = _ToND1[npc.floating80]
 
-ToJustFloat = TypeAliasType("ToJustFloat", JustFloat | npc.floating)
-ToJustFloat1D = TypeAliasType("ToJustFloat1D", _To1D2[JustFloat, npc.floating])
-ToJustFloat2D = TypeAliasType("ToJustFloat2D", _To2D2[JustFloat, npc.floating])
-ToJustFloat3D = TypeAliasType("ToJustFloat3D", _To3D2[JustFloat, npc.floating])
-ToJustFloatND = TypeAliasType("ToJustFloatND", _ToND2[JustFloat, npc.floating])
+type ToJustFloat = JustFloat | npc.floating
+type ToJustFloat1D = _To1D2[JustFloat, npc.floating]
+type ToJustFloat2D = _To2D2[JustFloat, npc.floating]
+type ToJustFloat3D = _To3D2[JustFloat, npc.floating]
+type ToJustFloatND = _ToND2[JustFloat, npc.floating]
 
-ToJustComplex64 = TypeAliasType("ToJustComplex64", npc.complexfloating64)
-ToJustComplex64_1D = TypeAliasType("ToJustComplex64_1D", _To1D1[npc.complexfloating64])
-ToJustComplex64_2D = TypeAliasType("ToJustComplex64_2D", _To2D1[npc.complexfloating64])
-ToJustComplex64_3D = TypeAliasType("ToJustComplex64_3D", _To3D1[npc.complexfloating64])
-ToJustComplex64_ND = TypeAliasType("ToJustComplex64_ND", _ToND1[npc.complexfloating64])
+type ToJustComplex64 = npc.complexfloating64
+type ToJustComplex64_1D = _To1D1[npc.complexfloating64]
+type ToJustComplex64_2D = _To2D1[npc.complexfloating64]
+type ToJustComplex64_3D = _To3D1[npc.complexfloating64]
+type ToJustComplex64_ND = _ToND1[npc.complexfloating64]
 
-ToJustComplex128 = TypeAliasType(
-    "ToJustComplex128",
-    JustComplex | npc.complexfloating128,
-)
-ToJustComplex128_1D = TypeAliasType(
-    "ToJustComplex128_1D",
-    _To1D2[JustComplex, npc.complexfloating128],
-)
-ToJustComplex128_2D = TypeAliasType(
-    "ToJustComplex128_2D",
-    _To2D2[JustComplex, npc.complexfloating128],
-)
-ToJustComplex128_3D = TypeAliasType(
-    "ToJustComplex128_3D",
-    _To3D2[JustComplex, npc.complexfloating128],
-)
-ToJustComplex128_ND = TypeAliasType(
-    "ToJustComplex128_ND",
-    _ToND2[JustComplex, npc.complexfloating128],
-)
+type ToJustComplex128 = JustComplex | npc.complexfloating128
+type ToJustComplex128_1D = _To1D2[JustComplex, npc.complexfloating128]
+type ToJustComplex128_2D = _To2D2[JustComplex, npc.complexfloating128]
+type ToJustComplex128_3D = _To3D2[JustComplex, npc.complexfloating128]
+type ToJustComplex128_ND = _ToND2[JustComplex, npc.complexfloating128]
 
-ToJustCLongDouble = TypeAliasType("ToJustCLongDouble", npc.complexfloating160)
-ToJustCLongDouble1D = TypeAliasType(
-    "ToJustCLongDouble1D",
-    _To1D1[npc.complexfloating160],
-)
-ToJustCLongDouble2D = TypeAliasType(
-    "ToJustCLongDouble2D",
-    _To2D1[npc.complexfloating160],
-)
-ToJustCLongDouble3D = TypeAliasType(
-    "ToJustCLongDouble3D",
-    _To3D1[npc.complexfloating160],
-)
-ToJustCLongDoubleND = TypeAliasType(
-    "ToJustCLongDoubleND",
-    _ToND1[npc.complexfloating160],
-)
+type ToJustCLongDouble = npc.complexfloating160
+type ToJustCLongDouble1D = _To1D1[npc.complexfloating160]
+type ToJustCLongDouble2D = _To2D1[npc.complexfloating160]
+type ToJustCLongDouble3D = _To3D1[npc.complexfloating160]
+type ToJustCLongDoubleND = _ToND1[npc.complexfloating160]
 
-ToJustComplex = TypeAliasType("ToJustComplex", JustComplex | npc.complexfloating)
-ToJustComplex1D = TypeAliasType(
-    "ToJustComplex1D",
-    _To1D2[JustComplex, npc.complexfloating],
-)
-ToJustComplex2D = TypeAliasType(
-    "ToJustComplex2D",
-    _To2D2[JustComplex, npc.complexfloating],
-)
-ToJustComplex3D = TypeAliasType(
-    "ToJustComplex3D",
-    _To3D2[JustComplex, npc.complexfloating],
-)
-ToJustComplexND = TypeAliasType(
-    "ToJustComplexND",
-    _ToND2[JustComplex, npc.complexfloating],
-)
+type ToJustComplex = JustComplex | npc.complexfloating
+type ToJustComplex1D = _To1D2[JustComplex, npc.complexfloating]
+type ToJustComplex2D = _To2D2[JustComplex, npc.complexfloating]
+type ToJustComplex3D = _To3D2[JustComplex, npc.complexfloating]
+type ToJustComplexND = _ToND2[JustComplex, npc.complexfloating]
 
 # array-likes, with "coercible" shape-types, and "strict" shape-types
 
-ToArrayStrict1D = TypeAliasType(
+ToArrayStrict1D = TypeAliasType(  # noqa: UP040
     "ToArrayStrict1D",
     _ToStrict1D2[T, SCT],
     type_params=(T, SCT),
 )
-ToArrayStrict2D = TypeAliasType(
+ToArrayStrict2D = TypeAliasType(  # noqa: UP040
     "ToArrayStrict2D",
     _ToStrict2D2[T, SCT],
     type_params=(T, SCT),
 )
-ToArrayStrict3D = TypeAliasType(
+ToArrayStrict3D = TypeAliasType(  # noqa: UP040
     "ToArrayStrict3D",
     _ToStrict3D2[T, SCT],
     type_params=(T, SCT),
 )
 
-ToBoolStrict1D = TypeAliasType("ToBoolStrict1D", _ToStrict1D2[_PyBool, np.bool_])
-ToBoolStrict2D = TypeAliasType("ToBoolStrict2D", _ToStrict2D2[_PyBool, np.bool_])
-ToBoolStrict3D = TypeAliasType("ToBoolStrict3D", _ToStrict3D2[_PyBool, np.bool_])
+type ToBoolStrict1D = _ToStrict1D2[_PyBool, np.bool]
+type ToBoolStrict2D = _ToStrict2D2[_PyBool, np.bool]
+type ToBoolStrict3D = _ToStrict3D2[_PyBool, np.bool]
 
-ToIntStrict1D = TypeAliasType("ToIntStrict1D", _ToStrict1D2[int, integer_co])
-ToIntStrict2D = TypeAliasType("ToIntStrict2D", _ToStrict2D2[int, integer_co])
-ToIntStrict3D = TypeAliasType("ToIntStrict3D", _ToStrict3D2[int, integer_co])
+type ToIntStrict1D = _ToStrict1D2[int, integer_co]
+type ToIntStrict2D = _ToStrict2D2[int, integer_co]
+type ToIntStrict3D = _ToStrict3D2[int, integer_co]
 
-ToFloat16Strict1D = TypeAliasType("ToFloat16Strict1D", _ToStrict1D1[f16_co])
-ToFloat16Strict2D = TypeAliasType("ToFloat16Strict2D", _ToStrict2D1[f16_co])
-ToFloat16Strict3D = TypeAliasType("ToFloat16Strict3D", _ToStrict3D1[f16_co])
+type ToFloat16Strict1D = _ToStrict1D1[f16_co]
+type ToFloat16Strict2D = _ToStrict2D1[f16_co]
+type ToFloat16Strict3D = _ToStrict3D1[f16_co]
 
-ToFloat32Strict1D = TypeAliasType("ToFloat32Strict1D", _ToStrict1D1[f32_co])
-ToFloat32Strict2D = TypeAliasType("ToFloat32Strict2D", _ToStrict2D1[f32_co])
-ToFloat32Strict3D = TypeAliasType("ToFloat32Strict3D", _ToStrict3D1[f32_co])
+type ToFloat32Strict1D = _ToStrict1D1[f32_co]
+type ToFloat32Strict2D = _ToStrict2D1[f32_co]
+type ToFloat32Strict3D = _ToStrict3D1[f32_co]
 
-ToFloat64Strict1D = TypeAliasType("ToFloat64Strict1D", _ToStrict1D2[float, f64_co])
-ToFloat64Strict2D = TypeAliasType("ToFloat64Strict2D", _ToStrict2D2[float, f64_co])
-ToFloat64Strict3D = TypeAliasType("ToFloat64Strict3D", _ToStrict3D2[float, f64_co])
+type ToFloat64Strict1D = _ToStrict1D2[py_float, f64_co]
+type ToFloat64Strict2D = _ToStrict2D2[py_float, f64_co]
+type ToFloat64Strict3D = _ToStrict3D2[py_float, f64_co]
 
-ToFloatStrict1D = TypeAliasType("ToFloatStrict1D", _ToStrict1D2[float, floating_co])
-ToFloatStrict2D = TypeAliasType("ToFloatStrict2D", _ToStrict2D2[float, floating_co])
-ToFloatStrict3D = TypeAliasType("ToFloatStrict3D", _ToStrict3D2[float, floating_co])
+type ToFloatStrict1D = _ToStrict1D2[py_float, floating_co]
+type ToFloatStrict2D = _ToStrict2D2[py_float, floating_co]
+type ToFloatStrict3D = _ToStrict3D2[py_float, floating_co]
 
-ToComplex64Strict1D = TypeAliasType("ToComplex64Strict1D", _ToStrict1D1[c64_co])
-ToComplex64Strict2D = TypeAliasType("ToComplex64Strict2D", _ToStrict2D1[c64_co])
-ToComplex64Strict3D = TypeAliasType("ToComplex64Strict3D", _ToStrict3D1[c64_co])
+type ToComplex64Strict1D = _ToStrict1D1[c64_co]
+type ToComplex64Strict2D = _ToStrict2D1[c64_co]
+type ToComplex64Strict3D = _ToStrict3D1[c64_co]
 
-ToComplex128Strict1D = TypeAliasType(
-    "ToComplex128Strict1D",
-    _ToStrict1D2[complex, c128_co],
-)
-ToComplex128Strict2D = TypeAliasType(
-    "ToComplex128Strict2D",
-    _ToStrict2D2[complex, c128_co],
-)
-ToComplex128Strict3D = TypeAliasType(
-    "ToComplex128Strict3D",
-    _ToStrict3D2[complex, c128_co],
-)
+type ToComplex128Strict1D = _ToStrict1D2[py_complex, c128_co]
+type ToComplex128Strict2D = _ToStrict2D2[py_complex, c128_co]
+type ToComplex128Strict3D = _ToStrict3D2[py_complex, c128_co]
 
-ToComplexStrict1D = TypeAliasType(
-    "ToComplexStrict1D",
-    _ToStrict1D2[complex, complexfloating_co],
-)
-ToComplexStrict2D = TypeAliasType(
-    "ToComplexStrict2D",
-    _ToStrict2D2[complex, complexfloating_co],
-)
-ToComplexStrict3D = TypeAliasType(
-    "ToComplexStrict3D",
-    _ToStrict3D2[complex, complexfloating_co],
-)
+type ToComplexStrict1D = _ToStrict1D2[py_complex, complexfloating_co]
+type ToComplexStrict2D = _ToStrict2D2[py_complex, complexfloating_co]
+type ToComplexStrict3D = _ToStrict3D2[py_complex, complexfloating_co]
 
 # array-likes, with "just" that scalar type, and "strict" shape-types
 
-ToJustBoolStrict1D = TypeAliasType("ToJustBoolStrict1D", _ToStrict1D2[bool, np.bool_])
-ToJustBoolStrict2D = TypeAliasType("ToJustBoolStrict2D", _ToStrict2D2[bool, np.bool_])
-ToJustBoolStrict3D = TypeAliasType("ToJustBoolStrict3D", _ToStrict3D2[bool, np.bool_])
-ToJustInt64Strict1D = TypeAliasType(
-    "ToJustInt64Strict1D",
-    _ToStrict1D2[JustInt, np.int64],
-)
-ToJustInt64Strict2D = TypeAliasType(
-    "ToJustInt64Strict2D",
-    _ToStrict2D2[JustInt, np.int64],
-)
-ToJustInt64Strict3D = TypeAliasType(
-    "ToJustInt64Strict3D",
-    _ToStrict3D2[JustInt, np.int64],
-)
-ToJustIntStrict1D = TypeAliasType(
-    "ToJustIntStrict1D",
-    _ToStrict1D2[JustInt, npc.integer],
-)
-ToJustIntStrict2D = TypeAliasType(
-    "ToJustIntStrict2D",
-    _ToStrict2D2[JustInt, npc.integer],
-)
-ToJustIntStrict3D = TypeAliasType(
-    "ToJustIntStrict3D",
-    _ToStrict3D2[JustInt, npc.integer],
-)
-ToJustFloat16Strict1D = TypeAliasType(
-    "ToJustFloat16Strict1D",
-    _ToStrict1D1[npc.floating16],
-)
-ToJustFloat16Strict2D = TypeAliasType(
-    "ToJustFloat16Strict2D",
-    _ToStrict2D1[npc.floating16],
-)
-ToJustFloat16Strict3D = TypeAliasType(
-    "ToJustFloat16Strict3D",
-    _ToStrict3D1[npc.floating16],
-)
-ToJustFloat32Strict1D = TypeAliasType(
-    "ToJustFloat32Strict1D",
-    _ToStrict1D1[npc.floating32],
-)
-ToJustFloat32Strict2D = TypeAliasType(
-    "ToJustFloat32Strict2D",
-    _ToStrict2D1[npc.floating32],
-)
-ToJustFloat32Strict3D = TypeAliasType(
-    "ToJustFloat32Strict3D",
-    _ToStrict3D1[npc.floating32],
-)
-ToJustFloat64Strict1D = TypeAliasType(
-    "ToJustFloat64Strict1D",
-    _ToStrict1D2[JustFloat, npc.floating64],
-)
-ToJustFloat64Strict2D = TypeAliasType(
-    "ToJustFloat64Strict2D",
-    _ToStrict2D2[JustFloat, npc.floating64],
-)
-ToJustFloat64Strict3D = TypeAliasType(
-    "ToJustFloat64Strict3D",
-    _ToStrict3D2[JustFloat, npc.floating64],
-)
-ToJustLongDoubleStrict1D = TypeAliasType(
-    "ToJustLongDoubleStrict1D",
-    _ToStrict1D1[npc.floating80],
-)
-ToJustLongDoubleStrict2D = TypeAliasType(
-    "ToJustLongDoubleStrict2D",
-    _ToStrict2D1[npc.floating80],
-)
-ToJustLongDoubleStrict3D = TypeAliasType(
-    "ToJustLongDoubleStrict3D",
-    _ToStrict3D1[npc.floating80],
-)
-ToJustFloatStrict1D = TypeAliasType(
-    "ToJustFloatStrict1D",
-    _ToStrict1D2[JustFloat, npc.floating],
-)
-ToJustFloatStrict2D = TypeAliasType(
-    "ToJustFloatStrict2D",
-    _ToStrict2D2[JustFloat, npc.floating],
-)
-ToJustFloatStrict3D = TypeAliasType(
-    "ToJustFloatStrict3D",
-    _ToStrict3D2[JustFloat, npc.floating],
-)
-ToJustComplex64Strict1D = TypeAliasType(
-    "ToJustComplex64Strict1D",
-    _ToStrict1D1[npc.complexfloating64],
-)
-ToJustComplex64Strict2D = TypeAliasType(
-    "ToJustComplex64Strict2D",
-    _ToStrict2D1[npc.complexfloating64],
-)
-ToJustComplex64Strict3D = TypeAliasType(
-    "ToJustComplex64Strict3D",
-    _ToStrict3D1[npc.complexfloating64],
-)
-ToJustComplex128Strict1D = TypeAliasType(
-    "ToJustComplex128Strict1D",
-    _ToStrict1D2[JustComplex, npc.complexfloating128],
-)
-ToJustComplex128Strict2D = TypeAliasType(
-    "ToJustComplex128Strict2D",
-    _ToStrict2D2[JustComplex, npc.complexfloating128],
-)
-ToJustComplex128Strict3D = TypeAliasType(
-    "ToJustComplex128Strict3D",
-    _ToStrict3D2[JustComplex, npc.complexfloating128],
-)
-ToJustCLongDoubleStrict1D = TypeAliasType(
-    "ToJustCLongDoubleStrict1D",
-    _ToStrict1D1[npc.complexfloating160],
-)
-ToJustCLongDoubleStrict2D = TypeAliasType(
-    "ToJustCLongDoubleStrict2D",
-    _ToStrict2D1[npc.complexfloating160],
-)
-ToJustCLongDoubleStrict3D = TypeAliasType(
-    "ToJustCLongDoubleStrict3D",
-    _ToStrict3D1[npc.complexfloating160],
-)
-ToJustComplexStrict1D = TypeAliasType(
-    "ToJustComplexStrict1D",
-    _ToStrict1D2[JustComplex, npc.complexfloating],
-)
-ToJustComplexStrict2D = TypeAliasType(
-    "ToJustComplexStrict2D",
-    _ToStrict2D2[JustComplex, npc.complexfloating],
-)
-ToJustComplexStrict3D = TypeAliasType(
-    "ToJustComplexStrict3D",
-    _ToStrict3D2[JustComplex, npc.complexfloating],
-)
+type ToJustBoolStrict1D = _ToStrict1D2[bool, np.bool]
+type ToJustBoolStrict2D = _ToStrict2D2[bool, np.bool]
+type ToJustBoolStrict3D = _ToStrict3D2[bool, np.bool]
+type ToJustInt64Strict1D = _ToStrict1D2[JustInt, np.int64]
+type ToJustInt64Strict2D = _ToStrict2D2[JustInt, np.int64]
+type ToJustInt64Strict3D = _ToStrict3D2[JustInt, np.int64]
+type ToJustIntStrict1D = _ToStrict1D2[JustInt, npc.integer]
+type ToJustIntStrict2D = _ToStrict2D2[JustInt, npc.integer]
+type ToJustIntStrict3D = _ToStrict3D2[JustInt, npc.integer]
+type ToJustFloat16Strict1D = _ToStrict1D1[npc.floating16]
+type ToJustFloat16Strict2D = _ToStrict2D1[npc.floating16]
+type ToJustFloat16Strict3D = _ToStrict3D1[npc.floating16]
+type ToJustFloat32Strict1D = _ToStrict1D1[npc.floating32]
+type ToJustFloat32Strict2D = _ToStrict2D1[npc.floating32]
+type ToJustFloat32Strict3D = _ToStrict3D1[npc.floating32]
+type ToJustFloat64Strict1D = _ToStrict1D2[JustFloat, npc.floating64]
+type ToJustFloat64Strict2D = _ToStrict2D2[JustFloat, npc.floating64]
+type ToJustFloat64Strict3D = _ToStrict3D2[JustFloat, npc.floating64]
+type ToJustLongDoubleStrict1D = _ToStrict1D1[npc.floating80]
+type ToJustLongDoubleStrict2D = _ToStrict2D1[npc.floating80]
+type ToJustLongDoubleStrict3D = _ToStrict3D1[npc.floating80]
+type ToJustFloatStrict1D = _ToStrict1D2[JustFloat, npc.floating]
+type ToJustFloatStrict2D = _ToStrict2D2[JustFloat, npc.floating]
+type ToJustFloatStrict3D = _ToStrict3D2[JustFloat, npc.floating]
+type ToJustComplex64Strict1D = _ToStrict1D1[npc.complexfloating64]
+type ToJustComplex64Strict2D = _ToStrict2D1[npc.complexfloating64]
+type ToJustComplex64Strict3D = _ToStrict3D1[npc.complexfloating64]
+type ToJustComplex128Strict1D = _ToStrict1D2[JustComplex, npc.complexfloating128]
+type ToJustComplex128Strict2D = _ToStrict2D2[JustComplex, npc.complexfloating128]
+type ToJustComplex128Strict3D = _ToStrict3D2[JustComplex, npc.complexfloating128]
+type ToJustCLongDoubleStrict1D = _ToStrict1D1[npc.complexfloating160]
+type ToJustCLongDoubleStrict2D = _ToStrict2D1[npc.complexfloating160]
+type ToJustCLongDoubleStrict3D = _ToStrict3D1[npc.complexfloating160]
+type ToJustComplexStrict1D = _ToStrict1D2[JustComplex, npc.complexfloating]
+type ToJustComplexStrict2D = _ToStrict2D2[JustComplex, npc.complexfloating]
+type ToJustComplexStrict3D = _ToStrict3D2[JustComplex, npc.complexfloating]
+
+
+# if not TYPE_CHECKING:
+try:
+    from beartype.vale import Is as _BeartypeIs
+except ImportError:
+    pass
+else:
+    # `beartype.vale._core._valecore.BeartypeValidator` is private, unfortunately
+    type _BeartypeValidator = Any
+
+    def _install() -> None:
+        def build(
+            check: Callable[[np.dtype[np.generic], Any], bool],
+        ) -> Callable[[int | None, object], _BeartypeValidator]:
+            def factory(nd: int | None, target: object) -> _BeartypeValidator:
+                def predicate(x: object, /) -> bool:
+                    try:
+                        x = np.asanyarray(x)
+                    except (ValueError, TypeError):
+                        return False
+                    return (nd is None or x.ndim == nd) and check(x.dtype, target)
+
+                return _BeartypeIs[predicate]
+
+            return factory
+
+        is_cast = build(np.can_cast)
+        is_sub = build(lambda dt, t: issubclass(dt.type, t))
+
+        def wrap(key: str, ann: _BeartypeValidator) -> None:
+            if key in globals():
+                globals()[key] = Ann[globals()[key], ann]  # ty:ignore[invalid-type-form]
+
+        for name, sct in [
+            ("Bool", np.bool),
+            ("Int64", np.int64),
+            ("Float16", np.float16),
+            ("Float32", np.float32),
+            ("Float64", np.float64),
+            ("LongDouble", np.longdouble),
+            ("Complex64", np.complex64),
+            ("Complex128", np.complex128),
+            ("CLongDouble", np.clongdouble),
+        ]:
+            name_ = f"{name}_" if name[-1].isdigit() else name
+
+            wrap(f"To{name}", is_cast(0, sct))
+            wrap(f"To{name_}1D", is_cast(1, sct))
+            wrap(f"To{name_}2D", is_cast(2, sct))
+            wrap(f"To{name_}3D", is_cast(3, sct))
+            wrap(f"To{name_}ND", is_cast(None, sct))
+
+            wrap(f"ToJust{name}", is_sub(0, sct))
+            wrap(f"ToJust{name_}1D", is_sub(1, sct))
+            wrap(f"ToJust{name_}2D", is_sub(2, sct))
+            wrap(f"ToJust{name_}3D", is_sub(3, sct))
+            wrap(f"ToJust{name_}ND", is_sub(None, sct))
+
+            wrap(f"To{name}Strict1D", is_cast(1, sct))
+            wrap(f"To{name}Strict2D", is_cast(2, sct))
+            wrap(f"To{name}Strict3D", is_cast(3, sct))
+
+            wrap(f"ToJust{name}Strict1D", is_sub(1, sct))
+            wrap(f"ToJust{name}Strict2D", is_sub(2, sct))
+            wrap(f"ToJust{name}Strict3D", is_sub(3, sct))
+
+        for name, sct, co_sct in [
+            ("Int", np.integer, (np.bool,)),
+            ("Float", np.floating, (np.integer, np.bool)),
+            ("Complex", np.complexfloating, (np.integer, np.floating, np.bool)),
+        ]:
+            co_classes = (sct, *co_sct)
+
+            wrap(f"To{name}", is_sub(0, co_classes))
+            wrap(f"To{name}1D", is_sub(1, co_classes))
+            wrap(f"To{name}2D", is_sub(2, co_classes))
+            wrap(f"To{name}3D", is_sub(3, co_classes))
+            wrap(f"To{name}ND", is_sub(None, co_classes))
+
+            wrap(f"ToJust{name}", is_sub(0, sct))
+            wrap(f"ToJust{name}1D", is_sub(1, sct))
+            wrap(f"ToJust{name}2D", is_sub(2, sct))
+            wrap(f"ToJust{name}3D", is_sub(3, sct))
+            wrap(f"ToJust{name}ND", is_sub(None, sct))
+
+            wrap(f"To{name}Strict1D", is_sub(1, co_classes))
+            wrap(f"To{name}Strict2D", is_sub(2, co_classes))
+            wrap(f"To{name}Strict3D", is_sub(3, co_classes))
+
+            wrap(f"ToJust{name}Strict1D", is_sub(1, sct))
+            wrap(f"ToJust{name}Strict2D", is_sub(2, sct))
+            wrap(f"ToJust{name}Strict3D", is_sub(3, sct))
+
+    _install()
+    del _install

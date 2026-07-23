@@ -25,43 +25,34 @@ However, this has several problems:
 3. **Type transformation**: `twice((1, 2)) == (1, 2, 1, 2)` changes from a 2-tuple to a 4-tuple
 4. **Limited to known types**: It doesn't account for custom types with `__rmul__` methods
 
-## The optype Solution
+## Inferring the Type
 
-`optype` provides protocols for special methods. For multiplication, we can use `CanRMul[T, R]`:
+`optype` comes with an `infer` command that derives a function's signature for you:
 
-- `T` is the type of the left operand (in `2 * x`, this is `Literal[2]`)
-- `R` is the return type of `__rmul__`
-
-```python
-import optype as op
+```console
+$ optype infer "def twice(x): return 2 * x"
+[R](x: CanRMul[Literal[2], R]) -> R
 ```
 
-=== "Python 3.12+"
+The rest of this guide explains where that type comes from.
 
-    ```python
-    from typing import Literal
+## The optype Solution
 
-    type Two = Literal[2]
-    type RMul2[R] = op.CanRMul[Two, R]
+`CanRMul[Literal[2], R]` describes the `__rmul__` method that `2 * x` calls on `x`:
 
+- `Literal[2]` is the left operand
+- `R` is the return type of `x.__rmul__`
 
-    def twice[R](x: RMul2[R]) -> R:
-        return 2 * x
-    ```
+Written out in full:
 
-=== "Python 3.11"
-
-    ```python
-    from typing import Literal, TypeAlias, TypeVar
-
-    R = TypeVar("R")
-    Two: TypeAlias = Literal[2]
-    RMul2: TypeAlias = op.CanRMul[Two, R]
+```python
+from typing import Literal
+import optype as op
 
 
-    def twice(x: RMul2[R]) -> R:
-        return 2 * x
-    ```
+def twice[R](x: op.CanRMul[Literal[2], R]) -> R:
+    return 2 * x
+```
 
 Now the type checker correctly understands:
 
@@ -70,7 +61,18 @@ twice(2)  # -> int
 twice(3.14)  # -> float
 twice("I")  # -> str (because 'I' * 2 == 'II')
 twice(True)  # -> int (because 2 * True == 2)
-twice((42, True))  # -> tuple[int, bool, int, bool]
+twice((42, True))  # -> tuple[Literal[42, True], ...]
+```
+
+You can alias it for readability:
+
+```python
+type Two = Literal[2]
+type RMul2[R] = op.CanRMul[Two, R]
+
+
+def twice[R](x: RMul2[R]) -> R:
+    return 2 * x
 ```
 
 ## Working with Custom Types
@@ -105,44 +107,22 @@ Because `optype.Can*` protocols are runtime-checkable, you can use `isinstance()
 
 For example, what about types that implement `__mul__` but not `__rmul__`? We can return `x * 2` as a fallback (assuming commutativity):
 
-=== "Python 3.12+"
+```python
+import optype as op
+from typing import Literal
 
-    ```python
-    import optype as op
-    from typing import Literal
-
-    type Two = Literal[2]
-    type RMul2[R] = op.CanRMul[Two, R]
-    type Mul2[R] = op.CanMul[Two, R]
-    type CMul2[R] = Mul2[R] | RMul2[R]
+type Two = Literal[2]
+type RMul2[R] = op.CanRMul[Two, R]
+type Mul2[R] = op.CanMul[Two, R]
+type CMul2[R] = Mul2[R] | RMul2[R]
 
 
-    def twice2[R](x: CMul2[R]) -> R:
-        if isinstance(x, op.CanRMul):
-            return 2 * x
-        else:
-            return x * 2
-    ```
-
-=== "Python 3.11"
-
-    ```python
-    import optype as op
-    from typing import Literal, TypeAlias, TypeVar
-
-    R = TypeVar("R")
-    Two: TypeAlias = Literal[2]
-    RMul2: TypeAlias = op.CanRMul[Two, R]
-    Mul2: TypeAlias = op.CanMul[Two, R]
-    CMul2: TypeAlias = Mul2[R] | RMul2[R]
-
-
-    def twice2(x: CMul2[R]) -> R:
-        if isinstance(x, op.CanRMul):
-            return 2 * x
-        else:
-            return x * 2
-    ```
+def twice2[R](x: CMul2[R]) -> R:
+    if isinstance(x, op.CanRMul):
+        return 2 * x
+    else:
+        return x * 2
+```
 
 This allows you to write flexible functions that adapt to the capabilities of their arguments.
 

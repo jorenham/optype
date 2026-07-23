@@ -237,17 +237,7 @@ Signed:
 
 !!! info
 
-    Since NumPy 2, `np.uint` and `np.int_` are aliases for `np.uintp` and `np.intp`,
-    respectively.
-
-!!! info
-
     On unix-based platforms `np.[u]intc` are aliases for `np.[u]int32`.
-
-!!! info
-
-    On NumPy 1 `np.uint` and `np.int_` are what in NumPy 2 are now the `np.ulong` and
-    `np.long` types, respectively.
 
 ## Real floats
 
@@ -422,7 +412,7 @@ that depends on the specific `np.dtype` instantiation.
         <th>dtype-like</th>
     </tr>
     <tr>
-        <td><code>bool_</code></td>
+        <td><code>bool</code></td>
         <td rowspan="3"><code>generic</code></td>
         <td><code>BoolDType</code></td>
         <td><code>AnyBoolArray</code></td>
@@ -457,7 +447,7 @@ that depends on the specific `np.dtype` instantiation.
 
 !!! info
 
-    Since NumPy 2, `np.bool` is preferred over `np.bool_`, which only exists for
+    Since NumPy 2, `np.bool` is preferred over `np.bool_`, which only existed for
     backwards compatibility.
 
 !!! info

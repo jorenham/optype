@@ -1,26 +1,12 @@
 import sys
 import types
 from collections.abc import Callable, Iterable, Mapping
-from typing import Any, ClassVar, LiteralString, TypeAlias
+from typing import Any, ClassVar, LiteralString, Protocol, override
 
 if sys.version_info >= (3, 13):
-    from typing import (
-        ParamSpec,
-        Protocol,
-        TypeVar,
-        TypeVarTuple,
-        override,
-        runtime_checkable,
-    )
+    from typing import ParamSpec, TypeVar, TypeVarTuple, runtime_checkable
 else:
-    from typing_extensions import (
-        ParamSpec,
-        Protocol,
-        TypeVar,
-        TypeVarTuple,
-        override,
-        runtime_checkable,
-    )
+    from typing_extensions import ParamSpec, TypeVar, TypeVarTuple, runtime_checkable
 
 __all__ = [
     "HasAnnotations",
@@ -33,6 +19,7 @@ __all__ = [
     "HasModule",
     "HasName",
     "HasNames",
+    "HasObjclass",
     "HasQualname",
     "HasSelf",
     "HasSlots",
@@ -47,24 +34,20 @@ def __dir__() -> list[str]:
 
 ###
 
-_TypeParams: TypeAlias = tuple[TypeVar | ParamSpec | TypeVarTuple, ...]
+type _TypeParams = tuple[TypeVar | ParamSpec | TypeVarTuple, ...]
 
-_TypeT = TypeVar("_TypeT", bound=type)
 _ObjectT_co = TypeVar("_ObjectT_co", default=object, covariant=True)
 _FuncT_co = TypeVar("_FuncT_co", bound=Callable[..., object], covariant=True)
 _TypeParamsT = TypeVar("_TypeParamsT", bound=_TypeParams, default=_TypeParams)
+_TypeT_co = TypeVar("_TypeT_co", bound=type, covariant=True, default=type)
 
-__AnyMapping: TypeAlias = "Mapping[str, object]"
-__AnyDict: TypeAlias = dict[str, Any]
+type __AnyMapping = Mapping[str, object]
+type __AnyDict = dict[str, Any]
 _DictT = TypeVar("_DictT", bound=__AnyMapping, default=__AnyDict)
 _DictT_co = TypeVar("_DictT_co", bound=__AnyMapping, default=__AnyDict, covariant=True)
 
 _NameT = TypeVar("_NameT", bound=str, default=str)
-_QualNameT = TypeVar(
-    "_QualNameT",
-    bound=str,
-    default=_NameT,
-)
+_QualNameT = TypeVar("_QualNameT", bound=str, default=_NameT)
 _StrT_co = TypeVar("_StrT_co", bound=str, default=str, covariant=True)
 
 
@@ -88,7 +71,7 @@ class HasDict(Protocol[_DictT]):  # type: ignore[misc]
 
 
 @runtime_checkable
-class HasClass(Protocol[_TypeT]):
+class HasClass[TypeT: type](Protocol):
     """
     Can be seen as the **invariant** inverse of `type[T]`, i.e. `HasClass[type[T]]`
     represents (but is not equivalent to) `T`. However, `HasClass` is stricter, and
@@ -129,10 +112,10 @@ class HasClass(Protocol[_TypeT]):
 
     @property  # type: ignore[override]  # mypy bug
     @override
-    def __class__(self) -> _TypeT: ...  # pyrefly: ignore[bad-override]
+    def __class__(self) -> TypeT: ...  # pyrefly: ignore[bad-override]
     @__class__.setter
     @override
-    def __class__(self, __class__: _TypeT, /) -> None: ...
+    def __class__(self, __class__: TypeT, /) -> None: ...
 
 
 @runtime_checkable
@@ -201,3 +184,9 @@ class HasSelf(Protocol[_ObjectT_co]):
 @runtime_checkable
 class HasCode(Protocol):
     __code__: types.CodeType
+
+
+@runtime_checkable
+class HasObjclass(Protocol[_TypeT_co]):
+    @property
+    def __objclass__(self, /) -> _TypeT_co: ...

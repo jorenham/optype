@@ -1,4 +1,4 @@
-from typing import Literal, TypeAlias
+from typing import Literal
 
 __all__ = [
     "ByteOrder",
@@ -17,31 +17,31 @@ __all__ = [
     "SortSide",
 ]
 
-Device: TypeAlias = Literal["cpu"]
+type Device = Literal["cpu"]
 
-ByteOrderChar: TypeAlias = Literal["<", ">", "=", "|"]
-ByteOrderName: TypeAlias = Literal["little", "big", "native", "ignore", "swap"]
-_ByteOrderShort: TypeAlias = Literal["L", "B", "N", "I", "S"]
-ByteOrder: TypeAlias = Literal[ByteOrderChar, _ByteOrderShort, ByteOrderName]
+type ByteOrderChar = Literal["<", ">", "=", "|"]
+type ByteOrderName = Literal["little", "big", "native", "ignore", "swap"]
+type _ByteOrderShort = Literal["L", "B", "N", "I", "S"]
+type ByteOrder = Literal[ByteOrderChar, _ByteOrderShort, ByteOrderName]
 
-CastingSafe: TypeAlias = Literal["no", "equiv", "safe", "same_kind"]
-CastingUnsafe: TypeAlias = Literal["unsafe"]
-Casting: TypeAlias = Literal[CastingSafe, CastingUnsafe]
+type CastingSafe = Literal["no", "equiv", "safe", "same_kind"]
+type CastingUnsafe = Literal["unsafe"]
+type Casting = Literal[CastingSafe, CastingUnsafe]
 
-OrderCF: TypeAlias = Literal["C", "F"]
-OrderACF: TypeAlias = Literal["A", OrderCF]
-OrderKACF: TypeAlias = Literal["K", OrderACF]
+type OrderCF = Literal["C", "F"]
+type OrderACF = Literal["A", OrderCF]
+type OrderKACF = Literal["K", OrderACF]
 
-IndexMode: TypeAlias = Literal["raise", "wrap", "clip"]
+type IndexMode = Literal["raise", "wrap", "clip"]
 
-PartitionKind: TypeAlias = Literal["introselect"]
+type PartitionKind = Literal["introselect"]
 
-SortKind: TypeAlias = Literal[
+type SortKind = Literal[
     "Q", "quick", "quicksort",
     "M", "merge", "mergesort",
     "H", "heap", "heapsort",
     "S", "stable", "stablesort",
 ]  # fmt: skip
-SortSide: TypeAlias = Literal["left", "right"]
+type SortSide = Literal["left", "right"]
 
-ConvolveMode: TypeAlias = Literal["full", "same", "valid"]
+type ConvolveMode = Literal["full", "same", "valid"]

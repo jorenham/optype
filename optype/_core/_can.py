@@ -1,12 +1,12 @@
 import sys
 import types
 from collections.abc import Generator, Iterable
-from typing import Any, Never, Protocol, Self, SupportsIndex, TypeAlias, overload
+from typing import Any, Never, Protocol, Self, SupportsIndex, overload, override
 
 if sys.version_info >= (3, 13):
-    from typing import ParamSpec, TypeVar, override, runtime_checkable
+    from typing import ParamSpec, TypeVar, runtime_checkable
 else:
-    from typing_extensions import ParamSpec, TypeVar, override, runtime_checkable
+    from typing_extensions import ParamSpec, TypeVar, runtime_checkable
 
 __all__ = [
     "CanAEnter",
@@ -49,12 +49,14 @@ __all__ = [
     "CanFloordivSelf",
     "CanFormat",
     "CanGe",
+    "CanGeSame",
     "CanGet",
     "CanGetMissing",
     "CanGetattr",
     "CanGetattribute",
     "CanGetitem",
     "CanGt",
+    "CanGtSame",
     "CanHash",
     "CanIAdd",
     "CanIAddSame",
@@ -96,18 +98,21 @@ __all__ = [
     "CanIXorSame",
     "CanIXorSelf",
     "CanIndex",
+    "CanInstancecheck",
     "CanInt",
     "CanInvert",
     "CanInvertSelf",
     "CanIter",
     "CanIterSelf",
     "CanLe",
+    "CanLeSame",
     "CanLen",
     "CanLengthHint",
     "CanLshift",
     "CanLshiftSame",
     "CanLshiftSelf",
     "CanLt",
+    "CanLtSame",
     "CanMatmul",
     "CanMatmulSame",
     "CanMatmulSelf",
@@ -150,6 +155,7 @@ __all__ = [
     "CanROr",
     "CanROrSelf",
     "CanRPow",
+    "CanRPow3",
     "CanRPowSelf",
     "CanRRshift",
     "CanRRshiftSelf",
@@ -177,6 +183,7 @@ __all__ = [
     "CanSub",
     "CanSubSame",
     "CanSubSelf",
+    "CanSubclasscheck",
     "CanTruediv",
     "CanTruedivSame",
     "CanTruedivSelf",
@@ -200,7 +207,6 @@ def __dir__() -> list[str]:
 # https://github.com/astral-sh/ty/issues/1798
 _Tss = ParamSpec("_Tss", default=...)
 
-_T = TypeVar("_T")
 _T_co = TypeVar("_T_co", covariant=True)
 _T_contra = TypeVar("_T_contra", contravariant=True)
 _TT_co = TypeVar("_TT_co", covariant=True, default=_T_contra)
@@ -211,7 +217,6 @@ _V_co = TypeVar("_V_co", covariant=True)
 _VV_co = TypeVar("_VV_co", default=_V_co, covariant=True)
 
 _BoolT_co = TypeVar("_BoolT_co", default=bool, covariant=True)
-_ExcT = TypeVar("_ExcT", bound=BaseException)
 
 _T_object_contra = TypeVar("_T_object_contra", contravariant=True, default=object)
 _T_object_co = TypeVar("_T_object_co", covariant=True, default=object)
@@ -239,12 +244,12 @@ _IndexT_contra = TypeVar(
 )
 
 # return type that is usually `None`, but can be anything, as it is ignored at runtime
-_Ignored: TypeAlias = object
+type _Ignored = object
 # This should be `asyncio.Future[typing.Any] | None`. But that would make this
 # incompatible with `Awaitable` -- it (annoyingly) uses `Any`:
 # https://github.com/python/typeshed/blob/587ad6/stdlib/asyncio/futures.pyi#L51
-_FutureOrNone: TypeAlias = object
-_AsyncGen: TypeAlias = Generator[_FutureOrNone, None, _T]
+type _FutureOrNone = object
+type _AsyncGen[_T] = Generator[_FutureOrNone, None, _T]
 
 
 ###
@@ -405,8 +410,22 @@ class CanLt(Protocol[_T_object_contra, _T_bool_co]):
 
 
 @runtime_checkable
+class CanLtSame(Protocol[_T_Never_contra, _T_bool_co]):
+    """CanLtSame[-T = Never, +R = bool] = CanLt[Self | T, R]"""
+
+    def __lt__(self, rhs: Self | _T_Never_contra, /) -> _T_bool_co: ...
+
+
+@runtime_checkable
 class CanLe(Protocol[_T_object_contra, _T_bool_co]):
     def __le__(self, rhs: _T_object_contra, /) -> _T_bool_co: ...
+
+
+@runtime_checkable
+class CanLeSame(Protocol[_T_Never_contra, _T_bool_co]):
+    """CanLeSame[-T = Never, +R = bool] = CanLe[Self | T, R]"""
+
+    def __le__(self, rhs: Self | _T_Never_contra, /) -> _T_bool_co: ...
 
 
 @runtime_checkable
@@ -415,8 +434,22 @@ class CanGt(Protocol[_T_object_contra, _T_bool_co]):
 
 
 @runtime_checkable
+class CanGtSame(Protocol[_T_Never_contra, _T_bool_co]):
+    """CanGtSame[-T = Never, +R = bool] = CanGt[Self | T, R]"""
+
+    def __gt__(self, rhs: Self | _T_Never_contra, /) -> _T_bool_co: ...
+
+
+@runtime_checkable
 class CanGe(Protocol[_T_object_contra, _T_bool_co]):
     def __ge__(self, rhs: _T_object_contra, /) -> _T_bool_co: ...
+
+
+@runtime_checkable
+class CanGeSame(Protocol[_T_Never_contra, _T_bool_co]):
+    """CanGeSame[-T = Never, +R = bool] = CanGe[Self | T, R]"""
+
+    def __ge__(self, rhs: Self | _T_Never_contra, /) -> _T_bool_co: ...
 
 
 # Callables
@@ -499,6 +532,20 @@ class CanDelete(Protocol[_T_contra]):
 @runtime_checkable
 class CanSetName(Protocol[_T_contra]):
     def __set_name__(self, cls: type[_T_contra], name: str, /) -> _Ignored: ...
+
+
+# Class checks
+
+
+@runtime_checkable
+class CanInstancecheck(Protocol):
+    def __instancecheck__(self, instance: object, /) -> bool: ...
+
+
+# not `@runtime_checkable`: a `__subclasscheck__` member shadows the one that
+# `ABCMeta` invokes internally during `isinstance`, so the check would crash
+class CanSubclasscheck(Protocol):
+    def __subclasscheck__(self, subclass: type, /) -> bool: ...
 
 
 # Collection type operands.
@@ -1012,6 +1059,12 @@ class CanRPow(Protocol[_T_contra, _TT_co]):
 
 
 @runtime_checkable
+class CanRPow3(Protocol[_T_contra, _V_contra, _T_int_co]):
+    # https://github.com/python/mypy/issues/10786
+    def __rpow__(self, lhs: _T_contra, mod: _V_contra, /) -> _T_int_co: ...  # type: ignore[misc]
+
+
+@runtime_checkable
 class CanRPowSelf(Protocol[_T_contra]):
     """CanRPowSelf[-T] = CanRPow[T, Self]"""
 
@@ -1096,7 +1149,6 @@ class CanROrSelf(Protocol[_T_contra]):
 ###
 # Augmented arithmetic operands
 
-# ruff: noqa: PYI034
 
 # __iadd__
 
@@ -1459,7 +1511,7 @@ class CanRound1(Protocol[_T_int_co]):
 
 @runtime_checkable
 class CanRound2(Protocol[_T_int_contra, _T_float_co]):
-    def __round__(self, /, ndigits: _T_int_contra) -> _T_float_co: ...
+    def __round__(self, ndigits: _T_int_contra, /) -> _T_float_co: ...
 
 
 @runtime_checkable
@@ -1472,7 +1524,7 @@ class CanRound(
     @override
     def __round__(self, /) -> _T_int_co: ...
     @overload
-    def __round__(self, /, ndigits: _T_int_contra) -> _T_float_co: ...
+    def __round__(self, ndigits: _T_int_contra, /) -> _T_float_co: ...
 
 
 @runtime_checkable
@@ -1530,10 +1582,10 @@ class CanExit(Protocol[_T_None_co]):
     @overload
     def __exit__(self, exc_type: None, exc: None, tb: None, /) -> None: ...
     @overload
-    def __exit__(  # noqa: PYI036
+    def __exit__[ExcT: BaseException](  # noqa: PYI036
         self,
-        exc_type: type[_ExcT],
-        exc: _ExcT,
+        exc_type: type[ExcT],
+        exc: ExcT,
         tb: types.TracebackType,
         /,
     ) -> _T_None_co: ...
@@ -1568,10 +1620,10 @@ class CanAExit(Protocol[_T_None_co]):
     @overload
     def __aexit__(self, exc_type: None, exc: None, tb: None, /) -> CanAwait[None]: ...
     @overload
-    def __aexit__(
+    def __aexit__[ExcT: BaseException](
         self,
-        exc_type: type[_ExcT],
-        exc_: _ExcT,
+        exc_type: type[ExcT],
+        exc_: ExcT,
         tb: types.TracebackType,
         /,
     ) -> CanAwait[_T_None_co]: ...

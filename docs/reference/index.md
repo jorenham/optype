@@ -99,6 +99,7 @@ These are the fundamental protocols for Python's builtin operations:
 - **[Attributes](core/attributes.md)**: `__name__`, `__dict__`, `__doc__`, etc.
 - **[Context Managers](core/context.md)**: `with`, `async with`
 - **[Descriptors](core/descriptors.md)**: `__get__`, `__set__`, `__delete__`
+- **[Metaclasses](core/metaclasses.md)**: `isinstance()`, `issubclass()`
 - **[Buffer Types](core/buffer.md)**: Memory views and buffer protocol
 
 ## Standard Library Modules

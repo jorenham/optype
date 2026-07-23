@@ -1,5 +1,5 @@
 [build-system]
-requires = ["uv_build>=0.11.8,<0.12.0"]
+requires = ["uv_build>=0.11.28,<0.12.0"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
@@ -8,7 +8,7 @@ module-root = ""
 [project]
 name = "optype"
 description = "Building Blocks for Precise & Flexible Type Hints"
-version = "0.17.1.dev0"
+version = "0.18.1.dev0"
 authors = [{ name = "Joren Hammudoglu", email = "jhammudoglu@gmail.com" }]
 license = "BSD-3-Clause"
 license-files = ["LICENSE"]
@@ -38,21 +38,24 @@ classifiers = [
   "Intended Audience :: Science/Research",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
   "Topic :: Scientific/Engineering",
   "Topic :: Software Development",
   "Typing :: Typed",
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = ["typing-extensions>=4.10; python_version<'3.13'"]
+
+[project.scripts]
+optype = "optype.__main__:main"
 
 [project.optional-dependencies]
 numpy = [
-  "numpy>=1.26,<2.7",
-  "numpy-typing-compat>=20250818.1.25,<20251207",
+  "numpy>=2.0,<2.8",
+  "numpy-typing-compat>=20260602.2.0,<20260603",
 ]
 
 [project.urls]
@@ -67,27 +70,30 @@ extra = [
   "optype[numpy]",
 ]
 doc = [
-  "zensical==0.0.39",
+  # https://github.com/zensical/zensical/issues/735
+  "zensical>=0.0.50, <0.1",
   "pygments==2.20.0",
 ]
 lint = [
-  "dprint-py==0.53.1.0",
-  "ruff==0.15.12",
-  "sp-repo-review[cli]==2026.4.4",
+  "dprint-py==0.55.1.4",
+  "ruff==0.15.21",
+  "sp-repo-review[cli]==2026.6.18",
 ]
 test = [
   { include-group = "extra" },
+  # see [tool.uv.sources] for the Python 3.15 git pin
   "beartype>=0.22.9",
-  "pytest>=9.0.3",
+  "pytest>=9.1.1",
   "typing-extensions>=4.15.0",
+  # the compat-backend tests type-check the rendered stubs
+  "basedpyright==1.39.9",
 ]
 type = [
   { include-group = "extra" },
   { include-group = "test" },
-  "basedpyright==1.39.3",
-  "mypy[faster-cache]==1.20.2",
-  "pyrefly==0.63.1",
-  "ty==0.0.34",
+  "mypy[faster-cache]==2.2.0",
+  "pyrefly==1.2.0-dev.2",
+  "ty==0.0.59",
 ]
 dev = [
   { include-group = "extra" },
@@ -96,6 +102,18 @@ dev = [
   { include-group = "test" },
   { include-group = "type" },
 ]
+
+[tool.uv.sources.beartype]
+# TODO(@jorenham): drop this git pin once beartype >0.22.9 is released (3.15 fix)
+git = "https://github.com/beartype/beartype.git"
+rev = "4f5b8fb"
+marker = "python_version >= '3.15'"
+
+[tool.uv.sources.typing-extensions]
+# TODO(@jorenham): drop this git pin once typing-extensions >4.15.0 is released (3.15 fix)
+git = "https://github.com/python/typing_extensions.git"
+rev = "7e4fc36"
+marker = "python_version >= '3.15'"
 
 # mypy
 
@@ -263,10 +281,10 @@ known-third-party = ["numpy"]
 
 [tool.ruff.lint.pylint]
 allow-dunder-method-names = [
-  # instance methods
-  "__self__",
-  # classmethods
+  # methods
   "__func__",
+  "__objclass__",
+  "__self__",
   "__wrapped__",
   # `dlpack`
   "__dlpack__",
@@ -288,10 +306,10 @@ allow-magic-value-types = ["int", "str"]
 [tool.tox]
 requires = ["tox-uv>=1"]
 env_list = [
-  "3.11",
   "3.12",
   "3.13",
   "3.14",
+  "3.15",
   "dprint",
   "ruff",
   "ty",

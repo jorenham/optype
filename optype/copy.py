@@ -4,12 +4,12 @@ https://docs.python.org/3/library/copy.html
 """
 
 import sys
-from typing import Any, Protocol, Self, TypeVar
+from typing import Any, Protocol, Self, override
 
 if sys.version_info >= (3, 13):
-    from typing import override, runtime_checkable
+    from typing import runtime_checkable
 else:
-    from typing_extensions import override, runtime_checkable
+    from typing_extensions import runtime_checkable
 
 __all__ = (
     "CanCopy",
@@ -25,14 +25,11 @@ def __dir__() -> tuple[str, ...]:
     return __all__
 
 
-_T_co = TypeVar("_T_co", covariant=True)
-
-
 @runtime_checkable
-class CanCopy(Protocol[_T_co]):
+class CanCopy[T_co](Protocol):
     """Anything that can be used as `copy.copy(_: CanCopy[T]) -> T`."""
 
-    def __copy__(self, /) -> _T_co: ...
+    def __copy__(self, /) -> T_co: ...
 
 
 @runtime_checkable  # https://github.com/astral-sh/ty/issues/1800
@@ -44,10 +41,10 @@ class CanCopySelf(CanCopy["CanCopySelf"], Protocol):
 
 
 @runtime_checkable
-class CanDeepcopy(Protocol[_T_co]):
+class CanDeepcopy[T_co](Protocol):
     """Anything that can be used as `copy.deepcopy(_: CanDeepcopy[T]) -> T`."""
 
-    def __deepcopy__(self, memo: dict[int, object], /) -> _T_co: ...
+    def __deepcopy__(self, memo: dict[int, object], /) -> T_co: ...
 
 
 @runtime_checkable  # https://github.com/astral-sh/ty/issues/1800
@@ -59,7 +56,7 @@ class CanDeepcopySelf(CanDeepcopy["CanDeepcopySelf"], Protocol):
 
 
 @runtime_checkable
-class CanReplace(Protocol[_T_co]):
+class CanReplace[T_co](Protocol):
     """
     Represents anything that will be accepted by the Python 3.13+ `copy.replace()`
     stdlib function. If `x: CanReplace[T, *Ts]` and `y = copy.replace(x, **kwargs)`,
@@ -73,7 +70,7 @@ class CanReplace(Protocol[_T_co]):
     but which looks like `*_: Any, **changes: Any` here.
     """
 
-    def __replace__(self, /, *_: Any, **changes: Any) -> _T_co: ...
+    def __replace__(self, /, *_: Any, **changes: Any) -> T_co: ...
 
 
 @runtime_checkable  # https://github.com/astral-sh/ty/issues/1800

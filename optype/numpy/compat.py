@@ -8,7 +8,6 @@ from numpy.exceptions import (
     TooHardError,
     VisibleDeprecationWarning,
 )
-from numpy_typing_compat import long, ulong
 
 from ._scalar import (
     cfloating as complexfloating,
@@ -63,13 +62,11 @@ __all__ = [
     "integer16",
     "integer32",
     "integer64",
-    "long",
     "number",
     "number8",
     "number16",
     "number32",
     "number64",
     "signedinteger",
-    "ulong",
     "unsignedinteger",
 ]

@@ -13,7 +13,7 @@ concurrency:
 
 env:
   UV_LOCKED: 1
-  NPTC_BUILD: 20251206
+  NPTC_BUILD: 20260602
 
 jobs:
   lint:
@@ -22,14 +22,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 
       - name: typos
-        uses: crate-ci/typos@cf5f1c29a8ac336af8568821ec41919923b05a83 # v1.45.1
+        uses: crate-ci/typos@bee27e3a4fd1ea2111cf90ab89cd076c870fce14 # v1.48.0
 
-      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
         with:
           python-version: "3.14"
 
@@ -60,24 +60,26 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        np: ["1.26", "2.0", "2.1", "2.2", "2.3", "2.4"]
-        py: ["3.11", "3.13"]
+        py: ["3.12", "3.14"]
+        np: ["2.0", "2.1", "2.2", "2.3", "2.4", "2.5"]
         exclude:
           - py: "3.13"
-            np: "1.26"
-          - py: "3.13"
             np: "2.0"
+          - py: "3.14"
+            np: "2.0"
+          - py: "3.14"
+            np: "2.1"
+          - py: "3.14"
+            np: "2.2"
         include:
-          - py: "3.14"
-            np: "2.3"
-          - py: "3.14"
-            np: "2.4"
+          - py: "3.15"
+            np: "2.5"
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 
-      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
         with:
           activate-environment: true
           python-version: ${{ matrix.py }}
@@ -111,23 +113,23 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu, windows]
-        py: ["3.11", "3.13", "3.14"]
-        np: ["1.26", "2.0", "2.3", "2.4"]
+        py: ["3.12", "3.13", "3.14"]
+        np: ["2.0", "2.4", "2.5"]
         exclude:
           - py: "3.13"
-            np: "1.26"
-          - py: "3.13"
             np: "2.0"
           - py: "3.14"
-            np: "1.26"
-          - py: "3.14"
             np: "2.0"
+        include:
+          - os: ubuntu
+            py: "3.15"
+            np: "2.5"
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 
-      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+      - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
         with:
           python-version: ${{ matrix.py }}
           activate-environment: true
