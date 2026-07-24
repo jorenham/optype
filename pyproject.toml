@@ -1,5 +1,5 @@
 [build-system]
-requires = ["uv_build>=0.11.28,<0.12.0"]
+requires = ["uv_build>=0.11.32,<0.12.0"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
@@ -71,12 +71,12 @@ extra = [
 ]
 doc = [
   # https://github.com/zensical/zensical/issues/735
-  "zensical>=0.0.50, <0.1",
+  "zensical==0.0.51",
   "pygments==2.20.0",
 ]
 lint = [
-  "dprint-py==0.55.1.4",
-  "ruff==0.15.21",
+  "dprint-py==0.55.2.0",
+  "ruff==0.16.0",
   "sp-repo-review[cli]==2026.6.18",
 ]
 test = [
@@ -84,16 +84,16 @@ test = [
   # see [tool.uv.sources] for the Python 3.15 git pin
   "beartype>=0.22.9",
   "pytest>=9.1.1",
-  "typing-extensions>=4.15.0",
+  "typing-extensions>=4.16.0",
   # the compat-backend tests type-check the rendered stubs
   "basedpyright==1.39.9",
 ]
 type = [
   { include-group = "extra" },
   { include-group = "test" },
-  "mypy[faster-cache]==2.2.0",
+  "mypy[faster-cache]==2.3.0",
   "pyrefly==1.2.0-dev.2",
-  "ty==0.0.59",
+  "ty==0.0.63",
 ]
 dev = [
   { include-group = "extra" },
