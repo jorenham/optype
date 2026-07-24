@@ -9,7 +9,7 @@ import optype.infer._numpy as _numpy
 from ._backends import BACKENDS, BackendName
 from ._errors import WARN_SKIP_PREFIX, InferError, InferWarning
 from ._explore import explore_lenient, explore_tuple_params
-from ._gc import pause_gc
+from ._gc import cyclic_gc
 from ._ir import Signature
 from ._isolate import isolate
 from ._overloads import dispatch_overloads, resolve_defaults
@@ -116,7 +116,7 @@ def _infer_render(
 ) -> str:
     gaps: set[_Gap] = set()
     try:
-        with pause_gc():
+        with cyclic_gc.pause():
             sigs = _infer(func, selectors, gaps)
     except RecursionError as exc:
         raise InferError("the result is nested too deeply") from exc

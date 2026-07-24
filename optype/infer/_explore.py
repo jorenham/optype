@@ -31,7 +31,7 @@ from types import (
 from typing import Any, cast
 
 from ._errors import InferError
-from ._gc import drain_gc
+from ._gc import cyclic_gc
 from ._signature import signature
 from ._spy import (
     _AbsentError,
@@ -453,7 +453,7 @@ def _drain() -> None:
     marks: dict[int, tuple[_Spy, int]] = {}
     token = _journal.set(marks)
     try:
-        drain_gc()
+        cyclic_gc.drain()
     finally:
         _journal.reset(token)
         journal_rollback(marks)

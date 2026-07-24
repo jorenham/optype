@@ -1315,18 +1315,18 @@ def test_inline_timeout_reports_blocked_frame(monkeypatch: pytest.MonkeyPatch) -
 
 
 def test_inline_timeout_resumes_gc(monkeypatch: pytest.MonkeyPatch) -> None:
-    # gh-766: the abandoned thread never unwinds its `pause_gc`
+    # gh-766: the abandoned thread never unwinds its `cyclic_gc.pause`
     monkeypatch.setattr("optype.infer._isolate._S_TIMEOUT", 0.1)
 
     def work() -> None:
-        with _gc.pause_gc():
+        with _gc.cyclic_gc.pause():
             time.sleep(5)
 
     enabled = gc.isenabled()
     with pytest.raises(InferError, match="timed out"):
         _inline(work)
     assert gc.isenabled() == enabled
-    assert not _gc._paused  # ruff: ignore[private-member-access]
+    assert not _gc.cyclic_gc._paused  # ruff: ignore[private-member-access]
 
 
 @fork_only

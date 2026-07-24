@@ -1,53 +1,43 @@
 """Pause and drain the cyclic garbage collector around exploration runs."""
 
-# ruff: file-ignore[global-statement]
-
 import gc
 from collections.abc import Generator
 from contextlib import contextmanager
+from typing import Final, final
 
-# pending allocations below this leave collection to the normal gc cadence
-_PENDING_MAX = 100_000
-
-# unlocked module state: one exploration at a time, like the collector it toggles
-_paused = False
-_promoted = False
+_PENDING_MAX: Final = 100_000
 
 
-@contextmanager
-def pause_gc() -> Generator[None]:
-    """Hold automatic collection off while the trace graph is fully live.
+@final
+class _CyclicGC:
+    __slots__ = "_paused", "_promoted"
 
-    Young-only sweeps between runs and on exit free the dead cycles without
-    scanning the host's older heap.
-    """
-    global _paused, _promoted
-    if _paused or not gc.isenabled():
-        yield
-        return
-    gc.disable()
-    _paused = True
-    _promoted = False
-    try:
-        yield
-    finally:
-        _paused = False
-        gc.enable()
-        # a drain promoted the live graph to the older generation; sweep it there
-        gc.collect(1 if _promoted else 0)
+    def __init__(self) -> None:
+        self._paused = False
+        self._promoted = False
+
+    @contextmanager
+    def pause(self) -> Generator[None]:
+        """Hold collection off while live, freeing dead cycles with young sweeps."""
+        if self._paused or not gc.isenabled():
+            yield
+            return
+        gc.disable()
+        self._paused = True
+        self._promoted = False
+        try:
+            yield
+        finally:
+            self._paused = False
+            gc.enable()
+            # a drain promoted the live graph to the older generation; sweep it there
+            gc.collect(1 if self._promoted else 0)
+
+    def drain(self) -> None:
+        """A young sweep once enough garbage pends while collection is paused."""
+        if self._paused and gc.get_count()[0] > _PENDING_MAX:
+            gc.collect(0)
+            self._promoted = True
 
 
-def drain_gc() -> None:
-    """A young sweep once enough garbage pends while collection is paused."""
-    global _promoted
-    if _paused and gc.get_count()[0] > _PENDING_MAX:
-        gc.collect(0)
-        _promoted = True
-
-
-def resume_gc() -> None:
-    """Undo a `pause_gc` whose owner will never unwind, e.g. an abandoned thread."""
-    global _paused, _promoted
-    if _paused:
-        _paused = _promoted = False
-        gc.enable()
+cyclic_gc: Final = _CyclicGC()
