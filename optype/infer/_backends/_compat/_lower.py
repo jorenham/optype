@@ -16,7 +16,7 @@ from itertools import product
 from typing import final
 
 # `from optype.infer import _ir` would re-enter the package, which imports this module
-import optype.infer._ir as _ir  # noqa: PLR0402
+import optype.infer._ir as _ir  # ruff: ignore[manual-from-import]
 from ._model import (
     _Alias,
     _Attr,
@@ -65,7 +65,7 @@ def _protocol_bounds(origin: str) -> tuple[_ir.Node | None, ...] | None:
     if origin not in _OPTYPE:
         return None
 
-    import optype  # noqa: PLC0415
+    import optype  # ruff: ignore[import-outside-top-level]
 
     cls = getattr(optype, origin, None)
     params = getattr(cls, "__parameters__", None)
@@ -171,7 +171,7 @@ class _Lowerer:
     def _subst_param(param: _ir.Param, subst: Mapping[str, _ir.Node]) -> _ir.Param:
         return replace(param, node=_ir.subst(param.node, subst))
 
-    def _node(  # noqa: PLR0911
+    def _node(  # ruff: ignore[too-many-return-statements]
         self,
         node: _ir.Node,
         tyvars: frozenset[str],

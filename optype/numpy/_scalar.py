@@ -98,41 +98,41 @@ if TYPE_CHECKING:
         _128Bit,
     )
 
-    type number = np.number[Any]  # noqa: PYI042
-    type integer = np.integer[Any]  # noqa: PYI042
-    type uinteger = np.unsignedinteger[Any]  # noqa: PYI042
-    type sinteger = np.signedinteger[Any]  # noqa: PYI042
-    type inexact = np.inexact[Any]  # noqa: PYI042
-    type floating = np.floating[Any]  # noqa: PYI042
-    type cfloating = np.complexfloating[Any, Any]  # noqa: PYI042
+    type number = np.number[Any]  # ruff: ignore[snake-case-type-alias]
+    type integer = np.integer[Any]  # ruff: ignore[snake-case-type-alias]
+    type uinteger = np.unsignedinteger[Any]  # ruff: ignore[snake-case-type-alias]
+    type sinteger = np.signedinteger[Any]  # ruff: ignore[snake-case-type-alias]
+    type inexact = np.inexact[Any]  # ruff: ignore[snake-case-type-alias]
+    type floating = np.floating[Any]  # ruff: ignore[snake-case-type-alias]
+    type cfloating = np.complexfloating[Any, Any]  # ruff: ignore[snake-case-type-alias]
 
-    type integer8 = np.integer[_8Bit]  # noqa: PYI042
-    type integer16 = np.integer[_16Bit]  # noqa: PYI042
-    type integer32 = np.integer[_32Bit]  # noqa: PYI042
-    type integer64 = np.integer[_64Bit]  # noqa: PYI042
+    type integer8 = np.integer[_8Bit]  # ruff: ignore[snake-case-type-alias]
+    type integer16 = np.integer[_16Bit]  # ruff: ignore[snake-case-type-alias]
+    type integer32 = np.integer[_32Bit]  # ruff: ignore[snake-case-type-alias]
+    type integer64 = np.integer[_64Bit]  # ruff: ignore[snake-case-type-alias]
 
-    type floating16 = np.floating[_16Bit]  # noqa: PYI042
-    type floating32 = np.floating[_32Bit]  # noqa: PYI042
-    type floating64 = np.floating[_64Bit]  # noqa: PYI042
+    type floating16 = np.floating[_16Bit]  # ruff: ignore[snake-case-type-alias]
+    type floating32 = np.floating[_32Bit]  # ruff: ignore[snake-case-type-alias]
+    type floating64 = np.floating[_64Bit]  # ruff: ignore[snake-case-type-alias]
     # float96, float128, and longdouble
-    type floating80 = np.floating[_96Bit] | np.floating[_128Bit]  # noqa: PYI042
+    type floating80 = np.floating[_96Bit] | np.floating[_128Bit]  # ruff: ignore[snake-case-type-alias]
 
-    type cfloating32 = np.complexfloating[_32Bit, _32Bit]  # noqa: PYI042
-    type cfloating64 = np.complexfloating[_64Bit, _64Bit]  # noqa: PYI042
+    type cfloating32 = np.complexfloating[_32Bit, _32Bit]  # ruff: ignore[snake-case-type-alias]
+    type cfloating64 = np.complexfloating[_64Bit, _64Bit]  # ruff: ignore[snake-case-type-alias]
     # complex192, complex256, and clongdouble
-    type cfloating80 = (  # noqa: PYI042
+    type cfloating80 = (  # ruff: ignore[snake-case-type-alias]
         np.complexfloating[_96Bit, _96Bit] | np.complexfloating[_128Bit, _128Bit]
     )
 
-    type inexact32 = np.inexact[_32Bit]  # noqa: PYI042
-    type inexact64 = np.inexact[_64Bit]  # noqa: PYI042
+    type inexact32 = np.inexact[_32Bit]  # ruff: ignore[snake-case-type-alias]
+    type inexact64 = np.inexact[_64Bit]  # ruff: ignore[snake-case-type-alias]
     # float96, complex192, float128, complex256, longdouble, and clongdouble
-    type inexact80 = np.inexact[_96Bit] | np.inexact[_128Bit]  # noqa: PYI042
+    type inexact80 = np.inexact[_96Bit] | np.inexact[_128Bit]  # ruff: ignore[snake-case-type-alias]
 
-    type number8 = np.number[_8Bit]  # noqa: PYI042
-    type number16 = np.number[_16Bit]  # noqa: PYI042
-    type number32 = np.number[_32Bit]  # noqa: PYI042
-    type number64 = np.number[_64Bit]  # noqa: PYI042
+    type number8 = np.number[_8Bit]  # ruff: ignore[snake-case-type-alias]
+    type number16 = np.number[_16Bit]  # ruff: ignore[snake-case-type-alias]
+    type number32 = np.number[_32Bit]  # ruff: ignore[snake-case-type-alias]
+    type number64 = np.number[_64Bit]  # ruff: ignore[snake-case-type-alias]
 else:
     number = np.number
     integer = np.integer

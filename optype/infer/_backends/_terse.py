@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from typing import Final, assert_never, final
 
 # `from optype.infer import _ir` would re-enter the package, which imports this module
-import optype.infer._ir as _ir  # noqa: PLR0402
+import optype.infer._ir as _ir  # ruff: ignore[manual-from-import]
 from ._base import Backend, default_text, value_text
 
 _NOT = "~"  # the type complement prefix

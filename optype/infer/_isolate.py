@@ -1,6 +1,6 @@
 """Run inference in a forked subprocess so a native fault can't crash the host."""
 
-# ruff: noqa: BLE001
+# ruff: file-ignore[blind-except]
 
 import enum
 import faulthandler
@@ -17,7 +17,7 @@ from contextlib import closing, suppress
 from multiprocessing.connection import Connection
 from multiprocessing.process import BaseProcess
 
-import optype.infer._spy as _spy  # noqa: PLR0402
+import optype.infer._spy as _spy  # ruff: ignore[manual-from-import]
 from ._errors import WARN_SKIP_PREFIX, InferError
 
 
@@ -143,7 +143,7 @@ def isolate[T](work: Callable[[], T]) -> T:
 
     Raises:
         InferError: If the child crashes, hangs past the timeout, or returns no result.
-    """  # noqa: DOC501
+    """  # ruff: ignore[docstring-missing-exception]
     if not hasattr(os, "fork"):
         return _inline(work)
 

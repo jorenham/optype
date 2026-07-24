@@ -7,7 +7,7 @@ then emits the text.
 from collections.abc import Sequence
 from typing import Final, final
 
-import optype.infer._ir as _ir  # noqa: PLR0402
+import optype.infer._ir as _ir  # ruff: ignore[manual-from-import]
 from ._lower import _Lowerer
 from ._model import _Protocol
 from ._print import _alias_text, _func_text, _import_block, _protocol_text
@@ -19,7 +19,7 @@ __all__ = ("COMPAT", "CompatBackend")
 class CompatBackend:
     """Render the signatures as a self-contained, type-checkable `.pyi` stub."""
 
-    def render(self, sigs: Sequence[_ir.Signature], /) -> str:  # noqa: PLR6301
+    def render(self, sigs: Sequence[_ir.Signature], /) -> str:  # ruff: ignore[no-self-use]
         module = _Lowerer().module(sigs)
         used: set[str] = set()
         bodies = list(dict.fromkeys(_func_text(f, used) for f in module.funcs))

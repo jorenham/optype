@@ -156,7 +156,7 @@ def infer(
             operation without a matching protocol, or a parameter that requires
             a value that no placeholder can provide; or, with `strict=True`, if
             the function could not be explored exhaustively.
-    """  # noqa: DOC502
+    """  # ruff: ignore[docstring-extraneous-exception]
 
     def render() -> str:
         return _infer_render(func, selectors, strict=strict, backend=backend)

@@ -1,4 +1,4 @@
-# ruff: noqa: DTZ005, DTZ011
+# ruff: file-ignore[call-datetime-now-without-tzinfo, call-date-today]
 
 import datetime as dt
 from typing import Any, cast
@@ -10,8 +10,8 @@ import optype as op
 
 # fmt: off
 class A: ...
-class B(A): ...  # noqa: E302
-class C(B): ...  # noqa: E302
+class B(A): ...  # ruff: ignore[blank-lines-top-level]
+class C(B): ...  # ruff: ignore[blank-lines-top-level]
 # fmt: on
 
 
@@ -29,7 +29,7 @@ class C(B): ...  # noqa: E302
 def test_just_sub_meta(just_cls: type, cls: type) -> None:
     obj = cls.today() if cls is dt.date else cls()
     assert isinstance(obj, just_cls)
-    assert not isinstance(bool(), just_cls)  # noqa: UP018
+    assert not isinstance(bool(), just_cls)  # ruff: ignore[native-literals]
     assert not isinstance(cls, just_cls)
 
     assert issubclass(cls, just_cls)

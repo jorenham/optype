@@ -6,5 +6,5 @@ __all__ = ("assert_subtype",)
 
 @type_check_only
 @final
-class assert_subtype[T]:  # noqa: N801
+class assert_subtype[T]:  # ruff: ignore[invalid-class-name]
     def __new__(cls, value: T, /) -> Self: ...

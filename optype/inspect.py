@@ -214,7 +214,7 @@ def get_args(tp: type | object, /) -> tuple[type | object, ...]:
         args: list[object] = []
         for arg in tp.__args__:
             if isinstance(arg, (TypeAliasType, AnnotatedAlias)):
-                arg = _get_alias(arg)  # noqa: PLW2901
+                arg = _get_alias(arg)  # ruff: ignore[redefined-loop-name]
             if isinstance(arg, (types.UnionType, UnionAlias, LiteralAlias)):
                 args.extend(get_args(arg))
             else:
@@ -266,13 +266,14 @@ def get_protocol_members(cls: type, /) -> frozenset[str]:
         members |= protocol_attrs
     else:
         # python <3.12
-        from optype._inspect import _get_protocol_attrs  # noqa: PLC0415
+        # ruff:ignore[import-outside-top-level]
+        from optype._inspect import _get_protocol_attrs
 
         members |= _get_protocol_attrs(cls)
 
     # sometimes __protocol_attrs__ hallicunates some non-existing dunders.
     # the `getattr_static` avoids potential descriptor magic
-    from inspect import getattr_static  # noqa: PLC0415
+    from inspect import getattr_static  # ruff: ignore[import-outside-top-level]
 
     members = {
         member

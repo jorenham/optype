@@ -6,7 +6,7 @@ from typing import Final
 import numpy as np
 import pytest
 
-import optype.numpy as onp  # noqa: TC001
+import optype.numpy as onp  # ruff: ignore[typing-only-first-party-import]
 from optype.numpy import _scalar as _sc, ctypeslib as _ct
 
 # All allowed arguments that when passed to `np.array`, will result in an
@@ -66,7 +66,7 @@ def test_any_array() -> None:
 
     v_empty_list: onp.AnyArray = []
     v_empty_tuple: onp.AnyArray = ()
-    v_empty_deque: onp.AnyArray = deque(())  # noqa: RUF037
+    v_empty_deque: onp.AnyArray = deque(())  # ruff: ignore[unnecessary-empty-iterable-within-deque-call]
     v_empty_bytearray: onp.AnyArray = bytearray(b"")
     v_empty_memoryview: onp.AnyArray = memoryview(b"")
     # rejection
@@ -158,7 +158,7 @@ def test_any_complex_floating_array(sctype: type[_sc.cfloating]) -> None:
 
 
 def test_any_datetime_array() -> None:
-    v = dt.datetime.now()  # noqa: DTZ005
+    v = dt.datetime.now()  # ruff: ignore[call-datetime-now-without-tzinfo]
     x = np.array(np.datetime64(v))
     x_any: onp.AnyDateTime64Array = x
     assert np.issubdtype(x.dtype, np.datetime64)

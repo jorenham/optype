@@ -11,7 +11,7 @@ FalsyBool = tp.Literal[False]
 type FalsyInt = tp.Annotated[tp.Literal[0], (int, False)]
 type FalsyIntCo = FalsyBool | FalsyInt
 type FalsyStr = tp.Literal["", b""]
-type Falsy = tp.Literal[None, FalsyIntCo] | FalsyStr  # noqa: PYI061
+type Falsy = tp.Literal[None, FalsyIntCo] | FalsyStr  # ruff: ignore[redundant-none-literal]
 
 
 class GenericTP[T]: ...
@@ -178,8 +178,8 @@ def test_get_protocol_members() -> None:
 
 
 def test_get_protocols() -> None:
-    import collections.abc  # noqa: PLC0415
-    import types  # noqa: PLC0415
+    import collections.abc  # ruff: ignore[import-outside-top-level]
+    import types  # ruff: ignore[import-outside-top-level]
 
     assert not op.inspect.get_protocols(collections.abc)
     assert not op.inspect.get_protocols(types)
@@ -293,7 +293,7 @@ def test_is_runtime_protocol() -> None:
 def test_is_union_type(origin: type) -> None:
     assert op.inspect.is_union_type(origin | None)
 
-    Alias: TypeAliasType = TypeAliasType("Alias", origin | None)  # noqa: N806  # pyright: ignore[reportGeneralTypeIssues]
+    Alias: TypeAliasType = TypeAliasType("Alias", origin | None)  # ruff: ignore[non-lowercase-variable-in-function]  # pyright: ignore[reportGeneralTypeIssues]
     assert op.inspect.is_union_type(Alias)
 
     assert op.inspect.is_union_type(tp.Annotated[origin | None, None])

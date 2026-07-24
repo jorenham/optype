@@ -1,4 +1,4 @@
-# ruff: noqa: E402, PLC0415
+# ruff: file-ignore[module-import-not-at-top-of-file, import-outside-top-level]
 
 _NPTC_BUILD = 2026_06_02
 
@@ -14,7 +14,7 @@ def _check_numpy_typing_compat() -> None:
         )
         raise ImportError(oh_no_an_import_error) from None
 
-    if not nptc._check_version():  # noqa: SLF001
+    if not nptc._check_version():  # ruff: ignore[private-member-access]
         from importlib.metadata import requires
 
         import numpy as np
@@ -46,7 +46,7 @@ def _check_numpy_typing_compat() -> None:
 
 _check_numpy_typing_compat()
 
-# ruff: noqa: F403
+# ruff: file-ignore[undefined-local-with-import-star]
 from . import (
     _any_array,
     _any_dtype,

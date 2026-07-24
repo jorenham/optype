@@ -8,7 +8,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, replace
 
 # `from optype.infer import _ir` would re-enter the package, which imports this module
-import optype.infer._ir as _ir  # noqa: PLR0402
+import optype.infer._ir as _ir  # ruff: ignore[manual-from-import]
 
 __all__ = (
     "_Alias",

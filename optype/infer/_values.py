@@ -106,7 +106,7 @@ def _walk(value: object) -> Generator[object]:
         yield from _walk(child)
 
 
-def map_values(value: Any, leaf: Callable[[Any], Any]) -> Any:  # noqa: C901, PLR0912
+def map_values(value: Any, leaf: Callable[[Any], Any]) -> Any:  # ruff: ignore[complex-structure, too-many-branches]
     """Rebuild `value` with each non-composite leaf replaced via `leaf`.
 
     Recurses into the same shapes as `_children`, but a `tuple` subclass (namedtuple)

@@ -40,14 +40,14 @@ _AVT = TypeVar("_AVT", bound=_AnyValue, default=_AnyValue)
 
 # Return types of `json.load[s]`
 
-Array = TypeAliasType("Array", list[_VT], type_params=(_VT,))  # noqa: UP040
-Object = TypeAliasType("Object", dict[str, _VT], type_params=(_VT,))  # noqa: UP040
+Array = TypeAliasType("Array", list[_VT], type_params=(_VT,))
+Object = TypeAliasType("Object", dict[str, _VT], type_params=(_VT,))
 # ensure that `Value | Array | Object` is equivalent to `Value`
 type Value = _Value | Array | Object
 
 
 # Input types of `json.dumps`
 
-AnyArray = TypeAliasType("AnyArray", list[_AVT] | tuple[_AVT, ...], type_params=(_AVT,))  # noqa: UP040
-AnyObject = TypeAliasType("AnyObject", dict[str, _AVT], type_params=(_AVT,))  # noqa: UP040
+AnyArray = TypeAliasType("AnyArray", list[_AVT] | tuple[_AVT, ...], type_params=(_AVT,))
+AnyObject = TypeAliasType("AnyObject", dict[str, _AVT], type_params=(_AVT,))
 type AnyValue = _AnyValue | AnyArray | AnyObject | Value

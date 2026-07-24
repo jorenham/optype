@@ -269,7 +269,7 @@ def _explore_func(func: _AnyFunc) -> object:
         if any(p.kind in VARIADIC_KINDS for p in params.values()):
             return func  # variadic parameters are not expressible (yet)
         exploration, _ = explore_lenient(func, params)
-    except Exception:  # noqa: BLE001  # an unexplorable function stays opaque
+    except Exception:  # ruff: ignore[blind-except]  # an unexplorable function stays opaque
         return func
     return _Fn(
         params,
@@ -319,7 +319,7 @@ def _source_element(result: object) -> _SpyObject | None:
     return None
 
 
-def _next(result: object, path: dict[int, _RecVar | None] | None = None) -> object:  # noqa: C901
+def _next(result: object, path: dict[int, _RecVar | None] | None = None) -> object:  # ruff: ignore[complex-structure]
     # a function (or iterator) within the yields or a container is explored as well
     path = {} if path is None else path
     rid = id(result)
@@ -459,7 +459,7 @@ def _drain() -> None:
         journal_rollback(marks)
 
 
-def _explore[T](  # noqa: C901, PLR0912
+def _explore[T](  # ruff: ignore[complex-structure, too-many-branches]
     func: Callable[..., T] | Callable[..., Coroutine[Any, None, T]],
     args: Sequence[object],
     kwds: Mapping[str, object],
@@ -502,7 +502,7 @@ def _explore[T](  # noqa: C901, PLR0912
             # a forked value the target rejected (e.g. `range`'s zero step); defer
             value_exc = exc
             undo = True
-        except (Exception, SystemExit) as exc:  # noqa: BLE001
+        except (Exception, SystemExit) as exc:  # ruff: ignore[blind-except]
             # the target rejected these spy values or exited (e.g. `exit()`); skip
             last_exc = exc
             undo = True
@@ -735,7 +735,7 @@ def explore_tuple_params(
         try:
             # a bare run: results aren't re-explored, so no recursion guard is needed
             _explore(func, args, kwds)
-        except Exception:  # noqa: BLE001, S112
+        except Exception:  # ruff: ignore[blind-except, try-except-continue]
             continue
         traces = _snapshot(elems)
         # an element skipped by short-circuit isn't traced; check only those that ran

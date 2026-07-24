@@ -200,7 +200,7 @@ def subtype(sub: Term, sup: Term) -> bool:
     """Whether `sub` is a subtype of `sup`, as far as can be told from the nodes."""
 
     # a set would hash `sub`, which could have unhashable defaults
-    if sub in (sup, NEVER) or sup in _TOP:  # noqa: PLR6201
+    if sub in (sup, NEVER) or sup in _TOP:  # ruff: ignore[literal-membership]
         return True
 
     match sub, sup:
@@ -434,7 +434,7 @@ _TYPES_NAMES: dict[type, str] = {
 
 def is_sentinel(x: object, /) -> bool:
     # the getattr works around a pyrefly (1.0.0) bug
-    return sys.version_info >= (3, 15) and isinstance(x, getattr(builtins, "sentinel"))  # noqa: B009
+    return sys.version_info >= (3, 15) and isinstance(x, getattr(builtins, "sentinel"))  # ruff: ignore[get-attr-with-constant]
 
 
 def _public_module(cls: type) -> str | None:
