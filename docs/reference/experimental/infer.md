@@ -79,7 +79,8 @@ generic, or a same-attribute intersection.
 
 A subclass of `NotImplementedError`, raised when `infer` does not support the given
 function, such as a non-callable, an operation without a matching protocol, or a
-parameter that requires a value no placeholder can provide.
+parameter that requires a value no placeholder can provide. It also reports a function
+that crashes the interpreter or blocks for longer than one minute.
 
 ## `InferWarning`
 
