@@ -61,7 +61,7 @@ from optype.infer._ir import (
     subtype,
     union,
 )
-from optype.infer._isolate import isolate
+from optype.infer._isolate import _inline, isolate
 from optype.infer._numpy import array_function_node
 from optype.infer._render import _collapse_recursive
 from optype.infer._signature import parse_text_signature
@@ -1235,9 +1235,46 @@ def test_buffer_spy_release_silent_under_cyclic_gc() -> None:
 fork_only = pytest.mark.skipif(not hasattr(os, "fork"), reason="requires os.fork")
 
 
-@fork_only
-def test_isolate_returns_value() -> None:
-    assert isolate(lambda: "ok") == "ok"
+type _Isolator = Callable[[Callable[[], Any]], Any]
+
+# without `fork`, `isolate` is `_inline`, so the same cases cover both there
+isolators = pytest.mark.parametrize(
+    "run",
+    [isolate, _inline],
+    ids=["isolate", "inline"],
+)
+
+
+@isolators
+def test_isolate_returns_value(run: _Isolator) -> None:
+    assert run(lambda: "ok") == "ok"
+
+
+@isolators
+def test_isolate_preserves_cause(run: _Isolator) -> None:
+    def work() -> None:
+        raise InferError("boom") from ValueError("root")
+
+    with pytest.raises(InferError, match="boom") as excinfo:
+        run(work)
+    assert isinstance(excinfo.value.__cause__, ValueError)
+
+
+@isolators
+def test_isolate_forwards_warning(run: _Isolator) -> None:
+    def work() -> str:
+        warnings.warn("heads up", InferWarning, stacklevel=1)
+        return "ok"
+
+    with pytest.warns(InferWarning, match="heads up"):
+        assert run(work) == "ok"
+
+
+@isolators
+def test_isolate_times_out(run: _Isolator, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("optype.infer._isolate._S_TIMEOUT", 0.1)
+    with pytest.raises(InferError, match="timed out"):
+        run(lambda: time.sleep(5))
 
 
 @fork_only
@@ -1254,30 +1291,42 @@ def test_isolate_reports_silent_exit() -> None:
 
 
 @fork_only
-def test_isolate_times_out(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_isolate_timeout_reports_spy_state(monkeypatch: pytest.MonkeyPatch) -> None:
+    # gh-766: the note names the last spy operation before the block
     monkeypatch.setattr("optype.infer._isolate._S_TIMEOUT", 0.1)
-    with pytest.raises(InferError, match="timed out"):
-        isolate(lambda: time.sleep(5))
+
+    def block(x: object) -> None:
+        repr(x)
+        time.sleep(30)
+
+    with pytest.raises(InferError, match="timed out") as excinfo:
+        infer(block)
+    assert any(
+        "spy state: __repr__() -> spy" in note for note in excinfo.value.__notes__
+    )
 
 
-@fork_only
-def test_isolate_preserves_cause() -> None:
+def test_inline_timeout_reports_blocked_frame(monkeypatch: pytest.MonkeyPatch) -> None:
+    # gh-766: the note names the frame the abandoned thread stopped in
+    monkeypatch.setattr("optype.infer._isolate._S_TIMEOUT", 0.1)
+    with pytest.raises(InferError, match="timed out") as excinfo:
+        _inline(lambda: time.sleep(5))
+    assert any("blocked at: " in note for note in excinfo.value.__notes__)
+
+
+def test_inline_timeout_resumes_gc(monkeypatch: pytest.MonkeyPatch) -> None:
+    # gh-766: the abandoned thread never unwinds its `pause_gc`
+    monkeypatch.setattr("optype.infer._isolate._S_TIMEOUT", 0.1)
+
     def work() -> None:
-        raise InferError("boom") from ValueError("root")
+        with _gc.pause_gc():
+            time.sleep(5)
 
-    with pytest.raises(InferError, match="boom") as excinfo:
-        isolate(work)
-    assert isinstance(excinfo.value.__cause__, ValueError)
-
-
-@fork_only
-def test_isolate_forwards_warning() -> None:
-    def work() -> str:
-        warnings.warn("heads up", InferWarning, stacklevel=1)
-        return "ok"
-
-    with pytest.warns(InferWarning, match="heads up"):
-        assert isolate(work) == "ok"
+    enabled = gc.isenabled()
+    with pytest.raises(InferError, match="timed out"):
+        _inline(work)
+    assert gc.isenabled() == enabled
+    assert not _gc._paused  # ruff: ignore[private-member-access]
 
 
 @fork_only

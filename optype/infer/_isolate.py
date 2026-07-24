@@ -1,6 +1,6 @@
-"""Run inference in a forked subprocess so a native fault can't crash the host."""
+"""Run inference under a timeout, in a forked subprocess where one is available."""
 
-# ruff: file-ignore[blind-except]
+# ruff: file-ignore[blind-except, docstring-missing-exception]
 
 import enum
 import faulthandler
@@ -10,15 +10,19 @@ import multiprocessing as mp
 import os
 import signal
 import sys
+import threading
 import time
 import warnings
 from collections.abc import Callable
+from concurrent.futures import Future
 from contextlib import closing, suppress
 from multiprocessing.connection import Connection
 from multiprocessing.process import BaseProcess
+from pathlib import Path
 
 import optype.infer._spy as _spy  # ruff: ignore[manual-from-import]
 from ._errors import WARN_SKIP_PREFIX, InferError
+from ._gc import resume_gc
 
 
 class _Status(enum.Enum):
@@ -91,6 +95,28 @@ def _kill_tree(proc: BaseProcess) -> None:
     proc.join()
 
 
+def _timeout_error(*details: str) -> InferError:
+    exc = InferError("inference timed out")
+    for detail in details:
+        if detail:
+            exc.add_note(detail)
+    return exc
+
+
+def _blocked_at(thread: threading.Thread) -> str:
+    # `sys._current_frames` is a CPython debugging aid; elsewhere there is no note
+    if not hasattr(sys, "_current_frames"):
+        return ""
+
+    frames = sys._current_frames()  # ruff: ignore[private-member-access]
+    if (frame := frames.get(thread.ident or -1)) is None:
+        return ""
+
+    code = frame.f_code
+    where = f"{Path(code.co_filename).name}:{frame.f_lineno}"
+    return f"blocked at: {where} in {code.co_qualname}"
+
+
 def _crash_error(sig: int, state: str) -> InferError:
     exc = InferError("inference crashed the interpreter")
     try:
@@ -119,31 +145,48 @@ def _no_result_error(proc: BaseProcess, buf: mmap.mmap, *, exited: bool) -> Infe
 
 
 def _inline[T](work: Callable[[], T]) -> T:
-    """Run `work` in-process, containing exploration debris like a fork child would.
+    """Run `work` on a worker thread, containing exploration debris like a fork child.
 
-    A leaked explored object (e.g. an unclosed event loop) can raise from its
-    deallocator, through a spy or a warnings-as-errors filter; in a fork child that
-    noise dies with the process, so it is muted here too (gh-769).
+    A leaked explored object can raise from its deallocator, through a spy or a
+    warnings-as-errors filter; that noise dies with a fork child, so it is muted
+    here too (gh-769). A thread cannot be killed, so one that hits the timeout
+    keeps running until the process exits, and the call raises (gh-766).
     """
 
+    def run() -> None:
+        try:
+            outcome.set_result(work())
+        except BaseException as exc:
+            outcome.set_exception(exc)
+
     def mute(_: object, /) -> None: ...
+
+    outcome: Future[T] = Future()
+    thread = threading.Thread(target=run, daemon=True)
 
     hook = sys.unraisablehook
     sys.unraisablehook = mute
     try:
-        result = work()
+        thread.start()
+        thread.join(_S_TIMEOUT)
+
+        if thread.is_alive():
+            resume_gc()  # the abandoned thread never unwinds its `pause_gc`
+            raise _timeout_error(_blocked_at(thread), "blocked thread was abandoned")
+
         gc.collect()  # finalize the explored garbage while the hook is muted
     finally:
         sys.unraisablehook = hook
-    return result
+
+    return outcome.result()
 
 
 def isolate[T](work: Callable[[], T]) -> T:
     """Run `work` in a forked subprocess so a native crash becomes an `InferError`.
 
-    Raises:
-        InferError: If the child crashes, hangs past the timeout, or returns no result.
-    """  # ruff: ignore[docstring-missing-exception]
+    Without `fork` it runs on a worker thread, which keeps the timeout but not the
+    crash containment.
+    """
     if not hasattr(os, "fork"):
         return _inline(work)
 
@@ -163,8 +206,9 @@ def isolate[T](work: Callable[[], T]) -> T:
             send.close()
 
         if not recv.poll(_S_TIMEOUT):
+            state = _read_state(buf)
             _kill_tree(proc)
-            raise InferError("inference timed out")
+            raise _timeout_error(f"spy state: {state}" if state else "")
 
         exited = True
         try:

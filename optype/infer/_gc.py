@@ -43,3 +43,11 @@ def drain_gc() -> None:
     if _paused and gc.get_count()[0] > _PENDING_MAX:
         gc.collect(0)
         _promoted = True
+
+
+def resume_gc() -> None:
+    """Undo a `pause_gc` whose owner will never unwind, e.g. an abandoned thread."""
+    global _paused, _promoted
+    if _paused:
+        _paused = _promoted = False
+        gc.enable()
