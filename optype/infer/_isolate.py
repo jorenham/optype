@@ -22,7 +22,7 @@ from pathlib import Path
 
 import optype.infer._spy as _spy  # ruff: ignore[manual-from-import]
 from ._errors import WARN_SKIP_PREFIX, InferError
-from ._gc import resume_gc
+from ._gc import cyclic_gc
 
 
 class _Status(enum.Enum):
@@ -167,12 +167,14 @@ def _inline[T](work: Callable[[], T]) -> T:
     hook = sys.unraisablehook
     sys.unraisablehook = mute
     try:
-        thread.start()
-        thread.join(_S_TIMEOUT)
+        # held here, not in the thread, which never unwinds once abandoned
+        with cyclic_gc.pause():
+            thread.start()
+            thread.join(_S_TIMEOUT)
 
-        if thread.is_alive():
-            resume_gc()  # the abandoned thread never unwinds its `pause_gc`
-            raise _timeout_error(_blocked_at(thread), "blocked thread was abandoned")
+            if thread.is_alive():
+                blocked = _blocked_at(thread)
+                raise _timeout_error(blocked, "blocked thread was abandoned")
 
         gc.collect()  # finalize the explored garbage while the hook is muted
     finally:
