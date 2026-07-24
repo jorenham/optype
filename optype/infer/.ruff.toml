@@ -2,13 +2,19 @@ extend = "../../pyproject.toml"
 cache-dir = "../../.ruff_cache"
 
 [lint.per-file-ignores]
-"_api.py" = ["PLR0402"]
-"_cli.py" = ["S102", "S307", "T201"]
-"_explore.py" = ["PLR0914"]
-"_numpy.py" = ["PLR0402"]
-"_protocols.py" = ["PLR0402"]
-"_render.py" = ["PLR0402"]
-"_spy.py" = ["TD002", "TD003", "PYI034", "PYI047", "PLR0904"]
+"_api.py" = ["manual-from-import"]
+"_cli.py" = ["exec-builtin", "suspicious-eval-usage", "print"]
+"_explore.py" = ["too-many-locals"]
+"_numpy.py" = ["manual-from-import"]
+"_protocols.py" = ["manual-from-import"]
+"_render.py" = ["manual-from-import"]
+"_spy.py" = [
+  "missing-todo-author",
+  "missing-todo-link",
+  "non-self-return-type",
+  "unused-private-type-alias",
+  "too-many-public-methods",
+]
 
 [lint.pylint]
 allow-dunder-method-names = [

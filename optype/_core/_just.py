@@ -6,7 +6,7 @@ from typing import (
     Never,
     Protocol,
     Self,
-    _ProtocolMeta,  # noqa: PLC2701
+    _ProtocolMeta,  # ruff: ignore[import-private-name]
     final,
     override,
 )
@@ -80,7 +80,7 @@ class Just[T](Protocol):  # type: ignore[misc]
 class _JustMeta(_ProtocolMeta, Generic[_ObjectT]):
     __just_class__: type[_ObjectT]  # pyright: ignore[reportUninitializedInstanceVariable]
 
-    def __new__[TypeT: type](  # noqa: PYI019
+    def __new__[TypeT: type](  # ruff: ignore[custom-type-var-for-self]
         mcls: type[TypeT],
         /,
         *args: *tuple[str, tuple[type, ...], dict[str, Any]],
@@ -104,8 +104,8 @@ class _JustMeta(_ProtocolMeta, Generic[_ObjectT]):
 
         if not isinstance(subclass, type):
             # unwrap subscripted generics, with special-casing for `Just[...]`
-            from types import GenericAlias  # noqa: I001, PLC0415
-            from optype.types._typeforms import GenericType  # noqa: PLC0415
+            from types import GenericAlias  # ruff: ignore[unsorted-imports, import-outside-top-level]
+            from optype.types._typeforms import GenericType  # ruff: ignore[import-outside-top-level]
 
             while type(subclass) in {GenericType, GenericAlias}:
                 origin = subclass.__origin__  # pyrefly:ignore[implicit-any-variable]

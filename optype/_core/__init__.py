@@ -1,4 +1,4 @@
-# ruff: noqa: F403
+# ruff: file-ignore[undefined-local-with-import-star]
 from optype._core import _can, _do, _does, _has, _just
 from optype._core._can import *
 from optype._core._do import *

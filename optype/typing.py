@@ -42,7 +42,7 @@ type AnyComplex = _c.CanComplex | _c.CanFloat | _c.CanIndex
 # Anything that can be iterated over, e.g. in a `for` loop,`builtins.iter`,
 # `builtins.enumerate`, or `numpy.array`.
 _ValueT = TypeVar("_ValueT", default=object)
-AnyIterable = TypeAliasType(  # noqa: UP040
+AnyIterable = TypeAliasType(
     "AnyIterable",
     _c.CanIter[_c.CanNext[_ValueT]] | _c.CanGetitem[int, _ValueT],
     type_params=(_ValueT,),
@@ -83,7 +83,7 @@ type EmptyIterable = AnyIterable[Never]
 
 # Literal
 
-type LiteralBool = Literal[False, True]  # noqa: RUF038
+type LiteralBool = Literal[False, True]  # ruff: ignore[redundant-bool-literal]
 type LiteralByte = Literal[
     0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
     0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,

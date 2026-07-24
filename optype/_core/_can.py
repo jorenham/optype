@@ -374,7 +374,7 @@ class CanAIterSelf(CanAIter["CanAIterSelf[_V_co]"], CanANext[_V_co], Protocol[_V
 
 
 @runtime_checkable
-class CanEq(Protocol[_T_object_contra, _T_bool_co]):  # noqa: PLW1641
+class CanEq(Protocol[_T_object_contra, _T_bool_co]):  # ruff: ignore[eq-without-hash]
     """
     Unfortunately, `typeshed` (incorrectly) annotates `object.__eq__` as
     `(Self, object) -> bool`.
@@ -1582,7 +1582,7 @@ class CanExit(Protocol[_T_None_co]):
     @overload
     def __exit__(self, exc_type: None, exc: None, tb: None, /) -> None: ...
     @overload
-    def __exit__[ExcT: BaseException](  # noqa: PYI036
+    def __exit__[ExcT: BaseException](  # ruff: ignore[bad-exit-annotation]
         self,
         exc_type: type[ExcT],
         exc: ExcT,

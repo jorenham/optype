@@ -13,7 +13,7 @@ from collections.abc import Sequence
 from typing import Literal
 
 # `from optype.infer import _ir` would re-enter the package, which imports this module
-import optype.infer._ir as _ir  # noqa: PLR0402
+import optype.infer._ir as _ir  # ruff: ignore[manual-from-import]
 from ._model import _Alias, _Attr, _Func, _Member, _Method, _Protocol, _value
 from optype._core import _can, _has, _just
 from optype.infer._backends._base import default_text, value_text
@@ -50,13 +50,13 @@ type _Prefix = Literal["", "*"]
 @functools.cache
 def _optype_numpy() -> frozenset[str]:
     try:
-        import optype.numpy as onp  # noqa: PLC0415
+        import optype.numpy as onp  # ruff: ignore[import-outside-top-level]
     except ImportError:  # numpy is optional
         return frozenset()
     return frozenset(onp.__all__)  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
 
 
-def _import_of(name: str) -> tuple[str, str | None] | None:  # noqa: PLR0911
+def _import_of(name: str) -> tuple[str, str | None] | None:  # ruff: ignore[too-many-return-statements]
     """The `(module, member)` an importable `name` comes from, or `None` for none.
 
     A `None` member means the module is imported whole, as in `import numpy as np`.
@@ -86,7 +86,7 @@ def _import_of(name: str) -> tuple[str, str | None] | None:  # noqa: PLR0911
 def _noop(_name: str) -> None: ...
 
 
-def _type(node: _ir.Node, used: set[str] | None = None) -> str:  # noqa: C901, PLR0911
+def _type(node: _ir.Node, used: set[str] | None = None) -> str:  # ruff: ignore[complex-structure, too-many-return-statements]
     # `rec` records each referenced name when `used` is given
     rec = _noop if used is None else used.add
     match node:

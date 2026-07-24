@@ -1,6 +1,6 @@
 """Pause and drain the cyclic garbage collector around exploration runs."""
 
-# ruff: noqa: PLW0603
+# ruff: file-ignore[global-statement]
 
 import gc
 from collections.abc import Generator

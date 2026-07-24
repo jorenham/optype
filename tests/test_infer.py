@@ -1,4 +1,4 @@
-# ruff: noqa: FURB118, PLW0108
+# ruff: file-ignore[reimplemented-operator, unnecessary-lambda]
 # pyright: reportUnknownArgumentType=false, reportUnknownLambdaType=false
 # pyright: reportUnknownMemberType=false, reportUnknownVariableType=false
 # pyright: reportUnusedParameter=false
@@ -25,7 +25,7 @@ import re
 import secrets
 import shutil
 import signal
-import subprocess  # noqa: S404
+import subprocess  # ruff: ignore[suspicious-subprocess-import]
 import sys
 import time
 import warnings
@@ -93,7 +93,7 @@ def _del_attr(x: Any) -> None:
 
 
 def _get_attr(x: Any) -> None:
-    x.spam  # noqa: B018
+    x.spam  # ruff: ignore[useless-expression]
 
 
 def _call_attr(x: Any) -> None:
@@ -121,7 +121,7 @@ def _del_class_attr(x: Any) -> None:
 
 
 def _get_class_attr(x: Any) -> None:
-    type(x).spam  # noqa: B018
+    type(x).spam  # ruff: ignore[useless-expression]
 
 
 UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
@@ -195,9 +195,9 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     ),
     (lambda x: -x if x else x, "[T: CanBool & CanNeg[R], R](x: T) -> R | T"),
     # `and` returns an operand: falsy `x` yields `x`, truthy `x` yields `not x`
-    (lambda x: x and not x, "[T: CanBool](x: T) -> bool | T"),  # noqa: SIM220
+    (lambda x: x and not x, "[T: CanBool](x: T) -> bool | T"),  # ruff: ignore[expr-and-not-expr]
     # `bool` is stable per run, so the `and` is always falsy and `foo` is unreachable
-    (lambda x: x.foo() if (x and not x) else x, "[T: CanBool](x: T) -> T"),  # noqa: SIM220
+    (lambda x: x.foo() if (x and not x) else x, "[T: CanBool](x: T) -> T"),  # ruff: ignore[expr-and-not-expr]
     (
         lambda x: (x + 1) if x else (x - 1),
         (
@@ -247,7 +247,7 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
             "[T, R](x: CanGetitem[Literal[0, 1], T & CanRAdd[T, R]]) -> R"
         ),
     ),
-    (lambda x: [i for i in x], "[R](x: CanIter[CanNext[R]]) -> list[R]"),  # noqa: C416
+    (lambda x: [i for i in x], "[R](x: CanIter[CanNext[R]]) -> list[R]"),  # ruff: ignore[unnecessary-comprehension]
     (lambda x: [[i] for i in x], "[R](x: CanIter[CanNext[R]]) -> list[list[R]]"),
     (lambda x: [str(i) for i in x], "(x: CanIter[CanNext[CanStr]]) -> list[str]"),
     (lambda x: next(iter(x)), "[R](x: CanIter[CanNext[R]]) -> R"),
@@ -303,7 +303,7 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     (lambda x: (x[1.0], x[None]), "[R](x: CanGetitem[float | None, R]) -> tuple[R, R]"),
     (lambda x: (-x, -x), "[R](x: CanNeg[R]) -> tuple[R, R]"),
     (lambda x: (x + 1, "a"), "[R](x: CanAdd[Literal[1], R]) -> tuple[R, Literal['a']]"),
-    (lambda x: x + (1, 2), "[R](x: CanAdd[tuple[Literal[1], Literal[2]], R]) -> R"),  # noqa: RUF005
+    (lambda x: x + (1, 2), "[R](x: CanAdd[tuple[Literal[1], Literal[2]], R]) -> R"),  # ruff: ignore[collection-literal-concatenation]
     (lambda x: [x], "[T](x: T) -> list[T]"),
     (lambda x: (x, 1), "[T](x: T) -> tuple[T, Literal[1]]"),
     # every spy has a unique class, so a `type(x)` result renders generically
@@ -334,7 +334,7 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     (lambda x: x.spam(1), "[R](x: Has['spam', (Literal[1]) -> +R]) -> R"),
     (_call_attr, "(x: Has['spam', () -> object]) -> None"),
     (lambda x: x.__wibble__, "[R](x: Has['__wibble__', +R]) -> R"),
-    (lambda x: getattr(x, "spam"), "[R](x: Has['spam', +R]) -> R"),  # noqa: B009
+    (lambda x: getattr(x, "spam"), "[R](x: Has['spam', +R]) -> R"),  # ruff: ignore[get-attr-with-constant]
     (lambda x: x.spam.ham, "[R](x: Has['spam', +Has['ham', +R]]) -> R"),
     # distinct attributes get distinct typevars; repeated reads share one
     (
@@ -417,7 +417,7 @@ BINARY_CASES: list[tuple[Callable[[Any, Any], Any], str]] = [
         lambda xs, key: sorted(xs, key=key),
         "[T, R](xs: CanIter[CanNext[R]], key: (R) -> T & CanLt[T, CanBool]) -> list[R]",
     ),
-    (lambda x, y: x, "[T](x: T, y: object) -> T"),  # noqa: ARG005
+    (lambda x, y: x, "[T](x: T, y: object) -> T"),  # ruff: ignore[unused-lambda-argument]
     (lambda x, y: (type(x), type(y)), "[T, U](x: T, y: U) -> tuple[type[T], type[U]]"),
     (
         lambda x, y: y + type(x)(),
@@ -706,7 +706,7 @@ DEFAULT_CASES: list[tuple[Callable[..., Any], str]] = [
 ]
 
 
-def _self_return(x: Any) -> Any:  # noqa: ARG001
+def _self_return(x: Any) -> Any:  # ruff: ignore[unused-function-argument]
     return _self_return
 
 
@@ -735,7 +735,7 @@ FUNCTION_CASES: list[tuple[Callable[..., Any], str]] = [
     # and renders in signature syntax; its parameter spies are named like parameters
     (lambda x: lambda y: (x, y), "[T, U](x: T) -> (y: U) -> tuple[T, U]"),
     (lambda x: lambda: x, "[T](x: T) -> () -> T"),
-    (lambda x: lambda y: y, "[T](x: object) -> (y: T) -> T"),  # noqa: ARG005
+    (lambda x: lambda y: y, "[T](x: object) -> (y: T) -> T"),  # ruff: ignore[unused-lambda-argument]
     (lambda x: lambda *, y: (x, y), "[T, U](x: T) -> (y: U) -> tuple[T, U]"),
     (lambda x: lambda y=1: (x, y), "[T, U](x: T) -> (y: U = 1) -> tuple[T, U]"),
     # ...except for a positional-only parameter, which renders without its name
@@ -762,7 +762,7 @@ FUNCTION_CASES: list[tuple[Callable[..., Any], str]] = [
         "[T, R, R2](f: (T) -> R, g: CanBool & ((T) -> R2), x: T) -> R | R2",
     ),
     (
-        lambda x: lambda y: y.foo,  # noqa: ARG005
+        lambda x: lambda y: y.foo,  # ruff: ignore[unused-lambda-argument]
         "[R](x: object) -> (y: Has['foo', +R]) -> R",
     ),
     # a failed inner run rolls back its traces on the closed-over parameter, so
@@ -845,7 +845,7 @@ FUNCTION_CASES: list[tuple[Callable[..., Any], str]] = [
     # a function within a returned container is explored as well, but a set member
     # must stay hashable, so it is left as-is
     (
-        lambda x: (lambda y: y, 1),  # noqa: ARG005
+        lambda x: (lambda y: y, 1),  # ruff: ignore[unused-lambda-argument]
         "[T](x: object) -> tuple[(y: T) -> T, Literal[1]]",
     ),
     (lambda x: [lambda: x], "[T](x: T) -> list[() -> T]"),
@@ -874,7 +874,7 @@ FUNCTION_CASES: list[tuple[Callable[..., Any], str]] = [
     # as do variadic parameters
     (_self_return, "(x: object) -> FunctionType"),
     (_fn_factory, "(n: object) -> () -> FunctionType"),
-    (lambda x: lambda *args: x, "(x: object) -> FunctionType"),  # noqa: ARG005
+    (lambda x: lambda *args: x, "(x: object) -> FunctionType"),  # ruff: ignore[unused-lambda-argument]
 ]
 
 
@@ -916,12 +916,12 @@ ITERATOR_CASES: list[tuple[Callable[..., Any], str]] = [
     ),
     (lambda x: filter(None, x), "[R: CanBool](x: CanIter[CanNext[R]]) -> filter[R]"),
     (
-        lambda x, y: zip(x, y),  # noqa: B905
+        lambda x, y: zip(x, y),  # ruff: ignore[zip-without-explicit-strict]
         "[R, R2](x: CanIter[CanNext[R]], y: CanIter[CanNext[R2]]) -> zip[tuple[R, R2]]",
     ),
     # a variadic `*iterables` makes the zipped tuple homogeneous and variadic (gh-688)
     (
-        lambda *iterables: zip(*iterables),  # noqa: B905
+        lambda *iterables: zip(*iterables),  # ruff: ignore[zip-without-explicit-strict]
         "[R](*iterables: CanIter[CanNext[R]]) -> zip[tuple[R, ...]]",
     ),
     # known limitation: a fixed tuple of count-many variadic elements is
@@ -942,7 +942,7 @@ ITERATOR_CASES: list[tuple[Callable[..., Any], str]] = [
         "(x: CanBool) -> enumerate[bool] | enumerate[int]",
     ),
     (lambda: map(str, [1, 2]), "() -> map[str]"),
-    (lambda: zip((), ()), "() -> zip[Never]"),  # noqa: B905
+    (lambda: zip((), ()), "() -> zip[Never]"),  # ruff: ignore[zip-without-explicit-strict]
     # generic `itertools` iterators (#722)
     (
         lambda xs: itertools.chain(xs),
@@ -999,7 +999,7 @@ ITERATOR_CASES: list[tuple[Callable[..., Any], str]] = [
     (_unpack_star, "[R](x: CanIter[CanNext[R]]) -> tuple[R, list[R]]"),
     (_unpack_iter, "[R](x: CanIter[CanNext[R]]) -> tuple[R, R]"),
     (
-        lambda x: {k: v for k, v in x},  # noqa: C416
+        lambda x: {k: v for k, v in x},  # ruff: ignore[unnecessary-comprehension]
         "[R: CanHash](x: CanIter[CanNext[CanIter[CanNext[R]]]]) -> dict[R, R]",
     ),
     # a star-unpack into a fixed-arity call (#683)
@@ -1223,7 +1223,7 @@ sys.exit(1 if captured else 0)
 
 
 def test_buffer_spy_release_silent_under_cyclic_gc() -> None:
-    out = subprocess.run(  # noqa: S603
+    out = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
         [sys.executable, "-c", _BUFFER_GC_SCRIPT],
         capture_output=True,
         text=True,
@@ -1341,7 +1341,7 @@ def test_isolate_reports_exit_code() -> None:
 def test_infer_isolates_native_crash() -> None:
     # a native callable that faults is contained, not a session crash (#738)
     class _Crash:
-        def __call__(self, x: object) -> None:  # noqa: ARG002
+        def __call__(self, x: object) -> None:  # ruff: ignore[unused-method-argument]
             signal.raise_signal(signal.SIGKILL)
 
     with pytest.raises(InferError):
@@ -1352,7 +1352,7 @@ def test_infer_isolates_native_crash() -> None:
 def test_infer_isolates_function_native_crash() -> None:
     # gh-763: cython 3 compiles methods to real functions, so a `FunctionType`
     # can fault in native code just like any other callable
-    def crash(x: object) -> None:  # noqa: ARG001
+    def crash(x: object) -> None:  # ruff: ignore[unused-function-argument]
         signal.raise_signal(signal.SIGSEGV)
 
     with pytest.raises(InferError):
@@ -1377,7 +1377,7 @@ def test_rich_return_chains_terminate() -> None:
     # #734: a deep return chain used to blow up into millions of trace items
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", InferWarning)
-        scanner = infer(getattr(re, "Scanner"))  # noqa: B009
+        scanner = infer(getattr(re, "Scanner"))  # ruff: ignore[get-attr-with-constant]
         matches = infer(difflib.get_close_matches)
     assert scanner.splitlines()[-1].endswith("-> re.Scanner")
     lines = matches.splitlines()
@@ -1568,7 +1568,7 @@ def test_method_descriptor_unsupported() -> None:
 
 def test_ternary_pow() -> None:
     def f(x: Any, y: Any, z: Any = None) -> Any:
-        return x.__pow__(y, z)  # noqa: PLC2801
+        return x.__pow__(y, z)  # ruff: ignore[unnecessary-dunder-call]
 
     if sys.version_info >= (3, 14):
         # since Python 3.14, ternary `pow()` reflects with the modulo onto `CanRPow3`
@@ -1654,7 +1654,7 @@ def test_infer_with() -> None:
 
     # a lone `__enter__` or `__exit__` does not imply the other, so it stays as-is
     def enter_only(x: Any) -> Any:
-        x.__enter__()  # noqa: PLC2801
+        x.__enter__()  # ruff: ignore[unnecessary-dunder-call]
         return x
 
     assert infer(enter_only) == "[T: CanEnter[object]](x: T) -> T"
@@ -1680,7 +1680,7 @@ def test_infer_async() -> None:
     assert infer(async_with) == "[R](x: CanAsyncWith[R, object]) -> R"
 
     async def aenter_only(x: Any) -> Any:
-        return await x.__aenter__()  # noqa: PLC2801
+        return await x.__aenter__()  # ruff: ignore[unnecessary-dunder-call]
 
     assert infer(aenter_only) == "[R](x: CanAEnter[CanAwait[R]]) -> R"
 
@@ -1802,8 +1802,8 @@ def test_returned_function_default() -> None:
 
 def test_returned_function_async() -> None:
     # an inner coroutine function is driven to completion, like the outer one
-    async def make(x: Any) -> Any:  # noqa: RUF029
-        async def inner(y: Any) -> Any:  # noqa: RUF029
+    async def make(x: Any) -> Any:  # ruff: ignore[unused-async]
+        async def inner(y: Any) -> Any:  # ruff: ignore[unused-async]
             return (x, y)
 
         return inner
@@ -1813,10 +1813,10 @@ def test_returned_function_async() -> None:
 
 def test_returned_function_mutual_recursion() -> None:
     # mutually recursive functions terminate; the cycle stays opaque
-    def ping(x: Any) -> Any:  # noqa: ARG001
+    def ping(x: Any) -> Any:  # ruff: ignore[unused-function-argument]
         return pong
 
-    def pong(x: Any) -> Any:  # noqa: ARG001
+    def pong(x: Any) -> Any:  # ruff: ignore[unused-function-argument]
         return ping
 
     assert infer(ping) == "(x: object) -> (x: object) -> FunctionType"
@@ -1878,7 +1878,7 @@ def test_infer_context() -> None:
     ctx = contextvars.copy_context()
     assert infer(lambda: ctx) == "() -> contextvars.Context"
 
-    def f(cb: Any, flag: Any = None) -> None:  # noqa: ARG001
+    def f(cb: Any, flag: Any = None) -> None:  # ruff: ignore[unused-function-argument]
         cb(context=contextvars.copy_context())
 
     assert infer(f) == "(cb: (context: contextvars.Context) -> object) -> None"
@@ -2092,8 +2092,8 @@ def _compat(source: str) -> str:
         last = body[-1]
     assert isinstance(last, ast.Expr)
     namespace: dict[str, object] = {}
-    exec(compile(ast.Module(body[:-1], []), "<expr>", "exec"), namespace)  # noqa: S102
-    func = eval(compile(ast.Expression(last.value), "<expr>", "eval"), namespace)  # noqa: S307
+    exec(compile(ast.Module(body[:-1], []), "<expr>", "exec"), namespace)  # ruff: ignore[exec-builtin]
+    func = eval(compile(ast.Expression(last.value), "<expr>", "eval"), namespace)  # ruff: ignore[suspicious-eval-usage]
     return infer(func, backend="compat")
 
 
@@ -2297,7 +2297,7 @@ def test_compat(source: str, expected: str) -> None:
 def test_compat_non_identifier_attr(attr: str) -> None:
     # a non-identifier attribute cannot name a protocol member, so compat rejects it
     # rather than emit unparsable Python; the terse form still renders the fiction
-    func = eval(f"lambda x: getattr(x, {attr!r})")  # noqa: S307
+    func = eval(f"lambda x: getattr(x, {attr!r})")  # ruff: ignore[suspicious-eval-usage]
     assert infer(func) == f"[R](x: Has[{attr!r}, +R]) -> R"
     with pytest.raises(InferError):
         infer(func, backend="compat")
@@ -2308,7 +2308,7 @@ def _basedpyright(path: Path) -> subprocess.CompletedProcess[str]:
         pytest.skip("basedpyright is not installed")
     # run from `path` so the stubs are checked in isolation from the project's settings
     return subprocess.run(
-        ["basedpyright", "."],  # noqa: S607
+        ["basedpyright", "."],  # ruff: ignore[start-process-with-partial-path]
         cwd=path,
         capture_output=True,
         text=True,
@@ -2328,13 +2328,13 @@ def test_compat_typechecks(tmp_path: Path) -> None:
 @pytest.mark.skipif(sys.version_info < (3, 14), reason="requires Python 3.14+")
 def test_infer_template_strings() -> None:
     # a t-string result is the qualified, non-generic `Template`
-    assert infer(eval("lambda: t''")) == "() -> string.templatelib.Template"  # noqa: S307
+    assert infer(eval("lambda: t''")) == "() -> string.templatelib.Template"  # ruff: ignore[suspicious-eval-usage]
 
     # `Interpolation` is generic on its `.value`, tracked through a typevar
-    interp = eval("lambda x: t'{x}'.interpolations[0]")  # noqa: S307
+    interp = eval("lambda x: t'{x}'.interpolations[0]")  # ruff: ignore[suspicious-eval-usage]
     assert infer(interp) == "[T](x: T) -> string.templatelib.Interpolation[T]"
 
-    literal = eval("lambda: t'{1}'.interpolations[0]")  # noqa: S307
+    literal = eval("lambda: t'{1}'.interpolations[0]")  # ruff: ignore[suspicious-eval-usage]
     assert infer(literal) == "() -> string.templatelib.Interpolation[int]"
 
 
@@ -2508,7 +2508,7 @@ def test_fork_explosion() -> None:
 
 @pytest.mark.parametrize(
     "choose",
-    [random.choice, secrets.choice],  # noqa: S311
+    [random.choice, secrets.choice],  # ruff: ignore[suspicious-non-cryptographic-random-usage]
     ids=["random", "secrets"],
 )
 def test_infer_choice_does_not_hang(choose: Callable[..., Any]) -> None:
@@ -2560,7 +2560,7 @@ def test_dispatch_try_except_bool_collapses_to_object() -> None:
     # a `try`/`except AttributeError` that returns a bool is also a presence predicate
     def f(x: Any) -> Any:
         try:
-            x.value  # noqa: B018
+            x.value  # ruff: ignore[useless-expression]
         except AttributeError:
             return False
         return True
@@ -2651,7 +2651,7 @@ def test_dispatch_fallback_keeps_unconditional_requirement() -> None:
         try:
             return x.value
         except AttributeError:
-            x.fallback  # noqa: B018
+            x.fallback  # ruff: ignore[useless-expression]
             return 0
 
     assert infer(f) == "[R](x: Has['value', +R]) -> R\n(x: Has['fallback']) -> object"
@@ -2700,7 +2700,7 @@ def test_dispatch_multi_parameter_no_budget_warning() -> None:
 
 def test_target_exception_skipped() -> None:
     # a non-protocol error from the target marks a failed run; it never escapes
-    def f(x: Any) -> None:  # noqa: ARG001
+    def f(x: Any) -> None:  # ruff: ignore[unused-function-argument]
         raise AssertionError
 
     with pytest.raises(InferError, match="completion") as excinfo:
@@ -2862,7 +2862,7 @@ def test_not_callable() -> None:
 def test_unresolvable_deferred_annotations() -> None:
     # deferred annotations that don't resolve must not fail the signature (#768)
     ns: dict[str, Any] = {}
-    exec("def f(x: Undefined = 42) -> Undefined: return x", ns)  # noqa: S102
+    exec("def f(x: Undefined = 42) -> Undefined: return x", ns)  # ruff: ignore[exec-builtin]
     assert infer(ns["f"]) == "[T = Literal[42]](x: T = 42) -> T"
 
 
@@ -3136,7 +3136,7 @@ def test_weakref_proxy() -> None:
 
 
 def _run_cli(*args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(  # noqa: S603
+    return subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
         [sys.executable, *args],
         capture_output=True,
         text=True,
@@ -3256,7 +3256,7 @@ _ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 
 def _run_cli_env(*args: str, **env: str) -> subprocess.CompletedProcess[str]:
     base = {k: v for k, v in os.environ.items() if k not in {"NO_COLOR", "FORCE_COLOR"}}
-    return subprocess.run(  # noqa: S603
+    return subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
         [sys.executable, *args],
         capture_output=True,
         text=True,

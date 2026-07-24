@@ -39,14 +39,14 @@ AxT = TypeVar("AxT", int, Any, default=int)
 ###
 # Shape types with at least N dimensions. They're fully static by default, but can be
 # turned "gradual" by passing `Any` as type argument.
-AtLeast0D = TypeAliasType("AtLeast0D", tuple[AxT, ...], type_params=(AxT,))  # noqa: UP040
-AtLeast1D = TypeAliasType("AtLeast1D", tuple[int, *tuple[AxT, ...]], type_params=(AxT,))  # noqa: UP040
-AtLeast2D = TypeAliasType(  # noqa: UP040
+AtLeast0D = TypeAliasType("AtLeast0D", tuple[AxT, ...], type_params=(AxT,))
+AtLeast1D = TypeAliasType("AtLeast1D", tuple[int, *tuple[AxT, ...]], type_params=(AxT,))
+AtLeast2D = TypeAliasType(
     "AtLeast2D",
     tuple[int, int, *tuple[AxT, ...]],
     type_params=(AxT,),
 )
-AtLeast3D = TypeAliasType(  # noqa: UP040
+AtLeast3D = TypeAliasType(
     "AtLeast3D",
     tuple[int, int, int, *tuple[AxT, ...]],
     type_params=(AxT,),
@@ -65,13 +65,13 @@ type AtMost3D = tuple[int, int, int] | AtMost2D
 # maximum number of dimensions was 32, but this was increased to 64 in `numpy>=2`.
 
 # NOTE: on `numpy<2` this was at most 32
-type _1_64 = Literal[  # noqa: PYI042
+type _1_64 = Literal[  # ruff: ignore[snake-case-type-alias]
     1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
     17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
     33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
     49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,
 ]  # fmt: skip
-type _0_64 = Literal[0, _1_64]  # noqa: PYI042
+type _0_64 = Literal[0, _1_64]  # ruff: ignore[snake-case-type-alias]
 
 type NDim0 = _1_64
 """Integer literal between 1 and 64, inclusive."""

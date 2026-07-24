@@ -1,4 +1,4 @@
-# ruff: noqa: N802
+# ruff: file-ignore[invalid-function-name]
 import io
 import os
 import pathlib

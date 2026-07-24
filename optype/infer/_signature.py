@@ -173,7 +173,7 @@ def _candidate(
         if gap:
             match param.kind:
                 case Parameter.POSITIONAL_OR_KEYWORD:
-                    param = param.replace(kind=Parameter.KEYWORD_ONLY)  # noqa: PLW2901
+                    param = param.replace(kind=Parameter.KEYWORD_ONLY)  # ruff: ignore[redefined-loop-name]
                 case Parameter.POSITIONAL_ONLY | Parameter.VAR_POSITIONAL:
                     return None
                 case _:
@@ -222,7 +222,7 @@ def _accepts(func: _AnyFunc, n: int) -> bool:
     spies = [_SpyObject() for _ in range(n)]
     try:
         func(*spies)
-    except (_Fork, Exception, SystemExit) as exc:  # noqa: BLE001
+    except (_Fork, Exception, SystemExit) as exc:  # ruff: ignore[blind-except]
         # a wrong-arity `TypeError` is raised before the body runs, leaving the spies
         # untouched; a touched spy or any other error (or exit) means the body ran
         if type(exc) is TypeError:

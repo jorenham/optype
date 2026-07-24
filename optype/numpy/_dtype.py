@@ -41,11 +41,11 @@ class HasDType(Protocol[DT_co]):
     def dtype(self, /) -> DT_co: ...
 
 
-DType = TypeAliasType("DType", np.dtype[ST], type_params=(ST,))  # noqa: UP040
+DType = TypeAliasType("DType", np.dtype[ST], type_params=(ST,))
 """Alias for `numpy.dtype[T: numpy.generic = np.generic]`."""
 
 
-ToDType = TypeAliasType(  # noqa: UP040
+ToDType = TypeAliasType(
     "ToDType",
     type[ST] | np.dtype[ST] | HasDType[np.dtype[ST]],
     type_params=(ST,),

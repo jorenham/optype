@@ -22,7 +22,7 @@ import optype.numpy.compat as npc
 from ._sequence_nd import SequenceND as SeqND
 from optype._core._just import JustComplex, JustFloat, JustInt
 
-__all__ = [  # noqa: RUF022
+__all__ = [  # ruff: ignore[unsorted-dunder-all]
     "ToScalar",
     "ToArray1D", "ToArrayStrict1D",
     "ToArray2D", "ToArrayStrict2D",
@@ -144,17 +144,17 @@ class _CanArray(Protocol[SCT_co]):
 
 
 if TYPE_CHECKING:
-    _CanArrayStrict1D = TypeAliasType(  # noqa: UP040
+    _CanArrayStrict1D = TypeAliasType(
         "_CanArrayStrict1D",
         nptc.CanArray[tuple[int], np.dtype[SCT]],
         type_params=(SCT,),
     )
-    _CanArrayStrict2D = TypeAliasType(  # noqa: UP040
+    _CanArrayStrict2D = TypeAliasType(
         "_CanArrayStrict2D",
         nptc.CanArray[tuple[int, int], np.dtype[SCT]],
         type_params=(SCT,),
     )
-    _CanArrayStrict3D = TypeAliasType(  # noqa: UP040
+    _CanArrayStrict3D = TypeAliasType(
         "_CanArrayStrict3D",
         nptc.CanArray[tuple[int, int, int], np.dtype[SCT]],
         type_params=(SCT,),
@@ -206,16 +206,16 @@ type _ToStrict3D2[T, SCT: np.generic] = (
 # TODO(jorenham): export & document
 # https://github.com/jorenham/optype/issues/373
 
-type integer_co = npc.integer | np.bool  # noqa: PYI042
-type floating_co = npc.floating | npc.integer | np.bool  # noqa: PYI042
-type complexfloating_co = npc.number | np.bool  # noqa: PYI042
+type integer_co = npc.integer | np.bool  # ruff: ignore[snake-case-type-alias]
+type floating_co = npc.floating | npc.integer | np.bool  # ruff: ignore[snake-case-type-alias]
+type complexfloating_co = npc.number | np.bool  # ruff: ignore[snake-case-type-alias]
 
 # promotion rules with safe casting mode
-type f16_co = npc.floating16 | npc.integer8 | np.bool  # noqa: PYI042
-type f32_co = npc.floating32 | npc.floating16 | npc.integer16 | npc.integer8 | np.bool  # noqa: PYI042
-type c64_co = npc.inexact32 | npc.number16 | npc.integer8 | np.bool  # noqa: PYI042
-type f64_co = npc.floating64 | npc.floating32 | npc.floating16 | npc.integer | np.bool  # noqa: PYI042
-type c128_co = npc.number64 | npc.number32 | npc.number16 | npc.integer | np.bool  # noqa: PYI042
+type f16_co = npc.floating16 | npc.integer8 | np.bool  # ruff: ignore[snake-case-type-alias]
+type f32_co = npc.floating32 | npc.floating16 | npc.integer16 | npc.integer8 | np.bool  # ruff: ignore[snake-case-type-alias]
+type c64_co = npc.inexact32 | npc.number16 | npc.integer8 | np.bool  # ruff: ignore[snake-case-type-alias]
+type f64_co = npc.floating64 | npc.floating32 | npc.floating16 | npc.integer | np.bool  # ruff: ignore[snake-case-type-alias]
+type c128_co = npc.number64 | npc.number32 | npc.number16 | npc.integer | np.bool  # ruff: ignore[snake-case-type-alias]
 
 ###
 
@@ -234,10 +234,10 @@ else:
 # scalar- and array-likes, with "coercible" shape-types
 
 type ToScalar = _PyScalar | np.generic
-ToArray1D = TypeAliasType("ToArray1D", _To1D2[T, SCT], type_params=(T, SCT))  # noqa: UP040
-ToArray2D = TypeAliasType("ToArray2D", _To2D2[T, SCT], type_params=(T, SCT))  # noqa: UP040
-ToArray3D = TypeAliasType("ToArray3D", _To3D2[T, SCT], type_params=(T, SCT))  # noqa: UP040
-ToArrayND = TypeAliasType("ToArrayND", _ToND2[T, SCT], type_params=(T, SCT))  # noqa: UP040
+ToArray1D = TypeAliasType("ToArray1D", _To1D2[T, SCT], type_params=(T, SCT))
+ToArray2D = TypeAliasType("ToArray2D", _To2D2[T, SCT], type_params=(T, SCT))
+ToArray3D = TypeAliasType("ToArray3D", _To3D2[T, SCT], type_params=(T, SCT))
+ToArrayND = TypeAliasType("ToArrayND", _ToND2[T, SCT], type_params=(T, SCT))
 
 type ToFalse = nptc.LiteralFalse | Literal[0]
 type ToTrue = nptc.LiteralTrue | Literal[1]
@@ -375,17 +375,17 @@ type ToJustComplexND = _ToND2[JustComplex, npc.complexfloating]
 
 # array-likes, with "coercible" shape-types, and "strict" shape-types
 
-ToArrayStrict1D = TypeAliasType(  # noqa: UP040
+ToArrayStrict1D = TypeAliasType(
     "ToArrayStrict1D",
     _ToStrict1D2[T, SCT],
     type_params=(T, SCT),
 )
-ToArrayStrict2D = TypeAliasType(  # noqa: UP040
+ToArrayStrict2D = TypeAliasType(
     "ToArrayStrict2D",
     _ToStrict2D2[T, SCT],
     type_params=(T, SCT),
 )
-ToArrayStrict3D = TypeAliasType(  # noqa: UP040
+ToArrayStrict3D = TypeAliasType(
     "ToArrayStrict3D",
     _ToStrict3D2[T, SCT],
     type_params=(T, SCT),

@@ -103,7 +103,7 @@ def resolve_defaults(
         omitted_renderers = _renderers(omitted, params)
         # the comparison must see every required parameter, regardless of selection
         observed = _signatures(omitted_renderers, names, deprecated=omitted.deprecated)
-    except Exception:  # noqa: BLE001
+    except Exception:  # ruff: ignore[blind-except]
         return _ResolvedDefaults({}, False, [])
 
     omitted_defaults = _bind_exploration(exploration, defaults)
@@ -123,7 +123,7 @@ def resolve_defaults(
     for name, value in defaults.items():
         try:
             variant = explore_spies(func, params, omit={name})
-        except Exception:  # noqa: BLE001, S112
+        except Exception:  # ruff: ignore[blind-except, try-except-continue]
             continue
         overloads += signatures(variant, params, selected, {name: value})
 
@@ -156,7 +156,7 @@ def dispatch_overloads(
         return baseline
     try:
         variant = explore_spies(func, params, absent={param: (name,)})
-    except Exception:  # noqa: BLE001
+    except Exception:  # ruff: ignore[blind-except]
         return baseline
     widens = absent_verdict(variant.spies, variant.traces, param, name)
     if widens is None:

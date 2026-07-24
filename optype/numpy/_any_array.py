@@ -16,7 +16,7 @@ import optype.numpy._scalar as _sc
 from ._shape import AnyShape
 from optype._core import CanBuffer, JustComplex, JustFloat, JustInt, JustObject
 
-# ruff: noqa: RUF022
+# ruff: file-ignore[unsorted-dunder-all]
 __all__ = [
     "AnyArray",
     "AnyNumberArray",
@@ -88,7 +88,7 @@ class _AnyArrayPY0(Protocol[_T_co]):
 
 
 type _AnyArrayPY[T] = tuple[T, ...] | _AnyArrayPY0[T]
-_AnyArray = TypeAliasType(  # noqa: UP040
+_AnyArray = TypeAliasType(
     "_AnyArray",
     _AnyArrayNP[_ST] | _AnyArrayPY[_VT] | _AnyArrayPY[_AnyArrayNP[_ST]],
     type_params=(_ST, _VT),
@@ -96,7 +96,7 @@ _AnyArray = TypeAliasType(  # noqa: UP040
 
 ###
 
-AnyArray = TypeAliasType(  # noqa: UP040
+AnyArray = TypeAliasType(
     "AnyArray",
     _AnyArray[_ST, object] | CanBuffer,
     type_params=(_ST,),

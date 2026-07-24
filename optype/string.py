@@ -5,7 +5,7 @@ See Also:
     - https://docs.python.org/3/library/string.html
 """
 
-from typing import Final, Literal as L  # noqa: N817
+from typing import Final, Literal as L  # ruff: ignore[camelcase-imported-as-acronym]
 
 __all__ = (
     "DIGITS",

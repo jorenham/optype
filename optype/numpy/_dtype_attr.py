@@ -1,5 +1,5 @@
-# ruff: noqa: PYI042
-from typing import Literal as L  # noqa: N817
+# ruff: file-ignore[snake-case-type-alias]
+from typing import Literal as L  # ruff: ignore[camelcase-imported-as-acronym]
 
 ###
 

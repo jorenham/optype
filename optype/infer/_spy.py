@@ -95,7 +95,7 @@ _driver_code: CodeType | None = None
 
 
 def set_driver_code[T: Callable[..., object]](fn: T, /) -> T:
-    global _driver_code  # noqa: PLW0603
+    global _driver_code  # ruff: ignore[global-statement]
     _driver_code = fn.__code__  # ty: ignore[unresolved-attribute]
     return fn
 
@@ -106,7 +106,7 @@ _state_buffer: mmap.mmap | None = None
 
 
 def set_state_buffer(buf: mmap.mmap | None, /) -> None:
-    global _state_buffer  # noqa: PLW0603
+    global _state_buffer  # ruff: ignore[global-statement]
     _state_buffer = buf
 
 
@@ -130,7 +130,7 @@ def _iter_is_star_unpack() -> bool:
         return False
 
     try:
-        frame = sys._getframe(2)  # _iter_is_star_unpack -> __iter__ -> consuming frame  # noqa: SLF001
+        frame = sys._getframe(2)  # _iter_is_star_unpack -> __iter__ -> consuming frame  # ruff: ignore[private-member-access]
     except ValueError:
         frame = None
     if frame is None or (i := frame.f_lasti) < 0 or frame.f_code is _driver_code:
@@ -549,7 +549,7 @@ class _SpyObject(_Spy, metaclass=_SpyType):
 
         def spy_generator() -> Generator[Any, None, "_SpyObject"]:
             yield from ()
-            return out  # noqa: B901
+            return out  # ruff: ignore[return-in-generator]
 
         return spy_generator()
 
@@ -643,7 +643,7 @@ def _traced_op(name: str) -> _AnyFunc:
 
 for _name in _TRACED_OPS:
     # bypass the metaclass: `_class_spy` isn't defined yet, and this isn't a trace
-    type.__setattr__(_SpyObject, _name, _traced_op(_name))  # noqa: PLC2801
+    type.__setattr__(_SpyObject, _name, _traced_op(_name))  # ruff: ignore[unnecessary-dunder-call]
 
 
 # Free functions, not methods: a method would be an unrecorded hole in the proxy.

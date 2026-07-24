@@ -117,7 +117,7 @@ class CanFlush(Protocol[_RT_co]):
 ###
 
 # runtime-checkable `_typeshed.{Str,Bytes,StrOrBytes,Generic}Path` alternative
-ToPath = TypeAliasType(  # noqa: UP040
+ToPath = TypeAliasType(
     "ToPath",
     _StrOrBytes | CanFSPath[_StrOrBytes],
     type_params=(_StrOrBytes,),
