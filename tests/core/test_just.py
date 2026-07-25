@@ -1,6 +1,7 @@
 # ruff: noqa: DTZ005, DTZ011
 
 import datetime as dt
+import re
 from typing import Any, cast
 
 import pytest
@@ -154,6 +155,9 @@ def test_just_instancecheck_str() -> None:
 
     with pytest.raises(
         BeartypeCallHintParamViolation,
-        match="subclasses are not accepted",
+        match=re.escape(
+            "instance has type 'bool', but JustInt requires exactly 'int' "
+            "(subclasses are not accepted)"
+        ),
     ):
         foo(True)  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]  # pyrefly: ignore[bad-argument-type]
