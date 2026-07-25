@@ -63,7 +63,7 @@ from optype.infer._ir import (
 )
 from optype.infer._isolate import _inline, isolate
 from optype.infer._numpy import array_function_node
-from optype.infer._render import _collapse_recursive
+from optype.infer._recursion import collapse_recursive
 from optype.infer._signature import parse_text_signature
 from optype.infer._spy import _SpyObject
 from optype.infer._values import GapKind
@@ -1515,7 +1515,7 @@ def test_collapse_recursive_reroll() -> None:
         *(TypeParam(leaf) for leaf in ("T7", "T8", "T9", "T10", "T11")),
     ]
     params = [Param("x", Name("T"))]
-    folded, fparams, fret = _collapse_recursive(type_params, params, Name("T"))
+    folded, fparams, fret = collapse_recursive(type_params, params, Name("T"))
     # T, U, V, W collapse onto a single self-referential T; spent leaves are dropped
     assert folded == [
         TypeParam("T", App("CanAdd", (Name("U"), Name("T")))),
@@ -1532,7 +1532,7 @@ def test_collapse_recursive_keeps_short_runs() -> None:
         TypeParam("U", App("CanAdd", (Name("T8"), Name("T9")))),
         *(TypeParam(leaf) for leaf in ("T7", "T8", "T9")),
     ]
-    folded, _, _ = _collapse_recursive(type_params, [Param("x", Name("T"))], Name("T"))
+    folded, _, _ = collapse_recursive(type_params, [Param("x", Name("T"))], Name("T"))
     assert folded == type_params
 
 
@@ -3215,10 +3215,26 @@ def test_cli_format_compat() -> None:
     )
 
 
+def test_cli_selector_negative_position() -> None:
+    # a bare `-1` is a parameter position, not a flag; this is why the trailing
+    # arguments are parsed as `argparse.REMAINDER`
+    out = _run_cli("-m", "optype.infer", "lambda x, y: x + y", "-1")
+    assert out.returncode == 0
+    assert out.stdout.splitlines() == [
+        "[T, R](y: T) -> R",
+        "[T, R](y: CanRAdd[T, R]) -> R",
+    ]
+
+
 def test_cli_format_invalid() -> None:
     out = _run_cli("-m", "optype.infer", "--format", "json", "lambda x: x")
     assert out.returncode != 0
-    assert "terse, compat" in out.stderr
+    # only the last line, since argparse wraps the usage above it to the terminal
+    error = out.stderr.strip().splitlines()[-1]
+    # py3.12 renders the choices bare, py3.13+ quotes them
+    assert "invalid choice: 'json'" in error
+    assert "terse" in error
+    assert "compat" in error
 
 
 def test_cli_def() -> None:
@@ -3363,7 +3379,11 @@ def test_cli_color_compat() -> None:
 def test_cli_color_invalid() -> None:
     out = _run_cli("-m", "optype.infer", "--color", "json", "lambda x: x")
     assert out.returncode != 0
-    assert "auto, always, never" in out.stderr
+    error = out.stderr.strip().splitlines()[-1]
+    assert "invalid choice: 'json'" in error
+    assert "auto" in error
+    assert "always" in error
+    assert "never" in error
 
 
 class _Tty(io.StringIO):

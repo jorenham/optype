@@ -2,25 +2,19 @@
 
 import sys
 import types
-from collections import Counter, defaultdict
+from collections import Counter
 from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from contextvars import Context
 from inspect import Parameter, _ParameterKind
 from typing import Any, NamedTuple, cast, final
 
-# `from . import` would import the package itself, which imports this module
+# `from . import _ir` would re-enter this package
 import optype.infer._ir as _ir
 import optype.infer._numpy as _numpy
-from ._analyze import (
-    all_packed,
-    analyze,
-    group_traces,
-    reflect,
-    representatives,
-    return_spies,
-    spy_runs,
-)
+from ._analyze import reflect, spy_runs
+from ._naming import TYPEVAR_TUPLE_NAME, _Naming, build as _build_naming
 from ._protocols import Op, Proto, resolve
+from ._recursion import collapse_recursive
 from ._spy import (
     _AnyFunc,
     _class_spy,
@@ -37,12 +31,10 @@ from ._spy import (
 from ._values import (
     COROUTINE,
     Exploration,
-    _Fn,
+    _FnResult,
     _Gen,
     _Rec,
     _RecRef,
-    _RecVar,
-    _walk,
     fn_spies,
 )
 from optype.inspect import _get_alias, is_generic_alias, is_union_type
@@ -51,8 +43,6 @@ _PARAM_PREFIX: dict[_ParameterKind, str] = {
     Parameter.VAR_POSITIONAL: "*",
     Parameter.VAR_KEYWORD: "**",
 }
-
-_TYPEVAR_TUPLE_NAME = "Ts"  # the PEP 646 typevar-tuple binder, used as `*Ts`
 
 _TUPLE_LIMIT = 16
 _LITERAL_LIMIT = 8
@@ -63,11 +53,6 @@ _CALLABLE_ORIGIN: object = Callable
 # the attribute variance signs of the fictional inline `Has['name', T]` form
 _READ = _ir.COVARIANT  # a read-only property suffices
 _WRITE = _ir.CONTRAVARIANT  # the attribute only has to accept the value
-
-type _TyVars = dict[int, str]
-type _TypeParams = list[_ir.TypeParam]
-type _Params = list[_ir.Param]
-type _Sig = tuple[_TypeParams, _Params, _ir.Node]
 
 type Names = Sequence[str]
 type Defaults = Mapping[str, object]
@@ -85,7 +70,7 @@ def _sign_read(ret: _ir.Node) -> _ir.Node:
     return ret if ret == _ir.OBJECT else _ir.Variance(_READ, ret)
 
 
-def _default(defaults: Defaults, name: str) -> tuple[object] | None:
+def _boxed_default(defaults: Defaults, name: str) -> tuple[object] | None:
     """The boxed default value of `name`, or `None` if it has none."""
     return (defaults[name],) if name in defaults else None
 
@@ -134,11 +119,6 @@ class _OpShape(NamedTuple):
     kwnames: tuple[str, ...]
 
 
-def _result_tyvar(index: int) -> str:
-    """The `index`-th return typevar name: `R`, `R2`, `R3`, ..."""
-    return "R" if not index else f"R{index + 1}"
-
-
 def _distinct[T](values: Iterable[T]) -> Collection[T]:
     """Deduplicate by identity; holding the values keeps their ids from reuse."""
     return {id(value): value for value in values}.values()
@@ -150,29 +130,17 @@ class _Renderer:
 
     _spies: Mapping[str, _SpyObject]
     _fixed: Mapping[str, object]
-    _results: list[object]
+    _results: Sequence[object]
     _traces: _Traces
-    count: int  # the `*args` placeholder count used during exploration
+    var_count: int  # the `*args` placeholder count used during exploration
     _tuple_params: frozenset[str]  # params that also accept `tuple[<bound>, ...]`
 
     _prefix: dict[str, str]
     _nameless: set[str]
     _optional: set[str]
     varpos: _SpyObject | None
-    vartuple: bool  # whether `varpos` renders as a `*Ts` typevar tuple
 
-    _reps: dict[int, int]
-    tyvars: _TyVars
-    _named: dict[int, str]
-
-    _result_spies: list[_SpyObject]
-
-    rec_tyvars: dict[_RecVar, str]
-    _rec_body: dict[_RecVar, object]
-
-    _declared_spies: list[_SpyObject]
-    _param_spies: list[_SpyObject]
-    _group_traces: _Traces
+    naming: _Naming  # which spies get a type parameter, and under what name
     _bound_nodes: dict[int, _ir.Node | None]  # rendered bound per representative
     _ret_node: _ir.Node  # rendered return union, refreshed along with the bounds
 
@@ -188,12 +156,18 @@ class _Renderer:
         self._spies = exploration.spies
         self._results = exploration.results
         self._traces = traces
-        self.count = exploration.var_count
+        self.var_count = exploration.var_count
         self._fixed = exploration.fixed
         self._tuple_params = exploration.tuple_params
 
         self._configure(params)
-        self._assign_tyvars()
+        self.naming = _build_naming(
+            self._results,
+            self._spies,
+            traces,
+            self.varpos,
+            self.var_count,
+        )
         self._typer = _ResultTyper(self)
         self._render_bounds()
         self._inline_single_use()
@@ -218,159 +192,34 @@ class _Renderer:
             None,
         )
 
-    def _assign_tyvars(self) -> None:
-        """Assign a type parameter to every spy that needs one, in signature order.
-
-        Populates the spy->name map (`tyvars`), the per-representative bound traces
-        (`_group_traces`), the `_declared_spies` pool, and result/recursive typevars.
-        """
-        results, traces = self._results, self._traces
-        # a returned function's parameter spies are named like regular parameters
-        param_spies = [*self._spies.values(), *fn_spies(results)]
-        order, appear = analyze(param_spies, results, traces)
-        param_ids = {id(spy) for spy in param_spies}
-        self._reps = reps = representatives(order, traces)
-
-        self.tyvars = {}
-        self._named = {}  # representative id -> name
-        varpos = self.varpos
-        self.vartuple = varpos is not None and all_packed(
-            varpos,
-            results,
-            traces,
-            self.count,
-        )
-        if self.vartuple:
-            # the `tyvars` entry earns `varpos` a slot and names it; `vartuple` flags it
-            self.tyvars[id(varpos)] = _TYPEVAR_TUPLE_NAME
-
-        self._result_spies = []
-        self._name_results(param_ids, reps)
-
-        self._rec_body = {
-            node.var: node.body
-            for result in results
-            for node in _walk(result)
-            if isinstance(node, _Rec)
-        }
-        base = len(self._result_spies)
-        self.rec_tyvars = {
-            var: _result_tyvar(base + i) for i, var in enumerate(self._rec_body)
-        }
-
-        self._declare_typars(param_spies, order, appear, param_ids, reps)
-        self._param_spies = param_spies
-        self._group_traces = group_traces(self.tyvars, reps, traces)
-
-    def _declare_typars(
-        self,
-        param_spies: Sequence[_SpyObject],
-        order: Sequence[_SpyObject],
-        appear: Mapping[int, int],
-        param_ids: set[int],
-        reps: dict[int, int],
-    ) -> None:
-        """Name one type parameter per distinct expression used at least twice.
-
-        Duplicates sharing a representative reuse its name.
-        """
-        candidates = [
-            spy for spy in param_spies if appear[id(spy)] >= 2 or id(spy) in self.tyvars
-        ]
-        candidates += [
-            spy
-            for spy in order
-            if appear[id(spy)] >= 2
-            and id(spy) not in param_ids
-            and id(spy) not in self.tyvars
-        ]
-
-        self._declared_spies = []
-        n = 0
-        for spy in candidates:
-            rep = reps.get(id(spy), id(spy))
-            if (var := self._named.get(rep)) is None:
-                var = self.tyvars.get(id(spy))  # a `*Ts` variadic keeps its name
-                if var is None:
-                    var = _ir.tyvar_name(n)
-                    n += 1
-                self._named[rep] = var
-                self._declared_spies.append(spy)
-            self.tyvars[id(spy)] = var
-
     def _render_bounds(self) -> None:
         """Render and cache each named bound and the return union."""
+        naming = self.naming
         self._bound_nodes = {
-            rep: self.traces(self._group_traces.get(rep, ())) for rep in self._named
+            rep: self.traces(naming.group_traces.get(rep, ())) for rep in naming.named
         }
         self._ret_node = self._typer.type_union(self._results)
 
     def _inline_single_use(self) -> None:
         # a bounded typevar referenced once and absent from the return carries no more
         # than its bound, so it inlines back into the one spot that uses it
-
-        vars_, reps = self.tyvars, self._reps
-
-        bounds = self._bound_nodes
+        naming, bounds = self.naming, self._bound_nodes
         rendered = [
-            *(self.slot(spy) for spy in self._param_spies),
+            *(self.slot(spy) for spy in naming.param_spies),
             *(node for node in bounds.values() if node is not None),
             self._ret_node,
         ]
         counts = Counter(name for node in rendered for name in _ir.names(node))
 
-        vartuple_id = id(self.varpos) if self.vartuple else None
-        pool_vars = {
-            vars_[sid]: reps.get(sid, sid)
-            for spy in self._declared_spies
-            if (sid := id(spy)) != vartuple_id
-        }
+        pool = naming.pool(id(self.varpos) if naming.vartuple else None)
         inline = {
             var
-            for var, rep in pool_vars.items()
+            for var, rep in pool.items()
             if counts[var] == 1 and bounds[rep] is not None
         }
-        if not inline:
-            return
-
-        # renumber the survivors back to a gapless `T, U, V, ...`
-        remap = {
-            old: _ir.tyvar_name(n)
-            for n, old in enumerate(var for var in pool_vars if var not in inline)
-        }
-
-        # mutate `tyvars` in place so the typer's shared reference stays current
-        survivors = {
-            sid: remap.get(var, var) for sid, var in vars_.items() if var not in inline
-        }
-        self.tyvars.clear()
-        self.tyvars.update(survivors)
-        self._declared_spies = [
-            spy for spy in self._declared_spies if id(spy) in self.tyvars
-        ]
-        self._named = {
-            rep: remap.get(var, var)
-            for rep, var in self._named.items()
-            if var not in inline
-        }
-        self._group_traces = group_traces(self.tyvars, reps, self._traces)
-        self._render_bounds()  # the renaming invalidated the rendered nodes
-
-    def _name_results(self, param_ids: set[int], reps: dict[int, int]) -> None:
-        for result in self._results:
-            for spy in return_spies(result):
-                sid = id(spy)
-                if sid in param_ids or sid in self.tyvars:
-                    continue
-                # results of one op-shape share a type parameter, even traced or reused
-                rep = reps.get(sid, sid)
-                if (var := self._named.get(rep)) is not None:
-                    self.tyvars[sid] = var
-                    continue
-                var = _result_tyvar(len(self._result_spies))
-                self.tyvars[sid] = var
-                self._result_spies.append(spy)
-                self._named[rep] = var
+        if inline:
+            self.naming = naming.inlined(pool, inline, self._traces)
+            self._render_bounds()  # the renaming invalidated the rendered nodes
 
     def returns(self, members: Iterable[Op]) -> _ir.Node | None:
         named: list[str] = []
@@ -378,7 +227,7 @@ class _Renderer:
         # a repeated op returns one spy; collect it once
         rets = _distinct(r for m in members if isinstance(r := m.ret, _SpyObject))
         for ret in rets:
-            if (var := self.tyvars.get(id(ret))) is not None:
+            if (var := self.naming.tyvars.get(id(ret))) is not None:
                 named.append(var)
             else:
                 items.extend(self._traces[id(ret)])
@@ -410,7 +259,7 @@ class _Renderer:
             return pos
 
         # require every call to star-unpack the same trailing run, else order decides
-        count = self.count
+        count = self.var_count
         if not all(
             m.args[-1] is tail and spy_runs(m.args, tail)[-1] == count for m in members
         ):
@@ -496,9 +345,9 @@ class _Renderer:
         return self.traces(self._traces[id(spy)])
 
     def slot(self, spy: _SpyObject) -> _ir.Node:
-        if self.vartuple and spy is self.varpos:
-            return _ir.Unpack(_ir.Name(_TYPEVAR_TUPLE_NAME))
-        if (var := self.tyvars.get(id(spy))) is not None:
+        if self.naming.vartuple and spy is self.varpos:
+            return _ir.Unpack(_ir.Name(TYPEVAR_TUPLE_NAME))
+        if (var := self.naming.tyvars.get(id(spy))) is not None:
             return _ir.Name(var)
         return _or_object(self.spy(spy))
 
@@ -509,11 +358,11 @@ class _Renderer:
         *,
         negate: bool = False,
     ) -> _ir.TypeParam:
-        var = self.tyvars[id(spy)]
-        if self.vartuple and spy is self.varpos:
+        var = self.naming.tyvars[id(spy)]
+        if self.naming.vartuple and spy is self.varpos:
             # a PEP 646 typevar tuple takes no bound or default
             return _ir.TypeParam(var, unpack=True)
-        rep = self._reps.get(id(spy), id(spy))
+        rep = self.naming.reps.get(id(spy), id(spy))
         node = self._bound_nodes[rep]
         default = defaulted.get(id(spy))
         if negate and default is not None:
@@ -534,10 +383,10 @@ class _Renderer:
             spy_id: node
             for name, value in defaults.items()
             if (spy := self._spies.get(name)) is not None
-            if (spy_id := id(spy)) in self.tyvars
+            if (spy_id := id(spy)) in self.naming.tyvars
             if (node := self._typer.value_union((value,))) is not None
         }
-        ordered = self._declared_spies + self._result_spies
+        ordered = [*self.naming.declared_spies, *self.naming.result_spies]
         if not negate:
             # PEP 696 requires defaulted type parameters to come last
             ordered.sort(key=lambda spy: id(spy) in defaulted)
@@ -547,8 +396,11 @@ class _Renderer:
         deferred = 0 if negate else sum(id(spy) in defaulted for spy in ordered)
         cut = len(ordered) - deferred
         typars[cut:cut] = [
-            _ir.TypeParam(name, bound=self._typer.return_type(self._rec_body[var]))
-            for var, name in self.rec_tyvars.items()
+            _ir.TypeParam(
+                name,
+                bound=self._typer.return_type(self.naming.rec_body[var]),
+            )
+            for var, name in self.naming.rec_tyvars.items()
         ]
 
         params = [
@@ -557,7 +409,7 @@ class _Renderer:
             if (param := self._param(name, defaults, negate=negate)) is not None
         ]
         ret_node = self._ret_node if ret is None else ret
-        typars, params, ret_node = _collapse_recursive(
+        typars, params, ret_node = collapse_recursive(
             typars,
             params,
             ret_node,
@@ -586,20 +438,26 @@ class _Renderer:
         if (spy := self._spies.get(name)) is None:
             # an omitted parameter binds its default, so passing it behaves the same
             node = self._typer.value_type(defaults[name])
-            return _ir.Param(name, node, prefix, nameless, _default(defaults, name))
+            return _ir.Param(
+                name,
+                node,
+                prefix,
+                nameless,
+                _boxed_default(defaults, name),
+            )
         node = self.slot(spy)
         if negate and name in defaults:
-            if id(spy) not in self.tyvars and (
+            if id(spy) not in self.naming.tyvars and (
                 mark := self._typer.value_union((defaults[name],))
             ):
                 node = _ir.exclude(self.spy(spy), mark)
             return _ir.Param(name, node, prefix, nameless)
-        if name in self._tuple_params and id(spy) not in self.tyvars:
+        if name in self._tuple_params and id(spy) not in self.naming.tyvars:
             # a typevar keeps its binding, so only an inlined bound widens to the union
             node = _ir.union([node, _ir.tuple_node_variadic(node)]) or node
         if node == _ir.OBJECT and name in self._optional:
             return None
-        return _ir.Param(name, node, prefix, nameless, _default(defaults, name))
+        return _ir.Param(name, node, prefix, nameless, _boxed_default(defaults, name))
 
 
 @final
@@ -609,6 +467,8 @@ class _ResultTyper:
     Reads the renderer's state live, so renderer and typer are mutually recursive and
     the typevar inlining is always reflected.
     """
+
+    _renderer: _Renderer
 
     def __init__(self, renderer: _Renderer, /) -> None:
         self._renderer = renderer
@@ -641,9 +501,9 @@ class _ResultTyper:
     def return_type(self, result: object) -> _ir.Node:
         match result:
             case _RecRef() | _Rec():
-                node = _ir.Name(self._renderer.rec_tyvars[result.var])
+                node = _ir.Name(self._renderer.naming.rec_tyvars[result.var])
             case _SpyObject() if (spy := as_spy(result)) is not None:
-                var = self._renderer.tyvars.get(id(spy))
+                var = self._renderer.naming.tyvars.get(id(spy))
                 node = _ir.Name(var) if var is not None else _ir.OBJECT
             case _SpyStr():
                 node = _ir.Type(str)
@@ -660,7 +520,7 @@ class _ResultTyper:
                         self.value_type(result.step),
                     ),
                 )
-            case _Fn():
+            case _FnResult():
                 node = self._function(result)
             case _ if result is None or _ir.is_sentinel(result):
                 node = _ir.Name(repr(result))
@@ -687,19 +547,19 @@ class _ResultTyper:
         """The type of a single `value`, or `Never` if unconstrained."""
         return self.value_union((value,)) or _ir.NEVER
 
-    def _function(self, fn: _Fn) -> _ir.Node:
+    def _function(self, fn: _FnResult) -> _ir.Node:
         """The signature-syntax type of an explored function result."""
         params = tuple(
             _ir.Arg(
                 None if p.kind is Parameter.POSITIONAL_ONLY else name,
                 self._fn_param(fn, name),
-                _default(fn.defaults, name),
+                _boxed_default(fn.defaults, name),
             )
             for name, p in fn.params.items()
         )
         return _ir.Fn(params, self.type_union(fn.results))
 
-    def _fn_param(self, fn: _Fn, name: str) -> _ir.Node:
+    def _fn_param(self, fn: _FnResult, name: str) -> _ir.Node:
         if (spy := fn.spies.get(name)) is not None:
             return self._renderer.slot(spy)
         value = fn.fixed[name]
@@ -804,16 +664,16 @@ class _ResultTyper:
     def _tuple(self, items: tuple[object, ...]) -> _ir.Node:
         spy = self._renderer.varpos
         if spy is not None:
-            if any(item is spy for item in items) and self._renderer.vartuple:
+            if any(item is spy for item in items) and self._renderer.naming.vartuple:
                 # every use is packed, so the placeholders unpack into a single `*Ts`
                 start = next(i for i, item in enumerate(items) if item is spy)
                 parts = [self.value_type(item) for item in items if item is not spy]
-                parts.insert(start, _ir.Unpack(_ir.Name(_TYPEVAR_TUPLE_NAME)))
+                parts.insert(start, _ir.Unpack(_ir.Name(TYPEVAR_TUPLE_NAME)))
                 return _ir.tuple_node(parts)
 
             # a uniform spread is `tuple[T, ...]`: the placeholder (`(*args,)`) at any
             # length, or its zipped element (`zip(*args)`) only at the full count
-            full_count = len(items) == self._renderer.count
+            full_count = len(items) == self._renderer.var_count
             for target, needs_full_count in (
                 (spy, False),
                 (spy.__optype_element__, True),
@@ -831,145 +691,7 @@ class _ResultTyper:
         return _ir.tuple_node(self.value_type(item) for item in items)
 
 
-_LOOP_MIN = 3  # unrolled iterations a run needs before it is rerolled
-
-
-def _shift_edges(bounded: Mapping[str, _ir.Node]) -> dict[str, str]:
-    """`x -> y` when `bound(y)` is `bound(x)` shifted one unrolled iteration deeper.
-
-    `y` is the copy `x` becomes next time round the loop: it appears in `bound(x)`, the
-    two bounds are equal up to a renaming, and that renaming carries `y` onto another
-    bounded copy (so `y` is the recursion pointer, not a shared outer typevar).
-    """
-    edge: dict[str, str] = {}
-    for x, bound in bounded.items():
-        for y in dict.fromkeys(_ir.names(bound)):
-            if y == x or y not in bounded:
-                continue
-
-            mapping = _ir.alpha_equal(bound, bounded[y])
-            if mapping is not None and mapping.get(y) in bounded:
-                edge[x] = y
-                break
-    return edge
-
-
-def _gc_typars(typars: _TypeParams, params: _Params, ret: _ir.Node) -> _TypeParams:
-    """Drop type parameters no longer reachable from the parameters or return."""
-    by_name = {typar.name: typar for typar in typars}
-    reach: set[str] = set()
-    stack = [name for p in params for name in _ir.names(p.node)]
-    stack += _ir.names(ret)
-    while stack:
-        if (name := stack.pop()) in reach:
-            continue
-
-        reach.add(name)
-        if (typar := by_name.get(name)) is not None:
-            stack += _ir.names(typar.bound) if typar.bound is not None else ()
-            stack += _ir.names(typar.default) if typar.default is not None else ()
-
-    return [typar for typar in typars if typar.name in reach]
-
-
-def _rename_sig(
-    typars: _TypeParams,
-    params: _Params,
-    ret: _ir.Node,
-    remap: Mapping[str, str],
-) -> _Sig:
-    """Apply a `Name` remap across a signature's type params, params, and return."""
-    tps = [
-        _ir.TypeParam(
-            remap.get(typar.name, typar.name),
-            None if typar.bound is None else _ir.rename(typar.bound, remap),
-            None if typar.default is None else _ir.rename(typar.default, remap),
-            typar.unpack,
-        )
-        for typar in typars
-    ]
-    args = [
-        _ir.Param(
-            p.name,
-            _ir.rename(p.node, remap),
-            p.prefix,
-            p.nameless,
-            p.default,
-        )
-        for p in params
-    ]
-    return tps, args, _ir.rename(ret, remap)
-
-
-def _renumber_tyvars(typars: _TypeParams, params: _Params, ret: _ir.Node) -> _Sig:
-    """Renumber the surviving `T, U, V, ...` typevars gaplessly, in their order."""
-    remap: dict[str, str] = {}
-    n = 0
-    for typar in typars:
-        if _ir.tyvar_index(typar.name) is not None:
-            if (new := _ir.tyvar_name(n)) != typar.name:
-                remap[typar.name] = new
-            n += 1
-
-    return _rename_sig(typars, params, ret, remap) if remap else (typars, params, ret)
-
-
-def _collapse_renaming(
-    bounded: Mapping[str, _ir.Node],
-    edge: Mapping[str, str],
-) -> dict[str, str]:
-    """The renaming that folds each run of shift edges onto its earliest copy.
-
-    A name has one outgoing `edge` at most, so its chain to a terminal is a run.
-    """
-    order = {name: i for i, name in enumerate(bounded)}
-
-    def terminal(name: str) -> str:
-        seen: set[str] = set()
-        while name in edge and name not in seen:
-            seen.add(name)
-            name = edge[name]
-        return name
-
-    runs: defaultdict[str, list[str]] = defaultdict(list)
-    for name in bounded:
-        runs[terminal(name)].append(name)
-
-    remap: dict[str, str] = {}
-    for members in runs.values():
-        if len(members) < _LOOP_MIN:
-            continue
-        lead = min(members, key=order.__getitem__)
-        remap.update({name: lead for name in members if name != lead})
-    return remap
-
-
-def _collapse_recursive(typars: _TypeParams, params: _Params, ret: _ir.Node) -> _Sig:
-    """Fold each run of self-similar typevars onto one (mutually) recursive typevar.
-
-    The explorer unrolls a loop into a run `T -> U -> V -> ...` of identical bounds,
-    one per iteration. Collapsing the run onto its leading copy closes it into the
-    recursive type the loop denotes (cf. `sum`, `-x + x`) rather than an N-deep
-    transcript, and keeps coupled loop variables as mutual recursion.
-    """
-    bounded = {
-        typar.name: typar.bound
-        for typar in typars
-        if typar.bound is not None and not typar.unpack
-    }
-    if len(bounded) < _LOOP_MIN or not (edge := _shift_edges(bounded)):
-        return typars, params, ret
-
-    remap = _collapse_renaming(bounded, edge)
-    if not remap:
-        return typars, params, ret
-
-    kept = [typar for typar in typars if typar.name not in remap]
-    typars, params, ret = _rename_sig(kept, params, ret, remap)
-    return _renumber_tyvars(_gc_typars(typars, params, ret), params, ret)
-
-
-def _renderers(
+def renderers_of(
     exploration: Exploration,
     params: Mapping[str, Parameter],
 ) -> list[_Renderer]:
@@ -984,7 +706,7 @@ def _renderers(
     return [_Renderer(exploration, params, t) for t in (traces, reflected)]
 
 
-def _signatures(
+def render_all(
     renderers: Iterable[_Renderer],
     selected: Names,
     defaults: Defaults | None = None,
@@ -1006,8 +728,8 @@ def signatures(
     *,
     negate: bool = False,
 ) -> list[_ir.Signature]:
-    return _signatures(
-        _renderers(exploration, params),
+    return render_all(
+        renderers_of(exploration, params),
         selected,
         defaults,
         negate=negate,
@@ -1028,7 +750,7 @@ def widened_signatures(
     one, so a parameter-only typevar would dangle.
     """
     sigs = [
-        r.signature(selected, ret=_ir.OBJECT) for r in _renderers(exploration, params)
+        r.signature(selected, ret=_ir.OBJECT) for r in renderers_of(exploration, params)
     ]
     return [] if any(sig.type_params for sig in sigs) else sigs
 

@@ -15,7 +15,7 @@ from dataclasses import replace
 from itertools import product
 from typing import final
 
-# `from optype.infer import _ir` would re-enter the package, which imports this module
+# `from . import _ir` would re-enter this package
 import optype.infer._ir as _ir  # ruff: ignore[manual-from-import]
 from ._model import (
     _Alias,
@@ -26,6 +26,7 @@ from ._model import (
     _cyclic,
     _free_tyvars,
     _Func,
+    _Helper,
     _is_generic,
     _is_protocol_node,
     _Member,
@@ -36,7 +37,6 @@ from ._model import (
     _strip_variance,
     _subst_member,
     _toposort,
-    _value,
 )
 from ._print import _OPTYPE, _import_of, _member_key, _type
 from optype.infer._errors import InferError
@@ -94,34 +94,94 @@ def _inherited_bounds(
 
 type _Constraints = dict[str, list[_ir.Node]]
 
+# the canonical dedup keys: equal definitions serialize to equal keys
+type _ProtoKey = tuple[tuple[str, ...], tuple[str, ...]]  # bases, then members
+type _GroupKey = tuple[tuple[bool, str], ...]  # one entry per cyclic bound
+
+
+@final
+class _HelperRegistry:
+    """The helper definitions shared across every signature of one render."""
+
+    defs: dict[str, _Helper]
+    groups: dict[_GroupKey, list[str]]
+    _keys: dict[_ProtoKey, str]
+    _names: set[str]  # every claimed helper name
+
+    def __init__(self) -> None:
+        self.defs = {}
+        self.groups = {}
+        self._keys = {}
+        self._names = set()
+
+    def register(
+        self,
+        candidate: str,
+        key: _ProtoKey,
+        build: Callable[[str], _Helper],
+    ) -> str:
+        if key in self._keys:
+            return self._keys[key]
+
+        name = self.claim(candidate)
+        self._keys[key] = name
+        self.defs[name] = build(name)
+        return name
+
+    def claim(self, candidate: str) -> str:
+        """A fresh helper name that collides with no real import or other helper."""
+        name = candidate
+        i = 2
+        while (
+            name in self._names
+            or _import_of(name) is not None
+            or hasattr(builtins, name)
+        ):
+            name = f"{candidate}{i}"
+            i += 1
+        self._names.add(name)
+        return name
+
 
 @final
 class _Lowerer:
     """Rewrite a sequence of `Signature`s into a printable `_Module`."""
 
+    _registry: _HelperRegistry
+
     def __init__(self) -> None:
-        self._defs: dict[str, _Protocol | _Alias] = {}
-        self._keys: dict[object, str] = {}
-        self._groups: dict[object, list[str]] = {}
-        self._names: set[str] = set()
+        self._registry = _HelperRegistry()
 
     def module(self, sigs: Sequence[_ir.Signature]) -> _Module:
-        funcs = [self._func(sig) for sig in sigs]
-        return _Module(tuple(self._defs.values()), tuple(funcs))
+        funcs = [_SigLowerer(self._registry, sig).func() for sig in sigs]
+        return _Module(tuple(self._registry.defs.values()), tuple(funcs))
 
-    def _func(self, sig: _ir.Signature) -> _Func:
-        tyvars = frozenset(typar.name for typar in sig.type_params)
+
+@final
+class _SigLowerer:
+    """Lower one `Signature`; its type variables are fixed for the whole traversal."""
+
+    _registry: _HelperRegistry
+    _sig: _ir.Signature
+    _tyvars: frozenset[str]  # the signature's type parameter names
+
+    def __init__(self, registry: _HelperRegistry, sig: _ir.Signature) -> None:
+        self._registry = registry
+        self._sig = sig
+        self._tyvars = frozenset(typar.name for typar in sig.type_params)
+
+    def func(self) -> _Func:
+        sig = self._sig
         constraints: _Constraints = {}
-        params = [self._param(p, tyvars, constraints) for p in sig.params]
-        ret = self._node(sig.ret, tyvars, constraints)
-        kept, subst = self._resolve_typars(sig.type_params, tyvars, constraints)
+        params = [self._param(p, constraints) for p in sig.params]
+        ret = self._node(sig.ret, constraints)
+        kept, subst = self._resolve_typars(sig.type_params, constraints)
         params = [self._subst_param(p, subst) for p in params]
         return _Func(tuple(kept), tuple(params), _ir.subst(ret, subst), sig.deprecated)
 
     def _resolve_typars(
         self,
         typars: Sequence[_ir.TypeParam],
-        tyvars: frozenset[str],
         constraints: _Constraints,
     ) -> tuple[list[_ir.TypeParam], dict[str, _ir.Node]]:
         """Eliminate typevar-referencing bounds, which PEP 695 forbids.
@@ -135,20 +195,21 @@ class _Lowerer:
             merged = self._merge_bound(
                 typar.bound,
                 constraints.get(typar.name),
-                tyvars,
             )
             bound[typar.name] = None if merged == _ir.OBJECT else merged
             default[typar.name] = (
-                None if typar.default is None else self._node(typar.default, tyvars, {})
+                None if typar.default is None else self._node(typar.default, {})
             )
 
-        elim = {tyvar: b for tyvar, b in bound.items() if b and _is_generic(b, tyvars)}
+        elim = {
+            tyvar: b for tyvar, b in bound.items() if b and _is_generic(b, self._tyvars)
+        }
         deps = {tyvar: frozenset(_ir.names(b)) & set(elim) for tyvar, b in elim.items()}
         cyclic = _cyclic(deps)
 
         subst: dict[str, _ir.Node] = {}
         for group in _components(cyclic, deps):
-            subst |= self._hoist_group(group, elim, tyvars)
+            subst |= self._hoist_group(group, elim)
         for tyvar in _toposort(set(elim) - cyclic, deps):
             subst[tyvar] = _ir.subst(elim[tyvar], subst)
 
@@ -162,10 +223,9 @@ class _Lowerer:
     def _param(
         self,
         param: _ir.Param,
-        tyvars: frozenset[str],
         constraints: _Constraints,
     ) -> _ir.Param:
-        return replace(param, node=self._node(param.node, tyvars, constraints))
+        return replace(param, node=self._node(param.node, constraints))
 
     @staticmethod
     def _subst_param(param: _ir.Param, subst: Mapping[str, _ir.Node]) -> _ir.Param:
@@ -174,65 +234,53 @@ class _Lowerer:
     def _node(  # ruff: ignore[too-many-return-statements]
         self,
         node: _ir.Node,
-        tyvars: frozenset[str],
         constraints: _Constraints,
     ) -> _ir.Node:
         match node:
             case _ir.App("Has", args):
-                first, *signed = (_value(a) for a in args)
-                return self._has(first, tuple(signed), tyvars, constraints)
+                first, *signed = (_ir.term_node(a) for a in args)
+                return self._has(first, tuple(signed), constraints)
             case _ir.App(origin, args):
-                return self._app(origin, args, tyvars, constraints)
+                return self._app(origin, args, constraints)
             case _ir.Fn(params, ret):
-                return self._fn(params, ret, tyvars, constraints)
+                return self._fn(params, ret, constraints)
             case _ir.Union(parts):
-                lowered = [self._node(p, tyvars, constraints) for p in parts]
+                lowered = [self._node(p, constraints) for p in parts]
                 return _ir.union(lowered) or _ir.OBJECT
             case _ir.Intersection(parts):
-                return self._inter(parts, tyvars, constraints)
+                return self._inter(parts, constraints)
             case _ir.Not(_):
                 return _ir.OBJECT
             case _ir.Unpack(part):
-                return _ir.Unpack(self._node(part, tyvars, constraints))
+                return _ir.Unpack(self._node(part, constraints))
             case _ir.Variance(_, part):
-                return self._node(part, tyvars, constraints)
+                return self._node(part, constraints)
             case _:
                 return node
 
-    def _arg(
-        self,
-        arg: _ir.Node | _ir.Arg,
-        tyvars: frozenset[str],
-        constraints: _Constraints,
-    ) -> _ir.Node | _ir.Arg:
+    def _arg(self, arg: _ir.Term, constraints: _Constraints) -> _ir.Term:
         if isinstance(arg, _ir.Arg):
-            return replace(arg, value=self._node(arg.value, tyvars, constraints))
-        return self._node(arg, tyvars, constraints)
+            return replace(arg, value=self._node(arg.value, constraints))
 
-    def _app(
-        self,
-        origin: str,
-        args: tuple[_ir.Node | _ir.Arg, ...],
-        tyvars: frozenset[str],
-        constraints: _Constraints,
-    ) -> _ir.App:
-        lowered = [self._arg(a, tyvars, constraints) for a in args]
+        return self._node(arg, constraints)
+
+    def _app(self, origin: str, args: _ir.Terms, constraints: _Constraints) -> _ir.App:
+        lowered = [self._arg(a, constraints) for a in args]
         if (bounds := _protocol_bounds(origin)) is not None:
             lowered = lowered[: len(bounds)]
             for arg, bound in zip(lowered, bounds, strict=False):
-                if bound and isinstance(arg, _ir.Name) and arg.name in tyvars:
+                if bound and isinstance(arg, _ir.Name) and arg.name in self._tyvars:
                     constraints.setdefault(arg.name, []).append(bound)
         return _ir.App(origin, tuple(lowered))
 
-    def _inter(
-        self,
-        parts: Sequence[_ir.Node],
-        tyvars: frozenset[str],
-        constraints: _Constraints,
-    ) -> _ir.Node:
+    def _inter(self, parts: Sequence[_ir.Node], constraints: _Constraints) -> _ir.Node:
         # a typevar member lifts the others into that typevar's bound, which is sound
         tyvar = next(
-            (p.name for p in parts if isinstance(p, _ir.Name) and p.name in tyvars),
+            (
+                p.name
+                for p in parts
+                if isinstance(p, _ir.Name) and p.name in self._tyvars
+            ),
             None,
         )
         if tyvar is not None:
@@ -250,22 +298,21 @@ class _Lowerer:
         for part in parts:
             if isinstance(part, _ir.Not):
                 continue
-            node = self._node(part, tyvars, constraints)
+            node = self._node(part, constraints)
             if (key := _type(node)) not in seen:
                 seen.add(key)
                 lowered.append(node)
-        return self._combine(lowered, tyvars)
+        return self._combine(lowered)
 
     def _proto_app(
         self,
         candidate: str,
-        tyvars: frozenset[str],
         *,
         bases: Sequence[_ir.Node] = (),
         members: Sequence[_Member] = (),
     ) -> _ir.App:
         """Register a helper `Protocol` (canonicalized for reuse) and apply it."""
-        fv = _free_tyvars([*bases, *_member_nodes(members)], tyvars)
+        fv = _free_tyvars([*bases, *_member_nodes(members)], self._tyvars)
         m = {name: _ir.Name(_ir.tyvar_name(i)) for i, name in enumerate(fv)}
         canon_bases = tuple(_ir.subst(b, m) for b in bases)
         canon_members = tuple(_subst_member(mem, m) for mem in members)
@@ -276,19 +323,20 @@ class _Lowerer:
             tuple(_type(b) for b in canon_bases),
             tuple(map(_member_key, canon_members)),
         )
-        name = self._register(
+        name = self._registry.register(
             candidate,
             key,
             lambda nm: _Protocol(nm, typars, canon_bases, canon_members),
         )
         return _ir.App(name, tuple(_ir.Name(f) for f in fv))
 
-    def _combine(self, parts: Sequence[_ir.Node], tyvars: frozenset[str]) -> _ir.Node:
+    def _combine(self, parts: Sequence[_ir.Node]) -> _ir.Node:
         # an `(A | B) & C` distributes to `(A & C) | (B & C)`: a union cannot be a base
         if not parts:
             return _ir.OBJECT
         if len(parts) == 1:
             return parts[0]
+
         unions = [p for p in parts if isinstance(p, _ir.Union)]
         if not unions:
             # a callable is not a valid base; it lifts into a `__call__` method instead
@@ -302,10 +350,11 @@ class _Lowerer:
                 _combine_name([p.origin for p in bases if isinstance(p, _ir.App)])
                 or "P"
             )
-            return self._proto_app(candidate, tyvars, bases=bases, members=members)
+            return self._proto_app(candidate, bases=bases, members=members)
+
         rest = [p for p in parts if not isinstance(p, _ir.Union)]
         variants = [
-            self._combine([*rest, *picks], tyvars)
+            self._combine([*rest, *picks])
             for picks in product(*(u.parts for u in unions))
         ]
         return _ir.union(variants) or _ir.OBJECT
@@ -314,7 +363,6 @@ class _Lowerer:
         self,
         first: _ir.Node,
         signed: tuple[_ir.Node, ...],
-        tyvars: frozenset[str],
         constraints: _Constraints,
     ) -> _ir.Node:
         attr = (
@@ -325,15 +373,15 @@ class _Lowerer:
             # not a valid identifier (e.g. from `getattr(x, "a-b")`) is inexpressible
             msg = f"cannot render attribute {attr!r} as a protocol member"
             raise InferError(msg)
-        member = self._has_member(attr, signed, tyvars, constraints)
+
+        member = self._has_member(attr, signed, constraints)
         candidate = "Has" + attr[:1].upper() + attr[1:]
-        return self._proto_app(candidate, tyvars, members=(member,))
+        return self._proto_app(candidate, members=(member,))
 
     def _has_member(
         self,
         attr: str,
         signed: tuple[_ir.Node, ...],
-        tyvars: frozenset[str],
         constraints: _Constraints,
         *,
         classvar: bool = False,
@@ -343,20 +391,20 @@ class _Lowerer:
             and isinstance(signed[0], _ir.App)
             and signed[0].origin == "ClassVar"
         ):
-            inner = tuple(_value(a) for a in signed[0].args)
-            return self._has_member(attr, inner, tyvars, constraints, classvar=True)
+            inner = tuple(_ir.term_node(a) for a in signed[0].args)
+            return self._has_member(attr, inner, constraints, classvar=True)
         if not signed:
             return _Attr(attr, _ir.OBJECT, classvar=classvar)
         if len(signed) == 1 and isinstance(signed[0], _ir.Fn):
             fn = signed[0]
-            ret = self._node(_strip_variance(fn.ret), tyvars, constraints)
-            params = tuple(self._arg(p, tyvars, constraints) for p in fn.params)
+            ret = self._node(_strip_variance(fn.ret), constraints)
+            params = tuple(self._arg(p, constraints) for p in fn.params)
             return _Method(attr, params, ret)
         if len(signed) == 1 and isinstance(signed[0], _ir.Variance):
             sign, part = signed[0].sign, signed[0].part
-            node = self._node(part, tyvars, constraints)
+            node = self._node(part, constraints)
             # `ClassVar` can't hold a typevar; a generic one demotes to instance read
-            cv = classvar and not _is_generic(node, tyvars)
+            cv = classvar and not _is_generic(node, self._tyvars)
             return _Attr(
                 attr,
                 node,
@@ -370,30 +418,28 @@ class _Lowerer:
             if isinstance(s, _ir.Variance) and s.sign == _ir.COVARIANT
         ]
         chosen = reads[0] if reads else _strip_variance(signed[0])
-        node = self._node(chosen, tyvars, constraints)
-        cv = classvar and not _is_generic(node, tyvars)
+        node = self._node(chosen, constraints)
+        cv = classvar and not _is_generic(node, self._tyvars)
         return _Attr(attr, node, classvar=cv)
 
     def _fn(
         self,
-        params: tuple[_ir.Node | _ir.Arg, ...],
+        params: _ir.Terms,
         ret: _ir.Node,
-        tyvars: frozenset[str],
         constraints: _Constraints,
     ) -> _ir.Node:
-        lowered_ret = self._node(ret, tyvars, constraints)
-        lowered = tuple(self._arg(p, tyvars, constraints) for p in params)
+        lowered_ret = self._node(ret, constraints)
+        lowered = tuple(self._arg(p, constraints) for p in params)
         # `Callable` covers positional params; a keyword or default needs `__call__`
         if not any(isinstance(p, _ir.Arg) and (p.key or p.default) for p in lowered):
             return _ir.Fn(lowered, lowered_ret)
         member = _Method("__call__", lowered, lowered_ret)
-        return self._proto_app("CanCallP", tyvars, members=(member,))
+        return self._proto_app("CanCallP", members=(member,))
 
     def _merge_bound(
         self,
         bound: _ir.Node | None,
         extra: list[_ir.Node] | None,
-        tyvars: frozenset[str],
     ) -> _ir.Node | None:
         parts: list[_ir.Node] = []
         if bound is not None:
@@ -403,13 +449,12 @@ class _Lowerer:
         if not parts:
             return None
         node = parts[0] if len(parts) == 1 else _ir.Intersection(tuple(parts))
-        return self._node(node, tyvars, {})
+        return self._node(node, {})
 
     def _hoist_group(
         self,
         group: frozenset[str],
         bound: Mapping[str, _ir.Node],
-        tyvars: frozenset[str],
     ) -> dict[str, _ir.Node]:
         """Turn a cyclic bound group into mutually-referential helper definitions."""
         members = sorted(group)
@@ -418,7 +463,7 @@ class _Lowerer:
                 name
                 for tyvar in members
                 for name in _ir.names(bound[tyvar])
-                if name in tyvars and name not in group
+                if name in self._tyvars and name not in group
             ),
         )
         canon = [_ir.tyvar_name(i) for i in range(len(free))]
@@ -436,9 +481,12 @@ class _Lowerer:
             for tyvar in members
         )
 
-        if key not in self._groups:
-            names = [self._claim(_bound_name(bound[tyvar], tyvar)) for tyvar in members]
-            self._groups[key] = names
+        if key not in self._registry.groups:
+            names = [
+                self._registry.claim(_bound_name(bound[tyvar], tyvar))
+                for tyvar in members
+            ]
+            self._registry.groups[key] = names
             refs: dict[str, _ir.Node] = {
                 tyvar: _ir.App(names[i], tuple(map(_ir.Name, canon)))
                 for i, tyvar in enumerate(members)
@@ -446,39 +494,12 @@ class _Lowerer:
             typars = tuple(_ir.TypeParam(c) for c in canon)
             for i, tyvar in enumerate(members):
                 body = _ir.subst(bound[tyvar], rename | refs)
-                self._defs[names[i]] = (
+                self._registry.defs[names[i]] = (
                     _Protocol(names[i], typars, (body,), ())
                     if _is_protocol_node(bound[tyvar])
                     else _Alias(names[i], typars, body)
                 )
 
-        names = self._groups[key]
+        names = self._registry.groups[key]
         site = tuple(map(_ir.Name, free))
         return {tyvar: _ir.App(names[i], site) for i, tyvar in enumerate(members)}
-
-    def _register(
-        self,
-        candidate: str,
-        key: object,
-        build: Callable[[str], _Protocol | _Alias],
-    ) -> str:
-        if key in self._keys:
-            return self._keys[key]
-        name = self._claim(candidate)
-        self._keys[key] = name
-        self._defs[name] = build(name)
-        return name
-
-    def _claim(self, candidate: str) -> str:
-        """A fresh helper name that collides with no real import or other helper."""
-        name = candidate
-        i = 2
-        while (
-            name in self._names
-            or _import_of(name) is not None
-            or hasattr(builtins, name)
-        ):
-            name = f"{candidate}{i}"
-            i += 1
-        self._names.add(name)
-        return name

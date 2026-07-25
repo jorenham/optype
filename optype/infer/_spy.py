@@ -6,7 +6,7 @@ import sys
 from collections.abc import Callable, Generator, Iterator
 from contextvars import ContextVar
 from enum import StrEnum
-from functools import lru_cache
+from functools import cache, lru_cache
 from types import CodeType
 from typing import (
     Any,
@@ -26,7 +26,9 @@ type _Memo = tuple[object, int | None]  # (fork plan, value); None value = absen
 type _KeyedMemo = tuple[object, dict[int, tuple[object, int]]]
 
 
+@cache
 def _slot(attr: str) -> str:
+    # runs on every fork decision, for one of a handful of fixed dunder names
     return f"__optype_{attr.strip('_')}__"
 
 
@@ -178,9 +180,8 @@ def _decide_keyed(
     *,
     keep_arg: bool,
 ) -> bool:
-    # per-operand variant of `_decide_stable`: `y in x` forks once per distinct `y`, so
-    # `y in x and y not in x` agrees within a run while `a in x` and `b in x` stay free.
-    # the cache retains `item` so its `id` can't be reused by a later distinct operand
+    # per-operand `_decide_stable`: `y in x and y not in x` agrees within a run, while
+    # `a in x` and `b in x` stay free. `item` is retained so its `id` can't be reused
     slot = _slot(attr)
     plan = _fork.get()
 
@@ -649,9 +650,8 @@ for _name in _TRACED_OPS:
 # Free functions, not methods: a method would be an unrecorded hole in the proxy.
 def _class_spy(cls: object) -> _SpyObject | None:
     """The spy whose unique class `cls` is, if any."""
-    # only a spy's unique class carries `__optype_instance__` in its own `__dict__`;
-    # the marker must point back into the mro, or it is a copy on some foreign class.
-    # gate on the exact metaclass: a foreign `__dict__` can be a metaclass property
+    # the marker must point back into the mro, or it is a copy on a foreign class; the
+    # exact-metaclass gate is because a foreign `__dict__` can be a metaclass property
     if type(cls) is _SpyType:
         spy = cls.__dict__.get("__optype_instance__")
         if isinstance(spy, _SpyObject) and issubclass(cls, type(spy)):

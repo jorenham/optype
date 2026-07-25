@@ -12,6 +12,9 @@ _PENDING_MAX: Final = 100_000
 class _CyclicGC:
     __slots__ = "_paused", "_promoted"
 
+    _paused: bool
+    _promoted: bool  # whether a drain moved the live graph to the older generation
+
     def __init__(self) -> None:
         self._paused = False
         self._promoted = False

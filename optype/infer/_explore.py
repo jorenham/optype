@@ -59,7 +59,7 @@ from ._values import (
     VARIADIC_KINDS,
     Exploration,
     GapKind,
-    _Fn,
+    _FnResult,
     _Gen,
     _Rec,
     _RecRef,
@@ -137,8 +137,7 @@ else:
     _TEMPLATE_TYPES: dict[type, tuple[str, str | None]] = {}
 
 
-def _reachable(params: Iterable[object]) -> Generator[_SpyObject]:
-    # every spy reachable from `params` through the recorded operations
+def _reachable_spies(params: Iterable[object]) -> Generator[_SpyObject]:
     seen: set[int] = set()
     stack = [spy for spy in params if isinstance(spy, _SpyObject)]
     while stack:
@@ -160,7 +159,7 @@ def _snapshot(params: Iterable[_SpyObject]) -> _Traces:
     sibling's trace merges into its owner's, and the markers themselves are dropped.
     """
     traces: _Traces = {}
-    for spy in _reachable(params):
+    for spy in _reachable_spies(params):
         items = (item for item in spy.__optype_trace__ if item.attr != _Marker.SIBLING)
         traces.setdefault(id(_own_spy(spy)), []).extend(items)
     return traces
@@ -216,7 +215,6 @@ def _yields[T](values: Iterable[T]) -> list[T]:
 
 
 def _sync[T](agen: AsyncGenerator[T, Any]) -> Generator[T]:
-    # iterate an async generator synchronously by resolving each step's awaitable
     for _ in range(_YIELD_LIMIT):
         try:
             yield _await(anext(agen))
@@ -271,7 +269,7 @@ def _explore_func(func: _AnyFunc) -> object:
         exploration, _ = explore_lenient(func, params)
     except Exception:  # ruff: ignore[blind-except]  # an unexplorable function stays opaque
         return func
-    return _Fn(
+    return _FnResult(
         params,
         exploration.spies,
         exploration.fixed,
@@ -303,23 +301,25 @@ def _wrapper(
     if (
         cls is functools.partial
         and isinstance(_unwrap(result), _FUNCTION_TYPES)
-        and isinstance(explored := _explore_func(cast("_AnyFunc", result)), _Fn)
+        and isinstance(explored := _explore_func(cast("_AnyFunc", result)), _FnResult)
     ):
         return explored
 
     ret = _wrapped_return(result)
-    return _Gen([] if ret is None else [_next(ret, path)], name)
+    return _Gen([] if ret is None else [_explore_result(ret, path)], name)
 
 
 def _source_element(result: object) -> _SpyObject | None:
-    # the shared element spy of a predicate filter's wrapped source iterator
     for ref in gc.get_referents(result):
         if isinstance(ref, _SpyObject) and ref.__optype_iterator__:
             return ref.__optype_element__
     return None
 
 
-def _next(result: object, path: dict[int, _RecVar | None] | None = None) -> object:  # ruff: ignore[complex-structure]
+def _explore_result(  # ruff: ignore[complex-structure]
+    result: object,
+    path: dict[int, _RecVar | None] | None = None,
+) -> object:
     # a function (or iterator) within the yields or a container is explored as well
     path = {} if path is None else path
     rid = id(result)
@@ -330,12 +330,15 @@ def _next(result: object, path: dict[int, _RecVar | None] | None = None) -> obje
     path[rid] = None  # marks the ancestor chain; a `_RecVar` once reached again
     cls = type(result)
     if isgenerator(result):
-        out = _Gen([_next(v, path) for v in _yields(result)], "Generator")
+        out = _Gen([_explore_result(v, path) for v in _yields(result)], "Generator")
     elif isasyncgen(result):
-        out = _Gen([_next(v, path) for v in _yields(_sync(result))], "AsyncGenerator")
+        out = _Gen(
+            [_explore_result(v, path) for v in _yields(_sync(result))],
+            "AsyncGenerator",
+        )
     elif isinstance(result, Coroutine):
         # a returned coroutine value (e.g. 2-arg `anext`'s `anext_awaitable`)
-        out = _Gen([_next(_await(result), path)], COROUTINE)
+        out = _Gen([_explore_result(_await(result), path)], COROUTINE)
     elif (kind := _ITERATOR_TYPES.get(cls)) is not None:
         values = _yields(cast("Iterable[Any]", result))
         if cls is enumerate:
@@ -345,41 +348,39 @@ def _next(result: object, path: dict[int, _RecVar | None] | None = None) -> obje
             # the predicate dropped every element; the element type is the source's
             element = _source_element(result)
             values = [element] if element is not None else values
-        out = _Gen([_next(v, path) for v in values], kind)
+        out = _Gen([_explore_result(v, path) for v in values], kind)
     elif (
         cls is _CALLABLE_ITERATOR
         and _CALLABLE_FIRST
         and len(refs := gc.get_referents(result)) == 2
         and (fn := as_spy(refs[0])) is not None
     ):
-        # `iter(callable, sentinel)`: call the callable for the element type; iterating
-        # would stop at the sentinel and pollute it. Referent 0 is the callable (per
-        # `_CALLABLE_FIRST`; not a spy-search, since the sentinel may be a spy too).
-        # Calling `fn()` is deliberate: the recorded `__call__` is what renders the
-        # parameter as `() -> R`, as `explore_spies` snapshots after this runs.
-        out = _Gen([_next(fn(), path)], "Iterator")
+        # `iter(callable, sentinel)`: referent 0 is the callable, not a spy-search,
+        # since the sentinel may be a spy too. Calling it is deliberate: the recorded
+        # `__call__` is what renders the parameter as `() -> R`.
+        out = _Gen([_explore_result(fn(), path)], "Iterator")
     elif (name := _WRAPPER_TYPES.get(cls)) is not None:
         out = _wrapper(cls, name, result, path)
     elif (tpl := _TEMPLATE_TYPES.get(cls)) is not None:
         kind, attr = tpl
-        yields = [] if attr is None else [_next(getattr(result, attr), path)]
+        yields = [] if attr is None else [_explore_result(getattr(result, attr), path)]
         out = _Gen(yields, kind)
     elif isinstance(_unwrap(result), _FUNCTION_TYPES):
         out = _explore_func(cast("_AnyFunc", result))
     else:
-        out = _next_container(cls, result, path)
+        out = _explore_container(cls, result, path)
     return _Rec(var, out) if (var := path.pop(rid)) is not None else out
 
 
-def _next_container(cls: type, result: Any, path: dict[int, _RecVar | None]) -> Any:
+def _explore_container(cls: type, result: Any, path: dict[int, _RecVar | None]) -> Any:
     match result:
         case tuple():
-            return tuple(_next(item, path) for item in result)
+            return tuple(_explore_result(item, path) for item in result)
         case list():
-            return [_next(item, path) for item in result]
+            return [_explore_result(item, path) for item in result]
         case Mapping() if not isinstance(result, Context):
             # the keys must stay hashable, so only the values recurse
-            items = {key: _next(value, path) for key, value in result.items()}
+            items = {key: _explore_result(value, path) for key, value in result.items()}
             try:
                 return cls(items)
             except TypeError:
@@ -391,8 +392,8 @@ def _next_container(cls: type, result: Any, path: dict[int, _RecVar | None]) -> 
 def _with_next_default(
     func: _AnyFunc,
     spies: Mapping[str, _SpyObject],
-    results: list[object],
-) -> list[object]:
+    results: Sequence[object],
+) -> Sequence[object]:
     # `next`/`anext` return `default` on an exhaustion branch the spies never reach
     if func not in _NEXT_BUILTINS or len(spies) < 2:
         return results
@@ -447,7 +448,7 @@ def _scrub_deprecated(message: str | None, func: _AnyFunc) -> str | None:
     return message.replace(f"{_SpyObject.__module__}.{name}", full).replace(name, owner)
 
 
-def _drain() -> None:
+def _drain_untraced() -> None:
     # the drain runs the target's finalizers; discard any spy ops they record,
     # or a rolled-back branch's `__del__` pollutes the trace
     marks: dict[int, tuple[_Spy, int]] = {}
@@ -512,7 +513,7 @@ def _explore[T](  # ruff: ignore[complex-structure, too-many-branches]
             if undo:
                 journal_rollback(marks)
 
-        _drain()
+        _drain_untraced()
 
     if not results:
         if value_exc is not None:
@@ -627,7 +628,11 @@ def explore_spies(
             _force_absent(spies, forced_absent)
             try:
                 results, deprecated, gaps = _explore(func, args, kwds)
-                results = _with_next_default(func, spies, [_next(r) for r in results])
+                results = _with_next_default(
+                    func,
+                    spies,
+                    [_explore_result(r) for r in results],
+                )
             except KeyError as exc:
                 key = exc.args[0] if exc.args else None
                 if (
