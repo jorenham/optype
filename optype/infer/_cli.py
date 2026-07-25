@@ -4,7 +4,7 @@ import argparse
 import ast
 import sys
 import warnings
-from typing import Final, cast
+from typing import Final
 
 from . import _color
 from ._backends import BackendName
@@ -31,12 +31,12 @@ def _parser() -> argparse.ArgumentParser:
 def run(*args: str) -> None:
     parser = _parser()
     ns = parser.parse_args(args)
-    rest = cast("list[str]", ns.rest)
+    rest: list[str] = ns.rest
     if not rest:
         parser.error("the EXPR argument is required")
 
-    backend = cast("BackendName", ns.format)
-    color = cast("ColorMode", ns.color)
+    backend: BackendName = ns.format
+    color: ColorMode = ns.color
     source, *selectors = rest
     selectors = [int(s) if s.removeprefix("-").isdigit() else s for s in selectors]
 

@@ -1,10 +1,11 @@
 """Analysis passes over the recorded spy trace graph, ahead of rendering."""
 
+# pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
+
 import sys
 from collections import Counter
 from collections.abc import Generator, Iterable, Mapping, Sequence
 from itertools import groupby
-from typing import cast
 
 from ._protocols import DUNDER_ATTR, DUNDER_CAN_R, DUNDER_CLASS_ATTR
 from ._spy import (
@@ -194,10 +195,9 @@ def _packed_uses(value: object, spy: _SpyObject, count: int) -> Generator[bool]:
                 yield False
             return
         case tuple() if not isinstance(value, (_Gen, _FnResult, _Rec, _RecRef)):
-            tup = cast("tuple[object, ...]", value)
-            if runs := spy_runs(tup, spy):
+            if runs := spy_runs(value, spy):
                 yield runs == [count]
-            items = (item for item in tup if item is not spy)
+            items = (item for item in value if item is not spy)
         case _:
             items = _children(value)
 

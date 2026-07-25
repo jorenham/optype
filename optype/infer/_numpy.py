@@ -2,7 +2,6 @@
 
 from collections.abc import Iterable, Sequence
 from inspect import Parameter
-from typing import cast
 
 # `from . import _ir` would re-enter this package
 import optype.infer._ir as _ir
@@ -41,7 +40,7 @@ def ufunc_params(nin: int) -> list[str]:
 
 
 def _ufunc_dtype(func: _AnyFunc, i: int) -> str | None:
-    types = cast("Sequence[str]", getattr(func, "types", ()))
+    types: Sequence[str] = getattr(func, "types", ())
     ranks = [
         _DTYPE_RANK[ins[i]]
         for sig in types

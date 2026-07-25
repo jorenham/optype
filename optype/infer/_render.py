@@ -1,12 +1,14 @@
 """Render the recorded spy traces as a PEP 695 signature."""
 
+# pyright: reportUnknownArgumentType=false
+
 import sys
 import types
 from collections import Counter
 from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
 from contextvars import Context
 from inspect import Parameter, _ParameterKind
-from typing import Any, NamedTuple, cast, final
+from typing import Any, NamedTuple, final
 
 # `from . import _ir` would re-enter this package
 import optype.infer._ir as _ir
@@ -16,7 +18,6 @@ from ._naming import TYPEVAR_TUPLE_NAME, _Naming, build as _build_naming
 from ._protocols import Op, Proto, resolve
 from ._recursion import collapse_recursive
 from ._spy import (
-    _AnyFunc,
     _class_spy,
     _Marker,
     _SpyBytes,
@@ -274,7 +275,7 @@ class _Renderer:
 
         if proto == "CanArrayFunction":
             ret = _or_object(self.returns(members))
-            func = cast("_AnyFunc", members[0].args[0])
+            func: Any = members[0].args[0]
             return _numpy.array_function_node(func, ret)
 
         pos = [
@@ -635,29 +636,21 @@ class _ResultTyper:
         cls = type(result)
         match result:
             case Mapping() if not isinstance(result, Context):
-                mapping = cast("Mapping[object, object]", result)
-                key = self.value_union(mapping, tuples=True) or _ir.NEVER
+                key = self.value_union(result, tuples=True) or _ir.NEVER
                 args: tuple[_ir.Node, ...]
                 if isinstance(result, Counter):
                     args = (key,)
                 else:
                     args = (
                         key,
-                        self.value_union(mapping.values(), tuples=True) or _ir.NEVER,
+                        self.value_union(result.values(), tuples=True) or _ir.NEVER,
                     )
                 return _ir.App(_ir.type_name(cls), args)
             case list() | set() | frozenset():
-                inner = self.value_union(
-                    cast("Collection[object]", result),
-                    tuples=True,
-                )
+                inner = self.value_union(result, tuples=True)
                 return _ir.App(_ir.type_name(cls), (inner or _ir.NEVER,))
             case tuple() if cls is tuple:
-                return (
-                    self._tuple(cast("tuple[object, ...]", result))
-                    if result
-                    else _ir.App("tuple", ())
-                )
+                return self._tuple(result) if result else _ir.App("tuple", ())
             case _:
                 return _ir.Type(cls)
 

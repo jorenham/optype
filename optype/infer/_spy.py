@@ -8,16 +8,7 @@ from contextvars import ContextVar
 from enum import StrEnum
 from functools import cache, lru_cache
 from types import CodeType
-from typing import (
-    Any,
-    ClassVar,
-    NamedTuple,
-    Self,
-    TypeGuard,
-    cast,
-    final,
-    override,
-)
+from typing import Any, ClassVar, NamedTuple, Self, TypeGuard, final, override
 
 type _AnyFunc = Callable[..., object]
 type _Args = tuple[object, ...]
@@ -320,14 +311,14 @@ class _SpyType(type):
 
 
 class _SpyObject(_Spy, metaclass=_SpyType):
-    __optype_element__: "_SpyObject | None" = None
+    __optype_element__: Self | None = None
     __optype_iterator__: bool = False
     __optype_growable__: bool = False
-    __optype_absent__: "frozenset[str]" = frozenset()
+    __optype_absent__: frozenset[str] = frozenset()
     # spies are descriptors (`__get__`), so only ever read through the class `__dict__`
-    __optype_instance__: "ClassVar[_SpyObject | None]" = None
+    __optype_instance__: ClassVar[Self | None] = None
 
-    def __new__(cls, /, *_args: object, **_kwargs: object) -> "_SpyObject":
+    def __new__(cls, /, *_args: object, **_kwargs: object) -> Self:
         if cls is not _SpyObject:
             # a `type(spy)(...)` sibling; the marker keeps it reachable from the spy
             self = super().__new__(cls)
@@ -335,8 +326,9 @@ class _SpyObject(_Spy, metaclass=_SpyType):
                 _journal_touch(owner)
                 owner.__optype_trace__.append(_TraceItem(_Marker.SIBLING, (), {}, self))
             return self
+
         # every spy gets a class of its own, so that `type(spy)` identifies the spy
-        unique = cast("type[Self]", type("_SpyObject", (cls,), {}))
+        unique: type[Any] = type("_SpyObject", (cls,), {})
         self = super().__new__(unique)
         type.__setattr__(unique, "__optype_instance__", self)
         return self
