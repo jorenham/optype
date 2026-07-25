@@ -28,7 +28,7 @@ from types import (
     MethodType,
     WrapperDescriptorType,
 )
-from typing import Any, cast
+from typing import Any
 
 from ._errors import InferError
 from ._gc import cyclic_gc
@@ -291,7 +291,7 @@ def _wrapped_return(result: object) -> object | None:
 def _wrapper(
     cls: type,
     name: str,
-    result: object,
+    result: Any,
     path: dict[int, _RecVar | None],
 ) -> object:
     """A generic `functools` wrapper, parameterized by the wrapped return type."""
@@ -301,7 +301,7 @@ def _wrapper(
     if (
         cls is functools.partial
         and isinstance(_unwrap(result), _FUNCTION_TYPES)
-        and isinstance(explored := _explore_func(cast("_AnyFunc", result)), _FnResult)
+        and isinstance(explored := _explore_func(result), _FnResult)
     ):
         return explored
 
@@ -317,7 +317,7 @@ def _source_element(result: object) -> _SpyObject | None:
 
 
 def _explore_result(  # ruff: ignore[complex-structure]
-    result: object,
+    result: Any,
     path: dict[int, _RecVar | None] | None = None,
 ) -> object:
     # a function (or iterator) within the yields or a container is explored as well
@@ -340,7 +340,7 @@ def _explore_result(  # ruff: ignore[complex-structure]
         # a returned coroutine value (e.g. 2-arg `anext`'s `anext_awaitable`)
         out = _Gen([_explore_result(_await(result), path)], COROUTINE)
     elif (kind := _ITERATOR_TYPES.get(cls)) is not None:
-        values = _yields(cast("Iterable[Any]", result))
+        values = _yields(result)
         if cls is enumerate:
             # `enumerate[R]` is parameterized by the element type, not the yields
             values = [item for _, item in values]
@@ -366,7 +366,7 @@ def _explore_result(  # ruff: ignore[complex-structure]
         yields = [] if attr is None else [_explore_result(getattr(result, attr), path)]
         out = _Gen(yields, kind)
     elif isinstance(_unwrap(result), _FUNCTION_TYPES):
-        out = _explore_func(cast("_AnyFunc", result))
+        out = _explore_func(result)
     else:
         out = _explore_container(cls, result, path)
     return _Rec(var, out) if (var := path.pop(rid)) is not None else out
@@ -414,11 +414,11 @@ def _with_next_default(
 
 
 @set_driver_code
-def _run[T](
-    func: Callable[..., T] | Callable[..., Coroutine[Any, None, T]],
+def _run(
+    func: Callable[..., Any],
     args: Iterable[object],
     kwds: Mapping[str, object],
-) -> tuple[T, str | None]:
+) -> tuple[Any, str | None]:
     """Call `func`, returning its (awaited) result and any deprecation message.
 
     A `DeprecationWarning` is recorded, not raised, so a `@deprecated` callable runs.
@@ -426,7 +426,7 @@ def _run[T](
     with warnings.catch_warnings(record=True) as caught:
         warnings.filterwarnings("always", category=DeprecationWarning)
         result = func(*args, **kwds)
-        value = _await(result) if iscoroutine(result) else cast("T", result)
+        value = _await(result) if iscoroutine(result) else result
 
     message = next(
         (str(w.message) for w in caught if issubclass(w.category, DeprecationWarning)),
