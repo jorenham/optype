@@ -7,13 +7,14 @@ import graphlib
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, replace
 
-# `from optype.infer import _ir` would re-enter the package, which imports this module
+# `from . import _ir` would re-enter this package
 import optype.infer._ir as _ir  # ruff: ignore[manual-from-import]
 
 __all__ = (
     "_Alias",
     "_Attr",
     "_Func",
+    "_Helper",
     "_Member",
     "_Method",
     "_Module",
@@ -29,7 +30,6 @@ __all__ = (
     "_strip_variance",
     "_subst_member",
     "_toposort",
-    "_value",
 )
 
 
@@ -48,7 +48,7 @@ class _Method:
     """A protocol method, e.g. a `Has['name', () -> +R]` or a callable's `__call__`."""
 
     name: str
-    params: tuple[_ir.Node | _ir.Arg, ...]
+    params: _ir.Terms
     ret: _ir.Node
 
 
@@ -84,20 +84,16 @@ class _Func:
     deprecated: str | None
 
 
+type _Helper = _Protocol | _Alias  # a synthesized helper definition
+
+
 @dataclass(frozen=True, slots=True)
 class _Module:
-    helpers: tuple[_Protocol | _Alias, ...]
+    helpers: tuple[_Helper, ...]
     funcs: tuple[_Func, ...]
 
 
-def _value(arg: _ir.Node | _ir.Arg) -> _ir.Node:
-    return arg.value if isinstance(arg, _ir.Arg) else arg
-
-
-def _free_tyvars(
-    nodes: Iterable[_ir.Node | _ir.Arg],
-    tyvars: frozenset[str],
-) -> list[str]:
+def _free_tyvars(nodes: Iterable[_ir.Term], tyvars: frozenset[str]) -> list[str]:
     """The signature typevars referenced across `nodes`, in first-appearance order."""
     seen: dict[str, None] = {}
     for node in nodes:
@@ -132,7 +128,7 @@ def _strip_variance(node: _ir.Node) -> _ir.Node:
     return node.part if isinstance(node, _ir.Variance) else node
 
 
-def _member_nodes(members: Iterable[_Member]) -> Iterable[_ir.Node | _ir.Arg]:
+def _member_nodes(members: Iterable[_Member]) -> Iterable[_ir.Term]:
     for member in members:
         if isinstance(member, _Attr):
             yield member.type

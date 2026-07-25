@@ -4,7 +4,7 @@ from collections.abc import Iterable, Sequence
 from inspect import Parameter
 from typing import cast
 
-# `from . import` would import the package itself, which imports this module
+# `from . import _ir` would re-enter this package
 import optype.infer._ir as _ir
 from ._signature import signature
 from ._spy import _AnyFunc

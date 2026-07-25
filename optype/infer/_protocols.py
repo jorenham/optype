@@ -2,7 +2,7 @@
 
 from typing import NamedTuple
 
-# `from . import` would import the package itself, which imports this module
+# `from . import _ir` would re-enter this package
 import optype.infer._numpy as _numpy
 from ._errors import InferError
 from ._spy import _Args, _dynamic_name, _Kwargs, _Marker, _TraceItem

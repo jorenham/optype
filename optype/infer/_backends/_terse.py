@@ -3,7 +3,7 @@
 from collections.abc import Sequence
 from typing import Final, assert_never, final
 
-# `from optype.infer import _ir` would re-enter the package, which imports this module
+# `from . import _ir` would re-enter this package
 import optype.infer._ir as _ir  # ruff: ignore[manual-from-import]
 from ._base import Backend, default_text, value_text
 
@@ -57,7 +57,7 @@ class TerseBackend:
             inner = f"({inner})"
         return f"{op}{inner}"
 
-    def _app(self, origin: str, args: tuple[_ir.Node | _ir.Arg, ...]) -> str:
+    def _app(self, origin: str, args: _ir.Terms) -> str:
         if origin == "tuple" and not args:
             parts = ["()"]
         else:
@@ -69,7 +69,7 @@ class TerseBackend:
             ]
         return f"{origin}[{', '.join(parts)}]" if parts else origin
 
-    def _arg(self, param: _ir.Node | _ir.Arg) -> str:
+    def _arg(self, param: _ir.Term) -> str:
         if not isinstance(param, _ir.Arg):
             return self._render_node(param)
         label = f"{param.key}: " if param.key else ""
@@ -78,7 +78,7 @@ class TerseBackend:
             decl += f" = {default_text(param.default[0])}"
         return decl
 
-    def _fn(self, params: tuple[_ir.Node | _ir.Arg, ...], ret: _ir.Node) -> str:
+    def _fn(self, params: _ir.Terms, ret: _ir.Node) -> str:
         decls = ", ".join(map(self._arg, params))
         return f"({decls}) -> {self._render_node(ret)}"
 

@@ -5,6 +5,7 @@ import sys
 import types
 from collections.abc import Generator, Iterable, Mapping
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Final, override
 
 type Node = (
@@ -13,9 +14,16 @@ type Node = (
 type Term = Node | Arg
 type Terms = tuple[Term, ...]
 
-# the shared variance signs: covariant (read-only) and contravariant (write-only)
-COVARIANT = "+"
-CONTRAVARIANT = "-"
+
+class Sign(StrEnum):
+    """A variance sign: covariant (read-only) or contravariant (write-only)."""
+
+    COVARIANT = "+"
+    CONTRAVARIANT = "-"
+
+
+COVARIANT: Final = Sign.COVARIANT
+CONTRAVARIANT: Final = Sign.CONTRAVARIANT
 
 # variance per type argument; the last entry repeats variadically
 _VARIANCES = {
@@ -67,7 +75,7 @@ OBJECT: Final[Name] = Name("object")
 NEVER: Final[Name] = Name("Never")
 NONE: Final[Name] = Name("None")
 
-_TOP = frozenset({OBJECT, Type(object)})
+_TOP: Final = OBJECT, Type(object)
 
 
 @dataclass(frozen=True, slots=True)
@@ -95,9 +103,9 @@ class Fn:
     ret: Node
 
 
-def _param_type(param: Term) -> Node:
-    """The type of a (possibly keyword-labeled) parameter."""
-    return param.value if isinstance(param, Arg) else param
+def term_node(term: Term) -> Node:
+    """The node of a term, unwrapping any keyword-labeled `Arg`."""
+    return term.value if isinstance(term, Arg) else term
 
 
 @dataclass(frozen=True, slots=True)
@@ -111,7 +119,7 @@ class Not:
 class Variance:
     """A variance-marked type: covariant (read-only) or contravariant (write-only)."""
 
-    sign: str
+    sign: Sign
     part: Node
 
 
@@ -199,7 +207,7 @@ def _subtype_args(origin: str, args: Terms, wider: Terms) -> bool:
 def subtype(sub: Term, sup: Term) -> bool:
     """Whether `sub` is a subtype of `sup`, as far as can be told from the nodes."""
 
-    # a set would hash `sub`, which could have unhashable defaults
+    # a set would hash the operands, which can carry an unhashable default
     if sub in (sup, NEVER) or sup in _TOP:  # ruff: ignore[literal-membership]
         return True
 
@@ -223,7 +231,7 @@ def subtype(sub: Term, sup: Term) -> bool:
                 len(params) == len(wider_params)
                 and subtype(ret, wider_ret)
                 and all(
-                    subtype(_param_type(wide), _param_type(param))
+                    subtype(term_node(wide), term_node(param))
                     for param, wide in zip(params, wider_params, strict=True)
                 )
             )
@@ -295,9 +303,9 @@ def _collapse_tuples(nodes: list[Node]) -> list[Node]:
             continue
         done.add(arity)
         group = groups[arity]
-        # `_fixed_tuple_arity` already excluded any `Arg`, so `_param_type` is a no-op
+        # `_fixed_tuple_arity` already excluded any `Arg`, so `term_node` is a no-op
         columns = (
-            union([_param_type(g.args[i]) for g in group], tuples=True) or NEVER
+            union([term_node(g.args[i]) for g in group], tuples=True) or NEVER
             for i in range(arity)
         )
         out.append(tuple_node(columns))
@@ -344,7 +352,7 @@ def intersection(parts: Iterable[Node]) -> Node | None:
 
 
 def names(node: Term) -> Generator[str]:
-    # every type-name leaf, in order, so typevar uses can be counted
+    # in order, so typevar uses can be counted
     match node:
         case Name(name):
             yield name

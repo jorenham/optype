@@ -2,7 +2,7 @@
 
 # pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 
-from collections.abc import Callable, Generator, Iterable, Mapping
+from collections.abc import Callable, Generator, Iterable, Mapping, Sequence
 from contextvars import Context
 from enum import StrEnum
 from inspect import Parameter
@@ -26,7 +26,7 @@ class Exploration(NamedTuple):
 
     spies: Mapping[str, _SpyObject]
     traces: _Traces
-    results: list[object]
+    results: Sequence[object]
     var_count: int  # the `*args` placeholder count
     fixed: Mapping[str, object]  # parameters passed as-is, not spies
     deprecated: str | None = None  # a `DeprecationWarning` message raised when called
@@ -37,7 +37,7 @@ class Exploration(NamedTuple):
 class _Gen(NamedTuple):
     """An explored generator, iterator, or coroutine result, e.g. `Generator[R]`."""
 
-    yielded: list[object]
+    yielded: Sequence[object]
     kind: str
 
 
@@ -45,14 +45,14 @@ class _Gen(NamedTuple):
 COROUTINE = "Coroutine"
 
 
-class _Fn(NamedTuple):
+class _FnResult(NamedTuple):
     """An explored function result, rendered in signature syntax."""
 
     params: Mapping[str, Parameter]
     spies: Mapping[str, _SpyObject]
     fixed: Mapping[str, object]
     defaults: Mapping[str, object]
-    results: list[object]
+    results: Sequence[object]
 
 
 # the shared identity of a recursive `_Rec` binder and its `_RecRef` uses
@@ -81,7 +81,7 @@ def _children(value: Any) -> Iterable[Any]:
     match value:
         case _Gen():
             out: Iterable[object] = value.yielded
-        case _Fn():
+        case _FnResult():
             out = value.results
         case _Rec():
             out = (value.body,)
@@ -121,7 +121,7 @@ def map_values(value: Any, leaf: Callable[[Any], Any]) -> Any:  # ruff: ignore[c
         case _Gen():
             yielded = [map_values(item, leaf) for item in value.yielded]
             out: object = value._replace(yielded=yielded)
-        case _Fn():
+        case _FnResult():
             results = [map_values(item, leaf) for item in value.results]
             out = value._replace(results=results)
         case _Rec():
@@ -160,8 +160,7 @@ def map_values(value: Any, leaf: Callable[[Any], Any]) -> Any:  # ruff: ignore[c
 
 
 def fn_spies(results: Iterable[object]) -> Generator[_SpyObject]:
-    # every parameter spy of the explored function results, in signature order
     for result in results:
         for node in _walk(result):
-            if isinstance(node, _Fn):
+            if isinstance(node, _FnResult):
                 yield from node.spies.values()
