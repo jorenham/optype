@@ -289,7 +289,7 @@ class _Printer:
             for name in sorted(whole)
         ]
         order = {"collections.abc": 0, "types": 1, "typing": 2, "typing_extensions": 3}
-        for module_name in sorted(groups, key=lambda m: (order.get(m, 9), m)):
+        for module_name in sorted(groups, key=lambda m: (order.get(m, 9), m)):  # pyrefly:ignore[implicit-any-lambda]
             members = ", ".join(sorted(groups[module_name]))
             lines.append(f"from {module_name} import {members}")
         return "\n".join(lines)
