@@ -1,6 +1,10 @@
-# `optype.numpy.ctypeslib`
+# `ctypeslib` submodule
 
 Typed `ctypes` aliases for NumPy scalar-like C types.
+
+This module is named after [`numpy.ctypeslib`][np-ctypeslib], and follows the
+dtype-to-`ctypes` correspondence that
+[`np.ctypeslib.as_ctypes_type`][as_ctypes_type] implements.
 
 `optype.numpy.ctypeslib` re-exports standard-library `ctypes` constructors under
 names that mirror NumPy's scalar naming — `Int32` for the `ctypes` counterpart of
@@ -22,21 +26,23 @@ The module assumes a C99-compatible compiler, a 32- or 64-bit system, and an
 [`ILP32`, `LLP64`, or `LP64` data model][data-models]. If that isn't the case
 for your platform, please [open an issue][issues].
 
+[np-ctypeslib]: https://numpy.org/doc/stable/reference/routines.ctypeslib.html
+[as_ctypes_type]: https://numpy.org/doc/stable/reference/routines.ctypeslib.html#numpy.ctypeslib.as_ctypes_type
 [data-models]: https://en.cppreference.com/w/c/language/arithmetic_types
 [issues]: https://github.com/jorenham/optype/issues
 
 !!! note
 
-    `Generic`, `Object`, `Array`, and `Bool` shadow builtins or `typing` names.
-    This is intentional — it keeps the naming parallel to `np.generic`,
-    `np.object_`, `np.ndarray`, and `np.bool` — and is safe as long as the
-    module is imported as a namespace rather than star-imported.
+    `Generic` shadows `typing.Generic`, and `Array` means something different
+    here than it does in the parent `optype.numpy` namespace. Both are
+    intentional — the names mirror `np.generic` and `np.ndarray` — and are safe
+    as long as the module is imported as a namespace rather than star-imported.
 
 ## Concrete types
 
 <table>
 <tr><th align="left">alias</th><th align="left"><code>ctypes</code></th><th align="left">NumPy analogue</th><th align="left">kind</th></tr>
-<tr><td align="left"><code>Bool</code></td><td align="left"><code>c_bool</code></td><td align="left"><code>np.bool</code></td><td align="left">boolean</td></tr>
+<tr><td align="left"><code>Bool</code></td><td align="left"><code>c_bool</code></td><td align="left"><code>np.bool_</code></td><td align="left">boolean</td></tr>
 <tr><td align="left"><code>Int8</code></td><td align="left"><code>c_int8</code></td><td align="left"><code>np.int8</code></td><td align="left">fixed-width integer</td></tr>
 <tr><td align="left"><code>UInt8</code></td><td align="left"><code>c_uint8</code></td><td align="left"><code>np.uint8</code></td><td align="left">fixed-width integer</td></tr>
 <tr><td align="left"><code>Int16</code></td><td align="left"><code>c_int16</code></td><td align="left"><code>np.int16</code></td><td align="left">fixed-width integer</td></tr>
@@ -67,7 +73,7 @@ for your platform, please [open an issue][issues].
 <tr><td align="left"><code>Object</code></td><td align="left"><code>py_object</code></td><td align="left"><code>np.object_</code></td><td align="left">Python object reference</td></tr>
 </table>
 
-### Several of these names are aliases of each other
+### Aliased names
 
 Unlike NumPy, `ctypes` has no distinct fixed-width types. `c_int8` *is*
 `c_byte`, `c_int16` *is* `c_short`, and the rest are resolved by `ctypes` at
@@ -91,7 +97,7 @@ names that resolve to the same class:
 `ctypes` aliases `c_int` to `c_long` when the two have equal size, and
 `c_longlong` to `c_long` likewise. So on `LP64`, `Long` **is** `LongLong`; on
 `ILP32` and `LLP64`, `IntC` **is** `Long`. There is no data model on which all
-four are distinct.
+three are distinct.
 
 Annotating with either name of a pair is equally correct. The pairs exist so
 code can be written in whichever vocabulary — NumPy's or C's — reads better at
@@ -120,8 +126,10 @@ is a type error, and unions containing them silently drop those members.
 ### NumPy version notes
 
 `UIntP` is `c_size_t`. On `numpy < 2`, `np.uintp` was `c_void_p` rather than
-`c_size_t`; on every supported data model the two have the same width, so the
-distinction is not observable in practice.
+`c_size_t`. The two have the same width on every supported data model and are
+almost always equivalent, but they remain distinct classes with different
+`.value` semantics: `c_void_p(0).value` is `None`, where `c_size_t(0).value`
+is `0`.
 
 `np.long` and `np.ulong` are the NumPy 2.0 names for the C `long` types, and do
 not exist under that spelling on `numpy < 2`.
@@ -137,13 +145,12 @@ since NumPy maps no dtype onto it.
 byte whereas `np.bytes_` is variable-length; the correspondence is with the
 dtype's element type, not its length.
 
-[as_ctypes_type]: https://numpy.org/doc/stable/reference/routines.ctypeslib.html#numpy.ctypeslib.as_ctypes_type
-
 ## Abstract type aliases
 
-These exist only for annotations. `ct._CData` and `ct._SimpleCData` are typeshed
-constructs — `_CData` has no runtime counterpart — so neither should be imported
-from `ctypes` or instantiated directly.
+`CType` and `CScalar` correspond to the private `ctypes` base classes that every
+C type derives from. They exist at runtime, but neither is importable from
+`ctypes` by name, and neither is meant to be instantiated — use them in
+annotations.
 
 <table>
 <tr><th align="left">alias</th><th align="left">definition</th></tr>
