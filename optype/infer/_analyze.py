@@ -183,7 +183,7 @@ def group_traces(
 
 def spy_runs(items: Iterable[object], spy: _SpyObject) -> list[int]:
     """Lengths of each consecutive run of `spy` within `items`."""
-    groups = groupby(items, key=lambda item: item is spy)
+    groups = groupby(items, key=lambda item: item is spy)  # pyrefly:ignore[implicit-any-lambda]
     return [sum(1 for _ in group) for is_spy, group in groups if is_spy]
 
 
