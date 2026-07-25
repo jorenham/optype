@@ -157,7 +157,7 @@ def test_just_instancecheck_str() -> None:
         BeartypeCallHintParamViolation,
         match=re.escape(
             "instance has type 'bool', but JustInt requires exactly 'int' "
-            "(subclasses are not accepted)"
+            "(subclasses are not accepted)",
         ),
     ):
         foo(True)  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]  # pyrefly: ignore[bad-argument-type]
