@@ -96,7 +96,7 @@ class _JustMeta(_ProtocolMeta, Generic[_ObjectT]):
     def __instancecheck__(self, instance: object) -> TypeIs[_ObjectT]:
         return self.__subclasscheck__(type(instance))
 
-    def __instancecheck_str__(self, instance: object) -> str:
+    def __instancecheck_str__(self, instance: object, /) -> str:
         expected = self.__just_class__
         actual = type(instance)
         return (
