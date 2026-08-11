@@ -61,22 +61,11 @@ wheels = [
 
 [[package]]
 name = "beartype"
-version = "0.22.9"
+version = "0.23.0rc0"
 source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version < '3.15'",
-]
-sdist = { url = "https://files.pythonhosted.org/packages/c7/94/1009e248bbfbab11397abca7193bea6626806be9a327d399810d523a07cb/beartype-0.22.9.tar.gz", hash = "sha256:8f82b54aa723a2848a56008d18875f91c1db02c32ef6a62319a002e3e25a975f", size = 1608866, upload-time = "2025-12-13T06:50:30.72Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4a/6d/158a00013b4b7726d69aa273eab7a5f329ea973edc0c626c4394c50231e5/beartype-0.23.0rc0.tar.gz", hash = "sha256:3cc8fd69a9a1f4a9ee5bdc20cd9c26962e2db3ef4c388e3181dd7f226c5c5d6f", size = 1928474, upload-time = "2026-08-08T07:26:47.964Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/71/cc/18245721fa7747065ab478316c7fea7c74777d07f37ae60db2e84f8172e8/beartype-0.22.9-py3-none-any.whl", hash = "sha256:d16c9bbc61ea14637596c5f6fbff2ee99cbe3573e46a716401734ef50c3060c2", size = 1333658, upload-time = "2025-12-13T06:50:28.266Z" },
-]
-
-[[package]]
-name = "beartype"
-version = "0.23.0"
-source = { git = "https://github.com/beartype/beartype.git?rev=4f5b8fb#4f5b8fb418745e9aa4adc2d4ffa1e7733a089dba" }
-resolution-markers = [
-    "python_full_version >= '3.15'",
+    { url = "https://files.pythonhosted.org/packages/25/a3/ba8699a1361099ff9162c9b5de6e024f75c2dff1f753c2b58beb719d9519/beartype-0.23.0rc0-py3-none-any.whl", hash = "sha256:5a6647bc6a777ead26fb1a781831aea95e29975cae8db26d5882f6147a45fae3", size = 1530796, upload-time = "2026-08-08T07:26:45.829Z" },
 ]
 
 [[package]]
@@ -455,8 +444,7 @@ numpy = [
 [package.dev-dependencies]
 dev = [
     { name = "basedpyright" },
-    { name = "beartype", version = "0.22.9", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.15'" },
-    { name = "beartype", version = "0.23.0", source = { git = "https://github.com/beartype/beartype.git?rev=4f5b8fb#4f5b8fb418745e9aa4adc2d4ffa1e7733a089dba" }, marker = "python_full_version >= '3.15'" },
+    { name = "beartype" },
     { name = "dprint-py" },
     { name = "mypy", extra = ["faster-cache"] },
     { name = "optype", extra = ["numpy"] },
@@ -484,8 +472,7 @@ lint = [
 ]
 test = [
     { name = "basedpyright" },
-    { name = "beartype", version = "0.22.9", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.15'" },
-    { name = "beartype", version = "0.23.0", source = { git = "https://github.com/beartype/beartype.git?rev=4f5b8fb#4f5b8fb418745e9aa4adc2d4ffa1e7733a089dba" }, marker = "python_full_version >= '3.15'" },
+    { name = "beartype" },
     { name = "optype", extra = ["numpy"] },
     { name = "pytest" },
     { name = "typing-extensions", version = "4.15.0", source = { git = "https://github.com/python/typing_extensions.git?rev=7e4fc36#7e4fc36c75e86297b35e08a26fca18ed3e0f0393" }, marker = "python_full_version >= '3.15'" },
@@ -493,8 +480,7 @@ test = [
 ]
 type = [
     { name = "basedpyright" },
-    { name = "beartype", version = "0.22.9", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.15'" },
-    { name = "beartype", version = "0.23.0", source = { git = "https://github.com/beartype/beartype.git?rev=4f5b8fb#4f5b8fb418745e9aa4adc2d4ffa1e7733a089dba" }, marker = "python_full_version >= '3.15'" },
+    { name = "beartype" },
     { name = "mypy", extra = ["faster-cache"] },
     { name = "optype", extra = ["numpy"] },
     { name = "pyrefly" },
@@ -515,8 +501,7 @@ provides-extras = ["numpy"]
 [package.metadata.requires-dev]
 dev = [
     { name = "basedpyright", specifier = "==1.39.9" },
-    { name = "beartype", marker = "python_full_version < '3.15'", specifier = ">=0.22.9" },
-    { name = "beartype", marker = "python_full_version >= '3.15'", git = "https://github.com/beartype/beartype.git?rev=4f5b8fb" },
+    { name = "beartype", specifier = ">=0.23.0rc0" },
     { name = "dprint-py", specifier = "==0.55.2.0" },
     { name = "mypy", extras = ["faster-cache"], specifier = "==2.3.0" },
     { name = "optype", extras = ["numpy"] },
@@ -542,8 +527,7 @@ lint = [
 ]
 test = [
     { name = "basedpyright", specifier = "==1.39.9" },
-    { name = "beartype", marker = "python_full_version < '3.15'", specifier = ">=0.22.9" },
-    { name = "beartype", marker = "python_full_version >= '3.15'", git = "https://github.com/beartype/beartype.git?rev=4f5b8fb" },
+    { name = "beartype", specifier = ">=0.23.0rc0" },
     { name = "optype", extras = ["numpy"] },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "typing-extensions", marker = "python_full_version < '3.15'", specifier = ">=4.16.0" },
@@ -551,8 +535,7 @@ test = [
 ]
 type = [
     { name = "basedpyright", specifier = "==1.39.9" },
-    { name = "beartype", marker = "python_full_version < '3.15'", specifier = ">=0.22.9" },
-    { name = "beartype", marker = "python_full_version >= '3.15'", git = "https://github.com/beartype/beartype.git?rev=4f5b8fb" },
+    { name = "beartype", specifier = ">=0.23.0rc0" },
     { name = "mypy", extras = ["faster-cache"], specifier = "==2.3.0" },
     { name = "optype", extras = ["numpy"] },
     { name = "pyrefly", specifier = "==1.2.0" },
