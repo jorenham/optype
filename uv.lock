@@ -359,8 +359,7 @@ dependencies = [
     { name = "librt", marker = "platform_python_implementation != 'PyPy'" },
     { name = "mypy-extensions" },
     { name = "pathspec" },
-    { name = "typing-extensions", version = "4.15.0", source = { git = "https://github.com/python/typing_extensions.git?rev=7e4fc36#7e4fc36c75e86297b35e08a26fca18ed3e0f0393" }, marker = "python_full_version >= '3.15'" },
-    { name = "typing-extensions", version = "4.16.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.15'" },
+    { name = "typing-extensions" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/12/af/4e516a05d3ca2eb9283e9ec45b2c02225c1514dd6da49fd3c9eaa6639370/mypy-2.3.0.tar.gz", hash = "sha256:465965d41cd9a2726694e983e8ce7113259327bec798115d1e1dfa2a52fb666e", size = 3988104, upload-time = "2026-07-13T11:34:53.387Z" }
 wheels = [
@@ -516,8 +515,7 @@ name = "optype"
 version = "0.18.1.dev0"
 source = { editable = "." }
 dependencies = [
-    { name = "typing-extensions", version = "4.15.0", source = { git = "https://github.com/python/typing_extensions.git?rev=7e4fc36#7e4fc36c75e86297b35e08a26fca18ed3e0f0393" }, marker = "python_version < '0'" },
-    { name = "typing-extensions", version = "4.16.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
 
 [package.optional-dependencies]
@@ -539,8 +537,7 @@ dev = [
     { name = "ruff" },
     { name = "sp-repo-review", extra = ["cli"] },
     { name = "ty" },
-    { name = "typing-extensions", version = "4.15.0", source = { git = "https://github.com/python/typing_extensions.git?rev=7e4fc36#7e4fc36c75e86297b35e08a26fca18ed3e0f0393" }, marker = "python_full_version >= '3.15'" },
-    { name = "typing-extensions", version = "4.16.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.15'" },
+    { name = "typing-extensions" },
     { name = "zensical" },
 ]
 doc = [
@@ -560,8 +557,7 @@ test = [
     { name = "beartype" },
     { name = "optype", extra = ["numpy"] },
     { name = "pytest" },
-    { name = "typing-extensions", version = "4.15.0", source = { git = "https://github.com/python/typing_extensions.git?rev=7e4fc36#7e4fc36c75e86297b35e08a26fca18ed3e0f0393" }, marker = "python_full_version >= '3.15'" },
-    { name = "typing-extensions", version = "4.16.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.15'" },
+    { name = "typing-extensions" },
 ]
 type = [
     { name = "basedpyright" },
@@ -571,8 +567,7 @@ type = [
     { name = "pyrefly" },
     { name = "pytest" },
     { name = "ty" },
-    { name = "typing-extensions", version = "4.15.0", source = { git = "https://github.com/python/typing_extensions.git?rev=7e4fc36#7e4fc36c75e86297b35e08a26fca18ed3e0f0393" }, marker = "python_full_version >= '3.15'" },
-    { name = "typing-extensions", version = "4.16.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.15'" },
+    { name = "typing-extensions" },
 ]
 
 [package.metadata]
@@ -596,8 +591,7 @@ dev = [
     { name = "ruff", specifier = "==0.16.3" },
     { name = "sp-repo-review", extras = ["cli"], specifier = "==2026.6.18" },
     { name = "ty", specifier = "==0.0.71" },
-    { name = "typing-extensions", marker = "python_full_version < '3.15'", specifier = ">=4.16.0" },
-    { name = "typing-extensions", marker = "python_full_version >= '3.15'", git = "https://github.com/python/typing_extensions.git?rev=7e4fc36" },
+    { name = "typing-extensions", specifier = ">=4.16.0" },
     { name = "zensical", specifier = "==0.0.54" },
 ]
 doc = [
@@ -615,8 +609,7 @@ test = [
     { name = "beartype", specifier = ">=0.23.0rc0" },
     { name = "optype", extras = ["numpy"] },
     { name = "pytest", specifier = ">=9.1.1" },
-    { name = "typing-extensions", marker = "python_full_version < '3.15'", specifier = ">=4.16.0" },
-    { name = "typing-extensions", marker = "python_full_version >= '3.15'", git = "https://github.com/python/typing_extensions.git?rev=7e4fc36" },
+    { name = "typing-extensions", specifier = ">=4.16.0" },
 ]
 type = [
     { name = "basedpyright", specifier = "==1.39.10" },
@@ -626,8 +619,7 @@ type = [
     { name = "pyrefly", specifier = "==1.2.0" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "ty", specifier = "==0.0.71" },
-    { name = "typing-extensions", marker = "python_full_version < '3.15'", specifier = ">=4.16.0" },
-    { name = "typing-extensions", marker = "python_full_version >= '3.15'", git = "https://github.com/python/typing_extensions.git?rev=7e4fc36" },
+    { name = "typing-extensions", specifier = ">=4.16.0" },
 ]
 
 [[package]]
@@ -959,19 +951,8 @@ wheels = [
 
 [[package]]
 name = "typing-extensions"
-version = "4.15.0"
-source = { git = "https://github.com/python/typing_extensions.git?rev=7e4fc36#7e4fc36c75e86297b35e08a26fca18ed3e0f0393" }
-resolution-markers = [
-    "python_full_version >= '3.15'",
-]
-
-[[package]]
-name = "typing-extensions"
 version = "4.16.0"
 source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version < '3.15'",
-]
 sdist = { url = "https://files.pythonhosted.org/packages/f6/cc/6253133b5bb138fc3306cebfbda2c520f545d36b5be2c7255cc528bb45d6/typing_extensions-4.16.0.tar.gz", hash = "sha256:dc983d19a509c94dba722ee6abd33940f7c05a89e243c47e907eb4db6f1a43e5", size = 113555, upload-time = "2026-07-02T08:40:05.92Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/49/d3/b8441a820a491ddfc024b0b0cf0393375b75ea13866d9c66727e54c2fc80/typing_extensions-4.16.0-py3-none-any.whl", hash = "sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8", size = 45571, upload-time = "2026-07-02T08:40:04.659Z" },
