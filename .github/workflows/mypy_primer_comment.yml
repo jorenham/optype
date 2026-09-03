@@ -23,7 +23,7 @@ jobs:
       cancel-in-progress: true
 
     steps:
-      - uses: dawidd6/action-download-artifact@57aa996fc1713cc1579039614f4645a7f4841fd4 # v23
+      - uses: dawidd6/action-download-artifact@d63b86af1b34672e53c440b1b83979861906bad7 # v24
         name: download pr-number
         with:
           name: pr-number
@@ -38,7 +38,7 @@ jobs:
             echo "pr-number=$(<$RUNNER_TEMP/artifacts/pr-number)" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: dawidd6/action-download-artifact@57aa996fc1713cc1579039614f4645a7f4841fd4 # v23
+      - uses: dawidd6/action-download-artifact@d63b86af1b34672e53c440b1b83979861906bad7 # v24
         name: download mypy_primer.diff
         id: download-mypy_primer-diff
         if: ${{ steps.pr-number.outputs.pr-number }}
