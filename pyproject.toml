@@ -71,12 +71,12 @@ extra = [
 ]
 doc = [
   # https://github.com/zensical/zensical/issues/735
-  "zensical==0.0.56",
+  "zensical==0.0.57",
   "pygments==2.21.0",
 ]
 lint = [
-  "dprint-py==0.56.0.0",
-  "ruff==0.16.4",
+  "dprint-py==0.56.1.0",
+  "ruff==0.16.5",
   "sp-repo-review[cli]==2026.8.14",
 ]
 test = [
@@ -93,7 +93,7 @@ type = [
   { include-group = "test" },
   "mypy[faster-cache]==2.3.1",
   "pyrefly==1.2.0",
-  "ty==0.0.73",
+  "ty==0.0.75",
 ]
 dev = [
   { include-group = "extra" },
