@@ -17,7 +17,7 @@ from ._spy import (
     as_spy,
     isinstance_not_spy,
 )
-from ._values import Exploration, _children, _FnResult, _Gen, _Rec, _RecRef, _walk
+from ._values import Exploration, _children, _walk
 
 type _Producer = Mapping[int, tuple[_SpyObject, _TraceItem]]
 
@@ -194,7 +194,7 @@ def _packed_uses(value: object, spy: _SpyObject, count: int) -> Generator[bool]:
             if value is spy:
                 yield False
             return
-        case tuple() if not isinstance(value, (_Gen, _FnResult, _Rec, _RecRef)):
+        case tuple():
             if runs := spy_runs(value, spy):
                 yield runs == [count]
             items = (item for item in value if item is not spy)

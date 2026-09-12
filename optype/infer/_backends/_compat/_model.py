@@ -13,7 +13,6 @@ import optype.infer._ir as _ir  # ruff: ignore[manual-from-import]
 __all__ = (
     "_Alias",
     "_Attr",
-    "_Func",
     "_Helper",
     "_Member",
     "_Method",
@@ -74,23 +73,13 @@ class _Alias:
     value: _ir.Node
 
 
-@dataclass(frozen=True, slots=True)
-class _Func:
-    """One overload: a `def` with PEP 695 type parameters and an optional marker."""
-
-    type_params: tuple[_ir.TypeParam, ...]
-    params: tuple[_ir.Param, ...]
-    ret: _ir.Node
-    deprecated: str | None
-
-
 type _Helper = _Protocol | _Alias  # a synthesized helper definition
 
 
 @dataclass(frozen=True, slots=True)
 class _Module:
     helpers: tuple[_Helper, ...]
-    funcs: tuple[_Func, ...]
+    funcs: tuple[_ir.Signature, ...]
 
 
 def _free_tyvars(nodes: Iterable[_ir.Term], tyvars: frozenset[str]) -> list[str]:

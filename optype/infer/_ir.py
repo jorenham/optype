@@ -9,7 +9,18 @@ from enum import StrEnum
 from typing import Final, override
 
 type Node = (
-    Lit | Type | Name | App | Fn | Union | Intersection | Not | Variance | Unpack | Dots
+    Lit
+    | Type
+    | Name
+    | App
+    | Has
+    | Fn
+    | Union
+    | Intersection
+    | Not
+    | Variance
+    | Unpack
+    | Dots
 )
 type Term = Node | Arg
 type Terms = tuple[Term, ...]
@@ -26,14 +37,14 @@ COVARIANT: Final = Sign.COVARIANT
 CONTRAVARIANT: Final = Sign.CONTRAVARIANT
 
 # variance per type argument; the last entry repeats variadically
-_VARIANCES = {
-    "AsyncGenerator": COVARIANT + CONTRAVARIANT,
-    "Generator": COVARIANT + CONTRAVARIANT + COVARIANT,
-    "frozenset": COVARIANT,
-    "tuple": COVARIANT,
-    "type": COVARIANT,
+_VARIANCES: dict[str, tuple[Sign, ...]] = {
+    "AsyncGenerator": (COVARIANT, CONTRAVARIANT),
+    "Generator": (COVARIANT, CONTRAVARIANT, COVARIANT),
+    "frozenset": (COVARIANT,),
+    "tuple": (COVARIANT,),
+    "type": (COVARIANT,),
     # `enumerate`, `filter`, and `map` are invariant in typeshed; only `zip` is not
-    "zip": COVARIANT,
+    "zip": (COVARIANT,),
 }
 
 
@@ -93,6 +104,15 @@ class App:
 
     origin: str
     args: Terms
+
+
+@dataclass(frozen=True, slots=True)
+class Has:
+    """An attribute requirement, e.g. `Has['name', -T, +R]`: `-T` write, `+R` read,
+    `Fn` method, or `ClassVar[...]`."""
+
+    attr: str
+    args: tuple[Node, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -195,9 +215,9 @@ def _subtype_args(origin: str, args: Terms, wider: Terms) -> bool:
     # an all-`Never` container holds only `[]`, a member of any same origin
     if args and all(arg == NEVER for arg in args):
         return True
-    if not (variances := _VARIANCES.get(origin, "")):
+    if not (variances := _VARIANCES.get(origin)):
         return False
-    signs = variances.ljust(len(args), variances[-1])
+    signs = variances + variances[-1:] * (len(args) - len(variances))
     return all(
         subtype(arg, wide) if sign == COVARIANT else subtype(wide, arg)
         for arg, wide, sign in zip(args, wider, signs, strict=False)
@@ -358,7 +378,7 @@ def names(node: Term) -> Generator[str]:
             yield name
         case Arg(value=part) | Not(part) | Variance(part=part) | Unpack(part):
             yield from names(part)
-        case App(args=parts) | Union(parts) | Intersection(parts):
+        case App(args=parts) | Has(args=parts) | Union(parts) | Intersection(parts):
             for part in parts:
                 yield from names(part)
         case Fn(params, ret):
@@ -378,6 +398,8 @@ def subst(node: Node, m: Mapping[str, Node], *, dedup: bool = False) -> Node:
             out = m.get(name, node)
         case App(origin, args):
             out = App(origin, tuple(subst_term(a, m, dedup=dedup) for a in args))
+        case Has(attr, args):
+            out = Has(attr, tuple(subst(a, m, dedup=dedup) for a in args))
         case Fn(params, ret):
             terms = tuple(subst_term(p, m, dedup=dedup) for p in params)
             out = Fn(terms, subst(ret, m, dedup=dedup))

@@ -14,7 +14,7 @@ from typing import Literal, final
 
 # `from . import _ir` would re-enter this package
 import optype.infer._ir as _ir  # ruff: ignore[manual-from-import]
-from ._model import _Alias, _Attr, _Func, _Member, _Method, _Protocol
+from ._model import _Alias, _Attr, _Member, _Method, _Protocol
 from optype._core import _can, _has, _just
 from optype.infer._backends._base import qualified_default_text, qualified_value_text
 
@@ -152,7 +152,7 @@ class _Printer:
                 return " | ".join(self.render_node(part) for part in parts)
             case _ir.Unpack(part):
                 return f"*{self.render_node(part)}"
-            case _:  # an Intersection/Not/Variance survived lowering, which is a bug
+            case _:  # a Has/Intersection/Not/Variance survived lowering, which is a bug
                 msg = f"cannot render {node!r} as valid Python"
                 raise AssertionError(msg)
 
@@ -259,7 +259,7 @@ class _Printer:
         value = self.render_node(alias.value)
         return f"type {alias.name}{self.type_params(alias.type_params)} = {value}"
 
-    def func_text(self, func: _Func) -> str:
+    def func_text(self, func: _ir.Signature) -> str:
         head = ""
         if func.deprecated is not None:
             self.record("deprecated")

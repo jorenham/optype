@@ -6,7 +6,6 @@ import sys
 import types
 from collections import Counter
 from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
-from contextvars import Context
 from inspect import Parameter, _ParameterKind
 from typing import Any, NamedTuple, final
 
@@ -37,6 +36,7 @@ from ._values import (
     _Rec,
     _RecRef,
     fn_spies,
+    is_mapping,
 )
 from optype.inspect import _get_alias, is_generic_alias, is_union_type
 
@@ -129,16 +129,13 @@ def _distinct[T](values: Iterable[T]) -> Collection[T]:
 class _Renderer:
     """Render an inferred `def` signature from the recorded spy traces."""
 
+    _params: Mapping[str, Parameter]
     _spies: Mapping[str, _SpyObject]
     _fixed: Mapping[str, object]
     _results: Sequence[object]
     _traces: _Traces
     var_count: int  # the `*args` placeholder count used during exploration
     _tuple_params: frozenset[str]  # params that also accept `tuple[<bound>, ...]`
-
-    _prefix: dict[str, str]
-    _nameless: set[str]
-    _optional: set[str]
     varpos: _SpyObject | None
 
     naming: _Naming  # which spies get a type parameter, and under what name
@@ -154,14 +151,22 @@ class _Renderer:
         traces: _Traces,
     ) -> None:
         # `traces` is the map to render: the raw exploration traces or the reflected one
+        self._params = params
         self._spies = exploration.spies
         self._results = exploration.results
         self._traces = traces
         self.var_count = exploration.var_count
         self._fixed = exploration.fixed
         self._tuple_params = exploration.tuple_params
+        self.varpos = next(  # ty:ignore[invalid-assignment]
+            (
+                self._spies[name]
+                for name, p in params.items()
+                if p.kind is Parameter.VAR_POSITIONAL
+            ),
+            None,
+        )
 
-        self._configure(params)
         self.naming = _build_naming(
             self._results,
             self._spies,
@@ -172,26 +177,6 @@ class _Renderer:
         self._typer = _ResultTyper(self)
         self._render_bounds()
         self._inline_single_use()
-
-    def _configure(self, params: Mapping[str, Parameter]) -> None:
-        """The per-parameter display facts: prefix, positional-only, optional."""
-        self._prefix = {n: _PARAM_PREFIX.get(p.kind, "") for n, p in params.items()}
-        self._nameless = {
-            n for n, p in params.items() if p.kind is Parameter.POSITIONAL_ONLY
-        }
-        self._optional = {
-            name
-            for name, p in params.items()
-            if p.default is not Parameter.empty or p.kind in _PARAM_PREFIX
-        }
-        self.varpos = next(  # ty:ignore[invalid-assignment]
-            (
-                self._spies[name]
-                for name, p in params.items()
-                if p.kind is Parameter.VAR_POSITIONAL
-            ),
-            None,
-        )
 
     def _render_bounds(self) -> None:
         """Render and cache each named bound and the return union."""
@@ -306,7 +291,7 @@ class _Renderer:
                 signed = *signed, _sign_read(ret)
             if members[0].classvar:
                 signed = (_ir.App("ClassVar", signed),)
-            return _ir.App(proto, (_ir.Name(repr(attr)), *signed))
+            return _ir.Has(attr, signed)
 
         if ret is not None:
             args = *args, ret
@@ -387,40 +372,31 @@ class _Renderer:
             if (spy_id := id(spy)) in self.naming.tyvars
             if (node := self._typer.value_union((value,))) is not None
         }
-        ordered = [*self.naming.declared_spies, *self.naming.result_spies]
-        if not negate:
-            # PEP 696 requires defaulted type parameters to come last
-            ordered.sort(key=lambda spy: id(spy) in defaulted)
-        typars = [self.typar(spy, defaulted, negate=negate) for spy in ordered]
-
-        # a recursive typevar carries no default, so it precedes the defaulted tail
-        deferred = 0 if negate else sum(id(spy) in defaulted for spy in ordered)
-        cut = len(ordered) - deferred
-        typars[cut:cut] = [
+        spies = [*self.naming.declared_spies, *self.naming.result_spies]
+        typars = [self.typar(spy, defaulted, negate=negate) for spy in spies]
+        recursive = [
             _ir.TypeParam(
                 name,
                 bound=self._typer.return_type(self.naming.rec_body[var]),
             )
             for var, name in self.naming.rec_tyvars.items()
         ]
+        # PEP 696: defaulted type parameters last; recursive typevars have no default
+        plain = [typar for typar in typars if typar.default is None]
+        tail = [typar for typar in typars if typar.default is not None]
 
         params = [
             param
             for name in selected
             if (param := self._param(name, defaults, negate=negate)) is not None
         ]
-        ret_node = self._ret_node if ret is None else ret
-        typars, params, ret_node = collapse_recursive(
-            typars,
-            params,
-            ret_node,
-        )
-        return _ir.Signature(
-            tuple(typars),
+        sig = _ir.Signature(
+            (*plain, *recursive, *tail),
             tuple(params),
-            ret_node,
+            self._ret_node if ret is None else ret,
             deprecated,
         )
+        return collapse_recursive(sig)
 
     def _param(
         self,
@@ -429,10 +405,12 @@ class _Renderer:
         *,
         negate: bool,
     ) -> _ir.Param | None:
+        param = self._params[name]
         # a positional-only parameter cannot be passed by keyword, so no name shows
-        nameless = name in self._nameless
-        prefix = self._prefix[name]
-        if name in self._fixed and name not in self._optional:
+        nameless = param.kind is Parameter.POSITIONAL_ONLY
+        prefix = _PARAM_PREFIX.get(param.kind, "")
+        optional = param.default is not Parameter.empty or param.kind in _PARAM_PREFIX
+        if name in self._fixed and not optional:
             # a fixed parameter without a default is a method descriptor's `self`
             node = _ir.Type(despy_class(type(self._fixed[name])))
             return _ir.Param(name, node, prefix, nameless)
@@ -456,7 +434,7 @@ class _Renderer:
         if name in self._tuple_params and id(spy) not in self.naming.tyvars:
             # a typevar keeps its binding, so only an inlined bound widens to the union
             node = _ir.union([node, _ir.tuple_node_variadic(node)]) or node
-        if node == _ir.OBJECT and name in self._optional:
+        if node == _ir.OBJECT and optional:
             return None
         return _ir.Param(name, node, prefix, nameless, _boxed_default(defaults, name))
 
@@ -534,8 +512,7 @@ class _ResultTyper:
             # an awaitable yields objects and is sent `None`, as `CanAwait`
             out = self.type_union(result.yielded)
             return _ir.App(COROUTINE, (_ir.OBJECT, _ir.NONE, out))
-        if not result.yielded and "." in result.kind:
-            # a qualified (`itertools`/`functools`) kind drops the misleading `[Never]`
+        if not result.yielded and result.bare_when_empty:
             return _ir.Name(result.kind)
         return _ir.App(result.kind, (self.type_union(result.yielded),))
 
@@ -635,7 +612,7 @@ class _ResultTyper:
 
         cls = type(result)
         match result:
-            case Mapping() if not isinstance(result, Context):
+            case _ if is_mapping(result):
                 key = self.value_union(result, tuples=True) or _ir.NEVER
                 args: tuple[_ir.Node, ...]
                 if isinstance(result, Counter):
@@ -690,12 +667,9 @@ def renderers_of(
 ) -> list[_Renderer]:
     traces, results = exploration.traces, exploration.results
     reflected = reflect([*exploration.spies.values(), *fn_spies(results)], traces)
-    # always two entries: `resolve_defaults` compares signature lists elementwise, so
-    # a reflected and an unreflected exploration must produce equal-length lists
     if reflected is traces:
         # nothing reflected, so a second renderer would repeat the first verbatim
-        renderer = _Renderer(exploration, params, traces)
-        return [renderer, renderer]
+        return [_Renderer(exploration, params, traces)]
     return [_Renderer(exploration, params, t) for t in (traces, reflected)]
 
 

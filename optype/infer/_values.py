@@ -4,10 +4,11 @@
 
 from collections.abc import Callable, Generator, Iterable, Mapping, Sequence
 from contextvars import Context
+from dataclasses import dataclass, replace
 from enum import StrEnum
 from inspect import Parameter
 from itertools import chain
-from typing import Any, NamedTuple, NewType
+from typing import Any, NamedTuple, NewType, TypeGuard
 
 from ._spy import _Spy, _SpyObject, _Traces
 
@@ -34,18 +35,24 @@ class Exploration(NamedTuple):
     tuple_params: frozenset[str] = frozenset()  # params also accepting a tuple of self
 
 
-class _Gen(NamedTuple):
+# not tuples: a `tuple()` match over a result tree must not match these
+
+
+@dataclass(frozen=True, slots=True)
+class _Gen:
     """An explored generator, iterator, or coroutine result, e.g. `Generator[R]`."""
 
     yielded: Sequence[object]
     kind: str
+    bare_when_empty: bool = False
 
 
 # the `_Gen.kind` of an awaited coroutine, rendered as `Coroutine[object, None, R]`
 COROUTINE = "Coroutine"
 
 
-class _FnResult(NamedTuple):
+@dataclass(frozen=True, slots=True)
+class _FnResult:
     """An explored function result, rendered in signature syntax."""
 
     params: Mapping[str, Parameter]
@@ -59,17 +66,24 @@ class _FnResult(NamedTuple):
 _RecVar = NewType("_RecVar", object)
 
 
-class _Rec(NamedTuple):
+@dataclass(frozen=True, slots=True)
+class _Rec:
     """A result that reaches itself, rendered as a recursive typevar bound."""
 
     var: _RecVar  # the identity shared with this binder's `_RecRef` uses
     body: Any
 
 
-class _RecRef(NamedTuple):
+@dataclass(frozen=True, slots=True)
+class _RecRef:
     """A reference to the enclosing `_Rec` binder of the same `var`."""
 
     var: _RecVar
+
+
+def is_mapping(value: object, /) -> TypeGuard[Mapping[Any, Any]]:
+    """A `Mapping` that is not a `Context`; a `Context` is a leaf (gh-769)."""
+    return isinstance(value, Mapping) and not isinstance(value, Context)
 
 
 def _children(value: Any) -> Iterable[Any]:
@@ -89,9 +103,7 @@ def _children(value: Any) -> Iterable[Any]:
             out = ()
         case tuple() | list() | set() | frozenset():
             out = value
-        case Mapping() if not isinstance(value, Context):
-            # `dict` and `frozendict` (py315+); a `Context` is a leaf, since its items
-            # are just whatever context vars happen to be set (gh-769)
+        case _ if is_mapping(value):
             out = chain.from_iterable(value.items())
         case slice():
             out = value.start, value.stop, value.step
@@ -120,12 +132,12 @@ def map_values(value: Any, leaf: Callable[[Any], Any]) -> Any:  # ruff: ignore[c
     match value:
         case _Gen():
             yielded = [map_values(item, leaf) for item in value.yielded]
-            out: object = value._replace(yielded=yielded)
+            out = replace(value, yielded=yielded)
         case _FnResult():
             results = [map_values(item, leaf) for item in value.results]
-            out = value._replace(results=results)
+            out = replace(value, results=results)
         case _Rec():
-            out = value._replace(body=map_values(value.body, leaf))
+            out = replace(value, body=map_values(value.body, leaf))
         case _RecRef():
             out = value
         case tuple() if type(value) is tuple:
@@ -135,7 +147,7 @@ def map_values(value: Any, leaf: Callable[[Any], Any]) -> Any:  # ruff: ignore[c
         case set() | frozenset():
             items = {map_values(item, leaf) for item in value}
             out = frozenset(items) if isinstance(value, frozenset) else items
-        case Mapping() if not isinstance(value, Context):
+        case _ if is_mapping(value):
             mapping = value
             rebuilt = {
                 map_values(k, leaf): map_values(v, leaf) for k, v in mapping.items()
@@ -145,7 +157,7 @@ def map_values(value: Any, leaf: Callable[[Any], Any]) -> Any:  # ruff: ignore[c
             else:  # the `frozendict` builtin rebuilds as itself
                 ctor = type(value)
                 try:
-                    out = ctor(rebuilt)  # type:ignore[call-arg]  # pyright:ignore[reportCallIssue]
+                    out = ctor(rebuilt)  # type:ignore[call-arg]  # pyright:ignore[reportCallIssue]  # ty:ignore[too-many-positional-arguments]
                 except TypeError:
                     out = mapping
         case slice():

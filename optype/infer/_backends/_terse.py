@@ -43,6 +43,9 @@ class TerseBackend:
                 out = _DOTS
             case _ir.App(origin, args):
                 out = self._app(origin, args)
+            case _ir.Has(attr, args):
+                parts = [repr(attr), *map(self._render_node, args)]
+                out = f"Has[{', '.join(parts)}]"
             case _ir.Fn(params, ret):
                 out = self._fn(params, ret)
             case _ir.Not() | _ir.Variance() | _ir.Unpack():

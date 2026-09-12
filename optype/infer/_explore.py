@@ -19,7 +19,7 @@ from collections.abc import (
     Sequence,
 )
 from contextlib import suppress
-from contextvars import Context, ContextVar
+from contextvars import ContextVar
 from inspect import Parameter, isasyncgen, iscoroutine, isgenerator
 from types import (
     BuiltinFunctionType,
@@ -65,6 +65,7 @@ from ._values import (
     _RecRef,
     _RecVar,
     fn_spies,
+    is_mapping,
 )
 
 _FORK_LIMIT = 64
@@ -82,23 +83,25 @@ _YIELD_COUNTS = tuple(range(2, 17))
 # the `next`-like builtins, which return their trailing argument when exhausted
 _NEXT_BUILTINS = frozenset({next, anext})
 
-# single-arg lazy iterators, mapped to their rendered name; itertools entries are
-# derived from the module, so new ones register automatically
+# the single-arg `itertools` iterators; with no yields they render bare, not `[Never]`
+_ITERTOOLS_TYPES: dict[type, str] = {
+    cls: f"itertools.{cls.__qualname__}"
+    for name, cls in vars(itertools).items()
+    if isinstance(cls, type)
+    and issubclass(cls, Iterator)
+    and not name.startswith("_")
+    and cls is not itertools.groupby  # 2 type args
+}
+
+# single-arg lazy iterators, mapped to their rendered name
 _ITERATOR_TYPES: dict[type, str] = (
-    {  # type: ignore[assignment]
+    {  # pyrefly: ignore[implicit-any-type-argument]
         enumerate: "enumerate",
         filter: "filter",
         map: "map",
         zip: "zip",
     }
-    | {
-        cls: f"itertools.{cls.__qualname__}"
-        for name, cls in vars(itertools).items()
-        if isinstance(cls, type)
-        and issubclass(cls, Iterator)
-        and not name.startswith("_")
-        and cls is not itertools.groupby  # 2 type args
-    }
+    | _ITERTOOLS_TYPES
     # typeshed types `tee()` as `tuple[Iterator[T], ...]`
     | {type(itertools.tee(())[0]): "Iterator"}
 )
@@ -306,7 +309,8 @@ def _wrapper(
         return explored
 
     ret = _wrapped_return(result)
-    return _Gen([] if ret is None else [_explore_result(ret, path)], name)
+    yields = [] if ret is None else [_explore_result(ret, path)]
+    return _Gen(yields, name, bare_when_empty=True)
 
 
 def _source_element(result: object) -> _SpyObject | None:
@@ -348,7 +352,11 @@ def _explore_result(  # ruff: ignore[complex-structure]
             # the predicate dropped every element; the element type is the source's
             element = _source_element(result)
             values = [element] if element is not None else values
-        out = _Gen([_explore_result(v, path) for v in values], kind)
+        out = _Gen(
+            [_explore_result(v, path) for v in values],
+            kind,
+            bare_when_empty=cls in _ITERTOOLS_TYPES,
+        )
     elif (
         cls is _CALLABLE_ITERATOR
         and _CALLABLE_FIRST
@@ -364,7 +372,7 @@ def _explore_result(  # ruff: ignore[complex-structure]
     elif (tpl := _TEMPLATE_TYPES.get(cls)) is not None:
         kind, attr = tpl
         yields = [] if attr is None else [_explore_result(getattr(result, attr), path)]
-        out = _Gen(yields, kind)
+        out = _Gen(yields, kind, bare_when_empty=True)
     elif isinstance(_unwrap(result), _FUNCTION_TYPES):
         out = _explore_func(result)
     else:
@@ -378,7 +386,7 @@ def _explore_container(cls: type, result: Any, path: dict[int, _RecVar | None]) 
             return tuple(_explore_result(item, path) for item in result)
         case list():
             return [_explore_result(item, path) for item in result]
-        case Mapping() if not isinstance(result, Context):
+        case _ if is_mapping(result):
             # the keys must stay hashable, so only the values recurse
             items = {key: _explore_result(value, path) for key, value in result.items()}
             try:
@@ -548,6 +556,7 @@ def _fixed_self(func: _AnyFunc, params: Mapping[str, Parameter]) -> dict[str, ob
 
 def _placeholders(
     params: Mapping[str, Parameter],
+    *,
     count: int,
     keys: Sequence[str],
     omit: Collection[str],
@@ -624,7 +633,13 @@ def explore_spies(
             fixed = _fixed_self(func, params) | {
                 n: _typed_default(params[n].default) for n in fix
             }
-            spies, args, kwds = _placeholders(params, count, keys, omit, fixed)
+            spies, args, kwds = _placeholders(
+                params,
+                count=count,
+                keys=keys,
+                omit=omit,
+                fixed=fixed,
+            )
             _force_absent(spies, forced_absent)
             try:
                 results, deprecated, gaps = _explore(func, args, kwds)
@@ -649,18 +664,14 @@ def explore_spies(
             except (IndexError, TypeError, ValueError) as exc:
                 # a too-short star-unpack raises `TypeError`; gate on it so the target's
                 # own error (e.g. a `ValueError`) can't churn the budget and bury itself
-                if (
-                    isinstance(exc, TypeError)
-                    and _starved.get()
-                    and (budget := next(budgets, 0)) != 0
-                ):
-                    pass
-                elif Parameter.VAR_POSITIONAL in kinds:
-                    if (count := next(counts, 0)) == 0:
-                        msg = f"ran out of `*args` placeholders ({exc})"
-                        raise InferError(msg) from exc
-                else:
+                starved = isinstance(exc, TypeError) and _starved.get()
+                if starved and (budget := next(budgets, 0)):
+                    continue
+                if Parameter.VAR_POSITIONAL not in kinds:
                     raise
+                if not (count := next(counts, 0)):
+                    msg = f"ran out of `*args` placeholders ({exc})"
+                    raise InferError(msg) from exc
             else:
                 return Exploration(
                     spies,
@@ -731,7 +742,13 @@ def explore_tuple_params(
         if not bare_shape or not bare_shape.isdisjoint(_TUPLE_DUNDERS):
             continue
 
-        spies, args, kwds = _placeholders(params, 2, [], (), exploration.fixed)
+        spies, args, kwds = _placeholders(
+            params,
+            count=2,
+            keys=(),
+            omit=(),
+            fixed=exploration.fixed,
+        )
         if (target := spies.get(name)) is None:
             continue
         elems = (_SpyObject(), _SpyObject())

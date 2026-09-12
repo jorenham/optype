@@ -40,13 +40,14 @@ from typing import Any, override
 import pytest
 
 from optype.infer import InferError, InferWarning, _color, _gc, infer
-from optype.infer._api import _Gap, _infer_render
+from optype.infer._api import _infer_render
 from optype.infer._backends import TERSE
 from optype.infer._ir import (
     App,
     Arg,
     Dots,
     Fn,
+    Has,
     Lit,
     Name,
     Node,
@@ -66,7 +67,6 @@ from optype.infer._numpy import array_function_node
 from optype.infer._recursion import collapse_recursive
 from optype.infer._signature import parse_text_signature
 from optype.infer._spy import _SpyObject
-from optype.infer._values import GapKind
 
 if sys.version_info >= (3, 13):
     from warnings import deprecated
@@ -1514,15 +1514,15 @@ def test_collapse_recursive_reroll() -> None:
         TypeParam("W", link("T10", "T11")),  # the last copy points at the loop's exit
         *(TypeParam(leaf) for leaf in ("T7", "T8", "T9", "T10", "T11")),
     ]
-    params = [Param("x", Name("T"))]
-    folded, fparams, fret = collapse_recursive(type_params, params, Name("T"))
+    sig = Signature(tuple(type_params), (Param("x", Name("T")),), Name("T"))
+    folded = collapse_recursive(sig)
     # T, U, V, W collapse onto a single self-referential T; spent leaves are dropped
-    assert folded == [
+    assert folded.type_params == (
         TypeParam("T", App("CanAdd", (Name("U"), Name("T")))),
         TypeParam("U"),  # the surviving per-iteration leaf, renumbered gaplessly
-    ]
-    assert fparams == params
-    assert fret == Name("T")
+    )
+    assert folded.params == sig.params
+    assert folded.ret == Name("T")
 
 
 def test_collapse_recursive_keeps_short_runs() -> None:
@@ -1532,8 +1532,28 @@ def test_collapse_recursive_keeps_short_runs() -> None:
         TypeParam("U", App("CanAdd", (Name("T8"), Name("T9")))),
         *(TypeParam(leaf) for leaf in ("T7", "T8", "T9")),
     ]
-    folded, _, _ = collapse_recursive(type_params, [Param("x", Name("T"))], Name("T"))
-    assert folded == type_params
+    sig = Signature(tuple(type_params), (Param("x", Name("T")),), Name("T"))
+    assert collapse_recursive(sig) == sig
+
+
+def test_attribute_name_is_not_a_typevar() -> None:
+    # an attribute name is not a `Name`: distinct attributes are not alpha-equal, so
+    # a read chain is not folded as a loop
+    spam = Has("spam", (Name("T"),))
+    assert alpha_equal(spam, Has("ham", (Name("U"),))) is None
+    assert list(names(spam)) == ["T"]
+
+    def f(x: Any) -> Any:
+        a = x.spam
+        b = a.ham
+        c = b.eggs
+        d = c.bacon
+        return x, a, b, c, d
+
+    assert infer(f) == (
+        "[T: Has['spam', +R], R: Has['ham', +R2], R2: Has['eggs', +R3], "
+        "R3: Has['bacon', +R4], R4](x: T) -> tuple[T, R, R2, R3, R4]"
+    )
 
 
 # `Fraction.limit_denominator` calls `Fraction(self)`; only 3.14+ accepts a duck-typed
@@ -1639,7 +1659,7 @@ def test_deprecated() -> None:
     def foo(x: Any) -> Any:
         return x + 1
 
-    assert infer(foo) == (  # pyright: ignore[reportDeprecated]
+    assert infer(foo) == (  # pyright: ignore[reportDeprecated]  # pyrefly: ignore[deprecated]
         "@deprecated('Use bar instead')\n[R](x: CanAdd[Literal[1], R]) -> R"
     )
 
@@ -1678,7 +1698,7 @@ def test_deprecated_operator() -> None:
     def foo(x: Any, y: Any) -> Any:
         return x * y
 
-    assert infer(foo) == (  # pyright: ignore[reportDeprecated]
+    assert infer(foo) == (  # pyright: ignore[reportDeprecated]  # pyrefly: ignore[deprecated]
         "@deprecated('old op')\n"
         "[T, R](x: CanMul[T, R], y: T) -> R\n"
         "@deprecated('old op')\n"
@@ -2593,13 +2613,6 @@ def test_strict_silent_when_complete() -> None:
     assert result == "[R](x: CanAdd[Literal[1], R]) -> R"
 
 
-def test_gap_message_and_dedup() -> None:
-    gap = _Gap(GapKind.RUN_BUDGET, "(x)")
-    assert gap.message() == "run budget exhausted in (x)"
-    # frozen and slotted, so equal gaps collapse in a set
-    assert len({gap, _Gap(GapKind.RUN_BUDGET, "(x)")}) == 1
-
-
 def test_dispatch_hasattr_collapses_to_object() -> None:
     # `hasattr` tolerates absence, so the attribute is not a requirement
     assert infer(lambda x: hasattr(x, "a")) == "(x: object) -> bool"
@@ -2760,7 +2773,7 @@ def test_target_exception_skipped() -> None:
 def test_target_exception_cause() -> None:
     # when no run completes, the target's last exception is chained as the cause
     with pytest.raises(InferError, match="completion") as excinfo:
-        infer(lambda: 0 / 0)
+        infer(lambda: 0 / 0)  # pyrefly: ignore[division-by-zero]
     assert isinstance(excinfo.value.__cause__, ZeroDivisionError)
 
 

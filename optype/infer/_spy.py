@@ -6,21 +6,18 @@ import sys
 from collections.abc import Callable, Generator, Iterator
 from contextvars import ContextVar
 from enum import StrEnum
-from functools import cache, lru_cache
+from functools import lru_cache
 from types import CodeType
 from typing import Any, ClassVar, NamedTuple, Self, TypeGuard, final, override
 
 type _AnyFunc = Callable[..., object]
 type _Args = tuple[object, ...]
 type _Kwargs = dict[str, object]
-type _Memo = tuple[object, int | None]  # (fork plan, value); None value = absent
+
+# per-run memos: (fork plan, value), `None` if decided absent; the keyed memo keeps
+# each operand alive so its id is not reused
+type _Memo = tuple[object, int | None]
 type _KeyedMemo = tuple[object, dict[int, tuple[object, int]]]
-
-
-@cache
-def _slot(attr: str) -> str:
-    # runs on every fork decision, for one of a handful of fixed dunder names
-    return f"__optype_{attr.strip('_')}__"
 
 
 def _internal(attr: str) -> bool:
@@ -143,23 +140,22 @@ def _decide() -> bool:
 def _decide_stable(spy: "_SpyObject", attr: str, /, *, optional: bool = False) -> int:
     # memoized per run (keyed by the fork plan) so repeats agree; else two disagreeing
     # `len(seq)` send e.g. `random.choice` into a non-terminating `_randbelow(0)`
-
-    slot = _slot(attr)
     plan = _fork.get()
+    memos = spy.__optype_stable__
 
-    memo: _Memo | None = getattr(spy, slot, None)
+    memo = memos.get(attr)
     if memo is not None and memo[0] is plan:
         if memo[1] is None:
             raise _AbsentError
         return memo[1]
 
     if optional and not _decide():
-        setattr(spy, slot, (plan, None))
+        memos[attr] = plan, None
         spy.__optype_trace_add__(_Marker.ABSENT, (attr,), {}, None)
         raise _AbsentError
 
     value = spy.__optype_trace_add__(attr, (), {}, int(_decide()))
-    setattr(spy, slot, (plan, value))
+    memos[attr] = plan, value
     return value
 
 
@@ -172,17 +168,17 @@ def _decide_keyed(
     keep_arg: bool,
 ) -> bool:
     # per-operand `_decide_stable`: `y in x and y not in x` agrees within a run, while
-    # `a in x` and `b in x` stay free. `item` is retained so its `id` can't be reused
-    slot = _slot(attr)
+    # `a in x` and `b in x` stay free
     plan = _fork.get()
+    memos = spy.__optype_keyed__
 
     cache: dict[int, tuple[object, int]]
-    memo: _KeyedMemo | None = getattr(spy, slot, None)
+    memo = memos.get(attr)
     if memo is not None and memo[0] is plan:
         cache = memo[1]
     else:
         cache = {}
-        setattr(spy, slot, (plan, cache))
+        memos[attr] = plan, cache
 
     key = id(item)
     if key not in cache:
@@ -315,8 +311,16 @@ class _SpyObject(_Spy, metaclass=_SpyType):
     __optype_iterator__: bool = False
     __optype_growable__: bool = False
     __optype_absent__: frozenset[str] = frozenset()
+    # see `_decide_stable` and `_decide_keyed`
+    __optype_stable__: dict[str, _Memo]
+    __optype_keyed__: dict[str, _KeyedMemo]
     # spies are descriptors (`__get__`), so only ever read through the class `__dict__`
     __optype_instance__: ClassVar[Self | None] = None
+
+    def __init__(self, /, *_args: object, **_kwargs: object) -> None:
+        super().__init__()
+        self.__optype_stable__ = {}
+        self.__optype_keyed__ = {}
 
     def __new__(cls, /, *_args: object, **_kwargs: object) -> Self:
         if cls is not _SpyObject:

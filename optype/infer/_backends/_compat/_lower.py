@@ -5,7 +5,6 @@ spec cannot express: intersections, the inline `Has[...]` form, typevar-referenc
 bounds, and keyword/defaulted callables. `docs/infer.md` is the source of truth.
 """
 
-import ast
 import builtins
 import functools
 import keyword
@@ -25,7 +24,6 @@ from ._model import (
     _components,
     _cyclic,
     _free_tyvars,
-    _Func,
     _Helper,
     _is_generic,
     _is_protocol_node,
@@ -170,14 +168,19 @@ class _SigLowerer:
         self._sig = sig
         self._tyvars = frozenset(typar.name for typar in sig.type_params)
 
-    def func(self) -> _Func:
+    def func(self) -> _ir.Signature:
         sig = self._sig
         constraints: _Constraints = {}
         params = [self._param(p, constraints) for p in sig.params]
         ret = self._node(sig.ret, constraints)
         kept, subst = self._resolve_typars(sig.type_params, constraints)
         params = [self._subst_param(p, subst) for p in params]
-        return _Func(tuple(kept), tuple(params), _ir.subst(ret, subst), sig.deprecated)
+        return replace(
+            sig,
+            type_params=tuple(kept),
+            params=tuple(params),
+            ret=_ir.subst(ret, subst),
+        )
 
     def _resolve_typars(
         self,
@@ -237,9 +240,8 @@ class _SigLowerer:
         constraints: _Constraints,
     ) -> _ir.Node:
         match node:
-            case _ir.App("Has", args):
-                first, *signed = (_ir.term_node(a) for a in args)
-                return self._has(first, tuple(signed), constraints)
+            case _ir.Has(attr, signed):
+                return self._has(attr, signed, constraints)
             case _ir.App(origin, args):
                 return self._app(origin, args, constraints)
             case _ir.Fn(params, ret):
@@ -361,13 +363,10 @@ class _SigLowerer:
 
     def _has(
         self,
-        first: _ir.Node,
+        attr: str,
         signed: tuple[_ir.Node, ...],
         constraints: _Constraints,
     ) -> _ir.Node:
-        attr = (
-            ast.literal_eval(first.name) if isinstance(first, _ir.Name) else str(first)
-        )
         if not attr.isidentifier() or keyword.iskeyword(attr):
             # a protocol member must be named for the real attribute, so a name that is
             # not a valid identifier (e.g. from `getattr(x, "a-b")`) is inexpressible

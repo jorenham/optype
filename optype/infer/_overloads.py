@@ -5,7 +5,7 @@ defaults that cannot be expressed as typevar defaults, and a presence-test on a 
 parameter's attribute.
 """
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from inspect import Parameter
 from typing import NamedTuple
 
@@ -41,6 +41,12 @@ def _bind(value: object, binding: Mapping[int, object]) -> object:
     return map_values(value, lambda v: binding.get(id(v), v))
 
 
+def _distinct(sigs: Iterable[Signature]) -> list[Signature]:
+    # no set: a default value may be unhashable
+    sigs = list(sigs)
+    return [sig for i, sig in enumerate(sigs) if sig not in sigs[:i]]
+
+
 def _bind_exploration(exp: Exploration, defaults: Defaults) -> Exploration:
     """The exploration as it would look with every defaulted parameter omitted."""
     spies = exp.spies
@@ -59,17 +65,11 @@ def _bind_exploration(exp: Exploration, defaults: Defaults) -> Exploration:
         ]
         for spy_id, items in exp.traces.items()
     }
-    kept = {name: spy for name, spy in spies.items() if name not in defaults}
-    bound_results = [_bind(result, binding) for result in exp.results]
-    return Exploration(
-        kept,
-        bound,
-        bound_results,
-        exp.var_count,
-        exp.fixed,
-        exp.deprecated,
-        exp.gaps,
-        frozenset(name for name in exp.tuple_params if name not in defaults),
+    return exp._replace(
+        spies={name: spy for name, spy in spies.items() if name not in defaults},
+        traces=bound,
+        results=[_bind(result, binding) for result in exp.results],
+        tuple_params=exp.tuple_params - set(defaults),
     )
 
 
@@ -107,7 +107,8 @@ def resolve_defaults(
         return _ResolvedDefaults({}, False, [])
 
     omitted_defaults = _bind_exploration(exploration, defaults)
-    if signatures(omitted_defaults, required, names) == observed:
+    expected = signatures(omitted_defaults, required, names)
+    if _distinct(expected) == _distinct(observed):
         return _ResolvedDefaults(defaults, False, [])
 
     overloads = render_all(
