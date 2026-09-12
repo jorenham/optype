@@ -1,11 +1,10 @@
-"""`_Lowerer`: rewrite the `Signature` IR into a printable `_Module`.
+"""`Lowerer`: rewrite the `Signature` IR into a printable `Module`.
 
 It synthesizes helper `Protocol`s (and recursive aliases) for the constructs the typing
 spec cannot express: intersections, the inline `Has[...]` form, typevar-referencing
 bounds, and keyword/defaulted callables. `docs/infer.md` is the source of truth.
 """
 
-import ast
 import builtins
 import functools
 import keyword
@@ -18,30 +17,27 @@ from typing import final
 # `from . import _ir` would re-enter this package
 import optype.infer._ir as _ir  # ruff: ignore[manual-from-import]
 from ._model import (
-    _Alias,
-    _Attr,
-    _bound_name,
-    _combine_name,
-    _components,
-    _cyclic,
-    _free_tyvars,
-    _Func,
-    _Helper,
-    _is_generic,
-    _is_protocol_node,
-    _Member,
-    _member_nodes,
-    _Method,
-    _Module,
-    _Protocol,
-    _strip_variance,
-    _subst_member,
-    _toposort,
+    Alias,
+    Attr,
+    Helper,
+    Member,
+    Method,
+    Module,
+    ProtocolDef,
+    bound_name,
+    combine_name,
+    components,
+    cyclic_names,
+    free_tyvars,
+    is_generic,
+    is_protocol_node,
+    member_nodes,
+    strip_variance,
+    subst_member,
+    toposort,
 )
-from ._print import _OPTYPE, _import_of, _member_key, _type
+from ._print import OPTYPE, import_of, member_key, type_text
 from optype.infer._errors import InferError
-
-__all__ = ("_Lowerer",)
 
 
 def _bound_node(bound: object) -> _ir.Node | None:
@@ -62,7 +58,7 @@ def _protocol_bounds(origin: str) -> tuple[_ir.Node | None, ...] | None:
     reports `()` (so excess arguments drop), and a bounded argument lets the matching
     inferred typevar pick up that bound.
     """
-    if origin not in _OPTYPE:
+    if origin not in OPTYPE:
         return None
 
     import optype  # ruff: ignore[import-outside-top-level]
@@ -103,7 +99,7 @@ type _GroupKey = tuple[tuple[bool, str], ...]  # one entry per cyclic bound
 class _HelperRegistry:
     """The helper definitions shared across every signature of one render."""
 
-    defs: dict[str, _Helper]
+    defs: dict[str, Helper]
     groups: dict[_GroupKey, list[str]]
     _keys: dict[_ProtoKey, str]
     _names: set[str]  # every claimed helper name
@@ -118,7 +114,7 @@ class _HelperRegistry:
         self,
         candidate: str,
         key: _ProtoKey,
-        build: Callable[[str], _Helper],
+        build: Callable[[str], Helper],
     ) -> str:
         if key in self._keys:
             return self._keys[key]
@@ -134,7 +130,7 @@ class _HelperRegistry:
         i = 2
         while (
             name in self._names
-            or _import_of(name) is not None
+            or import_of(name) is not None
             or hasattr(builtins, name)
         ):
             name = f"{candidate}{i}"
@@ -144,17 +140,17 @@ class _HelperRegistry:
 
 
 @final
-class _Lowerer:
-    """Rewrite a sequence of `Signature`s into a printable `_Module`."""
+class Lowerer:
+    """Rewrite a sequence of `Signature`s into a printable `Module`."""
 
     _registry: _HelperRegistry
 
     def __init__(self) -> None:
         self._registry = _HelperRegistry()
 
-    def module(self, sigs: Sequence[_ir.Signature]) -> _Module:
+    def module(self, sigs: Sequence[_ir.Signature]) -> Module:
         funcs = [_SigLowerer(self._registry, sig).func() for sig in sigs]
-        return _Module(tuple(self._registry.defs.values()), tuple(funcs))
+        return Module(tuple(self._registry.defs.values()), tuple(funcs))
 
 
 @final
@@ -170,14 +166,19 @@ class _SigLowerer:
         self._sig = sig
         self._tyvars = frozenset(typar.name for typar in sig.type_params)
 
-    def func(self) -> _Func:
+    def func(self) -> _ir.Signature:
         sig = self._sig
         constraints: _Constraints = {}
         params = [self._param(p, constraints) for p in sig.params]
         ret = self._node(sig.ret, constraints)
         kept, subst = self._resolve_typars(sig.type_params, constraints)
         params = [self._subst_param(p, subst) for p in params]
-        return _Func(tuple(kept), tuple(params), _ir.subst(ret, subst), sig.deprecated)
+        return replace(
+            sig,
+            type_params=tuple(kept),
+            params=tuple(params),
+            ret=_ir.subst(ret, subst),
+        )
 
     def _resolve_typars(
         self,
@@ -202,15 +203,15 @@ class _SigLowerer:
             )
 
         elim = {
-            tyvar: b for tyvar, b in bound.items() if b and _is_generic(b, self._tyvars)
+            tyvar: b for tyvar, b in bound.items() if b and is_generic(b, self._tyvars)
         }
         deps = {tyvar: frozenset(_ir.names(b)) & set(elim) for tyvar, b in elim.items()}
-        cyclic = _cyclic(deps)
+        cyclic = cyclic_names(deps)
 
         subst: dict[str, _ir.Node] = {}
-        for group in _components(cyclic, deps):
+        for group in components(cyclic, deps):
             subst |= self._hoist_group(group, elim)
-        for tyvar in _toposort(set(elim) - cyclic, deps):
+        for tyvar in toposort(set(elim) - cyclic, deps):
             subst[tyvar] = _ir.subst(elim[tyvar], subst)
 
         kept = [
@@ -237,9 +238,8 @@ class _SigLowerer:
         constraints: _Constraints,
     ) -> _ir.Node:
         match node:
-            case _ir.App("Has", args):
-                first, *signed = (_ir.term_node(a) for a in args)
-                return self._has(first, tuple(signed), constraints)
+            case _ir.Has(attr, signed):
+                return self._has(attr, signed, constraints)
             case _ir.App(origin, args):
                 return self._app(origin, args, constraints)
             case _ir.Fn(params, ret):
@@ -299,7 +299,7 @@ class _SigLowerer:
             if isinstance(part, _ir.Not):
                 continue
             node = self._node(part, constraints)
-            if (key := _type(node)) not in seen:
+            if (key := type_text(node)) not in seen:
                 seen.add(key)
                 lowered.append(node)
         return self._combine(lowered)
@@ -309,24 +309,24 @@ class _SigLowerer:
         candidate: str,
         *,
         bases: Sequence[_ir.Node] = (),
-        members: Sequence[_Member] = (),
+        members: Sequence[Member] = (),
     ) -> _ir.App:
         """Register a helper `Protocol` (canonicalized for reuse) and apply it."""
-        fv = _free_tyvars([*bases, *_member_nodes(members)], self._tyvars)
+        fv = free_tyvars([*bases, *member_nodes(members)], self._tyvars)
         m = {name: _ir.Name(_ir.tyvar_name(i)) for i, name in enumerate(fv)}
         canon_bases = tuple(_ir.subst(b, m) for b in bases)
-        canon_members = tuple(_subst_member(mem, m) for mem in members)
+        canon_members = tuple(subst_member(mem, m) for mem in members)
         canon_names = [_ir.tyvar_name(i) for i in range(len(fv))]
         tp_bounds = _inherited_bounds(canon_bases, frozenset(canon_names))
         typars = tuple(_ir.TypeParam(c, tp_bounds.get(c)) for c in canon_names)
         key = (
-            tuple(_type(b) for b in canon_bases),
-            tuple(map(_member_key, canon_members)),
+            tuple(type_text(b) for b in canon_bases),
+            tuple(map(member_key, canon_members)),
         )
         name = self._registry.register(
             candidate,
             key,
-            lambda nm: _Protocol(nm, typars, canon_bases, canon_members),
+            lambda nm: ProtocolDef(nm, typars, canon_bases, canon_members),
         )
         return _ir.App(name, tuple(_ir.Name(f) for f in fv))
 
@@ -342,13 +342,12 @@ class _SigLowerer:
             # a callable is not a valid base; it lifts into a `__call__` method instead
             bases = [p for p in parts if not isinstance(p, _ir.Fn)]
             members = tuple(
-                _Method("__call__", p.params, p.ret)
+                Method("__call__", p.params, p.ret)
                 for p in parts
                 if isinstance(p, _ir.Fn)
             )
             candidate = (
-                _combine_name([p.origin for p in bases if isinstance(p, _ir.App)])
-                or "P"
+                combine_name([p.origin for p in bases if isinstance(p, _ir.App)]) or "P"
             )
             return self._proto_app(candidate, bases=bases, members=members)
 
@@ -361,13 +360,10 @@ class _SigLowerer:
 
     def _has(
         self,
-        first: _ir.Node,
+        attr: str,
         signed: tuple[_ir.Node, ...],
         constraints: _Constraints,
     ) -> _ir.Node:
-        attr = (
-            ast.literal_eval(first.name) if isinstance(first, _ir.Name) else str(first)
-        )
         if not attr.isidentifier() or keyword.iskeyword(attr):
             # a protocol member must be named for the real attribute, so a name that is
             # not a valid identifier (e.g. from `getattr(x, "a-b")`) is inexpressible
@@ -385,7 +381,7 @@ class _SigLowerer:
         constraints: _Constraints,
         *,
         classvar: bool = False,
-    ) -> _Member:
+    ) -> Member:
         if (
             len(signed) == 1
             and isinstance(signed[0], _ir.App)
@@ -394,18 +390,18 @@ class _SigLowerer:
             inner = tuple(_ir.term_node(a) for a in signed[0].args)
             return self._has_member(attr, inner, constraints, classvar=True)
         if not signed:
-            return _Attr(attr, _ir.OBJECT, classvar=classvar)
+            return Attr(attr, _ir.OBJECT, classvar=classvar)
         if len(signed) == 1 and isinstance(signed[0], _ir.Fn):
             fn = signed[0]
-            ret = self._node(_strip_variance(fn.ret), constraints)
+            ret = self._node(strip_variance(fn.ret), constraints)
             params = tuple(self._arg(p, constraints) for p in fn.params)
-            return _Method(attr, params, ret)
+            return Method(attr, params, ret)
         if len(signed) == 1 and isinstance(signed[0], _ir.Variance):
             sign, part = signed[0].sign, signed[0].part
             node = self._node(part, constraints)
             # `ClassVar` can't hold a typevar; a generic one demotes to instance read
-            cv = classvar and not _is_generic(node, self._tyvars)
-            return _Attr(
+            cv = classvar and not is_generic(node, self._tyvars)
+            return Attr(
                 attr,
                 node,
                 classvar=cv,
@@ -417,10 +413,10 @@ class _SigLowerer:
             for s in signed
             if isinstance(s, _ir.Variance) and s.sign == _ir.COVARIANT
         ]
-        chosen = reads[0] if reads else _strip_variance(signed[0])
+        chosen = reads[0] if reads else strip_variance(signed[0])
         node = self._node(chosen, constraints)
-        cv = classvar and not _is_generic(node, self._tyvars)
-        return _Attr(attr, node, classvar=cv)
+        cv = classvar and not is_generic(node, self._tyvars)
+        return Attr(attr, node, classvar=cv)
 
     def _fn(
         self,
@@ -433,7 +429,7 @@ class _SigLowerer:
         # `Callable` covers positional params; a keyword or default needs `__call__`
         if not any(isinstance(p, _ir.Arg) and (p.key or p.default) for p in lowered):
             return _ir.Fn(lowered, lowered_ret)
-        member = _Method("__call__", lowered, lowered_ret)
+        member = Method("__call__", lowered, lowered_ret)
         return self._proto_app("CanCallP", members=(member,))
 
     def _merge_bound(
@@ -475,15 +471,15 @@ class _SigLowerer:
         }
         key = tuple(
             (
-                _is_protocol_node(bound[tyvar]),
-                _type(_ir.subst(bound[tyvar], rename | roles)),
+                is_protocol_node(bound[tyvar]),
+                type_text(_ir.subst(bound[tyvar], rename | roles)),
             )
             for tyvar in members
         )
 
         if key not in self._registry.groups:
             names = [
-                self._registry.claim(_bound_name(bound[tyvar], tyvar))
+                self._registry.claim(bound_name(bound[tyvar], tyvar))
                 for tyvar in members
             ]
             self._registry.groups[key] = names
@@ -495,9 +491,9 @@ class _SigLowerer:
             for i, tyvar in enumerate(members):
                 body = _ir.subst(bound[tyvar], rename | refs)
                 self._registry.defs[names[i]] = (
-                    _Protocol(names[i], typars, (body,), ())
-                    if _is_protocol_node(bound[tyvar])
-                    else _Alias(names[i], typars, body)
+                    ProtocolDef(names[i], typars, (body,), ())
+                    if is_protocol_node(bound[tyvar])
+                    else Alias(names[i], typars, body)
                 )
 
         names = self._registry.groups[key]

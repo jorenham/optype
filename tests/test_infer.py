@@ -1,4 +1,4 @@
-# ruff: file-ignore[reimplemented-operator, unnecessary-lambda]
+# ruff: file-ignore[reimplemented-container-builtin, reimplemented-operator, unnecessary-lambda]
 # pyright: reportUnknownArgumentType=false, reportUnknownLambdaType=false
 # pyright: reportUnknownMemberType=false, reportUnknownVariableType=false
 # pyright: reportUnusedParameter=false
@@ -34,19 +34,20 @@ from collections import Counter, defaultdict
 from collections.abc import Callable
 from inspect import Signature as PySignature, currentframe, signature
 from pathlib import Path
-from types import MappingProxyType, SimpleNamespace
+from types import GeneratorType, MappingProxyType, SimpleNamespace
 from typing import Any, override
 
 import pytest
 
 from optype.infer import InferError, InferWarning, _color, _gc, infer
-from optype.infer._api import _Gap, _infer_render
-from optype.infer._backends import TERSE
+from optype.infer._api import _infer_render
+from optype.infer._backends._terse import TERSE
 from optype.infer._ir import (
     App,
     Arg,
     Dots,
     Fn,
+    Has,
     Lit,
     Name,
     Node,
@@ -65,8 +66,7 @@ from optype.infer._isolate import _inline, isolate
 from optype.infer._numpy import array_function_node
 from optype.infer._recursion import collapse_recursive
 from optype.infer._signature import parse_text_signature
-from optype.infer._spy import _SpyObject
-from optype.infer._values import GapKind
+from optype.infer._spy import SpyObject
 
 if sys.version_info >= (3, 13):
     from warnings import deprecated
@@ -122,6 +122,11 @@ def _del_class_attr(x: Any) -> None:
 
 def _get_class_attr(x: Any) -> None:
     type(x).spam  # ruff: ignore[useless-expression]
+
+
+class _Add1:
+    def __call__(self, x: Any) -> Any:
+        return x + 1
 
 
 UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
@@ -382,6 +387,31 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     (_set_class_attr, "(x: Has['spam', ClassVar[-Literal[1]]]) -> None"),
     (_del_class_attr, "(x: Has['spam', ClassVar]) -> None"),
     (_get_class_attr, "(x: Has['spam', ClassVar]) -> None"),
+    (lambda x: str(x), "(x: CanStr) -> str"),
+    (lambda x: repr(x), "(x: CanRepr) -> str"),
+    (lambda x: bytes(x), "(x: CanBytes) -> bytes"),
+    # `in` and `len` do not distribute over a tuple, unlike `isinstance` (#716)
+    (lambda x: 0 in x, "(x: CanContains[Literal[0]]) -> bool"),
+    (lambda x: len(x), "(x: CanLen) -> int"),
+    # `isinstance`/`issubclass` recurse into a tuple classinfo, so the param widens
+    (
+        lambda x: isinstance(0, x),
+        "(x: CanInstancecheck | tuple[CanInstancecheck, ...]) -> bool",
+    ),
+    (
+        lambda x: issubclass(int, x),
+        "(x: CanSubclasscheck | tuple[CanSubclasscheck, ...]) -> bool",
+    ),
+    # a union intersected with a typevar is parenthesized, also in return position
+    (
+        lambda x: [x[0], int(x[1])],
+        (
+            "[R](x: CanGetitem[Literal[0, 1], R & (CanInt | CanIndex)])"
+            " -> list[Literal[1] | R] | list[Literal[0] | R]"
+        ),
+    ),
+    # a callable instance explores its `__call__`
+    (_Add1(), "[R](x: CanAdd[Literal[1], R]) -> R"),
 ]
 
 BINARY_CASES: list[tuple[Callable[[Any, Any], Any], str]] = [
@@ -503,6 +533,14 @@ BINARY_CASES: list[tuple[Callable[[Any, Any], Any], str]] = [
     ),
     # a synthesized attribute assignment binds the assigned value's type
     (lambda x, y: setattr(x, "spam", y), "[T](x: Has['spam', -T], y: T) -> None"),
+    (
+        lambda x, y: isinstance(y, x),
+        "(x: CanInstancecheck | tuple[CanInstancecheck, ...], y: object) -> bool",
+    ),
+    (
+        lambda x, y: issubclass(y, x),
+        "(x: CanSubclasscheck | tuple[CanSubclasscheck, ...], y: object) -> bool",
+    ),
 ]
 
 
@@ -603,6 +641,27 @@ VARIADIC_CASES: list[tuple[Callable[..., Any], str]] = [
     (_sum_kwargs, "[R](**kwargs: CanRAdd[Literal[0], R]) -> R"),
     # a variadic spread into a callable collapses to `*tuple[T, ...]` (gh-687)
     (_call_spread, "[T, R](f: (*tuple[T, ...]) -> R, *args: T) -> R"),
+    (
+        lambda x, *args, **kwargs: (x, args, kwargs),
+        (
+            "[T, *Ts, U](x: T, *args: *Ts, **kwargs: U)"
+            " -> tuple[T, tuple[*Ts], dict[str, U]]"
+        ),
+    ),
+    # star-unpack's grown budget (here 3) must not leak to `sum(z)`; `z` alone keeps
+    # the default yield of 2, so its `CanAdd` chain stays one level deep (#683, #686)
+    (
+        lambda x, z: (_takes3(*x), sum(z)),
+        (
+            "[T: CanRAdd[Literal[0], CanAdd[T, R2]], R, R2]"
+            "(x: CanIter[CanNext[R]], z: CanIter[CanNext[T]]) -> tuple[R, R2]\n"
+            "[R, R2]"
+            "(x: CanIter[CanNext[R]],"
+            " z: CanIter[CanNext[CanRAdd[Literal[0] | R2, R2]]]) -> tuple[R, R2]"
+        ),
+    ),
+    # a star-unpack into a 9-ary call hits a budget the old sparse range skipped (#683)
+    (lambda x: _takes9(*x), "[R](x: CanIter[CanNext[R]]) -> R"),
 ]
 
 
@@ -1022,6 +1081,587 @@ ITERATOR_CASES: list[tuple[Callable[..., Any], str]] = [
 ]
 
 
+class _MyGeneric[T]: ...  # module-level, so its name resolves
+
+
+type _AliasUnion = int | str
+type _AliasGeneric = list[int]
+type _AliasScalar = int
+
+_DEFAULTDICT = defaultdict(int, a=1)
+_CONTEXT = contextvars.copy_context()
+
+
+def _call_with_context(cb: Any, _flag: Any = None) -> None:
+    cb(context=contextvars.copy_context())
+
+
+def _make_local_list() -> Callable[[], Any]:
+    class Local: ...
+
+    return lambda: list[Local]
+
+
+def _make_local_callable() -> Callable[[], Any]:
+    class Local: ...
+
+    return lambda: Callable[[int], Local]
+
+
+def _make_local_generic() -> Callable[[], Any]:
+    class Local: ...
+
+    return lambda: _MyGeneric[Local]
+
+
+async def _async_gen(xs: Any) -> Any:
+    return (x async for x in xs)
+
+
+def _yield_hetero() -> Any:
+    yield None
+    yield 1
+
+
+def _yield_empty() -> Any:
+    yield from ()
+
+
+def _yield_nominal() -> Any:
+    yield True
+    yield 1
+
+
+def _yield_raisable() -> Any:
+    yield FileNotFoundError()
+    yield OSError()
+
+
+class _Base: ...
+
+
+class _Child(_Base): ...
+
+
+def _yield_custom() -> Any:
+    yield _Child()
+    yield _Base()
+
+
+def _yield_loop(x: Any) -> Any:
+    while True:
+        yield x + 1
+
+
+async def _make_async_inner(x: Any) -> Any:  # ruff: ignore[unused-async]
+    async def inner(y: Any) -> Any:  # ruff: ignore[unused-async]
+        return (x, y)
+
+    return inner
+
+
+def _ping(x: Any) -> Any:  # ruff: ignore[unused-function-argument]
+    return _pong
+
+
+def _pong(x: Any) -> Any:  # ruff: ignore[unused-function-argument]
+    return _ping
+
+
+def _self_ref() -> list[object]:
+    a: list[object] = []
+    a.append(a)
+    return a
+
+
+def _self_ref_nested() -> list[object]:
+    a: list[object] = []
+    b: list[object] = [a]
+    a.append(b)
+    return a
+
+
+def _self_ref_mixed(x: Any) -> list[object]:
+    a: list[object] = []
+    a.extend((a, x + 1))
+    return a
+
+
+def _self_ref_defaulted(x: Any = 1) -> list[object]:
+    a: list[object] = []
+    a.extend((a, x))
+    return a
+
+
+def _structural_dedup(x: Any) -> object:
+    a = x * 2
+    return (a + 1) if x else (a + 2) if a else a
+
+
+def _dedup_traced(x: Any, y: Any, z: Any) -> object:
+    p = x[y] if x else x[z]
+    return p.foo
+
+
+# how a returned value renders
+RESULT_CASES: list[tuple[Callable[..., Any], str]] = [
+    # empty containers parametrize with `Never`; the empty tuple is `tuple[()]`
+    (lambda: [], "() -> list[Never]"),
+    (lambda: {}, "() -> dict[Never, Never]"),
+    (lambda: (), "() -> tuple[()]"),
+    (lambda: set(), "() -> set[Never]"),
+    (lambda: frozenset(), "() -> frozenset[Never]"),
+    (lambda: [[]], "() -> list[list[Never]]"),
+    # an empty container is absorbed by a non-empty sibling, even when invariant
+    (lambda x: [None] if x else [], "(x: CanBool) -> list[None]"),
+    (lambda x: {None} if x else set(), "(x: CanBool) -> set[None]"),
+    (lambda x: {None: None} if x else {}, "(x: CanBool) -> dict[None, None]"),
+    # a non-empty invariant container is still not absorbed
+    (
+        lambda x: [1] if x else ["1"],
+        "(x: CanBool) -> list[Literal[1]] | list[Literal['1']]",
+    ),
+    # a long concrete tuple (like `random.getstate`) widens instead of listing literals
+    (lambda: tuple(range(50)), "() -> tuple[int, ...]"),
+    # the `...` value is `EllipsisType`, never its unusable `ellipsis` `__name__`
+    (lambda: ..., "() -> EllipsisType"),
+    (lambda x: (x, ...), "[T](x: T) -> tuple[T, EllipsisType]"),
+    (lambda: [..., ...], "() -> list[EllipsisType]"),
+    # render by the importable `types` name, not the cpython-internal `__name__`
+    (lambda: math, "() -> ModuleType"),
+    (lambda: (lambda: 0).__code__, "() -> CodeType"),
+    (lambda: currentframe(), "() -> FrameType"),
+    (lambda: type.__dict__["__dict__"], "() -> GetSetDescriptorType"),
+    (
+        lambda: MappingProxyType({"k": 1}),
+        "() -> MappingProxyType[Literal['k'], Literal[1]]",
+    ),
+    (lambda: Counter("ab"), "() -> collections.Counter[Literal['a', 'b']]"),
+    (lambda: Counter(), "() -> collections.Counter[Never]"),
+    # gh-769: a mapping whose ctor does not take items keeps its explored value
+    (lambda: _DEFAULTDICT, "() -> collections.defaultdict[Literal['a'], Literal[1]]"),
+    # gh-769: a `Context` renders bare, and `Context()` takes no arguments
+    (lambda: _CONTEXT, "() -> contextvars.Context"),
+    (_call_with_context, "(cb: (context: contextvars.Context) -> object) -> None"),
+    # a subscripted generic denotes the type it spells, not its `GenericAlias` runtime
+    (lambda: list[int], "() -> type[list[int]]"),
+    (lambda: dict[str, int], "() -> type[dict[str, int]]"),
+    (lambda: tuple[int, ...], "() -> type[tuple[int, ...]]"),
+    (lambda: list[int | None], "() -> type[list[int | None]]"),
+    (lambda: list[dict[str, int]], "() -> type[list[dict[str, int]]]"),
+    (lambda x: (x, list[int]), "[T](x: T) -> tuple[T, type[list[int]]]"),
+    # a user-defined generic (`typing._GenericAlias`) unwraps like a builtin one,
+    # qualified by the module it is importable from (#775)
+    (lambda: _MyGeneric[int], f"() -> type[{__name__}._MyGeneric[int]]"),
+    (lambda: list[_MyGeneric[int]], f"() -> type[list[{__name__}._MyGeneric[int]]]"),
+    # a union has no `type[...]` form; `type[int | str]` means `type[int] | type[str]`
+    (lambda: int | str, "() -> TypeForm[int | str]"),
+    (lambda: int | None, "() -> TypeForm[int | None]"),
+    # a `Callable` has no `type[...]` form either; `TypeForm` over the arrow form
+    (lambda: Callable[[int], str], "() -> TypeForm[(int) -> str]"),
+    (lambda: Callable[..., str], "() -> TypeForm[(...) -> str]"),
+    (lambda: list[Callable[[int], str]], "() -> type[list[(int) -> str]]"),
+    # an unnameable origin or argument keeps the unhelpful but honest `GenericAlias`
+    (_make_local_list(), "() -> types.GenericAlias"),
+    (_make_local_callable(), "() -> types.GenericAlias"),
+    (_make_local_generic(), "() -> types.GenericAlias"),
+    # a `TypeAliasType` denotes the type it spells, like a generic alias does
+    (lambda: _AliasUnion, "() -> TypeForm[int | str]"),
+    (lambda: _AliasGeneric, "() -> type[list[int]]"),
+    (lambda: _AliasScalar, "() -> type[int]"),
+    # an alias nested in a generic unwraps recursively
+    (lambda: list[_AliasUnion], "() -> type[list[int | str]]"),
+    # generator expressions are lazy, so they are iterated to trace what they yield
+    (lambda xs: (x for x in xs), "[R](xs: CanIter[CanNext[R]]) -> Generator[R]"),
+    (
+        lambda xs: (x + 1 for x in xs),
+        "[R](xs: CanIter[CanNext[CanAdd[Literal[1], R]]]) -> Generator[R]",
+    ),
+    (_async_gen, "[R](xs: CanAIter[CanANext[CanAwait[R]]]) -> AsyncGenerator[R]"),
+    # heterogeneous yields are sampled and unioned; an empty generator yields Never
+    (_yield_hetero, "() -> Generator[None | int]"),
+    (_yield_empty, "() -> Generator[Never]"),
+    # a yield whose type is a (nominal) subtype of another is absorbed into it
+    (_yield_nominal, "() -> Generator[int]"),
+    (_yield_raisable, "() -> Generator[OSError]"),
+    # user-defined subclass relations are recognized as well
+    (_yield_custom, f"() -> Generator[{__name__}._Base]"),
+    # an infinite generator terminates once a yield shape repeats, without exploding R
+    (_yield_loop, "[R](x: CanAdd[Literal[1], R]) -> Generator[R]"),
+    # a typevar default reaches through the returned function's body
+    (_fn_default, "[T = Literal[0]](x: T = 0) -> () -> T"),
+    # an inner coroutine function is driven to completion, like the outer one
+    (_make_async_inner, "[T, U](x: T) -> (y: U) -> tuple[T, U]"),
+    # mutually recursive functions terminate; the cycle stays opaque
+    (_ping, "(x: object) -> (x: object) -> FunctionType"),
+    # `str`'s element is single-use and inlines away; the surviving `map(g, y)`
+    # typevar, first named `U`, must renumber to `T` to keep the parameters gapless
+    (
+        lambda x, g, y: (map(str, x), map(g, y)),
+        (
+            "[T, R](x: CanIter[CanNext[CanStr]], g: (T) -> R, y: CanIter[CanNext[T]])"
+            " -> tuple[map[str], map[R]]"
+        ),
+    ),
+    # a cyclic result is a recursive type, tied off with a self-bounded typevar
+    (_self_ref, "[R: list[R]]() -> R"),
+    # the cycle is detected by identity through any depth of intermediate containers
+    (_self_ref_nested, "[R: list[list[R]]]() -> R"),
+    # a recursive container alongside a parameter and a result typevar
+    (_self_ref_mixed, "[R, R2: list[R2 | R]](x: CanAdd[Literal[1], R]) -> R2"),
+    # PEP 696: the defaultless recursive typevar must precede the defaulted one
+    (_self_ref_defaulted, "[R: list[R | T], T = Literal[1]](x: T = 1) -> R"),
+    # every forked run re-derives `a = x * 2` and then `a + 1` / `a + 2`; the fresh
+    # placeholders for these repeated subexpressions collapse onto one type parameter
+    # each, not one per run (which is what made e.g. `colorsys.hls_to_rgb` explode)
+    (
+        _structural_dedup,
+        (
+            "[R, R2: CanBool](x: CanMul[Literal[2], R2 & CanAdd[Literal[1, 2], R]"
+            " & CanBool] & CanBool) -> R | R2"
+        ),
+    ),
+    # `x[y]` and `x[z]` share an op-shape, so they collapse onto one return typevar
+    (
+        lambda x, y, z: x[y] if x else x[z],
+        "[T, U, R](x: CanBool & CanGetitem[T | U, R], y: T, z: U) -> R",
+    ),
+    # merged results may be traced (`.foo`), which the old untraced-only guard blocked
+    (
+        _dedup_traced,
+        "[T, U, R](x: CanBool & CanGetitem[T | U, Has['foo', +R]], y: T, z: U) -> R",
+    ),
+]
+
+
+def _with(x: Any) -> Any:
+    with x as y:
+        return y
+
+
+def _with_add(x: Any) -> Any:
+    with x as y:
+        return y + 1
+
+
+def _enter_only(x: Any) -> Any:
+    x.__enter__()  # ruff: ignore[unnecessary-dunder-call]
+    return x
+
+
+def _exit_only(x: Any) -> Any:
+    return x.__exit__(None, None, None)
+
+
+async def _await_add(x: Any) -> Any:
+    return (await x) + 1
+
+
+async def _async_with(x: Any) -> Any:
+    async with x as y:
+        return y
+
+
+async def _aenter_only(x: Any) -> Any:
+    return await x.__aenter__()  # ruff: ignore[unnecessary-dunder-call]
+
+
+async def _aexit_only(x: Any) -> Any:
+    return await x.__aexit__(None, None, None)
+
+
+async def _with_both(x: Any) -> Any:
+    with x:
+        async with x as y:
+            return y
+
+
+async def _async_for(x: Any) -> Any:
+    async for item in x:
+        return item
+    return None
+
+
+_STATUS = http.HTTPStatus.NOT_FOUND
+_FLAGS = re.IGNORECASE | re.MULTILINE
+
+
+def _status_default(x: http.HTTPStatus = _STATUS) -> http.HTTPStatus:
+    return x
+
+
+@deprecated("Use bar instead")
+def _deprecated_add(x: Any) -> Any:
+    return x + 1
+
+
+def _warn_add(x: Any) -> Any:
+    warnings.warn("deprecated", DeprecationWarning, stacklevel=2)
+    return x + 1
+
+
+def _deprecated_y(x: Any, y: Any = None) -> Any:
+    if y is None:
+        return x + 1
+    warnings.warn("y is deprecated", DeprecationWarning, stacklevel=2)
+    return x + y
+
+
+@deprecated("old op")
+def _deprecated_mul(x: Any, y: Any) -> Any:
+    return x * y
+
+
+def _raise_if_falsy(x: Any) -> int:
+    if not x:
+        raise ZeroDivisionError
+    return 1
+
+
+# statements and markers that a lambda cannot express
+STATEMENT_CASES: list[tuple[Callable[..., Any], str]] = [
+    (lambda x, *, y: x[y], "[T, R](x: CanGetitem[T, R], y: T) -> R"),
+    # a `with` statement requires `__enter__` and `__exit__` together, which is the
+    # combined `CanWith`; its unused `__exit__` result is unconstrained
+    (_with, "[R](x: CanWith[R, object]) -> R"),
+    (_with_add, "[R](x: CanWith[CanAdd[Literal[1], R], object]) -> R"),
+    # a lone `__enter__` or `__exit__` does not imply the other, so it stays as-is
+    (_enter_only, "[T: CanEnter[object]](x: T) -> T"),
+    (_exit_only, "(x: CanExit[None, None, None]) -> None"),
+    # coroutine functions are driven to completion; await/async with/async for trace
+    (_await_add, "[R](x: CanAwait[CanAdd[Literal[1], R]]) -> R"),
+    # like `CanWith`, but its declared parameters are the awaited results
+    (_async_with, "[R](x: CanAsyncWith[R, object]) -> R"),
+    (_aenter_only, "[R](x: CanAEnter[CanAwait[R]]) -> R"),
+    (_aexit_only, "[R](x: CanAExit[None, None, None, CanAwait[R]]) -> R"),
+    (_with_both, "[R](x: CanWith[object, object] & CanAsyncWith[R, object]) -> R"),
+    (_async_for, "[R](x: CanAIter[CanANext[CanAwait[R]]]) -> R"),
+    # #776: an importable enum member renders as its member path, not its repr
+    (lambda x: x == _STATUS, "[R](x: CanEq[Literal[HTTPStatus.NOT_FOUND], R]) -> R"),
+    (
+        _status_default,
+        "[T = Literal[HTTPStatus.NOT_FOUND]](x: T = HTTPStatus.NOT_FOUND) -> T",
+    ),
+    # #776: a composite flag has no member name, so it falls back to its data value
+    (lambda x: x != _FLAGS, "[R](x: CanNe[Literal[10], R]) -> R"),
+    # a `@deprecated` callable's `DeprecationWarning` becomes an `@deprecated` marker
+    (
+        _deprecated_add,  # pyright: ignore[reportDeprecated]  # pyrefly: ignore[deprecated]
+        "@deprecated('Use bar instead')\n[R](x: CanAdd[Literal[1], R]) -> R",
+    ),
+    # a plain `warnings.warn(..., DeprecationWarning)` counts too
+    (_warn_add, "@deprecated('deprecated')\n[R](x: CanAdd[Literal[1], R]) -> R"),
+    # only the call forms that raise the warning are marked: omitting `y` stays quiet
+    (
+        _deprecated_y,
+        (
+            "[R](x: CanAdd[Literal[1], R], y: None = None) -> R\n"
+            "@deprecated('y is deprecated')\n"
+            "[T: ~None, R](x: CanAdd[T, R], y: T) -> R\n"
+            "@deprecated('y is deprecated')\n"
+            "[T, R](x: T, y: CanRAdd[T, R] & ~None) -> R"
+        ),
+    ),
+    # both the forward and reflected overloads are marked
+    (
+        _deprecated_mul,  # pyright: ignore[reportDeprecated]  # pyrefly: ignore[deprecated]
+        (
+            "@deprecated('old op')\n"
+            "[T, R](x: CanMul[T, R], y: T) -> R\n"
+            "@deprecated('old op')\n"
+            "[T, R](x: T, y: CanRMul[T, R]) -> R"
+        ),
+    ),
+    # only the branch that raises is dropped; the surviving branch still infers
+    (_raise_if_falsy, "(x: CanBool) -> int"),
+]
+
+
+def _hasattr_try(x: Any) -> Any:
+    try:
+        x.value  # ruff: ignore[useless-expression]
+    except AttributeError:
+        return False
+    return True
+
+
+def _try_value(x: Any) -> Any:
+    try:
+        return x.value
+    except AttributeError:
+        return 0
+
+
+def _try_value_fallback(x: Any) -> Any:
+    try:
+        return x.value
+    except AttributeError:
+        x.fallback  # ruff: ignore[useless-expression]
+        return 0
+
+
+def _hasattr_then_b(x: Any) -> Any:
+    if hasattr(x, "a"):
+        _ = x.b
+        return True
+    return False
+
+
+# a presence-test on a single parameter's attribute may split into overloads
+DISPATCH_CASES: list[tuple[Callable[..., Any], str]] = [
+    # `hasattr` tolerates absence, so the attribute is not a requirement
+    (lambda x: hasattr(x, "a"), "(x: object) -> bool"),
+    # a `try`/`except AttributeError` that returns a bool is also a presence predicate
+    (_hasattr_try, "(x: object) -> bool"),
+    # the inverted polarity (`False` present, `True` absent) is still a bool predicate
+    (lambda x: not hasattr(x, "a"), "(x: object) -> bool"),
+    # the return ignores the attribute's value, so one overload with the unioned return
+    # of both branches covers it, rather than an `object` fallback
+    (lambda x: 1 if hasattr(x, "a") else 2, "(x: object) -> int"),
+    # a value dispatch keeps two overloads, but the fallback's return widens to a sound
+    # supertype of the present `R` (`object`), so the overloads no longer overlap
+    (
+        lambda x: getattr(x, "value", None),
+        "[R](x: Has['value', +R]) -> R\n(x: object) -> object",
+    ),
+    (_try_value, "[R](x: Has['value', +R]) -> R\n(x: object) -> object"),
+    # a directly-used attribute has no fallback, so its absent variant raises and is
+    # dropped; the attribute stays a hard requirement
+    (lambda x: x.a, "[R](x: Has['a', +R]) -> R"),
+    # `y.foo` is used in one branch of an unrelated fork, not dispatched on; forcing it
+    # absent completes via the other branch but leaves no tolerated-absence marker
+    (
+        lambda x, y: x if 0 in x else y.foo(),
+        "[T: CanContains[Literal[0]], R](x: T, y: Has['foo', () -> +R]) -> T | R",
+    ),
+    # two presence-tests on one parameter don't compose soundly, so the strict baseline
+    # (requiring both) is kept rather than overloads that resolve wrongly for mixed x
+    (
+        lambda x: (hasattr(x, "a"), hasattr(x, "b")),
+        "(x: Has['a'] & Has['b']) -> tuple[Literal[True], Literal[True]]",
+    ),
+    # a dispatch on a multi-parameter function isn't collapsed or widened (the fallback
+    # can't be rendered soundly without losing the other parameters), so the baseline
+    # stays; `y`'s own `a` is unaffected by forcing `x`'s `a` absent
+    (
+        lambda x, y: (hasattr(x, "a"), y.a),
+        "[R](x: Has['a'], y: Has['a', +R]) -> tuple[Literal[True], R]",
+    ),
+    # the absent branch derives its value from the parameter (`x.b`), so a widened
+    # fallback would orphan that typevar; the strict baseline is kept instead
+    (lambda x: hasattr(x, "a") or x.b, "(x: Has['a']) -> bool"),
+    # the `value` absence marker must not suppress the absent branch's `fallback` read
+    (
+        _try_value_fallback,
+        "[R](x: Has['value', +R]) -> R\n(x: Has['fallback']) -> object",
+    ),
+    # the present branch constrains the value (`+ 1`), so an `object` fallback would
+    # admit a `value` that cannot add; the sound baseline is kept
+    (
+        lambda x: getattr(x, "value", 0) + 1,
+        "[R](x: Has['value', +CanAdd[Literal[1], R]]) -> R",
+    ),
+    # the present branch also requires `b`, so widening to `object` would be unsound
+    (_hasattr_then_b, "(x: Has['a'] & Has['b']) -> bool"),
+]
+
+
+def _set_name(x: Any) -> object:
+    class C:
+        attr: Any = x
+
+    return C
+
+
+# builtins and method descriptors; their stubs name unparametrized generics or
+# CPython-internal types, so they render through compat but are not type-checked
+BUILTIN_CASES: list[tuple[Any, str]] = [
+    # an unbound method descriptor's `self` requires a real `__objclass__` instance
+    (str.upper, "(str) -> str"),
+    (int.bit_length, "(int) -> int"),
+    (float.hex, "(float) -> str"),
+    (list[Any].append, "(list, object) -> None"),
+    (object.__str__, "(object) -> str"),
+    (dict[Any, Any].get, "[T = None](dict, CanHash, T = None) -> T"),
+    # `memoryview()` is constructed from a spy through its `__buffer__`
+    (memoryview.tobytes, "(memoryview, order: str = 'C') -> bytes"),
+    # a defaulted parameter whose spy the function rejects passes its default
+    # instead, while the accepting parameters stay structural
+    (str.split, "(str, sep: None = None, maxsplit: CanIndex = -1) -> list[Never]"),
+    (bytes.decode, "(bytes, encoding: str = 'utf-8', errors: str = 'strict') -> str"),
+    # a rejected default widens to its type, both for the parameter and where the
+    # value flows on (the `format_spec` reaches `value.__format__`)
+    (format, "(CanFormat[str], str = '') -> str"),
+    # the pinned `self` is a spy class, which renders as its first non-spy base (#777)
+    (type.__or__, "(type, object) -> NotImplementedType"),
+    # a class-name-derived attribute simulates absence, so the fallback renders (#777)
+    (
+        ast.NodeVisitor.visit,
+        "[T, R](self: Has['generic_visit', (T) -> +R], node: T) -> R",
+    ),
+    # the metaclass `type` has no `inspect.signature`; the probe recovers its 1-argument
+    # form (the 3-argument metaclass call needs typed placeholders, out of scope)
+    (type, "[T](T) -> type[T]"),
+    (
+        range,
+        (
+            "(CanIndex) -> range\n"
+            "(CanIndex, CanIndex) -> range\n"
+            "(CanIndex, CanIndex, CanIndex) -> range"
+        ),
+    ),
+    (
+        slice,
+        (
+            "[T](T) -> slice[None, T, None]\n"
+            "[T, U](T, U) -> slice[T, U, None]\n"
+            "[T, U, V](T, U, V) -> slice[T, U, V]"
+        ),
+    ),
+    # an arity accepted all the way to the probe cap is rendered as `*args`
+    (min, "[T, U: CanLt[T | U, CanBool]](T, *args: U) -> U | T"),
+    # the iterable yields a pair, so the elements reach `__lt__` and the `key` result
+    # gets its own comparison constraint (#723)
+    (
+        sorted,
+        (
+            "[R: CanLt[R, CanBool]]"
+            "(CanIter[CanNext[R]], key: None = None, reverse: Literal[False] = False)"
+            " -> list[R]\n"
+            "[R: CanLt[R, CanBool]]"
+            "(CanIter[CanNext[R]], key: None = None, reverse: CanBool) -> list[R]\n"
+            "[T, R]"
+            "(CanIter[CanNext[R]], key: (R) -> T & CanLt[T, CanBool],"
+            " reverse: Literal[False] = False) -> list[R]\n"
+            "[T, R]"
+            "(CanIter[CanNext[R]], key: (R) -> T & CanLt[T, CanBool], reverse: CanBool)"
+            " -> list[R]"
+        ),
+    ),
+    # 2-arg `next` returns the value or the default on exhaustion
+    (next, "[R](CanNext[R]) -> R\n[T, R](CanNext[R], T) -> R | T"),
+    # 2-arg `anext` returns a coroutine resolving to the value or the default
+    (
+        anext,
+        (
+            "[R](CanANext[R]) -> R\n"
+            "[T, R](CanANext[CanAwait[R]], T) -> Coroutine[object, None, R | T]"
+        ),
+    ),
+    # the `callable_iterator` enrichment, independent of `iter`'s own docstring
+    (lambda f, s: iter(f, s), "[R](f: () -> R, s: object) -> Iterator[R]"),
+    # the callable is the first argument, not the sentinel: a non-spy callable can't
+    # be probed, so the element type is left opaque rather than blamed on the sentinel
+    (lambda s: iter(int, s), "(s: object) -> callable_iterator"),
+    (isinstance, "(object, CanInstancecheck | tuple[CanInstancecheck, ...]) -> bool"),
+    (issubclass, "(object, CanSubclasscheck | tuple[CanSubclasscheck, ...]) -> bool"),
+    # a `weakref.proxy` forwards `__class__`, so it must not be mistaken for a spy
+    (weakref.proxy, "(object) -> weakref.CallableProxyType"),
+    (_set_name, "(x: CanSetName[type, Literal['attr']]) -> type"),
+]
+
+
+# the corpus: every case also renders through compat and type-checks
 INFER_CASES: list[tuple[Callable[..., object], str]] = [
     *UNARY_CASES,
     *BINARY_CASES,
@@ -1029,17 +1669,22 @@ INFER_CASES: list[tuple[Callable[..., object], str]] = [
     *DEFAULT_CASES,
     *FUNCTION_CASES,
     *ITERATOR_CASES,
+    *RESULT_CASES,
+    *STATEMENT_CASES,
+    *DISPATCH_CASES,
     # a stdlib class renders module-qualified (#775)
     (abc.ABC, "() -> abc.ABC"),
 ]
 
+ALL_CASES: list[tuple[Any, str]] = [*INFER_CASES, *BUILTIN_CASES]
+
 
 @pytest.mark.parametrize(
     ("func", "expected"),
-    INFER_CASES,
-    ids=[f"{i}:{e.splitlines()[0]}" for i, (_, e) in enumerate(INFER_CASES)],
+    ALL_CASES,
+    ids=[f"{i}:{e.splitlines()[0]}" for i, (_, e) in enumerate(ALL_CASES)],
 )
-def test_infer(func: Callable[..., Any], expected: str) -> None:
+def test_infer(func: Any, expected: str) -> None:
     assert infer(func) == expected
 
 
@@ -1062,30 +1707,6 @@ def test_infer_select(
     expected: str,
 ) -> None:
     assert infer(func, *params) == expected
-
-
-def _str(x: Any) -> Any:
-    return str(x)
-
-
-def _repr(x: Any) -> Any:
-    return repr(x)
-
-
-def _bytes(x: Any) -> Any:
-    return bytes(x)
-
-
-@pytest.mark.parametrize(
-    ("func", "expected"),
-    [
-        (_str, "(x: CanStr) -> str"),
-        (_repr, "(x: CanRepr) -> str"),
-        (_bytes, "(x: CanBytes) -> bytes"),
-    ],
-)
-def test_stringify(func: Callable[[Any], Any], expected: str) -> None:
-    assert infer(func) == expected
 
 
 SUBTYPE_CASES: list[tuple[Any, Any, bool]] = [
@@ -1154,44 +1775,6 @@ def test_subtype(sub: Any, sup: Any, expected: bool) -> None:
     assert subtype(sub, sup) is expected
 
 
-def test_return_union_parenthesized() -> None:
-    # a union intersected with a typevar is parenthesized, also in return position
-    def f(x: Any) -> Any:
-        return [x[0], int(x[1])]
-
-    assert infer(f) == (
-        "[R](x: CanGetitem[Literal[0, 1], R & (CanInt | CanIndex)])"
-        " -> list[Literal[1] | R] | list[Literal[0] | R]"
-    )
-
-
-def test_keyword_only() -> None:
-    def f(x: Any, *, y: Any) -> Any:
-        return x[y]
-
-    assert infer(f) == "[T, R](x: CanGetitem[T, R], y: T) -> R"
-
-
-def test_callable_instance() -> None:
-    class Add1:
-        def __call__(self, x: Any) -> Any:
-            return x + 1
-
-    assert infer(Add1()) == "[R](x: CanAdd[Literal[1], R]) -> R"
-
-
-def test_method_descriptor() -> None:
-    # an unbound method descriptor's `self` requires a real `__objclass__` instance
-    assert infer(str.upper) == "(str) -> str"
-    assert infer(int.bit_length) == "(int) -> int"
-    assert infer(float.hex) == "(float) -> str"
-    assert infer(list[Any].append) == "(list, object) -> None"
-    assert infer(object.__str__) == "(object) -> str"
-    assert infer(dict[Any, Any].get) == "[T = None](dict, CanHash, T = None) -> T"
-    # `memoryview()` is constructed from a spy through its `__buffer__`
-    assert infer(memoryview.tobytes) == "(memoryview, order: str = 'C') -> bytes"
-
-
 # #739: a buffer-exporting spy reclaimed by cyclic GC may tear down its class MRO before
 # the held memoryview's `__release_buffer__` lookup. Dropping `__release_buffer__` from
 # the spy keeps the fabricated cycle below collecting silently on every supported
@@ -1201,7 +1784,7 @@ def test_method_descriptor() -> None:
 _BUFFER_GC_SCRIPT = """
 import gc, sys
 from optype.infer import infer
-from optype.infer._spy import _SpyObject, _TraceItem
+from optype.infer._spy import SpyObject, TraceItem
 
 captured = []
 sys.unraisablehook = lambda args: captured.append(args.err_msg)
@@ -1209,9 +1792,9 @@ sys.unraisablehook = lambda args: captured.append(args.err_msg)
 spies = []
 mv = None
 for _ in range(256):
-    spy = _SpyObject()
+    spy = SpyObject()
     mv = memoryview(spy)
-    spy.__optype_trace__.append(_TraceItem("hold", (mv,), {}, mv))
+    spy.__optype_trace__.append(TraceItem("hold", (mv,), {}, mv))
     spies.append(spy)
 del spies, mv
 gc.collect()
@@ -1484,9 +2067,7 @@ def test_drained_spies_freed(monkeypatch: pytest.MonkeyPatch) -> None:
     residue = [
         cls
         for cls in gc.get_objects()
-        if isinstance(cls, type)
-        and issubclass(cls, _SpyObject)
-        and cls is not _SpyObject
+        if isinstance(cls, type) and issubclass(cls, SpyObject) and cls is not SpyObject
     ]
     assert not residue
 
@@ -1514,15 +2095,15 @@ def test_collapse_recursive_reroll() -> None:
         TypeParam("W", link("T10", "T11")),  # the last copy points at the loop's exit
         *(TypeParam(leaf) for leaf in ("T7", "T8", "T9", "T10", "T11")),
     ]
-    params = [Param("x", Name("T"))]
-    folded, fparams, fret = collapse_recursive(type_params, params, Name("T"))
+    sig = Signature(tuple(type_params), (Param("x", Name("T")),), Name("T"))
+    folded = collapse_recursive(sig)
     # T, U, V, W collapse onto a single self-referential T; spent leaves are dropped
-    assert folded == [
+    assert folded.type_params == (
         TypeParam("T", App("CanAdd", (Name("U"), Name("T")))),
         TypeParam("U"),  # the surviving per-iteration leaf, renumbered gaplessly
-    ]
-    assert fparams == params
-    assert fret == Name("T")
+    )
+    assert folded.params == sig.params
+    assert folded.ret == Name("T")
 
 
 def test_collapse_recursive_keeps_short_runs() -> None:
@@ -1532,8 +2113,28 @@ def test_collapse_recursive_keeps_short_runs() -> None:
         TypeParam("U", App("CanAdd", (Name("T8"), Name("T9")))),
         *(TypeParam(leaf) for leaf in ("T7", "T8", "T9")),
     ]
-    folded, _, _ = collapse_recursive(type_params, [Param("x", Name("T"))], Name("T"))
-    assert folded == type_params
+    sig = Signature(tuple(type_params), (Param("x", Name("T")),), Name("T"))
+    assert collapse_recursive(sig) == sig
+
+
+def test_attribute_name_is_not_a_typevar() -> None:
+    # an attribute name is not a `Name`: distinct attributes are not alpha-equal, so
+    # a read chain is not folded as a loop
+    spam = Has("spam", (Name("T"),))
+    assert alpha_equal(spam, Has("ham", (Name("U"),))) is None
+    assert list(names(spam)) == ["T"]
+
+    def f(x: Any) -> Any:
+        a = x.spam
+        b = a.ham
+        c = b.eggs
+        d = c.bacon
+        return x, a, b, c, d
+
+    assert infer(f) == (
+        "[T: Has['spam', +R], R: Has['ham', +R2], R2: Has['eggs', +R3], "
+        "R3: Has['bacon', +R4], R4](x: T) -> tuple[T, R, R2, R3, R4]"
+    )
 
 
 # `Fraction.limit_denominator` calls `Fraction(self)`; only 3.14+ accepts a duck-typed
@@ -1560,59 +2161,12 @@ def test_wide_literal_union_capped() -> None:
     assert all(lit.count(",") < 8 for lit in re.findall(r"Literal\[([^\]]*)\]", out))
 
 
-def test_enum_literal() -> None:
-    # #776: an importable enum member renders as its member path, not its repr
-    status = http.HTTPStatus.NOT_FOUND
-    assert infer(lambda x: x == status) == (
-        "[R](x: CanEq[Literal[HTTPStatus.NOT_FOUND], R]) -> R"
-    )
-
-    def d(x: http.HTTPStatus = status) -> http.HTTPStatus:
-        return x
-
-    assert infer(d) == (
-        "[T = Literal[HTTPStatus.NOT_FOUND]](x: T = HTTPStatus.NOT_FOUND) -> T"
-    )
-
-
-def test_enum_literal_inexpressible() -> None:
-    # #776: a composite flag and a local enum fall back to their plain data value
+def test_enum_literal_local() -> None:
+    # #776: a local enum is not importable, so its member falls back to its data value
     class Color(enum.IntEnum):
         RED = 1
 
     assert infer(lambda x: x == Color.RED) == "[R](x: CanEq[Literal[1], R]) -> R"
-
-    flags = re.IGNORECASE | re.MULTILINE
-    assert infer(lambda x: x != flags) == "[R](x: CanNe[Literal[10], R]) -> R"
-
-
-def test_method_descriptor_fixed_defaults() -> None:
-    # a defaulted parameter whose spy the function rejects passes its default
-    # instead, while the accepting parameters stay structural
-    assert infer(str.split) == (
-        "(str, sep: None = None, maxsplit: CanIndex = -1) -> list[Never]"
-    )
-    assert infer(bytes.decode) == (
-        "(bytes, encoding: str = 'utf-8', errors: str = 'strict') -> str"
-    )
-    # a rejected default widens to its type, both for the parameter and where the
-    # value flows on (the `format_spec` reaches `value.__format__`)
-    assert infer(format) == "(CanFormat[str], str = '') -> str"
-
-
-def test_method_descriptor_unsupported() -> None:
-    # generators cannot be constructed, spy-rejecting parameters without a default
-    # have nothing to fall back on, and an empty `self` cannot always run
-    send = type(x for x in range(0)).send
-    # before 3.13, `generator.send` has no `inspect.signature` to explore at all
-    with pytest.raises(InferError, match=r"instantiate 'generator'|no signature"):
-        infer(send)
-    with pytest.raises(InferError, match="expected str instance"):
-        infer(str.join)
-    with pytest.raises(InferError, match="pop from empty list"):
-        infer(list[Any].pop)
-    with pytest.raises(InferError, match="dictionary is empty"):
-        infer(dict.popitem)
 
 
 def test_ternary_pow() -> None:
@@ -1631,391 +2185,6 @@ def test_ternary_pow() -> None:
             "[T, R, U = None](x: CanPow[T, U, R], y: T, z: U = None) -> R\n"
             "[T, R](x: T, y: CanRPow[T, R]) -> R"
         )
-
-
-def test_deprecated() -> None:
-    # a `@deprecated` callable's `DeprecationWarning` becomes an `@deprecated` marker
-    @deprecated("Use bar instead")
-    def foo(x: Any) -> Any:
-        return x + 1
-
-    assert infer(foo) == (  # pyright: ignore[reportDeprecated]
-        "@deprecated('Use bar instead')\n[R](x: CanAdd[Literal[1], R]) -> R"
-    )
-
-
-def test_deprecated_warn() -> None:
-    # a plain `warnings.warn(..., DeprecationWarning)` counts too
-    def foo(x: Any) -> Any:
-        warnings.warn("deprecated", DeprecationWarning, stacklevel=2)
-        return x + 1
-
-    assert infer(foo) == (
-        "@deprecated('deprecated')\n[R](x: CanAdd[Literal[1], R]) -> R"
-    )
-
-
-def test_deprecated_overload() -> None:
-    # only the call forms that raise the warning are marked: omitting `y` stays quiet
-    def foo(x: Any, y: Any = None) -> Any:
-        if y is None:
-            return x + 1
-        warnings.warn("y is deprecated", DeprecationWarning, stacklevel=2)
-        return x + y
-
-    assert infer(foo) == (
-        "[R](x: CanAdd[Literal[1], R], y: None = None) -> R\n"
-        "@deprecated('y is deprecated')\n"
-        "[T: ~None, R](x: CanAdd[T, R], y: T) -> R\n"
-        "@deprecated('y is deprecated')\n"
-        "[T, R](x: T, y: CanRAdd[T, R] & ~None) -> R"
-    )
-
-
-def test_deprecated_operator() -> None:
-    # both the forward and reflected overloads are marked
-    @deprecated("old op")
-    def foo(x: Any, y: Any) -> Any:
-        return x * y
-
-    assert infer(foo) == (  # pyright: ignore[reportDeprecated]
-        "@deprecated('old op')\n"
-        "[T, R](x: CanMul[T, R], y: T) -> R\n"
-        "@deprecated('old op')\n"
-        "[T, R](x: T, y: CanRMul[T, R]) -> R"
-    )
-
-
-def test_infer_with() -> None:
-    # a `with` statement requires `__enter__` and `__exit__` together, which is the
-    # combined `CanWith`; its unused `__exit__` result is unconstrained
-    def f(x: Any) -> Any:
-        with x as y:
-            return y
-
-    assert infer(f) == "[R](x: CanWith[R, object]) -> R"
-
-    def g(x: Any) -> Any:
-        with x as y:
-            return y + 1
-
-    assert infer(g) == "[R](x: CanWith[CanAdd[Literal[1], R], object]) -> R"
-
-    # a lone `__enter__` or `__exit__` does not imply the other, so it stays as-is
-    def enter_only(x: Any) -> Any:
-        x.__enter__()  # ruff: ignore[unnecessary-dunder-call]
-        return x
-
-    assert infer(enter_only) == "[T: CanEnter[object]](x: T) -> T"
-
-    def exit_only(x: Any) -> Any:
-        return x.__exit__(None, None, None)
-
-    assert infer(exit_only) == "(x: CanExit[None, None, None]) -> None"
-
-
-def test_infer_async() -> None:
-    # coroutine functions are driven to completion; await/async with/async for trace
-    async def aw(x: Any) -> Any:
-        return (await x) + 1
-
-    assert infer(aw) == "[R](x: CanAwait[CanAdd[Literal[1], R]]) -> R"
-
-    async def async_with(x: Any) -> Any:
-        async with x as y:
-            return y
-
-    # like `CanWith`, but its declared parameters are the awaited results
-    assert infer(async_with) == "[R](x: CanAsyncWith[R, object]) -> R"
-
-    async def aenter_only(x: Any) -> Any:
-        return await x.__aenter__()  # ruff: ignore[unnecessary-dunder-call]
-
-    assert infer(aenter_only) == "[R](x: CanAEnter[CanAwait[R]]) -> R"
-
-    async def aexit_only(x: Any) -> Any:
-        return await x.__aexit__(None, None, None)
-
-    assert infer(aexit_only) == "[R](x: CanAExit[None, None, None, CanAwait[R]]) -> R"
-
-    async def both(x: Any) -> Any:
-        with x:
-            async with x as y:
-                return y
-
-    assert infer(both) == (
-        "[R](x: CanWith[object, object] & CanAsyncWith[R, object]) -> R"
-    )
-
-    async def async_for(x: Any) -> Any:
-        async for item in x:
-            return item
-        return None
-
-    assert infer(async_for) == "[R](x: CanAIter[CanANext[CanAwait[R]]]) -> R"
-
-
-def test_infer_anext() -> None:
-    # 2-arg `anext` returns a coroutine resolving to the value or the default
-    assert infer(anext) == (
-        "[R](CanANext[R]) -> R\n"
-        "[T, R](CanANext[CanAwait[R]], T) -> Coroutine[object, None, R | T]"
-    )
-
-
-def test_infer_next_default() -> None:
-    # 2-arg `next` returns the value or the default on exhaustion
-    assert infer(next) == ("[R](CanNext[R]) -> R\n[T, R](CanNext[R], T) -> R | T")
-
-
-def test_infer_generator() -> None:
-    # generator expressions are lazy, so they are iterated to trace what they yield
-    def gen(xs: Any) -> Any:
-        return (x for x in xs)
-
-    assert infer(gen) == "[R](xs: CanIter[CanNext[R]]) -> Generator[R]"
-
-    def gen_add(xs: Any) -> Any:
-        return (x + 1 for x in xs)
-
-    assert infer(gen_add) == (
-        "[R](xs: CanIter[CanNext[CanAdd[Literal[1], R]]]) -> Generator[R]"
-    )
-
-    async def async_gen(xs: Any) -> Any:
-        return (x async for x in xs)
-
-    assert infer(async_gen) == (
-        "[R](xs: CanAIter[CanANext[CanAwait[R]]]) -> AsyncGenerator[R]"
-    )
-
-
-def test_inline_renumbers_survivors() -> None:
-    # `str`'s element is single-use and inlines away; the surviving `map(g, y)`
-    # typevar, first named `U`, must renumber to `T` to keep the parameters gapless
-    assert infer(lambda x, g, y: (map(str, x), map(g, y))) == (
-        "[T, R](x: CanIter[CanNext[CanStr]], g: (T) -> R, y: CanIter[CanNext[T]])"
-        " -> tuple[map[str], map[R]]"
-    )
-
-
-def test_infer_generator_yields() -> None:
-    # heterogeneous yields are sampled and unioned; an empty generator yields Never
-    def hetero() -> Any:
-        yield None
-        yield 1
-
-    assert infer(hetero) == "() -> Generator[None | int]"
-
-    def empty() -> Any:
-        yield from ()
-
-    assert infer(empty) == "() -> Generator[Never]"
-
-    # a yield whose type is a (nominal) subtype of another is absorbed into it
-    def nominal() -> Any:
-        yield True
-        yield 1
-
-    assert infer(nominal) == "() -> Generator[int]"
-
-    def raisable() -> Any:
-        yield FileNotFoundError()
-        yield OSError()
-
-    assert infer(raisable) == "() -> Generator[OSError]"
-
-    # user-defined subclass relations are recognized as well
-    class Base: ...
-
-    class Child(Base): ...
-
-    def custom() -> Any:
-        yield Child()
-        yield Base()
-
-    assert infer(custom) == "() -> Generator[Base]"
-
-    # an infinite generator terminates once a yield shape repeats, without exploding R
-    def loop(x: Any) -> Any:
-        while True:
-            yield x + 1
-
-    assert infer(loop) == "[R](x: CanAdd[Literal[1], R]) -> Generator[R]"
-
-
-def test_returned_function_default() -> None:
-    # a typevar default reaches through the returned function's body
-    assert infer(_fn_default) == "[T = Literal[0]](x: T = 0) -> () -> T"
-
-
-def test_returned_function_async() -> None:
-    # an inner coroutine function is driven to completion, like the outer one
-    async def make(x: Any) -> Any:  # ruff: ignore[unused-async]
-        async def inner(y: Any) -> Any:  # ruff: ignore[unused-async]
-            return (x, y)
-
-        return inner
-
-    assert infer(make) == "[T, U](x: T) -> (y: U) -> tuple[T, U]"
-
-
-def test_returned_function_mutual_recursion() -> None:
-    # mutually recursive functions terminate; the cycle stays opaque
-    def ping(x: Any) -> Any:  # ruff: ignore[unused-function-argument]
-        return pong
-
-    def pong(x: Any) -> Any:  # ruff: ignore[unused-function-argument]
-        return ping
-
-    assert infer(ping) == "(x: object) -> (x: object) -> FunctionType"
-
-
-def test_infer_empty_container() -> None:
-    # empty containers parametrize with `Never`; the empty tuple is `tuple[()]`
-    def returns(value: Any) -> Callable[[], Any]:
-        return lambda: value
-
-    assert infer(returns([])) == "() -> list[Never]"
-    assert infer(returns({})) == "() -> dict[Never, Never]"
-    assert infer(returns(())) == "() -> tuple[()]"
-    assert infer(returns(set())) == "() -> set[Never]"
-    assert infer(returns(frozenset())) == "() -> frozenset[Never]"
-    assert infer(returns([[]])) == "() -> list[list[Never]]"
-
-
-def test_infer_empty_container_union() -> None:
-    # an empty container is absorbed by a non-empty sibling, even when invariant
-    assert infer(lambda x: [None] if x else []) == "(x: CanBool) -> list[None]"
-    assert infer(lambda x: {None} if x else set()) == "(x: CanBool) -> set[None]"
-    assert infer(lambda x: {None: None} if x else {}) == (
-        "(x: CanBool) -> dict[None, None]"
-    )
-    # a non-empty invariant container is still not absorbed
-    assert infer(lambda x: [1] if x else ["1"]) == (
-        "(x: CanBool) -> list[Literal[1]] | list[Literal['1']]"
-    )
-
-
-def test_infer_ellipsis() -> None:
-    # the `...` value is `EllipsisType`, never its unusable `ellipsis` `__name__`
-    assert infer(lambda: ...) == "() -> EllipsisType"
-    assert infer(lambda x: (x, ...)) == "[T](x: T) -> tuple[T, EllipsisType]"
-    assert infer(lambda: [..., ...]) == "() -> list[EllipsisType]"
-
-
-def test_infer_types_aliases() -> None:
-    # render by the importable `types` name, not the cpython-internal `__name__`
-    assert infer(lambda: math) == "() -> ModuleType"
-    assert infer(lambda: (lambda: 0).__code__) == "() -> CodeType"
-    assert infer(lambda: currentframe()) == "() -> FrameType"
-    assert infer(lambda: type.__dict__["__dict__"]) == "() -> GetSetDescriptorType"
-    assert infer(lambda: MappingProxyType({"k": 1})) == (
-        "() -> MappingProxyType[Literal['k'], Literal[1]]"
-    )
-
-
-def test_infer_counter() -> None:
-    assert infer(lambda: Counter("ab")) == (
-        "() -> collections.Counter[Literal['a', 'b']]"
-    )
-    assert infer(lambda: Counter()) == "() -> collections.Counter[Never]"
-
-
-def test_infer_context() -> None:
-    # gh-769: a `Context` renders bare, and `Context()` takes no arguments
-    ctx = contextvars.copy_context()
-    assert infer(lambda: ctx) == "() -> contextvars.Context"
-
-    def f(cb: Any, flag: Any = None) -> None:  # ruff: ignore[unused-function-argument]
-        cb(context=contextvars.copy_context())
-
-    assert infer(f) == "(cb: (context: contextvars.Context) -> object) -> None"
-
-    if sys.version_info >= (3, 14):
-        with warnings.catch_warnings():
-            # exploring `asyncio.run` leaves never-awaited coroutines behind
-            warnings.simplefilter("ignore")
-            infer(asyncio.run)  # the gh-769 report; output varies by Python version
-    else:
-        # `asyncio.run` rejects the spy coroutine before any loop method is called
-        with pytest.raises(InferError, match="a coroutine was expected"):
-            infer(asyncio.run)
-
-
-def test_infer_defaultdict() -> None:
-    # gh-769: a mapping whose ctor does not take items keeps its explored value
-    d = defaultdict(int, a=1)
-    assert infer(lambda: d) == "() -> collections.defaultdict[Literal['a'], Literal[1]]"
-
-
-class _MyGeneric[T]: ...  # module-level, so its name resolves
-
-
-def test_infer_generic_alias() -> None:
-    # a subscripted generic denotes the type it spells, not its `GenericAlias` runtime
-    assert infer(lambda: list[int]) == "() -> type[list[int]]"
-    assert infer(lambda: dict[str, int]) == "() -> type[dict[str, int]]"
-    assert infer(lambda: tuple[int, ...]) == "() -> type[tuple[int, ...]]"
-    assert infer(lambda: list[int | None]) == "() -> type[list[int | None]]"
-    assert infer(lambda: list[dict[str, int]]) == "() -> type[list[dict[str, int]]]"
-    assert infer(lambda x: (x, list[int])) == "[T](x: T) -> tuple[T, type[list[int]]]"
-    # a user-defined generic (`typing._GenericAlias`) unwraps like a builtin one,
-    # qualified by the module it is importable from (#775)
-    generic = f"{_MyGeneric.__module__}._MyGeneric"
-    assert infer(lambda: _MyGeneric[int]) == f"() -> type[{generic}[int]]"
-    assert infer(lambda: list[_MyGeneric[int]]) == f"() -> type[list[{generic}[int]]]"
-
-
-def test_infer_generic_alias_union() -> None:
-    # a union has no `type[...]` form; `type[int | str]` means `type[int] | type[str]`
-    assert infer(lambda: int | str) == "() -> TypeForm[int | str]"
-    assert infer(lambda: int | None) == "() -> TypeForm[int | None]"
-
-
-def test_infer_generic_alias_callable() -> None:
-    # a `Callable` has no `type[...]` form either; `TypeForm` over the arrow form
-    assert infer(lambda: Callable[[int], str]) == "() -> TypeForm[(int) -> str]"
-    assert infer(lambda: Callable[..., str]) == "() -> TypeForm[(...) -> str]"
-    assert infer(lambda: list[Callable[[int], str]]) == (
-        "() -> type[list[(int) -> str]]"
-    )
-
-
-def test_infer_generic_alias_unnameable() -> None:
-    # an unnameable origin or argument keeps the unhelpful but honest `GenericAlias`
-    def make_builtin() -> Callable[[], Any]:
-        class Local: ...
-
-        return lambda: list[Local]
-
-    def make_callable() -> Callable[[], Any]:
-        class Local: ...
-
-        return lambda: Callable[[int], Local]
-
-    def make_user() -> Callable[[], Any]:
-        class Local: ...
-
-        return lambda: _MyGeneric[Local]
-
-    assert infer(make_builtin()) == "() -> types.GenericAlias"
-    assert infer(make_callable()) == "() -> types.GenericAlias"
-    assert infer(make_user()) == "() -> types.GenericAlias"
-
-
-type _AliasUnion = int | str
-type _AliasGeneric = list[int]
-type _AliasScalar = int
-
-
-def test_infer_type_alias() -> None:
-    # a `TypeAliasType` denotes the type it spells, like a generic alias does
-    assert infer(lambda: _AliasUnion) == "() -> TypeForm[int | str]"
-    assert infer(lambda: _AliasGeneric) == "() -> type[list[int]]"
-    assert infer(lambda: _AliasScalar) == "() -> type[int]"
-    # an alias nested in a generic unwraps recursively
-    assert infer(lambda: list[_AliasUnion]) == "() -> type[list[int | str]]"
 
 
 @pytest.mark.skipif(sys.version_info < (3, 15), reason="requires Python 3.15+")
@@ -2056,44 +2225,42 @@ def test_infer_sentinel() -> None:
     assert infer(g) == "(x: MISSING = MISSING) -> list[Never]\n[T: ~MISSING](x: T) -> T"
 
 
-def test_infer_ufunc() -> None:
+@pytest.mark.parametrize(
+    ("name", "expected"),
+    [
+        # a ufunc's dtype table gives the widest accepted kind per input
+        ("sin", "[R](x: CanArrayUFunc[np.ufunc, R] | ToComplexND) -> R"),
+        (
+            "add",
+            "[R](x1: CanArrayUFunc[np.ufunc, R] | ToComplexND, x2: ToComplexND) -> R",
+        ),
+        (
+            "hypot",
+            "[R](x1: CanArrayUFunc[np.ufunc, R] | ToFloatND, x2: ToFloatND) -> R",
+        ),
+        ("gcd", "[R](x1: CanArrayUFunc[np.ufunc, R] | ToIntND, x2: ToIntND) -> R"),
+        # `ldexp(mantissa: float, exponent: int)`: a different widest dtype per input
+        ("ldexp", "[R](x1: CanArrayUFunc[np.ufunc, R] | ToFloatND, x2: ToIntND) -> R"),
+        # NEP-18 functions (`np.mean`, `np.strings.upper`, ...) dispatch via
+        # `__array_function__`; the func type's arity tracks the required positionals
+        ("mean", "[R](a: CanArrayFunction[(Any) -> R, R]) -> R"),
+        ("sum", "[R](a: CanArrayFunction[(Any) -> R, R]) -> R"),
+        ("outer", "[R](a: CanArrayFunction[(Any, Any) -> R, R], b: object) -> R"),
+    ],
+)
+def test_infer_numpy(name: str, expected: str) -> None:
     np = pytest.importorskip("numpy")
-    assert infer(np.sin) == "[R](x: CanArrayUFunc[np.ufunc, R] | ToComplexND) -> R"
-    assert infer(np.add) == (
-        "[R](x1: CanArrayUFunc[np.ufunc, R] | ToComplexND, x2: ToComplexND) -> R"
-    )
-    assert infer(np.hypot) == (
-        "[R](x1: CanArrayUFunc[np.ufunc, R] | ToFloatND, x2: ToFloatND) -> R"
-    )
-    assert infer(np.gcd) == (
-        "[R](x1: CanArrayUFunc[np.ufunc, R] | ToIntND, x2: ToIntND) -> R"
-    )
-    # ldexp(mantissa: float, exponent: int) — different widest dtype per input
-    assert infer(np.ldexp) == (
-        "[R](x1: CanArrayUFunc[np.ufunc, R] | ToFloatND, x2: ToIntND) -> R"
-    )
+    assert infer(getattr(np, name)) == expected
 
 
 def test_infer_ufunc_in_function() -> None:
     np = pytest.importorskip("numpy")
 
-    # a ufunc inside a traced function → override path only (spy's `__array_ufunc__`)
+    # a ufunc inside a traced function only reaches the spy's `__array_ufunc__`
     def f(x: Any) -> Any:
         return np.sin(x)
 
     assert infer(f) == "[R](x: CanArrayUFunc[np.ufunc, R]) -> R"
-
-
-def test_infer_array_function() -> None:
-    np = pytest.importorskip("numpy")
-    # NEP-18 functions (np.mean, np.strings.upper, ...) dispatch via __array_function__
-    sig = "[R](a: CanArrayFunction[(Any) -> R, R]) -> R"
-    assert infer(np.mean) == sig
-    assert infer(np.sum) == sig
-    # the func type's arity tracks the required positional params (a, b)
-    assert infer(np.outer) == (
-        "[R](a: CanArrayFunction[(Any, Any) -> R, R], b: object) -> R"
-    )
 
 
 def render_node(node: Node) -> str:
@@ -2430,6 +2597,10 @@ _COMPAT_DIVERGENT = frozenset({
     # a generic the inference left unparametrized (reportMissingTypeArgument)
     "[T]() -> (dict, CanHash, T = None) -> T",
     "() -> functools.partial",
+    # a class local to this test module, which the isolated stub cannot import
+    f"() -> type[{__name__}._MyGeneric[int]]",
+    f"() -> type[list[{__name__}._MyGeneric[int]]]",
+    f"() -> Generator[{__name__}._Base]",
 })
 
 
@@ -2437,7 +2608,7 @@ def test_compat_renders_corpus() -> None:
     # every terse case must lower and print without error
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", InferWarning)
-        for func, terse in INFER_CASES:
+        for func, terse in ALL_CASES:
             assert infer(func, backend="compat"), terse
 
 
@@ -2469,48 +2640,6 @@ def test_unknown_param(selector: str | int) -> None:
         infer(abs, selector)
 
 
-def test_variadic_exhausted() -> None:
-    # placeholder growth is bounded; running out reports cleanly
-    with pytest.raises(InferError, match="placeholder"):
-        infer(lambda *args: args[10_000])
-
-
-def test_fixed_unpack_beyond_default_unsupported() -> None:
-    # an iterator yields two by default, so a 3+ target unpack can't be satisfied
-    def f(x: Any) -> Any:
-        a, b, c = x
-        return a, b, c
-
-    with pytest.raises(InferError):
-        infer(f)
-
-
-def test_mixed_star_unpack() -> None:
-    # two star unpackings of different fixed arities can't share one budget
-    def f(a: Any, b: Any) -> Any:
-        return divmod(*a), _takes3(*b)  # type: ignore[misc]
-
-    with pytest.raises(InferError):
-        infer(f)
-
-
-def test_star_unpack_no_budget_leak() -> None:
-    # star-unpack's grown budget (here 3) must not leak to `sum(z)`; `z` alone keeps
-    # the default yield of 2, so its `CanAdd` chain stays one level deep (#683, #686)
-    assert infer(lambda x, z: (_takes3(*x), sum(z))) == (
-        "[T: CanRAdd[Literal[0], CanAdd[T, R2]], R, R2]"
-        "(x: CanIter[CanNext[R]], z: CanIter[CanNext[T]]) -> tuple[R, R2]\n"
-        "[R, R2]"
-        "(x: CanIter[CanNext[R]], z: CanIter[CanNext[CanRAdd[Literal[0] | R2, R2]]])"
-        " -> tuple[R, R2]"
-    )
-
-
-def test_star_unpack_gap_arity() -> None:
-    # a star-unpack into a 9-ary call hits a budget the old sparse range skipped (#683)
-    assert infer(lambda x: _takes9(*x)) == "[R](x: CanIter[CanNext[R]]) -> R"
-
-
 def test_args_and_star_unpack() -> None:
     # `*args` and a growable star-unpack coexist: each grows its own budget instead of
     # the `*args` retry starving the star-unpack of yields (#683)
@@ -2520,50 +2649,6 @@ def test_args_and_star_unpack() -> None:
     sig = infer(f)
     assert "CanDivmod" in sig
     assert "CanRDivmod" in sig
-
-
-def test_star_unpack_error_not_masked() -> None:
-    # a non-arity error from a star-unpack target must surface as-is, not buried under
-    # a bogus "got N args" after needlessly climbing the whole yield budget (#683)
-    def picky(_a: Any) -> Any:
-        raise ValueError("domain error")
-
-    with pytest.raises(InferError, match="domain error"):
-        infer(lambda x: picky(*x))
-
-
-def test_variadic_mixed() -> None:
-    def f(x: Any, *args: Any, **kwargs: Any) -> Any:
-        return (x, args, kwargs)
-
-    assert infer(f) == (
-        "[T, *Ts, U](x: T, *args: *Ts, **kwargs: U)"
-        " -> tuple[T, tuple[*Ts], dict[str, U]]"
-    )
-
-
-def test_fork_explosion() -> None:
-    # exploration is budgeted: a function that forks on every run raises (timely)
-    # instead of exhaustively walking all 2**100 decision paths. Distinct `x[i]` spies
-    # each fork independently, since one spy's `bool` is stable per run.
-    def f(x: Any) -> Any:
-        for i in range(100):
-            bool(x[i])
-        return x
-
-    with pytest.raises(InferError, match="completion"):
-        infer(f)
-
-
-@pytest.mark.parametrize(
-    "choose",
-    [random.choice, secrets.choice],  # ruff: ignore[suspicious-non-cryptographic-random-usage]
-    ids=["random", "secrets"],
-)
-def test_infer_choice_does_not_hang(choose: Callable[..., Any]) -> None:
-    # issue #667: a consistent `len()` keeps random's empty-range loop unreachable
-    with pytest.raises(InferError):
-        infer(choose)
 
 
 def _budget_exhausting(x: Any) -> Any:
@@ -2591,195 +2676,6 @@ def test_strict_silent_when_complete() -> None:
         warnings.simplefilter("error", InferWarning)
         result = infer(lambda x: x + 1, strict=True)
     assert result == "[R](x: CanAdd[Literal[1], R]) -> R"
-
-
-def test_gap_message_and_dedup() -> None:
-    gap = _Gap(GapKind.RUN_BUDGET, "(x)")
-    assert gap.message() == "run budget exhausted in (x)"
-    # frozen and slotted, so equal gaps collapse in a set
-    assert len({gap, _Gap(GapKind.RUN_BUDGET, "(x)")}) == 1
-
-
-def test_dispatch_hasattr_collapses_to_object() -> None:
-    # `hasattr` tolerates absence, so the attribute is not a requirement
-    assert infer(lambda x: hasattr(x, "a")) == "(x: object) -> bool"
-
-
-def test_dispatch_try_except_bool_collapses_to_object() -> None:
-    # a `try`/`except AttributeError` that returns a bool is also a presence predicate
-    def f(x: Any) -> Any:
-        try:
-            x.value  # ruff: ignore[useless-expression]
-        except AttributeError:
-            return False
-        return True
-
-    assert infer(f) == "(x: object) -> bool"
-
-
-def test_dispatch_negated_predicate_collapses_to_object() -> None:
-    # the inverted polarity (`False` present, `True` absent) is still a bool predicate
-    assert infer(lambda x: not hasattr(x, "a")) == "(x: object) -> bool"
-
-
-def test_dispatch_presence_independent_return_collapses() -> None:
-    # the return ignores the attribute's value, so one overload with the unioned return
-    # of both branches covers it, rather than an `object` fallback
-    assert infer(lambda x: 1 if hasattr(x, "a") else 2) == "(x: object) -> int"
-
-
-def test_dispatch_getattr_default_widens_fallback() -> None:
-    # a value dispatch keeps two overloads, but the fallback's return widens to a sound
-    # supertype of the present `R` (`object`), so the overloads no longer overlap
-    def f(x: Any) -> Any:
-        return getattr(x, "value", None)
-
-    assert infer(f) == "[R](x: Has['value', +R]) -> R\n(x: object) -> object"
-
-
-def test_dispatch_try_except_value_widens_fallback() -> None:
-    def f(x: Any) -> Any:
-        try:
-            return x.value
-        except AttributeError:
-            return 0
-
-    assert infer(f) == "[R](x: Has['value', +R]) -> R\n(x: object) -> object"
-
-
-def test_dispatch_required_attribute_unchanged() -> None:
-    # a directly-used attribute has no fallback, so its absent variant raises and is
-    # dropped; the attribute stays a hard requirement
-    assert infer(lambda x: x.a) == "[R](x: Has['a', +R]) -> R"
-
-
-def test_dispatch_conditional_use_no_overload() -> None:
-    # `y.foo` is used in one branch of an unrelated fork, not dispatched on; forcing it
-    # absent completes via the other branch but leaves no tolerated-absence marker
-    def f(x: Any, y: Any) -> Any:
-        return x if 0 in x else y.foo()
-
-    assert infer(f) == (
-        "[T: CanContains[Literal[0]], R](x: T, y: Has['foo', () -> +R]) -> T | R"
-    )
-
-
-def test_dispatch_independent_dispatches_keep_baseline() -> None:
-    # two presence-tests on one parameter don't compose soundly, so the strict baseline
-    # (requiring both) is kept rather than overloads that resolve wrongly for mixed x
-    def f(x: Any) -> Any:
-        return hasattr(x, "a"), hasattr(x, "b")
-
-    assert infer(f) == (
-        "(x: Has['a'] & Has['b']) -> tuple[Literal[True], Literal[True]]"
-    )
-
-
-def test_dispatch_multi_parameter_keeps_baseline() -> None:
-    # a dispatch on a multi-parameter function isn't collapsed or widened (the fallback
-    # can't be rendered soundly without losing the other parameters), so the baseline
-    # stays; `y`'s own `a` is unaffected by forcing `x`'s `a` absent
-    def f(x: Any, y: Any) -> Any:
-        return hasattr(x, "a"), y.a
-
-    assert infer(f) == ("[R](x: Has['a'], y: Has['a', +R]) -> tuple[Literal[True], R]")
-
-
-def test_dispatch_value_from_parameter_keeps_baseline() -> None:
-    # the absent branch derives its value from the parameter (`x.b`), so a widened
-    # fallback would orphan that typevar; the strict baseline is kept instead
-    def f(x: Any) -> Any:
-        return hasattr(x, "a") or x.b
-
-    assert infer(f) == "(x: Has['a']) -> bool"
-
-
-def test_dispatch_fallback_keeps_unconditional_requirement() -> None:
-    # the `value` absence marker must not suppress the absent branch's `fallback` read
-    def f(x: Any) -> Any:
-        try:
-            return x.value
-        except AttributeError:
-            x.fallback  # ruff: ignore[useless-expression]
-            return 0
-
-    assert infer(f) == "[R](x: Has['value', +R]) -> R\n(x: Has['fallback']) -> object"
-
-
-def test_dispatch_value_capability_keeps_baseline() -> None:
-    # the present branch constrains the value (`+ 1`), so an `object` fallback would
-    # admit a `value` that cannot add; the sound baseline is kept
-    def f(x: Any) -> Any:
-        return getattr(x, "value", 0) + 1
-
-    assert infer(f) == "[R](x: Has['value', +CanAdd[Literal[1], R]]) -> R"
-
-
-def test_dispatch_present_extra_requirement_keeps_baseline() -> None:
-    # the present branch also requires `b`, so widening to `object` would be unsound
-    def f(x: Any) -> Any:
-        if hasattr(x, "a"):
-            _ = x.b
-            return True
-        return False
-
-    assert infer(f) == "(x: Has['a'] & Has['b']) -> bool"
-
-
-def test_dispatch_no_budget_warning_for_plain_reads() -> None:
-    # reading many attributes is not a dispatch, so it must not trip the dispatch budget
-    def f(x: Any) -> Any:
-        return x.a, x.b, x.c, x.d, x.e, x.f, x.g, x.h, x.i
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")
-        assert isinstance(infer(f), str)
-    assert isinstance(infer(f, strict=True), str)
-
-
-def test_dispatch_multi_parameter_no_budget_warning() -> None:
-    # a multi-parameter function never dispatches, so attribute reads cannot truncate
-    def f(x: Any, y: Any) -> Any:
-        return x.a, x.b, x.c, x.d, x.e, x.f, x.g, x.h, x.i, y
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")
-        assert isinstance(infer(f), str)
-
-
-def test_target_exception_skipped() -> None:
-    # a non-protocol error from the target marks a failed run; it never escapes
-    def f(x: Any) -> None:  # ruff: ignore[unused-function-argument]
-        raise AssertionError
-
-    with pytest.raises(InferError, match="completion") as excinfo:
-        infer(f)
-    assert isinstance(excinfo.value.__cause__, AssertionError)
-
-
-def test_target_exception_cause() -> None:
-    # when no run completes, the target's last exception is chained as the cause
-    with pytest.raises(InferError, match="completion") as excinfo:
-        infer(lambda: 0 / 0)
-    assert isinstance(excinfo.value.__cause__, ZeroDivisionError)
-
-
-def test_target_exception_partial() -> None:
-    # only the branch that raises is dropped; the surviving branch still infers
-    def f(x: Any) -> int:
-        if not x:
-            raise ZeroDivisionError
-        return 1
-
-    assert infer(f) == "(x: CanBool) -> int"
-
-
-def test_large_tuple_widens() -> None:
-    # a long concrete tuple (like `random.getstate`) widens instead of listing literals
-    def f() -> tuple[int, ...]:
-        return tuple(range(50))
-
-    assert infer(f) == "() -> tuple[int, ...]"
 
 
 def test_union_tuple_collapse() -> None:
@@ -2817,110 +2713,12 @@ def test_union_tuple_collapse() -> None:
     assert rendered([*wide, variadic], tuples=True) == f"{wide2} | tuple[V, ...]"
 
 
-def test_self_referential_result() -> None:
-    # a cyclic result is a recursive type, tied off with a self-bounded typevar
-    def f() -> list[object]:
-        a: list[object] = []
-        a.append(a)
-        return a
-
-    assert infer(f) == "[R: list[R]]() -> R"
-
-
-def test_self_referential_result_nested() -> None:
-    # the cycle is detected by identity through any depth of intermediate containers
-    def f() -> list[object]:
-        a: list[object] = []
-        b: list[object] = [a]
-        a.append(b)
-        return a
-
-    assert infer(f) == "[R: list[list[R]]]() -> R"
-
-
-def test_self_referential_result_mixed() -> None:
-    # a recursive container alongside a parameter and a result typevar
-    def f(x: Any) -> list[object]:
-        a: list[object] = []
-        a.extend((a, x + 1))
-        return a
-
-    assert infer(f) == "[R, R2: list[R2 | R]](x: CanAdd[Literal[1], R]) -> R2"
-
-
-def test_self_referential_result_defaulted() -> None:
-    # PEP 696: the defaultless recursive typevar must precede the defaulted one
-    def f(x: Any = 1) -> list[object]:
-        a: list[object] = []
-        a.extend((a, x))
-        return a
-
-    assert infer(f) == "[R: list[R | T], T = Literal[1]](x: T = 1) -> R"
-
-
-def test_deeply_nested_result() -> None:
-    # a finite result too deep for the call stack is reported, not crashed on
-    def f() -> list[object]:
-        x: list[object] = []
-        for _ in range(sys.getrecursionlimit() * 2):
-            x = [x]
-        return x
-
-    with pytest.raises(InferError, match="deeply"):
-        infer(f)
-
-
-def test_structural_dedup() -> None:
-    # every forked run re-derives `a = x * 2` and then `a + 1` / `a + 2`; the fresh
-    # placeholders for these repeated subexpressions collapse onto one type parameter
-    # each, not one per run (which is what made e.g. `colorsys.hls_to_rgb` explode)
-    def f(x: Any) -> object:
-        a = x * 2
-        return (a + 1) if x else (a + 2) if a else a
-
-    assert infer(f) == (
-        "[R, R2: CanBool](x: CanMul[Literal[2], R2 & CanAdd[Literal[1, 2], R]"
-        " & CanBool] & CanBool) -> R | R2"
-    )
-
-
-def test_dedup_different_operands() -> None:
-    # `x[y]` and `x[z]` share an op-shape, so they collapse onto one return typevar
-    def f(x: Any, y: Any, z: Any) -> object:
-        return x[y] if x else x[z]
-
-    assert infer(f) == "[T, U, R](x: CanBool & CanGetitem[T | U, R], y: T, z: U) -> R"
-
-    # merged results may be traced (`.foo`), which the old untraced-only guard blocked
-    def g(x: Any, y: Any, z: Any) -> object:
-        p = x[y] if x else x[z]
-        return p.foo
-
-    assert infer(g) == (
-        "[T, U, R](x: CanBool & CanGetitem[T | U, Has['foo', +R]], y: T, z: U) -> R"
-    )
-
-
-def test_not_callable() -> None:
-    not_callable: Any = 42
-    with pytest.raises(InferError, match="not a callable"):
-        infer(not_callable)
-
-
 @pytest.mark.skipif(sys.version_info < (3, 14), reason="requires PEP 649 annotations")
 def test_unresolvable_deferred_annotations() -> None:
     # deferred annotations that don't resolve must not fail the signature (#768)
     ns: dict[str, Any] = {}
     exec("def f(x: Undefined = 42) -> Undefined: return x", ns)  # ruff: ignore[exec-builtin]
     assert infer(ns["f"]) == "[T = Literal[42]](x: T = 42) -> T"
-
-
-def test_iter() -> None:
-    # the callable_iterator enrichment, independent of `iter`'s own docstring
-    assert infer(lambda f, s: iter(f, s)) == "[R](f: () -> R, s: object) -> Iterator[R]"
-    # the callable is the first argument, not the sentinel: a non-spy callable can't
-    # be probed, so the element type is left opaque rather than blamed on the sentinel
-    assert infer(lambda s: iter(int, s)) == "(s: object) -> callable_iterator"
 
 
 def test_builtin_without_signature() -> None:
@@ -2935,33 +2733,6 @@ def test_builtin_without_signature() -> None:
     assert infer(iter) == "[R](CanIter[R]) -> R\n[R](() -> R, object) -> Iterator[R]"
 
 
-def test_builtin_type() -> None:
-    # the metaclass `type` has no `inspect.signature`; the probe recovers its 1-argument
-    # form (the 3-argument metaclass call needs typed placeholders, out of scope)
-    assert infer(type) == "[T](T) -> type[T]"
-
-
-def test_builtin_range() -> None:
-    assert infer(range) == (
-        "(CanIndex) -> range\n"
-        "(CanIndex, CanIndex) -> range\n"
-        "(CanIndex, CanIndex, CanIndex) -> range"
-    )
-
-
-def test_builtin_slice() -> None:
-    assert infer(slice) == (
-        "[T](T) -> slice[None, T, None]\n"
-        "[T, U](T, U) -> slice[T, U, None]\n"
-        "[T, U, V](T, U, V) -> slice[T, U, V]"
-    )
-
-
-def test_builtin_variadic() -> None:
-    # an arity accepted all the way to the probe cap is rendered as `*args`
-    assert infer(min) == "[T, U: CanLt[T | U, CanBool]](T, *args: U) -> U | T"
-
-
 def _text_candidates(text: str, *, bound: bool = False) -> list[str] | None:
     func: Any = SimpleNamespace(__text_signature__=text)
     if bound:
@@ -2972,51 +2743,52 @@ def _text_candidates(text: str, *, bound: bool = False) -> list[str] | None:
     return [str(PySignature(list(c.values()))) for c in parsed]
 
 
-def test_text_signature_groups() -> None:
-    # the legacy find-family grammar: each optional group level is a candidate (#646)
-    assert _text_candidates("($self, sub[, start[, end]], /)") == [
-        "(self, sub, /)",
-        "(self, sub, start, /)",
-        "(self, sub, start, end, /)",
-    ]
+@pytest.mark.parametrize(
+    ("text", "bound", "expected"),
+    [
+        # the legacy find-family grammar: each optional group level is a candidate
+        # (#646)
+        (
+            "($self, sub[, start[, end]], /)",
+            False,
+            ["(self, sub, /)", "(self, sub, start, /)", "(self, sub, start, end, /)"],
+        ),
+        # a bound callable's `$` parameter is not part of the call signature
+        (
+            "($module, aiterator, default=<unrepresentable>, /)",
+            True,
+            ["(aiterator, /)", "(aiterator, default, /)"],
+        ),
+        # omitting an unrepresentable default forces later parameters to keyword-only
+        (
+            "($self, /, sep=<unrepresentable>, bytes_per_sep=1)",
+            False,
+            ["(self, /, *, bytes_per_sep=1)", "(self, /, sep, bytes_per_sep=1)"],
+        ),
+        # a leading (curses-style) group shifts the positional arity instead
+        (
+            "([y, x,] ch[, attr])",
+            False,
+            ["(ch)", "(ch, attr)", "(y, x, ch)", "(y, x, ch, attr)"],
+        ),
+        # literal defaults, `*args`, keyword-only, and `**kwargs` parse as-is
+        (
+            "($self, /, x=0, *args, key, **kwargs)",
+            False,
+            ["(self, /, x=0, *args, key, **kwargs)"],
+        ),
+    ],
+)
+def test_text_signature(text: str, bound: bool, expected: list[str]) -> None:
+    assert _text_candidates(text, bound=bound) == expected
 
 
-def test_text_signature_bound() -> None:
-    # a bound callable's `$` parameter is not part of the call signature
-    assert _text_candidates(
-        "($module, aiterator, default=<unrepresentable>, /)",
-        bound=True,
-    ) == ["(aiterator, /)", "(aiterator, default, /)"]
-
-
-def test_text_signature_omitted_default() -> None:
-    # omitting an unrepresentable default forces later parameters to keyword-only
-    assert _text_candidates("($self, /, sep=<unrepresentable>, bytes_per_sep=1)") == [
-        "(self, /, *, bytes_per_sep=1)",
-        "(self, /, sep, bytes_per_sep=1)",
-    ]
-
-
-def test_text_signature_leading_group() -> None:
-    # a leading (curses-style) group shifts the positional arity instead
-    assert _text_candidates("([y, x,] ch[, attr])") == [
-        "(ch)",
-        "(ch, attr)",
-        "(y, x, ch)",
-        "(y, x, ch, attr)",
-    ]
-
-
-def test_text_signature_kinds() -> None:
-    # literal defaults, `*args`, keyword-only, and `**kwargs` parse as-is
-    assert _text_candidates("($self, /, x=0, *args, key, **kwargs)") == [
-        "(self, /, x=0, *args, key, **kwargs)",
-    ]
-
-
-def test_text_signature_invalid() -> None:
-    for text in ("no parens", "(unclosed", "(a[, b)", "(a, a)", "(a, $b)", "(=1)"):
-        assert _text_candidates(text) is None, text
+@pytest.mark.parametrize(
+    "text",
+    ["no parens", "(unclosed", "(a[, b)", "(a, a)", "(a, $b)", "(=1)"],
+)
+def test_text_signature_invalid(text: str) -> None:
+    assert _text_candidates(text) is None
 
 
 def _skip_if_signature(func: Any) -> None:
@@ -3074,214 +2846,247 @@ def test_functools_reduce() -> None:
         )
 
 
-def test_builtin_sorted() -> None:
-    # the iterable yields a pair, so the elements reach `__lt__` and the `key` result
-    # carries its own comparison constraint (#723)
-    assert infer(sorted) == (
-        "[R: CanLt[R, CanBool]]"
-        "(CanIter[CanNext[R]], key: None = None, reverse: Literal[False] = False)"
-        " -> list[R]\n"
-        "[R: CanLt[R, CanBool]]"
-        "(CanIter[CanNext[R]], key: None = None, reverse: CanBool) -> list[R]\n"
-        "[T, R]"
-        "(CanIter[CanNext[R]], key: (R) -> T & CanLt[T, CanBool],"
-        " reverse: Literal[False] = False) -> list[R]\n"
-        "[T, R]"
-        "(CanIter[CanNext[R]], key: (R) -> T & CanLt[T, CanBool], reverse: CanBool)"
-        " -> list[R]"
-    )
+def test_infer_asyncio_run() -> None:
+    if sys.version_info >= (3, 14):
+        with warnings.catch_warnings():
+            # exploring `asyncio.run` leaves never-awaited coroutines behind
+            warnings.simplefilter("ignore")
+            infer(asyncio.run)  # the gh-769 report; output varies by Python version
+    else:
+        # `asyncio.run` rejects the spy coroutine before any loop method is called
+        with pytest.raises(InferError, match="a coroutine was expected"):
+            infer(asyncio.run)
 
 
-def test_builtin_typed_argument() -> None:
-    # `getattr` needs a real `str` name that an object spy cannot supply, so no arity
-    # explores and it raises rather than inferring a bogus signature
-    with pytest.raises(InferError):
-        infer(getattr)
+@pytest.mark.parametrize(
+    "func",
+    [
+        lambda x: (x.a, x.b, x.c, x.d, x.e, x.f, x.g, x.h, x.i),
+        lambda x, y: (x.a, x.b, x.c, x.d, x.e, x.f, x.g, x.h, x.i, y),
+    ],
+    ids=["single", "multi"],
+)
+def test_dispatch_no_budget_warning(func: Callable[..., Any]) -> None:
+    # reading many attributes is not a dispatch, so it must not trip the dispatch
+    # budget; a multi-parameter function never dispatches, so it cannot truncate either
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        assert isinstance(infer(func, strict=True), str)
 
 
-def test_dynamic_attr_name() -> None:
+def _unpack_triple(x: Any) -> Any:
+    a, b, c = x
+    return a, b, c
+
+
+def _mixed_star_unpack(a: Any, b: Any) -> Any:
+    return divmod(*a), _takes3(*b)  # type: ignore[misc]
+
+
+def _picky(_a: Any) -> Any:
+    raise ValueError("domain error")
+
+
+def _fork_explosion(x: Any) -> Any:
+    for i in range(100):
+        bool(x[i])
+    return x
+
+
+def _deep_result() -> list[object]:
+    x: list[object] = []
+    for _ in range(sys.getrecursionlimit() * 2):
+        x = [x]
+    return x
+
+
+class _Exiter:
+    def __call__(self, code: int = 0) -> None:
+        raise SystemExit(code)
+
+
+ERROR_CASES: list[tuple[Any, str]] = [
+    (42, "not a callable"),
+    # generators cannot be constructed; before 3.13, `generator.send` has no
+    # `inspect.signature` to explore at all
+    (GeneratorType.send, r"instantiate 'generator'|no signature"),
+    # a spy-rejecting parameter without a default has nothing to fall back on
+    (str.join, "expected str instance"),
+    # an empty `self` cannot always run
+    (list[Any].pop, "pop from empty list"),
+    (dict.popitem, "dictionary is empty"),
+    # `getattr` needs a real `str` name that an object spy cannot supply, so it raises
+    # rather than inferring a bogus signature; some 3.12 builds have a text signature
+    # for it, and then the run itself fails instead of the signature lookup
+    (getattr, r"no signature|attribute name must be string"),
     # a spy-derived attribute name is not statically known
-    with pytest.raises(InferError, match="no protocol"):
-        infer(lambda x, y: getattr(x, str(y)))
+    (lambda x, y: getattr(x, str(y)), "no protocol"),
+    # placeholder growth is bounded; running out reports cleanly
+    (lambda *args: args[10_000], "placeholder"),
+    # an iterator yields two by default, so a 3+ target unpack can't be satisfied
+    (_unpack_triple, "expected 3, got 2"),
+    # two star unpackings of different fixed arities can't share one budget
+    (_mixed_star_unpack, "divmod expected 2 arguments"),
+    # a non-arity error from a star-unpack target must surface as-is, not buried under
+    # a bogus "got N args" after needlessly climbing the whole yield budget (#683)
+    (lambda x: _picky(*x), "domain error"),
+    # exploration is budgeted: a function that forks on every run raises (timely)
+    # instead of exhaustively walking all 2**100 decision paths. Distinct `x[i]` spies
+    # each fork independently, since one spy's `bool` is stable per run.
+    (_fork_explosion, "completion"),
+    # issue #667: a consistent `len()` keeps random's empty-range loop unreachable
+    (random.choice, "empty sequence"),  # ruff: ignore[suspicious-non-cryptographic-random-usage]
+    (secrets.choice, "empty sequence"),
+    # a finite result too deep for the call stack is reported, not crashed on
+    (_deep_result, "deeply"),
+    # a SystemExit during a run is a rejected run, like any other raise, not a leak
+    (_Exiter(), "completion"),
+]
 
 
-def test_dynamic_attr_name_class_name() -> None:
-    # a class-name-derived attribute simulates absence, so the fallback renders (#777)
-    assert infer(ast.NodeVisitor.visit) == (
-        "[T, R](self: Has['generic_visit', (T) -> +R], node: T) -> R"
-    )
-    assert "_Spy" not in infer(pydoc.TextRepr.repr1)
+@pytest.mark.parametrize(
+    ("func", "match"),
+    ERROR_CASES,
+    ids=[f"{i}:{match}" for i, (_, match) in enumerate(ERROR_CASES)],
+)
+def test_infer_error(func: Any, match: str) -> None:
+    with pytest.raises(InferError, match=match):
+        infer(func)
 
 
-def test_fixed_self_spy_class() -> None:
-    # the pinned `self` is a spy class, which renders as its first non-spy base (#777)
-    assert infer(type.__or__) == "(type, object) -> NotImplementedType"
+def _raise_assertion(x: Any) -> None:  # ruff: ignore[unused-function-argument]
+    raise AssertionError
 
 
-def test_deprecated_spy_identity() -> None:
-    # a message naming the spy's class substitutes the target's owner instead (#777)
+@pytest.mark.parametrize(
+    ("func", "cause"),
+    [(_raise_assertion, AssertionError), (lambda: 0 / 0, ZeroDivisionError)],  # pyrefly: ignore[division-by-zero]
+    ids=["assertion", "zero-division"],
+)
+def test_infer_error_cause(func: Callable[..., Any], cause: type[Exception]) -> None:
+    # a non-protocol error from the target marks a failed run and never escapes; when
+    # no run completes, the target's last exception is chained as the cause
+    with pytest.raises(InferError, match="completion") as excinfo:
+        infer(func)
+    assert isinstance(excinfo.value.__cause__, cause)
+
+
+def test_no_spy_identity_leak() -> None:
+    # a spy's class name never reaches the output (#777): a class-name-derived
+    # attribute simulates absence, and a message naming the spy's class substitutes
+    # the target's owner instead
+    assert "Spy" not in infer(pydoc.TextRepr.repr1)
+
     class Legacy:
         def old(self) -> None:
             name = f"{self.__class__.__module__}.{self.__class__.__qualname__}"
             warnings.warn(f"{name}.old()", DeprecationWarning, stacklevel=2)
 
     out = infer(Legacy.old)
-    assert "_Spy" not in out
+    assert "Spy" not in out
     deprecated = f"@deprecated('{Legacy.__module__}.{Legacy.__qualname__}.old()')"
     assert out.splitlines()[0] == deprecated
 
 
-def test_instance_subclass_check() -> None:
-    # isinstance/issubclass recurse into a tuple classinfo, so the param widens (#716)
-    assert infer(lambda x: isinstance(0, x)) == (
-        "(x: CanInstancecheck | tuple[CanInstancecheck, ...]) -> bool"
-    )
-    assert infer(lambda x: issubclass(int, x)) == (
-        "(x: CanSubclasscheck | tuple[CanSubclasscheck, ...]) -> bool"
-    )
-    assert infer(lambda x, y: isinstance(y, x)) == (
-        "(x: CanInstancecheck | tuple[CanInstancecheck, ...], y: object) -> bool"
-    )
-    assert infer(lambda x, y: issubclass(y, x)) == (
-        "(x: CanSubclasscheck | tuple[CanSubclasscheck, ...], y: object) -> bool"
-    )
-
-
-def test_instance_subclass_check_builtin() -> None:
-    assert infer(isinstance) == (
-        "(object, CanInstancecheck | tuple[CanInstancecheck, ...]) -> bool"
-    )
-    assert infer(issubclass) == (
-        "(object, CanSubclasscheck | tuple[CanSubclasscheck, ...]) -> bool"
-    )
-
-
-def test_instance_check_no_overwiden() -> None:
-    # a returned classinfo is a typevar (no widening); `in`/`len` do not distribute
-    assert (
-        infer(
-            lambda x, y: y.foo() if (isinstance(y, x) and not isinstance(y, x)) else x,
-        )
-        == "[T: CanInstancecheck](x: T, y: object) -> T"
-    )
-    assert infer(lambda x: 0 in x) == "(x: CanContains[Literal[0]]) -> bool"
-    assert infer(lambda x: len(x)) == "(x: CanLen) -> int"
-
-
-def _set_name(x: Any) -> object:
-    class C:
-        attr: Any = x
-
-    return C
-
-
-def test_set_name() -> None:
-    assert infer(_set_name) == "(x: CanSetName[type, Literal['attr']]) -> type"
-
-
-def test_weakref_proxy() -> None:
-    # a `weakref.proxy` forwards `__class__`, so it must not be mistaken for a spy
-    assert infer(weakref.proxy) == "(object) -> weakref.CallableProxyType"
-
-
-def _run_cli(*args: str) -> subprocess.CompletedProcess[str]:
+def _run_cli(*args: str, **env: str) -> subprocess.CompletedProcess[str]:
+    # the color variables are inherited from the developer's shell, so reset them
+    base = {k: v for k, v in os.environ.items() if k not in {"NO_COLOR", "FORCE_COLOR"}}
     return subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
         [sys.executable, *args],
         capture_output=True,
         text=True,
         check=False,
+        env=base | env,
     )
 
 
-def test_cli_module() -> None:
-    out = _run_cli("-m", "optype.infer", "lambda x: x + 1")
-    assert out.returncode == 0
-    assert out.stdout.strip() == "[R](x: CanAdd[Literal[1], R]) -> R"
+_ADD1 = "[R](x: CanAdd[Literal[1], R]) -> R"
+_ADD1_COMPAT = (
+    "from typing import Literal\n"
+    "from optype import CanAdd\n\n"
+    "def f[R](x: CanAdd[Literal[1], R]) -> R: ..."
+)
 
-
-def test_cli_subcommand() -> None:
-    out = _run_cli("-m", "optype", "infer", "lambda x: x * 2")
-    assert out.returncode == 0
-    assert out.stdout.strip() == "[R](x: CanMul[Literal[2], R]) -> R"
-
-
-def test_cli_format_compat() -> None:
-    out = _run_cli("-m", "optype.infer", "--format", "compat", "lambda x: x + 1")
-    assert out.returncode == 0
-    assert out.stdout.strip() == (
-        "from typing import Literal\n"
-        "from optype import CanAdd\n\n"
-        "def f[R](x: CanAdd[Literal[1], R]) -> R: ..."
-    )
-
-
-def test_cli_selector_negative_position() -> None:
+CLI_CASES: list[tuple[tuple[str, ...], str]] = [
+    (("-m", "optype.infer", "lambda x: x + 1"), _ADD1),
+    (
+        ("-m", "optype", "infer", "lambda x: x * 2"),
+        "[R](x: CanMul[Literal[2], R]) -> R",
+    ),
+    (("-m", "optype.infer", "--format", "compat", "lambda x: x + 1"), _ADD1_COMPAT),
     # a bare `-1` is a parameter position, not a flag; this is why the trailing
     # arguments are parsed as `argparse.REMAINDER`
-    out = _run_cli("-m", "optype.infer", "lambda x, y: x + y", "-1")
+    (
+        ("-m", "optype.infer", "lambda x, y: x + y", "-1"),
+        "[T, R](y: T) -> R\n[T, R](y: CanRAdd[T, R]) -> R",
+    ),
+    # a trailing def/class is inferred directly, without a closing name reference
+    (
+        ("-m", "optype", "infer", "def f(x, y): return x @ y"),
+        "[T, R](x: CanMatmul[T, R], y: T) -> R\n[T, R](x: T, y: CanRMatmul[T, R]) -> R",
+    ),
+    (
+        ("-m", "optype", "infer", "def f(x=0): return x"),
+        "[T = Literal[0]](x: T = 0) -> T",
+    ),
+    (
+        ("-m", "optype", "infer", "lambda *args: args"),
+        "[*Ts](*args: *Ts) -> tuple[*Ts]",
+    ),
+    (
+        ("-m", "optype", "infer", "lambda x: lambda y: (x, y)"),
+        "[T, U](x: T) -> (y: U) -> tuple[T, U]",
+    ),
+    # a signatureless builtin is recovered by the arity probe instead of erroring out
+    (("-m", "optype", "infer", "type"), "[T](T) -> type[T]"),
+]
+
+
+@pytest.mark.parametrize(
+    ("args", "expected"),
+    CLI_CASES,
+    ids=[" ".join(args) for args, _ in CLI_CASES],
+)
+def test_cli(args: tuple[str, ...], expected: str) -> None:
+    out = _run_cli(*args)
     assert out.returncode == 0
-    assert out.stdout.splitlines() == [
-        "[T, R](y: T) -> R",
-        "[T, R](y: CanRAdd[T, R]) -> R",
-    ]
+    assert out.stdout.strip() == expected
 
 
-def test_cli_format_invalid() -> None:
-    out = _run_cli("-m", "optype.infer", "--format", "json", "lambda x: x")
+@pytest.mark.parametrize(
+    ("expr", "error"),
+    [
+        # infer's own limitations exit cleanly, instead of with a traceback
+        ("lambda x, y: getattr(x, str(y))", "InferError: no protocol"),
+        # a callable that raises SystemExit when probed errors cleanly, not silently
+        ("exit", "InferError:"),
+        ("quit", "InferError:"),
+    ],
+)
+def test_cli_infer_error(expr: str, error: str) -> None:
+    out = _run_cli("-m", "optype", "infer", expr)
+    assert out.returncode == 1
+    assert out.stderr.startswith(error)
+
+
+@pytest.mark.parametrize(
+    ("flag", "choices"),
+    [("--format", ["terse", "compat"]), ("--color", ["auto", "always", "never"])],
+)
+def test_cli_invalid_choice(flag: str, choices: list[str]) -> None:
+    out = _run_cli("-m", "optype.infer", flag, "json", "lambda x: x")
     assert out.returncode != 0
     # only the last line, since argparse wraps the usage above it to the terminal
     error = out.stderr.strip().splitlines()[-1]
     # py3.12 renders the choices bare, py3.13+ quotes them
     assert "invalid choice: 'json'" in error
-    assert "terse" in error
-    assert "compat" in error
-
-
-def test_cli_def() -> None:
-    # a trailing def/class is inferred directly, without a closing name reference
-    out = _run_cli("-m", "optype", "infer", "def f(x, y): return x @ y")
-    assert out.returncode == 0
-    assert out.stdout.strip() == (
-        "[T, R](x: CanMatmul[T, R], y: T) -> R\n[T, R](x: T, y: CanRMatmul[T, R]) -> R"
-    )
-
-
-def test_cli_default() -> None:
-    out = _run_cli("-m", "optype", "infer", "def f(x=0): return x")
-    assert out.returncode == 0
-    assert out.stdout.strip() == "[T = Literal[0]](x: T = 0) -> T"
-
-
-def test_cli_variadic() -> None:
-    out = _run_cli("-m", "optype", "infer", "lambda *args: args")
-    assert out.returncode == 0
-    assert out.stdout.strip() == "[*Ts](*args: *Ts) -> tuple[*Ts]"
-
-
-def test_cli_returned_function() -> None:
-    out = _run_cli("-m", "optype", "infer", "lambda x: lambda y: (x, y)")
-    assert out.returncode == 0
-    assert out.stdout.strip() == "[T, U](x: T) -> (y: U) -> tuple[T, U]"
-
-
-def test_cli_builtin() -> None:
-    # a signatureless builtin is recovered by the arity probe instead of erroring out
-    out = _run_cli("-m", "optype", "infer", "type")
-    assert out.returncode == 0
-    assert out.stdout.strip() == "[T](T) -> type[T]"
+    assert all(choice in error for choice in choices)
 
 
 def test_cli_usage() -> None:
     out = _run_cli("-m", "optype")
     assert out.returncode == 1
     assert "usage" in out.stderr.lower()
-
-
-def test_cli_infer_error() -> None:
-    # infer's own limitations exit cleanly, instead of with a traceback
-    out = _run_cli("-m", "optype", "infer", "lambda x, y: getattr(x, str(y))")
-    assert out.returncode == 1
-    assert out.stderr.startswith("InferError: no protocol")
 
 
 def test_cli_warns_on_stderr() -> None:
@@ -3293,97 +3098,40 @@ def test_cli_warns_on_stderr() -> None:
     assert "incomplete exploration" in out.stderr
 
 
-def test_cli_exit() -> None:
-    # a callable that raises SystemExit when probed errors cleanly, not silently
-    out = _run_cli("-m", "optype", "infer", "exit")
-    assert out.returncode == 1
-    assert out.stderr.startswith("InferError:")
-
-
-def test_cli_quit() -> None:
-    out = _run_cli("-m", "optype", "infer", "quit")
-    assert out.returncode == 1
-    assert out.stderr.startswith("InferError:")
-
-
-def test_infer_systemexit() -> None:
-    # a SystemExit during a run is a rejected run, like any other raise, not a leak
-    class _Exiter:
-        def __call__(self, code: int = 0) -> None:
-            raise SystemExit(code)
-
-    with pytest.raises(InferError):
-        infer(_Exiter())
-
-
 _ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 
-
-def _run_cli_env(*args: str, **env: str) -> subprocess.CompletedProcess[str]:
-    base = {k: v for k, v in os.environ.items() if k not in {"NO_COLOR", "FORCE_COLOR"}}
-    return subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
-        [sys.executable, *args],
-        capture_output=True,
-        text=True,
-        check=False,
-        env=base | env,
-    )
-
-
-def test_cli_color_off_when_piped() -> None:
+# (arguments, environment, whether the output is colored, the output without color)
+COLOR_CASES: list[tuple[tuple[str, ...], dict[str, str], bool, str]] = [
     # a pipe is not a tty, so the default auto mode stays plain
-    out = _run_cli("-m", "optype.infer", "lambda x: x + 1")
+    (("lambda x: x + 1",), {}, False, _ADD1),
+    (("lambda x: x + 1",), {"FORCE_COLOR": "1"}, True, _ADD1),
+    (("--color", "always", "lambda x: x + 1"), {}, True, _ADD1),
+    (("--color", "never", "lambda x: x + 1"), {"FORCE_COLOR": "1"}, False, _ADD1),
+    (("lambda x: x",), {"NO_COLOR": "1", "FORCE_COLOR": "1"}, False, "[T](x: T) -> T"),
+    (
+        ("--format", "compat", "lambda x: x + 1"),
+        {"FORCE_COLOR": "1"},
+        True,
+        _ADD1_COMPAT,
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    ("args", "env", "colored", "expected"),
+    COLOR_CASES,
+    ids=[" ".join([*args, *env]) for args, env, _, _ in COLOR_CASES],
+)
+def test_cli_color(
+    args: tuple[str, ...],
+    env: dict[str, str],
+    colored: bool,
+    expected: str,
+) -> None:
+    out = _run_cli("-m", "optype.infer", *args, **env)
     assert out.returncode == 0
-    assert "\x1b[" not in out.stdout
-
-
-def test_cli_color_force() -> None:
-    out = _run_cli_env("-m", "optype.infer", "lambda x: x + 1", FORCE_COLOR="1")
-    assert out.returncode == 0
-    assert "\x1b[" in out.stdout
-    assert _ANSI_RE.sub("", out.stdout).strip() == "[R](x: CanAdd[Literal[1], R]) -> R"
-
-
-def test_cli_color_always_flag() -> None:
-    out = _run_cli("-m", "optype.infer", "--color", "always", "lambda x: x + 1")
-    assert out.returncode == 0
-    assert "\x1b[" in out.stdout
-
-
-def test_cli_color_never_beats_force() -> None:
-    args = ("-m", "optype.infer", "--color", "never", "lambda x: x + 1")
-    out = _run_cli_env(*args, FORCE_COLOR="1")
-    assert out.returncode == 0
-    assert "\x1b[" not in out.stdout
-
-
-def test_cli_no_color_beats_force() -> None:
-    args = ("-m", "optype.infer", "lambda x: x")
-    out = _run_cli_env(*args, NO_COLOR="1", FORCE_COLOR="1")
-    assert out.returncode == 0
-    assert "\x1b[" not in out.stdout
-
-
-def test_cli_color_compat() -> None:
-    args = ("-m", "optype.infer", "--format", "compat", "lambda x: x + 1")
-    out = _run_cli_env(*args, FORCE_COLOR="1")
-    assert out.returncode == 0
-    assert "\x1b[" in out.stdout
-    assert _ANSI_RE.sub("", out.stdout).strip() == (
-        "from typing import Literal\n"
-        "from optype import CanAdd\n\n"
-        "def f[R](x: CanAdd[Literal[1], R]) -> R: ..."
-    )
-
-
-def test_cli_color_invalid() -> None:
-    out = _run_cli("-m", "optype.infer", "--color", "json", "lambda x: x")
-    assert out.returncode != 0
-    error = out.stderr.strip().splitlines()[-1]
-    assert "invalid choice: 'json'" in error
-    assert "auto" in error
-    assert "always" in error
-    assert "never" in error
+    assert ("\x1b[" in out.stdout) is colored
+    assert _ANSI_RE.sub("", out.stdout).strip() == expected
 
 
 class _Tty(io.StringIO):

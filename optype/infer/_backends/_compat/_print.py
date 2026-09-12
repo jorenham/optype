@@ -1,8 +1,8 @@
 """Emit valid Python text from the lowered model, collecting imports as it goes.
 
-A `_Printer` records every name it references, so the import block needs no second
-traversal. The module-level `_type` and `_member_key` discard that record: the lowerer
-uses them to build canonical dedup keys, not output.
+A `Printer` records every name it references, so the import block needs no second
+traversal. The module-level `type_text` and `member_key` discard that record: the
+lowerer uses them to build canonical dedup keys, not output.
 """
 
 import builtins
@@ -14,11 +14,9 @@ from typing import Literal, final
 
 # `from . import _ir` would re-enter this package
 import optype.infer._ir as _ir  # ruff: ignore[manual-from-import]
-from ._model import _Alias, _Attr, _Func, _Member, _Method, _Protocol
+from ._model import Alias, Attr, Member, Method, ProtocolDef
 from optype._core import _can, _has, _just
 from optype.infer._backends._base import qualified_default_text, qualified_value_text
-
-__all__ = "_OPTYPE", "_Printer", "_import_of", "_member_key", "_type"
 
 _ABC = frozenset({
     "Callable",
@@ -33,7 +31,7 @@ _ABC = frozenset({
 })
 _TYPING = frozenset({"Any", "ClassVar", "Literal", "Never", "Protocol", "overload"})
 _TYPING_EXT = frozenset({"TypeForm", "deprecated"})
-_OPTYPE = frozenset(_can.__all__) | frozenset(_has.__all__) | frozenset(_just.__all__)
+OPTYPE = frozenset(_can.__all__) | frozenset(_has.__all__) | frozenset(_just.__all__)
 
 type _Prefix = Literal["", "*"]
 
@@ -47,7 +45,7 @@ def _optype_numpy() -> frozenset[str]:
     return frozenset(onp.__all__)  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
 
 
-def _import_of(name: str) -> tuple[str, str | None] | None:  # ruff: ignore[too-many-return-statements]
+def import_of(name: str) -> tuple[str, str | None] | None:  # ruff: ignore[too-many-return-statements]
     """The `(module, member)` an importable `name` comes from, or `None` for none.
 
     A `None` member means the module is imported whole, as in `import numpy as np`.
@@ -63,7 +61,7 @@ def _import_of(name: str) -> tuple[str, str | None] | None:  # ruff: ignore[too-
         return "typing", name
     if name in _TYPING_EXT:
         return "typing_extensions", name
-    if name in _OPTYPE:
+    if name in OPTYPE:
         return "optype", name
     if name in _optype_numpy():
         return "optype.numpy", name
@@ -105,7 +103,7 @@ def _default_mask(params: Sequence[_ir.Param]) -> list[bool]:
 
 
 @final
-class _Printer:
+class Printer:
     """Render the lowered model as Python text, recording the names it references."""
 
     _used: set[str]  # every referenced name, for the import block
@@ -152,7 +150,7 @@ class _Printer:
                 return " | ".join(self.render_node(part) for part in parts)
             case _ir.Unpack(part):
                 return f"*{self.render_node(part)}"
-            case _:  # an Intersection/Not/Variance survived lowering, which is a bug
+            case _:  # a Has/Intersection/Not/Variance survived lowering, which is a bug
                 msg = f"cannot render {node!r} as valid Python"
                 raise AssertionError(msg)
 
@@ -222,8 +220,8 @@ class _Printer:
 
         return _join_params(items)
 
-    def _member_text(self, member: _Member, *, overload: bool) -> str:
-        if isinstance(member, _Attr):
+    def _member_text(self, member: Member, *, overload: bool) -> str:
+        if isinstance(member, Attr):
             if member.classvar:
                 self.record("ClassVar")
                 return f"    {member.name}: ClassVar[{self.render_node(member.type)}]"
@@ -240,7 +238,7 @@ class _Printer:
         ret = self.render_node(member.ret)
         return f"{head}    def {member.name}({self_sig}) -> {ret}: ..."
 
-    def protocol_text(self, proto: _Protocol) -> str:
+    def protocol_text(self, proto: ProtocolDef) -> str:
         self.record("Protocol")
         bases = ", ".join([*(self.render_node(b) for b in proto.bases), "Protocol"])
         head = f"class {proto.name}{self.type_params(proto.type_params)}({bases}):"
@@ -250,16 +248,16 @@ class _Printer:
         for m in proto.members:
             counts[m.name] += 1
         body = "\n".join(
-            self._member_text(m, overload=isinstance(m, _Method) and counts[m.name] > 1)
+            self._member_text(m, overload=isinstance(m, Method) and counts[m.name] > 1)
             for m in proto.members
         )
         return f"{head}\n{body}"
 
-    def alias_text(self, alias: _Alias) -> str:
+    def alias_text(self, alias: Alias) -> str:
         value = self.render_node(alias.value)
         return f"type {alias.name}{self.type_params(alias.type_params)} = {value}"
 
-    def func_text(self, func: _Func) -> str:
+    def func_text(self, func: _ir.Signature) -> str:
         head = ""
         if func.deprecated is not None:
             self.record("deprecated")
@@ -276,7 +274,7 @@ class _Printer:
         groups: dict[str, set[str]] = {}
         whole: set[str] = set()
         for name in self._used - locals_ - typevars:
-            if (found := _import_of(name)) is None:
+            if (found := import_of(name)) is None:
                 continue
             module_name, member = found
             if member is None:
@@ -295,14 +293,14 @@ class _Printer:
         return "\n".join(lines)
 
 
-def _type(node: _ir.Node) -> str:
+def type_text(node: _ir.Node) -> str:
     """A node's canonical text, for dedup keys; the recorded names are discarded."""
-    return _Printer().render_node(node)
+    return Printer().render_node(node)
 
 
-def _member_key(member: _Member) -> str:
-    if isinstance(member, _Attr):
+def member_key(member: Member) -> str:
+    if isinstance(member, Attr):
         flags = f"{member.classvar}{member.readonly}"
-        return f"{member.name}:{flags}:{_type(member.type)}"
-    params = _Printer().call_params(member.params)
-    return f"{member.name}:{params}->{_type(member.ret)}"
+        return f"{member.name}:{flags}:{type_text(member.type)}"
+    params = Printer().call_params(member.params)
+    return f"{member.name}:{params}->{type_text(member.ret)}"
