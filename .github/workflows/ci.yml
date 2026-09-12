@@ -61,19 +61,12 @@ jobs:
       fail-fast: false
       matrix:
         py: ["3.12", "3.14"]
-        np: ["2.0", "2.1", "2.2", "2.3", "2.4", "2.5"]
-        exclude:
-          - py: "3.13"
-            np: "2.0"
-          - py: "3.14"
-            np: "2.0"
-          - py: "3.14"
-            np: "2.1"
-          - py: "3.14"
-            np: "2.2"
+        np: ["2.3", "2.4", "2.5"]
         include:
-          - py: "3.15"
-            np: "2.5"
+          - {py: "3.12", np: "2.0"}
+          - {py: "3.12", np: "2.1"}
+          - {py: "3.12", np: "2.2"}
+          - {py: "3.15", np: "2.5"}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -114,16 +107,11 @@ jobs:
       matrix:
         os: [ubuntu, windows]
         py: ["3.12", "3.13", "3.14"]
-        np: ["2.0", "2.4", "2.5"]
-        exclude:
-          - py: "3.13"
-            np: "2.0"
-          - py: "3.14"
-            np: "2.0"
+        np: ["2.4", "2.5"]
         include:
-          - os: ubuntu
-            py: "3.15"
-            np: "2.5"
+          - {os: ubuntu, py: "3.12", np: "2.0"}
+          - {os: windows, py: "3.12", np: "2.0"}
+          - {os: ubuntu, py: "3.15", np: "2.5"}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
