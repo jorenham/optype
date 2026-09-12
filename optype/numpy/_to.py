@@ -497,7 +497,7 @@ else:
 
         def wrap(key: str, ann: _BeartypeValidator) -> None:
             if key in globals():
-                globals()[key] = Ann[globals()[key], ann]  # ty:ignore[invalid-type-form]
+                globals()[key] = Ann[globals()[key], ann]  # pyrefly:ignore[invalid-annotation] # ty:ignore[invalid-type-form]
 
         for name, sct in [
             ("Bool", np.bool),
