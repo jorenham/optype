@@ -10,7 +10,7 @@ from inspect import Parameter
 from itertools import chain
 from typing import Any, NamedTuple, NewType, TypeGuard
 
-from ._spy import _Spy, _SpyObject, _Traces
+from ._spy import Spy, SpyObject, Traces
 
 VARIADIC_KINDS = frozenset({Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD})
 
@@ -25,8 +25,8 @@ class GapKind(StrEnum):
 class Exploration(NamedTuple):
     """What one exploration of a function against spy placeholders produced."""
 
-    spies: Mapping[str, _SpyObject]
-    traces: _Traces
+    spies: Mapping[str, SpyObject]
+    traces: Traces
     results: Sequence[object]
     var_count: int  # the `*args` placeholder count
     fixed: Mapping[str, object]  # parameters passed as-is, not spies
@@ -39,7 +39,7 @@ class Exploration(NamedTuple):
 
 
 @dataclass(frozen=True, slots=True)
-class _Gen:
+class Gen:
     """An explored generator, iterator, or coroutine result, e.g. `Generator[R]`."""
 
     yielded: Sequence[object]
@@ -47,38 +47,38 @@ class _Gen:
     bare_when_empty: bool = False
 
 
-# the `_Gen.kind` of an awaited coroutine, rendered as `Coroutine[object, None, R]`
+# the `Gen.kind` of an awaited coroutine, rendered as `Coroutine[object, None, R]`
 COROUTINE = "Coroutine"
 
 
 @dataclass(frozen=True, slots=True)
-class _FnResult:
+class FnResult:
     """An explored function result, rendered in signature syntax."""
 
     params: Mapping[str, Parameter]
-    spies: Mapping[str, _SpyObject]
+    spies: Mapping[str, SpyObject]
     fixed: Mapping[str, object]
     defaults: Mapping[str, object]
     results: Sequence[object]
 
 
-# the shared identity of a recursive `_Rec` binder and its `_RecRef` uses
-_RecVar = NewType("_RecVar", object)
+# the shared identity of a recursive `Rec` binder and its `RecRef` uses
+RecVar = NewType("RecVar", object)
 
 
 @dataclass(frozen=True, slots=True)
-class _Rec:
+class Rec:
     """A result that reaches itself, rendered as a recursive typevar bound."""
 
-    var: _RecVar  # the identity shared with this binder's `_RecRef` uses
+    var: RecVar  # the identity shared with this binder's `RecRef` uses
     body: Any
 
 
 @dataclass(frozen=True, slots=True)
-class _RecRef:
-    """A reference to the enclosing `_Rec` binder of the same `var`."""
+class RecRef:
+    """A reference to the enclosing `Rec` binder of the same `var`."""
 
-    var: _RecVar
+    var: RecVar
 
 
 def is_mapping(value: object, /) -> TypeGuard[Mapping[Any, Any]]:
@@ -86,20 +86,20 @@ def is_mapping(value: object, /) -> TypeGuard[Mapping[Any, Any]]:
     return isinstance(value, Mapping) and not isinstance(value, Context)
 
 
-def _children(value: Any) -> Iterable[Any]:
+def children(value: Any) -> Iterable[Any]:
     """The values directly contained in an explored result."""
-    if isinstance(value, _Spy):
+    if isinstance(value, Spy):
         # a spy is a leaf; its unique class defeats the `Mapping` check's negative cache
         return ()
 
     match value:
-        case _Gen():
+        case Gen():
             out: Iterable[object] = value.yielded
-        case _FnResult():
+        case FnResult():
             out = value.results
-        case _Rec():
+        case Rec():
             out = (value.body,)
-        case _RecRef():
+        case RecRef():
             out = ()
         case tuple() | list() | set() | frozenset():
             out = value
@@ -112,33 +112,33 @@ def _children(value: Any) -> Iterable[Any]:
     return out
 
 
-def _walk(value: object) -> Generator[object]:
+def walk(value: object) -> Generator[object]:
     yield value
-    for child in _children(value):
-        yield from _walk(child)
+    for child in children(value):
+        yield from walk(child)
 
 
 def map_values(value: Any, leaf: Callable[[Any], Any]) -> Any:  # ruff: ignore[complex-structure, too-many-branches]
     """Rebuild `value` with each non-composite leaf replaced via `leaf`.
 
-    Recurses into the same shapes as `_children`, but a `tuple` subclass (namedtuple)
+    Recurses into the same shapes as `children`, but a `tuple` subclass (namedtuple)
     is a leaf, and a `dict` subclass (e.g. `defaultdict`) collapses to a plain `dict`.
     """
 
-    if isinstance(value, _Spy):
-        # a spy is a leaf; see `_children`
+    if isinstance(value, Spy):
+        # a spy is a leaf; see `children`
         return leaf(value)
 
     match value:
-        case _Gen():
+        case Gen():
             yielded = [map_values(item, leaf) for item in value.yielded]
             out = replace(value, yielded=yielded)
-        case _FnResult():
+        case FnResult():
             results = [map_values(item, leaf) for item in value.results]
             out = replace(value, results=results)
-        case _Rec():
+        case Rec():
             out = replace(value, body=map_values(value.body, leaf))
-        case _RecRef():
+        case RecRef():
             out = value
         case tuple() if type(value) is tuple:
             out = tuple(map_values(item, leaf) for item in value)
@@ -171,8 +171,8 @@ def map_values(value: Any, leaf: Callable[[Any], Any]) -> Any:  # ruff: ignore[c
     return out
 
 
-def fn_spies(results: Iterable[object]) -> Generator[_SpyObject]:
+def fn_spies(results: Iterable[object]) -> Generator[SpyObject]:
     for result in results:
-        for node in _walk(result):
-            if isinstance(node, _FnResult):
+        for node in walk(result):
+            if isinstance(node, FnResult):
                 yield from node.spies.values()

@@ -1,6 +1,6 @@
 """The lowered target model and the pure `_ir.Node` helpers shared across lowering.
 
-`_Lowerer` builds these definitions; `_print` emits them.
+`Lowerer` builds these definitions; `_print` emits them.
 """
 
 import graphlib
@@ -10,30 +10,9 @@ from dataclasses import dataclass, replace
 # `from . import _ir` would re-enter this package
 import optype.infer._ir as _ir  # ruff: ignore[manual-from-import]
 
-__all__ = (
-    "_Alias",
-    "_Attr",
-    "_Helper",
-    "_Member",
-    "_Method",
-    "_Module",
-    "_Protocol",
-    "_bound_name",
-    "_combine_name",
-    "_components",
-    "_cyclic",
-    "_free_tyvars",
-    "_is_generic",
-    "_is_protocol_node",
-    "_member_nodes",
-    "_strip_variance",
-    "_subst_member",
-    "_toposort",
-)
-
 
 @dataclass(frozen=True, slots=True)
-class _Attr:
+class Attr:
     """A protocol attribute: `name: T`, a read-only `@property`, or a `ClassVar`."""
 
     name: str
@@ -43,7 +22,7 @@ class _Attr:
 
 
 @dataclass(frozen=True, slots=True)
-class _Method:
+class Method:
     """A protocol method, e.g. a `Has['name', () -> +R]` or a callable's `__call__`."""
 
     name: str
@@ -51,21 +30,21 @@ class _Method:
     ret: _ir.Node
 
 
-type _Member = _Attr | _Method
+type Member = Attr | Method
 
 
 @dataclass(frozen=True, slots=True)
-class _Protocol:
+class ProtocolDef:
     """A synthesized helper `Protocol`: extra `bases` (intersection) or `members`."""
 
     name: str
     type_params: tuple[_ir.TypeParam, ...]
     bases: tuple[_ir.Node, ...]
-    members: tuple[_Member, ...]
+    members: tuple[Member, ...]
 
 
 @dataclass(frozen=True, slots=True)
-class _Alias:
+class Alias:
     """A (possibly recursive) `type` alias, for a self-referential concrete bound."""
 
     name: str
@@ -73,16 +52,16 @@ class _Alias:
     value: _ir.Node
 
 
-type _Helper = _Protocol | _Alias  # a synthesized helper definition
+type Helper = ProtocolDef | Alias  # a synthesized helper definition
 
 
 @dataclass(frozen=True, slots=True)
-class _Module:
-    helpers: tuple[_Helper, ...]
+class Module:
+    helpers: tuple[Helper, ...]
     funcs: tuple[_ir.Signature, ...]
 
 
-def _free_tyvars(nodes: Iterable[_ir.Term], tyvars: frozenset[str]) -> list[str]:
+def free_tyvars(nodes: Iterable[_ir.Term], tyvars: frozenset[str]) -> list[str]:
     """The signature typevars referenced across `nodes`, in first-appearance order."""
     seen: dict[str, None] = {}
     for node in nodes:
@@ -92,16 +71,16 @@ def _free_tyvars(nodes: Iterable[_ir.Term], tyvars: frozenset[str]) -> list[str]
     return list(seen)
 
 
-def _is_generic(node: _ir.Node, tyvars: frozenset[str]) -> bool:
+def is_generic(node: _ir.Node, tyvars: frozenset[str]) -> bool:
     """Whether `node` references any of the signature's type variables."""
     return not frozenset(_ir.names(node)).isdisjoint(tyvars)
 
 
-def _is_protocol_node(node: _ir.Node) -> bool:
+def is_protocol_node(node: _ir.Node) -> bool:
     return isinstance(node, _ir.App) and node.origin.startswith(("Can", "Has", "Just"))
 
 
-def _combine_name(bases: Sequence[str]) -> str:
+def combine_name(bases: Sequence[str]) -> str:
     """The combined-protocol name, e.g. `CanNeg` + `CanRAdd` -> `CanNegRAdd`."""
     for prefix in ("Can", "Has", "Just"):
         if bases and all(b.startswith(prefix) for b in bases):
@@ -109,25 +88,25 @@ def _combine_name(bases: Sequence[str]) -> str:
     return "".join(bases)
 
 
-def _bound_name(bound: _ir.Node, tyvar: str) -> str:
+def bound_name(bound: _ir.Node, tyvar: str) -> str:
     return bound.origin if isinstance(bound, _ir.App) else f"Bound{tyvar}"
 
 
-def _strip_variance(node: _ir.Node) -> _ir.Node:
+def strip_variance(node: _ir.Node) -> _ir.Node:
     return node.part if isinstance(node, _ir.Variance) else node
 
 
-def _member_nodes(members: Iterable[_Member]) -> Iterable[_ir.Term]:
+def member_nodes(members: Iterable[Member]) -> Iterable[_ir.Term]:
     for member in members:
-        if isinstance(member, _Attr):
+        if isinstance(member, Attr):
             yield member.type
         else:
             yield from member.params
             yield member.ret
 
 
-def _subst_member(member: _Member, m: Mapping[str, _ir.Node]) -> _Member:
-    if isinstance(member, _Attr):
+def subst_member(member: Member, m: Mapping[str, _ir.Node]) -> Member:
+    if isinstance(member, Attr):
         return replace(member, type=_ir.subst(member.type, m))
     params = tuple(_ir.subst_term(p, m) for p in member.params)
     return replace(member, params=params, ret=_ir.subst(member.ret, m))
@@ -144,12 +123,12 @@ def _reachable(deps: Mapping[str, frozenset[str]], start: str) -> set[str]:
     return seen
 
 
-def _cyclic(deps: Mapping[str, frozenset[str]]) -> frozenset[str]:
+def cyclic_names(deps: Mapping[str, frozenset[str]]) -> frozenset[str]:
     """The nodes that lie on a cycle (a self-loop or a mutual reference)."""
     return frozenset(node for node in deps if node in _reachable(deps, node))
 
 
-def _components(
+def components(
     cyclic: frozenset[str],
     deps: Mapping[str, frozenset[str]],
 ) -> list[frozenset[str]]:
@@ -168,7 +147,7 @@ def _components(
     return groups
 
 
-def _toposort(
+def toposort(
     nodes: frozenset[str] | set[str],
     deps: Mapping[str, frozenset[str]],
 ) -> list[str]:

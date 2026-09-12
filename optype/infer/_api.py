@@ -14,7 +14,7 @@ from ._isolate import isolate
 from ._overloads import dispatch_overloads, resolve_defaults
 from ._render import Names, signatures
 from ._signature import parse_text_signature, probe_signatures, signature
-from ._spy import _AnyFunc
+from ._spy import AnyFunc
 
 # parameter names, positions, or empty for all
 type _Selectors = tuple[str | int, ...]
@@ -39,7 +39,7 @@ def _select(selectors: Iterable[str | int], names: Names) -> Names:
 
 
 def _form_signatures(
-    func: _AnyFunc,
+    func: AnyFunc,
     params: Mapping[str, Parameter],
     selectors: _Selectors,
     gaps: _Gaps,
@@ -68,7 +68,7 @@ def _form_signatures(
     return [*overloads, *lines]
 
 
-def _candidate_parameters(func: _AnyFunc) -> list[dict[str, Parameter]]:
+def _candidate_parameters(func: AnyFunc) -> list[dict[str, Parameter]]:
     try:
         return [dict(signature(func).parameters)]
     except TypeError as exc:  # not callable
@@ -79,7 +79,7 @@ def _candidate_parameters(func: _AnyFunc) -> list[dict[str, Parameter]]:
         raise InferError(str(exc)) from exc
 
 
-def _infer(func: _AnyFunc, selectors: _Selectors, gaps: _Gaps) -> list[Signature]:
+def _infer(func: AnyFunc, selectors: _Selectors, gaps: _Gaps) -> list[Signature]:
     if nin := _numpy.ufunc_nin(func):
         names = _numpy.ufunc_params(nin)
         return _numpy.infer_ufunc(func, names, _select(selectors, names))
@@ -97,7 +97,7 @@ def _infer(func: _AnyFunc, selectors: _Selectors, gaps: _Gaps) -> list[Signature
 
 
 def _infer_render(
-    func: _AnyFunc,
+    func: AnyFunc,
     selectors: _Selectors,
     *,
     strict: bool,
@@ -120,7 +120,7 @@ def _infer_render(
 
 
 def infer(
-    func: _AnyFunc,
+    func: AnyFunc,
     /,
     *selectors: str | int,
     strict: bool = False,

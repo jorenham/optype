@@ -12,10 +12,8 @@ from ._analyze import (
     representatives,
     return_spies,
 )
-from ._spy import _SpyObject, _Traces
-from ._values import _Rec, _RecVar, _walk, fn_spies
-
-__all__ = ("TYPEVAR_TUPLE_NAME", "_Naming", "build")
+from ._spy import SpyObject, Traces
+from ._values import Rec, RecVar, fn_spies, walk
 
 TYPEVAR_TUPLE_NAME = "Ts"  # the PEP 646 typevar-tuple binder, used as `*Ts`
 
@@ -26,18 +24,18 @@ def _result_tyvar(index: int) -> str:
 
 
 @dataclass(frozen=True, slots=True)
-class _Naming:
+class Naming:
     """Which spies get a type parameter, and under what name."""
 
     reps: Mapping[int, int]  # spy id -> representative id
     tyvars: Mapping[int, str]  # spy id -> type parameter name
     named: Mapping[int, str]  # representative id -> name
-    param_spies: Sequence[_SpyObject]
-    declared_spies: Sequence[_SpyObject]
-    result_spies: Sequence[_SpyObject]
-    rec_tyvars: Mapping[_RecVar, str]
-    rec_body: Mapping[_RecVar, object]
-    group_traces: _Traces
+    param_spies: Sequence[SpyObject]
+    declared_spies: Sequence[SpyObject]
+    result_spies: Sequence[SpyObject]
+    rec_tyvars: Mapping[RecVar, str]
+    rec_body: Mapping[RecVar, object]
+    group_traces: Traces
     vartuple: bool  # whether the `*args` spy renders as a `*Ts` typevar tuple
 
     def pool(self, vartuple_id: int | None) -> dict[str, int]:
@@ -52,8 +50,8 @@ class _Naming:
         self,
         pool: Mapping[str, int],
         inline: AbstractSet[str],
-        traces: _Traces,
-    ) -> "_Naming":
+        traces: Traces,
+    ) -> "Naming":
         """This naming with the `inline` names dropped and the survivors renumbered."""
         remap = {
             old: _ir.tyvar_name(n)
@@ -85,16 +83,16 @@ class _Assign:
     tyvars: dict[int, str] = field(default_factory=dict)
     named: dict[int, str] = field(default_factory=dict)  # representative id -> name
 
-    def rep(self, spy: _SpyObject) -> int:
+    def rep(self, spy: SpyObject) -> int:
         return self.reps.get(sid := id(spy), sid)
 
     def name_results(
         self,
         results: Sequence[object],
         param_ids: AbstractSet[int],
-    ) -> list[_SpyObject]:
+    ) -> list[SpyObject]:
         """Name one type parameter per distinct returned expression."""
-        result_spies: list[_SpyObject] = []
+        result_spies: list[SpyObject] = []
         for result in results:
             for spy in return_spies(result):
                 sid = id(spy)
@@ -110,10 +108,10 @@ class _Assign:
 
     def declare_typars(
         self,
-        param_spies: Sequence[_SpyObject],
-        order: Sequence[_SpyObject],
+        param_spies: Sequence[SpyObject],
+        order: Sequence[SpyObject],
         appear: Mapping[int, int],
-    ) -> list[_SpyObject]:
+    ) -> list[SpyObject]:
         """Name one type parameter per distinct expression used at least twice.
 
         Duplicates sharing a representative reuse its name.
@@ -130,7 +128,7 @@ class _Assign:
             and id(spy) not in self.tyvars
         ]
 
-        declared: list[_SpyObject] = []
+        declared: list[SpyObject] = []
         n = 0
         for spy in candidates:
             if (var := self.named.get(rep := self.rep(spy))) is None:
@@ -146,11 +144,11 @@ class _Assign:
 
 def build(
     results: Sequence[object],
-    spies: Mapping[str, _SpyObject],
-    traces: _Traces,
-    varpos: _SpyObject | None,
+    spies: Mapping[str, SpyObject],
+    traces: Traces,
+    varpos: SpyObject | None,
     var_count: int,
-) -> _Naming:
+) -> Naming:
     """Assign a type parameter to every spy that needs one, in signature order."""
     # a returned function's parameter spies are named like regular parameters
     param_spies = [*spies.values(), *fn_spies(results)]
@@ -165,17 +163,17 @@ def build(
 
     result_spies = assign.name_results(results, {id(spy) for spy in param_spies})
 
-    rec_body: dict[_RecVar, object] = {
+    rec_body: dict[RecVar, object] = {
         node.var: node.body
         for result in results
-        for node in _walk(result)
-        if isinstance(node, _Rec)
+        for node in walk(result)
+        if isinstance(node, Rec)
     }
     base = len(result_spies)
     rec_tyvars = {var: _result_tyvar(base + i) for i, var in enumerate(rec_body)}
 
     declared = assign.declare_typars(param_spies, order, appear)
-    return _Naming(
+    return Naming(
         reps,
         assign.tyvars,
         assign.named,

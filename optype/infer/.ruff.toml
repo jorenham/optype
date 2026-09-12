@@ -12,7 +12,6 @@ cache-dir = "../../.ruff_cache"
   "missing-todo-author",
   "missing-todo-link",
   "non-self-return-type",
-  "unused-private-type-alias",
   "too-many-public-methods",
 ]
 

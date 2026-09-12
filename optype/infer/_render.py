@@ -13,28 +13,28 @@ from typing import Any, NamedTuple, final
 import optype.infer._ir as _ir
 import optype.infer._numpy as _numpy
 from ._analyze import reflect, spy_runs
-from ._naming import TYPEVAR_TUPLE_NAME, _Naming, build as _build_naming
+from ._naming import TYPEVAR_TUPLE_NAME, Naming, build as _build_naming
 from ._protocols import Op, Proto, resolve
 from ._recursion import collapse_recursive
 from ._spy import (
-    _class_spy,
-    _Marker,
-    _SpyBytes,
-    _SpyObject,
-    _SpyStr,
-    _TraceItem,
-    _Traces,
+    Marker,
+    SpyBytes,
+    SpyObject,
+    SpyStr,
+    TraceItem,
+    Traces,
     as_spy,
+    class_spy,
     despy_class,
     isinstance_not_spy,
 )
 from ._values import (
     COROUTINE,
     Exploration,
-    _FnResult,
-    _Gen,
-    _Rec,
-    _RecRef,
+    FnResult,
+    Gen,
+    Rec,
+    RecRef,
     fn_spies,
     is_mapping,
 )
@@ -130,15 +130,15 @@ class _Renderer:
     """Render an inferred `def` signature from the recorded spy traces."""
 
     _params: Mapping[str, Parameter]
-    _spies: Mapping[str, _SpyObject]
+    _spies: Mapping[str, SpyObject]
     _fixed: Mapping[str, object]
     _results: Sequence[object]
-    _traces: _Traces
+    _traces: Traces
     var_count: int  # the `*args` placeholder count used during exploration
     _tuple_params: frozenset[str]  # params that also accept `tuple[<bound>, ...]`
-    varpos: _SpyObject | None
+    varpos: SpyObject | None
 
-    naming: _Naming  # which spies get a type parameter, and under what name
+    naming: Naming  # which spies get a type parameter, and under what name
     _bound_nodes: dict[int, _ir.Node | None]  # rendered bound per representative
     _ret_node: _ir.Node  # rendered return union, refreshed along with the bounds
 
@@ -148,7 +148,7 @@ class _Renderer:
         self,
         exploration: Exploration,
         params: Mapping[str, Parameter],
-        traces: _Traces,
+        traces: Traces,
     ) -> None:
         # `traces` is the map to render: the raw exploration traces or the reflected one
         self._params = params
@@ -209,9 +209,9 @@ class _Renderer:
 
     def returns(self, members: Iterable[Op]) -> _ir.Node | None:
         named: list[str] = []
-        items: list[_TraceItem] = []
+        items: list[TraceItem] = []
         # a repeated op returns one spy; collect it once
-        rets = _distinct(r for m in members if isinstance(r := m.ret, _SpyObject))
+        rets = _distinct(r for m in members if isinstance(r := m.ret, SpyObject))
         for ret in rets:
             if (var := self.naming.tyvars.get(id(ret))) is not None:
                 named.append(var)
@@ -239,7 +239,7 @@ class _Renderer:
             return pos
 
         tail = call_args[-1]
-        if not isinstance(tail, _SpyObject) or (
+        if not isinstance(tail, SpyObject) or (
             tail is not varpos and tail is not varpos.__optype_element__
         ):
             return pos
@@ -298,15 +298,15 @@ class _Renderer:
 
         return _ir.App(proto, args)
 
-    def traces(self, items: Iterable[_TraceItem]) -> _ir.Node | None:
+    def traces(self, items: Iterable[TraceItem]) -> _ir.Node | None:
         # dedup the re-collected return-chain items so they can't blow up (#734)
         items = _distinct(items)
         # an absence marker means the op was optional; an attribute probe keys on its
         # name, so it spares the other reads
-        optional = {item.args for item in items if item.attr == _Marker.ABSENT}
+        optional = {item.args for item in items if item.attr == Marker.ABSENT}
         groups: dict[_OpShape, list[Op]] = {}
         for item in items:
-            if item.attr == _Marker.ABSENT:
+            if item.attr == Marker.ABSENT:
                 continue
             probed = (
                 ("__getattr__", item.args[0])
@@ -327,10 +327,10 @@ class _Renderer:
         parts = [self.group(key.proto, group) for key, group in groups.items()]
         return _ir.intersection(_merge_combined(parts))
 
-    def spy(self, spy: _SpyObject) -> _ir.Node | None:
+    def spy(self, spy: SpyObject) -> _ir.Node | None:
         return self.traces(self._traces[id(spy)])
 
-    def slot(self, spy: _SpyObject) -> _ir.Node:
+    def slot(self, spy: SpyObject) -> _ir.Node:
         if self.naming.vartuple and spy is self.varpos:
             return _ir.Unpack(_ir.Name(TYPEVAR_TUPLE_NAME))
         if (var := self.naming.tyvars.get(id(spy))) is not None:
@@ -339,7 +339,7 @@ class _Renderer:
 
     def typar(
         self,
-        spy: _SpyObject,
+        spy: SpyObject,
         defaulted: Mapping[int, _ir.Node],
         *,
         negate: bool = False,
@@ -479,16 +479,16 @@ class _ResultTyper:
 
     def return_type(self, result: object) -> _ir.Node:
         match result:
-            case _RecRef() | _Rec():
+            case RecRef() | Rec():
                 node = _ir.Name(self._renderer.naming.rec_tyvars[result.var])
-            case _SpyObject() if (spy := as_spy(result)) is not None:
+            case SpyObject() if (spy := as_spy(result)) is not None:
                 var = self._renderer.naming.tyvars.get(id(spy))
                 node = _ir.Name(var) if var is not None else _ir.OBJECT
-            case _SpyStr():
+            case SpyStr():
                 node = _ir.Type(str)
-            case _SpyBytes():
+            case SpyBytes():
                 node = _ir.Type(bytes)
-            case _Gen():
+            case Gen():
                 node = self._generator_type(result)
             case slice():
                 node = _ir.App(
@@ -499,7 +499,7 @@ class _ResultTyper:
                         self.value_type(result.step),
                     ),
                 )
-            case _FnResult():
+            case FnResult():
                 node = self._function(result)
             case _ if result is None or _ir.is_sentinel(result):
                 node = _ir.Name(repr(result))
@@ -507,7 +507,7 @@ class _ResultTyper:
                 node = self._container(result)
         return node
 
-    def _generator_type(self, result: _Gen) -> _ir.Node:
+    def _generator_type(self, result: Gen) -> _ir.Node:
         if result.kind == COROUTINE:
             # an awaitable yields objects and is sent `None`, as `CanAwait`
             out = self.type_union(result.yielded)
@@ -525,7 +525,7 @@ class _ResultTyper:
         """The type of a single `value`, or `Never` if unconstrained."""
         return self.value_union((value,)) or _ir.NEVER
 
-    def _function(self, fn: _FnResult) -> _ir.Node:
+    def _function(self, fn: FnResult) -> _ir.Node:
         """The signature-syntax type of an explored function result."""
         params = tuple(
             _ir.Arg(
@@ -537,7 +537,7 @@ class _ResultTyper:
         )
         return _ir.Fn(params, self.type_union(fn.results))
 
-    def _fn_param(self, fn: _FnResult, name: str) -> _ir.Node:
+    def _fn_param(self, fn: FnResult, name: str) -> _ir.Node:
         if (spy := fn.spies.get(name)) is not None:
             return self._renderer.slot(spy)
         value = fn.fixed[name]
@@ -548,11 +548,11 @@ class _ResultTyper:
 
     def _class_of(self, cls: type[Any]) -> _ir.Node | None:
         """The type of `cls`'s instances, if it is expressible."""
-        if (spy := _class_spy(cls)) is not None:
+        if (spy := class_spy(cls)) is not None:
             return self.return_type(spy)
-        if issubclass(cls, _SpyStr):
+        if issubclass(cls, SpyStr):
             return _ir.Type(str)
-        if issubclass(cls, _SpyBytes):
+        if issubclass(cls, SpyBytes):
             return _ir.Type(bytes)
         if cls is type(None):
             return _ir.NONE

@@ -41,7 +41,7 @@ import pytest
 
 from optype.infer import InferError, InferWarning, _color, _gc, infer
 from optype.infer._api import _infer_render
-from optype.infer._backends import TERSE
+from optype.infer._backends._terse import TERSE
 from optype.infer._ir import (
     App,
     Arg,
@@ -66,7 +66,7 @@ from optype.infer._isolate import _inline, isolate
 from optype.infer._numpy import array_function_node
 from optype.infer._recursion import collapse_recursive
 from optype.infer._signature import parse_text_signature
-from optype.infer._spy import _SpyObject
+from optype.infer._spy import SpyObject
 
 if sys.version_info >= (3, 13):
     from warnings import deprecated
@@ -1201,7 +1201,7 @@ def test_method_descriptor() -> None:
 _BUFFER_GC_SCRIPT = """
 import gc, sys
 from optype.infer import infer
-from optype.infer._spy import _SpyObject, _TraceItem
+from optype.infer._spy import SpyObject, TraceItem
 
 captured = []
 sys.unraisablehook = lambda args: captured.append(args.err_msg)
@@ -1209,9 +1209,9 @@ sys.unraisablehook = lambda args: captured.append(args.err_msg)
 spies = []
 mv = None
 for _ in range(256):
-    spy = _SpyObject()
+    spy = SpyObject()
     mv = memoryview(spy)
-    spy.__optype_trace__.append(_TraceItem("hold", (mv,), {}, mv))
+    spy.__optype_trace__.append(TraceItem("hold", (mv,), {}, mv))
     spies.append(spy)
 del spies, mv
 gc.collect()
@@ -1484,9 +1484,7 @@ def test_drained_spies_freed(monkeypatch: pytest.MonkeyPatch) -> None:
     residue = [
         cls
         for cls in gc.get_objects()
-        if isinstance(cls, type)
-        and issubclass(cls, _SpyObject)
-        and cls is not _SpyObject
+        if isinstance(cls, type) and issubclass(cls, SpyObject) and cls is not SpyObject
     ]
     assert not residue
 
@@ -3123,7 +3121,7 @@ def test_dynamic_attr_name_class_name() -> None:
     assert infer(ast.NodeVisitor.visit) == (
         "[T, R](self: Has['generic_visit', (T) -> +R], node: T) -> R"
     )
-    assert "_Spy" not in infer(pydoc.TextRepr.repr1)
+    assert "Spy" not in infer(pydoc.TextRepr.repr1)
 
 
 def test_fixed_self_spy_class() -> None:
@@ -3139,7 +3137,7 @@ def test_deprecated_spy_identity() -> None:
             warnings.warn(f"{name}.old()", DeprecationWarning, stacklevel=2)
 
     out = infer(Legacy.old)
-    assert "_Spy" not in out
+    assert "Spy" not in out
     deprecated = f"@deprecated('{Legacy.__module__}.{Legacy.__qualname__}.old()')"
     assert out.splitlines()[0] == deprecated
 

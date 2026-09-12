@@ -9,25 +9,25 @@ from itertools import groupby
 
 from ._protocols import DUNDER_ATTR, DUNDER_CAN_R, DUNDER_CLASS_ATTR
 from ._spy import (
-    _Marker,
-    _own_spy,
-    _SpyObject,
-    _TraceItem,
-    _Traces,
+    Marker,
+    SpyObject,
+    TraceItem,
+    Traces,
     as_spy,
     isinstance_not_spy,
+    own_spy,
 )
-from ._values import Exploration, _children, _walk
+from ._values import Exploration, children, walk
 
-type _Producer = Mapping[int, tuple[_SpyObject, _TraceItem]]
+type _Producer = Mapping[int, tuple[SpyObject, TraceItem]]
 
 # a spy's op-shape: its own id when it is a leaf, else the producing operation
 type _Shape = int | tuple[str, _Shape, str, object, tuple[str, ...]]
 
 
-def return_spies(value: object) -> Generator[_SpyObject]:
-    # an `_FnResult`'s parameter spies are not returns; they are named like parameters
-    for node in _walk(value):
+def return_spies(value: object) -> Generator[SpyObject]:
+    # an `FnResult`'s parameter spies are not returns; they are named like parameters
+    for node in walk(value):
         if (spy := as_spy(node)) is not None:
             yield spy
 
@@ -45,7 +45,7 @@ def dispatch_candidates(exp: Exploration) -> list[tuple[str, str]]:
     )
 
 
-def _param_traces(exp: Exploration, param: str) -> Sequence[_TraceItem]:
+def _param_traces(exp: Exploration, param: str) -> Sequence[TraceItem]:
     """The recorded ops on `param`'s spy, empty if it has none."""
     spy = exp.spies.get(param)
     return () if spy is None else exp.traces.get(id(spy), ())
@@ -59,9 +59,9 @@ def absent_verdict(exp: Exploration, param: str, name: str) -> bool | None:
     """
     items = _param_traces(exp, param)
     marker = "__getattr__", name
-    if not any(item.attr == _Marker.ABSENT and item.args == marker for item in items):
+    if not any(item.attr == Marker.ABSENT and item.args == marker for item in items):
         return None
-    return all(item.attr == _Marker.ABSENT for item in items)
+    return all(item.attr == Marker.ABSENT for item in items)
 
 
 def requires_only_presence(exp: Exploration, param: str, name: str) -> bool:
@@ -84,9 +84,9 @@ def returns_concrete(results: Iterable[object]) -> bool:
     return all(next(return_spies(r), None) is None for r in results)
 
 
-def _trace_order(params: Sequence[_SpyObject], traces: _Traces) -> list[_SpyObject]:
+def _trace_order(params: Sequence[SpyObject], traces: Traces) -> list[SpyObject]:
     """The reachable spies: `params` first, then each op's return spy, depth-first."""
-    order: list[_SpyObject] = []
+    order: list[SpyObject] = []
     seen: set[int] = set()
     stack = list(reversed(params))
     while stack:
@@ -96,16 +96,16 @@ def _trace_order(params: Sequence[_SpyObject], traces: _Traces) -> list[_SpyObje
         seen.add(id(spy))
         order.append(spy)
         stack.extend(
-            op.return_ for op in traces[id(spy)] if isinstance(op.return_, _SpyObject)
+            op.return_ for op in traces[id(spy)] if isinstance(op.return_, SpyObject)
         )
     return order
 
 
 def analyze(
-    params: Sequence[_SpyObject],
+    params: Sequence[SpyObject],
     results: Iterable[object],
-    traces: _Traces,
-) -> tuple[list[_SpyObject], dict[int, int]]:
+    traces: Traces,
+) -> tuple[list[SpyObject], dict[int, int]]:
     """The reachable spies in trace order, and how often each one appears.
 
     A spy appearing twice earns a type parameter, so the count decides what gets named.
@@ -121,12 +121,12 @@ def analyze(
         for value in (*op.args, *op.kwargs.values())
         if (arg := as_spy(value)) is not None
     )
-    appear.update(id(op.return_) for op in ops if isinstance(op.return_, _SpyObject))
+    appear.update(id(op.return_) for op in ops if isinstance(op.return_, SpyObject))
 
     return order, appear
 
 
-def _shape(spy: _SpyObject, made_by: _Producer, keys: dict[int, _Shape]) -> _Shape:
+def _shape(spy: SpyObject, made_by: _Producer, keys: dict[int, _Shape]) -> _Shape:
     """A structural key over op-shape, not operands: `x[y]` and `x[z]` share one."""
     sid = id(spy)
     if sid in keys:
@@ -146,16 +146,16 @@ def _shape(spy: _SpyObject, made_by: _Producer, keys: dict[int, _Shape]) -> _Sha
     return keys[sid]
 
 
-def representatives(order: Sequence[_SpyObject], traces: _Traces) -> dict[int, int]:
+def representatives(order: Sequence[SpyObject], traces: Traces) -> dict[int, int]:
     """Map each spy to a representative: the same operation on an owner of the same
     shape shares one, so the fresh placeholder each forked run allocates for a
     repeated subexpression collapses onto it instead of spawning a type parameter.
     """
     # a result is always a fresh spy, so a parameter never appears here and stays a leaf
-    made_by: dict[int, tuple[_SpyObject, _TraceItem]] = {}
+    made_by: dict[int, tuple[SpyObject, TraceItem]] = {}
     for owner in order:
         for item in traces[id(owner)]:
-            if isinstance(item.return_, _SpyObject):
+            if isinstance(item.return_, SpyObject):
                 made_by.setdefault(id(item.return_), (owner, item))
 
     keys: dict[int, _Shape] = {}
@@ -169,28 +169,28 @@ def representatives(order: Sequence[_SpyObject], traces: _Traces) -> dict[int, i
 def group_traces(
     named: Iterable[int],
     reps: Mapping[int, int],
-    traces: _Traces,
-) -> _Traces:
+    traces: Traces,
+) -> Traces:
     """Each representative's bound: the traces of every named spy that shares it.
 
     Only named spies merge; an inline one still renders its constraints where used.
     """
-    merged: _Traces = {}
+    merged: Traces = {}
     for spy_id in named:
         merged.setdefault(reps.get(spy_id, spy_id), []).extend(traces.get(spy_id, ()))
     return merged
 
 
-def spy_runs(items: Iterable[object], spy: _SpyObject) -> list[int]:
+def spy_runs(items: Iterable[object], spy: SpyObject) -> list[int]:
     """Lengths of each consecutive run of `spy` within `items`."""
     groups = groupby(items, key=lambda item: item is spy)
     return [sum(1 for _ in group) for is_spy, group in groups if is_spy]
 
 
-def _packed_uses(value: object, spy: _SpyObject, count: int) -> Generator[bool]:
+def _packed_uses(value: object, spy: SpyObject, count: int) -> Generator[bool]:
     # True per use that is packed: one full placeholder run inside a tuple
     match value:
-        case _SpyObject():
+        case SpyObject():
             if value is spy:
                 yield False
             return
@@ -199,16 +199,16 @@ def _packed_uses(value: object, spy: _SpyObject, count: int) -> Generator[bool]:
                 yield runs == [count]
             items = (item for item in value if item is not spy)
         case _:
-            items = _children(value)
+            items = children(value)
 
     for item in items:
         yield from _packed_uses(item, spy, count)
 
 
 def all_packed(
-    spy: _SpyObject,
+    spy: SpyObject,
     results: Iterable[object],
-    traces: _Traces,
+    traces: Traces,
     count: int,
 ) -> bool:
     """Whether `spy` is used at least once, but only ever packed.
@@ -233,21 +233,21 @@ def all_packed(
     return bool(uses) and all(uses)
 
 
-def reflect(params: Sequence[_SpyObject], traces: _Traces) -> _Traces:
+def reflect(params: Sequence[SpyObject], traces: Traces) -> Traces:
     """A copy of `traces` with each spy-spy binary op reflected onto its RHS,
     or `traces` itself when nothing reflects at all.
     """
-    kept: _Traces = dict(traces)
-    added: dict[int, list[_TraceItem]] = {}
+    kept: Traces = dict(traces)
+    added: dict[int, list[TraceItem]] = {}
     for spy in _trace_order(params, traces):
-        keep: list[_TraceItem] = []
+        keep: list[TraceItem] = []
         for item in traces[id(spy)]:
             rhs = item.args[0] if item.args else None
-            if item.attr in DUNDER_CAN_R and isinstance(rhs, _SpyObject):
+            if item.attr in DUNDER_CAN_R and isinstance(rhs, SpyObject):
                 # since Python 3.14, ternary `pow()` reflects with the modulo kept
                 rargs = (spy, *item.args[1:]) if sys.version_info >= (3, 14) else (spy,)
-                reflected = _TraceItem("__r" + item.attr[2:], rargs, {}, item.return_)
-                added.setdefault(id(_own_spy(rhs)), []).append(reflected)
+                reflected = TraceItem("__r" + item.attr[2:], rargs, {}, item.return_)
+                added.setdefault(id(own_spy(rhs)), []).append(reflected)
             else:
                 keep.append(item)
         kept[id(spy)] = keep

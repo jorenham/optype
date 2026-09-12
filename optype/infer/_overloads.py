@@ -26,7 +26,7 @@ from ._render import (
     union_signatures,
     widened_signatures,
 )
-from ._spy import _AnyFunc, _TraceItem
+from ._spy import AnyFunc, TraceItem
 from ._values import Exploration, map_values
 
 
@@ -55,7 +55,7 @@ def _bind_exploration(exp: Exploration, defaults: Defaults) -> Exploration:
     binding |= {id(type(spies[name])): type(value) for name, value in defaults.items()}
     bound = {
         spy_id: [
-            _TraceItem(
+            TraceItem(
                 item.attr,
                 tuple(_bind(arg, binding) for arg in item.args),
                 {key: _bind(val, binding) for key, val in item.kwargs.items()},
@@ -74,7 +74,7 @@ def _bind_exploration(exp: Exploration, defaults: Defaults) -> Exploration:
 
 
 def resolve_defaults(
-    func: _AnyFunc,
+    func: AnyFunc,
     params: Mapping[str, Parameter],
     selected: Names,
     exploration: Exploration,
@@ -132,7 +132,7 @@ def resolve_defaults(
 
 
 def dispatch_overloads(
-    func: _AnyFunc,
+    func: AnyFunc,
     params: Mapping[str, Parameter],
     selected: Names,
     exploration: Exploration,
