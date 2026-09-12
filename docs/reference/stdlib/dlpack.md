@@ -11,23 +11,23 @@ A collection of low-level types for working [DLPack](DOC-DLPACK).
     </tr>
     <tr>
         <td markdown="block">
-        ```{ .plain .no-copy .no-select }
-        CanDLPack[
+            ```{ .plain .no-copy .no-select }
+            CanDLPack[
             +T = int,
             +D: int = int,
-        ]
-        ```
+            ]
+            ```
         </td>
         <td markdown="block">
-        ```{ .py .no-copy .no-select }
-        def __dlpack__(
+            ```{ .py .no-copy .no-select }
+            def __dlpack__(
             *,
             stream: int | None = ...,
             max_version: tuple[int, int] | None = ...,
             dl_device: tuple[T, D] | None = ...,
             copy: bool | None = ...,
-        ) -> types.CapsuleType: ...
-        ```
+            ) -> types.CapsuleType: ...
+            ```
         </td>
     </tr>
     <tr></tr>
@@ -35,8 +35,8 @@ A collection of low-level types for working [DLPack](DOC-DLPACK).
         <td markdown="block">
             ```{ .plain .no-copy .no-select }
             CanDLPackDevice[
-                +T = int,
-                +D: int = int,
+            +T = int,
+            +D: int = int,
             ]
             ```
         </td>

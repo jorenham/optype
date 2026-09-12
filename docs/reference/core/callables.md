@@ -7,28 +7,28 @@ Unlike `operator`, `optype` provides an operator for callable objects:
 and doesn't use esoteric hacks.
 
 <table>
-  <thead>
-    <tr>
-        <th colspan="3" align="center">operator</th>
-        <th colspan="2" align="center">operand</th>
-    </tr>
-    <tr>
-        <td>expression</td>
-        <th>function</th>
-        <th>type</th>
-        <td>method</td>
-        <th>type</th>
-    </tr>
+    <thead>
+        <tr>
+            <th colspan="3" align="center">operator</th>
+            <th colspan="2" align="center">operand</th>
+        </tr>
+        <tr>
+            <td>expression</td>
+            <th>function</th>
+            <th>type</th>
+            <td>method</td>
+            <th>type</th>
+        </tr>
     </thead>
     <tbody>
-    <tr>
-        <td><code>_(*args, **kwargs)</code></td>
-        <td><code>do_call</code></td>
-        <td><code>DoesCall</code></td>
-        <td><code>__call__</code></td>
-        <td><code>CanCall[**Tss, +R]</code></td>
-    </tr>
-  </tbody>
+        <tr>
+            <td><code>_(*args, **kwargs)</code></td>
+            <td><code>do_call</code></td>
+            <td><code>DoesCall</code></td>
+            <td><code>__call__</code></td>
+            <td><code>CanCall[**Tss, +R]</code></td>
+        </tr>
+    </tbody>
 </table>
 
 !!! note
