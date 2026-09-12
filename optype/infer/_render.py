@@ -390,7 +390,7 @@ class _Renderer:
         ordered = [*self.naming.declared_spies, *self.naming.result_spies]
         if not negate:
             # PEP 696 requires defaulted type parameters to come last
-            ordered.sort(key=lambda spy: id(spy) in defaulted)  # pyrefly:ignore[implicit-any-lambda]
+            ordered.sort(key=lambda spy: id(spy) in defaulted)
         typars = [self.typar(spy, defaulted, negate=negate) for spy in ordered]
 
         # a recursive typevar carries no default, so it precedes the defaulted tail
