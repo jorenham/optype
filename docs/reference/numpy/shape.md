@@ -20,24 +20,24 @@ their differences become clear:
         <td>
             ```{ .py .no-copy .no-select }
             type NDArray[
-                # no shape type
-                SCT: generic,  # no default
+            # no shape type
+            SCT: generic, # no default
             ] = ndarray[Any, dtype[SCT]]
             ```
         </td>
         <td>
             ```{ .py .no-copy .no-select }
             type Array[
-                NDT: (int, ...) = (int, ...),
-                SCT: generic = generic,
+            NDT: (int, ...) = (int, ...),
+            SCT: generic = generic,
             ] = ndarray[NDT, dtype[SCT]]
             ```
         </td>
         <td>
             ```{ .py .no-copy .no-select }
             type ArrayND[
-                SCT: generic = generic,
-                NDT: (int, ...) = (int, ...),
+            SCT: generic = generic,
+            NDT: (int, ...) = (int, ...),
             ] = ndarray[NDT, dtype[SCT]]
             ```
         </td>
@@ -77,25 +77,25 @@ In the same way as `ArrayND` for `ndarray` (shown for reference), its subtypes
         <td>
             ```{ .py .no-copy .no-select }
             type ArrayND[
-                SCT: generic = generic,
-                NDT: (int, ...) = (int, ...),
+            SCT: generic = generic,
+            NDT: (int, ...) = (int, ...),
             ] = ndarray[NDT, dtype[SCT]]
             ```
         </td>
         <td>
             ```{ .py .no-copy .no-select }
             type MArray[
-                SCT: generic = generic,
-                NDT: (int, ...) = (int, ...),
+            SCT: generic = generic,
+            NDT: (int, ...) = (int, ...),
             ] = ma.MaskedArray[NDT, dtype[SCT]]
             ```
         </td>
         <td>
             ```{ .py .no-copy .no-select }
             type Matrix[
-                SCT: generic = generic,
-                M: int = int,
-                N: int = M,
+            SCT: generic = generic,
+            M: int = int,
+            N: int = M,
             ] = matrix[(M, N), dtype[SCT]]
             ```
         </td>
