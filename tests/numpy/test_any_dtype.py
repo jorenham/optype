@@ -4,6 +4,7 @@ from typing import Final, Never, cast
 import numpy as np
 import pytest
 
+import optype.numpy as onp  # noqa: TC001
 from optype.numpy import _dtype_attr
 
 _DTYPES: Final = (
@@ -111,3 +112,23 @@ def test_time_units(
 
     assert name in names, (name, names)
     assert str_ in chars, (str_, chars)
+
+
+def test_any_void_dtype_list_form() -> None:
+    dt: onp.AnyVoidDType = [("x", "f4"), ("y", "i4")]
+    assert np.dtype(dt)
+
+
+def test_any_void_dtype_dict_form1() -> None:
+    dt: onp.AnyVoidDType = {"names": ["x", "y"], "formats": ["f4", "i4"]}
+    assert np.dtype(dt)
+
+
+def test_any_void_dtype_dict_form2() -> None:
+    dt: onp.AnyVoidDType = {"x": ("i4", 0), "y": ("f4", 4)}
+    assert np.dtype(dt)
+
+
+def test_any_void_dtype_string_form() -> None:
+    dt: onp.AnyVoidDType = "V8"
+    assert np.dtype(dt)
