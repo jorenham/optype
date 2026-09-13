@@ -72,6 +72,14 @@ def import_of(name: str) -> tuple[str, str | None] | None:  # ruff: ignore[too-m
     return None
 
 
+def _qualified(name: str) -> str:
+    """`name` behind its module, or as is when it has none."""
+    if hasattr(builtins, name):
+        return f"builtins.{name}"
+    found = import_of(name)
+    return name if found is None or found[1] is None else f"{found[0]}.{name}"
+
+
 def _join_params(items: Sequence[tuple[str, bool]]) -> str:
     """Join rendered params, inserting `/` after a leading positional-only run."""
     parts: list[str] = []
@@ -107,45 +115,46 @@ class Printer:
     """Render the lowered model as Python text, recording the names it references."""
 
     _used: set[str]  # every referenced name, for the import block
+    _shadowed: frozenset[str]  # names the current class body binds
 
     def __init__(self) -> None:
         self._used = set()
+        self._shadowed = frozenset()
 
     def record(self, name: str) -> None:
         self._used.add(name)
 
+    def _name(self, name: str) -> str:
+        if name in self._shadowed:
+            name = _qualified(name)
+        self._used.add(name)
+        return name
+
     def render_node(self, node: _ir.Node) -> str:  # ruff: ignore[complex-structure, too-many-return-statements]
-        rec = self._used.add
         match node:
             case _ir.Lit(values):
-                rec("Literal")
+                rec = self._used.add
                 joined = ", ".join(qualified_value_text(v, rec) for v in values)
-                return f"Literal[{joined}]"
+                return f"{self._name('Literal')}[{joined}]"
             case _ir.Type(cls):
-                rec(name := _ir.type_name(cls))
-                return name
+                return self._name(_ir.type_name(cls))
             case _ir.Name(name):
-                rec(name)
-                return name
+                return self._name(name)
             case _ir.Dots():
                 return "..."
             case _ir.App("tuple", ()):
-                rec("tuple")
-                return "tuple[()]"
+                return f"{self._name('tuple')}[()]"
             case _ir.App(origin, ()):
-                rec(origin)
-                return origin
+                return self._name(origin)
             case _ir.App(origin, args):
-                rec(origin)
-                return f"{origin}[{', '.join(self._arg_types(args))}]"
+                return f"{self._name(origin)}[{', '.join(self._arg_types(args))}]"
             case _ir.Fn(params, ret):
-                rec("Callable")
                 inner = (
                     "..."
                     if params == (_ir.Dots(),)
                     else f"[{', '.join(self._arg_types(params))}]"
                 )
-                return f"Callable[{inner}, {self.render_node(ret)}]"
+                return f"{self._name('Callable')}[{inner}, {self.render_node(ret)}]"
             case _ir.Union(parts):
                 return " | ".join(self.render_node(part) for part in parts)
             case _ir.Unpack(part):
@@ -225,9 +234,19 @@ class Printer:
             if member.classvar:
                 self.record("ClassVar")
                 return f"    {member.name}: ClassVar[{self.render_node(member.type)}]"
-            if member.readonly:
+            if member.readonly or member.setter is not None:
                 ret = self.render_node(member.type)
-                return f"    @property\n    def {member.name}(self) -> {ret}: ..."
+                text = f"    @property\n    def {member.name}(self) -> {ret}: ..."
+                if member.setter is None:
+                    return text
+                # the getter binds the name before the setter's annotation is read
+                self._shadowed = frozenset({member.name})
+                value = self.render_node(member.setter)
+                self._shadowed = frozenset()
+                return (
+                    f"{text}\n    @{member.name}.setter\n"
+                    f"    def {member.name}(self, value: {value}, /) -> None: ..."
+                )
             return f"    {member.name}: {self.render_node(member.type)}"
         sig = self.call_params(member.params)
         head = ""
@@ -301,6 +320,7 @@ def type_text(node: _ir.Node) -> str:
 def member_key(member: Member) -> str:
     if isinstance(member, Attr):
         flags = f"{member.classvar}{member.readonly}"
-        return f"{member.name}:{flags}:{type_text(member.type)}"
+        setter = "" if member.setter is None else f"={type_text(member.setter)}"
+        return f"{member.name}:{flags}:{type_text(member.type)}{setter}"
     params = Printer().call_params(member.params)
     return f"{member.name}:{params}->{type_text(member.ret)}"

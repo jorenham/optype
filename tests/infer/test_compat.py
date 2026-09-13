@@ -27,6 +27,7 @@ from optype.infer._ir import (
     CONTRAVARIANT,
     COVARIANT,
     NONE,
+    OBJECT,
     App,
     Arg,
     Fn,
@@ -302,6 +303,75 @@ TEXT_CASES: list[tuple[str, tuple[Signature, ...], str]] = [
         ),
     ),
     (
+        "settable property",
+        (_sig((), Has("spam", (Variance(CONTRAVARIANT, ZERO),)), NONE),),
+        (
+            "from typing import Literal, Protocol\n\n"
+            "class HasSpam(Protocol):\n"
+            "    @property\n"
+            "    def spam(self) -> object: ...\n"
+            "    @spam.setter\n"
+            "    def spam(self, value: Literal[0], /) -> None: ...\n\n"
+            "def f(x: HasSpam) -> None: ..."
+        ),
+    ),
+    (
+        "shadowed setter type",
+        (
+            _sig(
+                (),
+                Has("list", (Variance(CONTRAVARIANT, App("list", (Name("Never"),))),)),
+                NONE,
+            ),
+        ),
+        (
+            "import builtins\n"
+            "from typing import Never, Protocol\n\n"
+            "class HasList(Protocol):\n"
+            "    @property\n"
+            "    def list(self) -> object: ...\n"
+            "    @list.setter\n"
+            "    def list(self, value: builtins.list[Never], /) -> None: ...\n\n"
+            "def f(x: HasList) -> None: ..."
+        ),
+    ),
+    (
+        "method and write",
+        (
+            _sig(
+                (),
+                Intersection((
+                    Has("spam", (Fn((), OBJECT),)),
+                    Has("spam", (Variance(CONTRAVARIANT, Fn((), NONE)),)),
+                )),
+                NONE,
+            ),
+        ),
+        (
+            "from collections.abc import Callable\n"
+            "from typing import Protocol\n\n"
+            "class HasSpam(Protocol):\n"
+            "    @property\n"
+            "    def spam(self) -> Callable[[], object]: ...\n"
+            "    @spam.setter\n"
+            "    def spam(self, value: Callable[[], None], /) -> None: ...\n\n"
+            "def f(x: HasSpam) -> None: ..."
+        ),
+    ),
+    (
+        "member named like a type parameter",
+        (_sig((TypeParam("T"),), Has("T", (Variance(CONTRAVARIANT, T),)), NONE),),
+        (
+            "from typing import Protocol\n\n"
+            "class HasT[U](Protocol):\n"
+            "    @property\n"
+            "    def T(self) -> object: ...\n"
+            "    @T.setter\n"
+            "    def T(self, value: U, /) -> None: ...\n\n"
+            "def f[T](x: HasT[T]) -> None: ..."
+        ),
+    ),
+    (
         # `~` has no Python meaning, and a variance sign is only presentational
         "fictional forms dropped",
         (
@@ -389,10 +459,51 @@ def test_has_read_is_a_property() -> None:
     assert _has_member(Variance(COVARIANT, R)) == Attr("spam", T, readonly=True)
 
 
-def test_has_read_write_is_a_plain_attribute() -> None:
-    # a read-and-write attribute is invariant: a plain annotation accepts both
+def test_has_read_write_is_a_settable_property() -> None:
+    # a settable property is satisfied by a plain attribute and by a property alike
     signed = Variance(CONTRAVARIANT, R), Variance(COVARIANT, R)
-    assert _has_member(*signed) == Attr("spam", T)
+    assert _has_member(*signed) == Attr("spam", T, setter=T)
+
+
+def test_has_write_is_a_settable_property() -> None:
+    # any attribute that accepts the written type will do, so the getter is `object`
+    assert _has_member(Variance(CONTRAVARIANT, ZERO)) == Attr(
+        "spam",
+        OBJECT,
+        setter=ZERO,
+    )
+    # a read of another type keeps both: an asymmetric property
+    signed = Variance(CONTRAVARIANT, ZERO), Variance(COVARIANT, R)
+    assert _has_member(*signed) == Attr("spam", T, setter=ZERO)
+
+
+def test_has_presence_is_a_read_only_property() -> None:
+    assert _has_member() == Attr("spam", OBJECT, readonly=True)
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+def test_has_method_merges_with_a_write_as_a_callable_read(reverse: bool) -> None:
+    parts = (
+        Has("spam", (Fn((), OBJECT),)),
+        Has("spam", (Variance(CONTRAVARIANT, ZERO),)),
+    )
+    node = Intersection(parts[::-1] if reverse else parts)
+    module = Lowerer().module([_sig((), node, NONE)])
+    assert [h.members for h in _protocols(module)] == [
+        (Attr("spam", Fn((), OBJECT), setter=ZERO),),
+    ]
+
+
+def test_has_of_one_attribute_merge_within_an_intersection() -> None:
+    # a separate read and write of one attribute lower to one member, not two bases
+    node = Intersection((
+        Has("spam", (Variance(CONTRAVARIANT, ZERO),)),
+        Has("spam", (Variance(COVARIANT, R),)),
+    ))
+    module = Lowerer().module([_sig((TypeParam("R"),), node)])
+    (helper,), (func,) = _protocols(module), module.funcs
+    assert helper.members == (Attr("spam", T, setter=ZERO),)
+    assert func.params[0].node == App(helper.name, (R,))
 
 
 def test_has_method() -> None:
@@ -403,9 +514,22 @@ def test_has_method() -> None:
 def test_has_classvar() -> None:
     signed = App("ClassVar", (Variance(COVARIANT, Type(int)),))
     assert _has_member(signed) == Attr("spam", Type(int), classvar=True)
-    # a `ClassVar` cannot hold a typevar, so a generic one demotes to an instance read
+    # a `ClassVar` cannot hold a typevar, so a generic one demotes to the instance form
     signed = App("ClassVar", (Variance(COVARIANT, R),))
     assert _has_member(signed) == Attr("spam", T, readonly=True)
+    signed = App("ClassVar", (R,))
+    assert _has_member(signed) == Attr("spam", T)
+    signed = App(
+        "ClassVar",
+        (Variance(COVARIANT, R), Variance(CONTRAVARIANT, Type(int))),
+    )
+    assert _has_member(signed) == Attr("spam", T, setter=Type(int))
+    # a class attribute keeps its read type
+    signed = App(
+        "ClassVar",
+        (Variance(COVARIANT, Type(int)), Variance(CONTRAVARIANT, ZERO)),
+    )
+    assert _has_member(signed) == Attr("spam", Type(int), classvar=True)
 
 
 def test_has_helper_name_avoids_shipped_protocol() -> None:
@@ -496,8 +620,8 @@ def test_type_parameter_default_is_lowered() -> None:
 
 
 def test_helpers_are_keyed_on_their_members() -> None:
-    # one registry: another attribute or another mutability is another helper, while
-    # the same definition under other binder names is the same helper
+    # one registry: another attribute or another access is another helper, while the
+    # same definition under other binder names is the same helper
     read = Variance(COVARIANT, R)
     module = Lowerer().module([
         Signature((TypeParam("R"),), (Param("a", Has("spam", (read,))),), R),
@@ -517,7 +641,7 @@ def test_helpers_are_keyed_on_their_members() -> None:
     assert len(by_members) == 3
     spam = by_members[Attr("spam", T, readonly=True),]
     ham = by_members[Attr("ham", T, readonly=True),]
-    spam_rw = by_members[Attr("spam", T),]
+    spam_rw = by_members[Attr("spam", T, setter=T),]
     assert len({spam.name, ham.name, spam_rw.name}) == 3
     assert [f.params[0].node for f in module.funcs] == [
         App(spam.name, (R,)),

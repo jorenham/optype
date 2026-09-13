@@ -561,6 +561,7 @@ lint = [
 test = [
     { name = "basedpyright" },
     { name = "beartype" },
+    { name = "mypy", extra = ["faster-cache"] },
     { name = "optype", extra = ["numpy"] },
     { name = "pytest" },
     { name = "typing-extensions" },
@@ -613,6 +614,7 @@ lint = [
 test = [
     { name = "basedpyright", specifier = "==1.40.1" },
     { name = "beartype", specifier = ">=0.23.0rc1" },
+    { name = "mypy", extras = ["faster-cache"], specifier = "==2.3.1" },
     { name = "optype", extras = ["numpy"] },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "typing-extensions", specifier = ">=4.16.0" },

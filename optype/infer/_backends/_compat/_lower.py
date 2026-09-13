@@ -11,7 +11,7 @@ import keyword
 import typing
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import replace
-from itertools import product
+from itertools import count, islice, product
 from typing import final
 
 # `from . import _ir` would re-enter this package
@@ -176,6 +176,33 @@ class Lowerer:
         return Module(tuple(self._registry.defs.values()), tuple(funcs))
 
 
+def _signed(args: tuple[_ir.Node, ...]) -> tuple[_ir.Node, ...] | None:
+    """`args` as reads and writes; a lone method is a read of its callable type."""
+    if all(isinstance(arg, _ir.Variance) for arg in args):
+        return args
+    if len(args) == 1 and isinstance(args[0], _ir.Fn):
+        return (_ir.Variance(_ir.COVARIANT, args[0]),)
+    return None
+
+
+def _merge_has(parts: Sequence[_ir.Node]) -> list[_ir.Node]:
+    """Join the `Has` members of one attribute, so its reads and writes share one."""
+    out: list[_ir.Node] = []
+    index: dict[str, int] = {}
+    for part in parts:
+        if isinstance(part, _ir.Has) and (signed := _signed(part.args)) is not None:
+            if (i := index.get(part.attr)) is not None:
+                prev = out[i]
+                assert isinstance(prev, _ir.Has)
+                merged = _signed(prev.args)
+                assert merged is not None
+                out[i] = _ir.Has(part.attr, merged + signed)
+                continue
+            index[part.attr] = len(out)
+        out.append(part)
+    return out
+
+
 @final
 class _SigLowerer:
     """Lower one `Signature`; its type variables are fixed for the whole traversal."""
@@ -297,6 +324,7 @@ class _SigLowerer:
         return _ir.App(origin, tuple(lowered))
 
     def _inter(self, parts: Sequence[_ir.Node], constraints: _Constraints) -> _ir.Node:
+        parts = _merge_has(parts)
         # a typevar member lifts the others into that typevar's bound, which is sound
         tyvar = next(
             (
@@ -336,10 +364,13 @@ class _SigLowerer:
     ) -> _ir.App:
         """Register a helper `Protocol` (canonicalized for reuse) and apply it."""
         fv = free_tyvars([*bases, *member_nodes(members)], self._tyvars)
-        m = {name: _ir.Name(_ir.tyvar_name(i)) for i, name in enumerate(fv)}
+        # a member binds its name in the class body, where a type parameter is looked up
+        taken = {mem.name for mem in members}
+        fresh = (n for n in map(_ir.tyvar_name, count()) if n not in taken)
+        canon_names = list(islice(fresh, len(fv)))
+        m = {name: _ir.Name(c) for name, c in zip(fv, canon_names, strict=True)}
         canon_bases = tuple(_ir.subst(b, m) for b in bases)
         canon_members = tuple(subst_member(mem, m) for mem in members)
-        canon_names = [_ir.tyvar_name(i) for i in range(len(fv))]
         tp_bounds = _inherited_bounds(canon_bases, frozenset(canon_names))
         typars = tuple(_ir.TypeParam(c, tp_bounds.get(c)) for c in canon_names)
         key = (
@@ -397,7 +428,7 @@ class _SigLowerer:
         candidate = "Has" + attr[:1].upper() + attr[1:]
         return self._proto_app(candidate, members=(member,))
 
-    def _has_member(
+    def _has_member(  # ruff: ignore[too-many-return-statements]
         self,
         attr: str,
         signed: tuple[_ir.Node, ...],
@@ -413,33 +444,33 @@ class _SigLowerer:
             inner = tuple(_ir.term_node(a) for a in signed[0].args)
             return self._has_member(attr, inner, constraints, classvar=True)
         if not signed:
-            return Attr(attr, _ir.OBJECT, classvar=classvar)
+            return Attr(attr, _ir.OBJECT, classvar=classvar, readonly=not classvar)
         if len(signed) == 1 and isinstance(signed[0], _ir.Fn):
             fn = signed[0]
             ret = self._node(strip_variance(fn.ret), constraints)
             params = tuple(self._arg(p, constraints) for p in fn.params)
             return Method(attr, params, ret)
-        if len(signed) == 1 and isinstance(signed[0], _ir.Variance):
-            sign, part = signed[0].sign, signed[0].part
-            node = self._node(part, constraints)
-            # `ClassVar` can't hold a typevar; a generic one demotes to instance read
+        signs = [s for s in signed if isinstance(s, _ir.Variance)]
+        if len(signs) != len(signed):
+            node = self._node(strip_variance(signed[0]), constraints)
             cv = classvar and not is_generic(node, self._tyvars)
-            return Attr(
-                attr,
-                node,
-                classvar=cv,
-                readonly=not cv and sign == _ir.COVARIANT,
-            )
-        # a read-and-write attribute is invariant: a plain annotation accepts both
-        reads = [
-            s.part
-            for s in signed
-            if isinstance(s, _ir.Variance) and s.sign == _ir.COVARIANT
-        ]
-        chosen = reads[0] if reads else strip_variance(signed[0])
-        node = self._node(chosen, constraints)
-        cv = classvar and not is_generic(node, self._tyvars)
-        return Attr(attr, node, classvar=cv)
+            return Attr(attr, node, classvar=cv)
+        reads = [s.part for s in signs if s.sign == _ir.COVARIANT]
+        writes = [s.part for s in signs if s.sign == _ir.CONTRAVARIANT]
+        read = self._node(_ir.intersection(reads) or _ir.OBJECT, constraints)
+        write = self._node(_ir.union(writes) or _ir.OBJECT, constraints)
+        # a class attribute is a plain `ClassVar`, which cannot hold a typevar; a
+        # generic one demotes to the instance form
+        nodes = (read, write) if writes else (read,)
+        if classvar and not any(is_generic(n, self._tyvars) for n in nodes):
+            return Attr(attr, read if reads else write, classvar=True)
+        # a dunder has a declared type, which a settable property would override
+        # incompatibly
+        if writes and attr.startswith("__") and attr.endswith("__"):
+            return Attr(attr, read if reads else write)
+        # a property with a setter is what a plain attribute and a settable property
+        # both satisfy; an annotation is only matched by a plain attribute
+        return Attr(attr, read, readonly=not writes, setter=write if writes else None)
 
     def _fn(
         self,

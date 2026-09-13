@@ -13,12 +13,14 @@ import optype.infer._ir as _ir  # ruff: ignore[manual-from-import]
 
 @dataclass(frozen=True, slots=True)
 class Attr:
-    """A protocol attribute: `name: T`, a read-only `@property`, or a `ClassVar`."""
+    """A protocol attribute: `name: T`, a `@property` (read-only, or with a setter of
+    another type), or a `ClassVar`."""
 
     name: str
     type: _ir.Node
     classvar: bool = False
     readonly: bool = False
+    setter: _ir.Node | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -100,6 +102,8 @@ def member_nodes(members: Iterable[Member]) -> Iterable[_ir.Term]:
     for member in members:
         if isinstance(member, Attr):
             yield member.type
+            if member.setter is not None:
+                yield member.setter
         else:
             yield from member.params
             yield member.ret
@@ -107,7 +111,8 @@ def member_nodes(members: Iterable[Member]) -> Iterable[_ir.Term]:
 
 def subst_member(member: Member, m: Mapping[str, _ir.Node]) -> Member:
     if isinstance(member, Attr):
-        return replace(member, type=_ir.subst(member.type, m))
+        setter = None if member.setter is None else _ir.subst(member.setter, m)
+        return replace(member, type=_ir.subst(member.type, m), setter=setter)
     params = tuple(_ir.subst_term(p, m) for p in member.params)
     return replace(member, params=params, ret=_ir.subst(member.ret, m))
 
