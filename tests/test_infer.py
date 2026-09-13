@@ -2006,6 +2006,49 @@ def test_isolate_kills_child_on_host_interrupt(
             os.kill(pid, signal.SIGKILL)
 
 
+@fork_only
+def test_isolate_detaches_stdio(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # gh-764: an fd op or a write on 1 in the target must not reach the host's stdout
+    (sink := tmp_path / "null").touch()
+    monkeypatch.setattr(os, "devnull", str(sink))  # never the real one
+    canary = tmp_path / "canary"
+    canary.touch()
+    canary.chmod(0o644)
+
+    def work() -> None:
+        os.write(1, b"leak")
+        os.fchmod(1, 0)
+
+    sys.stdout.flush()
+    fd = os.open(canary, os.O_WRONLY)
+    saved = os.dup(1)
+    os.dup2(fd, 1)
+    try:
+        isolate(work)
+    finally:
+        os.dup2(saved, 1)
+        os.close(saved)
+        os.close(fd)
+    assert canary.stat().st_mode & 0o777 == 0o644
+    assert not canary.read_text()
+
+
+@fork_only
+def test_isolate_with_closed_host_stdio() -> None:
+    # gh-764: with the host's stdin and stdout closed, the result pipe takes fd 0 or 1
+    code = (
+        "import os, sys; from optype.infer._isolate import isolate;"
+        " sys.stdout.flush(); os.close(0); os.close(1);"
+        " sys.stderr.write(isolate(lambda: 'ok'))"
+    )
+    out = _run_cli("-c", code)
+    assert out.returncode == 0, out.stderr
+    assert out.stderr == "ok"
+
+
 def test_infer_reports_target_interrupt() -> None:
     # gh-773
     with pytest.raises(InferError, match="KeyboardInterrupt"):
