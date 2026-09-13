@@ -438,7 +438,7 @@ that depends on the specific `np.dtype` instantiation.
         <td><code>AnyTimeDelta64DType</code></td>
     </tr>
     <tr>
-        <td colspan=2></td>
+        <td colspan="2"></td>
         <td><code>StringDType</code></td>
         <td><code>AnyStringArray</code></td>
         <td><code>AnyStringDType</code></td>

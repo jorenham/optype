@@ -2,19 +2,19 @@
 
 from typing import NamedTuple
 
-# `from . import` would import the package itself, which imports this module
+# `from . import _ir` would re-enter this package
 import optype.infer._numpy as _numpy
 from ._errors import InferError
-from ._spy import _Args, _dynamic_name, _Kwargs, _Marker, _TraceItem
+from ._spy import Args, Kwargs, Marker, TraceItem, dynamic_name
 from optype._core import _can, _has
 from optype.inspect import get_protocol_members
 
 _DUNDER_ATTR_WRITE = frozenset({"__delattr__", "__setattr__"})
 DUNDER_ATTR = frozenset({"__getattr__", "__getattribute__"}) | _DUNDER_ATTR_WRITE
 DUNDER_CLASS_ATTR = frozenset({
-    _Marker.CLASS_DELATTR,
-    _Marker.CLASS_GETATTR,
-    _Marker.CLASS_SETATTR,
+    Marker.CLASS_DELATTR,
+    Marker.CLASS_GETATTR,
+    Marker.CLASS_SETATTR,
 })
 
 
@@ -63,17 +63,17 @@ type Proto = str | tuple[str, ...]  # a tuple is rendered as a union of protocol
 
 class Op(NamedTuple):
     proto: Proto
-    args: _Args
-    kwargs: _Kwargs
+    args: Args
+    kwargs: Kwargs
     ret: object
     attr: str | None = None  # the subject of a synthesized `Has[...]` form
     classvar: bool = False  # a class-level attribute, i.e. a `ClassVar` member
 
 
-def resolve(trace: _TraceItem) -> Op:
+def resolve(trace: TraceItem) -> Op:
     if trace.attr in DUNDER_ATTR or trace.attr in DUNDER_CLASS_ATTR:
         name = trace.args[0]
-        if not isinstance(name, str) or _dynamic_name(name):
+        if not isinstance(name, str) or dynamic_name(name):
             msg = "no protocol for a dynamic attribute name"
             raise InferError(msg)
 

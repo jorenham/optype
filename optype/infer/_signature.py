@@ -15,7 +15,7 @@ from collections.abc import Iterator
 from inspect import Parameter
 from typing import Final, NamedTuple
 
-from ._spy import _AnyFunc, _Fork, _SpyObject
+from ._spy import AnyFunc, Fork, SpyObject
 
 if sys.version_info >= (3, 14):
     import functools
@@ -173,7 +173,7 @@ def _candidate(
         if gap:
             match param.kind:
                 case Parameter.POSITIONAL_OR_KEYWORD:
-                    param = param.replace(kind=Parameter.KEYWORD_ONLY)  # noqa: PLW2901
+                    param = param.replace(kind=Parameter.KEYWORD_ONLY)  # ruff: ignore[redefined-loop-name]
                 case Parameter.POSITIONAL_ONLY | Parameter.VAR_POSITIONAL:
                     return None
                 case _:
@@ -182,7 +182,7 @@ def _candidate(
     return params
 
 
-def parse_text_signature(func: _AnyFunc) -> list[dict[str, Parameter]] | None:
+def parse_text_signature(func: AnyFunc) -> list[dict[str, Parameter]] | None:
     """Candidate parameter mappings parsed from `__text_signature__`, or `None`.
 
     Optional groups and unrepresentable defaults expand into one candidate per valid
@@ -217,12 +217,12 @@ def parse_text_signature(func: _AnyFunc) -> list[dict[str, Parameter]] | None:
     return [c for on in combos if (c := _candidate(raw, on, groups)) is not None]
 
 
-def _accepts(func: _AnyFunc, n: int) -> bool:
+def _accepts(func: AnyFunc, n: int) -> bool:
     """Whether `func` runs its body when called with `n` positional placeholders."""
-    spies = [_SpyObject() for _ in range(n)]
+    spies = [SpyObject() for _ in range(n)]
     try:
         func(*spies)
-    except (_Fork, Exception, SystemExit) as exc:  # noqa: BLE001
+    except (Fork, Exception, SystemExit) as exc:  # ruff: ignore[blind-except]
         # a wrong-arity `TypeError` is raised before the body runs, leaving the spies
         # untouched; a touched spy or any other error (or exit) means the body ran
         if type(exc) is TypeError:
@@ -237,7 +237,7 @@ def _params(n: int, *, var_positional: bool) -> dict[str, Parameter]:
     return params
 
 
-def probe_signatures(func: _AnyFunc) -> list[dict[str, Parameter]] | None:
+def probe_signatures(func: AnyFunc) -> list[dict[str, Parameter]] | None:
     """A synthetic parameter mapping per explorable arity, or `None` if none run."""
     if not (arities := {n for n in range(_MAX_PROBE_ARITY + 1) if _accepts(func, n)}):
         return None

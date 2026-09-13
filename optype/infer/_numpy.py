@@ -2,12 +2,11 @@
 
 from collections.abc import Iterable, Sequence
 from inspect import Parameter
-from typing import cast
 
-# `from . import` would import the package itself, which imports this module
+# `from . import _ir` would re-enter this package
 import optype.infer._ir as _ir
 from ._signature import signature
-from ._spy import _AnyFunc
+from ._spy import AnyFunc
 from ._values import VARIADIC_KINDS
 
 DUNDER_CAN_MAP = {
@@ -27,7 +26,7 @@ _DTYPE_RANK: dict[str, int] = {
 _DTYPE_ALIASES = [alias for _, alias in _DTYPE_KINDS]
 
 
-def ufunc_nin(func: _AnyFunc) -> int | None:
+def ufunc_nin(func: AnyFunc) -> int | None:
     """The input arity if `func` looks like a ufunc, `None` otherwise."""
     nin, nout = getattr(func, "nin", None), getattr(func, "nout", None)
     if isinstance(nin, int) and isinstance(nout, int):
@@ -40,8 +39,8 @@ def ufunc_params(nin: int) -> list[str]:
     return ["x"] if nin == 1 else [f"x{i + 1}" for i in range(nin)]
 
 
-def _ufunc_dtype(func: _AnyFunc, i: int) -> str | None:
-    types = cast("Sequence[str]", getattr(func, "types", ()))
+def _ufunc_dtype(func: AnyFunc, i: int) -> str | None:
+    types: Sequence[str] = getattr(func, "types", ())
     ranks = [
         _DTYPE_RANK[ins[i]]
         for sig in types
@@ -51,7 +50,7 @@ def _ufunc_dtype(func: _AnyFunc, i: int) -> str | None:
 
 
 def infer_ufunc(
-    func: _AnyFunc,
+    func: AnyFunc,
     names: Sequence[str],
     selected: Iterable[str],
 ) -> list[_ir.Signature]:
@@ -70,7 +69,7 @@ def infer_ufunc(
     return [_ir.Signature((_ir.TypeParam("R"),), tuple(params), _ir.Name("R"))]
 
 
-def _required_args(func: _AnyFunc) -> int | None:
+def _required_args(func: AnyFunc) -> int | None:
     """The positional arity of `func`, or `None` if it has none or is variadic."""
     try:
         params = signature(func).parameters.values()
@@ -84,7 +83,7 @@ def _required_args(func: _AnyFunc) -> int | None:
     )
 
 
-def array_function_node(func: _AnyFunc, ret: _ir.Node) -> _ir.Node:
+def array_function_node(func: AnyFunc, ret: _ir.Node) -> _ir.Node:
     """Render `CanArrayFunction` with the dispatched function's arity."""
     n = _required_args(func)
     sig: tuple[_ir.Node, ...] = (

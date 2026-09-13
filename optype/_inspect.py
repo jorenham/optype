@@ -4,7 +4,7 @@ __all__ = ["_get_protocol_attrs"]
 
 
 # same as from `typing_extensions._EXCLUDED_ATTRS`
-_EXCLUDED_ATTRS: typing.Final = frozenset(getattr(typing, "EXCLUDED_ATTRIBUTES")) | {  # noqa: B009
+_EXCLUDED_ATTRS: typing.Final = frozenset(getattr(typing, "EXCLUDED_ATTRIBUTES")) | {  # ruff: ignore[get-attr-with-constant]
     "__match_args__",
     "__protocol_attrs__",
     "__non_callable_proto_members__",

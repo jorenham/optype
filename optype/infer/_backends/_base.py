@@ -9,8 +9,8 @@ import sys
 from collections.abc import Callable, Sequence
 from typing import Protocol
 
-# `from optype.infer import _ir` would re-enter the package, which imports this module
-import optype.infer._ir as _ir  # noqa: PLR0402
+# `from . import _ir` would re-enter this package
+import optype.infer._ir as _ir  # ruff: ignore[manual-from-import]
 
 
 class Backend(Protocol):
@@ -33,11 +33,10 @@ def _enum_member_path(value: enum.Enum) -> tuple[str, str, str] | None:
     return cls.__module__, cls.__name__, name
 
 
-def value_text(value: object, rec: Callable[[str], None] | None = None) -> str:
-    """A single value's source text: an enum member's path, else its `repr`.
+def value_text(value: object) -> str:
+    """A single value's source text: an enum member's bare path, else its `repr`.
 
-    A `rec` records the enum class path to import and selects the qualified form;
-    an inexpressible enum member falls back to its data value.
+    An inexpressible enum member falls back to its data value.
     """
     if not isinstance(value, enum.Enum):
         return repr(value)
@@ -45,18 +44,24 @@ def value_text(value: object, rec: Callable[[str], None] | None = None) -> str:
     if (found := _enum_member_path(value)) is None:
         return repr(value.value)
 
-    module, cls, member = found
-    if rec is None:
-        return f"{cls}.{member}"
+    _, cls, member = found
+    return f"{cls}.{member}"
 
+
+def qualified_value_text(value: object, rec: Callable[[str], None]) -> str:
+    """`value_text` with the enum class qualified; `rec` records its import path."""
+    if not isinstance(value, enum.Enum) or (found := _enum_member_path(value)) is None:
+        return value_text(value)
+
+    module, cls, member = found
     rec(path := f"{module}.{cls}")
     return f"{path}.{member}"
 
 
-def default_text(value: object, rec: Callable[[str], None] | None = None) -> str:
+def default_text(value: object) -> str:
     """The default's source text, in stub style: a literal `repr`, else `...`."""
     if isinstance(value, enum.Enum):
-        return value_text(value, rec) if _enum_member_path(value) else "..."
+        return value_text(value) if _enum_member_path(value) else "..."
 
     simple = (
         value is None
@@ -64,3 +69,10 @@ def default_text(value: object, rec: Callable[[str], None] | None = None) -> str
         or isinstance(value, (int, float, complex, str, bytes))
     )
     return repr(value) if simple else "..."
+
+
+def qualified_default_text(value: object, rec: Callable[[str], None]) -> str:
+    """`default_text` with an enum member's class qualified and recorded."""
+    if isinstance(value, enum.Enum):
+        return qualified_value_text(value, rec) if _enum_member_path(value) else "..."
+    return default_text(value)

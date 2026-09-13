@@ -1,4 +1,4 @@
-# ruff: noqa: F403
+# ruff: file-ignore[undefined-local-with-import-star]
 import importlib as _importlib
 import importlib.metadata as _metadata
 

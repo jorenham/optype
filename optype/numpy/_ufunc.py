@@ -1,7 +1,11 @@
 import sys
 import types
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from typing import Any, Literal as L, Protocol  # noqa: N817
+from typing import (  # ruff: ignore[camelcase-imported-as-acronym]
+    Any,
+    Literal as L,
+    Protocol,
+)
 
 if sys.version_info >= (3, 13):
     from typing import TypeVar, runtime_checkable

@@ -13,7 +13,7 @@ NOTE:
 import ctypes as ct
 import sys
 
-# ruff: noqa: N812
+# ruff: file-ignore[lowercase-imported-as-non-lowercase]
 from ctypes import (
     c_bool as Bool,
     c_byte as Byte,
@@ -46,7 +46,7 @@ from ctypes import (
 from typing import TYPE_CHECKING, Final, Literal, Never, cast
 
 if sys.version_info >= (3, 14) and sys.platform != "win32":
-    from ctypes import (  # noqa: I001
+    from ctypes import (  # ruff: ignore[unsorted-imports]
         c_float_complex as Complex64,
         c_double_complex as Complex128,
         c_longdouble_complex as CLongDouble,
@@ -58,7 +58,7 @@ else:
 
 from ._ctypeslib import CScalar, CType
 
-# ruff: noqa: RUF022
+# ruff: file-ignore[unsorted-dunder-all]
 __all__ = [
     "CType",
     "CScalar",
@@ -121,7 +121,7 @@ SIZE_LONGDOUBLE: Final = cast("Literal[8, 10, 12, 16]", ct.sizeof(ct.c_longdoubl
 
 
 def __is_dev() -> bool:
-    from importlib import metadata  # noqa: PLC0415
+    from importlib import metadata  # ruff: ignore[import-outside-top-level]
 
     return "dev" in metadata.version((__package__ or "optype").removesuffix(".numpy"))
 

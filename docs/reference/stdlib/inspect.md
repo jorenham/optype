@@ -15,12 +15,14 @@ objects.
             <a href="https://docs.python.org/3/library/typing.html#typing.get_args"><code>typing.get_args()</code></a>,
             that
             <ul>
-            <li>
-                unpacks <code>typing.Annotated</code> and Python 3.12 <code>type _</code> alias
-                types (i.e. <code>typing.TypeAliasType</code>),
-            </li>
-            <li>recursively flattens unions and nested <code>typing.Literal</code> types, and</li>
-            <li>raises <code>TypeError</code> if not a type expression.</li>
+                <li>
+                    unpacks <code>typing.Annotated</code> and Python 3.12 <code>type _</code> alias
+                    types (i.e. <code>typing.TypeAliasType</code>),
+                </li>
+                <li>
+                    recursively flattens unions and nested <code>typing.Literal</code> types, and
+                </li>
+                <li>raises <code>TypeError</code> if not a type expression.</li>
             </ul>
             Return a <code>tuple[...]</code> of type arguments or parameters.
             <br>
@@ -34,10 +36,10 @@ objects.
             But this is in direct contradiction with the
             <a href="https://typing.python.org/en/latest/spec/literal.html#shortening-unions-of-literals">official typing documentation</a>:
             <blockquote>
-            When a <code>Literal</code> is parameterized with more than one value, it’s treated as
-            exactly equivalent to the union of those types.
-            That is, <code>Literal[v1, v2, v3]</code> is equivalent to
-            <code>Literal[v1] | Literal[v2] | Literal[v3]</code>
+                When a <code>Literal</code> is parameterized with more than one value, it’s treated as
+                exactly equivalent to the union of those types.
+                That is, <code>Literal[v1, v2, v3]</code> is equivalent to
+                <code>Literal[v1] | Literal[v2] | Literal[v3]</code>
             </blockquote>
             So this is why <code>optype.inspect.get_args</code> should be used
             ```pycon
@@ -68,21 +70,25 @@ objects.
     <tr>
         <td><code>get_protocol_members(_)</code></td>
         <td>
-        A better alternative to
-        <a href="https://docs.python.org/3/library/typing.html#typing.get_protocol_members"><code>typing.get_protocol_members()</code></a>,
-        that
-        <ul>
-            <li>doesn't require Python 3.13 or above,</li>
-            <li>
-                supports <a href="https://peps.python.org/pep-0695/">PEP 695</a>
-                <code>type _</code> alias types on Python 3.12 and above,
-            </li>
-            <li>unpacks unions of <code>typing.Literal</code> ...</li>
-            <li>... and flattens them if nested within another <code>typing.Literal</code>,</li>
-            <li>treats <code>typing.Annotated[T]</code> as <code>T</code>, and</li>
-            <li>raises a <code>TypeError</code> if the passed value isn't a type expression.</li>
-        </ul>
-        Returns a <code>frozenset[str]</code> with member names.
+            A better alternative to
+            <a href="https://docs.python.org/3/library/typing.html#typing.get_protocol_members"><code>typing.get_protocol_members()</code></a>,
+            that
+            <ul>
+                <li>doesn't require Python 3.13 or above,</li>
+                <li>
+                    supports <a href="https://peps.python.org/pep-0695/">PEP 695</a>
+                    <code>type _</code> alias types on Python 3.12 and above,
+                </li>
+                <li>unpacks unions of <code>typing.Literal</code> ...</li>
+                <li>
+                    ... and flattens them if nested within another <code>typing.Literal</code>,
+                </li>
+                <li>treats <code>typing.Annotated[T]</code> as <code>T</code>, and</li>
+                <li>
+                    raises a <code>TypeError</code> if the passed value isn't a type expression.
+                </li>
+            </ul>
+            Returns a <code>frozenset[str]</code> with member names.
         </td>
     </tr>
     <tr>

@@ -3,18 +3,8 @@
 from typing import Final, Literal
 
 from ._base import Backend
-from ._compat import COMPAT, CompatBackend
-from ._terse import TERSE, TerseBackend
-
-__all__ = (
-    "BACKENDS",
-    "COMPAT",
-    "TERSE",
-    "Backend",
-    "BackendName",
-    "CompatBackend",
-    "TerseBackend",
-)
+from ._compat import COMPAT
+from ._terse import TERSE
 
 type BackendName = Literal["terse", "compat"]
 

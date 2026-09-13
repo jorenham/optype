@@ -11,9 +11,8 @@ tags:
 
     The `optype.infer` module is experimental and its API may change without notice.
 
-`optype.infer` works out which `optype` protocols a function requires of its parameters.
-It runs the function against recording proxies that trace every operation, then renders
-the result as a [PEP 695](https://peps.python.org/pep-0695/) signature.
+`optype.infer` works out which `optype` protocols a function requires of its parameters,
+and reports the result as a [PEP 695](https://peps.python.org/pep-0695/) signature.
 
 For the Python API surface (the `infer` function and its exceptions), see the
 [`optype.infer`](reference/experimental/infer.md) reference.
@@ -72,8 +71,8 @@ and the inline [`Has[...]`](#attributes) form become protocols, and the
 
 ## Overloads
 
-A binary operator can dispatch to either operand, so it is reported as one overload per
-line:
+A binary operator can dispatch to either operand. Both possibilities are reported, one
+overload per line:
 
 ```console
 $ optype infer "lambda x, y: x * y"
@@ -81,8 +80,7 @@ $ optype infer "lambda x, y: x * y"
 [T, R](x: T, y: CanRMul[T, R]) -> R
 ```
 
-An operator applied to its own result yields a recursive bound, where the bound of `T`
-refers back to `T`:
+An operator applied to its own result gives a bound that refers back to its own typevar:
 
 ```console
 $ optype infer "lambda x: -x + x"
@@ -92,47 +90,36 @@ $ optype infer "lambda x: -x + x"
 
 ## Intersections
 
-Python has no intersection types, so the `&` is not valid Python: both requirements
-apply at once. Since each `optype` protocol declares a single method, an intersection
-of distinct protocols is expressible as a protocol that inherits from all members:
-
-```python
-class CanNegRAdd[T, R](CanNeg[T], CanRAdd[T, R], Protocol): ...
-```
-
-This turns the `CanNeg[T] & CanRAdd[T, R]` above into the valid `CanNegRAdd[T, R]`.
-Where `optype` already ships the combined protocol, `infer` reports it directly:
-`CanGetitem & CanLen` merges into `CanSequence`, and a traced `with` statement renders
-as [`CanWith`](#context-managers) rather than `CanEnter & CanExit`:
+Python has no intersection types. The `&` is not valid Python: it means that both
+requirements apply at once. Where `optype` already ships the combined protocol, `infer`
+reports it directly: `CanGetitem & CanLen` merges into `CanSequence`, and a `with`
+statement gives [`CanWith`](#context-managers) instead of `CanEnter & CanExit`:
 
 ```console
 $ optype infer "lambda x, i: x[i] if len(x) else None"
 [T, R](x: CanSequence[T, R], i: T) -> R | None
 ```
 
-Only an intersection of the same protocol shares its method, which happens when an
-operation is traced at several arities:
+A protocol can also intersect with itself, when an operation is used at several arities:
 
 ```console
 $ optype infer "lambda x: (round(x), round(x, 2))"
 [R, R2](x: CanRound[R] & CanRound[Literal[2], R2]) -> tuple[R, R2]
 ```
 
-That takes `@overload`s instead, which `optype` ships as the three-parameter
-`CanRound`: this intersection is `CanRound[Literal[2], R, R2]`.
+Here `optype` ships the three-parameter `CanRound`, so this intersection is
+`CanRound[Literal[2], R, R2]`.
 
 ## Operators
 
-Every operation that dispatches through a dunder is traced. That includes augmented
-assignments, which map to the in-place protocols:
+Augmented assignments map to the in-place protocols:
 
 ```console
 $ optype infer "def f(x, y): x += y; return x"
 [T, R](x: CanIAdd[T, R], y: T) -> R
 ```
 
-The same goes for builtins such as `divmod`, `round`, and `reversed`, which dispatch
-through dunders too:
+The same goes for builtins such as `divmod`, `round`, and `reversed`:
 
 ```console
 $ optype infer "lambda x: divmod(x, 2)"
@@ -145,9 +132,8 @@ $ optype infer "lambda x: reversed(x)"
 [R](x: CanReversed[R]) -> R
 ```
 
-A call dispatches through `__call__`, but a parameter that is called renders in
-signature syntax rather than as `CanCall` or `Callable`, with any keyword arguments
-as named parameters:
+A parameter that is called gets signature syntax instead of `CanCall` or `Callable`, with
+any keyword arguments as named parameters:
 
 ```console
 $ optype infer "lambda f: f(1, b=2)"
@@ -156,28 +142,18 @@ $ optype infer "lambda f: f(1, b=2)"
 
 ## Attributes
 
-Attribute access dispatches through `__getattr__`, except for the few attributes
-that every object already has, like `__doc__`, which require nothing. Reading a
-special attribute that `optype` ships a single-member `Has*` protocol for reports
-that protocol directly:
+Where `optype` ships a `Has*` protocol for the attribute, that protocol is reported
+directly. The few attributes that every object already has, like `__doc__`, require
+nothing:
 
 ```console
 $ optype infer "lambda x: x.__name__"
 [R](x: HasName[R]) -> R
 ```
 
-An attribute without a shipped protocol renders as the fictional inline form
-`Has['name', T]`. Like `&` and `~`, it is not valid Python, but it is expressible as
-a protocol with a single member. The type argument carries a variance sign: a read
-requires only the covariant `+T`, so a `@property` getter suffices:
-
-```python
-class HasSpam[T](Protocol):
-    @property
-    def spam(self) -> T: ...
-```
-
-This turns `Has['spam', +R]` into the valid `HasSpam[R]`:
+Attributes without a shipped protocol use the fictional inline form `Has['name', T]`.
+Like `&` and `~`, that form is not valid Python. Its type argument carries a variance
+sign: a read requires only the covariant `+T`, so a `@property` getter suffices:
 
 ```console
 $ optype infer "lambda x: x.spam"
@@ -186,12 +162,11 @@ $ optype infer "lambda x: x.spam"
 
 !!! tip "Reading the `+`/`-` signs"
 
-    The sign is the direction the value flows: a covariant `+T` is **produced** (read
-    out, like a getter's return type), and a contravariant `-T` is **consumed** (passed
-    in, like a setter's argument). So a read is `+`, a write is `-`.
+    A read is `+` and a write is `-`: covariant for values that come out, contravariant
+    for values that go in.
 
-When the attribute is called, the sign sinks into the callable's return type, where
-the covariance applies: `Has['spam', () -> +R]` is the method `def spam(self) -> R`:
+For a called attribute the sign moves to the callable's return type, where the covariance
+applies: `Has['spam', () -> +R]` is the method `def spam(self) -> R`:
 
 ```console
 $ optype infer "lambda x: x.spam()"
@@ -211,8 +186,8 @@ $ optype infer "def f(x): del x.spam"
 (x: Has['spam']) -> None
 ```
 
-A builtin object renders by its importable `types` name, so a module is `ModuleType`, a
-code object `CodeType`, etc.
+Builtin objects use their importable `types` name: `ModuleType` for a module, `CodeType`
+for a code object, and so on.
 
 ```console
 $ optype infer "def f(): return f.__code__"
@@ -221,8 +196,7 @@ $ optype infer "def f(): return f.__code__"
 
 ## Classes
 
-`type` reads the class directly instead of dispatching through a dunder, but every
-recording proxy has a unique class, so the result is still tied to its parameter:
+The class of a value stays linked to the parameter it came from:
 
 ```console
 $ optype infer "lambda x: type(x)"
@@ -232,14 +206,14 @@ $ optype infer "lambda x: type(next(x))"
 [R](x: CanNext[R]) -> type[R]
 ```
 
-That unique class also ties its instances back to the parameter:
+Instantiating that class gives the parameter type back:
 
 ```console
 $ optype infer "lambda x: type(x)()"
 [T](x: T) -> T
 ```
 
-An attribute access on the class itself renders inside `ClassVar`, mirroring a protocol
+An attribute accessed on the class itself is wrapped in `ClassVar`, matching a protocol
 member declared as `spam: ClassVar[...]`.
 
 ```console
@@ -253,8 +227,8 @@ $ optype infer "def f(x): del type(x).spam"
 (x: Has['spam', ClassVar]) -> None
 ```
 
-A concrete class renders parameterized when it resolves by name (a local class stays
-a bare `type`), and `type` is covariant, so a subclass is absorbed by its parent:
+A concrete class is parameterized when it resolves by name; a local class stays a bare
+`type`. Because `type` is covariant, a subclass is absorbed by its parent:
 
 ```console
 $ optype infer "lambda: bool"
@@ -274,7 +248,7 @@ $ optype infer "lambda: dict[str, int]"
 () -> type[dict[str, int]]
 ```
 
-A union or `Callable` has no `type[...]` form, so it renders as a `TypeForm`
+Unions and `Callable` have no `type[...]` form, and use `TypeForm` instead
 ([PEP 747](https://peps.python.org/pep-0747/)):
 
 ```console
@@ -290,8 +264,8 @@ An origin or argument that doesn't resolve by name keeps the bare `GenericAlias`
 
 ## Branches
 
-Both sides of a conditional are explored, so the parameter has to satisfy every branch
-(an intersection) and the return is the union of the branch results:
+Both sides of a conditional are explored. The parameter has to satisfy every branch (an
+intersection), and the return type is the union of the branch results:
 
 ```console
 $ optype infer "lambda x: x if x > 0 else -x"
@@ -306,25 +280,25 @@ $ optype infer "lambda x, y: (x + y) if x else y"
 [T: CanBool, U: CanRAdd[T, R], R](x: T, y: U) -> R | U
 ```
 
-A comparison chain short-circuits, so it branches too: a falsy first comparison is
-returned as-is, and only a truthy one evaluates the second (`0 < x` reflects to
-`x.__gt__`):
+A comparison chain short-circuits, which makes it a branch too: a falsy first comparison
+is returned as-is, and only a truthy one evaluates the second. Here `0 < x` reflects to
+`x.__gt__`:
 
 ```console
 $ optype infer "lambda x: 0 < x < 10"
 [R, R2: CanBool](x: CanGt[Literal[0], R2 & CanBool] & CanLt[Literal[10], R]) -> R | R2
 ```
 
-A predicate is assumed stable within a single call, so repeating it on the same operand
-agrees rather than branching again. A self-contradicting guard is therefore never
-satisfiable, and its body is left untraced:
+Predicates are assumed stable within a single call: repeating one on the same operand
+agrees instead of branching again. A self-contradicting guard is then never satisfiable,
+and its body is left unexplored:
 
 ```console
 $ optype infer "lambda x: x.foo() if (x and not x) else x"
 [T: CanBool](x: T) -> T
 ```
 
-Distinct operands stay independent, so `a in x` and `b in x` still branch separately.
+Distinct operands stay independent. `a in x` and `b in x` still branch separately.
 
 ## Variadic parameters
 
@@ -339,9 +313,8 @@ $ optype infer "lambda *args: (1, *args)"
 [*Ts](*args: *Ts) -> tuple[Literal[1], *Ts]
 ```
 
-Operating on individual elements is not expressible with a variadic type parameter, so
-the elements then share a single inferred element type, as does every value of
-`**kwargs`:
+A variadic type parameter cannot express operations on individual elements. Those
+elements then share one inferred element type, as does every value of `**kwargs`:
 
 ```console
 $ optype infer "lambda *args: args[0] + args[1]"
@@ -352,9 +325,9 @@ $ optype infer "lambda **kwargs: kwargs"
 [T](**kwargs: T) -> dict[str, T]
 ```
 
-A variadic spread into a callable collapses into a single `*tuple[T, ...]`, so its
-arity tracks the variadic rather than the placeholder count. This also covers element
-spreads like `map` (whose signature and `strict` flag require Python 3.14):
+A variadic spread into a callable becomes a single `*tuple[T, ...]`, giving the callable
+the arity of the variadic itself. The same holds for element spreads, as in `map`, whose
+signature and `strict` flag require Python 3.14:
 
 ```console
 $ optype infer "lambda f, *args: f(*args)"
@@ -366,8 +339,8 @@ $ optype infer "map"
 
 ## Parameter defaults
 
-[PEP 696](https://peps.python.org/pep-0696/) type parameter defaults are used when
-appropriate:
+When the parameter has its own typevar, its default becomes a
+[PEP 696](https://peps.python.org/pep-0696/) type parameter default:
 
 ```console
 $ optype infer "def f(x=0): return x"
@@ -381,8 +354,8 @@ $ optype infer "def f(x=0): return str(x)"
 (x: CanStr = 0) -> str
 ```
 
-When omission behaves differently, such as when the function branches on the default,
-the call without the argument is reported as a separate overload:
+If omitting the argument behaves differently, for instance when the function branches on
+the default, the call without it is reported as a separate overload:
 
 ```console
 $ optype infer "def f(x=None): return [] if x is None else x"
@@ -395,8 +368,8 @@ The `~None` complement makes the overloads disjoint: the first one covers `f()` 
 in practice it's fine to omit it, as overloads are matched in order anyway.
 
 A Python 3.15+ `sentinel` is its own type per
-[PEP 661](https://peps.python.org/pep-0661/), spelled as its declared name, so the
-common sentinel-default pattern renders just like the `None` default above:
+[PEP 661](https://peps.python.org/pep-0661/), spelled as its declared name. The common
+sentinel-default pattern therefore works just like the `None` default above:
 
 ```console
 $ optype infer "MISSING = sentinel('MISSING')
@@ -419,7 +392,7 @@ def foo(x): return x + 1"
 [R](x: CanAdd[Literal[1], R]) -> R
 ```
 
-The warning has to actually fire, so only the overloads that raise it are marked. Omitting a
+The warning has to actually fire: only the overloads that raise it are marked. Omitting a
 default that takes a quiet branch leaves that overload unmarked:
 
 ```console
@@ -440,11 +413,10 @@ Only `DeprecationWarning` is recognized (not `PendingDeprecationWarning`, nor a
 
 ## Methods
 
-Anything callable can be inferred: not just functions, but also builtins (like
-`math.sqrt` above), callable instances, and unbound method descriptors. A
-positional-only parameter cannot be passed by keyword, so it renders as a bare type
-without its name. A method descriptor's `self` requires a real instance of its
-defining class, so it is reported as that concrete type:
+Anything callable can be inferred, including builtins (like `math.sqrt` above), callable
+instances, and unbound method descriptors. Positional-only parameters cannot be passed by
+keyword, and appear as a bare type without their name. The `self` of a method descriptor
+requires a real instance of its defining class, which is reported as that concrete type:
 
 ```console
 $ optype infer "str.upper"
@@ -454,9 +426,8 @@ $ optype infer "dict.get"
 [T = None](dict, CanHash, T = None) -> T
 ```
 
-When a builtin rejects the recording proxy for a defaulted parameter, its default is
-passed instead and the parameter is pinned to it, while the accepting parameters stay
-structural:
+A builtin that only accepts concrete values for a defaulted parameter pins that
+parameter to its default, while the others stay structural:
 
 ```console
 $ optype infer "str.split"
@@ -466,7 +437,7 @@ $ optype infer "str.split"
 ## Context managers
 
 A `with` statement requires `__enter__` and `__exit__` together, which `optype` combines
-as `CanWith`; the `__exit__` result is unused, so it stays `object`:
+as `CanWith`. The `__exit__` result is unused and stays `object`:
 
 ```pycon
 >>> def f(x):
@@ -478,8 +449,8 @@ as `CanWith`; the `__exit__` result is unused, so it stays `object`:
 
 ## Async
 
-Coroutine functions are run to completion, so `await`, `async with`, and `async for` are
-traced like their synchronous counterparts:
+Coroutine functions are run to completion. `await`, `async with`, and `async for` are
+inferred like their synchronous counterparts:
 
 ```console
 $ optype infer "async def f(x): return await x"
@@ -502,7 +473,7 @@ are the awaited results:
 
 ## Generators and lazy iterators
 
-A generator is lazy, so it is iterated to collect the types it yields:
+Generators are lazy, and get iterated to collect the types they yield:
 
 ```console
 $ optype infer "def f(n): yield from range(n)"
@@ -516,7 +487,7 @@ $ optype infer "async def f(xs): return (x async for x in xs)"
 ```
 
 Lazy builtin iterators (`map`, `filter`, `zip`, and `enumerate`) are iterated the same
-way, and a callable argument is traced right through them:
+way, and a callable argument is explored through them:
 
 ```console
 $ optype infer "lambda x: map(str, x)"
@@ -538,8 +509,8 @@ $ optype infer "zip"
 [R](*iterables: CanIter[CanNext[R]], strict: CanBool = False) -> zip[tuple[R, ...]]
 ```
 
-Iteration yields two elements, so a callable that compares them, like `sorted` or `max`,
-traces the comparison too:
+A callable that compares the elements it iterates, like `sorted` or `max`, requires the
+comparison too:
 
 ```console
 $ optype infer "lambda xs: sorted(xs)"
@@ -565,14 +536,11 @@ $ optype infer "lambda x: {k: v for k, v in x}"
 [R: CanHash](x: CanIter[CanNext[CanIter[CanNext[R]]]]) -> dict[R, R]
 ```
 
-A placeholder iterator yields two elements, so a two-target unpack (and a starred one) is
-covered, but a fixed unpack of three or more targets cannot be satisfied and raises an
-`InferError`.
+A fixed unpack of three or more targets cannot be satisfied and raises an `InferError`.
 
 ## Returned functions
 
-A returned function is lazy too, so it is explored with placeholders of its own, and
-its type renders in the same signature syntax:
+A returned function is explored too, and gets the same signature syntax:
 
 ```console
 $ optype infer "lambda x: lambda y: (x, y)"
@@ -588,9 +556,8 @@ $ optype infer "lambda x: lambda y: x + y"
 [T, R](x: T) -> (y: CanRAdd[T, R]) -> R
 ```
 
-This applies to anything function-like: builtins, method descriptors, and a
-`functools.partial` (explored with its bound arguments in place), also from within a
-returned container:
+This also covers builtins, method descriptors, and `functools.partial`, including from
+within a returned container:
 
 ```console
 $ optype infer "lambda: str.upper"
@@ -606,8 +573,8 @@ $ optype infer "def counter(start): return (lambda: start), (lambda by: start + 
 [T, R](start: T) -> tuple[() -> T, (by: CanRAdd[T, R]) -> R]
 ```
 
-A recursive function (factory) has an inexpressible type, so it stays an opaque
-`FunctionType`, as does one with variadic parameters:
+A recursive function (factory) has no expressible type, and stays an opaque
+`FunctionType`. So does one with variadic parameters:
 
 ```console
 $ optype infer "def f(x): return f"
@@ -616,8 +583,8 @@ $ optype infer "def f(x): return f"
 
 ## Containers
 
-Element types are tracked through the containers that hold them, so a typevar can
-surface at any depth, on either side of the signature:
+Element types are tracked through the containers that hold them. A typevar can appear at
+any depth, on either side of the signature:
 
 ```console
 $ optype infer "lambda x: (x + 1, x + 1)"
@@ -634,8 +601,8 @@ $ optype infer "lambda x: frozendict({'k': x + 1})"
 [R](x: CanAdd[Literal[1], R]) -> frozendict[Literal['k'], R]
 ```
 
-A container that holds itself is a recursive type. The cycle is detected by identity
-and tied off as a typevar bounded by its own structure:
+A container that holds itself is a recursive type, reported as a typevar bounded by its
+own structure:
 
 ```console
 $ optype infer "def f(): x = []; x.append(x); return x"
@@ -644,8 +611,8 @@ $ optype infer "def f(): x = []; x.append(x); return x"
 
 ## Unions
 
-A union member that is a subtype of another member is absorbed into it, following the
-runtime subclass relations, such as `bool <: int` and `FileNotFoundError <: OSError`:
+A union member that is a subtype of another member is absorbed into it, following runtime
+subclass relations such as `bool <: int` and `FileNotFoundError <: OSError`:
 
 ```console
 $ optype infer "def f(): yield True; yield 1"
@@ -655,8 +622,8 @@ $ optype infer "def f(): yield FileNotFoundError(); yield OSError()"
 () -> Generator[OSError]
 ```
 
-PEP 484's `int <: float <: complex` numeric tower is a static-typing fiction with no
-runtime counterpart, so it is not applied:
+PEP 484's `int <: float <: complex` numeric tower has no runtime counterpart, so it is
+not applied:
 
 ```console
 $ optype infer "lambda x: (x + 1, x + 1.0)"
@@ -673,8 +640,8 @@ $ optype infer "lambda x: [FileNotFoundError()] if x else [OSError()]"
 (x: CanBool) -> list[FileNotFoundError] | list[OSError]
 ```
 
-An *empty* container is the exception: its only inhabitant is the empty instance, which
-is a member of every same-base container, so it is absorbed even when invariant:
+Empty containers are the exception. The empty instance belongs to every container with
+the same base, and is absorbed even when invariant:
 
 ```console
 $ optype infer "lambda x: [None] if x else []"
@@ -722,18 +689,17 @@ $ optype infer "import numpy as np; np.mean"
 
 `infer` calls the function, so it only works on functions that are safe to run with
 placeholder arguments (no real side effects, no reliance on concrete values). This
-extends to anything it returns: a returned function is called with placeholders of its
-own, and a returned lazy iterator is iterated. A returned function that raises during
-this exploration is not treated as an error: its type stays an opaque `FunctionType`.
+extends to anything it returns: a returned lazy iterator is iterated, and a returned
+function is called. If that call raises, its type falls back to an opaque `FunctionType`
+instead of erroring.
 
 A single-parameter function that dispatches on an attribute's presence (`hasattr`,
-`getattr` with a default, or `try`/`except AttributeError`) is explored again with the
-attribute forced absent, to reach the branch a placeholder otherwise hides. Because the
-attribute is tolerated rather than required, the parameter widens past `Has[...]`. When
-the return ignores the attribute's value, a single overload covers it, its return the
-union of both branches (so a `hasattr` predicate accepts any object and returns `bool`);
-when the present branch returns the value, that overload stays over an `object` fallback
-(the only sound supertype of an arbitrary present return):
+`getattr` with a default, or `try`/`except AttributeError`) covers both branches. The
+attribute is tolerated rather than required, which widens the parameter past `Has[...]`.
+If the return ignores the attribute's value, one overload covers both branches and
+returns their union, which is why a `hasattr` predicate accepts any object and returns
+`bool`. If the present branch returns the value, that overload sits above an `object`
+fallback:
 
 ```pycon
 >>> print(infer(lambda x: hasattr(x, "spam")))
@@ -747,38 +713,33 @@ when the present branch returns the value, that overload stays over an `object` 
 
 Anything else keeps the strict baseline that requires the attribute: more than one
 parameter, several presence-tests at once, a present branch that needs more than the
-attribute itself, or an absent branch that can't run on placeholders (as with `dict`).
+attribute itself, or an absent branch that cannot be explored (as with `dict`).
 
 When `infer` can't handle the input, it raises `InferError` (a `NotImplementedError`
-subclass). That's the case for operations without a matching protocol, such as an
-attribute access whose name is not statically known (a computed `getattr`); for arguments
-that aren't callable to begin with; and for a builtin whose parameters `inspect.signature`
-cannot recover (such as `iter`, `max`, or `type` itself, though `type(x)` within a
-function is fine). A function that never runs to completion, such as `lambda: 0 / 0`,
-raises `InferError` chained from the triggering exception (`__cause__`).
+subclass). This happens for operations without a matching protocol, like an attribute
+access whose name is not statically known (a computed `getattr`); for arguments that
+aren't callable to begin with; and for builtins whose signature cannot be introspected,
+such as `iter`, `max`, or `type` itself (`type(x)` within a function is fine). A function
+that never runs to completion, such as `lambda: 0 / 0`, raises `InferError` chained from
+the triggering exception (`__cause__`).
 
-Variadic parameters are explored with a few placeholders, retried with more after an
-out-of-range index, a failed unpacking, or a missing `**kwargs` key, and reported as an
-`InferError` once the budget runs out. The placeholders remain observable: `len(args)`
-reports their count, and `args` and `kwargs` are never empty.
+Variadic parameters are explored with a bounded number of arguments. A function that
+needs more raises an `InferError`. They are never empty, and `len(args)` reports however
+many were used.
 
-The number of explored branches is capped, so a function with many of them gets a
-signature that only covers the explored ones, along with an `InferWarning` that names the
-gap and the affected call form. The CLI prints it to standard error; `strict=True` raises
-an `InferError` instead.
+The number of explored branches is capped. A function with many of them gets a signature
+covering only the explored ones, plus an `InferWarning` naming the gap and the affected
+call form. The CLI prints it to standard error; `strict=True` raises an `InferError`
+instead.
 
-It can only observe operations that go through a dunder method. Anything that inspects a
-parameter at the C level is invisible, so a parameter passed to `id()`, `isinstance()`,
-or an identity check (`is`) is reported as `object` rather than its real requirement. The
-same blind spot hides a branch on a derived integer: `len`, `int`, and `index` return a
-small placeholder, so `len(x) > 5` is never explored.
+Only operations that go through a dunder method can be observed. A parameter passed to
+`id()`, `isinstance()`, or an identity check (`is`) is reported as `object` instead of
+its real requirement. Branches on a derived integer are invisible for the same reason:
+`len`, `int`, and `index` return a small placeholder value, so `len(x) > 5` is never
+explored.
 
-A native callable (a C builtin, method descriptor, or callable object) can fault the
-interpreter outright during exploration rather than raise. Where `os.fork` is available,
-inferring one runs in a forked child, so such a crash surfaces as an `InferError` instead
-of taking the host process down. The error names the signal and the last spy operation
-before the fault. A pure-Python function that internally calls a crashing C function is
-not isolated.
+Exploration can also crash the interpreter or hang. Either way you get an `InferError`
+naming where it stopped, after at most a minute.
 
 !!! warning "Generic bounds"
 

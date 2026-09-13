@@ -5,7 +5,7 @@ defaults that cannot be expressed as typevar defaults, and a presence-test on a 
 parameter's attribute.
 """
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from inspect import Parameter
 from typing import NamedTuple
 
@@ -20,13 +20,13 @@ from ._ir import Signature
 from ._render import (
     Defaults,
     Names,
-    _renderers,
-    _signatures,
+    render_all,
+    renderers_of,
     signatures,
     union_signatures,
     widened_signatures,
 )
-from ._spy import _AnyFunc, _TraceItem
+from ._spy import AnyFunc, TraceItem
 from ._values import Exploration, map_values
 
 
@@ -41,6 +41,12 @@ def _bind(value: object, binding: Mapping[int, object]) -> object:
     return map_values(value, lambda v: binding.get(id(v), v))
 
 
+def _distinct(sigs: Iterable[Signature]) -> list[Signature]:
+    # no set: a default value may be unhashable
+    sigs = list(sigs)
+    return [sig for i, sig in enumerate(sigs) if sig not in sigs[:i]]
+
+
 def _bind_exploration(exp: Exploration, defaults: Defaults) -> Exploration:
     """The exploration as it would look with every defaulted parameter omitted."""
     spies = exp.spies
@@ -49,7 +55,7 @@ def _bind_exploration(exp: Exploration, defaults: Defaults) -> Exploration:
     binding |= {id(type(spies[name])): type(value) for name, value in defaults.items()}
     bound = {
         spy_id: [
-            _TraceItem(
+            TraceItem(
                 item.attr,
                 tuple(_bind(arg, binding) for arg in item.args),
                 {key: _bind(val, binding) for key, val in item.kwargs.items()},
@@ -59,22 +65,16 @@ def _bind_exploration(exp: Exploration, defaults: Defaults) -> Exploration:
         ]
         for spy_id, items in exp.traces.items()
     }
-    kept = {name: spy for name, spy in spies.items() if name not in defaults}
-    bound_results = [_bind(result, binding) for result in exp.results]
-    return Exploration(
-        kept,
-        bound,
-        bound_results,
-        exp.var_count,
-        exp.fixed,
-        exp.deprecated,
-        exp.gaps,
-        frozenset(name for name in exp.tuple_params if name not in defaults),
+    return exp._replace(
+        spies={name: spy for name, spy in spies.items() if name not in defaults},
+        traces=bound,
+        results=[_bind(result, binding) for result in exp.results],
+        tuple_params=exp.tuple_params - set(defaults),
     )
 
 
 def resolve_defaults(
-    func: _AnyFunc,
+    func: AnyFunc,
     params: Mapping[str, Parameter],
     selected: Names,
     exploration: Exploration,
@@ -100,17 +100,18 @@ def resolve_defaults(
 
     try:
         omitted = explore_spies(func, params, omit=defaults)
-        omitted_renderers = _renderers(omitted, params)
+        omitted_renderers = renderers_of(omitted, params)
         # the comparison must see every required parameter, regardless of selection
-        observed = _signatures(omitted_renderers, names, deprecated=omitted.deprecated)
-    except Exception:  # noqa: BLE001
+        observed = render_all(omitted_renderers, names, deprecated=omitted.deprecated)
+    except Exception:  # ruff: ignore[blind-except]
         return _ResolvedDefaults({}, False, [])
 
     omitted_defaults = _bind_exploration(exploration, defaults)
-    if signatures(omitted_defaults, required, names) == observed:
+    expected = signatures(omitted_defaults, required, names)
+    if _distinct(expected) == _distinct(observed):
         return _ResolvedDefaults(defaults, False, [])
 
-    overloads = _signatures(
+    overloads = render_all(
         omitted_renderers,
         selected,
         defaults,
@@ -123,7 +124,7 @@ def resolve_defaults(
     for name, value in defaults.items():
         try:
             variant = explore_spies(func, params, omit={name})
-        except Exception:  # noqa: BLE001, S112
+        except Exception:  # ruff: ignore[blind-except, try-except-continue]
             continue
         overloads += signatures(variant, params, selected, {name: value})
 
@@ -131,7 +132,7 @@ def resolve_defaults(
 
 
 def dispatch_overloads(
-    func: _AnyFunc,
+    func: AnyFunc,
     params: Mapping[str, Parameter],
     selected: Names,
     exploration: Exploration,
@@ -144,21 +145,17 @@ def dispatch_overloads(
     `object`, the return unions both branches. If the present branch returns the value,
     that overload stays over an `object` fallback. Otherwise the `baseline` holds.
     """
-    candidates = (
-        dispatch_candidates(exploration.spies, exploration.traces)
-        if len(params) == 1
-        else ()
-    )
+    candidates = dispatch_candidates(exploration) if len(params) == 1 else ()
     if len(candidates) != 1:
         return baseline
     ((param, name),) = candidates
-    if not requires_only_presence(exploration.spies, exploration.traces, param, name):
+    if not requires_only_presence(exploration, param, name):
         return baseline
     try:
         variant = explore_spies(func, params, absent={param: (name,)})
-    except Exception:  # noqa: BLE001
+    except Exception:  # ruff: ignore[blind-except]
         return baseline
-    widens = absent_verdict(variant.spies, variant.traces, param, name)
+    widens = absent_verdict(variant, param, name)
     if widens is None:
         return baseline
     if (

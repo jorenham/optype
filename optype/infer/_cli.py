@@ -1,70 +1,42 @@
 """The `optype infer` command-line logic."""
 
+import argparse
 import ast
 import sys
 import warnings
+from typing import Final
 
 from . import _color
 from ._backends import BackendName
 from ._color import ColorMode
 from optype.infer import InferError, InferWarning, infer
 
-
-def _flag_value(rest: list[str]) -> tuple[str, list[str]]:
-    """Split the value off a leading `--flag VALUE` or `--flag=VALUE`."""
-    _, eq, value = rest[0].partition("=")
-    if eq:
-        return value, rest[1:]
-    return (rest[1] if len(rest) > 1 else ""), rest[2:]
+_FORMATS: Final[tuple[BackendName, ...]] = "terse", "compat"
+_COLORS: Final[tuple[ColorMode, ...]] = "auto", "always", "never"
 
 
-def _format(rest: list[str]) -> tuple[BackendName, list[str]]:
-    """Split off a leading `--format {terse,compat}`."""
-    name, rest = _flag_value(rest)
-    # return the literal, not `name`: not every type checker narrows `str` to the name
-    if name == "terse":
-        return "terse", rest
-    if name == "compat":
-        return "compat", rest
-    sys.exit("--format must be one of: terse, compat")
-
-
-def _color_flag(rest: list[str]) -> tuple[ColorMode, list[str]]:
-    """Split off a leading `--color {auto,always,never}`."""
-    name, rest = _flag_value(rest)
-    if name == "auto":
-        return "auto", rest
-    if name == "always":
-        return "always", rest
-    if name == "never":
-        return "never", rest
-    sys.exit("--color must be one of: auto, always, never")
-
-
-def _flags(args: tuple[str, ...]) -> tuple[BackendName, ColorMode, list[str]]:
-    """Strip leading `--format`/`--color` flags in any order."""
-    backend: BackendName = "terse"
-    color: ColorMode = "auto"
-    rest = list(args)
-    while rest:
-        match rest[0].partition("=")[0]:
-            case "--format":
-                backend, rest = _format(rest)
-            case "--color":
-                color, rest = _color_flag(rest)
-            case _:
-                break  # unrecognized flag or the expression: fall through
-    return backend, color, rest
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="optype infer",
+        description="Infer the `optype` protocols required of a callable.",
+    )
+    parser.add_argument("--format", choices=_FORMATS, default=_FORMATS[0])
+    parser.add_argument("--color", choices=_COLORS, default=_COLORS[0])
+    # REMAINDER stops flag parsing at the expression, so a `-1` parameter position
+    # (and an expression containing `--`) reaches us intact
+    parser.add_argument("rest", nargs=argparse.REMAINDER, metavar="EXPR [PARAM ...]")
+    return parser
 
 
 def run(*args: str) -> None:
-    backend, color, rest = _flags(args)
+    parser = _parser()
+    ns = parser.parse_args(args)
+    rest: list[str] = ns.rest
     if not rest:
-        sys.exit(
-            "usage: optype infer [--format {terse,compat}] "
-            "[--color {auto,always,never}] EXPR [PARAM ...]",
-        )
+        parser.error("the EXPR argument is required")
 
+    backend: BackendName = ns.format
+    color: ColorMode = ns.color
     source, *selectors = rest
     selectors = [int(s) if s.removeprefix("-").isdigit() else s for s in selectors]
 
@@ -83,7 +55,7 @@ def run(*args: str) -> None:
     try:
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always", InferWarning)
-            signature = infer(eval(code, namespace), *selectors, backend=backend)
+            rendered = infer(eval(code, namespace), *selectors, backend=backend)
     except (InferError, ValueError) as exc:
         cause = exc.__cause__
         detail = f" ({type(cause).__name__}: {cause})" if cause is not None else ""
@@ -91,8 +63,8 @@ def run(*args: str) -> None:
         sys.exit(f"{type(exc).__name__}: {exc}{detail}{notes}")
 
     if _color.want_color(sys.stdout, color):
-        signature = _color.highlight(signature)
-    print(signature)
+        rendered = _color.highlight(rendered)
+    print(rendered)
     for entry in caught:
         if issubclass(entry.category, InferWarning):
             print(f"warning: {entry.message}", file=sys.stderr)

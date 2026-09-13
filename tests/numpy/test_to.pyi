@@ -1,4 +1,4 @@
-# ruff: noqa: PYI048
+# ruff: file-ignore[stub-body-multiple-statements]
 
 from collections.abc import Sequence as Seq
 from typing import Any

@@ -2,14 +2,15 @@
 
 # pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 
-from collections.abc import Callable, Generator, Iterable, Mapping
+from collections.abc import Callable, Generator, Iterable, Mapping, Sequence
 from contextvars import Context
+from dataclasses import dataclass, replace
 from enum import StrEnum
 from inspect import Parameter
 from itertools import chain
-from typing import Any, NamedTuple, NewType
+from typing import Any, NamedTuple, NewType, TypeGuard
 
-from ._spy import _Spy, _SpyObject, _Traces
+from ._spy import Spy, SpyObject, Traces
 
 VARIADIC_KINDS = frozenset({Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD})
 
@@ -24,9 +25,9 @@ class GapKind(StrEnum):
 class Exploration(NamedTuple):
     """What one exploration of a function against spy placeholders produced."""
 
-    spies: Mapping[str, _SpyObject]
-    traces: _Traces
-    results: list[object]
+    spies: Mapping[str, SpyObject]
+    traces: Traces
+    results: Sequence[object]
     var_count: int  # the `*args` placeholder count
     fixed: Mapping[str, object]  # parameters passed as-is, not spies
     deprecated: str | None = None  # a `DeprecationWarning` message raised when called
@@ -34,64 +35,75 @@ class Exploration(NamedTuple):
     tuple_params: frozenset[str] = frozenset()  # params also accepting a tuple of self
 
 
-class _Gen(NamedTuple):
+# not tuples: a `tuple()` match over a result tree must not match these
+
+
+@dataclass(frozen=True, slots=True)
+class Gen:
     """An explored generator, iterator, or coroutine result, e.g. `Generator[R]`."""
 
-    yielded: list[object]
+    yielded: Sequence[object]
     kind: str
+    bare_when_empty: bool = False
 
 
-# the `_Gen.kind` of an awaited coroutine, rendered as `Coroutine[object, None, R]`
+# the `Gen.kind` of an awaited coroutine, rendered as `Coroutine[object, None, R]`
 COROUTINE = "Coroutine"
 
 
-class _Fn(NamedTuple):
+@dataclass(frozen=True, slots=True)
+class FnResult:
     """An explored function result, rendered in signature syntax."""
 
     params: Mapping[str, Parameter]
-    spies: Mapping[str, _SpyObject]
+    spies: Mapping[str, SpyObject]
     fixed: Mapping[str, object]
     defaults: Mapping[str, object]
-    results: list[object]
+    results: Sequence[object]
 
 
-# the shared identity of a recursive `_Rec` binder and its `_RecRef` uses
-_RecVar = NewType("_RecVar", object)
+# the shared identity of a recursive `Rec` binder and its `RecRef` uses
+RecVar = NewType("RecVar", object)
 
 
-class _Rec(NamedTuple):
+@dataclass(frozen=True, slots=True)
+class Rec:
     """A result that reaches itself, rendered as a recursive typevar bound."""
 
-    var: _RecVar  # the identity shared with this binder's `_RecRef` uses
+    var: RecVar  # the identity shared with this binder's `RecRef` uses
     body: Any
 
 
-class _RecRef(NamedTuple):
-    """A reference to the enclosing `_Rec` binder of the same `var`."""
+@dataclass(frozen=True, slots=True)
+class RecRef:
+    """A reference to the enclosing `Rec` binder of the same `var`."""
 
-    var: _RecVar
+    var: RecVar
 
 
-def _children(value: Any) -> Iterable[Any]:
+def is_mapping(value: object, /) -> TypeGuard[Mapping[Any, Any]]:
+    """A `Mapping` that is not a `Context`; a `Context` is a leaf (gh-769)."""
+    return isinstance(value, Mapping) and not isinstance(value, Context)
+
+
+def children(value: Any) -> Iterable[Any]:
     """The values directly contained in an explored result."""
-    if isinstance(value, _Spy):
+    if isinstance(value, Spy):
         # a spy is a leaf; its unique class defeats the `Mapping` check's negative cache
         return ()
 
     match value:
-        case _Gen():
+        case Gen():
             out: Iterable[object] = value.yielded
-        case _Fn():
+        case FnResult():
             out = value.results
-        case _Rec():
+        case Rec():
             out = (value.body,)
-        case _RecRef():
+        case RecRef():
             out = ()
         case tuple() | list() | set() | frozenset():
             out = value
-        case Mapping() if not isinstance(value, Context):
-            # `dict` and `frozendict` (py315+); a `Context` is a leaf, since its items
-            # are just whatever context vars happen to be set (gh-769)
+        case _ if is_mapping(value):
             out = chain.from_iterable(value.items())
         case slice():
             out = value.start, value.stop, value.step
@@ -100,33 +112,33 @@ def _children(value: Any) -> Iterable[Any]:
     return out
 
 
-def _walk(value: object) -> Generator[object]:
+def walk(value: object) -> Generator[object]:
     yield value
-    for child in _children(value):
-        yield from _walk(child)
+    for child in children(value):
+        yield from walk(child)
 
 
-def map_values(value: Any, leaf: Callable[[Any], Any]) -> Any:  # noqa: C901, PLR0912
+def map_values(value: Any, leaf: Callable[[Any], Any]) -> Any:  # ruff: ignore[complex-structure, too-many-branches]
     """Rebuild `value` with each non-composite leaf replaced via `leaf`.
 
-    Recurses into the same shapes as `_children`, but a `tuple` subclass (namedtuple)
+    Recurses into the same shapes as `children`, but a `tuple` subclass (namedtuple)
     is a leaf, and a `dict` subclass (e.g. `defaultdict`) collapses to a plain `dict`.
     """
 
-    if isinstance(value, _Spy):
-        # a spy is a leaf; see `_children`
+    if isinstance(value, Spy):
+        # a spy is a leaf; see `children`
         return leaf(value)
 
     match value:
-        case _Gen():
+        case Gen():
             yielded = [map_values(item, leaf) for item in value.yielded]
-            out: object = value._replace(yielded=yielded)
-        case _Fn():
+            out = replace(value, yielded=yielded)
+        case FnResult():
             results = [map_values(item, leaf) for item in value.results]
-            out = value._replace(results=results)
-        case _Rec():
-            out = value._replace(body=map_values(value.body, leaf))
-        case _RecRef():
+            out = replace(value, results=results)
+        case Rec():
+            out = replace(value, body=map_values(value.body, leaf))
+        case RecRef():
             out = value
         case tuple() if type(value) is tuple:
             out = tuple(map_values(item, leaf) for item in value)
@@ -135,7 +147,7 @@ def map_values(value: Any, leaf: Callable[[Any], Any]) -> Any:  # noqa: C901, PL
         case set() | frozenset():
             items = {map_values(item, leaf) for item in value}
             out = frozenset(items) if isinstance(value, frozenset) else items
-        case Mapping() if not isinstance(value, Context):
+        case _ if is_mapping(value):
             mapping = value
             rebuilt = {
                 map_values(k, leaf): map_values(v, leaf) for k, v in mapping.items()
@@ -145,7 +157,7 @@ def map_values(value: Any, leaf: Callable[[Any], Any]) -> Any:  # noqa: C901, PL
             else:  # the `frozendict` builtin rebuilds as itself
                 ctor = type(value)
                 try:
-                    out = ctor(rebuilt)  # type:ignore[call-arg]  # pyright:ignore[reportCallIssue]
+                    out = ctor(rebuilt)  # type:ignore[call-arg]  # pyright:ignore[reportCallIssue]  # ty:ignore[too-many-positional-arguments]
                 except TypeError:
                     out = mapping
         case slice():
@@ -159,9 +171,8 @@ def map_values(value: Any, leaf: Callable[[Any], Any]) -> Any:  # noqa: C901, PL
     return out
 
 
-def fn_spies(results: Iterable[object]) -> Generator[_SpyObject]:
-    # every parameter spy of the explored function results, in signature order
+def fn_spies(results: Iterable[object]) -> Generator[SpyObject]:
     for result in results:
-        for node in _walk(result):
-            if isinstance(node, _Fn):
+        for node in walk(result):
+            if isinstance(node, FnResult):
                 yield from node.spies.values()

@@ -14,7 +14,7 @@ import optype.numpy._scalar as _sc
 from ._dtype import ToDType as To
 from optype._core._just import Just, JustComplex, JustFloat, JustInt
 
-# ruff: noqa: RUF022
+# ruff: file-ignore[unsorted-dunder-all]
 __all__ = [
     "AnyDType",
     "AnyNumberDType",
@@ -81,8 +81,8 @@ def __dir__() -> list[str]:
 
 ###
 
-type fc_cls = type[JustFloat | JustComplex]  # noqa: PYI042
-type ifc_cls = type[JustInt | JustFloat | JustComplex]  # noqa: PYI042
+type fc_cls = type[JustFloat | JustComplex]  # ruff: ignore[snake-case-type-alias]
+type ifc_cls = type[JustInt | JustFloat | JustComplex]  # ruff: ignore[snake-case-type-alias]
 
 type O_cls = type[Just[object]]
 type S_cls = type[Just[bytes]]

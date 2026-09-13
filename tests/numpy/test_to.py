@@ -85,7 +85,7 @@ def _id(v: object) -> str:
     _FAMILIES,
     ids=[f[0] for f in _FAMILIES],
 )
-def test_to(  # noqa: PLR0913, PLR0917
+def test_to(  # ruff: ignore[too-many-arguments, too-many-positional-arguments]
     family: str,
     just_sct: type[np.generic],
     co_target: type[np.generic] | tuple[type, ...],

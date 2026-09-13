@@ -5,27 +5,46 @@ import sys
 import types
 from collections.abc import Generator, Iterable, Mapping
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Final, override
 
 type Node = (
-    Lit | Type | Name | App | Fn | Union | Intersection | Not | Variance | Unpack | Dots
+    Lit
+    | Type
+    | Name
+    | App
+    | Has
+    | Fn
+    | Union
+    | Intersection
+    | Not
+    | Variance
+    | Unpack
+    | Dots
 )
 type Term = Node | Arg
 type Terms = tuple[Term, ...]
 
-# the shared variance signs: covariant (read-only) and contravariant (write-only)
-COVARIANT = "+"
-CONTRAVARIANT = "-"
+
+class Sign(StrEnum):
+    """A variance sign: covariant (read-only) or contravariant (write-only)."""
+
+    COVARIANT = "+"
+    CONTRAVARIANT = "-"
+
+
+COVARIANT: Final = Sign.COVARIANT
+CONTRAVARIANT: Final = Sign.CONTRAVARIANT
 
 # variance per type argument; the last entry repeats variadically
-_VARIANCES = {
-    "AsyncGenerator": COVARIANT + CONTRAVARIANT,
-    "Generator": COVARIANT + CONTRAVARIANT + COVARIANT,
-    "frozenset": COVARIANT,
-    "tuple": COVARIANT,
-    "type": COVARIANT,
+_VARIANCES: dict[str, tuple[Sign, ...]] = {
+    "AsyncGenerator": (COVARIANT, CONTRAVARIANT),
+    "Generator": (COVARIANT, CONTRAVARIANT, COVARIANT),
+    "frozenset": (COVARIANT,),
+    "tuple": (COVARIANT,),
+    "type": (COVARIANT,),
     # `enumerate`, `filter`, and `map` are invariant in typeshed; only `zip` is not
-    "zip": COVARIANT,
+    "zip": (COVARIANT,),
 }
 
 
@@ -67,7 +86,7 @@ OBJECT: Final[Name] = Name("object")
 NEVER: Final[Name] = Name("Never")
 NONE: Final[Name] = Name("None")
 
-_TOP = frozenset({OBJECT, Type(object)})
+_TOP: Final = OBJECT, Type(object)
 
 
 @dataclass(frozen=True, slots=True)
@@ -88,6 +107,15 @@ class App:
 
 
 @dataclass(frozen=True, slots=True)
+class Has:
+    """An attribute requirement, e.g. `Has['name', -T, +R]`: `-T` write, `+R` read,
+    `Fn` method, or `ClassVar[...]`."""
+
+    attr: str
+    args: tuple[Node, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class Fn:
     """A function type in signature syntax, e.g. `(x: T) -> R` or `(T) -> R`."""
 
@@ -95,9 +123,9 @@ class Fn:
     ret: Node
 
 
-def _param_type(param: Term) -> Node:
-    """The type of a (possibly keyword-labeled) parameter."""
-    return param.value if isinstance(param, Arg) else param
+def term_node(term: Term) -> Node:
+    """The node of a term, unwrapping any keyword-labeled `Arg`."""
+    return term.value if isinstance(term, Arg) else term
 
 
 @dataclass(frozen=True, slots=True)
@@ -111,7 +139,7 @@ class Not:
 class Variance:
     """A variance-marked type: covariant (read-only) or contravariant (write-only)."""
 
-    sign: str
+    sign: Sign
     part: Node
 
 
@@ -187,9 +215,9 @@ def _subtype_args(origin: str, args: Terms, wider: Terms) -> bool:
     # an all-`Never` container holds only `[]`, a member of any same origin
     if args and all(arg == NEVER for arg in args):
         return True
-    if not (variances := _VARIANCES.get(origin, "")):
+    if not (variances := _VARIANCES.get(origin)):
         return False
-    signs = variances.ljust(len(args), variances[-1])
+    signs = variances + variances[-1:] * (len(args) - len(variances))
     return all(
         subtype(arg, wide) if sign == COVARIANT else subtype(wide, arg)
         for arg, wide, sign in zip(args, wider, signs, strict=False)
@@ -199,8 +227,8 @@ def _subtype_args(origin: str, args: Terms, wider: Terms) -> bool:
 def subtype(sub: Term, sup: Term) -> bool:
     """Whether `sub` is a subtype of `sup`, as far as can be told from the nodes."""
 
-    # a set would hash `sub`, which could have unhashable defaults
-    if sub in (sup, NEVER) or sup in _TOP:  # noqa: PLR6201
+    # a set would hash the operands, which can carry an unhashable default
+    if sub in (sup, NEVER) or sup in _TOP:  # ruff: ignore[literal-membership]
         return True
 
     match sub, sup:
@@ -223,7 +251,7 @@ def subtype(sub: Term, sup: Term) -> bool:
                 len(params) == len(wider_params)
                 and subtype(ret, wider_ret)
                 and all(
-                    subtype(_param_type(wide), _param_type(param))
+                    subtype(term_node(wide), term_node(param))
                     for param, wide in zip(params, wider_params, strict=True)
                 )
             )
@@ -295,9 +323,9 @@ def _collapse_tuples(nodes: list[Node]) -> list[Node]:
             continue
         done.add(arity)
         group = groups[arity]
-        # `_fixed_tuple_arity` already excluded any `Arg`, so `_param_type` is a no-op
+        # `_fixed_tuple_arity` already excluded any `Arg`, so `term_node` is a no-op
         columns = (
-            union([_param_type(g.args[i]) for g in group], tuples=True) or NEVER
+            union([term_node(g.args[i]) for g in group], tuples=True) or NEVER
             for i in range(arity)
         )
         out.append(tuple_node(columns))
@@ -344,13 +372,13 @@ def intersection(parts: Iterable[Node]) -> Node | None:
 
 
 def names(node: Term) -> Generator[str]:
-    # every type-name leaf, in order, so typevar uses can be counted
+    # in order, so typevar uses can be counted
     match node:
         case Name(name):
             yield name
         case Arg(value=part) | Not(part) | Variance(part=part) | Unpack(part):
             yield from names(part)
-        case App(args=parts) | Union(parts) | Intersection(parts):
+        case App(args=parts) | Has(args=parts) | Union(parts) | Intersection(parts):
             for part in parts:
                 yield from names(part)
         case Fn(params, ret):
@@ -370,6 +398,8 @@ def subst(node: Node, m: Mapping[str, Node], *, dedup: bool = False) -> Node:
             out = m.get(name, node)
         case App(origin, args):
             out = App(origin, tuple(subst_term(a, m, dedup=dedup) for a in args))
+        case Has(attr, args):
+            out = Has(attr, tuple(subst(a, m, dedup=dedup) for a in args))
         case Fn(params, ret):
             terms = tuple(subst_term(p, m, dedup=dedup) for p in params)
             out = Fn(terms, subst(ret, m, dedup=dedup))
@@ -434,7 +464,7 @@ _TYPES_NAMES: dict[type, str] = {
 
 def is_sentinel(x: object, /) -> bool:
     # the getattr works around a pyrefly (1.0.0) bug
-    return sys.version_info >= (3, 15) and isinstance(x, getattr(builtins, "sentinel"))  # noqa: B009
+    return sys.version_info >= (3, 15) and isinstance(x, getattr(builtins, "sentinel"))  # ruff: ignore[get-attr-with-constant]
 
 
 def _public_module(cls: type) -> str | None:
