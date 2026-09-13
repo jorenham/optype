@@ -73,7 +73,9 @@ def _candidate_parameters(func: AnyFunc) -> list[dict[str, Parameter]]:
         return [dict(signature(func).parameters)]
     except TypeError as exc:  # not callable
         raise InferError(describe(exc)) from exc
-    except ValueError as exc:  # callable but no signature (e.g. a C builtin)
+    except Exception as exc:
+        # callable but no usable signature: a C builtin, or a `__text_signature__`
+        # default that does not evaluate in its module (gh-772)
         if candidates := parse_text_signature(func) or probe_signatures(func):
             return candidates
         raise InferError(describe(exc)) from exc
