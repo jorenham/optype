@@ -3,7 +3,7 @@
 import builtins
 import sys
 import types
-from collections.abc import Generator, Iterable, Mapping
+from collections.abc import Collection, Generator, Iterable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Final, override
@@ -434,17 +434,22 @@ def placeholder_name(n: int) -> str:
     return f"\x00{n}"
 
 
-def _canonical_renaming(node: Node) -> dict[str, str]:
-    """Relabel each `Name` by first-occurrence order, to canonicalize via `rename`."""
+def _canonical_renaming(node: Node, tyvars: Collection[str]) -> dict[str, str]:
+    """Relabel each of the `tyvars` by first-occurrence order, to canonicalize via
+    `rename`."""
     m: dict[str, str] = {}
     for name in names(node):
-        m.setdefault(name, placeholder_name(len(m)))
+        if name in tyvars:
+            m.setdefault(name, placeholder_name(len(m)))
     return m
 
 
-def alpha_equal(a: Node, b: Node) -> dict[str, str] | None:
-    """A `Name` bijection making `a` and `b` identical up to renaming, or `None`."""
-    ca, cb = _canonical_renaming(a), _canonical_renaming(b)
+def alpha_equal(a: Node, b: Node, tyvars: Collection[str]) -> dict[str, str] | None:
+    """A bijection over the `tyvars` making `a` and `b` identical, or `None`.
+
+    Any other name, such as `None` or `object`, has to match as it is.
+    """
+    ca, cb = _canonical_renaming(a, tyvars), _canonical_renaming(b, tyvars)
     if rename(a, ca) != rename(b, cb):
         return None
     inv = {label: name for name, label in cb.items()}

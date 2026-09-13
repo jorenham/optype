@@ -11,6 +11,7 @@ import pytest
 from optype.infer._ir import (
     COVARIANT,
     NEVER,
+    NONE,
     OBJECT,
     App,
     Arg,
@@ -252,28 +253,41 @@ def test_alpha_equal_and_rename() -> None:
     # and a simultaneous rename that drops union members which collapse together
     a = App("CanAdd", (Name("A"), App("CanMul", (Name("B"), Name("A")))))
     b = App("CanAdd", (Name("X"), App("CanMul", (Name("Y"), Name("X")))))
-    assert alpha_equal(a, b) == {"A": "X", "B": "Y"}
-    assert alpha_equal(a, App("CanAdd", (Name("X"), Name("X")))) is None
+    tyvars = {"A", "B", "X", "Y"}
+    assert alpha_equal(a, b, tyvars) == {"A": "X", "B": "Y"}
+    assert alpha_equal(a, App("CanAdd", (Name("X"), Name("X"))), tyvars) is None
     assert rename(a, {"A": "X", "B": "Y"}) == b
     assert rename(Union((Name("A"), Name("B"))), {"A": "C", "B": "C"}) == Name("C")
 
 
 def test_alpha_equal_is_a_bijection() -> None:
     # the same shape with a name used twice on one side only is not a bijection
-    assert alpha_equal(App("X", (A, A)), App("X", (B, C))) is None
-    assert alpha_equal(App("X", (B, C)), App("X", (A, A))) is None
+    tyvars = {"A", "B", "C"}
+    assert alpha_equal(App("X", (A, A)), App("X", (B, C)), tyvars) is None
+    assert alpha_equal(App("X", (B, C)), App("X", (A, A)), tyvars) is None
     # a swap is a bijection, and renames simultaneously
-    assert alpha_equal(App("X", (A, B)), App("X", (B, A))) == {"A": "B", "B": "A"}
+    assert alpha_equal(App("X", (A, B)), App("X", (B, A)), tyvars) == {
+        "A": "B",
+        "B": "A",
+    }
     assert rename(App("X", (A, B)), {"A": "B", "B": "A"}) == App("X", (B, A))
 
 
 def test_alpha_equal_keeps_callable_metadata() -> None:
     # an argument's keyword and default are structure, not names, so they must match
     fn = Fn((Arg("x", A, (0,)),), B)
-    assert alpha_equal(fn, Fn((Arg("x", C, (0,)),), A)) == {"A": "C", "B": "A"}
-    assert alpha_equal(fn, Fn((Arg("y", A, (0,)),), B)) is None
-    assert alpha_equal(fn, Fn((Arg("x", A, (1,)),), B)) is None
-    assert alpha_equal(fn, Fn((Arg("x", A),), B)) is None
+    tyvars = {"A", "B", "C"}
+    assert alpha_equal(fn, Fn((Arg("x", C, (0,)),), A), tyvars) == {"A": "C", "B": "A"}
+    assert alpha_equal(fn, Fn((Arg("y", A, (0,)),), B), tyvars) is None
+    assert alpha_equal(fn, Fn((Arg("x", A, (1,)),), B), tyvars) is None
+    assert alpha_equal(fn, Fn((Arg("x", A),), B), tyvars) is None
+
+
+def test_alpha_equal_renames_only_type_parameters() -> None:
+    # `None` and `object` are names too, but not ones that a renaming may touch
+    a, b = App("CanAdd", (NONE, A)), App("CanAdd", (OBJECT, B))
+    assert alpha_equal(a, b, {"A", "B"}) is None
+    assert alpha_equal(a, App("CanAdd", (NONE, B)), {"A", "B"}) == {"A": "B"}
 
 
 def test_tuple_nodes() -> None:

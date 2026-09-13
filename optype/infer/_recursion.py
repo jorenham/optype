@@ -1,7 +1,7 @@
 """Turn a loop the explorer ran several times back into one recursive typevar."""
 
 from collections import defaultdict
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from dataclasses import replace
 
 # `from . import _ir` would re-enter this package
@@ -10,7 +10,10 @@ import optype.infer._ir as _ir  # ruff: ignore[manual-from-import]
 _LOOP_MIN = 3  # copies a chain needs before it counts as a loop
 
 
-def _shift_edges(bounded: Mapping[str, _ir.Node]) -> dict[str, str]:
+def _shift_edges(
+    bounded: Mapping[str, _ir.Node],
+    tyvars: Collection[str],
+) -> dict[str, str]:
     """Link `x -> y` when `y` is what `x` becomes on the next pass through the loop.
 
     All three must hold: `y` appears in `x`'s bound, the two bounds are the same apart
@@ -24,7 +27,7 @@ def _shift_edges(bounded: Mapping[str, _ir.Node]) -> dict[str, str]:
             if y == x or y not in bounded:
                 continue
 
-            mapping = _ir.alpha_equal(bound, bounded[y])
+            mapping = _ir.alpha_equal(bound, bounded[y], tyvars)
             if mapping is not None and mapping.get(y) in bounded and mapping[y] != y:
                 edge[x] = y
                 break
@@ -132,7 +135,8 @@ def collapse_recursive(sig: _ir.Signature) -> _ir.Signature:
         for typar in sig.type_params
         if typar.bound is not None and not typar.unpack
     }
-    if len(bounded) < _LOOP_MIN or not (edge := _shift_edges(bounded)):
+    tyvars = {typar.name for typar in sig.type_params}
+    if len(bounded) < _LOOP_MIN or not (edge := _shift_edges(bounded, tyvars)):
         return sig
 
     remap = _collapse_renaming(bounded, edge)
