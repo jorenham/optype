@@ -4,7 +4,9 @@ A `Backend` turns the structured `Signature`s that `_render` builds into text: t
 default `TERSE` form (`[R](x: CanAdd[Literal[1], R]) -> R`), or valid `.pyi` Python.
 """
 
+import cmath
 import enum
+import math
 import sys
 from collections.abc import Callable, Sequence
 from typing import Protocol
@@ -66,7 +68,9 @@ def default_text(value: object) -> str:
     simple = (
         value is None
         or _ir.is_sentinel(value)  # a sentinel's repr is its declared name
-        or isinstance(value, (int, float, complex, str, bytes))
+        or isinstance(value, (int, str, bytes))
+        or (isinstance(value, float) and math.isfinite(value))
+        or (isinstance(value, complex) and cmath.isfinite(value))
     )
     return repr(value) if simple else "..."
 

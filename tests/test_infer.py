@@ -2638,6 +2638,13 @@ def test_unresolvable_deferred_annotations() -> None:
     assert infer(ns["f"]) == "[T = Literal[42]](x: T = 42) -> T"
 
 
+def test_nonfinite_default_elides() -> None:
+    ns: dict[str, Any] = {}
+    exec("def f(x=float('inf')): return x", ns)  # ruff: ignore[exec-builtin]
+    assert infer(ns["f"]) == "[T = float](x: T = ...) -> T"
+    assert infer(ns["f"], backend="compat") == "def f[T = float](x: T = ...) -> T: ..."
+
+
 def test_builtin_without_signature() -> None:
     try:
         signature(iter)
