@@ -48,7 +48,8 @@ def _child(work: Callable[[], object], send: Connection, buf: mmap.mmap) -> None
         try:
             payload, status, cause = work(), _Status.OK, None
         except BaseException as exc:
-            payload, status, cause = exc, _Status.ERROR, exc.__cause__
+            payload, status = _outcome(exc), _Status.ERROR
+            cause = payload.__cause__
 
         warns = [(str(w.message), w.category) for w in caught]
 
@@ -93,6 +94,16 @@ def _kill_tree(proc: BaseProcess) -> None:
             os.killpg(proc.pid, signal.SIGKILL)
     proc.kill()
     proc.join()
+
+
+def _outcome(exc: BaseException) -> BaseException:
+    # the child has its own session and a thread gets no signals, so an interrupt
+    # came from the target itself (e.g. `signal.default_int_handler`)
+    if isinstance(exc, KeyboardInterrupt):
+        error = InferError("the function raised KeyboardInterrupt")
+        error.__cause__ = exc
+        return error
+    return exc
 
 
 def _timeout_error(*details: str) -> InferError:
@@ -157,7 +168,7 @@ def _inline[T](work: Callable[[], T]) -> T:
         try:
             outcome.set_result(work())
         except BaseException as exc:
-            outcome.set_exception(exc)
+            outcome.set_exception(_outcome(exc))
 
     def mute(_: object, /) -> None: ...
 
@@ -207,20 +218,21 @@ def isolate[T](work: Callable[[], T]) -> T:
             # close the parent's write end so a dead child yields EOF, not a hang
             send.close()
 
-        if not recv.poll(_S_TIMEOUT):
-            state = _read_state(buf)
-            _kill_tree(proc)
-            raise _timeout_error(f"spy state: {state}" if state else "")
-
-        exited = True
         try:
-            received = recv.recv()
-        except Exception:
-            # dead child: EOF or truncated pickle
-            received = None
-            exited = proc.pid is not None and _wait_exit(proc.pid)
+            if not recv.poll(_S_TIMEOUT):
+                state = _read_state(buf)
+                raise _timeout_error(f"spy state: {state}" if state else "")
 
-        _kill_tree(proc)
+            exited = True
+            try:
+                received = recv.recv()
+            except Exception:
+                # dead child: EOF or truncated pickle
+                received = None
+                exited = proc.pid is not None and _wait_exit(proc.pid)
+        finally:
+            # also on a host-side interrupt, which the child's session shields it from
+            _kill_tree(proc)
 
         if received is None:
             raise _no_result_error(proc, buf, exited=exited)
