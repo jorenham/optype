@@ -86,6 +86,15 @@ def is_mapping(value: object, /) -> TypeGuard[Mapping[Any, Any]]:
     return isinstance(value, Mapping) and not isinstance(value, Context)
 
 
+def read_items(mapping: Mapping[Any, Any], /) -> list[tuple[Any, Any]] | None:
+    """The items of `mapping`, or `None` when reading them raises (a closed shelf)."""
+    try:
+        # not `list(...)`: its length hint would add a `len` requirement to the mapping
+        return [pair for pair in mapping.items()]  # ruff: ignore[unnecessary-comprehension]
+    except Exception:  # ruff: ignore[blind-except]
+        return None
+
+
 def children(value: Any) -> Iterable[Any]:
     """The values directly contained in an explored result."""
     if isinstance(value, Spy):
@@ -103,8 +112,8 @@ def children(value: Any) -> Iterable[Any]:
             out = ()
         case tuple() | list() | set() | frozenset():
             out = value
-        case _ if is_mapping(value):
-            out = chain.from_iterable(value.items())
+        case _ if is_mapping(value) and (pairs := read_items(value)) is not None:
+            out = chain.from_iterable(pairs)
         case slice():
             out = value.start, value.stop, value.step
         case _:
@@ -147,11 +156,9 @@ def map_values(value: Any, leaf: Callable[[Any], Any]) -> Any:  # ruff: ignore[c
         case set() | frozenset():
             items = {map_values(item, leaf) for item in value}
             out = frozenset(items) if isinstance(value, frozenset) else items
-        case _ if is_mapping(value):
+        case _ if is_mapping(value) and (pairs := read_items(value)) is not None:
             mapping = value
-            rebuilt = {
-                map_values(k, leaf): map_values(v, leaf) for k, v in mapping.items()
-            }
+            rebuilt = {map_values(k, leaf): map_values(v, leaf) for k, v in pairs}
             if isinstance(value, dict):
                 out = rebuilt  # any `dict` subclass collapses to a plain `dict`
             else:  # the `frozendict` builtin rebuilds as itself

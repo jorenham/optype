@@ -23,6 +23,7 @@ import pydoc
 import random
 import re
 import secrets
+import shelve  # ruff: ignore[suspicious-pickle-import]
 import shutil
 import signal
 import subprocess  # ruff: ignore[suspicious-subprocess-import]
@@ -31,7 +32,7 @@ import time
 import warnings
 import weakref
 from collections import Counter, defaultdict
-from collections.abc import Callable
+from collections.abc import Callable, Iterator, Mapping
 from inspect import Signature as PySignature, currentframe, signature
 from pathlib import Path
 from types import GeneratorType, MappingProxyType, SimpleNamespace
@@ -1085,6 +1086,51 @@ def _call_with_context(cb: Any, _flag: Any = None) -> None:
     cb(context=contextvars.copy_context())
 
 
+class _Closed(Mapping[str, int]):
+    """A mapping that raises when read, like `shelve._ClosedDict`."""
+
+    @override
+    def __getitem__(self, key: str) -> int:
+        raise ValueError("closed")
+
+    @override
+    def __iter__(self) -> Iterator[str]:
+        raise ValueError("closed")
+
+    @override
+    def __len__(self) -> int:
+        return 0
+
+
+_CLOSED = _Closed()
+
+
+class _View(Mapping[Any, Any]):
+    """A mapping forwarding to a spy, like a `MappingProxyType`."""
+
+    _source: Any
+
+    def __init__(self, source: Any) -> None:
+        self._source = source
+
+    @override
+    def __getitem__(self, key: Any) -> Any:
+        return self._source[key]
+
+    @override
+    def __iter__(self) -> Iterator[Any]:
+        return iter(self._source)
+
+    @override
+    def __len__(self) -> int:
+        return len(self._source)
+
+
+def _close(x: Any) -> _Closed:
+    x.dict = _Closed()
+    return _CLOSED
+
+
 def _make_local_list() -> Callable[[], Any]:
     class Local: ...
 
@@ -1232,6 +1278,17 @@ RESULT_CASES: list[tuple[Callable[..., Any], str]] = [
     # gh-769: a `Context` renders bare, and `Context()` takes no arguments
     (lambda: _CONTEXT, "() -> contextvars.Context"),
     (_call_with_context, "(cb: (context: contextvars.Context) -> object) -> None"),
+    # gh-770, gh-771: reading a mapping's items must not add a `len` requirement
+    (
+        lambda x: _View(x),
+        (
+            "[R: CanHash, R2](x: CanIter[CanNext[R]] & CanGetitem[R, R2])"
+            f" -> {__name__}._View[R, R2]"
+        ),
+    ),
+    # gh-770, gh-771: a mapping that raises when read is a leaf
+    (lambda: _CLOSED, f"() -> {__name__}._Closed"),
+    (_close, f"(x: Has['dict', -{__name__}._Closed]) -> {__name__}._Closed"),
     # a subscripted generic denotes the type it spells, not its `GenericAlias` runtime
     (lambda: list[int], "() -> type[list[int]]"),
     (lambda: dict[str, int], "() -> type[dict[str, int]]"),
@@ -3000,7 +3057,19 @@ _COMPAT_DIVERGENT = frozenset({
     f"() -> type[{__name__}._MyGeneric[int]]",
     f"() -> type[list[{__name__}._MyGeneric[int]]]",
     f"() -> Generator[{__name__}._Base]",
+    f"() -> {__name__}._Closed",
+    f"(x: Has['dict', -{__name__}._Closed]) -> {__name__}._Closed",
+    (
+        "[R: CanHash, R2](x: CanIter[CanNext[R]] & CanGetitem[R, R2])"
+        f" -> {__name__}._View[R, R2]"
+    ),
 })
+
+
+def test_infer_shelf() -> None:
+    # gh-770, gh-771: a shelf raises when read, both before and after closing
+    assert infer(shelve.Shelf).endswith("-> shelve.Shelf")
+    assert infer(shelve.Shelf.close).endswith("-> None")
 
 
 def test_compat_renders_corpus() -> None:
