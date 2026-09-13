@@ -32,9 +32,9 @@ from ._model import (
     is_generic,
     is_protocol_node,
     member_nodes,
+    resolution_order,
     strip_variance,
     subst_member,
-    toposort,
 )
 from ._print import OPTYPE, import_of, member_key, type_text
 from optype.infer._errors import InferError
@@ -185,6 +185,16 @@ def _signed(args: tuple[_ir.Node, ...]) -> tuple[_ir.Node, ...] | None:
     return None
 
 
+def _order_typars(typars: list[_ir.TypeParam]) -> list[_ir.TypeParam]:
+    """PEP 696 order: no default right after a typevar tuple, and no parameter without
+    one after a default, so the tuple goes last with an empty default."""
+    if not any(typar.default is not None for typar in typars):
+        return typars
+    empty = _ir.Unpack(_ir.App("tuple", ()))
+    tuples = [replace(t, default=empty) for t in typars if t.unpack]
+    return [t for t in typars if not t.unpack] + tuples
+
+
 def _merge_has(parts: Sequence[_ir.Node]) -> list[_ir.Node]:
     """Join the `Has` members of one attribute, so its reads and writes share one."""
     out: list[_ir.Node] = []
@@ -258,18 +268,32 @@ class _SigLowerer:
         deps = {tyvar: frozenset(_ir.names(b)) & set(elim) for tyvar, b in elim.items()}
         cyclic = cyclic_names(deps)
 
+        # each unit sees the substitutions of the units it depends on, so no
+        # eliminated name survives in a hoisted body or a substituted bound
         subst: dict[str, _ir.Node] = {}
-        for group in components(cyclic, deps):
-            subst |= self._hoist_group(group, elim)
-        for tyvar in toposort(set(elim) - cyclic, deps):
-            subst[tyvar] = _ir.subst(elim[tyvar], subst)
+        for unit in resolution_order(
+            components(cyclic, deps),
+            set(elim) - cyclic,
+            deps,
+        ):
+            resolved = {tyvar: _ir.subst(elim[tyvar], subst) for tyvar in unit}
+            if unit <= cyclic:
+                subst |= self._hoist_group(unit, resolved)
+            else:
+                subst |= resolved
 
         kept = [
-            replace(typar, bound=bound[typar.name], default=default[typar.name])
+            replace(
+                typar,
+                bound=bound[typar.name],
+                default=None
+                if (d := default[typar.name]) is None
+                else _ir.subst(d, subst),
+            )
             for typar in typars
             if typar.name not in elim
         ]
-        return kept, subst
+        return _order_typars(kept), subst
 
     def _param(
         self,

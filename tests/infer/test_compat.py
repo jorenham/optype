@@ -1,7 +1,9 @@
 """The compat lowering, from hand-built `Signature`s to `.pyi` text."""
 
+import os
 import shutil
 import subprocess  # ruff: ignore[suspicious-subprocess-import]
+import sys
 from pathlib import Path
 
 import pytest
@@ -20,7 +22,7 @@ from optype.infer._backends._compat._model import (
     components,
     cyclic_names,
     free_tyvars,
-    toposort,
+    resolution_order,
 )
 from optype.infer._backends._compat._print import OPTYPE
 from optype.infer._ir import (
@@ -30,6 +32,7 @@ from optype.infer._ir import (
     OBJECT,
     App,
     Arg,
+    Dots,
     Fn,
     Has,
     Intersection,
@@ -163,6 +166,90 @@ TEXT_CASES: list[tuple[str, tuple[Signature, ...], str]] = [
         ),
     ),
     (
+        "callable with positional default",
+        (_sig((TypeParam("R"),), Fn((Arg(None, ZERO, (0,)),), R)),),
+        (
+            "from typing import Literal, Protocol\n\n"
+            "class CanCallP[T](Protocol):\n"
+            "    def __call__(self, _0: Literal[0] = 0, /) -> T: ...\n\n"
+            "def f[R](x: CanCallP[R]) -> R: ..."
+        ),
+    ),
+    (
+        # a default before a required positional parameter cannot be written down
+        "callable default before a required parameter",
+        (_sig((TypeParam("R"),), Fn((Arg(None, ZERO, (0,)), Type(int)), R)),),
+        (
+            "from typing import Literal, Protocol\n\n"
+            "class CanCallP[T](Protocol):\n"
+            "    def __call__(self, _0: Literal[0], _1: int, /) -> T: ...\n\n"
+            "def f[R](x: CanCallP[R]) -> R: ..."
+        ),
+    ),
+    (
+        # a keyword parameter without a `*` before it is positional too, so a default
+        # before it is dropped as well
+        "callable default before a required keyword",
+        (
+            _sig(
+                (TypeParam("T"), TypeParam("R")),
+                Fn((Arg(None, ZERO, (0,)), Arg("y", T)), R),
+            ),
+        ),
+        (
+            "from typing import Literal, Protocol\n\n"
+            "class CanCallP[T, U](Protocol):\n"
+            "    def __call__(self, _0: Literal[0], /, y: T) -> U: ...\n\n"
+            "def f[T, R](x: CanCallP[T, R]) -> R: ..."
+        ),
+    ),
+    (
+        "callable default before a required keyword and a star",
+        (
+            _sig(
+                (TypeParam("T"), TypeParam("R")),
+                Fn(
+                    (
+                        Arg(None, ZERO, (0,)),
+                        Arg("y", T),
+                        Unpack(App("tuple", (T, Dots()))),
+                    ),
+                    R,
+                ),
+            ),
+        ),
+        (
+            "from typing import Literal, Protocol\n\n"
+            "class CanCallP[T, U](Protocol):\n"
+            "    def __call__(self, _0: Literal[0], /, y: T, *_1: T) -> U: ...\n\n"
+            "def f[T, R](x: CanCallP[T, R]) -> R: ..."
+        ),
+    ),
+    (
+        # after a star, a required keyword no longer constrains the defaults before it
+        "callable required keyword after a star",
+        (
+            _sig(
+                (TypeParam("T"), TypeParam("R")),
+                Fn(
+                    (
+                        Arg(None, ZERO, (0,)),
+                        Unpack(App("tuple", (T, Dots()))),
+                        Arg("k", Lit((1,))),
+                    ),
+                    R,
+                ),
+            ),
+        ),
+        (
+            "from typing import Literal, Protocol\n\n"
+            "class CanCallP[T, U](Protocol):\n"
+            "    def __call__(self, _0: Literal[0] = 0, /, *_1: T, k: Literal[1])"
+            " -> U: ...\n\n"
+            "def f[T, R](x: CanCallP[T, R]) -> R: ..."
+        ),
+    ),
+    (
         # PEP 695 forbids a bound that references a type parameter; a cycle hoists
         "cyclic protocol bound",
         (_sig((TypeParam("T", App("CanLt", (T, App("CanBool", ())))),), T, T),),
@@ -177,6 +264,68 @@ TEXT_CASES: list[tuple[str, tuple[Signature, ...], str]] = [
         "cyclic concrete bound",
         (_sig((TypeParam("T", App("list", (T,))),), T, T),),
         "type list2 = list[list2]\n\ndef f(x: list2) -> list2: ...",
+    ),
+    (
+        # an eliminated binder is substituted where a default mentions it
+        "default of an eliminated binder",
+        (
+            Signature(
+                (
+                    TypeParam("T", App("CanNeg", (R,))),
+                    TypeParam("R"),
+                    TypeParam("U", default=T),
+                ),
+                (Param("x", T), Param("y", U)),
+                R,
+            ),
+        ),
+        (
+            "from optype import CanNeg\n\n"
+            "def f[R, U = CanNeg[R]](x: CanNeg[R], y: U) -> R: ..."
+        ),
+    ),
+    (
+        # a hoisted bound sees the substitution of the acyclic binder it mentions
+        "recursive bound of an eliminated binder",
+        (
+            Signature(
+                (
+                    TypeParam("T", App("CanAdd", (T, U))),
+                    TypeParam("U", App("CanNeg", (R,))),
+                    TypeParam("R"),
+                ),
+                (Param("x", T),),
+                R,
+            ),
+        ),
+        (
+            "from typing import Protocol\n"
+            "from optype import CanAdd, CanNeg\n\n"
+            "class CanAdd2[T](CanAdd[CanAdd2[T], CanNeg[T]], Protocol): ...\n\n"
+            "def f[R](x: CanAdd2[R]) -> R: ..."
+        ),
+    ),
+    (
+        # a cycle, an acyclic binder, and another cycle resolve in dependency order
+        "chained bounds",
+        (
+            Signature(
+                (
+                    TypeParam("T", App("CanAdd", (T, U))),
+                    TypeParam("U", App("CanNeg", (X,))),
+                    TypeParam("X", App("list", (X,))),
+                ),
+                (Param("x", T),),
+                NONE,
+            ),
+        ),
+        (
+            "from typing import Protocol\n"
+            "from optype import CanAdd, CanNeg\n\n"
+            "type list2 = list[list2]\n"
+            "class CanAdd2(CanAdd[CanAdd2, CanNeg[list2]], Protocol): ...\n\n"
+            "def f(x: CanAdd2) -> None: ..."
+        ),
     ),
     (
         # a mutually recursive pair hoists together, keeping the free typevar as an arg
@@ -393,6 +542,23 @@ TEXT_CASES: list[tuple[str, tuple[Signature, ...], str]] = [
             ),
         ),
         "def f[*Ts](*args: *Ts) -> tuple[*Ts]: ...",
+    ),
+    (
+        # a default may not follow a typevar tuple, and nothing without a default may
+        # follow a default, so the tuple moves last with an empty default
+        "typevar tuple beside a typevar default",
+        (
+            Signature(
+                (TypeParam("Ts", unpack=True), TypeParam("T", default=ZERO)),
+                (Param("args", TS, prefix="*"), Param("x", T, default=(0,))),
+                App("tuple", (App("tuple", (TS,)), T)),
+            ),
+        ),
+        (
+            "from typing import Literal\n\n"
+            "def f[T = Literal[0], *Ts = *tuple[()]](*args: *Ts, x: T = 0)"
+            " -> tuple[tuple[*Ts], T]: ..."
+        ),
     ),
     (
         "typevar default",
@@ -729,6 +895,32 @@ def test_acyclic_bound_referencing_a_cyclic_one() -> None:
     assert func.params[0].node == func.ret == App("CanNeg", (App(alias.name, ()),))
 
 
+def test_resolution_order_does_not_depend_on_the_hash_seed() -> None:
+    # competing cyclic bounds resolve in one order whatever the seed
+    script = """
+from optype.infer._ir import App, Name, Param, Signature, TypeParam
+from optype.infer._backends._compat import COMPAT
+T, U, X = Name("T"), Name("U"), Name("X")
+type_params = (
+    TypeParam("T", App("tuple", (U, X))),
+    TypeParam("U", App("list", (U,))),
+    TypeParam("X", App("list", (App("tuple", (X, X)),))),
+)
+print(COMPAT.render([Signature(type_params, (Param("x", T),), T)]))
+"""
+    outputs = {
+        subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
+            [sys.executable, "-c", script],
+            env={**os.environ, "PYTHONHASHSEED": seed},
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout
+        for seed in ("0", "1", "2")
+    }
+    assert len(outputs) == 1
+
+
 def test_graph_helpers() -> None:
     deps = {
         "a": frozenset({"b"}),
@@ -739,9 +931,18 @@ def test_graph_helpers() -> None:
     }
     cyclic = cyclic_names(deps)
     assert cyclic == {"a", "b", "c"}
-    assert set(components(cyclic, deps)) == {frozenset({"a", "b"}), frozenset({"c"})}
-    chain = {"d": frozenset({"e"}), "x": frozenset({"d"})}
-    assert toposort({"d", "e", "x"}, chain) == ["e", "d", "x"]
+    groups = components(cyclic, deps)
+    assert set(groups) == {frozenset({"a", "b"}), frozenset({"c"})}
+    # every unit comes after the units it depends on
+    order = resolution_order(groups, {"d", "e"}, deps)
+    assert sorted(order, key=sorted) == [
+        frozenset({"a", "b"}),
+        frozenset({"c"}),
+        frozenset({"d"}),
+        frozenset({"e"}),
+    ]
+    assert order.index(frozenset({"a", "b"})) < order.index(frozenset({"c"}))
+    assert order.index(frozenset({"a", "b"})) < order.index(frozenset({"d"}))
 
 
 def test_naming_helpers() -> None:

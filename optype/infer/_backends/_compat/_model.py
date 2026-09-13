@@ -152,11 +152,26 @@ def components(
     return groups
 
 
-def toposort(
-    nodes: frozenset[str] | set[str],
+def resolution_order(
+    groups: Iterable[frozenset[str]],
+    singles: Iterable[str],
     deps: Mapping[str, frozenset[str]],
-) -> list[str]:
-    """The acyclic `nodes` ordered so each follows the others it depends on."""
+) -> list[frozenset[str]]:
+    """The cyclic `groups` and acyclic `singles` as units, in dependency order."""
+    unit_of = {name: group for group in groups for name in group}
+    unit_of |= {name: frozenset({name}) for name in singles}
     # sorted insertion keeps the order deterministic; `deps` is the predecessor map
-    graph = {node: deps.get(node, frozenset()) & nodes for node in sorted(nodes)}
+    units = sorted(set(unit_of.values()), key=sorted)
+    graph = {
+        unit: sorted(
+            {
+                unit_of[dep]
+                for name in unit
+                for dep in deps.get(name, ())
+                if dep not in unit
+            },
+            key=sorted,
+        )
+        for unit in units
+    }
     return list(graphlib.TopologicalSorter(graph).static_order())
