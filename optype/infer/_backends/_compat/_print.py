@@ -116,13 +116,32 @@ class Printer:
 
     _used: set[str]  # every referenced name, for the import block
     _shadowed: frozenset[str]  # names the current class body binds
+    _aliases: dict[str, str]  # modules a class body shadows, by their import alias
 
     def __init__(self) -> None:
         self._used = set()
         self._shadowed = frozenset()
+        self._aliases = {}
 
     def record(self, name: str) -> None:
         self._used.add(name)
+
+    def _literal(self, value: object) -> str:
+        paths: list[str] = []
+        text = qualified_value_text(value, paths.append)
+        for path in paths:  # an enum member's `module.Class`
+            module = path.rpartition(".")[0]
+            if module.partition(".")[0] not in self._shadowed:
+                self._used.add(path)
+                continue
+            if (alias := self._aliases.get(module)) is None:
+                # a leading double underscore would be mangled in the class body
+                alias = "_" + module.replace(".", "_").lstrip("_")
+                while alias in self._aliases.values():
+                    alias += "_"
+                self._aliases[module] = alias
+            text = alias + text.removeprefix(module)
+        return text
 
     def _name(self, name: str) -> str:
         if name in self._shadowed:
@@ -133,8 +152,7 @@ class Printer:
     def render_node(self, node: _ir.Node) -> str:  # ruff: ignore[complex-structure, too-many-return-statements]
         match node:
             case _ir.Lit(values):
-                rec = self._used.add
-                joined = ", ".join(qualified_value_text(v, rec) for v in values)
+                joined = ", ".join(map(self._literal, values))
                 return f"{self._name('Literal')}[{joined}]"
             case _ir.Type(cls):
                 return self._name(_ir.type_name(cls))
@@ -312,6 +330,9 @@ class Printer:
         lines = [
             f"import {name} as np" if name == "numpy" else f"import {name}"
             for name in sorted(whole)
+        ]
+        lines += [
+            f"import {m} as {alias}" for m, alias in sorted(self._aliases.items())
         ]
         order = {"collections.abc": 0, "types": 1, "typing": 2, "typing_extensions": 3}
         for module_name in sorted(groups, key=lambda m: (order.get(m, 9), m)):

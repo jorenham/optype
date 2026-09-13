@@ -2392,6 +2392,40 @@ COMPAT_CASES: list[tuple[str, str]] = [
         ),
     ),
     (
+        # a module the property name shadows is imported under another name
+        "import enum\ndef f(x): x.enum = enum.FlagBoundary.STRICT",
+        (
+            "import enum as _enum\n"
+            "from typing import Literal, Protocol\n\n"
+            "class HasEnum(Protocol):\n"
+            "    @property\n"
+            "    def enum(self) -> object: ...\n"
+            "    @enum.setter\n"
+            "    def enum(self, value: Literal[_enum.FlagBoundary.STRICT], /)"
+            " -> None: ...\n\n"
+            "def f(x: HasEnum) -> None: ..."
+        ),
+    ),
+    (
+        # the module stays imported as itself for its other uses
+        (
+            "import enum\ndef f(x): x.enum = enum.FlagBoundary.STRICT;"
+            " return enum.FlagBoundary.CONFORM"
+        ),
+        (
+            "import enum\n"
+            "import enum as _enum\n"
+            "from typing import Literal, Protocol\n\n"
+            "class HasEnum(Protocol):\n"
+            "    @property\n"
+            "    def enum(self) -> object: ...\n"
+            "    @enum.setter\n"
+            "    def enum(self, value: Literal[_enum.FlagBoundary.STRICT], /)"
+            " -> None: ...\n\n"
+            "def f(x: HasEnum) -> enum.FlagBoundary: ..."
+        ),
+    ),
+    (
         # a dunder has a declared type, which a property would override incompatibly
         "def f(x, y): x.__module__ = str(y)",
         (
