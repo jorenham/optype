@@ -927,6 +927,20 @@ def test_same_protocol_stays_apart_when_a_join_would_change_meaning(node: Node) 
     assert helper.bases == node.parts
 
 
+@pytest.mark.parametrize("reverse", [False, True])
+def test_same_protocol_at_callables_of_another_layout_stays_apart(
+    reverse: bool,
+) -> None:
+    # a fixed parameter does not imply an unpacked one, nor the other way around
+    fixed = Fn((OBJECT,), OBJECT)
+    unpacked = Fn((Unpack(App("tuple", (T, Dots()))),), OBJECT)
+    parts = (App("CanNeg", (fixed,)), App("CanNeg", (unpacked,)))
+    node = Intersection(parts[::-1] if reverse else parts)
+    module = Lowerer().module([_sig((TypeParam("T"),), node)])
+    (helper,) = _protocols(module)
+    assert len(helper.bases) == 2
+
+
 def test_same_protocol_at_unrelated_arguments_stays_apart() -> None:
     # nothing joins `int` and `str` covariantly, so both applications stay as bases
     node = Intersection((App("CanNeg", (Type(int),)), App("CanNeg", (Type(str),))))

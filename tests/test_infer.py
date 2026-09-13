@@ -2273,6 +2273,163 @@ COMPAT_CASES: list[tuple[str, str]] = [
         ),
     ),
     (
+        # the same, with the narrower argument known only through its typevar's bound
+        "def f(make): a = make(0); abs(-make(1)); b = -a; return a, b, abs(b)",
+        (
+            "from collections.abc import Callable\n"
+            "from typing import Literal\n"
+            "from optype import CanAbs, CanNeg\n\n"
+            "def f[R3](make: Callable[[Literal[0, 1]], CanNeg[CanAbs[R3]]])"
+            " -> tuple[CanNeg[CanAbs[R3]], CanAbs[R3], R3]: ..."
+        ),
+    ),
+    (
+        # the same, inside a callable's return type
+        "def f(make): a = make(0); abs((-make(1))()); return a, abs((-a)())",
+        (
+            "from collections.abc import Callable\n"
+            "from typing import Literal\n"
+            "from optype import CanAbs, CanNeg\n\n"
+            "def f[R2](make: Callable[[Literal[0, 1]], CanNeg[Callable[[],"
+            " CanAbs[R2]]]]) -> tuple[CanNeg[Callable[[], CanAbs[R2]]], R2]: ..."
+        ),
+    ),
+    (
+        # the same, between reads of an attribute
+        "def f(make): a = make(0); (-make(1)).x; return a, (-a).x",
+        (
+            "from collections.abc import Callable\n"
+            "from typing import Literal, Protocol\n"
+            "from optype import CanNeg\n\n"
+            "class HasX[T](Protocol):\n"
+            "    @property\n"
+            "    def x(self) -> T: ...\n\n"
+            "def f[R2](make: Callable[[Literal[0, 1]], CanNeg[HasX[R2]]])"
+            " -> tuple[CanNeg[HasX[R2]], R2]: ..."
+        ),
+    ),
+    (
+        # the same, through a bound that is an intersection
+        ("def f(make): a = make(0); abs(-make(1)); b = -a; return a, b, abs(b), +b"),
+        (
+            "from collections.abc import Callable\n"
+            "from typing import Literal, Protocol\n"
+            "from optype import CanAbs, CanNeg, CanPos\n\n"
+            "class CanAbsPos[T, U](CanAbs[T], CanPos[U], Protocol): ...\n\n"
+            "def f[R3, R4](make: Callable[[Literal[0, 1]], CanNeg[CanAbsPos[R3, R4]]])"
+            " -> tuple[CanNeg[CanAbsPos[R3, R4]], CanAbsPos[R3, R4], R3, R4]: ..."
+        ),
+    ),
+    (
+        # the same, through a method's return
+        "def f(make): a = make(0); abs((-make(1)).x()); return a, abs((-a).x())",
+        (
+            "from collections.abc import Callable\n"
+            "from typing import Literal, Protocol\n"
+            "from optype import CanAbs, CanNeg\n\n"
+            "class HasX[T](Protocol):\n"
+            "    def x(self) -> CanAbs[T]: ...\n\n"
+            "def f[R2](make: Callable[[Literal[0, 1]], CanNeg[HasX[R2]]])"
+            " -> tuple[CanNeg[HasX[R2]], R2]: ..."
+        ),
+    ),
+    (
+        # the same, between two intersections
+        (
+            "def f(make): a = make(0); abs(-make(1)); +(-make(1));"
+            " return a, abs(-a), +(-a)"
+        ),
+        (
+            "from collections.abc import Callable\n"
+            "from typing import Literal, Protocol\n"
+            "from optype import CanAbs, CanNeg, CanPos\n\n"
+            "class CanAbsPos[T, U](CanAbs[T], CanPos[U], Protocol): ...\n\n"
+            "def f[R2, R3](make: Callable[[Literal[0, 1]], CanNeg[CanAbsPos[R2,"
+            " R3]]]) -> tuple[CanNeg[CanAbsPos[R2, R3]], R2, R3]: ..."
+        ),
+    ),
+    (
+        # a requirement lifted while lowering a bound is kept as a constraint
+        (
+            "def f(make, take): a = make(0); b = make(1); take(-a); abs(-b);"
+            " abs(-make(2)); return a, b"
+        ),
+        (
+            "from collections.abc import Callable\n"
+            "from typing import Literal\n"
+            "from optype import CanAbs, CanNeg\n\n"
+            "def f[T: CanAbs[object]](make: Callable[[Literal[0, 1, 2]],"
+            " CanNeg[T]], take: Callable[[T], object])"
+            " -> tuple[CanNeg[T], CanNeg[T]]: ..."
+        ),
+    ),
+    (
+        # a bound that adds a shipped protocol's bound to a typevar is lowered once
+        "lambda x: (x, iter(x))",
+        (
+            "from optype import CanIter, CanNext\n\n"
+            "def f[R: CanNext[object]](x: CanIter[R]) -> tuple[CanIter[R], R]: ..."
+        ),
+    ),
+    (
+        # a helper an earlier lowering of a bound registered is not emitted
+        "def f(make): a = make(0); next(iter(make(1))); return a, iter(a)",
+        (
+            "from collections.abc import Callable\n"
+            "from typing import Literal\n"
+            "from optype import CanIter, CanNext\n\n"
+            "def f[R2: CanNext[object]](make: Callable[[Literal[0, 1]],"
+            " CanIter[R2]]) -> tuple[CanIter[R2], R2]: ..."
+        ),
+    ),
+    (
+        # a bound and a lifted requirement that are one union distribute once
+        "def f(make): a = make(0); int(make(1)); return a, int(a)",
+        (
+            "from collections.abc import Callable\n"
+            "from typing import Literal\n"
+            "from optype import CanIndex, CanInt\n\n"
+            "def f[R: CanInt | CanIndex](make: Callable[[int], R])"
+            " -> tuple[R, Literal[1]] | tuple[R, Literal[0]]: ..."
+        ),
+    ),
+    (
+        # an arity form of `round` joins by the shipped protocol's variance
+        "def f(make): a = make(0); round(make(1)); return a, round(a)",
+        (
+            "from collections.abc import Callable\n"
+            "from typing import Literal\n"
+            "from optype import CanRound1\n\n"
+            "def f[R2](make: Callable[[Literal[0, 1]], CanRound1[R2]])"
+            " -> tuple[CanRound1[R2], R2]: ..."
+        ),
+    ),
+    (
+        # the same for `pow`
+        "def f(make): a = make(0); pow(make(1), 2, 3); return a, pow(a, 2, 3)",
+        (
+            "from collections.abc import Callable\n"
+            "from typing import Literal\n"
+            "from optype import CanPow3\n\n"
+            "def f[R2](make: Callable[[Literal[0, 1]], CanPow3[Literal[2],"
+            " Literal[3], R2]]) -> tuple[CanPow3[Literal[2], Literal[3], R2], R2]: ..."
+        ),
+    ),
+    (
+        # a builtin argument joins by the IR's variance
+        (
+            "def f(make): a = make(0); frozenset((1, 2)) in make(1);"
+            " return a, frozenset((1,)) in a"
+        ),
+        (
+            "from collections.abc import Callable\n"
+            "from typing import Literal\n"
+            "from optype import CanContains\n\n"
+            "def f[R: CanContains[frozenset[Literal[1, 2]]]](make: Callable[[int],"
+            " R]) -> tuple[R, Literal[True]] | tuple[R, Literal[False]]: ..."
+        ),
+    ),
+    (
         # the two arities of `round` fold into the shipped three-parameter protocol
         "lambda x: (round(x), round(x, 2))",
         (
