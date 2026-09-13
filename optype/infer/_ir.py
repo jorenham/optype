@@ -6,6 +6,7 @@ import types
 from collections.abc import Collection, Generator, Iterable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
+from itertools import starmap
 from typing import Final, override
 
 type Node = (
@@ -250,8 +251,7 @@ def subtype(sub: Term, sup: Term) -> bool:
                 len(params) == len(wider_params)
                 and subtype(ret, wider_ret)
                 and all(
-                    subtype(term_node(wide), term_node(param))
-                    for param, wide in zip(params, wider_params, strict=True)
+                    starmap(_param_subtype, zip(params, wider_params, strict=True)),
                 )
             )
         case Unpack(part), Unpack(wider):
@@ -259,6 +259,20 @@ def subtype(sub: Term, sup: Term) -> bool:
         case _:
             result = False
     return result
+
+
+def _param_subtype(param: Term, wider: Term) -> bool:
+    """Whether `param` takes every argument its `wider` counterpart takes."""
+    key, default = (
+        (param.key, param.default) if isinstance(param, Arg) else (None, None)
+    )
+    if isinstance(wider, Arg):
+        # the keyword must match, and an omission the wider one allows must be allowed
+        if key != wider.key or (wider.default is not None and default is None):
+            return False
+    elif key is not None:
+        return False
+    return subtype(term_node(wider), term_node(param))
 
 
 def _absorb(nodes: list[Node]) -> list[Node]:
