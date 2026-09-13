@@ -6,6 +6,7 @@ import sys
 import types
 from collections import Counter
 from collections.abc import Callable, Collection, Iterable, Mapping, Sequence
+from dataclasses import dataclass, replace
 from inspect import Parameter, _ParameterKind
 from typing import Any, NamedTuple, final
 
@@ -125,9 +126,23 @@ def _distinct[T](values: Iterable[T]) -> Collection[T]:
     return {id(value): value for value in values}.values()
 
 
+@dataclass(frozen=True, slots=True)
+class _Binding:
+    """What one render reads: the exploration, the traces, and the naming."""
+
+    exploration: Exploration
+    params: Mapping[str, Parameter]
+    traces: Traces  # the raw exploration traces, or the reflected ones
+    varpos: SpyObject | None
+    naming: Naming  # which spies get a type parameter, and under what name
+
+
 @final
 class _Renderer:
-    """Render an inferred `def` signature from the recorded spy traces."""
+    """Render an inferred `def` signature from the recorded spy traces.
+
+    The binding is fixed for the renderer's lifetime; `_renderer_of` picks it.
+    """
 
     _params: Mapping[str, Parameter]
     _spies: Mapping[str, SpyObject]
@@ -138,57 +153,35 @@ class _Renderer:
     _tuple_params: frozenset[str]  # params that also accept `tuple[<bound>, ...]`
     varpos: SpyObject | None
 
-    naming: Naming  # which spies get a type parameter, and under what name
+    naming: Naming
     _bound_nodes: dict[int, _ir.Node | None]  # rendered bound per representative
-    _ret_node: _ir.Node  # rendered return union, refreshed along with the bounds
+    _ret_node: _ir.Node  # rendered return union
 
     _typer: "_ResultTyper"  # renders explored result values into type nodes
 
-    def __init__(
-        self,
-        exploration: Exploration,
-        params: Mapping[str, Parameter],
-        traces: Traces,
-    ) -> None:
-        # `traces` is the map to render: the raw exploration traces or the reflected one
-        self._params = params
+    def __init__(self, binding: _Binding) -> None:
+        exploration = binding.exploration
+        self._params = binding.params
         self._spies = exploration.spies
         self._results = exploration.results
-        self._traces = traces
+        self._traces = binding.traces
         self.var_count = exploration.var_count
         self._fixed = exploration.fixed
         self._tuple_params = exploration.tuple_params
-        self.varpos = next(  # ty:ignore[invalid-assignment]
-            (
-                self._spies[name]
-                for name, p in params.items()
-                if p.kind is Parameter.VAR_POSITIONAL
-            ),
-            None,
-        )
+        self.varpos = binding.varpos  # ty:ignore[invalid-assignment]
+        self.naming = naming = binding.naming
 
-        self.naming = _build_naming(
-            self._results,
-            self._spies,
-            traces,
-            self.varpos,
-            self.var_count,
-        )
-        self._typer = _ResultTyper(self)
-        self._render_bounds()
-        self._inline_single_use()
-
-    def _render_bounds(self) -> None:
-        """Render and cache each named bound and the return union."""
-        naming = self.naming
+        self._typer = _ResultTyper(binding, self.slot)
         self._bound_nodes = {
             rep: self.traces(naming.group_traces.get(rep, ())) for rep in naming.named
         }
         self._ret_node = self._typer.type_union(self._results)
 
-    def _inline_single_use(self) -> None:
-        # a bounded typevar referenced once and absent from the return carries no more
-        # than its bound, so it inlines back into the one spot that uses it
+    def single_use(self) -> tuple[dict[str, int], set[str]]:
+        """The declared typevar pool, and the bounded names in it rendered once.
+
+        Such a typevar says no more than its bound, so it inlines into its one use.
+        """
         naming, bounds = self.naming, self._bound_nodes
         rendered = [
             *(self.slot(spy) for spy in naming.param_spies),
@@ -203,9 +196,7 @@ class _Renderer:
             for var, rep in pool.items()
             if counts[var] == 1 and bounds[rep] is not None
         }
-        if inline:
-            self.naming = naming.inlined(pool, inline, self._traces)
-            self._render_bounds()  # the renaming invalidated the rendered nodes
+        return pool, inline
 
     def returns(self, members: Iterable[Op]) -> _ir.Node | None:
         named: list[str] = []
@@ -441,16 +432,26 @@ class _Renderer:
 
 @final
 class _ResultTyper:
-    """Render an explored runtime value as a type node, against the renderer's binding.
+    """Render an explored runtime value as a type node, under a fixed binding.
 
-    Reads the renderer's state live, so renderer and typer are mutually recursive and
-    the typevar inlining is always reflected.
+    A returned function's parameter spy renders through `slot`, so typer and renderer
+    stay mutually recursive, but neither mutates what the other reads.
     """
 
-    _renderer: _Renderer
+    _naming: Naming
+    _varpos: SpyObject | None
+    _var_count: int
+    _slot: Callable[[SpyObject], _ir.Node]
 
-    def __init__(self, renderer: _Renderer, /) -> None:
-        self._renderer = renderer
+    def __init__(
+        self,
+        binding: _Binding,
+        slot: Callable[[SpyObject], _ir.Node],
+    ) -> None:
+        self._naming = binding.naming
+        self._varpos = binding.varpos  # ty:ignore[invalid-assignment]
+        self._var_count = binding.exploration.var_count
+        self._slot = slot
 
     def value_union(
         self,
@@ -480,9 +481,9 @@ class _ResultTyper:
     def return_type(self, result: object) -> _ir.Node:
         match result:
             case RecRef() | Rec():
-                node = _ir.Name(self._renderer.naming.rec_tyvars[result.var])
+                node = _ir.Name(self._naming.rec_tyvars[result.var])
             case SpyObject() if (spy := as_spy(result)) is not None:
-                var = self._renderer.naming.tyvars.get(id(spy))
+                var = self._naming.tyvars.get(id(spy))
                 node = _ir.Name(var) if var is not None else _ir.OBJECT
             case SpyStr():
                 node = _ir.Type(str)
@@ -539,11 +540,13 @@ class _ResultTyper:
 
     def _fn_param(self, fn: FnResult, name: str) -> _ir.Node:
         if (spy := fn.spies.get(name)) is not None:
-            return self._renderer.slot(spy)
+            return self._slot(spy)
+
         value = fn.fixed[name]
         if name in fn.defaults:
             # a pinned default renders as its value, like the outer parameters do
             return self.value_type(value)
+
         return _ir.Type(despy_class(type(value)))  # a method descriptor's pinned `self`
 
     def _class_of(self, cls: type[Any]) -> _ir.Node | None:
@@ -632,9 +635,9 @@ class _ResultTyper:
                 return _ir.Type(cls)
 
     def _tuple(self, items: tuple[object, ...]) -> _ir.Node:
-        spy = self._renderer.varpos
+        spy = self._varpos
         if spy is not None:
-            if any(item is spy for item in items) and self._renderer.naming.vartuple:
+            if any(item is spy for item in items) and self._naming.vartuple:
                 # every use is packed, so the placeholders unpack into a single `*Ts`
                 start = next(i for i, item in enumerate(items) if item is spy)
                 parts = [self.value_type(item) for item in items if item is not spy]
@@ -643,7 +646,7 @@ class _ResultTyper:
 
             # a uniform spread is `tuple[T, ...]`: the placeholder (`(*args,)`) at any
             # length, or its zipped element (`zip(*args)`) only at the full count
-            full_count = len(items) == self._renderer.var_count
+            full_count = len(items) == self._var_count
             for target, needs_full_count in (
                 (spy, False),
                 (spy.__optype_element__, True),
@@ -661,6 +664,36 @@ class _ResultTyper:
         return _ir.tuple_node(self.value_type(item) for item in items)
 
 
+def _renderer_of(
+    exploration: Exploration,
+    params: Mapping[str, Parameter],
+    traces: Traces,
+) -> _Renderer:
+    """A renderer under the final naming; a trial render decides what inlines."""
+    varpos = next(
+        (
+            exploration.spies[name]
+            for name, p in params.items()
+            if p.kind is Parameter.VAR_POSITIONAL
+        ),
+        None,
+    )
+    naming = _build_naming(
+        exploration.results,
+        exploration.spies,
+        traces,
+        varpos,
+        exploration.var_count,
+    )
+    binding = _Binding(exploration, params, traces, varpos, naming)
+    trial = _Renderer(binding)
+    pool, inline = trial.single_use()
+    if not inline:
+        return trial
+    naming = naming.inlined(pool, inline, traces)
+    return _Renderer(replace(binding, naming=naming))
+
+
 def renderers_of(
     exploration: Exploration,
     params: Mapping[str, Parameter],
@@ -669,8 +702,8 @@ def renderers_of(
     reflected = reflect([*exploration.spies.values(), *fn_spies(results)], traces)
     if reflected is traces:
         # nothing reflected, so a second renderer would repeat the first verbatim
-        return [_Renderer(exploration, params, traces)]
-    return [_Renderer(exploration, params, t) for t in (traces, reflected)]
+        return [_renderer_of(exploration, params, traces)]
+    return [_renderer_of(exploration, params, t) for t in (traces, reflected)]
 
 
 def render_all(
