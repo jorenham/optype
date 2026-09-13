@@ -1,9 +1,11 @@
 """The compat lowering, from hand-built `Signature`s to `.pyi` text."""
 
+import enum
 import os
 import shutil
 import subprocess  # ruff: ignore[suspicious-subprocess-import]
 import sys
+import types
 from pathlib import Path
 
 import pytest
@@ -537,6 +539,30 @@ TEXT_CASES: list[tuple[str, tuple[Signature, ...], str]] = [
         ),
     ),
     (
+        "enum literal whose module the member shadows",
+        (
+            _sig(
+                (),
+                Has(
+                    "enum",
+                    (Variance(CONTRAVARIANT, Lit((enum.FlagBoundary.STRICT,))),),
+                ),
+                NONE,
+            ),
+        ),
+        (
+            "import enum as _enum\n"
+            "from typing import Literal, Protocol\n\n"
+            "class HasEnum(Protocol):\n"
+            "    @property\n"
+            "    def enum(self) -> object: ...\n"
+            "    @enum.setter\n"
+            "    def enum(self, value: Literal[_enum.FlagBoundary.STRICT], /)"
+            " -> None: ...\n\n"
+            "def f(x: HasEnum) -> None: ..."
+        ),
+    ),
+    (
         "member named like a type parameter",
         (_sig((TypeParam("T"),), Has("T", (Variance(CONTRAVARIANT, T),)), NONE),),
         (
@@ -670,6 +696,39 @@ def test_has_write_is_a_settable_property() -> None:
     # a read of another type keeps both: an asymmetric property
     signed = Variance(CONTRAVARIANT, ZERO), Variance(COVARIANT, R)
     assert _has_member(*signed) == Attr("spam", T, setter=ZERO)
+
+
+@pytest.mark.parametrize(
+    ("modules", "aliases"),
+    [
+        (("_fake.mod",), ("_fake_mod",)),
+        (("pkg.a.b", "pkg.a_b"), ("_pkg_a_b", "_pkg_a_b_")),
+    ],
+    ids=["leading underscore", "colliding paths"],
+)
+def test_shadowed_module_aliases(
+    modules: tuple[str, ...],
+    aliases: tuple[str, ...],
+) -> None:
+    # `_` plus the path never starts with two underscores, which the class body
+    # would mangle, and a second module never reuses another's alias
+    kinds: list[type[enum.Enum]] = []
+    for name in modules:
+        Kind = enum.Enum("Kind", "A")  # ruff: ignore[non-lowercase-variable-in-function]
+        Kind.__module__ = name
+        sys.modules[name] = module = types.ModuleType(name)
+        vars(module)["Kind"] = Kind
+        kinds.append(Kind)
+    try:
+        signed = tuple(Variance(CONTRAVARIANT, Lit((kind["A"],))) for kind in kinds)
+        attr = modules[0].partition(".")[0]
+        text = COMPAT.render([_sig((), Has(attr, signed), NONE)])
+    finally:
+        for name in modules:
+            del sys.modules[name]
+    for name, alias in zip(modules, aliases, strict=True):
+        assert f"import {name} as {alias}\n" in text
+        assert f"{alias}.Kind.A" in text
 
 
 def test_has_presence_is_a_read_only_property() -> None:
