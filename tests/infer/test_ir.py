@@ -8,6 +8,7 @@ from typing import Any
 
 import pytest
 
+import optype.infer._ir as _ir  # ruff: ignore[manual-from-import]
 from optype.infer._ir import (
     COVARIANT,
     NEVER,
@@ -25,6 +26,7 @@ from optype.infer._ir import (
     Not,
     Param,
     Signature,
+    Term,
     Type,
     TypeParam,
     Union,
@@ -87,6 +89,8 @@ SUBTYPE_CASES: list[tuple[Any, Any, bool]] = [
     (App("list", (Name("Never"),)), App("list", (Type(int),)), True),
     (App("list", (Type(int),)), App("list", (Name("Never"),)), False),
     (App("set", (Name("Never"),)), App("set", (Type(int),)), True),
+    (App("list", (Lit((2, 3)),)), App("list", (Lit((3, 2)),)), True),
+    (App("list", (Type(int),)), App("list", (Type(object),)), False),
     (App("dict", (Name("Never"),) * 2), App("dict", (Type(str), Type(int))), True),
     (App("list", (Name("Never"),)), App("set", (Type(int),)), False),
     # type is covariant
@@ -195,6 +199,27 @@ def test_union_and_intersection_flatten_every_level() -> None:
     assert union([Union((A, Union((B, C))))]) == Union((A, B, C))
     nested = Intersection((A, Intersection((B, C))))
     assert intersection([nested]) == Intersection((A, B, C))
+
+
+def test_subtype_of_nested_invariant_containers_is_linear(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # equivalence is decided once per level, without an equality walk at each
+    a, b = Lit((2, 3)), Lit((3, 2))
+    depth = 40
+    for _ in range(depth):
+        a, b = App("list", (a,)), App("list", (b,))
+    calls = 0
+    walk = _ir.equivalent
+
+    def counted(x: Term, y: Term) -> bool:
+        nonlocal calls
+        calls += 1
+        return walk(x, y)
+
+    monkeypatch.setattr(_ir, "equivalent", counted)
+    assert subtype(a, b)
+    assert calls == depth
 
 
 def test_union_absorbs_subtypes() -> None:
