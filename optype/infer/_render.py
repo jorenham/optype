@@ -38,6 +38,7 @@ from ._values import (
     RecRef,
     fn_spies,
     is_mapping,
+    read_items,
 )
 from optype.inspect import _get_alias, is_generic_alias, is_union_type
 
@@ -599,16 +600,14 @@ class _ResultTyper:
 
         cls = type(result)
         match result:
-            case _ if is_mapping(result):
-                key = self.value_union(result, tuples=True) or _ir.NEVER
+            case _ if is_mapping(result) and (pairs := read_items(result)) is not None:
+                key = self.value_union((k for k, _ in pairs), tuples=True) or _ir.NEVER
                 args: tuple[_ir.Node, ...]
                 if isinstance(result, Counter):
                     args = (key,)
                 else:
-                    args = (
-                        key,
-                        self.value_union(result.values(), tuples=True) or _ir.NEVER,
-                    )
+                    value = self.value_union((v for _, v in pairs), tuples=True)
+                    args = (key, value or _ir.NEVER)
                 return _ir.App(_ir.type_name(cls), args)
             case list() | set() | frozenset():
                 inner = self.value_union(result, tuples=True)

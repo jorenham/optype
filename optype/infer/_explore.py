@@ -66,6 +66,7 @@ from ._values import (
     RecVar,
     fn_spies,
     is_mapping,
+    read_items,
 )
 
 _FORK_LIMIT = 64
@@ -386,9 +387,9 @@ def _explore_container(cls: type, result: Any, path: dict[int, RecVar | None]) -
             return tuple(_explore_result(item, path) for item in result)
         case list():
             return [_explore_result(item, path) for item in result]
-        case _ if is_mapping(result):
+        case _ if is_mapping(result) and (pairs := read_items(result)) is not None:
             # the keys must stay hashable, so only the values recurse
-            items = {key: _explore_result(value, path) for key, value in result.items()}
+            items = {key: _explore_result(value, path) for key, value in pairs}
             try:
                 return cls(items)
             except TypeError:
