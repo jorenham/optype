@@ -70,6 +70,19 @@ def test_value_text_local_enum() -> None:
 def test_default_text() -> None:
     assert default_text(None) == "None"
     assert default_text(1.5) == "1.5"
+    assert default_text(2j) == "2j"
+    assert default_text(float("inf")) == "..."
+    assert default_text(float("nan")) == "..."
+    assert default_text(complex(1, float("inf"))) == "..."
+
+
+def test_default_text_float_subclass() -> None:
+    class Odd(float):
+        def __complex__(self) -> complex:
+            raise NotImplementedError
+
+    assert default_text(Odd(1.5)) == "1.5"
+    assert default_text(Odd("inf")) == "..."
     assert default_text(b"x") == "b'x'"
     assert default_text(Color.RED) == "Color.RED"
     # only a literal repr is stub-safe; anything else elides
