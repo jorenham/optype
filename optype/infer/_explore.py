@@ -172,7 +172,8 @@ def _snapshot(params: Iterable[SpyObject]) -> Traces:
 def _parameters(func: AnyFunc) -> Mapping[str, Parameter]:
     try:
         return signature(func).parameters
-    except (TypeError, ValueError) as exc:  # not callable, or no signature
+    except Exception as exc:
+        # not callable, or no usable signature (gh-772)
         raise InferError(describe(exc)) from exc
 
 

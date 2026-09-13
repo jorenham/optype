@@ -122,7 +122,7 @@ def _scan(text: str) -> tuple[list[_RawParam], list[int], bool]:
     i = 1
     while i < len(text) and not closed:
         c = text[i]
-        if c in " ,":
+        if c in " ,\n":  # a builtin's text signature can wrap (`select.epoll.register`)
             i += 1
         elif c == ")":
             closed = True

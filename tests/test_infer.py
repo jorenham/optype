@@ -24,6 +24,7 @@ import pydoc
 import random
 import re
 import secrets
+import select
 import shelve  # ruff: ignore[suspicious-pickle-import]
 import shutil
 import signal
@@ -3369,6 +3370,28 @@ def test_builtin_str_index() -> None:
     # the text signature parses (#646), but the str-typed `sub` rejects placeholders
     with pytest.raises(InferError, match="must be str"):
         infer(str.index)
+
+
+def test_text_signature_wraps() -> None:
+    # gh-772: a builtin's text signature can wrap, with a default `inspect` can't eval
+    class _Register:
+        __text_signature__: str = (
+            "($self, /, fd,\n         eventmask=select.EPOLLIN | select.EPOLLOUT)"
+        )
+
+        def __call__(self, *args: object) -> None: ...
+
+    parsed = parse_text_signature(_Register())
+    assert parsed is not None
+    assert [list(c) for c in parsed] == [["self", "fd"], ["self", "fd", "eventmask"]]
+
+
+@pytest.mark.skipif(not hasattr(select, "epoll"), reason="requires select.epoll")
+def test_builtin_epoll_register() -> None:
+    # gh-772: `inspect` evaluates the defaults where `select` is the function, not the
+    # module; the text signature is parsed instead, and the fd rejects a placeholder
+    with pytest.raises(InferError, match="fileno"):
+        infer(select.epoll.register)
 
 
 def test_functools_reduce() -> None:
