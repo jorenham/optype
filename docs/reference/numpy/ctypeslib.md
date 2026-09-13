@@ -44,7 +44,7 @@ for your platform, please [open an issue][issues].
     <tr>
         <td><code>Bool</code></td>
         <td><code>c_bool</code></td>
-        <td><code>np.bool_</code></td>
+        <td><code>np.bool</code></td>
         <td>boolean</td>
     </tr>
     <tr>
