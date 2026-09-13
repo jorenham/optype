@@ -4,7 +4,9 @@ import dis
 import mmap
 import sys
 from collections.abc import Callable, Generator, Iterator
+from contextlib import contextmanager
 from contextvars import ContextVar
+from dataclasses import dataclass, replace
 from enum import StrEnum
 from functools import lru_cache
 from types import CodeType
@@ -66,15 +68,6 @@ class Marker(StrEnum):
     CLASS_SETATTR = "__class_setattr__"
 
 
-fork_plan: ContextVar[Iterator[bool] | None] = ContextVar("fork_plan", default=None)
-
-# the yield count for a star-unpack iterator (`f(*x)`) whose arity no bytecode pins:
-# the arity it needs, which `explore_spies` grows into until the call works
-yield_budget: ContextVar[int] = ContextVar("yield_budget", default=1)
-# set when a growable star-unpack iterator hits the budget, so `explore_spies` only
-# grows the budget when a fixed-arity star unpacking actually came up short
-starved: ContextVar[bool] = ContextVar("starved", default=False)
-
 # one element exercises no pairwise op, so `sorted`/`min` never reach their elements'
 # `__lt__` (#686); a pair suffices, and `_render` inlines the extra typevar away
 _DEFAULT_YIELD = 2
@@ -130,7 +123,7 @@ def _iter_is_star_unpack() -> bool:
 
 
 def _decide() -> bool:
-    if (plan := fork_plan.get()) is None:
+    if (plan := current_run().plan) is None:
         return True
     if (value := next(plan, None)) is None:
         raise Fork
@@ -140,7 +133,7 @@ def _decide() -> bool:
 def _decide_stable(spy: "SpyObject", attr: str, /, *, optional: bool = False) -> int:
     # memoized per run (keyed by the fork plan) so repeats agree; else two disagreeing
     # `len(seq)` send e.g. `random.choice` into a non-terminating `_randbelow(0)`
-    plan = fork_plan.get()
+    plan = current_run().plan
     memos = spy.__optype_stable__
 
     memo = memos.get(attr)
@@ -169,7 +162,7 @@ def _decide_keyed(
 ) -> bool:
     # per-operand `_decide_stable`: `y in x and y not in x` agrees within a run, while
     # `a in x` and `b in x` stay free
-    plan = fork_plan.get()
+    plan = current_run().plan
     memos = spy.__optype_keyed__
 
     cache: dict[int, tuple[object, int]]
@@ -218,16 +211,51 @@ class Spy:
         self.__optype_trace__ = []
 
 
-# while a run explores, each touched spy's pre-run trace length, so `_explore` can
-# undo a rejected run by truncating only the spies it actually appended to
-journal: ContextVar[dict[int, tuple[Spy, int]] | None] = ContextVar(
-    "journal",
-    default=None,
-)
+@dataclass(frozen=True, slots=True)
+class Run:
+    """What the spies read during one exploration attempt.
+
+    A change is a new snapshot in the current context, so a context copied by the
+    target keeps its own view, as a plain context variable would.
+    """
+
+    # the fork decisions to replay; `None` decides `True`
+    plan: Iterator[bool] | None = None
+    # the yield count for a star-unpack iterator (`f(*x)`) whose arity no bytecode
+    # pins: the arity it needs, which `explore_spies` grows into until the call works
+    yield_budget: int = 1
+    # set when a growable star-unpack iterator hits the budget, so `explore_spies` only
+    # grows the budget when a fixed-arity star unpacking actually came up short
+    starved: bool = False
+    # each touched spy's pre-run trace length, so a rejected run can be undone by
+    # truncating only the spies it appended to
+    journal: dict[int, tuple[Spy, int]] | None = None
+
+
+_run: ContextVar[Run | None] = ContextVar("run", default=None)
+
+
+def current_run() -> Run:
+    """The active run, or a throwaway one outside of any exploration."""
+    return _run.get() or Run()
+
+
+def set_run(run: Run) -> None:
+    """Make `run` the active snapshot of the current context."""
+    _run.set(run)
+
+
+@contextmanager
+def running(run: Run) -> Generator[None]:
+    token = _run.set(run)
+    try:
+        yield
+    finally:
+        _run.reset(token)
 
 
 def _journal_touch(spy: Spy) -> None:
-    if (marks := journal.get()) is not None and id(spy) not in marks:
+    if (marks := current_run().journal) is not None and id(spy) not in marks:
         marks[id(spy)] = (spy, len(spy.__optype_trace__))
 
 
@@ -475,10 +503,11 @@ class SpyObject(Spy, metaclass=_SpyType):
         # count from the trace, not a field, so a forked run's rollback is reflected
         served = sum(1 for item in self.__optype_trace__ if item.attr == "__next__")
         growable = self.__optype_growable__
-        limit = yield_budget.get() if growable else _DEFAULT_YIELD
+        run = current_run()
+        limit = run.yield_budget if growable else _DEFAULT_YIELD
         if served >= limit:
             if growable:
-                starved.set(True)
+                _run.set(replace(run, starved=True))
             raise StopIteration
         return self.__optype_trace_add__("__next__", (), {}, _element_of(self))
 

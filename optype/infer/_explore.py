@@ -20,6 +20,7 @@ from collections.abc import (
 )
 from contextlib import contextmanager, suppress
 from contextvars import ContextVar
+from dataclasses import replace
 from inspect import Parameter, isasyncgen, iscoroutine, isgenerator
 from types import (
     BuiltinFunctionType,
@@ -46,13 +47,12 @@ from ._spy import (
     TraceItem,
     Traces,
     as_spy,
-    fork_plan,
-    journal,
+    current_run,
     journal_rollback,
     own_spy,
+    running,
     set_driver_code,
-    starved,
-    yield_budget,
+    set_run,
 )
 from ._values import (
     COROUTINE,
@@ -466,11 +466,12 @@ def _drain_untraced() -> None:
     # the drain runs the target's finalizers; discard any spy ops they record,
     # or a rolled-back branch's `__del__` pollutes the trace
     marks: dict[int, tuple[Spy, int]] = {}
-    token = journal.set(marks)
+    before = current_run()
+    set_run(replace(before, journal=marks))
     try:
         cyclic_gc.drain()
     finally:
-        journal.reset(token)
+        set_run(replace(current_run(), journal=before.journal))
         journal_rollback(marks)
 
 
@@ -491,12 +492,10 @@ def _explore[T](  # ruff: ignore[complex-structure, too-many-branches]
         if not stack:
             break
         plan = stack.pop()
-        # `starved` is a per-run star-unpack flag, so no prior run leaks into this one
-        starved.set(False)
-        fork_token = fork_plan.set(iter(plan))
         # a rejected run rolls back its trace appends, including on closed-over spies
         marks: dict[int, tuple[Spy, int]] = {}
-        journal_token = journal.set(marks)
+        outer = current_run()
+        set_run(replace(outer, plan=iter(plan), starved=False, journal=marks))
         undo = False
 
         try:
@@ -523,8 +522,8 @@ def _explore[T](  # ruff: ignore[complex-structure, too-many-branches]
             last_exc = exc
             undo = True
         finally:
-            fork_plan.reset(fork_token)
-            journal.reset(journal_token)
+            # the plan and journal end with the run; a starvation stays for the caller
+            set_run(replace(current_run(), plan=outer.plan, journal=outer.journal))
             if undo:
                 journal_rollback(marks)
 
@@ -642,69 +641,65 @@ def explore_spies(
 
     # registering `func` itself keeps a returned self-reference from recursing
     token = _exploring.set(_exploring.get() | {_explore_key(func)})
-
-    yield_token = yield_budget.set(budget)
-    starve_token = starved.set(False)
     try:
         while True:
-            yield_budget.set(budget)
-
-            # a fresh `self` instance per attempt, so a mutated one cannot leak
-            fixed = _fixed_self(func, params) | {
-                n: _typed_default(params[n].default) for n in fix
-            }
-            spies, args, kwds = _placeholders(
-                params,
-                count=count,
-                keys=keys,
-                omit=omit,
-                fixed=fixed,
-            )
-            _force_absent(spies, forced_absent)
-            try:
-                results, deprecated, gaps = _explore(func, args, kwds)
-                explored, deprecated = _drain(func, results, deprecated)
-                results = _with_next_default(func, spies, explored)
-            except KeyError as exc:
-                key = exc.args[0] if exc.args else None
-                if (
-                    Parameter.VAR_KEYWORD not in kinds
-                    or not isinstance(key, str)
-                    or key in keys
-                    or key in params
-                ):
-                    raise
-                if len(keys) >= _KWARGS_LIMIT:
-                    msg = f"ran out of `**kwargs` placeholder keys ({exc})"
-                    raise InferError(msg) from exc
-                keys.append(key)
-            except (IndexError, TypeError, ValueError) as exc:
-                # a too-short star-unpack raises `TypeError`; gate on it so the target's
-                # own error (e.g. a `ValueError`) can't churn the budget and bury itself
-                if (
-                    isinstance(exc, TypeError)
-                    and starved.get()
-                    and (budget := next(budgets, 0))
-                ):
-                    continue
-                if Parameter.VAR_POSITIONAL not in kinds:
-                    raise
-                if not (count := next(counts, 0)):
-                    msg = f"ran out of `*args` placeholders ({exc})"
-                    raise InferError(msg) from exc
-            else:
-                return Exploration(
-                    spies,
-                    _snapshot((*spies.values(), *fn_spies(results))),
-                    results,
-                    count,
-                    fixed,
-                    deprecated,
-                    gaps,
+            run = replace(current_run(), yield_budget=budget, starved=False)
+            with running(run):
+                # a fresh `self` instance per attempt, so a mutated one cannot leak
+                fixed = _fixed_self(func, params) | {
+                    n: _typed_default(params[n].default) for n in fix
+                }
+                spies, args, kwds = _placeholders(
+                    params,
+                    count=count,
+                    keys=keys,
+                    omit=omit,
+                    fixed=fixed,
                 )
+                _force_absent(spies, forced_absent)
+                try:
+                    results, deprecated, gaps = _explore(func, args, kwds)
+                    explored, deprecated = _drain(func, results, deprecated)
+                    results = _with_next_default(func, spies, explored)
+                except KeyError as exc:
+                    key = exc.args[0] if exc.args else None
+                    if (
+                        Parameter.VAR_KEYWORD not in kinds
+                        or not isinstance(key, str)
+                        or key in keys
+                        or key in params
+                    ):
+                        raise
+                    if len(keys) >= _KWARGS_LIMIT:
+                        msg = f"ran out of `**kwargs` placeholder keys ({exc})"
+                        raise InferError(msg) from exc
+                    keys.append(key)
+                except (IndexError, TypeError, ValueError) as exc:
+                    # a too-short star-unpack raises `TypeError`; gate on it so the
+                    # target's own error (e.g. a `ValueError`) can't churn the budget
+                    # and bury itself
+                    if (
+                        isinstance(exc, TypeError)
+                        and current_run().starved
+                        and (budget := next(budgets, 0))
+                    ):
+                        continue
+                    if Parameter.VAR_POSITIONAL not in kinds:
+                        raise
+                    if not (count := next(counts, 0)):
+                        msg = f"ran out of `*args` placeholders ({exc})"
+                        raise InferError(msg) from exc
+                else:
+                    return Exploration(
+                        spies,
+                        _snapshot((*spies.values(), *fn_spies(results))),
+                        results,
+                        count,
+                        fixed,
+                        deprecated,
+                        gaps,
+                    )
     finally:
-        starved.reset(starve_token)
-        yield_budget.reset(yield_token)
         _exploring.reset(token)
 
 
