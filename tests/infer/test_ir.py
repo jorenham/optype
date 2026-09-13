@@ -101,6 +101,37 @@ SUBTYPE_CASES: list[tuple[Any, Any, bool]] = [
         False,
     ),
     (Fn((), Type(int)), Fn((Arg("x", Type(int)),), Type(int)), False),
+    # a keyword must match by name, and an omission the wider one allows must be allowed
+    (
+        Fn((Arg("x", Type(int)),), Type(int)),
+        Fn((Arg("y", Type(int)),), Type(int)),
+        False,
+    ),
+    (Fn((Arg("x", Type(int)),), Type(int)), Fn((Type(int),), Type(int)), False),
+    (Fn((Type(int),), Type(int)), Fn((Arg("x", Type(int)),), Type(int)), False),
+    (
+        Fn((Arg("x", Type(int)),), Type(int)),
+        Fn((Arg("x", Type(int), (0,)),), Type(int)),
+        False,
+    ),
+    (
+        Fn((Arg("x", Type(int), (0,)),), Type(int)),
+        Fn((Arg("x", Type(int)),), Type(int)),
+        True,
+    ),
+    # the default's value is no part of the type
+    (
+        Fn((Arg("x", Type(int), (0,)),), Type(int)),
+        Fn((Arg("x", Type(int), (1,)),), Type(int)),
+        True,
+    ),
+    (
+        Fn((Arg("x", Type(int), (1,)),), Type(int)),
+        Fn((Arg("x", Type(int), (0,)),), Type(int)),
+        True,
+    ),
+    (FN_LIST_DEFAULT, Fn((Arg(None, Type(int), ([2],)),), Type(int)), True),
+    (Fn((Arg(None, Type(int), ([2],)),), Type(int)), FN_LIST_DEFAULT, True),
     # `zip` is covariant in typeshed; `map`, `filter`, and `enumerate` are invariant
     (App("zip", (Type(bool),)), App("zip", (Type(int),)), True),
     (App("map", (Type(bool),)), App("map", (Type(int),)), False),
