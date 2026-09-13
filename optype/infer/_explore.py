@@ -20,7 +20,7 @@ from collections.abc import (
 )
 from contextlib import contextmanager, suppress
 from contextvars import ContextVar
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from inspect import Parameter, isasyncgen, iscoroutine, isgenerator
 from types import (
     BuiltinFunctionType,
@@ -462,20 +462,85 @@ def _scrub_deprecated(message: str | None, func: AnyFunc) -> str | None:
     return message.replace(f"{SpyObject.__module__}.{name}", full).replace(name, owner)
 
 
-def _drain_untraced() -> None:
-    # the drain runs the target's finalizers; discard any spy ops they record,
-    # or a rolled-back branch's `__del__` pollutes the trace
+@contextmanager
+def _untraced() -> Generator[None]:
+    """Discard the spy ops recorded within: a finalizer's, or a rolled-back branch's
+    `__del__` would pollute the trace."""
     marks: dict[int, tuple[Spy, int]] = {}
     before = current_run()
     set_run(replace(before, journal=marks))
     try:
-        cyclic_gc.drain()
+        yield
     finally:
         set_run(replace(current_run(), journal=before.journal))
         journal_rollback(marks)
 
 
-def _explore[T](  # ruff: ignore[complex-structure, too-many-branches]
+@dataclass(frozen=True, slots=True)
+class _Done[T]:
+    result: T
+    message: str | None  # a `DeprecationWarning` the run raised
+
+
+@dataclass(frozen=True, slots=True)
+class _Forked:
+    """A fork point the plan did not cover: one alternative per branch is due."""
+
+
+@dataclass(frozen=True, slots=True)
+class _Rejected:
+    """The target refused the spies, or an absent dunder turned out to be needed."""
+
+    exc: BaseException | None = None
+
+
+type _Outcome[T] = _Done[T] | _Forked | _Rejected
+
+
+def _run_plan[T](
+    func: Callable[..., T] | Callable[..., Coroutine[Any, None, T]],
+    args: Sequence[object],
+    kwds: Mapping[str, object],
+    plan: Sequence[bool],
+    *,
+    scrub: bool,
+) -> _Outcome[T]:
+    """One run of `func` under `plan`, undone unless it completed or forked.
+
+    Raises:
+        InferError: If a spy hit an operation without a protocol.
+        IndexError: If a `*args` placeholder was missing; the attempt grows into it.
+        KeyError: If a `**kwargs` key was missing; the attempt injects it.
+        TypeError: If a star-unpack came up short; the attempt grows its budget.
+    """
+    # a rejected run rolls back its trace appends, including on closed-over spies
+    marks: dict[int, tuple[Spy, int]] = {}
+    outer = current_run()
+    set_run(replace(outer, plan=iter(plan), starved=False, journal=marks))
+    undo = False
+    # each outcome returns from its handler: a local would keep every rejected run's
+    # frame alive through the exception's traceback until the paused GC runs
+    try:
+        result, message = _run(func, args, kwds)
+        return _Done(result, _scrub_deprecated(message, func) if scrub else None)
+    except Fork:
+        return _Forked()
+    except AbsentError:
+        undo = True
+        return _Rejected()
+    except (InferError, IndexError, KeyError, TypeError):
+        raise
+    except (Exception, SystemExit) as exc:  # ruff: ignore[blind-except]
+        undo = True
+        return _Rejected(exc)
+    finally:
+        # the plan and journal end with the run; a starvation stays for the caller
+        set_run(replace(current_run(), plan=outer.plan, journal=outer.journal))
+        if undo:
+            journal_rollback(marks)
+
+
+def _explore[T](  # ruff: ignore[complex-structure]
     func: Callable[..., T] | Callable[..., Coroutine[Any, None, T]],
     args: Sequence[object],
     kwds: Mapping[str, object],
@@ -486,48 +551,34 @@ def _explore[T](  # ruff: ignore[complex-structure, too-many-branches]
     dropped = False
 
     last_exc: BaseException | None = None
-    value_exc: ValueError | None = None
+    value_exc: BaseException | None = None  # a `ValueError`, deferred
 
     for _ in range(_RUN_LIMIT):  # caps the exponential blowup of independent forks
         if not stack:
             break
         plan = stack.pop()
-        # a rejected run rolls back its trace appends, including on closed-over spies
-        marks: dict[int, tuple[Spy, int]] = {}
-        outer = current_run()
-        set_run(replace(outer, plan=iter(plan), starved=False, journal=marks))
-        undo = False
-
-        try:
-            result, message = _run(func, args, kwds)
-            results.append(result)
-            if deprecated is None:
-                deprecated = _scrub_deprecated(message, func)
-        except Fork:
-            if len(plan) < _FORK_LIMIT:
-                stack.extend(([*plan, False], [*plan, True]))
-            else:
-                dropped = True
-        except AbsentError:
-            # the dunder is genuinely needed, so this run (and its marker) never was
-            undo = True
-        except (InferError, IndexError, KeyError, TypeError):
-            raise  # signals the driver acts on, not a rejected run
-        except ValueError as exc:
-            # a forked value the target rejected (e.g. `range`'s zero step); defer
-            value_exc = exc
-            undo = True
-        except (Exception, SystemExit) as exc:  # ruff: ignore[blind-except]
-            # the target rejected these spy values or exited (e.g. `exit()`); skip
-            last_exc = exc
-            undo = True
-        finally:
-            # the plan and journal end with the run; a starvation stays for the caller
-            set_run(replace(current_run(), plan=outer.plan, journal=outer.journal))
-            if undo:
-                journal_rollback(marks)
-
-        _drain_untraced()
+        match _run_plan(func, args, kwds, plan, scrub=deprecated is None):
+            case _Done(result, message):
+                results.append(result)
+                if deprecated is None:
+                    deprecated = message
+            case _Forked():
+                if len(plan) < _FORK_LIMIT:
+                    stack.extend(([*plan, False], [*plan, True]))
+                else:
+                    dropped = True
+            # by the real type, as an `except` clause would: `__class__` may lie
+            case _Rejected(exc) if issubclass(type(exc), ValueError):
+                # a forked value the target rejected (e.g. `range`'s zero step); defer
+                with _untraced():  # releasing the last one runs its finalizer
+                    value_exc = exc
+            case _Rejected(exc) if exc is not None:
+                with _untraced():
+                    last_exc = exc
+            case _Rejected():
+                pass
+        with _untraced():
+            cyclic_gc.drain()
 
     if not results:
         if value_exc is not None:
@@ -629,21 +680,13 @@ def explore_spies(
 ) -> Exploration:
     kinds = {p.kind for p in params.values()}
     forced_absent = absent or {}
-
-    counts = iter(_VARIADIC_COUNTS)
-    count = next(counts)
-
-    # rerun with new spies when the variadic placeholders/iterator yield budget runs out
-    budgets = iter(_YIELD_COUNTS)
-    budget = 1
-
-    keys: list[str] = []
+    attempt = _Attempt.first()
 
     # registering `func` itself keeps a returned self-reference from recursing
     token = _exploring.set(_exploring.get() | {_explore_key(func)})
     try:
         while True:
-            run = replace(current_run(), yield_budget=budget, starved=False)
+            run = replace(current_run(), yield_budget=attempt.budget, starved=False)
             with running(run):
                 # a fresh `self` instance per attempt, so a mutated one cannot leak
                 fixed = _fixed_self(func, params) | {
@@ -651,8 +694,8 @@ def explore_spies(
                 }
                 spies, args, kwds = _placeholders(
                     params,
-                    count=count,
-                    keys=keys,
+                    count=attempt.count,
+                    keys=attempt.keys,
                     omit=omit,
                     fixed=fixed,
                 )
@@ -661,46 +704,76 @@ def explore_spies(
                     results, deprecated, gaps = _explore(func, args, kwds)
                     explored, deprecated = _drain(func, results, deprecated)
                     results = _with_next_default(func, spies, explored)
-                except KeyError as exc:
-                    key = exc.args[0] if exc.args else None
-                    if (
-                        Parameter.VAR_KEYWORD not in kinds
-                        or not isinstance(key, str)
-                        or key in keys
-                        or key in params
-                    ):
+                except (IndexError, KeyError, TypeError, ValueError) as exc:
+                    if (grown := attempt.grown(exc, kinds, params)) is None:
                         raise
-                    if len(keys) >= _KWARGS_LIMIT:
-                        msg = f"ran out of `**kwargs` placeholder keys ({exc})"
-                        raise InferError(msg) from exc
-                    keys.append(key)
-                except (IndexError, TypeError, ValueError) as exc:
-                    # a too-short star-unpack raises `TypeError`; gate on it so the
-                    # target's own error (e.g. a `ValueError`) can't churn the budget
-                    # and bury itself
-                    if (
-                        isinstance(exc, TypeError)
-                        and current_run().starved
-                        and (budget := next(budgets, 0))
-                    ):
-                        continue
-                    if Parameter.VAR_POSITIONAL not in kinds:
-                        raise
-                    if not (count := next(counts, 0)):
-                        msg = f"ran out of `*args` placeholders ({exc})"
-                        raise InferError(msg) from exc
+                    attempt = grown
                 else:
                     return Exploration(
                         spies,
                         _snapshot((*spies.values(), *fn_spies(results))),
                         results,
-                        count,
+                        attempt.count,
                         fixed,
                         deprecated,
                         gaps,
                     )
     finally:
         _exploring.reset(token)
+
+
+@dataclass(frozen=True, slots=True)
+class _Attempt:
+    """What one attempt passes the target; grown after one that came up short."""
+
+    counts: Iterator[int]  # the `*args` placeholder counts still to try
+    budgets: Iterator[int]  # the yield budgets still to try
+    count: int  # the `*args` placeholder count
+    budget: int = 1  # the yield budget of a growable star-unpack iterator
+    keys: tuple[str, ...] = ()  # the injected `**kwargs` keys
+
+    @classmethod
+    def first(cls) -> "_Attempt":
+        counts = iter(_VARIADIC_COUNTS)
+        return cls(counts, iter(_YIELD_COUNTS), next(counts))
+
+    def grown(
+        self,
+        exc: Exception,
+        kinds: Collection[object],
+        params: Mapping[str, Parameter],
+    ) -> "_Attempt | None":
+        """The next attempt after `exc` ended one, or `None` if it was the target's.
+
+        Raises:
+            InferError: If nothing is left to grow.
+        """
+        if issubclass(type(exc), KeyError):
+            key = exc.args[0] if exc.args else None
+            if (
+                Parameter.VAR_KEYWORD not in kinds
+                or not isinstance(key, str)
+                or key in self.keys
+                or key in params
+            ):
+                return None
+            if len(self.keys) >= _KWARGS_LIMIT:
+                msg = f"ran out of `**kwargs` placeholder keys ({exc})"
+                raise InferError(msg) from exc
+            return replace(self, keys=(*self.keys, key))
+        # a too-short star-unpack raises `TypeError`; gate on it so the target's own
+        # error (e.g. a `ValueError`) can't churn the budget and bury itself
+        budget = self.budget
+        starved = issubclass(type(exc), TypeError) and current_run().starved
+        if starved and (budget := next(self.budgets, 0)):
+            return replace(self, budget=budget)
+        if Parameter.VAR_POSITIONAL not in kinds:
+            return None
+        if not (count := next(self.counts, 0)):
+            msg = f"ran out of `*args` placeholders ({exc})"
+            raise InferError(msg) from exc
+        # an exhausted budget stays at zero, as it did
+        return replace(self, count=count, budget=budget)
 
 
 def explore_lenient(

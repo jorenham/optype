@@ -2619,6 +2619,59 @@ def test_unresolvable_deferred_annotations() -> None:
     assert infer(ns["f"]) == "[T = Literal[42]](x: T = 42) -> T"
 
 
+class _LyingTypeError(TypeError):
+    # what an `except TypeError` clause matches, whatever `__class__` claims
+    @override
+    def __getattribute__(self, name: str) -> Any:
+        return KeyError if name == "__class__" else super().__getattribute__(name)
+
+
+def test_driver_signals_match_the_real_exception_type() -> None:
+    def f(*args: Any) -> Any:
+        if len(args) < 3:
+            raise _LyingTypeError("key")
+        return args
+
+    assert infer(f) == "[*Ts](*args: *Ts) -> tuple[*Ts]"
+
+
+class _FinalizingError(Exception):
+    spy: object
+
+    def __init__(self, spy: object) -> None:
+        super().__init__()
+        self.spy = spy
+
+    def __del__(self) -> None:
+        str(self.spy)
+
+
+class _FinalizingValueError(ValueError):
+    spy: object
+
+    def __init__(self, spy: object) -> None:
+        super().__init__()
+        self.spy = spy
+
+    def __del__(self) -> None:
+        str(self.spy)
+
+
+@pytest.mark.parametrize("boom", [_FinalizingError, _FinalizingValueError])
+def test_rejected_exception_finalizer_is_untraced(
+    boom: type[_FinalizingError | _FinalizingValueError],
+) -> None:
+    # a rejected run's exception is released once the next one replaces it; the spy
+    # ops its finalizer records then must not become requirements
+    def f(x: Any, y: Any) -> Any:
+        bool(y)
+        if x:
+            raise boom(x)
+        return y
+
+    assert "CanStr" not in infer(f)
+
+
 def test_builtin_without_signature() -> None:
     try:
         signature(iter)
