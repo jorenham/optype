@@ -275,7 +275,7 @@ The remaining aliases mirror the `np.generic` hierarchy:
     <tr>
         <td><code>SignedInteger</code></td>
         <td>
-            <code>Int8 | Int16 | Int32 | Int64 | Short | IntC | IntP | Long | LongLong</code>
+            <code>Byte | Short | IntC | Long | LongLong</code>
         </td>
     </tr>
     <tr>
