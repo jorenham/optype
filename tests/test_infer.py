@@ -7,6 +7,7 @@ import abc
 import ast
 import asyncio
 import builtins
+import contextlib
 import contextvars
 import difflib
 import enum
@@ -33,6 +34,7 @@ import weakref
 from collections import Counter, defaultdict
 from collections.abc import Callable
 from inspect import Signature as PySignature, currentframe, signature
+from multiprocessing.connection import Connection
 from pathlib import Path
 from types import GeneratorType, MappingProxyType, SimpleNamespace
 from typing import Any, override
@@ -1958,6 +1960,56 @@ def test_infer_isolates_native_crash() -> None:
 
     with pytest.raises(InferError):
         infer(_Crash())
+
+
+@isolators
+def test_isolate_reports_target_interrupt(run: _Isolator) -> None:
+    # gh-773: a `KeyboardInterrupt` raised by the target is a limitation, not a ctrl+C
+    def work() -> None:
+        raise KeyboardInterrupt
+
+    with pytest.raises(InferError, match="KeyboardInterrupt") as excinfo:
+        run(work)
+    assert isinstance(excinfo.value.__cause__, KeyboardInterrupt)
+
+
+@fork_only
+def test_isolate_kills_child_on_host_interrupt(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # gh-773: a ctrl+C on the host must not orphan the child in its own session
+    pid_file = tmp_path / "pid"
+
+    def work() -> None:
+        pid_file.write_text(str(os.getpid()))
+        time.sleep(60)
+
+    def poll(*_args: object) -> bool:
+        # the interrupt lands while the host waits on the child, once it has started
+        for _ in range(500):
+            if pid_file.exists() and pid_file.read_text():
+                raise KeyboardInterrupt
+            time.sleep(0.01)
+        pytest.fail("the child never started")
+
+    monkeypatch.setattr(Connection, "poll", poll)
+    with pytest.raises(KeyboardInterrupt):
+        isolate(work)
+
+    pid = int(pid_file.read_text())
+    try:
+        with pytest.raises(ProcessLookupError):
+            os.kill(pid, 0)
+    finally:
+        with contextlib.suppress(ProcessLookupError):
+            os.kill(pid, signal.SIGKILL)
+
+
+def test_infer_reports_target_interrupt() -> None:
+    # gh-773
+    with pytest.raises(InferError, match="KeyboardInterrupt"):
+        infer(signal.default_int_handler)
 
 
 @fork_only
