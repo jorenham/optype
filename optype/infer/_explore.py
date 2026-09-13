@@ -20,9 +20,10 @@ from collections.abc import (
 )
 from contextlib import contextmanager, suppress
 from contextvars import ContextVar
-from inspect import Parameter, isasyncgen, iscoroutine, isgenerator
+from inspect import Parameter, isasyncgen, isgenerator
 from types import (
     BuiltinFunctionType,
+    CoroutineType,
     FunctionType,
     MethodDescriptorType,
     MethodType,
@@ -446,8 +447,18 @@ def _run(
 ) -> tuple[Any, str | None]:
     """Call `func`, returning its (awaited) result and any deprecation message."""
     with _record_deprecation() as caught:
-        result = func(*args, **kwds)
-        value = _await(result) if iscoroutine(result) else result
+        trace, profile = sys.gettrace(), sys.getprofile()
+        try:
+            result = func(*args, **kwds)
+        finally:
+            # a spy the target installed as trace function (`bdb.Bdb.start_trace`)
+            # would otherwise be called on every later frame, without bound (gh-774);
+            # only when changed, since a native hook (yappi) is `None` to the getter
+            if sys.gettrace() is not trace:
+                sys.settrace(trace)
+            if sys.getprofile() is not profile:
+                sys.setprofile(profile)
+        value = _await(result) if isinstance(result, CoroutineType) else result
     return value, _deprecation(caught)
 
 
