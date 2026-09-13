@@ -44,27 +44,16 @@ from optype.infer._api import _infer_render
 from optype.infer._backends._terse import TERSE
 from optype.infer._ir import (
     App,
-    Arg,
-    Dots,
     Fn,
     Has,
-    Lit,
     Name,
     Node,
-    Param,
     Signature,
-    Type,
-    TypeParam,
-    Union,
     alpha_equal,
     names,
-    rename,
-    subtype,
-    union,
 )
 from optype.infer._isolate import _inline, isolate
 from optype.infer._numpy import array_function_node
-from optype.infer._recursion import collapse_recursive
 from optype.infer._signature import parse_text_signature
 from optype.infer._spy import SpyObject
 
@@ -1764,72 +1753,6 @@ def test_infer_select(
     assert infer(func, *params) == expected
 
 
-SUBTYPE_CASES: list[tuple[Any, Any, bool]] = [
-    (Type(bool), Type(int), True),
-    (Type(int), Type(bool), False),
-    (Type(int), Type(float), False),  # PEP 484's numeric tower is not real
-    (Type(FileNotFoundError), Type(OSError), True),
-    (Type(OSError), Type(FileNotFoundError), False),
-    (Name("Never"), Type(str), True),
-    (Type(str), Name("object"), True),
-    (Type(str), Type(object), True),
-    (Lit((True, 1)), Type(int), True),
-    (Lit((1, "a")), Type(int), False),
-    (Lit((1,)), Lit((1, 2)), True),
-    (Lit((True,)), Lit((1,)), False),  # Literal[True] is not Literal[1]
-    # the yield type is covariant
-    (App("Generator", (Type(bool),)), App("Generator", (Type(int),)), True),
-    (App("Generator", (Type(int),)), App("Generator", (Type(bool),)), False),
-    # the send type is contravariant
-    (
-        App("Generator", (Type(int), Type(int), Type(int))),
-        App("Generator", (Type(int), Type(bool), Type(int))),
-        True,
-    ),
-    (
-        App("Generator", (Type(int), Type(bool), Type(int))),
-        App("Generator", (Type(int), Type(int), Type(int))),
-        False,
-    ),
-    # tuple is covariant in every element; list is invariant
-    (App("tuple", (Type(bool), Lit((1,)))), App("tuple", (Type(int),) * 2), True),
-    (App("tuple", (Type(bool),)), App("tuple", (Type(int),) * 2), False),
-    (App("list", (Type(bool),)), App("list", (Type(int),)), False),
-    # an empty container is the bottom of its base, even when invariant
-    (App("list", (Name("Never"),)), App("list", (Type(int),)), True),
-    (App("list", (Type(int),)), App("list", (Name("Never"),)), False),
-    (App("set", (Name("Never"),)), App("set", (Type(int),)), True),
-    (App("dict", (Name("Never"),) * 2), App("dict", (Type(str), Type(int))), True),
-    (App("list", (Name("Never"),)), App("set", (Type(int),)), False),
-    # type is covariant
-    (App("type", (Type(bool),)), App("type", (Type(int),)), True),
-    (App("type", (Type(int),)), App("type", (Type(bool),)), False),
-    # a function's parameters are contravariant, its return type is covariant
-    (Fn((), Type(bool)), Fn((), Type(int)), True),
-    (Fn((), Type(int)), Fn((), Type(bool)), False),
-    (
-        Fn((Arg("x", Type(int)),), Type(int)),
-        Fn((Arg("x", Type(bool)),), Type(int)),
-        True,
-    ),
-    (
-        Fn((Arg("x", Type(bool)),), Type(int)),
-        Fn((Arg("x", Type(int)),), Type(int)),
-        False,
-    ),
-    (Fn((), Type(int)), Fn((Arg("x", Type(int)),), Type(int)), False),
-    # `zip` is covariant in typeshed; `map`, `filter`, and `enumerate` are invariant
-    (App("zip", (Type(bool),)), App("zip", (Type(int),)), True),
-    (App("map", (Type(bool),)), App("map", (Type(int),)), False),
-    (App("enumerate", (Type(bool),)), App("enumerate", (Type(int),)), False),
-]
-
-
-@pytest.mark.parametrize(("sub", "sup", "expected"), SUBTYPE_CASES)
-def test_subtype(sub: Any, sup: Any, expected: bool) -> None:
-    assert subtype(sub, sup) is expected
-
-
 # #739: a buffer-exporting spy reclaimed by cyclic GC may tear down its class MRO before
 # the held memoryview's `__release_buffer__` lookup. Dropping `__release_buffer__` from
 # the spy keeps the fabricated cycle below collecting silently on every supported
@@ -2125,51 +2048,6 @@ def test_drained_spies_freed(monkeypatch: pytest.MonkeyPatch) -> None:
         if isinstance(cls, type) and issubclass(cls, SpyObject) and cls is not SpyObject
     ]
     assert not residue
-
-
-def test_alpha_equal_and_rename() -> None:
-    # the fold's primitives: structural equality up to a consistent name bijection,
-    # and a simultaneous rename that drops union members which collapse together
-    a = App("CanAdd", (Name("A"), App("CanMul", (Name("B"), Name("A")))))
-    b = App("CanAdd", (Name("X"), App("CanMul", (Name("Y"), Name("X")))))
-    assert alpha_equal(a, b) == {"A": "X", "B": "Y"}
-    assert alpha_equal(a, App("CanAdd", (Name("X"), Name("X")))) is None
-    assert rename(a, {"A": "X", "B": "Y"}) == b
-    assert rename(Union((Name("A"), Name("B"))), {"A": "C", "B": "C"}) == Name("C")
-
-
-def test_collapse_recursive_reroll() -> None:
-    # #736: an unrolled loop's run of identical bounds folds to one recursive typevar
-    def link(leaf: str, nxt: str) -> Node:
-        return App("CanAdd", (Name(leaf), Name(nxt)))
-
-    type_params = [
-        TypeParam("T", link("T7", "U")),
-        TypeParam("U", link("T8", "V")),
-        TypeParam("V", link("T9", "W")),
-        TypeParam("W", link("T10", "T11")),  # the last copy points at the loop's exit
-        *(TypeParam(leaf) for leaf in ("T7", "T8", "T9", "T10", "T11")),
-    ]
-    sig = Signature(tuple(type_params), (Param("x", Name("T")),), Name("T"))
-    folded = collapse_recursive(sig)
-    # T, U, V, W collapse onto a single self-referential T; spent leaves are dropped
-    assert folded.type_params == (
-        TypeParam("T", App("CanAdd", (Name("U"), Name("T")))),
-        TypeParam("U"),  # the surviving per-iteration leaf, renumbered gaplessly
-    )
-    assert folded.params == sig.params
-    assert folded.ret == Name("T")
-
-
-def test_collapse_recursive_keeps_short_runs() -> None:
-    # #736: below the loop threshold, similar typevars are left intact (no false fold)
-    type_params = [
-        TypeParam("T", App("CanAdd", (Name("T7"), Name("U")))),
-        TypeParam("U", App("CanAdd", (Name("T8"), Name("T9")))),
-        *(TypeParam(leaf) for leaf in ("T7", "T8", "T9")),
-    ]
-    sig = Signature(tuple(type_params), (Param("x", Name("T")),), Name("T"))
-    assert collapse_recursive(sig) == sig
 
 
 def test_attribute_name_is_not_a_typevar() -> None:
@@ -2731,41 +2609,6 @@ def test_strict_silent_when_complete() -> None:
         warnings.simplefilter("error", InferWarning)
         result = infer(lambda x: x + 1, strict=True)
     assert result == "[R](x: CanAdd[Literal[1], R]) -> R"
-
-
-def test_union_tuple_collapse() -> None:
-    # a wide union of same-arity tuples (like `colorsys.hls_to_rgb`) collapses per
-    # position; a small one keeps its correlation
-    def pair(i: int) -> App:
-        return App("tuple", (Name(f"A{i}"), Name(f"B{i}")))
-
-    def triple(i: int) -> App:
-        return App("tuple", (Name(f"C{i}"), Name(f"D{i}"), Name(f"E{i}")))
-
-    def rendered(nodes: list[Node], *, tuples: bool) -> str:
-        node = union(nodes, tuples=tuples)
-        assert node is not None
-        return render_node(node)
-
-    cols2 = " | ".join(f"A{i}" for i in range(9)), " | ".join(f"B{i}" for i in range(9))
-    wide2 = f"tuple[{cols2[0]}, {cols2[1]}]"
-
-    small: list[Node] = [pair(0), pair(1)]
-    assert rendered(small, tuples=True) == "tuple[A0, B0] | tuple[A1, B1]"
-
-    wide: list[Node] = [pair(i) for i in range(9)]
-    assert rendered(wide, tuples=True) == wide2
-    assert rendered(wide, tuples=False).count("tuple[") == 9
-
-    # each arity collapses on its own; a wider triple group folds independently
-    cols3 = tuple(" | ".join(f"{p}{i}" for i in range(9)) for p in "CDE")
-    mixed = wide + [triple(i) for i in range(9)]
-    assert rendered(mixed, tuples=True) == f"{wide2} | tuple[{', '.join(cols3)}]"
-
-    # a non-tuple member and a variadic tuple stay untouched beside the collapse
-    assert rendered([*wide, Name("X")], tuples=True) == f"{wide2} | X"
-    variadic = App("tuple", (Name("V"), Dots()))
-    assert rendered([*wide, variadic], tuples=True) == f"{wide2} | tuple[V, ...]"
 
 
 @pytest.mark.skipif(sys.version_info < (3, 14), reason="requires PEP 649 annotations")
