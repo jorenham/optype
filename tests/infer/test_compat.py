@@ -248,6 +248,34 @@ TEXT_CASES: list[tuple[str, tuple[Signature, ...], str]] = [
         ),
     ),
     (
+        # a protocol-typed bound is applied, not flattened to its arguments
+        "protocol bound from a shipped generic",
+        (_sig((TypeParam("R"),), App("CanIter", (R,))),),
+        (
+            "from optype import CanIter, CanNext\n\n"
+            "def f[R: CanNext[object]](x: CanIter[R]) -> R: ..."
+        ),
+    ),
+    (
+        # a bound from outside `optype` is applied and imported like any other type
+        "protocol bound from the standard library in a helper",
+        (
+            _sig(
+                (TypeParam("R"),),
+                Intersection((App("CanDir", (R,)), App("CanBool", ()))),
+            ),
+        ),
+        (
+            "import typing\n"
+            "from collections.abc import Iterable\n"
+            "from typing import Protocol\n"
+            "from optype import CanBool, CanDir\n\n"
+            "class CanDirBool[T: Iterable[typing.Any]]"
+            "(CanDir[T], CanBool, Protocol): ...\n\n"
+            "def f[R: Iterable[typing.Any]](x: CanDirBool[R]) -> R: ..."
+        ),
+    ),
+    (
         # a helper inherits the bound of the shipped protocol parameter it fills
         "protocol bound in helper",
         (
