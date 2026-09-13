@@ -326,8 +326,11 @@ type _GroupKey = tuple[tuple[bool, str], ...]  # one entry per cyclic bound
 
 
 @final
-class _HelperRegistry:
-    """The helper definitions shared across every signature of one render."""
+class Lowerer:
+    """Rewrite a sequence of `Signature`s into a printable `Module`.
+
+    The helper definitions are shared across every signature of one render.
+    """
 
     defs: dict[str, Helper]
     groups: dict[_GroupKey, list[str]]
@@ -339,6 +342,10 @@ class _HelperRegistry:
         self.groups = {}
         self._keys = {}
         self._names = set()
+
+    def module(self, sigs: Sequence[_ir.Signature]) -> Module:
+        funcs = [_SigLowerer(self, sig).func() for sig in sigs]
+        return Module(tuple(_reachable(self.defs, funcs)), tuple(funcs))
 
     def register(
         self,
@@ -367,20 +374,6 @@ class _HelperRegistry:
             i += 1
         self._names.add(name)
         return name
-
-
-@final
-class Lowerer:
-    """Rewrite a sequence of `Signature`s into a printable `Module`."""
-
-    _registry: _HelperRegistry
-
-    def __init__(self) -> None:
-        self._registry = _HelperRegistry()
-
-    def module(self, sigs: Sequence[_ir.Signature]) -> Module:
-        funcs = [_SigLowerer(self._registry, sig).func() for sig in sigs]
-        return Module(tuple(_reachable(self._registry.defs, funcs)), tuple(funcs))
 
 
 def _mentions(node: _ir.Term) -> Iterable[str]:
@@ -507,11 +500,11 @@ def _merge_has(parts: Sequence[_ir.Node]) -> list[_ir.Node]:
 class _SigLowerer:
     """Lower one `Signature`; its type variables are fixed for the whole traversal."""
 
-    _registry: _HelperRegistry
+    _registry: Lowerer
     _sig: _ir.Signature
     _tyvars: frozenset[str]  # the signature's type parameter names
 
-    def __init__(self, registry: _HelperRegistry, sig: _ir.Signature) -> None:
+    def __init__(self, registry: Lowerer, sig: _ir.Signature) -> None:
         self._registry = registry
         self._sig = sig
         self._tyvars = frozenset(typar.name for typar in sig.type_params)
@@ -519,10 +512,10 @@ class _SigLowerer:
     def func(self) -> _ir.Signature:
         sig = self._sig
         constraints: _Constraints = {}
-        params = [self._param(p, constraints) for p in sig.params]
+        params = [replace(p, node=self._node(p.node, constraints)) for p in sig.params]
         ret = self._node(sig.ret, constraints)
         kept, subst = self._resolve_typars(sig.type_params, constraints)
-        params = [self._subst_param(p, subst) for p in params]
+        params = [replace(p, node=_ir.subst(p.node, subst)) for p in params]
         return replace(
             sig,
             type_params=tuple(kept),
@@ -589,17 +582,6 @@ class _SigLowerer:
             if typar.name not in elim
         ]
         return _order_typars(kept), subst
-
-    def _param(
-        self,
-        param: _ir.Param,
-        constraints: _Constraints,
-    ) -> _ir.Param:
-        return replace(param, node=self._node(param.node, constraints))
-
-    @staticmethod
-    def _subst_param(param: _ir.Param, subst: Mapping[str, _ir.Node]) -> _ir.Param:
-        return replace(param, node=_ir.subst(param.node, subst))
 
     def _node(  # ruff: ignore[too-many-return-statements]
         self,
@@ -784,13 +766,11 @@ class _SigLowerer:
             ret = self._node(strip_variance(fn.ret), constraints)
             params = tuple(self._arg(p, constraints) for p in fn.params)
             return Method(attr, params, ret)
-        signs = [s for s in signed if isinstance(s, _ir.Variance)]
-        if len(signs) != len(signed):
+        if not all(isinstance(s, _ir.Variance) for s in signed):
             node = self._node(strip_variance(signed[0]), constraints)
             cv = classvar and not is_generic(node, self._tyvars)
             return Attr(attr, node, classvar=cv)
-        reads = [s.part for s in signs if s.sign == _ir.COVARIANT]
-        writes = [s.part for s in signs if s.sign == _ir.CONTRAVARIANT]
+        reads, writes = _reads_writes(signed)
         read = self._node(_ir.intersection(reads) or _ir.OBJECT, constraints)
         write = self._node(_ir.union(writes) or _ir.OBJECT, constraints)
         # a class attribute is a plain `ClassVar`, which cannot hold a typevar; a
@@ -843,14 +823,7 @@ class _SigLowerer:
     ) -> dict[str, _ir.Node]:
         """Turn a cyclic bound group into mutually-referential helper definitions."""
         members = sorted(group)
-        free = list(
-            dict.fromkeys(
-                name
-                for tyvar in members
-                for name in _ir.names(bound[tyvar])
-                if name in self._tyvars and name not in group
-            ),
-        )
+        free = free_tyvars([bound[tyvar] for tyvar in members], self._tyvars - group)
         canon = [_ir.tyvar_name(i) for i in range(len(free))]
         rename: dict[str, _ir.Node] = {
             f: _ir.Name(canon[i]) for i, f in enumerate(free)

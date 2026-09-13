@@ -4,7 +4,7 @@ import builtins
 import sys
 import types
 from collections.abc import Collection, Generator, Iterable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import StrEnum
 from itertools import starmap
 from typing import Final, override
@@ -216,9 +216,9 @@ def _subtype_args(origin: str, args: Terms, wider: Terms) -> bool:
     if not (variances := _VARIANCES.get(origin)):
         # an all-`Never` invariant container holds only `[]`, a member of any same
         # origin; otherwise each argument has to be the same type, as written or not
-        return (bool(args) and all(arg == NEVER for arg in args)) or all(
-            starmap(equivalent, zip(args, wider, strict=True)),
-        )
+        if args and all(arg == NEVER for arg in args):
+            return True
+        return _equivalent_all(args, wider)
     signs = variances + variances[-1:] * (len(args) - len(variances))
     return all(
         subtype(arg, wide) if sign == COVARIANT else subtype(wide, arg)
@@ -514,38 +514,35 @@ def alpha_equal(a: Node, b: Node, tyvars: Collection[str]) -> dict[str, str] | N
     return {name: inv[label] for name, label in ca.items()}
 
 
-def _signature_types(sig: Signature) -> Node:
-    """Every type in `sig` as one node, its type parameters renamed by position."""
-    m = {t.name: placeholder_name(i) for i, t in enumerate(sig.type_params)}
+def rename_signature(sig: Signature, m: Mapping[str, str]) -> Signature:
+    """`rename` across a signature's type parameters, parameters, and return type."""
 
-    def canon(node: Node | None) -> Node:
-        return Dots() if node is None else rename(node, m)
+    def opt(node: Node | None) -> Node | None:
+        return None if node is None else rename(node, m)
 
-    typars = App(
-        "",
-        tuple(App("", (canon(t.bound), canon(t.default))) for t in sig.type_params),
+    typars = tuple(
+        replace(
+            t,
+            name=m.get(t.name, t.name),
+            bound=opt(t.bound),
+            default=opt(t.default),
+        )
+        for t in sig.type_params
     )
-    params = App("", tuple(canon(p.node) for p in sig.params))
-    return App("", (typars, params, canon(sig.ret)))
-
-
-def _signature_shape(sig: Signature) -> tuple[object, ...]:
-    """What two signatures have to share as it is: everything but the types."""
-    return (
-        tuple(
-            (t.unpack, t.bound is not None, t.default is not None)
-            for t in sig.type_params
-        ),
-        tuple((p.name, p.prefix, p.nameless, p.default) for p in sig.params),
-        sig.deprecated,
-    )
+    params = tuple(replace(p, node=rename(p.node, m)) for p in sig.params)
+    return replace(sig, type_params=typars, params=params, ret=rename(sig.ret, m))
 
 
 def alpha_equal_signatures(a: Signature, b: Signature) -> bool:
     """Whether `a` and `b` are one signature up to their type parameters' names."""
-    return _signature_shape(a) == _signature_shape(b) and _signature_types(
-        a,
-    ) == _signature_types(b)
+    canon = [
+        rename_signature(
+            sig,
+            {t.name: placeholder_name(i) for i, t in enumerate(sig.type_params)},
+        )
+        for sig in (a, b)
+    ]
+    return canon[0] == canon[1]
 
 
 # the two `types` members that alias another's type, so each type maps to one name

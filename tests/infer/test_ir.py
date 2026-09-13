@@ -367,6 +367,8 @@ def test_alpha_equal_renames_only_type_parameters() -> None:
     a, b = App("CanAdd", (NONE, A)), App("CanAdd", (OBJECT, B))
     assert alpha_equal(a, b, {"A", "B"}) is None
     assert alpha_equal(a, App("CanAdd", (NONE, B)), {"A", "B"}) == {"A": "B"}
+    # nor is an attribute name
+    assert alpha_equal(Has("spam", (A,)), Has("ham", (B,)), {"A", "B"}) is None
 
 
 def test_alpha_equal_signatures() -> None:

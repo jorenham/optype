@@ -24,7 +24,8 @@ def _mul(a: str, b: str) -> Node:
     return App("CanMul", (Name(a), Name(b)))
 
 
-# an unrolled four-pass loop: each copy's bound is the previous one, shifted
+# an unrolled four-pass loop: each copy's bound is the previous one, shifted, and
+# the last copy points at the loop's exit
 CHAIN = (
     TypeParam("T", _add("T7", "U")),
     TypeParam("U", _add("T8", "V")),
@@ -36,21 +37,11 @@ CHAIN = (
 
 def test_collapse_recursive_reroll() -> None:
     # #736: an unrolled loop's run of identical bounds folds to one recursive typevar
-    def link(leaf: str, nxt: str) -> Node:
-        return App("CanAdd", (Name(leaf), Name(nxt)))
-
-    type_params = [
-        TypeParam("T", link("T7", "U")),
-        TypeParam("U", link("T8", "V")),
-        TypeParam("V", link("T9", "W")),
-        TypeParam("W", link("T10", "T11")),  # the last copy points at the loop's exit
-        *(TypeParam(leaf) for leaf in ("T7", "T8", "T9", "T10", "T11")),
-    ]
-    sig = Signature(tuple(type_params), (Param("x", Name("T")),), Name("T"))
+    sig = Signature(CHAIN, (Param("x", Name("T")),), Name("T"))
     folded = collapse_recursive(sig)
     # T, U, V, W collapse onto a single self-referential T; spent leaves are dropped
     assert folded.type_params == (
-        TypeParam("T", App("CanAdd", (Name("U"), Name("T")))),
+        TypeParam("T", _add("U", "T")),
         TypeParam("U"),  # the surviving per-iteration leaf, renumbered gaplessly
     )
     assert folded.params == sig.params
@@ -60,8 +51,8 @@ def test_collapse_recursive_reroll() -> None:
 def test_collapse_recursive_keeps_short_runs() -> None:
     # #736: below the loop threshold, similar typevars are left intact (no false fold)
     type_params = [
-        TypeParam("T", App("CanAdd", (Name("T7"), Name("U")))),
-        TypeParam("U", App("CanAdd", (Name("T8"), Name("T9")))),
+        TypeParam("T", _add("T7", "U")),
+        TypeParam("U", _add("T8", "T9")),
         *(TypeParam(leaf) for leaf in ("T7", "T8", "T9")),
     ]
     sig = Signature(tuple(type_params), (Param("x", Name("T")),), Name("T"))

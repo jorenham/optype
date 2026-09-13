@@ -2,10 +2,10 @@
 
 import enum
 import os
-import shutil
 import subprocess  # ruff: ignore[suspicious-subprocess-import]
 import sys
 import types
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -644,21 +644,15 @@ def test_text(sigs: tuple[Signature, ...], expected: str) -> None:
     assert COMPAT.render(sigs) == expected
 
 
-def test_text_typechecks(tmp_path: Path) -> None:
+def test_text_typechecks(
+    tmp_path: Path,
+    basedpyright: Callable[[Path], subprocess.CompletedProcess[str]],
+) -> None:
     # each rendered stub must be valid, self-contained, type-checkable Python
-    if shutil.which("basedpyright") is None:
-        pytest.skip("basedpyright is not installed")
     for label, sigs, _ in TEXT_CASES:
         stub = tmp_path / f"{label.replace(' ', '_')}.pyi"
         stub.write_text(f"{COMPAT.render(sigs)}\n")
-    # run from `tmp_path` so the stubs are checked apart from the project's settings
-    out = subprocess.run(
-        ["basedpyright", "."],  # ruff: ignore[start-process-with-partial-path]
-        cwd=tmp_path,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    out = basedpyright(tmp_path)
     assert out.returncode == 0, out.stdout
 
 

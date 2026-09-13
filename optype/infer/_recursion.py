@@ -53,30 +53,6 @@ def _gc_typars(sig: _ir.Signature) -> _ir.Signature:
     return replace(sig, type_params=kept)
 
 
-def _rename_sig(sig: _ir.Signature, remap: Mapping[str, str]) -> _ir.Signature:
-    """Apply a `Name` remap across a signature's type params, params, and return."""
-
-    def rename(node: _ir.Node | None) -> _ir.Node | None:
-        return None if node is None else _ir.rename(node, remap)
-
-    typars = tuple(
-        replace(
-            typar,
-            name=remap.get(typar.name, typar.name),
-            bound=rename(typar.bound),
-            default=rename(typar.default),
-        )
-        for typar in sig.type_params
-    )
-    params = tuple(replace(p, node=_ir.rename(p.node, remap)) for p in sig.params)
-    return replace(
-        sig,
-        type_params=typars,
-        params=params,
-        ret=_ir.rename(sig.ret, remap),
-    )
-
-
 def _renumber_tyvars(sig: _ir.Signature) -> _ir.Signature:
     """Rename what is left back to `T, U, V, ...`, in order and without gaps."""
     remap: dict[str, str] = {}
@@ -87,7 +63,7 @@ def _renumber_tyvars(sig: _ir.Signature) -> _ir.Signature:
                 remap[typar.name] = new
             n += 1
 
-    return _rename_sig(sig, remap) if remap else sig
+    return _ir.rename_signature(sig, remap) if remap else sig
 
 
 def _collapse_renaming(
@@ -99,7 +75,6 @@ def _collapse_renaming(
     A name links to at most one other, so following the links from any name ends
     somewhere; the names that end in the same place are copies of one another.
     """
-    order = {name: i for i, name in enumerate(bounded)}
 
     def terminal(name: str) -> str:
         seen: set[str] = set()
@@ -116,8 +91,8 @@ def _collapse_renaming(
     for members in runs.values():
         if len(members) < _LOOP_MIN:
             continue
-        lead = min(members, key=order.__getitem__)
-        remap.update({name: lead for name in members if name != lead})
+        lead, *rest = members
+        remap.update(dict.fromkeys(rest, lead))
     return remap
 
 
@@ -144,5 +119,5 @@ def collapse_recursive(sig: _ir.Signature) -> _ir.Signature:
         return sig
 
     kept = tuple(typar for typar in sig.type_params if typar.name not in remap)
-    renamed = _rename_sig(replace(sig, type_params=kept), remap)
+    renamed = _ir.rename_signature(replace(sig, type_params=kept), remap)
     return _renumber_tyvars(_gc_typars(renamed))

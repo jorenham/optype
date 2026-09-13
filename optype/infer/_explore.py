@@ -66,8 +66,7 @@ from ._values import (
     RecRef,
     RecVar,
     fn_spies,
-    is_mapping,
-    read_items,
+    mapping_items,
 )
 
 _FORK_LIMIT = 64
@@ -170,14 +169,6 @@ def _snapshot(params: Iterable[SpyObject]) -> Traces:
     return traces
 
 
-def _parameters(func: AnyFunc) -> Mapping[str, Parameter]:
-    try:
-        return signature(func).parameters
-    except Exception as exc:
-        # not callable, or no usable signature (gh-772)
-        raise InferError(describe(exc)) from exc
-
-
 def declared_defaults(params: Mapping[str, Parameter]) -> dict[str, object]:
     """The declared parameter defaults, by name."""
     return {n: p.default for n, p in params.items() if p.default is not Parameter.empty}
@@ -221,7 +212,7 @@ def _yields[T](values: Iterable[T]) -> list[T]:
 
 
 def _sync[T](agen: AsyncGenerator[T, Any]) -> Generator[T]:
-    for _ in range(_YIELD_LIMIT):
+    while True:
         try:
             yield _await(anext(agen))
         except StopAsyncIteration:
@@ -269,7 +260,7 @@ def _explore_func(func: AnyFunc) -> object:
     if _explore_key(func) in _exploring.get():
         return func  # a recursive function type is inexpressible
     try:
-        params = _parameters(func)
+        params = signature(func).parameters
         if any(p.kind in VARIADIC_KINDS for p in params.values()):
             return func  # variadic parameters are not expressible (yet)
         exploration, _ = explore_lenient(func, params)
@@ -389,7 +380,7 @@ def _explore_container(cls: type, result: Any, path: dict[int, RecVar | None]) -
             return tuple(_explore_result(item, path) for item in result)
         case list():
             return [_explore_result(item, path) for item in result]
-        case _ if is_mapping(result) and (pairs := read_items(result)) is not None:
+        case _ if (pairs := mapping_items(result)) is not None:
             # the keys must stay hashable, so only the values recurse
             items = {key: _explore_result(value, path) for key, value in pairs}
             try:
@@ -768,8 +759,7 @@ def explore_tuple_params(
     """
     tuple_params: set[str] = set()
     for name, spy in exploration.spies.items():
-        param = params.get(name)
-        if param is None or param.kind in VARIADIC_KINDS:
+        if params[name].kind in VARIADIC_KINDS:
             continue
         bare_shape = _op_shape(exploration.traces.get(id(spy), ()))
         if not bare_shape or not bare_shape.isdisjoint(_TUPLE_DUNDERS):
@@ -782,8 +772,7 @@ def explore_tuple_params(
             omit=(),
             fixed=exploration.fixed,
         )
-        if (target := spies.get(name)) is None:
-            continue
+        target = spies[name]
         elems = (SpyObject(), SpyObject())
         args = [elems if a is target else a for a in args]
         kwds = {key: elems if value is target else value for key, value in kwds.items()}
