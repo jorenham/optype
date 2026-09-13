@@ -32,6 +32,7 @@ from optype.infer._ir import (
     OBJECT,
     App,
     Arg,
+    Dots,
     Fn,
     Has,
     Intersection,
@@ -162,6 +163,90 @@ TEXT_CASES: list[tuple[str, tuple[Signature, ...], str]] = [
             "class CanCallP[T](Protocol):\n"
             "    def __call__(self, _0: Literal[0], /, b: Literal[2]) -> T: ...\n\n"
             "def f[R](x: CanCallP[R]) -> R: ..."
+        ),
+    ),
+    (
+        "callable with positional default",
+        (_sig((TypeParam("R"),), Fn((Arg(None, ZERO, (0,)),), R)),),
+        (
+            "from typing import Literal, Protocol\n\n"
+            "class CanCallP[T](Protocol):\n"
+            "    def __call__(self, _0: Literal[0] = 0, /) -> T: ...\n\n"
+            "def f[R](x: CanCallP[R]) -> R: ..."
+        ),
+    ),
+    (
+        # a default before a required positional parameter cannot be written down
+        "callable default before a required parameter",
+        (_sig((TypeParam("R"),), Fn((Arg(None, ZERO, (0,)), Type(int)), R)),),
+        (
+            "from typing import Literal, Protocol\n\n"
+            "class CanCallP[T](Protocol):\n"
+            "    def __call__(self, _0: Literal[0], _1: int, /) -> T: ...\n\n"
+            "def f[R](x: CanCallP[R]) -> R: ..."
+        ),
+    ),
+    (
+        # a keyword parameter without a `*` before it is positional too, so a default
+        # before it is dropped as well
+        "callable default before a required keyword",
+        (
+            _sig(
+                (TypeParam("T"), TypeParam("R")),
+                Fn((Arg(None, ZERO, (0,)), Arg("y", T)), R),
+            ),
+        ),
+        (
+            "from typing import Literal, Protocol\n\n"
+            "class CanCallP[T, U](Protocol):\n"
+            "    def __call__(self, _0: Literal[0], /, y: T) -> U: ...\n\n"
+            "def f[T, R](x: CanCallP[T, R]) -> R: ..."
+        ),
+    ),
+    (
+        "callable default before a required keyword and a star",
+        (
+            _sig(
+                (TypeParam("T"), TypeParam("R")),
+                Fn(
+                    (
+                        Arg(None, ZERO, (0,)),
+                        Arg("y", T),
+                        Unpack(App("tuple", (T, Dots()))),
+                    ),
+                    R,
+                ),
+            ),
+        ),
+        (
+            "from typing import Literal, Protocol\n\n"
+            "class CanCallP[T, U](Protocol):\n"
+            "    def __call__(self, _0: Literal[0], /, y: T, *_1: T) -> U: ...\n\n"
+            "def f[T, R](x: CanCallP[T, R]) -> R: ..."
+        ),
+    ),
+    (
+        # after a star, a required keyword no longer constrains the defaults before it
+        "callable required keyword after a star",
+        (
+            _sig(
+                (TypeParam("T"), TypeParam("R")),
+                Fn(
+                    (
+                        Arg(None, ZERO, (0,)),
+                        Unpack(App("tuple", (T, Dots()))),
+                        Arg("k", Lit((1,))),
+                    ),
+                    R,
+                ),
+            ),
+        ),
+        (
+            "from typing import Literal, Protocol\n\n"
+            "class CanCallP[T, U](Protocol):\n"
+            "    def __call__(self, _0: Literal[0] = 0, /, *_1: T, k: Literal[1])"
+            " -> U: ...\n\n"
+            "def f[T, R](x: CanCallP[T, R]) -> R: ..."
         ),
     ),
     (

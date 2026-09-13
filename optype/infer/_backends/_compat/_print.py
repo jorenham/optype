@@ -93,17 +93,17 @@ def _join_params(items: Sequence[tuple[str, bool]]) -> str:
     return ", ".join(parts)
 
 
-def _default_mask(params: Sequence[_ir.Param]) -> list[bool]:
+def _default_mask(defaults: Sequence[bool], end: int) -> list[bool]:
     """Which params may show their default: only a suffix of the positional run may.
 
     A non-default positional parameter forces every earlier one to drop its default,
     since `def f(x=1, y)` is a syntax error; the type already pins the value anyway.
+    `end` is where the positional run stops.
     """
-    end = next((i for i, p in enumerate(params) if p.prefix), len(params))
-    show = [p.default is not None for p in params]
+    show = list(defaults)
     required = False
     for i in range(end - 1, -1, -1):
-        if params[i].default is None:
+        if not defaults[i]:
             required = True
         elif required:
             show[i] = False
@@ -185,7 +185,8 @@ class Printer:
         return f"{decl} = {self.render_node(typar.default)}"
 
     def params(self, params: Sequence[_ir.Param]) -> str:
-        show = _default_mask(params)
+        end = next((i for i, p in enumerate(params) if p.prefix), len(params))
+        show = _default_mask([p.default is not None for p in params], end)
         auto = 0
         items: list[tuple[str, bool]] = []
         for i, p in enumerate(params):
@@ -211,22 +212,31 @@ class Printer:
         return prefix, self.render_node(value)  # type:ignore[return-value]  # mypy fail
 
     def call_params(self, params: Sequence[_ir.Term]) -> str:
+        end = next(
+            (
+                i
+                for i, p in enumerate(params)
+                if isinstance(_ir.term_node(p), _ir.Unpack)
+            ),
+            len(params),
+        )
+        defaults = [isinstance(p, _ir.Arg) and p.default is not None for p in params]
+        show = _default_mask(defaults, end)
         auto = 0
         items: list[tuple[str, bool]] = []
-        for p in params:
+        for i, p in enumerate(params):
             if isinstance(p, _ir.Arg) and p.key:
                 decl = f"{p.key}: {self.render_node(p.value)}"
-                if p.default is not None:
-                    default = qualified_default_text(p.default[0], self._used.add)
-                    decl += f" = {default}"
-                items.append((decl, False))
-                continue
-
-            # a `*` parameter is not positional-only, so the `/` lands before it
-            prefix, ann = self._prefixed_type(_ir.term_node(p))
-            items.append((f"{prefix}_{auto}: {ann}", not prefix))
-            auto += 1
-
+                positional_only = False
+            else:
+                # a `*` parameter is not positional-only, so the `/` lands before it
+                prefix, ann = self._prefixed_type(_ir.term_node(p))
+                decl = f"{prefix}_{auto}: {ann}"
+                positional_only = not prefix
+                auto += 1
+            if isinstance(p, _ir.Arg) and p.default is not None and show[i]:
+                decl += f" = {qualified_default_text(p.default[0], self._used.add)}"
+            items.append((decl, positional_only))
         return _join_params(items)
 
     def _member_text(self, member: Member, *, overload: bool) -> str:

@@ -2428,6 +2428,26 @@ COMPAT_CASES: list[tuple[str, str]] = [
         ),
     ),
     (
+        # a positional-only default of a returned function is kept
+        "lambda: (lambda x=0, /: x)",
+        (
+            "from typing import Protocol\n\n"
+            "class CanCallP[T](Protocol):\n"
+            "    def __call__(self, _0: T = 0, /) -> T: ...\n\n"
+            "def f[T]() -> CanCallP[T]: ..."
+        ),
+    ),
+    (
+        # a required keyword without a `*` before it drops the default before it
+        "lambda: (lambda x=0, /, *, y: (x, y))",
+        (
+            "from typing import Protocol\n\n"
+            "class CanCallP[T, U](Protocol):\n"
+            "    def __call__(self, _0: T, /, y: U) -> tuple[T, U]: ...\n\n"
+            "def f[T, U]() -> CanCallP[T, U]: ..."
+        ),
+    ),
+    (
         # a callable intersected with a protocol lifts into a `__call__`, not a base
         "lambda f, g, x: f(x) if g else g(x)",
         (
