@@ -124,6 +124,18 @@ NO_FOLD_CASES: list[tuple[str, tuple[TypeParam, ...]]] = [
         ),
     ),
     (
+        # alike bounds around one shared, bounded name, which is a dependency they have
+        # in common, not a step through the loop
+        "shared dependency",
+        (
+            TypeParam("T", _add("X", "T7")),
+            TypeParam("U", _add("X", "T8")),
+            TypeParam("V", _add("X", "T9")),
+            TypeParam("X", _add("X", "T10")),
+            *(TypeParam(leaf) for leaf in ("T7", "T8", "T9", "T10")),
+        ),
+    ),
+    (
         # an already recursive pair links both ways, and has nothing left to fold
         "already recursive",
         (

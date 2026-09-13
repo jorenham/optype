@@ -15,7 +15,8 @@ def _shift_edges(bounded: Mapping[str, _ir.Node]) -> dict[str, str]:
 
     All three must hold: `y` appears in `x`'s bound, the two bounds are the same apart
     from which names they use, and that renaming sends `y` to another bounded name.
-    The last one rules out a `y` that the two bounds merely have in common.
+    The last one rules out a `y` that the two bounds merely have in common, which the
+    renaming sends to itself.
     """
     edge: dict[str, str] = {}
     for x, bound in bounded.items():
@@ -24,7 +25,7 @@ def _shift_edges(bounded: Mapping[str, _ir.Node]) -> dict[str, str]:
                 continue
 
             mapping = _ir.alpha_equal(bound, bounded[y])
-            if mapping is not None and mapping.get(y) in bounded:
+            if mapping is not None and mapping.get(y) in bounded and mapping[y] != y:
                 edge[x] = y
                 break
     return edge
