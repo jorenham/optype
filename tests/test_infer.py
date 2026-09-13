@@ -2476,6 +2476,15 @@ COMPAT_CASES: list[tuple[str, str]] = [
         "from typing import Literal\n\ndef f[T = Literal[0]](x: T = 0) -> T: ...",
     ),
     ("lambda *args: args", "def f[*Ts](*args: *Ts) -> tuple[*Ts]: ..."),
+    (
+        # PEP 696: a typevar tuple moves behind a defaulted type parameter
+        "lambda *args, x=0: (args, x)",
+        (
+            "from typing import Literal\n\n"
+            "def f[T = Literal[0], *Ts = *tuple[()]](*args: *Ts, x: T = 0)"
+            " -> tuple[tuple[*Ts], T]: ..."
+        ),
+    ),
     ("str.upper", "def f(_0: str, /) -> str: ..."),
     (
         # a *args run forwarded into a method renders as a star parameter (#776)

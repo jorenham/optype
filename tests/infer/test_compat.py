@@ -544,6 +544,23 @@ TEXT_CASES: list[tuple[str, tuple[Signature, ...], str]] = [
         "def f[*Ts](*args: *Ts) -> tuple[*Ts]: ...",
     ),
     (
+        # a default may not follow a typevar tuple, and nothing without a default may
+        # follow a default, so the tuple moves last with an empty default
+        "typevar tuple beside a typevar default",
+        (
+            Signature(
+                (TypeParam("Ts", unpack=True), TypeParam("T", default=ZERO)),
+                (Param("args", TS, prefix="*"), Param("x", T, default=(0,))),
+                App("tuple", (App("tuple", (TS,)), T)),
+            ),
+        ),
+        (
+            "from typing import Literal\n\n"
+            "def f[T = Literal[0], *Ts = *tuple[()]](*args: *Ts, x: T = 0)"
+            " -> tuple[tuple[*Ts], T]: ..."
+        ),
+    ),
+    (
         "typevar default",
         (
             Signature(

@@ -185,6 +185,16 @@ def _signed(args: tuple[_ir.Node, ...]) -> tuple[_ir.Node, ...] | None:
     return None
 
 
+def _order_typars(typars: list[_ir.TypeParam]) -> list[_ir.TypeParam]:
+    """PEP 696 order: no default right after a typevar tuple, and no parameter without
+    one after a default, so the tuple goes last with an empty default."""
+    if not any(typar.default is not None for typar in typars):
+        return typars
+    empty = _ir.Unpack(_ir.App("tuple", ()))
+    tuples = [replace(t, default=empty) for t in typars if t.unpack]
+    return [t for t in typars if not t.unpack] + tuples
+
+
 def _merge_has(parts: Sequence[_ir.Node]) -> list[_ir.Node]:
     """Join the `Has` members of one attribute, so its reads and writes share one."""
     out: list[_ir.Node] = []
@@ -283,7 +293,7 @@ class _SigLowerer:
             for typar in typars
             if typar.name not in elim
         ]
-        return kept, subst
+        return _order_typars(kept), subst
 
     def _param(
         self,

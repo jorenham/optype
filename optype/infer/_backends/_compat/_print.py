@@ -173,13 +173,11 @@ class Printer:
 
     def _type_param(self, typar: _ir.TypeParam) -> str:
         if typar.unpack:
-            return f"*{typar.name}"
-
-        decl = (
-            f"{typar.name}: {self.render_node(typar.bound)}"
-            if typar.bound is not None
-            else typar.name
-        )
+            decl = f"*{typar.name}"
+        elif typar.bound is not None:
+            decl = f"{typar.name}: {self.render_node(typar.bound)}"
+        else:
+            decl = typar.name
         if typar.default is None:
             return decl
         return f"{decl} = {self.render_node(typar.default)}"
