@@ -231,11 +231,6 @@ still importable but are aliases of `Never`.
 counterpart and are deliberately absent. `c_wchar` is likewise not exposed,
 since NumPy maps no dtype onto it.
 
-`Bytes` is `c_char`, which is what
-[`np.ctypeslib.as_ctypes_type`][as_ctypes_type] returns for `np.bytes_`. Note
-that `c_char` is a single byte whereas `np.bytes_` is variable-length; the
-correspondence is with the dtype's element type, not its length.
-
 ## Abstract type aliases
 
 `CType` and `CScalar` correspond to the private `ctypes` base classes that every
