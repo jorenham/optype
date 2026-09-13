@@ -73,6 +73,34 @@ def _origin_name(origin: type) -> str:
     return _ir.type_name(origin)
 
 
+# the terse form counts arguments where `optype` ships one protocol per arity
+_ARITY_FORMS = {
+    ("CanRound", 1): "CanRound1",
+    ("CanRound", 2): "CanRound2",
+    ("CanPow", 2): "CanPow2",
+    ("CanPow", 3): "CanPow3",
+}
+
+
+def _fold_arities(bases: list[_ir.Node]) -> list[_ir.Node]:
+    """Join the two arity forms of an operation into the protocol that has both."""
+    for one, two in (("CanRound1", "CanRound2"), ("CanPow2", "CanPow3")):
+        apps = {b.origin: b for b in bases if isinstance(b, _ir.App)}
+        if not {one, two} <= apps.keys():
+            continue
+        first, second = apps[one], apps[two]
+        if one == "CanRound1":
+            (r1,), (n, r2) = first.args, second.args
+            joined = _ir.App("CanRound", (n, r1, r2))
+        else:
+            (t, r2), (t2, v, r3) = first.args, second.args
+            if not (_ir.subtype(t, t2) and _ir.subtype(t2, t)):
+                continue
+            joined = _ir.App("CanPow", (t, v, r2, r3))
+        bases = [joined if b is first else b for b in bases if b is not second]
+    return bases
+
+
 @functools.cache
 def _protocol_params(origin: str) -> tuple[object, ...] | None:
     """The type parameters of an `optype` protocol in declared order, if known.
@@ -439,6 +467,7 @@ class _SigLowerer:
         return self._node(arg, constraints)
 
     def _app(self, origin: str, args: _ir.Terms, constraints: _Constraints) -> _ir.App:
+        origin = _ARITY_FORMS.get((origin, len(args)), origin)
         lowered = [self._arg(a, constraints) for a in args]
         if (bounds := _protocol_bounds(origin)) is not None:
             lowered = lowered[: len(bounds)]
@@ -518,7 +547,9 @@ class _SigLowerer:
         unions = [p for p in parts if isinstance(p, _ir.Union)]
         if not unions:
             # a callable is not a valid base; it lifts into a `__call__` method instead
-            bases = _merge_bases([p for p in parts if not isinstance(p, _ir.Fn)])
+            bases = _fold_arities(
+                _merge_bases([p for p in parts if not isinstance(p, _ir.Fn)]),
+            )
             members = tuple(
                 Method("__call__", p.params, p.ret)
                 for p in parts

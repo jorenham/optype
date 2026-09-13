@@ -2273,6 +2273,47 @@ COMPAT_CASES: list[tuple[str, str]] = [
         ),
     ),
     (
+        # the two arities of `round` fold into the shipped three-parameter protocol
+        "lambda x: (round(x), round(x, 2))",
+        (
+            "from typing import Literal\n"
+            "from optype import CanRound\n\n"
+            "def f[R, R2](x: CanRound[Literal[2], R, R2]) -> tuple[R, R2]: ..."
+        ),
+    ),
+    (
+        # the same for `pow`
+        "lambda x: (x ** 2, pow(x, 2, 3))",
+        (
+            "from typing import Literal\n"
+            "from optype import CanPow\n\n"
+            "def f[R, R2](x: CanPow[Literal[2], Literal[3], R, R2])"
+            " -> tuple[R, R2]: ..."
+        ),
+    ),
+    (
+        # both operations fold in one intersection
+        "lambda x: (round(x), round(x, 2), x ** 2, pow(x, 2, 3))",
+        (
+            "from typing import Literal, Protocol\n"
+            "from optype import CanPow, CanRound\n\n"
+            "class CanRoundPow[T, U, V, W](CanRound[Literal[2], T, U],"
+            " CanPow[Literal[2], Literal[3], V, W], Protocol): ...\n\n"
+            "def f[R, R2, R3, R4](x: CanRoundPow[R, R2, R3, R4])"
+            " -> tuple[R, R2, R3, R4]: ..."
+        ),
+    ),
+    (
+        # the shared exponent type compares up to union order
+        "lambda x: (x ** 2, x ** 3, pow(x, 3, 4), pow(x, 2, 4))",
+        (
+            "from typing import Literal\n"
+            "from optype import CanPow\n\n"
+            "def f[R, R2](x: CanPow[Literal[2, 3], Literal[4], R, R2])"
+            " -> tuple[R, R, R2, R2]: ..."
+        ),
+    ),
+    (
         "lambda x: x + 1",
         (
             "from typing import Literal\n"
