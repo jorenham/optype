@@ -725,13 +725,24 @@ class _SigLowerer:
             return _ir.OBJECT
         if len(parts) == 1:
             return parts[0]
-        # a callable is not a valid base; it lifts into a `__call__` method instead
-        bases = [p for p in parts if not isinstance(p, _ir.Fn)]
-        members = tuple(
-            Method("__call__", p.params, p.ret) for p in parts if isinstance(p, _ir.Fn)
-        )
-        candidate = (
-            combine_name([p.origin for p in bases if isinstance(p, _ir.App)]) or "P"
+        apps = [p for p in parts if isinstance(p, _ir.App)]
+        candidate = combine_name([p.origin for p in apps]) or "P"
+        # a callable is not a valid base; it lifts into a `__call__` method instead,
+        # and the two `pow` forms at different exponents, which share no shipped
+        # protocol, into `__pow__` overloads
+        pows = [p for p in apps if p.origin in {"CanPow2", "CanPow3"}]
+        overloaded: list[_ir.App] = pows if len(pows) > 1 else []
+        bases = [p for p in parts if not isinstance(p, _ir.Fn) and p not in overloaded]
+        members = (
+            *(
+                Method("__call__", p.params, p.ret)
+                for p in parts
+                if isinstance(p, _ir.Fn)
+            ),
+            *(
+                Method("__pow__", p.args[:-1], _ir.term_node(p.args[-1]))
+                for p in overloaded
+            ),
         )
         return self._proto_app(candidate, bases=bases, members=members)
 

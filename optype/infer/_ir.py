@@ -215,13 +215,46 @@ def _subtype_args(origin: str, args: Terms, wider: Terms) -> bool:
         return False
     if not (variances := _VARIANCES.get(origin)):
         # an all-`Never` invariant container holds only `[]`, a member of any same
-        # origin; a declared variance decides per argument instead
-        return bool(args) and all(arg == NEVER for arg in args)
+        # origin; otherwise each argument has to be the same type, as written or not
+        return (bool(args) and all(arg == NEVER for arg in args)) or all(
+            starmap(equivalent, zip(args, wider, strict=True)),
+        )
     signs = variances + variances[-1:] * (len(args) - len(variances))
     return all(
         subtype(arg, wide) if sign == COVARIANT else subtype(wide, arg)
         for arg, wide, sign in zip(args, wider, signs, strict=False)
     )
+
+
+def _equivalent_all(xs: Iterable[Term], ys: Iterable[Term]) -> bool:
+    return all(starmap(equivalent, zip(xs, ys, strict=True)))
+
+
+def equivalent(a: Term, b: Term) -> bool:  # ruff: ignore[too-many-return-statements, too-many-locals]
+    """Whether `a` and `b` are one type, up to the order of literal values and of
+    union parts."""
+    if a is b:
+        return True
+    match a, b:
+        case Lit(values), Lit(others):
+            return set(_keys(values)) == set(_keys(others))
+        case App(origin, args), App(other, other_args):
+            same = origin == other and len(args) == len(other_args)
+            return same and _equivalent_all(args, other_args)
+        case Union(parts), Union(others):
+            return len(parts) == len(others) and all(
+                any(equivalent(p, q) for q in others) for p in parts
+            )
+        case Fn(params, ret), Fn(other_params, other_ret):
+            same = len(params) == len(other_params) and equivalent(ret, other_ret)
+            return same and _equivalent_all(params, other_params)
+        case Arg(key, value, default), Arg(other_key, other_value, other_default):
+            same = key == other_key and default == other_default
+            return same and equivalent(value, other_value)
+        case Unpack(part), Unpack(other):
+            return equivalent(part, other)
+        case _:
+            return a == b
 
 
 def subtype(sub: Term, sup: Term) -> bool:

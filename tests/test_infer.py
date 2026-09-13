@@ -2471,6 +2471,29 @@ COMPAT_CASES: list[tuple[str, str]] = [
         ),
     ),
     (
+        # two `pow` forms at different exponents become `__pow__` overloads
+        "lambda x: (x ** 2, pow(x, 3, 5))",
+        (
+            "from typing import Literal, Protocol, overload\n\n"
+            "class CanPow2Pow3[T, U](Protocol):\n"
+            "    @overload\n"
+            "    def __pow__(self, _0: Literal[2], /) -> T: ...\n"
+            "    @overload\n"
+            "    def __pow__(self, _0: Literal[3], _1: Literal[5], /) -> U: ...\n\n"
+            "def f[R, R2](x: CanPow2Pow3[R, R2]) -> tuple[R, R2]: ..."
+        ),
+    ),
+    (
+        # an exponent type compares up to union order inside an invariant one
+        "lambda x: (x ** [2, 3], pow(x, [3, 2], 4))",
+        (
+            "from typing import Literal\n"
+            "from optype import CanPow\n\n"
+            "def f[R, R2](x: CanPow[list[Literal[2, 3]], Literal[4], R, R2])"
+            " -> tuple[R, R2]: ..."
+        ),
+    ),
+    (
         "lambda x: x + 1",
         (
             "from typing import Literal\n"
