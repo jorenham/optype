@@ -68,6 +68,7 @@ extra_javascript = ["scripts/posthog.js"]
     "reference/numpy/ufunc.md",
     "reference/numpy/aliases.md",
     "reference/numpy/low-level.md",
+    "reference/numpy/ctypeslib.md",
   ] },
   { "Experimental" = [
     "reference/experimental/infer.md",
