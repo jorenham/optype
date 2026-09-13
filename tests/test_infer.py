@@ -2645,6 +2645,18 @@ def test_nonfinite_default_elides() -> None:
     assert infer(ns["f"], backend="compat") == "def f[T = float](x: T = ...) -> T: ..."
 
 
+def test_unhashable_default_of_returned_function() -> None:
+    # a list default is not hashable, which must not stop the unions from forming
+    fn = eval("lambda: (lambda x=[]: x)")  # ruff: ignore[suspicious-eval-usage]
+    assert infer(fn) == "[T]() -> (x: T = ...) -> T"
+    assert infer(fn, backend="compat") == (
+        "from typing import Protocol\n\n"
+        "class CanCallP[T](Protocol):\n"
+        "    def __call__(self, x: T = ...) -> T: ...\n\n"
+        "def f[T]() -> CanCallP[T]: ..."
+    )
+
+
 def test_builtin_without_signature() -> None:
     try:
         signature(iter)

@@ -142,6 +142,20 @@ def test_union_flattens_and_dedups() -> None:
     assert union([Union((A, B)), Union((B, C))]) == Union((A, B, C))
 
 
+def test_union_and_intersection_accept_unhashable_defaults() -> None:
+    fn = FN_LIST_DEFAULT
+    assert union([fn, fn]) == fn
+    assert intersection([fn, fn]) == fn
+    assert union([fn, A]) == Union((fn, A))
+    assert subst(Union((fn, A)), {"A": B}, dedup=True) == Union((fn, B))
+
+
+def test_union_and_intersection_flatten_every_level() -> None:
+    assert union([Union((A, Union((B, C))))]) == Union((A, B, C))
+    nested = Intersection((A, Intersection((B, C))))
+    assert intersection([nested]) == Intersection((A, B, C))
+
+
 def test_union_absorbs_subtypes() -> None:
     # a literal is covered by its type, a subclass by its parent, `Never` by anything
     assert union([Lit((1,)), Type(int)]) == Type(int)
