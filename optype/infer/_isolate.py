@@ -37,8 +37,7 @@ _S_GRACE = 1.0
 _S_POLL = 0.01
 
 
-def _child(work: Callable[[], object], send: Connection, buf: mmap.mmap) -> None:
-    os.setsid()  # own session, so the target's `kill(0)`/`killpg` can't reach the host
+def _detach_stdio(send: Connection) -> Connection:
     # a spy's `__index__` is 0 or 1, so an fd op in the target lands on these; with
     # the host's stdio closed, the pipe or `/dev/null` itself may already sit there
     fd = send.fileno()
@@ -47,11 +46,17 @@ def _child(work: Callable[[], object], send: Connection, buf: mmap.mmap) -> None
     if fd != send.fileno():
         send = Connection(fd, readable=False)
     null = os.open(os.devnull, os.O_RDWR)
-    for fd in (0, 1, 2):
-        if fd != null:
-            os.dup2(null, fd)
+    for low in (0, 1, 2):
+        if low != null:
+            os.dup2(null, low)
     if null > 2:
         os.close(null)
+    return send
+
+
+def _child(work: Callable[[], object], send: Connection, buf: mmap.mmap) -> None:
+    os.setsid()  # own session, so the target's `kill(0)`/`killpg` can't reach the host
+    send = _detach_stdio(send)
     pid = os.getpid()
     faulthandler.disable()  # report a native crash via InferError, not a C-level dump
     _spy.set_state_buffer(buf)
