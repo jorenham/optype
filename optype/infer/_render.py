@@ -144,38 +144,24 @@ class _Renderer:
     The binding is fixed for the renderer's lifetime; `_renderer_of` picks it.
     """
 
-    _params: Mapping[str, Parameter]
-    _spies: Mapping[str, SpyObject]
-    _fixed: Mapping[str, object]
-    _results: Sequence[object]
-    _traces: Traces
-    var_count: int  # the `*args` placeholder count used during exploration
-    _tuple_params: frozenset[str]  # params that also accept `tuple[<bound>, ...]`
-    varpos: SpyObject | None
-
-    naming: Naming
+    _binding: _Binding
     _bound_nodes: dict[int, _ir.Node | None]  # rendered bound per representative
     _ret_node: _ir.Node  # rendered return union
-
     _typer: "_ResultTyper"  # renders explored result values into type nodes
 
     def __init__(self, binding: _Binding) -> None:
-        exploration = binding.exploration
-        self._params = binding.params
-        self._spies = exploration.spies
-        self._results = exploration.results
-        self._traces = binding.traces
-        self.var_count = exploration.var_count
-        self._fixed = exploration.fixed
-        self._tuple_params = exploration.tuple_params
-        self.varpos = binding.varpos  # ty:ignore[invalid-assignment]
-        self.naming = naming = binding.naming
-
+        self._binding = binding
         self._typer = _ResultTyper(binding, self.slot)
+        self._ret_node = self._typer.type_union(binding.exploration.results)
+
+        naming = binding.naming
         self._bound_nodes = {
             rep: self.traces(naming.group_traces.get(rep, ())) for rep in naming.named
         }
-        self._ret_node = self._typer.type_union(self._results)
+
+    @property
+    def naming(self) -> Naming:
+        return self._binding.naming
 
     def single_use(self) -> tuple[dict[str, int], set[str]]:
         """The declared typevar pool, and the bounded names in it rendered once.
@@ -190,7 +176,7 @@ class _Renderer:
         ]
         counts = Counter(name for node in rendered for name in _ir.names(node))
 
-        pool = naming.pool(id(self.varpos) if naming.vartuple else None)
+        pool = naming.pool(id(self._binding.varpos) if naming.vartuple else None)
         inline = {
             var
             for var, rep in pool.items()
@@ -207,7 +193,7 @@ class _Renderer:
             if (var := self.naming.tyvars.get(id(ret))) is not None:
                 named.append(var)
             else:
-                items.extend(self._traces[id(ret)])
+                items.extend(self._binding.traces[id(ret)])
         parts: list[_ir.Node] = [_ir.Name(var) for var in dict.fromkeys(named)]
         if items and (node := self.traces(items)) is not None:
             parts.append(node)
@@ -224,7 +210,7 @@ class _Renderer:
     ) -> list[_ir.Node]:
         # the variadic spreads `count` copies of one spy: the placeholder (`f(*args)`)
         # or its iterated element (`map`); collapse the trailing run to `*tuple[T, ...]`
-        varpos = self.varpos
+        varpos = self._binding.varpos
         call_args = members[0].args
         if varpos is None or not call_args:
             return pos
@@ -236,7 +222,7 @@ class _Renderer:
             return pos
 
         # require every call to star-unpack the same trailing run, else order decides
-        count = self.var_count
+        count = self._binding.exploration.var_count
         if not all(
             m.args[-1] is tail and spy_runs(m.args, tail)[-1] == count for m in members
         ):
@@ -319,10 +305,10 @@ class _Renderer:
         return _ir.intersection(_merge_combined(parts))
 
     def spy(self, spy: SpyObject) -> _ir.Node | None:
-        return self.traces(self._traces[id(spy)])
+        return self.traces(self._binding.traces[id(spy)])
 
     def slot(self, spy: SpyObject) -> _ir.Node:
-        if self.naming.vartuple and spy is self.varpos:
+        if self.naming.vartuple and spy is self._binding.varpos:
             return _ir.Unpack(_ir.Name(TYPEVAR_TUPLE_NAME))
         if (var := self.naming.tyvars.get(id(spy))) is not None:
             return _ir.Name(var)
@@ -336,7 +322,7 @@ class _Renderer:
         negate: bool = False,
     ) -> _ir.TypeParam:
         var = self.naming.tyvars[id(spy)]
-        if self.naming.vartuple and spy is self.varpos:
+        if self.naming.vartuple and spy is self._binding.varpos:
             # a PEP 646 typevar tuple takes no bound or default
             return _ir.TypeParam(var, unpack=True)
         rep = self.naming.reps.get(id(spy), id(spy))
@@ -356,10 +342,11 @@ class _Renderer:
         deprecated: str | None = None,
     ) -> _ir.Signature:
         defaults = defaults or {}
+        spies = self._binding.exploration.spies
         defaulted = {
             spy_id: node
             for name, value in defaults.items()
-            if (spy := self._spies.get(name)) is not None
+            if (spy := spies.get(name)) is not None
             if (spy_id := id(spy)) in self.naming.tyvars
             if (node := self._typer.value_union((value,))) is not None
         }
@@ -396,16 +383,17 @@ class _Renderer:
         *,
         negate: bool,
     ) -> _ir.Param | None:
-        param = self._params[name]
+        exploration = self._binding.exploration
+        param = self._binding.params[name]
         # a positional-only parameter cannot be passed by keyword, so no name shows
         nameless = param.kind is Parameter.POSITIONAL_ONLY
         prefix = _PARAM_PREFIX.get(param.kind, "")
         optional = param.default is not Parameter.empty or param.kind in _PARAM_PREFIX
-        if name in self._fixed and not optional:
+        if name in exploration.fixed and not optional:
             # a fixed parameter without a default is a method descriptor's `self`
-            node = _ir.Type(despy_class(type(self._fixed[name])))
+            node = _ir.Type(despy_class(type(exploration.fixed[name])))
             return _ir.Param(name, node, prefix, nameless)
-        if (spy := self._spies.get(name)) is None:
+        if (spy := exploration.spies.get(name)) is None:
             # an omitted parameter binds its default, so passing it behaves the same
             node = self._typer.value_type(defaults[name])
             return _ir.Param(
@@ -422,7 +410,7 @@ class _Renderer:
             ):
                 node = _ir.exclude(self.spy(spy), mark)
             return _ir.Param(name, node, prefix, nameless)
-        if name in self._tuple_params and id(spy) not in self.naming.tyvars:
+        if name in exploration.tuple_params and id(spy) not in self.naming.tyvars:
             # a typevar keeps its binding, so only an inlined bound widens to the union
             node = _ir.union([node, _ir.tuple_node_variadic(node)]) or node
         if node == _ir.OBJECT and optional:
@@ -438,9 +426,7 @@ class _ResultTyper:
     stay mutually recursive, but neither mutates what the other reads.
     """
 
-    _naming: Naming
-    _varpos: SpyObject | None
-    _var_count: int
+    _binding: _Binding
     _slot: Callable[[SpyObject], _ir.Node]
 
     def __init__(
@@ -448,9 +434,7 @@ class _ResultTyper:
         binding: _Binding,
         slot: Callable[[SpyObject], _ir.Node],
     ) -> None:
-        self._naming = binding.naming
-        self._varpos = binding.varpos  # ty:ignore[invalid-assignment]
-        self._var_count = binding.exploration.var_count
+        self._binding = binding
         self._slot = slot
 
     def value_union(
@@ -481,9 +465,9 @@ class _ResultTyper:
     def return_type(self, result: object) -> _ir.Node:
         match result:
             case RecRef() | Rec():
-                node = _ir.Name(self._naming.rec_tyvars[result.var])
+                node = _ir.Name(self._binding.naming.rec_tyvars[result.var])
             case SpyObject() if (spy := as_spy(result)) is not None:
-                var = self._naming.tyvars.get(id(spy))
+                var = self._binding.naming.tyvars.get(id(spy))
                 node = _ir.Name(var) if var is not None else _ir.OBJECT
             case SpyStr():
                 node = _ir.Type(str)
@@ -635,9 +619,9 @@ class _ResultTyper:
                 return _ir.Type(cls)
 
     def _tuple(self, items: tuple[object, ...]) -> _ir.Node:
-        spy = self._varpos
+        spy = self._binding.varpos
         if spy is not None:
-            if any(item is spy for item in items) and self._naming.vartuple:
+            if any(item is spy for item in items) and self._binding.naming.vartuple:
                 # every use is packed, so the placeholders unpack into a single `*Ts`
                 start = next(i for i, item in enumerate(items) if item is spy)
                 parts = [self.value_type(item) for item in items if item is not spy]
@@ -646,7 +630,7 @@ class _ResultTyper:
 
             # a uniform spread is `tuple[T, ...]`: the placeholder (`(*args,)`) at any
             # length, or its zipped element (`zip(*args)`) only at the full count
-            full_count = len(items) == self._var_count
+            full_count = len(items) == self._binding.exploration.var_count
             for target, needs_full_count in (
                 (spy, False),
                 (spy.__optype_element__, True),
