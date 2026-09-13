@@ -38,16 +38,39 @@ from ._model import (
 )
 from ._print import OPTYPE, import_of, member_key, type_text
 from optype.infer._errors import InferError
+from optype.inspect import is_union_type
 
 
 def _bound_node(bound: object) -> _ir.Node | None:
-    """A typevar bound as an IR node: a plain type, or a union of plain types."""
+    """A typevar bound as an IR node: a type, a union, or a shipped protocol."""
     if isinstance(bound, type):
         return _ir.Type(bound)
-    args = typing.get_args(bound)
-    if args and all(isinstance(a, type) for a in args):
-        return _ir.union([_ir.Type(a) for a in args])
-    return None
+    args: list[_ir.Node] = []
+    for arg in typing.get_args(bound):
+        if (node := _bound_node(arg)) is None:
+            return None
+        args.append(node)
+    if not args:
+        return None
+    if is_union_type(bound):
+        return _ir.union(args)
+    origin = typing.get_origin(bound)
+    if not isinstance(origin, type):
+        return None
+    return _ir.App(_origin_name(origin), tuple(args))
+
+
+def _origin_name(origin: type) -> str:
+    """The name the printer imports `origin` by: bare if importable, else qualified."""
+    name = origin.__name__
+    found = import_of(name)
+    if (
+        found is not None
+        and found[1] == name
+        and origin.__module__.startswith(found[0])
+    ):
+        return name
+    return _ir.type_name(origin)
 
 
 @functools.cache

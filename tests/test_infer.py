@@ -2430,6 +2430,23 @@ COMPAT_CASES: list[tuple[str, str]] = [
             "def f() -> collections.Counter[Literal['a']]: ..."
         ),
     ),
+    (
+        # a bounded protocol parameter hands its bound to the inferred typevar
+        "lambda x: iter(x)",
+        (
+            "from optype import CanIter, CanNext\n\n"
+            "def f[R: CanNext[object]](x: CanIter[R]) -> R: ..."
+        ),
+    ),
+    (
+        "lambda x: x.__dir__()",
+        (
+            "import typing\n"
+            "from collections.abc import Iterable\n"
+            "from optype import CanDir\n\n"
+            "def f[R: Iterable[typing.Any]](x: CanDir[R]) -> R: ..."
+        ),
+    ),
 ]
 
 
