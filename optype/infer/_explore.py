@@ -18,7 +18,7 @@ from collections.abc import (
     Mapping,
     Sequence,
 )
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 from contextvars import ContextVar
 from inspect import Parameter, isasyncgen, iscoroutine, isgenerator
 from types import (
@@ -421,26 +421,32 @@ def _with_next_default(
     return merged if awaitable else [*results, default]
 
 
+@contextmanager
+def _record_deprecation() -> Generator[list[warnings.WarningMessage]]:
+    # recorded, not raised, so a `@deprecated` callable runs
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.filterwarnings("always", category=DeprecationWarning)
+        yield caught
+
+
+def _deprecation(caught: Iterable[warnings.WarningMessage]) -> str | None:
+    return next(
+        (str(w.message) for w in caught if issubclass(w.category, DeprecationWarning)),
+        None,
+    )
+
+
 @set_driver_code
 def _run(
     func: Callable[..., Any],
     args: Iterable[object],
     kwds: Mapping[str, object],
 ) -> tuple[Any, str | None]:
-    """Call `func`, returning its (awaited) result and any deprecation message.
-
-    A `DeprecationWarning` is recorded, not raised, so a `@deprecated` callable runs.
-    """
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.filterwarnings("always", category=DeprecationWarning)
+    """Call `func`, returning its (awaited) result and any deprecation message."""
+    with _record_deprecation() as caught:
         result = func(*args, **kwds)
         value = _await(result) if iscoroutine(result) else result
-
-    message = next(
-        (str(w.message) for w in caught if issubclass(w.category, DeprecationWarning)),
-        None,
-    )
-    return value, message
+    return value, _deprecation(caught)
 
 
 def _scrub_deprecated(message: str | None, func: AnyFunc) -> str | None:
@@ -496,7 +502,8 @@ def _explore[T](  # ruff: ignore[complex-structure, too-many-branches]
         try:
             result, message = _run(func, args, kwds)
             results.append(result)
-            deprecated = deprecated or _scrub_deprecated(message, func)
+            if deprecated is None:
+                deprecated = _scrub_deprecated(message, func)
         except Fork:
             if len(plan) < _FORK_LIMIT:
                 stack.extend(([*plan, False], [*plan, True]))
@@ -537,6 +544,19 @@ def _explore[T](  # ruff: ignore[complex-structure, too-many-branches]
     hits = (dropped, GapKind.BRANCH_BUDGET), (bool(stack), GapKind.RUN_BUDGET)
     gaps = frozenset(kind for hit, kind in hits if hit)
     return results, deprecated, gaps
+
+
+def _drain(
+    func: AnyFunc,
+    results: Iterable[object],
+    deprecated: str | None,
+) -> tuple[list[object], str | None]:
+    # a lazy result (e.g. a generator) runs its body only when drained
+    with _record_deprecation() as caught:
+        explored = [_explore_result(r) for r in results]
+    if deprecated is None:
+        deprecated = _scrub_deprecated(_deprecation(caught), func)
+    return explored, deprecated
 
 
 def _fixed_self(func: AnyFunc, params: Mapping[str, Parameter]) -> dict[str, object]:
@@ -643,11 +663,8 @@ def explore_spies(
             _force_absent(spies, forced_absent)
             try:
                 results, deprecated, gaps = _explore(func, args, kwds)
-                results = _with_next_default(
-                    func,
-                    spies,
-                    [_explore_result(r) for r in results],
-                )
+                explored, deprecated = _drain(func, results, deprecated)
+                results = _with_next_default(func, spies, explored)
             except KeyError as exc:
                 key = exc.args[0] if exc.args else None
                 if (

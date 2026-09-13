@@ -141,9 +141,10 @@ def dispatch_overloads(
     """The overloads for a presence-test on a single parameter's attribute.
 
     Forcing the attribute absent surfaces the branch a placeholder hides. If the return
-    ignores the attribute's value, one overload covers it: the parameter widens to
-    `object`, the return unions both branches. If the present branch returns the value,
-    that overload stays over an `object` fallback. Otherwise the `baseline` holds.
+    ignores the attribute's value and both branches agree on deprecation, one overload
+    covers it: the parameter widens to `object`, the return unions both branches.
+    Otherwise the present overload stays over an `object` fallback, or, if that fallback
+    would orphan a typevar, the `baseline` holds.
     """
     candidates = dispatch_candidates(exploration) if len(params) == 1 else ()
     if len(candidates) != 1:
@@ -160,6 +161,7 @@ def dispatch_overloads(
         return baseline
     if (
         widens
+        and exploration.deprecated == variant.deprecated
         and returns_concrete(exploration.results)
         and returns_concrete(variant.results)
     ):
