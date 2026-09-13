@@ -6,7 +6,7 @@ from inspect import Parameter
 
 import optype.infer._numpy as _numpy
 from ._backends import BACKENDS, BackendName
-from ._errors import WARN_SKIP_PREFIX, InferError, InferWarning
+from ._errors import WARN_SKIP_PREFIX, InferError, InferWarning, describe
 from ._explore import explore_lenient, explore_tuple_params
 from ._gc import cyclic_gc
 from ._ir import Signature
@@ -49,7 +49,7 @@ def _form_signatures(
     try:
         exploration, fallback = explore_lenient(func, params)
     except (IndexError, KeyError, TypeError, ValueError) as exc:
-        raise InferError(str(exc)) from exc
+        raise InferError(describe(exc)) from exc
 
     gaps.update(f"{kind} in {where}" for kind in exploration.gaps)
 
@@ -72,11 +72,11 @@ def _candidate_parameters(func: AnyFunc) -> list[dict[str, Parameter]]:
     try:
         return [dict(signature(func).parameters)]
     except TypeError as exc:  # not callable
-        raise InferError(str(exc)) from exc
+        raise InferError(describe(exc)) from exc
     except ValueError as exc:  # callable but no signature (e.g. a C builtin)
         if candidates := parse_text_signature(func) or probe_signatures(func):
             return candidates
-        raise InferError(str(exc)) from exc
+        raise InferError(describe(exc)) from exc
 
 
 def _infer(func: AnyFunc, selectors: _Selectors, gaps: _Gaps) -> list[Signature]:

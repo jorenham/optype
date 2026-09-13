@@ -45,6 +45,7 @@ import pytest
 from optype.infer import InferError, InferWarning, _color, _gc, infer
 from optype.infer._api import _infer_render
 from optype.infer._backends._terse import TERSE
+from optype.infer._errors import describe
 from optype.infer._ir import (
     App,
     Fn,
@@ -3605,6 +3606,21 @@ def test_cli(args: tuple[str, ...], expected: str) -> None:
     [
         # infer's own limitations exit cleanly, instead of with a traceback
         ("lambda x, y: getattr(x, str(y))", "InferError: no protocol"),
+        # gh-778: a spy in the message renders as nothing, so the type name stands in
+        ("lambda x: {}[x]", "InferError: KeyError\n"),
+        # gh-778: a cause is shown once, and by type alone when it has no message
+        (
+            "def f(): raise RuntimeError('ran')",
+            "InferError: the function never ran to completion (RuntimeError: ran)\n",
+        ),
+        (
+            "def f(): raise AssertionError",
+            "InferError: the function never ran to completion (AssertionError)\n",
+        ),
+        (
+            "bytearray.__init__",
+            "InferError: ran out of `*args` placeholders (bytearray",
+        ),
         # a callable that raises SystemExit when probed errors cleanly, not silently
         ("exit", "InferError:"),
         ("quit", "InferError:"),
@@ -3614,6 +3630,33 @@ def test_cli_infer_error(expr: str, error: str) -> None:
     out = _run_cli("-m", "optype", "infer", expr)
     assert out.returncode == 1
     assert out.stderr.startswith(error)
+
+
+def test_cli_infer_error_is_cut() -> None:
+    # gh-778: the 1024 `*args` placeholders repr as nothing, so the message is cut
+    out = _run_cli("-m", "optype", "infer", "lambda *a: int(str(a))")
+    assert out.returncode == 1
+    assert out.stderr.startswith("InferError: ran out of `*args` placeholders")
+    assert out.stderr.rstrip().endswith("[...])")
+    assert len(out.stderr) < 300
+
+
+def test_cli_infer_error_unpicklable_cause_is_cut_once() -> None:
+    # gh-778: a cause holding spies takes the pickling fallback; no second cut there
+    out = _run_cli(
+        "-m",
+        "optype",
+        "infer",
+        "def f(*args): raise ValueError('x' * 300, args)",
+    )
+    assert out.returncode == 1
+    assert out.stderr.rstrip().endswith("[...])")
+
+
+def test_describe() -> None:
+    assert describe(ValueError("x")) == "x"
+    assert describe(KeyError()) == "KeyError"
+    assert describe(ValueError("x" * 300)) == "x" * 200 + " [...]"
 
 
 @pytest.mark.parametrize(
