@@ -467,6 +467,40 @@ def alpha_equal(a: Node, b: Node, tyvars: Collection[str]) -> dict[str, str] | N
     return {name: inv[label] for name, label in ca.items()}
 
 
+def _signature_types(sig: Signature) -> Node:
+    """Every type in `sig` as one node, its type parameters renamed by position."""
+    m = {t.name: placeholder_name(i) for i, t in enumerate(sig.type_params)}
+
+    def canon(node: Node | None) -> Node:
+        return Dots() if node is None else rename(node, m)
+
+    typars = App(
+        "",
+        tuple(App("", (canon(t.bound), canon(t.default))) for t in sig.type_params),
+    )
+    params = App("", tuple(canon(p.node) for p in sig.params))
+    return App("", (typars, params, canon(sig.ret)))
+
+
+def _signature_shape(sig: Signature) -> tuple[object, ...]:
+    """What two signatures have to share as it is: everything but the types."""
+    return (
+        tuple(
+            (t.unpack, t.bound is not None, t.default is not None)
+            for t in sig.type_params
+        ),
+        tuple((p.name, p.prefix, p.nameless, p.default) for p in sig.params),
+        sig.deprecated,
+    )
+
+
+def alpha_equal_signatures(a: Signature, b: Signature) -> bool:
+    """Whether `a` and `b` are one signature up to their type parameters' names."""
+    return _signature_shape(a) == _signature_shape(b) and _signature_types(
+        a,
+    ) == _signature_types(b)
+
+
 # the two `types` members that alias another's type, so each type maps to one name
 _TYPE_ALIASES = "LambdaType", "BuiltinMethodType"
 

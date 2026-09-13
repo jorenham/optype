@@ -7,6 +7,7 @@ parameter's attribute.
 
 from collections.abc import Iterable, Mapping
 from inspect import Parameter
+from itertools import starmap
 from typing import NamedTuple
 
 from ._analyze import (
@@ -16,7 +17,7 @@ from ._analyze import (
     returns_concrete,
 )
 from ._explore import declared_defaults, explore_spies
-from ._ir import Signature
+from ._ir import Signature, alpha_equal_signatures
 from ._render import (
     Defaults,
     Names,
@@ -42,9 +43,19 @@ def _bind(value: object, binding: Mapping[int, object]) -> object:
 
 
 def _distinct(sigs: Iterable[Signature]) -> list[Signature]:
-    # no set: a default value may be unhashable
-    sigs = list(sigs)
-    return [sig for i, sig in enumerate(sigs) if sig not in sigs[:i]]
+    out: list[Signature] = []
+    for sig in sigs:
+        if not any(alpha_equal_signatures(sig, seen) for seen in out):
+            out.append(sig)
+    return out
+
+
+def _same(expected: Iterable[Signature], observed: Iterable[Signature]) -> bool:
+    """Whether the two renders agree, up to how their type parameters are named."""
+    expected, observed = _distinct(expected), _distinct(observed)
+    return len(expected) == len(observed) and all(
+        starmap(alpha_equal_signatures, zip(expected, observed, strict=True)),
+    )
 
 
 def _bind_exploration(exp: Exploration, defaults: Defaults) -> Exploration:
@@ -108,7 +119,7 @@ def resolve_defaults(
 
     omitted_defaults = _bind_exploration(exploration, defaults)
     expected = signatures(omitted_defaults, required, names)
-    if _distinct(expected) == _distinct(observed):
+    if _same(expected, observed):
         return _ResolvedDefaults(defaults, False, [])
 
     overloads = render_all(
