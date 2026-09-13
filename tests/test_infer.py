@@ -2302,6 +2302,104 @@ COMPAT_CASES: list[tuple[str, str]] = [
         ),
     ),
     (
+        # a write needs a settable attribute that accepts the value; any getter will do
+        "def f(x): x.spam = 1",
+        (
+            "from typing import Literal, Protocol\n\n"
+            "class HasSpam(Protocol):\n"
+            "    @property\n"
+            "    def spam(self) -> object: ...\n"
+            "    @spam.setter\n"
+            "    def spam(self, value: Literal[1], /) -> None: ...\n\n"
+            "def f(x: HasSpam) -> None: ..."
+        ),
+    ),
+    (
+        # the getter binds the name, so the setter's type is qualified past it
+        "def f(x): x.list = []",
+        (
+            "import builtins\n"
+            "from typing import Never, Protocol\n\n"
+            "class HasList(Protocol):\n"
+            "    @property\n"
+            "    def list(self) -> object: ...\n"
+            "    @list.setter\n"
+            "    def list(self, value: builtins.list[Never], /) -> None: ...\n\n"
+            "def f(x: HasList) -> None: ..."
+        ),
+    ),
+    (
+        # a dunder has a declared type, which a property would override incompatibly
+        "def f(x, y): x.__module__ = str(y)",
+        (
+            "from typing import Protocol\n"
+            "from optype import CanStr\n\n"
+            "class Has__module__(Protocol):\n"
+            "    __module__: str\n\n"
+            "def f(x: Has__module__, y: CanStr) -> None: ..."
+        ),
+    ),
+    (
+        # a dunder read alone is still a read-only property
+        "def f(x): return x.__array_interface__",
+        (
+            "from typing import Protocol\n\n"
+            "class Has__array_interface__[T](Protocol):\n"
+            "    @property\n"
+            "    def __array_interface__(self) -> T: ...\n\n"
+            "def f[R](x: Has__array_interface__[R]) -> R: ..."
+        ),
+    ),
+    (
+        # a shipped read beside a dunder write keeps the annotation form as well
+        "def f(x): x.__code__ = (lambda: None).__code__; x.__code__",
+        (
+            "from types import CodeType\n"
+            "from typing import Protocol\n"
+            "from optype import HasCode\n\n"
+            "class Has__code__(Protocol):\n"
+            "    __code__: CodeType\n"
+            "class Has__code__Code(Has__code__, HasCode, Protocol): ...\n\n"
+            "def f(x: Has__code__Code) -> None: ..."
+        ),
+    ),
+    (
+        # a read and a write of one attribute share one member
+        "def f(x): x.spam = 1; return x.spam",
+        (
+            "from typing import Literal, Protocol\n\n"
+            "class HasSpam[T](Protocol):\n"
+            "    @property\n"
+            "    def spam(self) -> T: ...\n"
+            "    @spam.setter\n"
+            "    def spam(self, value: Literal[1], /) -> None: ...\n\n"
+            "def f[R](x: HasSpam[R]) -> R: ..."
+        ),
+    ),
+    (
+        "def f(x): x.spam = x.spam",
+        (
+            "from typing import Protocol\n\n"
+            "class HasSpam[T](Protocol):\n"
+            "    @property\n"
+            "    def spam(self) -> T: ...\n"
+            "    @spam.setter\n"
+            "    def spam(self, value: T, /) -> None: ...\n\n"
+            "def f[T](x: HasSpam[T]) -> None: ..."
+        ),
+    ),
+    (
+        # bare presence accepts a read-only property too
+        "def f(x): del x.spam",
+        (
+            "from typing import Protocol\n\n"
+            "class HasSpam(Protocol):\n"
+            "    @property\n"
+            "    def spam(self) -> object: ...\n\n"
+            "def f(x: HasSpam) -> None: ..."
+        ),
+    ),
+    (
         "lambda x: x.spam()",
         (
             "from typing import Protocol\n\n"
@@ -2482,6 +2580,49 @@ def _basedpyright(path: Path) -> subprocess.CompletedProcess[str]:
         text=True,
         check=False,
     )
+
+
+def test_compat_write_matches_wider_attributes(tmp_path: Path) -> None:
+    # basedpyright does not check a setter's value type against a plain attribute,
+    # so the matching is verified with mypy
+    if shutil.which("mypy") is None:
+        pytest.skip("mypy is not installed")
+    source = f"""{_compat("def f(x): x.spam = 1")}
+
+class Wider:
+    spam: int
+
+class Exact:
+    spam: Literal[1]
+
+class Other:
+    spam: str
+
+class ReadOnly:
+    @property
+    def spam(self) -> int:
+        return 1
+
+f(Wider())
+f(Exact())
+f(Other())  # error
+f(ReadOnly())  # error
+"""
+    (tmp_path / "write.py").write_text(source)
+    out = subprocess.run(
+        ["mypy", "--no-error-summary", "--no-color-output", "write.py"],  # ruff: ignore[start-process-with-partial-path]
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    errors = sorted(
+        int(n) for n in re.findall(r"^write\.py:(\d+): error", out.stdout, re.MULTILINE)
+    )
+    lines = source.splitlines()
+    assert errors == [
+        i for i, line in enumerate(lines, 1) if line.endswith("# error")
+    ], out.stdout
 
 
 def test_compat_typechecks(tmp_path: Path) -> None:
