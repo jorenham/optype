@@ -37,8 +37,7 @@ from ._values import (
     Rec,
     RecRef,
     fn_spies,
-    is_mapping,
-    read_items,
+    mapping_items,
 )
 from optype.inspect import _get_alias, is_generic_alias, is_union_type
 
@@ -457,10 +456,10 @@ class _ResultTyper:
         nodes: list[_ir.Node] = []
         if len(literals) > _LITERAL_LIMIT:
             # an enumerated run (e.g. randbelow's 256 bytes) is noise; widen to types
-            nodes.extend(_ir.distinct(_ir.Type(type(v)) for v in literals))
+            nodes.extend(_ir.Type(type(v)) for v in literals)
         elif literals:
             nodes.append(_ir.Lit(tuple(literals)))
-        nodes.extend(_ir.distinct(parts))
+        nodes.extend(parts)
         return _ir.union(nodes, tuples=tuples)
 
     def return_type(self, result: object) -> _ir.Node:
@@ -504,7 +503,7 @@ class _ResultTyper:
 
     def type_union(self, values: Iterable[object]) -> _ir.Node:
         """The deduplicated union of the types of `values`, or `Never` if empty."""
-        parts = _ir.distinct(map(self.return_type, _distinct(values)))
+        parts = map(self.return_type, _distinct(values))
         return _ir.union(parts, tuples=True) or _ir.NEVER
 
     def value_type(self, value: object) -> _ir.Node:
@@ -600,7 +599,7 @@ class _ResultTyper:
 
         cls = type(result)
         match result:
-            case _ if is_mapping(result) and (pairs := read_items(result)) is not None:
+            case _ if (pairs := mapping_items(result)) is not None:
                 key = self.value_union((k for k, _ in pairs), tuples=True) or _ir.NEVER
                 args: tuple[_ir.Node, ...]
                 if isinstance(result, Counter):

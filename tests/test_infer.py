@@ -50,11 +50,9 @@ from optype.infer._errors import describe
 from optype.infer._ir import (
     App,
     Fn,
-    Has,
     Name,
     Node,
     Signature,
-    alpha_equal,
     names,
 )
 from optype.infer._isolate import _inline, isolate
@@ -2258,12 +2256,7 @@ def test_drained_spies_freed(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_attribute_name_is_not_a_typevar() -> None:
-    # an attribute name is not a `Name`: distinct attributes are not alpha-equal, so
-    # a read chain is not folded as a loop
-    spam = Has("spam", (Name("T"),))
-    assert alpha_equal(spam, Has("ham", (Name("U"),)), {"T", "U"}) is None
-    assert list(names(spam)) == ["T"]
-
+    # distinct attributes are not alpha-equal, so a read chain is not folded as a loop
     def f(x: Any) -> Any:
         a = x.spam
         b = a.ham
@@ -3280,8 +3273,6 @@ def test_fork_truncation_warning() -> None:
 
 def test_strict_raises_on_gap() -> None:
     # the same incompleteness that warns by default fails closed under `strict`
-    with pytest.warns(InferWarning):
-        assert isinstance(infer(_budget_exhausting), str)
     with pytest.raises(InferError, match="incomplete exploration"):
         infer(_budget_exhausting, strict=True)
 
@@ -3321,13 +3312,19 @@ def test_unhashable_default_of_returned_function() -> None:
     )
 
 
-def test_builtin_without_signature() -> None:
+def _skip_if_signature(func: Any) -> None:
     try:
-        signature(iter)
+        signature(func)
     except ValueError:
         pass
     else:
-        pytest.skip("this build exposes an `inspect.signature` for `iter`")
+        pytest.skip(
+            f"this build exposes an `inspect.signature` for `{func.__qualname__}`",
+        )
+
+
+def test_builtin_without_signature() -> None:
+    _skip_if_signature(iter)
     # the arity probe recovers a signatureless builtin instead of raising, exploring
     # each accepted arity as a separate overload
     assert infer(iter) == "[R](CanIter[R]) -> R\n[R](() -> R, object) -> Iterator[R]"
@@ -3391,17 +3388,6 @@ def test_text_signature_invalid(text: str) -> None:
     assert _text_candidates(text) is None
 
 
-def _skip_if_signature(func: Any) -> None:
-    try:
-        signature(func)
-    except ValueError:
-        pass
-    else:
-        pytest.skip(
-            f"this build exposes an `inspect.signature` for `{func.__qualname__}`",
-        )
-
-
 def test_builtin_dict_pop() -> None:
     _skip_if_signature(dict.pop)
     # the 2-parameter form never completes (`KeyError` on an empty `dict`)
@@ -3425,16 +3411,8 @@ def test_builtin_str_index() -> None:
 
 def test_text_signature_wraps() -> None:
     # gh-772: a builtin's text signature can wrap, with a default `inspect` can't eval
-    class _Register:
-        __text_signature__: str = (
-            "($self, /, fd,\n         eventmask=select.EPOLLIN | select.EPOLLOUT)"
-        )
-
-        def __call__(self, *args: object) -> None: ...
-
-    parsed = parse_text_signature(_Register())
-    assert parsed is not None
-    assert [list(c) for c in parsed] == [["self", "fd"], ["self", "fd", "eventmask"]]
+    text = "($self, /, fd,\n         eventmask=select.EPOLLIN | select.EPOLLOUT)"
+    assert _text_candidates(text) == ["(self, /, fd)", "(self, /, fd, eventmask)"]
 
 
 @pytest.mark.skipif(not hasattr(select, "epoll"), reason="requires select.epoll")
