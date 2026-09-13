@@ -1790,6 +1790,8 @@ def test_buffer_spy_release_silent_under_cyclic_gc() -> None:
         text=True,
         check=False,
     )
+    if sys.version_info < (3, 13) and out.returncode == -signal.SIGSEGV:
+        pytest.xfail("the CPython 3.12 buffer release fault, see the note above")
     assert out.returncode == 0, out.stderr or out.stdout
 
 
