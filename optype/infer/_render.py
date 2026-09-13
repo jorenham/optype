@@ -717,7 +717,8 @@ def widened_signatures(
     one, so a parameter-only typevar would dangle.
     """
     sigs = [
-        r.signature(selected, ret=_ir.OBJECT) for r in renderers_of(exploration, params)
+        r.signature(selected, ret=_ir.OBJECT, deprecated=exploration.deprecated)
+        for r in renderers_of(exploration, params)
     ]
     return [] if any(sig.type_params for sig in sigs) else sigs
 

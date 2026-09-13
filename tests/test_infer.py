@@ -1412,6 +1412,17 @@ def _deprecated_mul(x: Any, y: Any) -> Any:
     return x * y
 
 
+def _deprecated_gen(x: Any) -> Any:
+    warnings.warn("old", DeprecationWarning, stacklevel=2)
+    yield x + 1
+
+
+def _deprecated_empty(x: Any) -> int:
+    if x:
+        warnings.warn("", DeprecationWarning, stacklevel=2)
+    return 1
+
+
 def _raise_if_falsy(x: Any) -> int:
     if not x:
         raise ZeroDivisionError
@@ -1472,6 +1483,13 @@ STATEMENT_CASES: list[tuple[Callable[..., Any], str]] = [
             "[T, R](x: T, y: CanRMul[T, R]) -> R"
         ),
     ),
+    # a generator body only warns when drained
+    (
+        _deprecated_gen,
+        "@deprecated('old')\n[R](x: CanAdd[Literal[1], R]) -> Generator[R]",
+    ),
+    # an empty message is still a marker, and a quiet branch does not unset it
+    (_deprecated_empty, "@deprecated('')\n(x: CanBool) -> int"),
     # only the branch that raises is dropped; the surviving branch still infers
     (_raise_if_falsy, "(x: CanBool) -> int"),
 ]
@@ -1500,6 +1518,25 @@ def _try_value_fallback(x: Any) -> Any:
         return 0
 
 
+@deprecated("old")
+def _deprecated_getattr(x: Any) -> Any:
+    return getattr(x, "value", None)
+
+
+def _deprecated_present(x: Any) -> Any:
+    if hasattr(x, "a"):
+        warnings.warn("old", DeprecationWarning, stacklevel=2)
+        return 1
+    return 2
+
+
+def _deprecated_absent(x: Any) -> Any:
+    if hasattr(x, "a"):
+        return 1
+    warnings.warn("old", DeprecationWarning, stacklevel=2)
+    return 2
+
+
 def _hasattr_then_b(x: Any) -> Any:
     if hasattr(x, "a"):
         _ = x.b
@@ -1518,13 +1555,31 @@ DISPATCH_CASES: list[tuple[Callable[..., Any], str]] = [
     # the return ignores the attribute's value, so one overload with the unioned return
     # of both branches covers it, rather than an `object` fallback
     (lambda x: 1 if hasattr(x, "a") else 2, "(x: object) -> int"),
+    # a deprecation in only one branch keeps the overloads apart, so the marker lands
+    # on that branch alone
+    (
+        _deprecated_present,
+        "@deprecated('old')\n(x: Has['a']) -> int\n(x: object) -> object",
+    ),
+    (
+        _deprecated_absent,
+        "(x: Has['a']) -> int\n@deprecated('old')\n(x: object) -> object",
+    ),
     # a value dispatch keeps two overloads, but the fallback's return widens to a sound
-    # supertype of the present `R` (`object`), so the overloads no longer overlap
+    # supertype of the present `R` (`object`), so the overlap is sound
     (
         lambda x: getattr(x, "value", None),
         "[R](x: Has['value', +R]) -> R\n(x: object) -> object",
     ),
     (_try_value, "[R](x: Has['value', +R]) -> R\n(x: object) -> object"),
+    # the widened fallback keeps the `@deprecated` marker
+    (
+        _deprecated_getattr,  # pyright: ignore[reportDeprecated]  # pyrefly: ignore[deprecated]
+        (
+            "@deprecated('old')\n[R](x: Has['value', +R]) -> R\n"
+            "@deprecated('old')\n(x: object) -> object"
+        ),
+    ),
     # a directly-used attribute has no fallback, so its absent variant raises and is
     # dropped; the attribute stays a hard requirement
     (lambda x: x.a, "[R](x: Has['a', +R]) -> R"),
