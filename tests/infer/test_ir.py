@@ -105,6 +105,11 @@ SUBTYPE_CASES: list[tuple[Any, Any, bool]] = [
     (App("zip", (Type(bool),)), App("zip", (Type(int),)), True),
     (App("map", (Type(bool),)), App("map", (Type(int),)), False),
     (App("enumerate", (Type(bool),)), App("enumerate", (Type(int),)), False),
+    # an all-`Never` argument list is the empty container only where nothing is known
+    # about the variance; a declared contravariant position decides for itself
+    (App("Generator", (Name("Never"),) * 3), App("Generator", (Type(int),) * 3), False),
+    (App("Generator", (Name("Never"),)), App("Generator", (Type(int),)), True),
+    (App("tuple", (Name("Never"),)), App("tuple", (Type(int),)), True),
     # a union operand: every member below, any member above
     (Union((Type(bool), Lit((1,)))), Type(int), True),
     (Union((Type(bool), Type(str))), Type(int), False),

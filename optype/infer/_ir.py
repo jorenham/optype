@@ -212,11 +212,10 @@ def _subtype_args(origin: str, args: Terms, wider: Terms) -> bool:
     """Whether same-`origin` applications relate, argument by argument."""
     if len(args) != len(wider):
         return False
-    # an all-`Never` container holds only `[]`, a member of any same origin
-    if args and all(arg == NEVER for arg in args):
-        return True
     if not (variances := _VARIANCES.get(origin)):
-        return False
+        # an all-`Never` invariant container holds only `[]`, a member of any same
+        # origin; a declared variance decides per argument instead
+        return bool(args) and all(arg == NEVER for arg in args)
     signs = variances + variances[-1:] * (len(args) - len(variances))
     return all(
         subtype(arg, wide) if sign == COVARIANT else subtype(wide, arg)
