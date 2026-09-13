@@ -281,7 +281,7 @@ The remaining aliases mirror the `np.generic` hierarchy:
     <tr>
         <td><code>UnsignedInteger</code></td>
         <td>
-            <code>UInt8 | UInt16 | UInt32 | UInt64 | UShort | UIntC | UIntP | ULong | ULongLong</code>
+            <code>UByte | UShort | UIntC | ULong | ULongLong</code>
         </td>
     </tr>
     <tr>
