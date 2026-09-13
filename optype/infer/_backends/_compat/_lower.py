@@ -9,7 +9,7 @@ import builtins
 import functools
 import keyword
 import typing
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import replace
 from itertools import count, islice, product
 from typing import final
@@ -82,25 +82,6 @@ _ARITY_FORMS = {
 }
 
 
-def _fold_arities(bases: list[_ir.Node]) -> list[_ir.Node]:
-    """Join the two arity forms of an operation into the protocol that has both."""
-    for one, two in (("CanRound1", "CanRound2"), ("CanPow2", "CanPow3")):
-        apps = {b.origin: b for b in bases if isinstance(b, _ir.App)}
-        if not {one, two} <= apps.keys():
-            continue
-        first, second = apps[one], apps[two]
-        if one == "CanRound1":
-            (r1,), (n, r2) = first.args, second.args
-            joined = _ir.App("CanRound", (n, r1, r2))
-        else:
-            (t, r2), (t2, v, r3) = first.args, second.args
-            if not (_ir.subtype(t, t2) and _ir.subtype(t2, t)):
-                continue
-            joined = _ir.App("CanPow", (t, v, r2, r3))
-        bases = [joined if b is first else b for b in bases if b is not second]
-    return bases
-
-
 @functools.cache
 def _protocol_params(origin: str) -> tuple[object, ...] | None:
     """The type parameters of an `optype` protocol in declared order, if known.
@@ -146,39 +127,114 @@ def _protocol_variances(origin: str) -> tuple[_ir.Sign | None, ...] | None:
     )
 
 
-def _implies(sub: _ir.Node, sup: _ir.Node) -> bool:
-    """`_ir.subtype`, with applications of one shipped protocol compared argument by
-    argument in their declared variance, which the IR does not know."""
-    if (
-        isinstance(sub, _ir.App)
-        and isinstance(sup, _ir.App)
-        and sub.origin == sup.origin
-        and (signs := _protocol_variances(sub.origin)) is not None
-        and len(sub.args) == len(sup.args) == len(signs)
-    ):
-        pairs = zip(sub.args, sup.args, signs, strict=True)
-        return all(
-            _implies(_ir.term_node(a), _ir.term_node(b))
-            if sign == _ir.COVARIANT
-            else _implies(_ir.term_node(b), _ir.term_node(a))
-            if sign == _ir.CONTRAVARIANT
-            else a == b
-            for a, b, sign in pairs
+type _Bounds = Mapping[str, Sequence[_ir.Node]]
+
+
+def _reads_writes(
+    signed: tuple[_ir.Node, ...],
+) -> tuple[list[_ir.Node], list[_ir.Node]]:
+    signs = [s for s in signed if isinstance(s, _ir.Variance)]
+    reads = [s.part for s in signs if s.sign == _ir.COVARIANT]
+    writes = [s.part for s in signs if s.sign == _ir.CONTRAVARIANT]
+    return reads, writes
+
+
+def _variances_at(origin: str, arity: int) -> tuple[_ir.Sign | None, ...] | None:
+    """The declared variances of the shipped protocol behind `origin` at `arity`."""
+    signs = _protocol_variances(_ARITY_FORMS.get((origin, arity), origin))
+    return signs if signs is not None and len(signs) == arity else None
+
+
+def _implies_args(sub: _ir.App, sup: _ir.App, bounds: _Bounds) -> bool:
+    """Argument by argument in the declared variance; identical if invariant."""
+    signs = _variances_at(sub.origin, len(sub.args))
+    if signs is None or len(sup.args) != len(signs):
+        return _ir.subtype(sub, sup)
+    return all(
+        _implies(_ir.term_node(a), _ir.term_node(b), bounds)
+        if sign == _ir.COVARIANT
+        else _implies(_ir.term_node(b), _ir.term_node(a), bounds)
+        if sign == _ir.CONTRAVARIANT
+        else a == b
+        for a, b, sign in zip(sub.args, sup.args, signs, strict=True)
+    )
+
+
+def _implies_attr(sub: _ir.Has, sup: _ir.Has, bounds: _Bounds) -> bool:
+    """Every read of `sup` is implied by a read of `sub`, and every write likewise."""
+    own, other = _signed(sub.args), _signed(sup.args)
+    if own is None or other is None:
+        return sub == sup
+    reads, writes = _reads_writes(own)
+    wider_reads, wider_writes = _reads_writes(other)
+    return all(any(_implies(r, w, bounds) for r in reads) for w in wider_reads) and all(
+        any(_implies(w, r, bounds) for r in writes) for w in wider_writes
+    )
+
+
+def _same_layout(params: _ir.Terms, wider: _ir.Terms) -> bool:
+    """Positional parameters in equal number, unpacked at the same positions."""
+    return (
+        len(params) == len(wider)
+        and not any(isinstance(p, _ir.Arg) for p in (*params, *wider))
+        and all(
+            isinstance(p, _ir.Unpack) == isinstance(w, _ir.Unpack)
+            for p, w in zip(params, wider, strict=True)
         )
-    return _ir.subtype(sub, sup)
+    )
 
 
-def _merge_apps(first: _ir.App, second: _ir.App) -> _ir.App | None:
+def _implies(  # ruff: ignore[too-many-return-statements]
+    sub: _ir.Node,
+    sup: _ir.Node,
+    bounds: _Bounds,
+) -> bool:
+    """Whether requiring `sub` requires `sup`: `_ir.subtype`, plus what the IR does
+    not know: a typevar's bounds, a shipped protocol's declared variance, and the
+    reads and writes of an attribute."""
+    if sub == sup:
+        return True
+    match sub, sup:
+        case _ir.Variance(_, part), _:
+            return _implies(part, sup, bounds)
+        case _, _ir.Variance(_, part):
+            return _implies(sub, part, bounds)
+        case _, _ir.Intersection(parts):
+            return all(_implies(sub, p, bounds) for p in parts)
+        case _ir.Intersection(parts), _:
+            return any(_implies(p, sup, bounds) for p in parts)
+        case _ir.Name(name), _ if any(
+            _implies(b, sup, bounds) for b in bounds.get(name, ())
+        ):
+            return True
+        case _ir.App(origin), _ir.App(wider) if origin == wider:
+            return _implies_args(sub, sup, bounds)
+        case _ir.Has(attr), _ir.Has(wider_attr) if attr == wider_attr:
+            return _implies_attr(sub, sup, bounds)
+        case _ir.Fn(params, ret), _ir.Fn(wider_params, wider_ret):
+            return (
+                _same_layout(params, wider_params)
+                and _implies(ret, wider_ret, bounds)
+                and all(
+                    _implies(_ir.term_node(w), _ir.term_node(p), bounds)
+                    for p, w in zip(params, wider_params, strict=True)
+                )
+            )
+        case _:
+            return _ir.subtype(sub, sup)
+
+
+def _merge_apps(first: _ir.App, second: _ir.App, bounds: _Bounds) -> _ir.App | None:
     """One application of a protocol that `first` and `second` both require, if at
-    most one argument differs and the two are ordered by subtyping: the narrower one
-    wins in a covariant position, the wider one in a contravariant position.
+    most one argument differs and the two are ordered by implication: the narrower
+    one wins in a covariant position, the wider one in a contravariant position.
 
     Both must apply every parameter: an omitted one defaults to another, which a join
     would then change as well. Two differing arguments may be correlated, as in
     `CanSetitem[int, int] & CanSetitem[str, str]`, so they stay apart.
     """
-    signs = _protocol_variances(first.origin)
-    if signs is None or len(first.args) != len(signs) or len(second.args) != len(signs):
+    signs = _variances_at(first.origin, len(first.args))
+    if signs is None or len(second.args) != len(signs):
         return None
     pairs = zip(first.args, second.args, strict=True)
     differing = [i for i, (x, y) in enumerate(pairs) if x != y]
@@ -188,9 +244,9 @@ def _merge_apps(first: _ir.App, second: _ir.App) -> _ir.App | None:
         return None
     (i,) = differing
     x, y = _ir.term_node(first.args[i]), _ir.term_node(second.args[i])
-    if _implies(x, y):
+    if _implies(x, y, bounds):
         narrower, wider = x, y
-    elif _implies(y, x):
+    elif _implies(y, x, bounds):
         narrower, wider = y, x
     else:
         return None
@@ -203,22 +259,45 @@ def _merge_apps(first: _ir.App, second: _ir.App) -> _ir.App | None:
     return _ir.App(first.origin, (*first.args[:i], joined, *first.args[i + 1 :]))
 
 
-def _merge_bases(bases: Sequence[_ir.Node]) -> list[_ir.Node]:
+def _merge_parts(parts: Sequence[_ir.Node], bounds: _Bounds) -> list[_ir.Node]:
     """Join the applications of one protocol, which a class cannot inherit twice."""
     out: list[_ir.Node] = []
-    for base in bases:
+    for part in parts:
         for i, prev in enumerate(out):
             if (
-                isinstance(base, _ir.App)
+                isinstance(part, _ir.App)
                 and isinstance(prev, _ir.App)
-                and prev.origin == base.origin
-                and (joined := _merge_apps(prev, base)) is not None
+                and prev.origin == part.origin
+                and (joined := _merge_apps(prev, part, bounds)) is not None
             ):
                 out[i] = joined
                 break
         else:
-            out.append(base)
+            out.append(part)
     return out
+
+
+def _fold_arities(parts: list[_ir.Node]) -> list[_ir.Node]:
+    """Join the two arity forms of an operation into the protocol that has both."""
+    for origin, (one, two) in (("CanRound", (1, 2)), ("CanPow", (2, 3))):
+        apps = {
+            len(p.args): p
+            for p in parts
+            if isinstance(p, _ir.App) and p.origin == origin
+        }
+        if not {one, two} <= apps.keys():
+            continue
+        first, second = apps[one], apps[two]
+        if origin == "CanRound":
+            (r1,), (n, r2) = first.args, second.args
+            joined = _ir.App(origin, (n, r1, r2))
+        else:
+            (t, r2), (t2, v, r3) = first.args, second.args
+            if not (_ir.subtype(t, t2) and _ir.subtype(t2, t)):
+                continue
+            joined = _ir.App(origin, (t, v, r2, r3))
+        parts = [joined if p is first else p for p in parts if p is not second]
+    return parts
 
 
 def _inherited_bounds(
@@ -301,7 +380,69 @@ class Lowerer:
 
     def module(self, sigs: Sequence[_ir.Signature]) -> Module:
         funcs = [_SigLowerer(self._registry, sig).func() for sig in sigs]
-        return Module(tuple(self._registry.defs.values()), tuple(funcs))
+        return Module(tuple(_reachable(self._registry.defs, funcs)), tuple(funcs))
+
+
+def _mentions(node: _ir.Term) -> Iterable[str]:
+    # the applied and bare names in `node`, helpers included
+    match node:
+        case _ir.Name(name):
+            yield name
+        case _ir.App(origin, parts) | _ir.Has(origin, parts):
+            yield origin
+            for part in parts:
+                yield from _mentions(part)
+        case _ir.Union(parts) | _ir.Intersection(parts):
+            for part in parts:
+                yield from _mentions(part)
+        case _ir.Fn(params, ret):
+            for part in (*params, ret):
+                yield from _mentions(part)
+        case (
+            _ir.Arg(value=part)
+            | _ir.Not(part)
+            | _ir.Variance(part=part)
+            | _ir.Unpack(part)
+        ):
+            yield from _mentions(part)
+        case _:
+            return
+
+
+def _typar_nodes(typars: Iterable[_ir.TypeParam]) -> Iterable[_ir.Node]:
+    for typar in typars:
+        yield from (n for n in (typar.bound, typar.default) if n is not None)
+
+
+def _reachable(
+    defs: Mapping[str, Helper],
+    funcs: Iterable[_ir.Signature],
+) -> list[Helper]:
+    """The helpers the functions mention, directly or through other helpers, in the
+    order they were registered; a bound lowered more than once leaves unused ones."""
+    todo = [
+        name
+        for func in funcs
+        for node in (
+            *(p.node for p in func.params),
+            func.ret,
+            *_typar_nodes(func.type_params),
+        )
+        for name in _mentions(node)
+    ]
+    seen: set[str] = set()
+    while todo:
+        name = todo.pop()
+        if name in seen or (helper := defs.get(name)) is None:
+            continue
+        seen.add(name)
+        nodes: list[_ir.Term] = list(_typar_nodes(helper.type_params))
+        if isinstance(helper, ProtocolDef):
+            nodes += [*helper.bases, *member_nodes(helper.members)]
+        else:
+            nodes.append(helper.value)
+        todo.extend(name for node in nodes for name in _mentions(node))
+    return [helper for name, helper in defs.items() if name in seen]
 
 
 def _signed(args: tuple[_ir.Node, ...]) -> tuple[_ir.Node, ...] | None:
@@ -321,6 +462,27 @@ def _order_typars(typars: list[_ir.TypeParam]) -> list[_ir.TypeParam]:
     empty = _ir.Unpack(_ir.App("tuple", ()))
     tuples = [replace(t, default=empty) for t in typars if t.unpack]
     return [t for t in typars if not t.unpack] + tuples
+
+
+def _distinct_text(nodes: Iterable[_ir.Node]) -> list[_ir.Node]:
+    out: list[_ir.Node] = []
+    seen: set[str] = set()
+    for node in nodes:
+        if (key := type_text(node)) not in seen:
+            seen.add(key)
+            out.append(node)
+    return out
+
+
+def _constrain(
+    constraints: _Constraints,
+    tyvar: str,
+    parts: Iterable[_ir.Node],
+) -> None:
+    """Add the `parts` that `tyvar` is not constrained by yet; the bounds are lowered
+    more than once, which must not grow them."""
+    known = constraints.setdefault(tyvar, [])
+    known.extend(p for p in parts if p not in known)
 
 
 def _merge_has(parts: Sequence[_ir.Node]) -> list[_ir.Node]:
@@ -379,16 +541,21 @@ class _SigLowerer:
         one becomes a helper `Protocol`.
         """
         bound: dict[str, _ir.Node | None] = {}
-        default: dict[str, _ir.Node | None] = {}
-        for typar in typars:
-            merged = self._merge_bound(
-                typar.bound,
-                constraints.get(typar.name),
-            )
-            bound[typar.name] = None if merged == _ir.OBJECT else merged
-            default[typar.name] = (
-                None if typar.default is None else self._node(typar.default, {})
-            )
+        # lowering a bound may lift a requirement into another typevar's constraints,
+        # so the bounds are lowered again until no constraint is new
+        counts: dict[str, int] = {}
+        while True:
+            for typar in typars:
+                extra = constraints.get(typar.name)
+                merged = self._merge_bound(typar.bound, extra, constraints)
+                bound[typar.name] = None if merged == _ir.OBJECT else merged
+            if (found := {n: len(c) for n, c in constraints.items()}) == counts:
+                break
+            counts = found
+        default = {
+            typar.name: None if typar.default is None else self._node(typar.default, {})
+            for typar in typars
+        }
 
         elim = {
             tyvar: b for tyvar, b in bound.items() if b and is_generic(b, self._tyvars)
@@ -473,7 +640,7 @@ class _SigLowerer:
             lowered = lowered[: len(bounds)]
             for arg, bound in zip(lowered, bounds, strict=False):
                 if bound and isinstance(arg, _ir.Name) and arg.name in self._tyvars:
-                    constraints.setdefault(arg.name, []).append(bound)
+                    _constrain(constraints, arg.name, [bound])
         return _ir.App(origin, tuple(lowered))
 
     def _inter(self, parts: Sequence[_ir.Node], constraints: _Constraints) -> _ir.Node:
@@ -494,19 +661,35 @@ class _SigLowerer:
                 if not isinstance(p, _ir.Not)
                 and not (isinstance(p, _ir.Name) and p.name == tyvar)
             ]
-            constraints.setdefault(tyvar, []).extend(extra)
+            _constrain(constraints, tyvar, extra)
             return _ir.Name(tyvar)
 
-        lowered: list[_ir.Node] = []
-        seen: set[str] = set()
-        for part in parts:
-            if isinstance(part, _ir.Not):
-                continue
+        bounds = {
+            typar.name: [
+                *([typar.bound] if typar.bound is not None else []),
+                *constraints.get(typar.name, ()),
+            ]
+            for typar in self._sig.type_params
+        }
+        # `(A | B) & C` distributes to `(A & C) | (B & C)`: a union cannot be a base
+        parts = _ir.distinct(parts)
+        unions = [p for p in parts if isinstance(p, _ir.Union)]
+        rest = [p for p in parts if not isinstance(p, (_ir.Union, _ir.Not))]
+        lowered: list[tuple[_ir.Node, _ir.Node]] = []
+
+        def lower(part: _ir.Node) -> _ir.Node:
+            for raw, node in lowered:
+                if raw == part:
+                    return node
             node = self._node(part, constraints)
-            if (key := type_text(node)) not in seen:
-                seen.add(key)
-                lowered.append(node)
-        return self._combine(lowered)
+            lowered.append((part, node))
+            return node
+
+        variants: list[_ir.Node] = []
+        for picks in product(*(u.parts for u in unions)):
+            joined = _fold_arities(_merge_parts([*rest, *picks], bounds))
+            variants.append(self._combine(_distinct_text(map(lower, joined))))
+        return _ir.union(variants) or _ir.OBJECT
 
     def _proto_app(
         self,
@@ -538,36 +721,19 @@ class _SigLowerer:
         return _ir.App(name, tuple(_ir.Name(f) for f in fv))
 
     def _combine(self, parts: Sequence[_ir.Node]) -> _ir.Node:
-        # an `(A | B) & C` distributes to `(A & C) | (B & C)`: a union cannot be a base
         if not parts:
             return _ir.OBJECT
         if len(parts) == 1:
             return parts[0]
-
-        unions = [p for p in parts if isinstance(p, _ir.Union)]
-        if not unions:
-            # a callable is not a valid base; it lifts into a `__call__` method instead
-            bases = _fold_arities(
-                _merge_bases([p for p in parts if not isinstance(p, _ir.Fn)]),
-            )
-            members = tuple(
-                Method("__call__", p.params, p.ret)
-                for p in parts
-                if isinstance(p, _ir.Fn)
-            )
-            if len(bases) == 1 and not members:
-                return bases[0]
-            candidate = (
-                combine_name([p.origin for p in bases if isinstance(p, _ir.App)]) or "P"
-            )
-            return self._proto_app(candidate, bases=bases, members=members)
-
-        rest = [p for p in parts if not isinstance(p, _ir.Union)]
-        variants = [
-            self._combine([*rest, *picks])
-            for picks in product(*(u.parts for u in unions))
-        ]
-        return _ir.union(variants) or _ir.OBJECT
+        # a callable is not a valid base; it lifts into a `__call__` method instead
+        bases = [p for p in parts if not isinstance(p, _ir.Fn)]
+        members = tuple(
+            Method("__call__", p.params, p.ret) for p in parts if isinstance(p, _ir.Fn)
+        )
+        candidate = (
+            combine_name([p.origin for p in bases if isinstance(p, _ir.App)]) or "P"
+        )
+        return self._proto_app(candidate, bases=bases, members=members)
 
     def _has(
         self,
@@ -647,6 +813,7 @@ class _SigLowerer:
         self,
         bound: _ir.Node | None,
         extra: list[_ir.Node] | None,
+        constraints: _Constraints,
     ) -> _ir.Node | None:
         parts: list[_ir.Node] = []
         if bound is not None:
@@ -656,7 +823,7 @@ class _SigLowerer:
         if not parts:
             return None
         node = parts[0] if len(parts) == 1 else _ir.Intersection(tuple(parts))
-        return self._node(node, {})
+        return self._node(node, constraints)
 
     def _hoist_group(
         self,
