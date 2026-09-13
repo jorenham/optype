@@ -456,10 +456,10 @@ class _ResultTyper:
         nodes: list[_ir.Node] = []
         if len(literals) > _LITERAL_LIMIT:
             # an enumerated run (e.g. randbelow's 256 bytes) is noise; widen to types
-            nodes.extend(dict.fromkeys(_ir.Type(type(v)) for v in literals))
+            nodes.extend(_ir.distinct(_ir.Type(type(v)) for v in literals))
         elif literals:
             nodes.append(_ir.Lit(tuple(literals)))
-        nodes.extend(dict.fromkeys(parts))
+        nodes.extend(_ir.distinct(parts))
         return _ir.union(nodes, tuples=tuples)
 
     def return_type(self, result: object) -> _ir.Node:
@@ -503,7 +503,7 @@ class _ResultTyper:
 
     def type_union(self, values: Iterable[object]) -> _ir.Node:
         """The deduplicated union of the types of `values`, or `Never` if empty."""
-        parts = dict.fromkeys(map(self.return_type, _distinct(values)))
+        parts = _ir.distinct(map(self.return_type, _distinct(values)))
         return _ir.union(parts, tuples=True) or _ir.NEVER
 
     def value_type(self, value: object) -> _ir.Node:

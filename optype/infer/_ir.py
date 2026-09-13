@@ -332,21 +332,38 @@ def _collapse_tuples(nodes: list[Node]) -> list[Node]:
     return out
 
 
+def distinct(nodes: Iterable[Node]) -> list[Node]:
+    """The distinct `nodes` by equality: a callable's default may be unhashable."""
+    out: list[Node] = []
+    for node in nodes:
+        if node not in out:
+            out.append(node)
+    return out
+
+
+def _flatten(parts: Iterable[Node], kind: type[Union | Intersection]) -> list[Node]:
+    """The distinct members of `parts`, with every nested `kind` opened up."""
+    flat: list[Node] = []
+    stack = list(parts)[::-1]
+    while stack:
+        part = stack.pop()
+        if isinstance(part, kind):
+            stack.extend(reversed(part.parts))
+        elif part not in flat:
+            flat.append(part)
+    return flat
+
+
 def union(parts: Iterable[Node], *, tuples: bool = False) -> Node | None:
     """The simplified flat union of `parts`, unwrapped if singular, or `None`.
 
     With `tuples=True`, a wide union of same-arity tuples collapses per position;
     pass it only in covariant positions, where widening a tuple stays sound.
     """
-    flat: dict[Node, None] = {}
-    for part in parts:
-        if isinstance(part, Union):
-            flat.update(dict.fromkeys(part.parts))
-        else:
-            flat[part] = None
+    flat = _flatten(parts, Union)
     if not flat:
         return None
-    nodes = _absorb(list(flat))
+    nodes = _absorb(flat)
     if tuples:
         nodes = _collapse_tuples(nodes)
     return nodes[0] if len(nodes) == 1 else Union(tuple(nodes))
@@ -360,15 +377,10 @@ def exclude(base: Node | None, part: Node) -> Node:
 
 def intersection(parts: Iterable[Node]) -> Node | None:
     """The flat intersection of `parts`, unwrapped if singular, or `None`."""
-    flat: dict[Node, None] = {}
-    for part in parts:
-        if isinstance(part, Intersection):
-            flat.update(dict.fromkeys(part.parts))
-        else:
-            flat[part] = None
+    flat = _flatten(parts, Intersection)
     if not flat:
         return None
-    return next(iter(flat)) if len(flat) == 1 else Intersection(tuple(flat))
+    return flat[0] if len(flat) == 1 else Intersection(tuple(flat))
 
 
 def names(node: Term) -> Generator[str]:
@@ -406,7 +418,7 @@ def subst(node: Node, m: Mapping[str, Node], *, dedup: bool = False) -> Node:
         case Union(parts) | Intersection(parts):
             new = tuple(subst(p, m, dedup=dedup) for p in parts)
             if dedup:
-                new = tuple(dict.fromkeys(new))
+                new = tuple(distinct(new))
             out = new[0] if dedup and len(new) == 1 else type(node)(new)
         case Not(part) | Unpack(part):
             out = type(node)(subst(part, m, dedup=dedup))
