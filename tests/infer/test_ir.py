@@ -23,11 +23,15 @@ from optype.infer._ir import (
     Name,
     Node,
     Not,
+    Param,
+    Signature,
     Type,
+    TypeParam,
     Union,
     Unpack,
     Variance,
     alpha_equal,
+    alpha_equal_signatures,
     exclude,
     intersection,
     names,
@@ -338,6 +342,59 @@ def test_alpha_equal_renames_only_type_parameters() -> None:
     a, b = App("CanAdd", (NONE, A)), App("CanAdd", (OBJECT, B))
     assert alpha_equal(a, b, {"A", "B"}) is None
     assert alpha_equal(a, App("CanAdd", (NONE, B)), {"A", "B"}) == {"A": "B"}
+
+
+def test_alpha_equal_signatures() -> None:
+    def sig(t: str, u: str, *, default: tuple[object] | None = (0,)) -> Signature:
+        return Signature(
+            (TypeParam(t, App("CanAdd", (Name(u), Name(t)))), TypeParam(u)),
+            (Param("x", Name(t)), Param("y", Name(u), default=default)),
+            Name(t),
+        )
+
+    assert alpha_equal_signatures(sig("T", "U"), sig("A", "B"))
+    assert alpha_equal_signatures(sig("T", "U"), sig("U", "T"))
+    # the type parameters' names are the only freedom
+    assert not alpha_equal_signatures(sig("T", "U"), sig("T", "U", default=(1,)))
+    swapped = Signature(
+        sig("T", "U").type_params[::-1],
+        sig("T", "U").params,
+        Name("T"),
+    )
+    assert not alpha_equal_signatures(sig("T", "U"), swapped)
+    unpacked = Signature((TypeParam("Ts", unpack=True),), (), Name("Ts"))
+    assert not alpha_equal_signatures(
+        unpacked,
+        Signature((TypeParam("Ts"),), (), Name("Ts")),
+    )
+    # a concrete name is not a type parameter, whatever it is called
+    assert not alpha_equal_signatures(
+        Signature((), (Param("x", Name("None")),), Name("None")),
+        Signature((), (Param("x", Name("object")),), Name("object")),
+    )
+    # an absent bound or default is not an `object` one
+    plain = Signature((TypeParam("T"),), (Param("x", Name("T")),), Name("T"))
+    for typar in (TypeParam("T", bound=OBJECT), TypeParam("T", default=OBJECT)):
+        alike = Signature((typar,), plain.params, plain.ret)
+        assert not alpha_equal_signatures(plain, alike)
+    # a name is renameable in the signature that declares it, and only there
+    ints = Signature(
+        (TypeParam("int"),),
+        (Param("x", Name("int")), Param("y", Name("str"))),
+        Name("int"),
+    )
+    strs = Signature(
+        (TypeParam("str"),),
+        (Param("x", Name("str")), Param("y", Name("int"))),
+        Name("str"),
+    )
+    assert not alpha_equal_signatures(ints, strs)
+    objs = Signature(
+        (TypeParam("object"),),
+        (Param("x", Name("object")),),
+        Name("object"),
+    )
+    assert alpha_equal_signatures(plain, objs)
 
 
 def test_tuple_nodes() -> None:
