@@ -21,6 +21,8 @@ class Attr:
     classvar: bool = False
     readonly: bool = False
     setter: _ir.Node | None = None
+    # the setter type is not one the getter returns, which basedpyright reports
+    mismatch: bool = False
 
 
 @dataclass(frozen=True, slots=True)

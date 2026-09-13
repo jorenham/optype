@@ -672,6 +672,21 @@ def test_has_write_is_a_settable_property() -> None:
     assert _has_member(*signed) == Attr("spam", T, setter=ZERO)
 
 
+def test_has_write_the_read_does_not_return_is_marked() -> None:
+    signed = Variance(COVARIANT, Fn((), OBJECT)), Variance(CONTRAVARIANT, NONE)
+    assert _has_member(*signed) == Attr(
+        "spam",
+        Fn((), OBJECT),
+        setter=NONE,
+        mismatch=True,
+    )
+    # a write the read returns is not marked, nor is one the IR cannot relate
+    signed = Variance(COVARIANT, Type(int)), Variance(CONTRAVARIANT, ZERO)
+    assert _has_member(*signed) == Attr("spam", Type(int), setter=ZERO)
+    signed = Variance(COVARIANT, App("CanNeg", (R,))), Variance(CONTRAVARIANT, ZERO)
+    assert _has_member(*signed) == Attr("spam", App("CanNeg", (T,)), setter=ZERO)
+
+
 def test_has_presence_is_a_read_only_property() -> None:
     assert _has_member() == Attr("spam", OBJECT, readonly=True)
 
@@ -680,12 +695,12 @@ def test_has_presence_is_a_read_only_property() -> None:
 def test_has_method_merges_with_a_write_as_a_callable_read(reverse: bool) -> None:
     parts = (
         Has("spam", (Fn((), OBJECT),)),
-        Has("spam", (Variance(CONTRAVARIANT, ZERO),)),
+        Has("spam", (Variance(CONTRAVARIANT, Fn((), NONE)),)),
     )
     node = Intersection(parts[::-1] if reverse else parts)
     module = Lowerer().module([_sig((), node, NONE)])
     assert [h.members for h in _protocols(module)] == [
-        (Attr("spam", Fn((), OBJECT), setter=ZERO),),
+        (Attr("spam", Fn((), OBJECT), setter=Fn((), NONE)),),
     ]
 
 

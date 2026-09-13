@@ -2452,6 +2452,36 @@ COMPAT_CASES: list[tuple[str, str]] = [
         ),
     ),
     (
+        # a setter type the getter does not return is marked for pyright
+        "def f(x): x.callback(); x.callback = None",
+        (
+            "from collections.abc import Callable\n"
+            "from typing import Protocol\n\n"
+            "class HasCallback(Protocol):\n"
+            "    @property\n"
+            "    def callback(self) -> Callable[[], object]: ...\n"
+            "    @callback.setter\n"
+            "    def callback(self, value: None, /) -> None: ..."
+            "  # pyright: ignore[reportPropertyTypeMismatch]\n\n"
+            "def f(x: HasCallback) -> None: ..."
+        ),
+    ),
+    (
+        # the same, with a generic read
+        "def f(x): x.spam = None; return x.spam()",
+        (
+            "from collections.abc import Callable\n"
+            "from typing import Protocol\n\n"
+            "class HasSpam[T](Protocol):\n"
+            "    @property\n"
+            "    def spam(self) -> Callable[[], T]: ...\n"
+            "    @spam.setter\n"
+            "    def spam(self, value: None, /) -> None: ..."
+            "  # pyright: ignore[reportPropertyTypeMismatch]\n\n"
+            "def f[R](x: HasSpam[R]) -> R: ..."
+        ),
+    ),
+    (
         # bare presence accepts a read-only property too
         "def f(x): del x.spam",
         (
@@ -2672,6 +2702,48 @@ def _basedpyright(path: Path) -> subprocess.CompletedProcess[str]:
         text=True,
         check=False,
     )
+
+
+def test_compat_mismatched_setter_keeps_the_read(tmp_path: Path) -> None:
+    # the getter still has to return what is read; the setter only has to accept
+    # what is written
+    if shutil.which("mypy") is None:
+        pytest.skip("mypy is not installed")
+    source = f"""{_compat("def f(x): x.callback(); x.callback = None")}
+
+class Asymmetric:
+    @property
+    def callback(self) -> Callable[[], object]:
+        return lambda: None
+    @callback.setter
+    def callback(self, value: None, /) -> None:
+        pass
+
+class Optional:
+    callback: Callable[[], object] | None = None
+
+class Never:
+    callback: None = None
+
+f(Asymmetric())
+f(Optional())  # error
+f(Never())  # error
+"""
+    (tmp_path / "write.py").write_text(source)
+    out = subprocess.run(
+        ["mypy", "--no-error-summary", "--no-color-output", "write.py"],  # ruff: ignore[start-process-with-partial-path]
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    errors = sorted(
+        int(n) for n in re.findall(r"^write\.py:(\d+): error", out.stdout, re.MULTILINE)
+    )
+    lines = source.splitlines()
+    assert errors == [
+        i for i, line in enumerate(lines, 1) if line.endswith("# error")
+    ], out.stdout
 
 
 def test_compat_write_matches_wider_attributes(tmp_path: Path) -> None:

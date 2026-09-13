@@ -627,7 +627,14 @@ class _SigLowerer:
             return Attr(attr, read if reads else write)
         # a property with a setter is what a plain attribute and a settable property
         # both satisfy; an annotation is only matched by a plain attribute
-        return Attr(attr, read, readonly=not writes, setter=write if writes else None)
+        if not writes:
+            return Attr(attr, read, readonly=True)
+        # a protocol read is left to the checkers, which know what it holds
+        held = _ir.subst(read, dict.fromkeys(self._tyvars, _ir.OBJECT))
+        mismatch = (
+            bool(reads) and not is_protocol_node(read) and not _ir.subtype(write, held)
+        )
+        return Attr(attr, read, setter=write, mismatch=mismatch)
 
     def _fn(
         self,

@@ -251,9 +251,12 @@ class Printer:
                 self._shadowed = frozenset({member.name})
                 value = self.render_node(member.setter)
                 self._shadowed = frozenset()
+                note = (
+                    "  # pyright: ignore[reportPropertyTypeMismatch]" * member.mismatch
+                )
                 return (
                     f"{text}\n    @{member.name}.setter\n"
-                    f"    def {member.name}(self, value: {value}, /) -> None: ..."
+                    f"    def {member.name}(self, value: {value}, /) -> None: ...{note}"
                 )
             return f"    {member.name}: {self.render_node(member.type)}"
         sig = self.call_params(member.params)
