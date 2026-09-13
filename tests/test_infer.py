@@ -34,7 +34,7 @@ import time
 import warnings
 import weakref
 from collections import Counter, defaultdict
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Coroutine, Iterator, Mapping
 from inspect import Signature as PySignature, currentframe, signature
 from multiprocessing.connection import Connection
 from pathlib import Path
@@ -2008,6 +2008,57 @@ def test_isolate_reports_exit_code() -> None:
     with pytest.raises(InferError, match="no result") as excinfo:
         isolate(lambda: os._exit(7))
     assert any("exit code: 7" in note for note in excinfo.value.__notes__)
+
+
+def test_infer_restores_trace_hooks() -> None:
+    # gh-774: a spy the target installs as trace or profile function is removed
+    # right after the call, so it never sees the driver's own frames
+    def trace(x: Any) -> None:
+        sys.settrace(x)
+
+    def profile(x: Any) -> None:
+        sys.setprofile(x)
+
+    async def coro() -> int:  # ruff: ignore[unused-async]
+        return 1
+
+    def factory(x: Any) -> Coroutine[Any, Any, int]:
+        c = coro()
+        sys.settrace(x)
+        return c  # driven after the hook is restored, so the spy sees nothing
+
+    def render(func: Callable[..., object]) -> str:
+        return _infer_render(func, (), strict=False, backend="terse")
+
+    before = sys.gettrace(), sys.getprofile()
+    assert render(trace) == "(x: object) -> None"
+    assert render(profile).endswith("-> None")
+    assert render(factory) == "(x: object) -> int"
+    assert (sys.gettrace(), sys.getprofile()) == before
+
+
+def test_infer_leaves_untouched_hooks_alone(monkeypatch: pytest.MonkeyPatch) -> None:
+    # gh-774: a native profiler is `None` to the getters, so a target that installs
+    # no hook must not have them set back either
+    calls: list[str] = []
+    monkeypatch.setattr(sys, "settrace", lambda _: calls.append("trace"))
+    monkeypatch.setattr(sys, "setprofile", lambda _: calls.append("profile"))
+    assert _infer_render(lambda x: x + 1, (), strict=False, backend="terse")
+    assert not calls
+
+
+@fork_only
+@pytest.mark.skipif(sys.version_info < (3, 14), reason="`Bdb.start_trace` is 3.14+")
+def test_cli_bdb_start_trace() -> None:
+    # gh-774: the spy trace function grew the trace without bound, into an OOM
+    code = (
+        "import bdb, resource;"
+        " resource.setrlimit(resource.RLIMIT_AS, (1 << 31, 1 << 31));"
+        " from optype.infer import infer; print(infer(bdb.Bdb.start_trace))"
+    )
+    out = _run_cli("-c", code)
+    assert out.returncode == 0, out.stderr
+    assert out.stdout.rstrip().endswith("]) -> None")
 
 
 @fork_only
