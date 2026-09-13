@@ -2,7 +2,17 @@
 
 import pytest
 
-from optype.infer._ir import App, Name, Node, Param, Signature, TypeParam, Unpack
+from optype.infer._ir import (
+    NONE,
+    OBJECT,
+    App,
+    Name,
+    Node,
+    Param,
+    Signature,
+    TypeParam,
+    Unpack,
+)
 from optype.infer._recursion import collapse_recursive
 
 
@@ -133,6 +143,18 @@ NO_FOLD_CASES: list[tuple[str, tuple[TypeParam, ...]]] = [
             TypeParam("V", _add("X", "T9")),
             TypeParam("X", _add("X", "T10")),
             *(TypeParam(leaf) for leaf in ("T7", "T8", "T9", "T10")),
+        ),
+    ),
+    (
+        # copies that differ in a concrete type are not copies; a renaming may only
+        # touch the type parameters
+        "differing concrete types",
+        (
+            TypeParam("T", App("CanAdd", (NONE, Name("U")))),
+            TypeParam("U", App("CanAdd", (OBJECT, Name("V")))),
+            TypeParam("V", App("CanAdd", (NONE, Name("W")))),
+            TypeParam("W", App("CanAdd", (OBJECT, Name("T7")))),
+            TypeParam("T7"),
         ),
     ),
     (

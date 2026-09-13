@@ -2056,7 +2056,7 @@ def test_attribute_name_is_not_a_typevar() -> None:
     # an attribute name is not a `Name`: distinct attributes are not alpha-equal, so
     # a read chain is not folded as a loop
     spam = Has("spam", (Name("T"),))
-    assert alpha_equal(spam, Has("ham", (Name("U"),))) is None
+    assert alpha_equal(spam, Has("ham", (Name("U"),)), {"T", "U"}) is None
     assert list(names(spam)) == ["T"]
 
     def f(x: Any) -> Any:
