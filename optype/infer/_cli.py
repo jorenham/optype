@@ -10,6 +10,7 @@ from . import _color
 from ._backends import BackendName
 from ._color import ColorMode
 from optype.infer import InferError, InferWarning, infer
+from optype.infer._errors import describe
 
 _FORMATS: Final[tuple[BackendName, ...]] = "terse", "compat"
 _COLORS: Final[tuple[ColorMode, ...]] = "auto", "always", "never"
@@ -26,6 +27,17 @@ def _parser() -> argparse.ArgumentParser:
     # (and an expression containing `--`) reaches us intact
     parser.add_argument("rest", nargs=argparse.REMAINDER, metavar="EXPR [PARAM ...]")
     return parser
+
+
+def _failure(exc: Exception) -> str:
+    message = str(exc)
+    if (cause := exc.__cause__) is not None:
+        shown = describe(cause)
+        if message != shown and not message.endswith(f"({shown})"):
+            name = type(cause).__name__
+            message += f" ({name})" if shown == name else f" ({name}: {shown})"
+    notes = "".join(f"\n  {note}" for note in getattr(exc, "__notes__", ()))
+    return f"{type(exc).__name__}: {message}{notes}"
 
 
 def run(*args: str) -> None:
@@ -57,10 +69,7 @@ def run(*args: str) -> None:
             warnings.simplefilter("always", InferWarning)
             rendered = infer(eval(code, namespace), *selectors, backend=backend)
     except (InferError, ValueError) as exc:
-        cause = exc.__cause__
-        detail = f" ({type(cause).__name__}: {cause})" if cause is not None else ""
-        notes = "".join(f"\n  {note}" for note in getattr(exc, "__notes__", ()))
-        sys.exit(f"{type(exc).__name__}: {exc}{detail}{notes}")
+        sys.exit(_failure(exc))
 
     if _color.want_color(sys.stdout, color):
         rendered = _color.highlight(rendered)

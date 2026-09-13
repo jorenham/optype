@@ -12,3 +12,14 @@ class InferError(NotImplementedError):
 
 class InferWarning(RuntimeWarning):
     """Emitted when `infer` could not explore the function exhaustively."""
+
+
+_MESSAGE_LIMIT = 200
+
+
+def describe(exc: BaseException, /) -> str:
+    """The message of `exc` cut to a readable length, or its type name when empty."""
+    text = str(exc)
+    if len(text) > _MESSAGE_LIMIT:
+        text = f"{text[:_MESSAGE_LIMIT]} [...]"
+    return text or type(exc).__name__

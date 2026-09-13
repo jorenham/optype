@@ -21,7 +21,7 @@ from multiprocessing.process import BaseProcess
 from pathlib import Path
 
 import optype.infer._spy as _spy  # ruff: ignore[manual-from-import]
-from ._errors import WARN_SKIP_PREFIX, InferError
+from ._errors import WARN_SKIP_PREFIX, InferError, describe
 from ._gc import cyclic_gc
 
 
@@ -59,7 +59,12 @@ def _child(work: Callable[[], object], send: Connection, buf: mmap.mmap) -> None
             send.send((status, payload, cause, warns))
         except Exception:
             # a spy in the exception won't pickle
-            fallback = payload if status is _Status.OK else InferError(str(payload))
+            if isinstance(payload, InferError):
+                fallback = InferError(str(payload))  # already described
+            elif isinstance(payload, BaseException):
+                fallback = InferError(describe(payload))
+            else:
+                fallback = payload
             send.send((status, fallback, None, warns))
 
 

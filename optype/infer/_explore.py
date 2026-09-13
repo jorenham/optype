@@ -30,7 +30,7 @@ from types import (
 )
 from typing import Any
 
-from ._errors import InferError
+from ._errors import InferError, describe
 from ._gc import cyclic_gc
 from ._signature import signature
 from ._spy import (
@@ -172,7 +172,7 @@ def _parameters(func: AnyFunc) -> Mapping[str, Parameter]:
     try:
         return signature(func).parameters
     except (TypeError, ValueError) as exc:  # not callable, or no signature
-        raise InferError(str(exc)) from exc
+        raise InferError(describe(exc)) from exc
 
 
 def declared_defaults(params: Mapping[str, Parameter]) -> dict[str, object]:
@@ -535,7 +535,7 @@ def _explore[T](  # ruff: ignore[complex-structure, too-many-branches]
             raise value_exc
 
         msg = (
-            str(last_exc)
+            describe(last_exc)
             if isinstance(last_exc, DynamicNameError)
             else "the function never ran to completion"
         )
@@ -675,7 +675,7 @@ def explore_spies(
                 ):
                     raise
                 if len(keys) >= _KWARGS_LIMIT:
-                    msg = f"ran out of `**kwargs` placeholder keys ({exc})"
+                    msg = f"ran out of `**kwargs` placeholder keys ({describe(exc)})"
                     raise InferError(msg) from exc
                 keys.append(key)
             except (IndexError, TypeError, ValueError) as exc:
@@ -690,7 +690,7 @@ def explore_spies(
                 if Parameter.VAR_POSITIONAL not in kinds:
                     raise
                 if not (count := next(counts, 0)):
-                    msg = f"ran out of `*args` placeholders ({exc})"
+                    msg = f"ran out of `*args` placeholders ({describe(exc)})"
                     raise InferError(msg) from exc
             else:
                 return Exploration(
