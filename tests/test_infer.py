@@ -2251,6 +2251,28 @@ def _compat(source: str) -> str:
 # one representative input per construct, paired with its valid-Python `.pyi` rendering
 COMPAT_CASES: list[tuple[str, str]] = [
     (
+        # a requirement lifted into a typevar's bound joins with the bound's own
+        "def f(make): a = make(0); -make(1); return a, -a",
+        (
+            "from collections.abc import Callable\n"
+            "from typing import Literal\n"
+            "from optype import CanNeg\n\n"
+            "def f[R2](make: Callable[[Literal[0, 1]], CanNeg[R2]])"
+            " -> tuple[CanNeg[R2], R2]: ..."
+        ),
+    ),
+    (
+        # the same, one application deep
+        "def f(make): a = make(0); abs(-make(1)); return a, abs(-a)",
+        (
+            "from collections.abc import Callable\n"
+            "from typing import Literal\n"
+            "from optype import CanAbs, CanNeg\n\n"
+            "def f[R2](make: Callable[[Literal[0, 1]], CanNeg[CanAbs[R2]]])"
+            " -> tuple[CanNeg[CanAbs[R2]], R2]: ..."
+        ),
+    ),
+    (
         "lambda x: x + 1",
         (
             "from typing import Literal\n"

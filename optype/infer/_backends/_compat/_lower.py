@@ -74,12 +74,11 @@ def _origin_name(origin: type) -> str:
 
 
 @functools.cache
-def _protocol_bounds(origin: str) -> tuple[_ir.Node | None, ...] | None:
-    """The per-argument typevar bounds of an `optype` protocol, or `None` if unknown.
+def _protocol_params(origin: str) -> tuple[object, ...] | None:
+    """The type parameters of an `optype` protocol in declared order, if known.
 
-    Reconciles the inferred `App` with the shipped generic: a non-generic protocol
-    reports `()` (so excess arguments drop), and a bounded argument lets the matching
-    inferred typevar pick up that bound.
+    `__parameters__` orders them by first appearance across the bases, which is not
+    the `Protocol[...]` order for every shipped protocol.
     """
     if origin not in OPTYPE:
         return None
@@ -87,10 +86,111 @@ def _protocol_bounds(origin: str) -> tuple[_ir.Node | None, ...] | None:
     import optype  # ruff: ignore[import-outside-top-level]
 
     cls = getattr(optype, origin, None)
-    params = getattr(cls, "__parameters__", None)
-    if params is None:
+    for base in getattr(cls, "__orig_bases__", ()):
+        if typing.get_origin(base) is typing.Protocol:
+            return typing.get_args(base)
+    return getattr(cls, "__parameters__", None)
+
+
+def _protocol_bounds(origin: str) -> tuple[_ir.Node | None, ...] | None:
+    """The per-argument typevar bounds of an `optype` protocol, or `None` if unknown.
+
+    Reconciles the inferred `App` with the shipped generic: a non-generic protocol
+    reports `()` (so excess arguments drop), and a bounded argument lets the matching
+    inferred typevar pick up that bound.
+    """
+    if (params := _protocol_params(origin)) is None:
         return None
     return tuple(_bound_node(getattr(p, "__bound__", None)) for p in params)
+
+
+def _protocol_variances(origin: str) -> tuple[_ir.Sign | None, ...] | None:
+    """The declared variance per argument of an `optype` protocol, if known."""
+    if (params := _protocol_params(origin)) is None:
+        return None
+    return tuple(
+        _ir.COVARIANT
+        if getattr(p, "__covariant__", False)
+        else _ir.CONTRAVARIANT
+        if getattr(p, "__contravariant__", False)
+        else None
+        for p in params
+    )
+
+
+def _implies(sub: _ir.Node, sup: _ir.Node) -> bool:
+    """`_ir.subtype`, with applications of one shipped protocol compared argument by
+    argument in their declared variance, which the IR does not know."""
+    if (
+        isinstance(sub, _ir.App)
+        and isinstance(sup, _ir.App)
+        and sub.origin == sup.origin
+        and (signs := _protocol_variances(sub.origin)) is not None
+        and len(sub.args) == len(sup.args) == len(signs)
+    ):
+        pairs = zip(sub.args, sup.args, signs, strict=True)
+        return all(
+            _implies(_ir.term_node(a), _ir.term_node(b))
+            if sign == _ir.COVARIANT
+            else _implies(_ir.term_node(b), _ir.term_node(a))
+            if sign == _ir.CONTRAVARIANT
+            else a == b
+            for a, b, sign in pairs
+        )
+    return _ir.subtype(sub, sup)
+
+
+def _merge_apps(first: _ir.App, second: _ir.App) -> _ir.App | None:
+    """One application of a protocol that `first` and `second` both require, if at
+    most one argument differs and the two are ordered by subtyping: the narrower one
+    wins in a covariant position, the wider one in a contravariant position.
+
+    Both must apply every parameter: an omitted one defaults to another, which a join
+    would then change as well. Two differing arguments may be correlated, as in
+    `CanSetitem[int, int] & CanSetitem[str, str]`, so they stay apart.
+    """
+    signs = _protocol_variances(first.origin)
+    if signs is None or len(first.args) != len(signs) or len(second.args) != len(signs):
+        return None
+    pairs = zip(first.args, second.args, strict=True)
+    differing = [i for i, (x, y) in enumerate(pairs) if x != y]
+    if not differing:
+        return first
+    if len(differing) != 1:
+        return None
+    (i,) = differing
+    x, y = _ir.term_node(first.args[i]), _ir.term_node(second.args[i])
+    if _implies(x, y):
+        narrower, wider = x, y
+    elif _implies(y, x):
+        narrower, wider = y, x
+    else:
+        return None
+    if signs[i] == _ir.COVARIANT:
+        joined = narrower
+    elif signs[i] == _ir.CONTRAVARIANT:
+        joined = wider
+    else:
+        return None
+    return _ir.App(first.origin, (*first.args[:i], joined, *first.args[i + 1 :]))
+
+
+def _merge_bases(bases: Sequence[_ir.Node]) -> list[_ir.Node]:
+    """Join the applications of one protocol, which a class cannot inherit twice."""
+    out: list[_ir.Node] = []
+    for base in bases:
+        for i, prev in enumerate(out):
+            if (
+                isinstance(base, _ir.App)
+                and isinstance(prev, _ir.App)
+                and prev.origin == base.origin
+                and (joined := _merge_apps(prev, base)) is not None
+            ):
+                out[i] = joined
+                break
+        else:
+            out.append(base)
+    return out
 
 
 def _inherited_bounds(
@@ -418,12 +518,14 @@ class _SigLowerer:
         unions = [p for p in parts if isinstance(p, _ir.Union)]
         if not unions:
             # a callable is not a valid base; it lifts into a `__call__` method instead
-            bases = [p for p in parts if not isinstance(p, _ir.Fn)]
+            bases = _merge_bases([p for p in parts if not isinstance(p, _ir.Fn)])
             members = tuple(
                 Method("__call__", p.params, p.ret)
                 for p in parts
                 if isinstance(p, _ir.Fn)
             )
+            if len(bases) == 1 and not members:
+                return bases[0]
             candidate = (
                 combine_name([p.origin for p in bases if isinstance(p, _ir.App)]) or "P"
             )

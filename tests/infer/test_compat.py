@@ -250,6 +250,35 @@ TEXT_CASES: list[tuple[str, tuple[Signature, ...], str]] = [
         ),
     ),
     (
+        # a protocol required twice is one base: the narrower covariant argument wins
+        "same protocol at a narrower argument",
+        (
+            _sig(
+                (),
+                Intersection((
+                    App("CanNeg", (Type(int),)),
+                    App("CanNeg", (Type(object),)),
+                )),
+                NONE,
+            ),
+        ),
+        "from optype import CanNeg\n\ndef f(x: CanNeg[int]) -> None: ...",
+    ),
+    (
+        # and a contravariant argument keeps the wider one
+        "same protocol at contravariant arguments",
+        (
+            _sig(
+                (TypeParam("R"),),
+                Intersection((
+                    App("CanAdd", (Type(int), R)),
+                    App("CanAdd", (Type(object), R)),
+                )),
+            ),
+        ),
+        "from optype import CanAdd\n\ndef f[R](x: CanAdd[object, R]) -> R: ...",
+    ),
+    (
         # PEP 695 forbids a bound that references a type parameter; a cycle hoists
         "cyclic protocol bound",
         (_sig((TypeParam("T", App("CanLt", (T, App("CanBool", ())))),), T, T),),
@@ -783,6 +812,68 @@ def test_type_parameter_default_is_lowered() -> None:
     (helper,), (func,) = _protocols(module), module.funcs
     assert helper.members == (Attr("spam", Type(int), readonly=True),)
     assert func.type_params == (TypeParam("T", default=App(helper.name, ())),)
+
+
+def test_same_protocol_merges_beside_another_base() -> None:
+    node = Intersection((
+        App("CanNeg", (Type(int),)),
+        App("CanPos", (R,)),
+        App("CanNeg", (Type(object),)),
+    ))
+    module = Lowerer().module([_sig((TypeParam("R"),), node)])
+    (helper,) = _protocols(module)
+    assert helper.bases == (App("CanNeg", (Type(int),)), App("CanPos", (T,)))
+
+
+def test_same_protocol_joins_in_declared_parameter_order() -> None:
+    # `CanRound` declares its parameters in another order than `__parameters__` has
+    node = Intersection((
+        App("CanRound", (Type(int), Type(int), Type(float))),
+        App("CanRound", (Type(int), Type(object), Type(float))),
+    ))
+    module = Lowerer().module([_sig((), node, NONE)])
+    assert module.funcs[0].params[0].node == App(
+        "CanRound",
+        (Type(int), Type(int), Type(float)),
+    )
+
+
+def test_distribution_does_not_duplicate_a_base() -> None:
+    # `(A | B) & A` distributes to `A & A`, one base
+    arms = Union((App("CanNeg", (Type(int),)), App("CanPos", (R,))))
+    node = Intersection((arms, App("CanNeg", (Type(int),))))
+    module = Lowerer().module([_sig((TypeParam("R"),), node)])
+    lowered = module.funcs[0].params[0].node
+    assert isinstance(lowered, Union)
+    assert lowered.parts[0] == App("CanNeg", (Type(int),))
+
+
+@pytest.mark.parametrize(
+    "node",
+    [
+        # an omitted parameter defaults to another, which a join would change too
+        Intersection((App("CanAdd", (Type(int),)), App("CanAdd", (Type(str),)))),
+        # two differing arguments may be correlated
+        Intersection((
+            App("CanSetitem", (Type(int), Type(int))),
+            App("CanSetitem", (Type(str), Type(str))),
+        )),
+    ],
+    ids=["omitted parameter", "correlated arguments"],
+)
+def test_same_protocol_stays_apart_when_a_join_would_change_meaning(node: Node) -> None:
+    module = Lowerer().module([_sig((), node, NONE)])
+    (helper,) = _protocols(module)
+    assert isinstance(node, Intersection)
+    assert helper.bases == node.parts
+
+
+def test_same_protocol_at_unrelated_arguments_stays_apart() -> None:
+    # nothing joins `int` and `str` covariantly, so both applications stay as bases
+    node = Intersection((App("CanNeg", (Type(int),)), App("CanNeg", (Type(str),))))
+    module = Lowerer().module([_sig((TypeParam("R"),), node)])
+    (helper,) = _protocols(module)
+    assert helper.bases == (App("CanNeg", (Type(int),)), App("CanNeg", (Type(str),)))
 
 
 def test_helpers_are_keyed_on_their_members() -> None:
