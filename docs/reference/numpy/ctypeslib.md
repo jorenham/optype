@@ -318,9 +318,6 @@ The remaining aliases mirror the `np.generic` hierarchy:
     </tr>
 </table>
 
-`Byte` and `UByte` are absent from the two integer unions because they are
-aliases of `Int8` and `UInt8`; including them would be redundant.
-
 ### How the numeric aliases are defined
 
 `Integer`, `Floating`, and `ComplexFloating` are defined as `CScalar[int]`,
