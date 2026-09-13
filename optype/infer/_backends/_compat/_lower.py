@@ -32,9 +32,9 @@ from ._model import (
     is_generic,
     is_protocol_node,
     member_nodes,
+    resolution_order,
     strip_variance,
     subst_member,
-    toposort,
 )
 from ._print import OPTYPE, import_of, member_key, type_text
 from optype.infer._errors import InferError
@@ -258,14 +258,28 @@ class _SigLowerer:
         deps = {tyvar: frozenset(_ir.names(b)) & set(elim) for tyvar, b in elim.items()}
         cyclic = cyclic_names(deps)
 
+        # each unit sees the substitutions of the units it depends on, so no
+        # eliminated name survives in a hoisted body or a substituted bound
         subst: dict[str, _ir.Node] = {}
-        for group in components(cyclic, deps):
-            subst |= self._hoist_group(group, elim)
-        for tyvar in toposort(set(elim) - cyclic, deps):
-            subst[tyvar] = _ir.subst(elim[tyvar], subst)
+        for unit in resolution_order(
+            components(cyclic, deps),
+            set(elim) - cyclic,
+            deps,
+        ):
+            resolved = {tyvar: _ir.subst(elim[tyvar], subst) for tyvar in unit}
+            if unit <= cyclic:
+                subst |= self._hoist_group(unit, resolved)
+            else:
+                subst |= resolved
 
         kept = [
-            replace(typar, bound=bound[typar.name], default=default[typar.name])
+            replace(
+                typar,
+                bound=bound[typar.name],
+                default=None
+                if (d := default[typar.name]) is None
+                else _ir.subst(d, subst),
+            )
             for typar in typars
             if typar.name not in elim
         ]

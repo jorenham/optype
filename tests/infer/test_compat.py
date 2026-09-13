@@ -1,7 +1,9 @@
 """The compat lowering, from hand-built `Signature`s to `.pyi` text."""
 
+import os
 import shutil
 import subprocess  # ruff: ignore[suspicious-subprocess-import]
+import sys
 from pathlib import Path
 
 import pytest
@@ -20,7 +22,7 @@ from optype.infer._backends._compat._model import (
     components,
     cyclic_names,
     free_tyvars,
-    toposort,
+    resolution_order,
 )
 from optype.infer._backends._compat._print import OPTYPE
 from optype.infer._ir import (
@@ -177,6 +179,68 @@ TEXT_CASES: list[tuple[str, tuple[Signature, ...], str]] = [
         "cyclic concrete bound",
         (_sig((TypeParam("T", App("list", (T,))),), T, T),),
         "type list2 = list[list2]\n\ndef f(x: list2) -> list2: ...",
+    ),
+    (
+        # an eliminated binder is substituted where a default mentions it
+        "default of an eliminated binder",
+        (
+            Signature(
+                (
+                    TypeParam("T", App("CanNeg", (R,))),
+                    TypeParam("R"),
+                    TypeParam("U", default=T),
+                ),
+                (Param("x", T), Param("y", U)),
+                R,
+            ),
+        ),
+        (
+            "from optype import CanNeg\n\n"
+            "def f[R, U = CanNeg[R]](x: CanNeg[R], y: U) -> R: ..."
+        ),
+    ),
+    (
+        # a hoisted bound sees the substitution of the acyclic binder it mentions
+        "recursive bound of an eliminated binder",
+        (
+            Signature(
+                (
+                    TypeParam("T", App("CanAdd", (T, U))),
+                    TypeParam("U", App("CanNeg", (R,))),
+                    TypeParam("R"),
+                ),
+                (Param("x", T),),
+                R,
+            ),
+        ),
+        (
+            "from typing import Protocol\n"
+            "from optype import CanAdd, CanNeg\n\n"
+            "class CanAdd2[T](CanAdd[CanAdd2[T], CanNeg[T]], Protocol): ...\n\n"
+            "def f[R](x: CanAdd2[R]) -> R: ..."
+        ),
+    ),
+    (
+        # a cycle, an acyclic binder, and another cycle resolve in dependency order
+        "chained bounds",
+        (
+            Signature(
+                (
+                    TypeParam("T", App("CanAdd", (T, U))),
+                    TypeParam("U", App("CanNeg", (X,))),
+                    TypeParam("X", App("list", (X,))),
+                ),
+                (Param("x", T),),
+                NONE,
+            ),
+        ),
+        (
+            "from typing import Protocol\n"
+            "from optype import CanAdd, CanNeg\n\n"
+            "type list2 = list[list2]\n"
+            "class CanAdd2(CanAdd[CanAdd2, CanNeg[list2]], Protocol): ...\n\n"
+            "def f(x: CanAdd2) -> None: ..."
+        ),
     ),
     (
         # a mutually recursive pair hoists together, keeping the free typevar as an arg
@@ -729,6 +793,32 @@ def test_acyclic_bound_referencing_a_cyclic_one() -> None:
     assert func.params[0].node == func.ret == App("CanNeg", (App(alias.name, ()),))
 
 
+def test_resolution_order_does_not_depend_on_the_hash_seed() -> None:
+    # competing cyclic bounds resolve in one order whatever the seed
+    script = """
+from optype.infer._ir import App, Name, Param, Signature, TypeParam
+from optype.infer._backends._compat import COMPAT
+T, U, X = Name("T"), Name("U"), Name("X")
+type_params = (
+    TypeParam("T", App("tuple", (U, X))),
+    TypeParam("U", App("list", (U,))),
+    TypeParam("X", App("list", (App("tuple", (X, X)),))),
+)
+print(COMPAT.render([Signature(type_params, (Param("x", T),), T)]))
+"""
+    outputs = {
+        subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
+            [sys.executable, "-c", script],
+            env={**os.environ, "PYTHONHASHSEED": seed},
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout
+        for seed in ("0", "1", "2")
+    }
+    assert len(outputs) == 1
+
+
 def test_graph_helpers() -> None:
     deps = {
         "a": frozenset({"b"}),
@@ -739,9 +829,18 @@ def test_graph_helpers() -> None:
     }
     cyclic = cyclic_names(deps)
     assert cyclic == {"a", "b", "c"}
-    assert set(components(cyclic, deps)) == {frozenset({"a", "b"}), frozenset({"c"})}
-    chain = {"d": frozenset({"e"}), "x": frozenset({"d"})}
-    assert toposort({"d", "e", "x"}, chain) == ["e", "d", "x"]
+    groups = components(cyclic, deps)
+    assert set(groups) == {frozenset({"a", "b"}), frozenset({"c"})}
+    # every unit comes after the units it depends on
+    order = resolution_order(groups, {"d", "e"}, deps)
+    assert sorted(order, key=sorted) == [
+        frozenset({"a", "b"}),
+        frozenset({"c"}),
+        frozenset({"d"}),
+        frozenset({"e"}),
+    ]
+    assert order.index(frozenset({"a", "b"})) < order.index(frozenset({"c"}))
+    assert order.index(frozenset({"a", "b"})) < order.index(frozenset({"d"}))
 
 
 def test_naming_helpers() -> None:
