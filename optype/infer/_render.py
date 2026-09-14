@@ -14,7 +14,7 @@ from typing import Any, NamedTuple, final
 import optype.infer._ir as _ir
 import optype.infer._numpy as _numpy
 from ._analyze import reflect, spy_runs
-from ._naming import TYPEVAR_TUPLE_NAME, Naming, build as _build_naming
+from ._naming import TYVAR_TUPLE_NAME, Naming, build as _build_naming
 from ._protocols import Op, Proto, resolve
 from ._recursion import collapse_recursive
 from ._spy import (
@@ -52,10 +52,6 @@ _LITERAL_LIMIT = 8
 # `object`-typed so the `is` check isn't flagged (`Callable` is a special form)
 _CALLABLE_ORIGIN: object = Callable
 
-# the attribute variance signs of the fictional inline `Has['name', T]` form
-_READ = _ir.COVARIANT  # a read-only property suffices
-_WRITE = _ir.CONTRAVARIANT  # the attribute only has to accept the value
-
 type Names = Sequence[str]
 type Defaults = Mapping[str, object]
 
@@ -65,11 +61,13 @@ def _or_object(node: _ir.Node | None) -> _ir.Node:
     return _ir.OBJECT if node is None else node
 
 
-def _sign_read(ret: _ir.Node) -> _ir.Node:
-    """Mark a read covariant; a callable signs its return type instead: a method."""
+def _covariant(ret: _ir.Node) -> _ir.Node:
+    """The read result `ret` in covariant position. A method varies in what it
+    returns, so the marker goes on its return type; an unconstrained `object` is
+    left bare."""
     if isinstance(ret, _ir.Fn):
-        return _ir.Fn(ret.params, _sign_read(ret.ret))
-    return ret if ret == _ir.OBJECT else _ir.Variance(_READ, ret)
+        return _ir.Fn(ret.params, _covariant(ret.ret))
+    return ret if ret == _ir.OBJECT else _ir.Covariant(ret)
 
 
 def _boxed_default(defaults: Defaults, name: str) -> tuple[object] | None:
@@ -133,7 +131,7 @@ class _Binding:
     exploration: Exploration
     params: Mapping[str, Parameter]
     traces: Traces  # the raw exploration traces, or the reflected ones
-    varpos: SpyObject | None
+    var_pos: SpyObject | None
     naming: Naming  # which spies get a type parameter, and under what name
 
 
@@ -176,11 +174,13 @@ class _Renderer:
         ]
         counts = Counter(name for node in rendered for name in _ir.names(node))
 
-        pool = naming.pool(id(self._binding.varpos) if naming.vartuple else None)
+        pool = naming.pool(
+            id(self._binding.var_pos) if naming.tyvar_tuple else None,
+        )
         inline = {
-            var
-            for var, rep in pool.items()
-            if counts[var] == 1 and bounds[rep] is not None
+            tyvar
+            for tyvar, rep in pool.items()
+            if counts[tyvar] == 1 and bounds[rep] is not None
         }
         return pool, inline
 
@@ -190,11 +190,11 @@ class _Renderer:
         # a repeated op returns one spy; collect it once
         rets = _distinct(r for m in members if isinstance(r := m.ret, SpyObject))
         for ret in rets:
-            if (var := self.naming.tyvars.get(id(ret))) is not None:
-                named.append(var)
+            if (tyvar := self.naming.tyvars.get(id(ret))) is not None:
+                named.append(tyvar)
             else:
                 items.extend(self._binding.traces[id(ret)])
-        parts: list[_ir.Node] = [_ir.Name(var) for var in dict.fromkeys(named)]
+        parts: list[_ir.Node] = [_ir.Name(tyvar) for tyvar in dict.fromkeys(named)]
         if items and (node := self.traces(items)) is not None:
             parts.append(node)
         if (out := _ir.intersection(parts)) is None and rets:
@@ -203,21 +203,21 @@ class _Renderer:
             out = _ir.OBJECT
         return out
 
-    def _collapse_varargs(
+    def _collapse_var_pos(
         self,
         members: Sequence[Op],
         pos: list[_ir.Node],
     ) -> list[_ir.Node]:
         # the variadic spreads `count` copies of one spy: the placeholder (`f(*args)`)
         # or its iterated element (`map`); collapse the trailing run to `*tuple[T, ...]`
-        varpos = self._binding.varpos
+        var_pos = self._binding.var_pos
         call_args = members[0].args
-        if varpos is None or not call_args:
+        if var_pos is None or not call_args:
             return pos
 
         tail = call_args[-1]
         if not isinstance(tail, SpyObject) or (
-            tail is not varpos and tail is not varpos.__optype_element__
+            tail is not var_pos and tail is not var_pos.__optype_element__
         ):
             return pos
 
@@ -257,18 +257,18 @@ class _Renderer:
         ret = self.returns(members)
 
         if proto == "CanCall":
-            call_pos = self._collapse_varargs(members, pos)
+            call_pos = self._collapse_var_pos(members, pos)
             return _ir.Fn((*call_pos, *args[len(pos) :]), _or_object(ret))
 
         if (attr := members[0].attr) is not None:
             # a read is covariant (a property suffices) and a write contravariant
             # (the attribute only has to accept the value); existence renders bare
-            signed: tuple[_ir.Node, ...] = tuple(_ir.Variance(_WRITE, a) for a in pos)
+            attr_args: tuple[_ir.Node, ...] = tuple(_ir.Contravariant(a) for a in pos)
             if ret is not None and ret != _ir.OBJECT:
-                signed = *signed, _sign_read(ret)
+                attr_args = *attr_args, _covariant(ret)
             if members[0].classvar:
-                signed = (_ir.App("ClassVar", signed),)
-            return _ir.Has(attr, signed)
+                attr_args = (_ir.App("ClassVar", attr_args),)
+            return _ir.Has(attr, attr_args)
 
         if ret is not None:
             args = *args, ret
@@ -308,10 +308,10 @@ class _Renderer:
         return self.traces(self._binding.traces[id(spy)])
 
     def slot(self, spy: SpyObject) -> _ir.Node:
-        if self.naming.vartuple and spy is self._binding.varpos:
-            return _ir.Unpack(_ir.Name(TYPEVAR_TUPLE_NAME))
-        if (var := self.naming.tyvars.get(id(spy))) is not None:
-            return _ir.Name(var)
+        if self.naming.tyvar_tuple and spy is self._binding.var_pos:
+            return _ir.Unpack(_ir.Name(TYVAR_TUPLE_NAME))
+        if (tyvar := self.naming.tyvars.get(id(spy))) is not None:
+            return _ir.Name(tyvar)
         return _or_object(self.spy(spy))
 
     def typar(
@@ -321,16 +321,16 @@ class _Renderer:
         *,
         negate: bool = False,
     ) -> _ir.TypeParam:
-        var = self.naming.tyvars[id(spy)]
-        if self.naming.vartuple and spy is self._binding.varpos:
-            # a PEP 646 typevar tuple takes no bound or default
-            return _ir.TypeParam(var, unpack=True)
+        tyvar = self.naming.tyvars[id(spy)]
+        if self.naming.tyvar_tuple and spy is self._binding.var_pos:
+            # this TypeVarTuple is unbounded; the compat lowerer adds any default
+            return _ir.TypeParam(tyvar, unpack=True)
         rep = self.naming.reps.get(id(spy), id(spy))
         node = self._bound_nodes[rep]
         default = defaulted.get(id(spy))
         if negate and default is not None:
             node = _ir.exclude(node, default)
-        return _ir.TypeParam(var, bound=node, default=None if negate else default)
+        return _ir.TypeParam(tyvar, bound=node, default=None if negate else default)
 
     def signature(
         self,
@@ -386,13 +386,13 @@ class _Renderer:
         exploration = self._binding.exploration
         param = self._binding.params[name]
         # a positional-only parameter cannot be passed by keyword, so no name shows
-        nameless = param.kind is Parameter.POSITIONAL_ONLY
+        pos_only = param.kind is Parameter.POSITIONAL_ONLY
         prefix = _PARAM_PREFIX.get(param.kind, "")
         optional = param.default is not Parameter.empty or param.kind in _PARAM_PREFIX
         if name in exploration.fixed and not optional:
             # a fixed parameter without a default is a method descriptor's `self`
             node = _ir.Type(despy_class(type(exploration.fixed[name])))
-            return _ir.Param(name, node, prefix, nameless)
+            return _ir.Param(name, node, prefix, pos_only)
         if (spy := exploration.spies.get(name)) is None:
             # an omitted parameter binds its default, so passing it behaves the same
             node = self._typer.value_type(defaults[name])
@@ -400,7 +400,7 @@ class _Renderer:
                 name,
                 node,
                 prefix,
-                nameless,
+                pos_only,
                 _boxed_default(defaults, name),
             )
         node = self.slot(spy)
@@ -409,13 +409,19 @@ class _Renderer:
                 mark := self._typer.value_union((defaults[name],))
             ):
                 node = _ir.exclude(self.spy(spy), mark)
-            return _ir.Param(name, node, prefix, nameless)
+            return _ir.Param(name, node, prefix, pos_only)
         if name in exploration.tuple_params and id(spy) not in self.naming.tyvars:
             # a typevar keeps its binding, so only an inlined bound widens to the union
             node = _ir.union([node, _ir.tuple_node_variadic(node)]) or node
         if node == _ir.OBJECT and optional:
             return None
-        return _ir.Param(name, node, prefix, nameless, _boxed_default(defaults, name))
+        return _ir.Param(
+            name,
+            node,
+            prefix,
+            pos_only,
+            _boxed_default(defaults, name),
+        )
 
 
 @final
@@ -467,8 +473,8 @@ class _ResultTyper:
             case RecRef() | Rec():
                 node = _ir.Name(self._binding.naming.rec_tyvars[result.var])
             case SpyObject() if (spy := as_spy(result)) is not None:
-                var = self._binding.naming.tyvars.get(id(spy))
-                node = _ir.Name(var) if var is not None else _ir.OBJECT
+                tyvar = self._binding.naming.tyvars.get(id(spy))
+                node = _ir.Name(tyvar) if tyvar is not None else _ir.OBJECT
             case SpyStr():
                 node = _ir.Type(str)
             case SpyBytes():
@@ -617,13 +623,13 @@ class _ResultTyper:
                 return _ir.Type(cls)
 
     def _tuple(self, items: tuple[object, ...]) -> _ir.Node:
-        spy = self._binding.varpos
+        spy = self._binding.var_pos
         if spy is not None:
-            if any(item is spy for item in items) and self._binding.naming.vartuple:
+            if any(item is spy for item in items) and self._binding.naming.tyvar_tuple:
                 # every use is packed, so the placeholders unpack into a single `*Ts`
                 start = next(i for i, item in enumerate(items) if item is spy)
                 parts = [self.value_type(item) for item in items if item is not spy]
-                parts.insert(start, _ir.Unpack(_ir.Name(TYPEVAR_TUPLE_NAME)))
+                parts.insert(start, _ir.Unpack(_ir.Name(TYVAR_TUPLE_NAME)))
                 return _ir.tuple_node(parts)
 
             # a uniform spread is `tuple[T, ...]`: the placeholder (`(*args,)`) at any
@@ -652,7 +658,7 @@ def _renderer_of(
     traces: Traces,
 ) -> _Renderer:
     """A renderer under the final naming; a trial render decides what inlines."""
-    varpos = next(
+    var_pos = next(
         (
             exploration.spies[name]
             for name, p in params.items()
@@ -664,10 +670,10 @@ def _renderer_of(
         exploration.results,
         exploration.spies,
         traces,
-        varpos,
+        var_pos,
         exploration.var_count,
     )
-    binding = _Binding(exploration, params, traces, varpos, naming)
+    binding = _Binding(exploration, params, traces, var_pos, naming)
     trial = _Renderer(binding)
     pool, inline = trial.single_use()
     if not inline:

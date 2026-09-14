@@ -53,7 +53,7 @@ class _RawParam(NamedTuple):
     group: int  # innermost enclosing optionality toggle, -1 when required
 
 
-def _positional_only(raw: list[_RawParam]) -> list[_RawParam]:
+def _pos_only(raw: list[_RawParam]) -> list[_RawParam]:
     return [
         _RawParam(p.param.replace(kind=Parameter.POSITIONAL_ONLY), p.group)
         if p.param.kind is Parameter.POSITIONAL_OR_KEYWORD
@@ -130,7 +130,7 @@ def _scan(text: str) -> tuple[list[_RawParam], list[int], bool]:
             group = _scan_group(parents, group, opens=c == "[")
             i += 1
         elif c == "/":
-            raw = _positional_only(raw)
+            raw = _pos_only(raw)
             i += 1
         elif c == "*":
             i = _scan_variadic(text, i, raw, group)
@@ -230,9 +230,9 @@ def _accepts(func: AnyFunc, n: int) -> bool:
     return True
 
 
-def _params(n: int, *, var_positional: bool) -> dict[str, Parameter]:
+def _params(n: int, *, var_pos: bool) -> dict[str, Parameter]:
     params = {f"_{i}": Parameter(f"_{i}", Parameter.POSITIONAL_ONLY) for i in range(n)}
-    if var_positional:
+    if var_pos:
         params["args"] = Parameter("args", Parameter.VAR_POSITIONAL)
     return params
 
@@ -244,6 +244,6 @@ def probe_signatures(func: AnyFunc) -> list[dict[str, Parameter]] | None:
 
     if _MAX_PROBE_ARITY in arities:
         # an unbounded arity is variadic: one `*args` the explorer grows into
-        return [_params(min(arities), var_positional=True)]
+        return [_params(min(arities), var_pos=True)]
 
-    return [_params(n, var_positional=False) for n in arities]
+    return [_params(n, var_pos=False) for n in arities]

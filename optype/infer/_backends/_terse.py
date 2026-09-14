@@ -48,7 +48,7 @@ class TerseBackend:
                 out = f"Has[{', '.join(parts)}]"
             case _ir.Fn(params, ret):
                 out = self._fn(params, ret)
-            case _ir.Not() | _ir.Variance() | _ir.Unpack():
+            case _ir.Not() | _ir.Covariant() | _ir.Contravariant() | _ir.Unpack():
                 out = self._prefixed(node)
             case _ir.Union() | _ir.Intersection():
                 out = self._infixed(node)
@@ -85,10 +85,15 @@ class TerseBackend:
         decls = ", ".join(map(self._arg, params))
         return f"({decls}) -> {self._render_node(ret)}"
 
-    def _prefixed(self, node: _ir.Not | _ir.Variance | _ir.Unpack) -> str:
+    def _prefixed(
+        self,
+        node: _ir.Not | _ir.Covariant | _ir.Contravariant | _ir.Unpack,
+    ) -> str:
         match node:
-            case _ir.Variance(sign, part):
-                op = sign
+            case _ir.Covariant(part):
+                op = _ir.COVARIANT
+            case _ir.Contravariant(part):
+                op = _ir.CONTRAVARIANT
             case _ir.Not(part):
                 op = _NOT
             case _ir.Unpack(part):
@@ -128,7 +133,7 @@ class TerseBackend:
         return decl
 
     def _param(self, param: _ir.Param) -> str:
-        label = "" if param.nameless else f"{param.prefix}{param.name}: "
+        label = "" if param.pos_only else f"{param.prefix}{param.name}: "
         decl = f"{label}{self._render_node(param.node)}"
         if param.default is not None:
             decl += f" = {default_text(param.default[0])}"

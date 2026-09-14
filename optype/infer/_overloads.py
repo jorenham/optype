@@ -70,7 +70,7 @@ def _bind_exploration(exp: Exploration, defaults: Defaults) -> Exploration:
                 item.attr,
                 tuple(_bind(arg, binding) for arg in item.args),
                 {key: _bind(val, binding) for key, val in item.kwargs.items()},
-                item.return_,
+                item.ret,
             )
             for item in items
         ]

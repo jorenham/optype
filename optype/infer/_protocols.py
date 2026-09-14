@@ -80,26 +80,26 @@ def resolve(trace: TraceItem) -> Op:
         # a class-level attribute mirrors a `ClassVar` protocol member, which no
         # shipped instance-member `Has*` protocol declares
         if trace.attr in DUNDER_CLASS_ATTR:
-            return Op("Has", trace.args[1:], {}, trace.return_, name, classvar=True)
+            return Op("Has", trace.args[1:], {}, trace.ret, name, classvar=True)
 
         # a read of an attribute with a shipped single-member `Has*` protocol
         if name in _DUNDER_HAS_MAP and trace.attr not in _DUNDER_ATTR_WRITE:
-            return Op(_DUNDER_HAS_MAP[name], (), {}, trace.return_)
+            return Op(_DUNDER_HAS_MAP[name], (), {}, trace.ret)
 
         # everything else synthesizes the inline `Has['name', T]` form; a write
         # binds the assigned value's type, which a bounded `Has*` could reject
-        return Op("Has", trace.args[1:], {}, trace.return_, name)
+        return Op("Has", trace.args[1:], {}, trace.ret, name)
 
     # checked before _DUNDER_CAN_MAP, which also contains the coercion dunders
     if trace.attr in _COERCION_PROTOS:
-        return Op(_COERCION_PROTOS[trace.attr], (), {}, trace.return_)
+        return Op(_COERCION_PROTOS[trace.attr], (), {}, trace.ret)
 
     if trace.attr in _DUNDER_CAN_MAP:
         proto = _DUNDER_CAN_MAP[trace.attr]
         # a modulo arg makes `__rpow__` the 3-parameter `CanRPow3`, not `CanRPow`
         if trace.attr == "__rpow__" and len(trace.args) > 1:
             proto = "CanRPow3"
-        return Op(proto, trace.args, trace.kwargs, trace.return_)
+        return Op(proto, trace.args, trace.kwargs, trace.ret)
 
     msg = f"no protocol for {trace.attr!r}"
     raise InferError(msg)

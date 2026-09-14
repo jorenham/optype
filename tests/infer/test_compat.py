@@ -28,12 +28,12 @@ from optype.infer._backends._compat._model import (
 )
 from optype.infer._backends._compat._print import OPTYPE
 from optype.infer._ir import (
-    CONTRAVARIANT,
-    COVARIANT,
     NONE,
     OBJECT,
     App,
     Arg,
+    Contravariant,
+    Covariant,
     Dots,
     Fn,
     Has,
@@ -48,7 +48,6 @@ from optype.infer._ir import (
     TypeParam,
     Union,
     Unpack,
-    Variance,
 )
 
 R, T, U, X = Name("R"), Name("T"), Name("U"), Name("X")
@@ -484,7 +483,7 @@ TEXT_CASES: list[tuple[str, tuple[Signature, ...], str]] = [
     ),
     (
         "settable property",
-        (_sig((), Has("spam", (Variance(CONTRAVARIANT, ZERO),)), NONE),),
+        (_sig((), Has("spam", (Contravariant(ZERO),)), NONE),),
         (
             "from typing import Literal, Protocol\n\n"
             "class HasSpam(Protocol):\n"
@@ -500,7 +499,7 @@ TEXT_CASES: list[tuple[str, tuple[Signature, ...], str]] = [
         (
             _sig(
                 (),
-                Has("list", (Variance(CONTRAVARIANT, App("list", (Name("Never"),))),)),
+                Has("list", (Contravariant(App("list", (Name("Never"),))),)),
                 NONE,
             ),
         ),
@@ -522,7 +521,7 @@ TEXT_CASES: list[tuple[str, tuple[Signature, ...], str]] = [
                 (),
                 Intersection((
                     Has("spam", (Fn((), OBJECT),)),
-                    Has("spam", (Variance(CONTRAVARIANT, Fn((), NONE)),)),
+                    Has("spam", (Contravariant(Fn((), NONE)),)),
                 )),
                 NONE,
             ),
@@ -545,7 +544,7 @@ TEXT_CASES: list[tuple[str, tuple[Signature, ...], str]] = [
                 (),
                 Has(
                     "enum",
-                    (Variance(CONTRAVARIANT, Lit((enum.FlagBoundary.STRICT,))),),
+                    (Contravariant(Lit((enum.FlagBoundary.STRICT,))),),
                 ),
                 NONE,
             ),
@@ -564,7 +563,7 @@ TEXT_CASES: list[tuple[str, tuple[Signature, ...], str]] = [
     ),
     (
         "member named like a type parameter",
-        (_sig((TypeParam("T"),), Has("T", (Variance(CONTRAVARIANT, T),)), NONE),),
+        (_sig((TypeParam("T"),), Has("T", (Contravariant(T),)), NONE),),
         (
             "from typing import Protocol\n\n"
             "class HasT[U](Protocol):\n"
@@ -582,7 +581,7 @@ TEXT_CASES: list[tuple[str, tuple[Signature, ...], str]] = [
             _sig(
                 (TypeParam("T"),),
                 Intersection((T, Not(NONE))),
-                Variance(COVARIANT, T),
+                Covariant(T),
             ),
         ),
         "def f[T](x: T) -> T: ...",
@@ -620,7 +619,7 @@ TEXT_CASES: list[tuple[str, tuple[Signature, ...], str]] = [
         (
             Signature(
                 (TypeParam("T", default=ZERO),),
-                (Param("x", T, nameless=True, default=(0,)),),
+                (Param("x", T, pos_only=True, default=(0,)),),
                 T,
                 deprecated="old",
             ),
@@ -662,8 +661,8 @@ def _protocols(module: Module) -> list[ProtocolDef]:
     return protocols
 
 
-def _has_member(*signed: Node) -> Member:
-    module = Lowerer().module([_sig((TypeParam("R"),), Has("spam", signed))])
+def _has_member(*args: Node) -> Member:
+    module = Lowerer().module([_sig((TypeParam("R"),), Has("spam", args))])
     (helper,) = module.helpers
     assert isinstance(helper, ProtocolDef)
     (member,) = helper.members
@@ -671,25 +670,25 @@ def _has_member(*signed: Node) -> Member:
 
 
 def test_has_read_is_a_property() -> None:
-    assert _has_member(Variance(COVARIANT, R)) == Attr("spam", T, readonly=True)
+    assert _has_member(Covariant(R)) == Attr("spam", T, readonly=True)
 
 
 def test_has_read_write_is_a_settable_property() -> None:
     # a settable property is satisfied by a plain attribute and by a property alike
-    signed = Variance(CONTRAVARIANT, R), Variance(COVARIANT, R)
-    assert _has_member(*signed) == Attr("spam", T, setter=T)
+    args = Contravariant(R), Covariant(R)
+    assert _has_member(*args) == Attr("spam", T, setter=T)
 
 
 def test_has_write_is_a_settable_property() -> None:
     # any attribute that accepts the written type will do, so the getter is `object`
-    assert _has_member(Variance(CONTRAVARIANT, ZERO)) == Attr(
+    assert _has_member(Contravariant(ZERO)) == Attr(
         "spam",
         OBJECT,
         setter=ZERO,
     )
     # a read of another type keeps both: an asymmetric property
-    signed = Variance(CONTRAVARIANT, ZERO), Variance(COVARIANT, R)
-    assert _has_member(*signed) == Attr("spam", T, setter=ZERO)
+    args = Contravariant(ZERO), Covariant(R)
+    assert _has_member(*args) == Attr("spam", T, setter=ZERO)
 
 
 @pytest.mark.parametrize(
@@ -714,9 +713,9 @@ def test_shadowed_module_aliases(
         vars(module)["Kind"] = Kind
         kinds.append(Kind)
     try:
-        signed = tuple(Variance(CONTRAVARIANT, Lit((kind["A"],))) for kind in kinds)
+        args = tuple(Contravariant(Lit((kind["A"],))) for kind in kinds)
         attr = modules[0].partition(".")[0]
-        text = COMPAT.render([_sig((), Has(attr, signed), NONE)])
+        text = COMPAT.render([_sig((), Has(attr, args), NONE)])
     finally:
         for name in modules:
             del sys.modules[name]
@@ -733,7 +732,7 @@ def test_has_presence_is_a_read_only_property() -> None:
 def test_has_method_merges_with_a_write_as_a_callable_read(reverse: bool) -> None:
     parts = (
         Has("spam", (Fn((), OBJECT),)),
-        Has("spam", (Variance(CONTRAVARIANT, ZERO),)),
+        Has("spam", (Contravariant(ZERO),)),
     )
     node = Intersection(parts[::-1] if reverse else parts)
     module = Lowerer().module([_sig((), node, NONE)])
@@ -745,8 +744,8 @@ def test_has_method_merges_with_a_write_as_a_callable_read(reverse: bool) -> Non
 def test_has_of_one_attribute_merge_within_an_intersection() -> None:
     # a separate read and write of one attribute lower to one member, not two bases
     node = Intersection((
-        Has("spam", (Variance(CONTRAVARIANT, ZERO),)),
-        Has("spam", (Variance(COVARIANT, R),)),
+        Has("spam", (Contravariant(ZERO),)),
+        Has("spam", (Covariant(R),)),
     ))
     module = Lowerer().module([_sig((TypeParam("R"),), node)])
     (helper,), (func,) = _protocols(module), module.funcs
@@ -756,34 +755,34 @@ def test_has_of_one_attribute_merge_within_an_intersection() -> None:
 
 def test_has_method() -> None:
     method = Method("spam", (ZERO,), T)
-    assert _has_member(Fn((ZERO,), Variance(COVARIANT, R))) == method
+    assert _has_member(Fn((ZERO,), Covariant(R))) == method
 
 
 def test_has_classvar() -> None:
-    signed = App("ClassVar", (Variance(COVARIANT, Type(int)),))
-    assert _has_member(signed) == Attr("spam", Type(int), classvar=True)
+    arg = App("ClassVar", (Covariant(Type(int)),))
+    assert _has_member(arg) == Attr("spam", Type(int), classvar=True)
     # a `ClassVar` cannot hold a typevar, so a generic one demotes to the instance form
-    signed = App("ClassVar", (Variance(COVARIANT, R),))
-    assert _has_member(signed) == Attr("spam", T, readonly=True)
-    signed = App("ClassVar", (R,))
-    assert _has_member(signed) == Attr("spam", T)
-    signed = App(
+    arg = App("ClassVar", (Covariant(R),))
+    assert _has_member(arg) == Attr("spam", T, readonly=True)
+    arg = App("ClassVar", (R,))
+    assert _has_member(arg) == Attr("spam", T)
+    arg = App(
         "ClassVar",
-        (Variance(COVARIANT, R), Variance(CONTRAVARIANT, Type(int))),
+        (Covariant(R), Contravariant(Type(int))),
     )
-    assert _has_member(signed) == Attr("spam", T, setter=Type(int))
+    assert _has_member(arg) == Attr("spam", T, setter=Type(int))
     # a class attribute keeps its read type
-    signed = App(
+    arg = App(
         "ClassVar",
-        (Variance(COVARIANT, Type(int)), Variance(CONTRAVARIANT, ZERO)),
+        (Covariant(Type(int)), Contravariant(ZERO)),
     )
-    assert _has_member(signed) == Attr("spam", Type(int), classvar=True)
+    assert _has_member(arg) == Attr("spam", Type(int), classvar=True)
 
 
 def test_has_helper_name_avoids_shipped_protocol() -> None:
     # `HasName` is an `optype` import, so the synthesized helper takes another name
     module = Lowerer().module([
-        _sig((TypeParam("R"),), Has("name", (Variance(COVARIANT, R),))),
+        _sig((TypeParam("R"),), Has("name", (Covariant(R),))),
     ])
     (helper,), (func,) = module.helpers, module.funcs
     assert helper.name not in OPTYPE
@@ -810,7 +809,7 @@ def test_intersection_distributes_over_every_union() -> None:
 
 def test_nested_argument_lowers_into_its_own_helper() -> None:
     # a helper's method parameter is lowered too, under the helper's own binders
-    node = Fn((Arg("k", Has("spam", (Variance(COVARIANT, X),))),), R)
+    node = Fn((Arg("k", Has("spam", (Covariant(X),))),), R)
     sig = Signature((TypeParam("X"), TypeParam("R")), (Param("f", node),), R)
     module = Lowerer().module([sig])
     helpers = _protocols(module)
@@ -859,7 +858,7 @@ def test_intersected_callables_become_call_overloads() -> None:
 
 def test_type_parameter_default_is_lowered() -> None:
     # a default is a type expression too, so a fictional one becomes a helper
-    default = Has("spam", (Variance(COVARIANT, Type(int)),))
+    default = Has("spam", (Covariant(Type(int)),))
     sig = Signature((TypeParam("T", default=default),), (Param("x", T),), T)
     module = Lowerer().module([sig])
     (helper,), (func,) = _protocols(module), module.funcs
@@ -946,18 +945,18 @@ def test_same_protocol_at_unrelated_arguments_stays_apart() -> None:
 def test_helpers_are_keyed_on_their_members() -> None:
     # one registry: another attribute or another access is another helper, while the
     # same definition under other binder names is the same helper
-    read = Variance(COVARIANT, R)
+    read = Covariant(R)
     module = Lowerer().module([
         Signature((TypeParam("R"),), (Param("a", Has("spam", (read,))),), R),
         Signature((TypeParam("R"),), (Param("b", Has("ham", (read,))),), R),
         Signature(
             (TypeParam("R"),),
-            (Param("c", Has("spam", (Variance(CONTRAVARIANT, R), read))),),
+            (Param("c", Has("spam", (Contravariant(R), read))),),
             R,
         ),
         Signature(
             (TypeParam("X"),),
-            (Param("d", Has("spam", (Variance(COVARIANT, X),))),),
+            (Param("d", Has("spam", (Covariant(X),))),),
             X,
         ),
     ])

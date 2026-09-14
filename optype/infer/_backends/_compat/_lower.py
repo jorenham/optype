@@ -83,7 +83,7 @@ _ARITY_FORMS = {
 
 
 @functools.cache
-def _protocol_params(origin: str) -> tuple[object, ...] | None:
+def _protocol_typars(origin: str) -> tuple[object, ...] | None:
     """The type parameters of an `optype` protocol in declared order, if known.
 
     `__parameters__` orders them by first appearance across the bases, which is not
@@ -108,67 +108,66 @@ def _protocol_bounds(origin: str) -> tuple[_ir.Node | None, ...] | None:
     reports `()` (so excess arguments drop), and a bounded argument lets the matching
     inferred typevar pick up that bound.
     """
-    if (params := _protocol_params(origin)) is None:
+    if (typars := _protocol_typars(origin)) is None:
         return None
-    return tuple(_bound_node(getattr(p, "__bound__", None)) for p in params)
+    return tuple(_bound_node(getattr(typar, "__bound__", None)) for typar in typars)
 
 
-def _protocol_variances(origin: str) -> tuple[_ir.Sign | None, ...] | None:
+def _protocol_variances(origin: str) -> tuple[_ir.Variance | None, ...] | None:
     """The declared variance per argument of an `optype` protocol, if known."""
-    if (params := _protocol_params(origin)) is None:
+    if (typars := _protocol_typars(origin)) is None:
         return None
     return tuple(
         _ir.COVARIANT
-        if getattr(p, "__covariant__", False)
+        if getattr(typar, "__covariant__", False)
         else _ir.CONTRAVARIANT
-        if getattr(p, "__contravariant__", False)
+        if getattr(typar, "__contravariant__", False)
         else None
-        for p in params
+        for typar in typars
     )
 
 
 type _Bounds = Mapping[str, Sequence[_ir.Node]]
 
 
-def _reads_writes(
-    signed: tuple[_ir.Node, ...],
-) -> tuple[list[_ir.Node], list[_ir.Node]]:
-    signs = [s for s in signed if isinstance(s, _ir.Variance)]
-    reads = [s.part for s in signs if s.sign == _ir.COVARIANT]
-    writes = [s.part for s in signs if s.sign == _ir.CONTRAVARIANT]
-    return reads, writes
+def _by_variance(args: tuple[_ir.Node, ...]) -> tuple[list[_ir.Node], list[_ir.Node]]:
+    """The covariant and the contravariant `Has` arguments, unwrapped."""
+    co = [a.part for a in args if isinstance(a, _ir.Covariant)]
+    contra = [a.part for a in args if isinstance(a, _ir.Contravariant)]
+    return co, contra
 
 
-def _variances_at(origin: str, arity: int) -> tuple[_ir.Sign | None, ...] | None:
+def _variances_at(origin: str, arity: int) -> tuple[_ir.Variance | None, ...] | None:
     """The declared variances of the shipped protocol behind `origin` at `arity`."""
-    signs = _protocol_variances(_ARITY_FORMS.get((origin, arity), origin))
-    return signs if signs is not None and len(signs) == arity else None
+    variances = _protocol_variances(_ARITY_FORMS.get((origin, arity), origin))
+    return variances if variances is not None and len(variances) == arity else None
 
 
 def _implies_args(sub: _ir.App, sup: _ir.App, bounds: _Bounds) -> bool:
     """Argument by argument in the declared variance; identical if invariant."""
-    signs = _variances_at(sub.origin, len(sub.args))
-    if signs is None or len(sup.args) != len(signs):
+    variances = _variances_at(sub.origin, len(sub.args))
+    if variances is None or len(sup.args) != len(variances):
         return _ir.subtype(sub, sup)
     return all(
         _implies(_ir.term_node(a), _ir.term_node(b), bounds)
-        if sign == _ir.COVARIANT
+        if variance == _ir.COVARIANT
         else _implies(_ir.term_node(b), _ir.term_node(a), bounds)
-        if sign == _ir.CONTRAVARIANT
+        if variance == _ir.CONTRAVARIANT
         else a == b
-        for a, b, sign in zip(sub.args, sup.args, signs, strict=True)
+        for a, b, variance in zip(sub.args, sup.args, variances, strict=True)
     )
 
 
 def _implies_attr(sub: _ir.Has, sup: _ir.Has, bounds: _Bounds) -> bool:
-    """Every read of `sup` is implied by a read of `sub`, and every write likewise."""
-    own, other = _signed(sub.args), _signed(sup.args)
+    """Each covariant argument of `sup` is implied by one of `sub`, and each
+    contravariant one implies one of `sub`."""
+    own, other = _with_variance(sub.args), _with_variance(sup.args)
     if own is None or other is None:
         return sub == sup
-    reads, writes = _reads_writes(own)
-    wider_reads, wider_writes = _reads_writes(other)
-    return all(any(_implies(r, w, bounds) for r in reads) for w in wider_reads) and all(
-        any(_implies(w, r, bounds) for r in writes) for w in wider_writes
+    co, contra = _by_variance(own)
+    wider_co, wider_contra = _by_variance(other)
+    return all(any(_implies(c, w, bounds) for c in co) for w in wider_co) and all(
+        any(_implies(w, c, bounds) for c in contra) for w in wider_contra
     )
 
 
@@ -184,20 +183,16 @@ def _same_layout(params: _ir.Terms, wider: _ir.Terms) -> bool:
     )
 
 
-def _implies(  # ruff: ignore[too-many-return-statements]
-    sub: _ir.Node,
-    sup: _ir.Node,
-    bounds: _Bounds,
-) -> bool:
+def _implies(sub: _ir.Node, sup: _ir.Node, bounds: _Bounds) -> bool:  # ruff: ignore[too-many-return-statements]
     """Whether requiring `sub` requires `sup`: `_ir.subtype`, plus what the IR does
     not know: a typevar's bounds, a shipped protocol's declared variance, and the
-    reads and writes of an attribute."""
+    variance of each `Has` argument."""
     if sub == sup:
         return True
     match sub, sup:
-        case _ir.Variance(_, part), _:
+        case _ir.Covariant(part) | _ir.Contravariant(part), _:
             return _implies(part, sup, bounds)
-        case _, _ir.Variance(_, part):
+        case _, _ir.Covariant(part) | _ir.Contravariant(part):
             return _implies(sub, part, bounds)
         case _, _ir.Intersection(parts):
             return all(_implies(sub, p, bounds) for p in parts)
@@ -233,8 +228,8 @@ def _merge_apps(first: _ir.App, second: _ir.App, bounds: _Bounds) -> _ir.App | N
     would then change as well. Two differing arguments may be correlated, as in
     `CanSetitem[int, int] & CanSetitem[str, str]`, so they stay apart.
     """
-    signs = _variances_at(first.origin, len(first.args))
-    if signs is None or len(second.args) != len(signs):
+    variances = _variances_at(first.origin, len(first.args))
+    if variances is None or len(second.args) != len(variances):
         return None
     pairs = zip(first.args, second.args, strict=True)
     differing = [i for i, (x, y) in enumerate(pairs) if x != y]
@@ -250,9 +245,9 @@ def _merge_apps(first: _ir.App, second: _ir.App, bounds: _Bounds) -> _ir.App | N
         narrower, wider = y, x
     else:
         return None
-    if signs[i] == _ir.COVARIANT:
+    if variances[i] == _ir.COVARIANT:
         joined = narrower
-    elif signs[i] == _ir.CONTRAVARIANT:
+    elif variances[i] == _ir.CONTRAVARIANT:
         joined = wider
     else:
         return None
@@ -302,7 +297,7 @@ def _fold_arities(parts: list[_ir.Node]) -> list[_ir.Node]:
 
 def _inherited_bounds(
     bases: Sequence[_ir.Node],
-    typars: frozenset[str],
+    tyvars: frozenset[str],
 ) -> dict[str, _ir.Node]:
     """Each helper type parameter's bound, taken from the protocol base it fills."""
     result: dict[str, _ir.Node] = {}
@@ -313,7 +308,7 @@ def _inherited_bounds(
         ):
             continue
         for arg, bound in zip(base.args, bounds, strict=False):
-            if bound is not None and isinstance(arg, _ir.Name) and arg.name in typars:
+            if bound is not None and isinstance(arg, _ir.Name) and arg.name in tyvars:
                 result.setdefault(arg.name, bound)
     return result
 
@@ -394,7 +389,8 @@ def _mentions(node: _ir.Term) -> Iterable[str]:
         case (
             _ir.Arg(value=part)
             | _ir.Not(part)
-            | _ir.Variance(part=part)
+            | _ir.Covariant(part)
+            | _ir.Contravariant(part)
             | _ir.Unpack(part)
         ):
             yield from _mentions(part)
@@ -438,12 +434,14 @@ def _reachable(
     return [helper for name, helper in defs.items() if name in seen]
 
 
-def _signed(args: tuple[_ir.Node, ...]) -> tuple[_ir.Node, ...] | None:
-    """`args` as reads and writes; a lone method is a read of its callable type."""
-    if all(isinstance(arg, _ir.Variance) for arg in args):
+def _with_variance(args: tuple[_ir.Node, ...]) -> tuple[_ir.Node, ...] | None:
+    """The `Has` arguments, each in its variance position, or `None` if one has no
+    variance (a `ClassVar` or a bare type). A lone method is only read, so its
+    callable type is covariant."""
+    if all(isinstance(arg, (_ir.Covariant, _ir.Contravariant)) for arg in args):
         return args
     if len(args) == 1 and isinstance(args[0], _ir.Fn):
-        return (_ir.Variance(_ir.COVARIANT, args[0]),)
+        return (_ir.Covariant(args[0]),)
     return None
 
 
@@ -453,8 +451,8 @@ def _order_typars(typars: list[_ir.TypeParam]) -> list[_ir.TypeParam]:
     if not any(typar.default is not None for typar in typars):
         return typars
     empty = _ir.Unpack(_ir.App("tuple", ()))
-    tuples = [replace(t, default=empty) for t in typars if t.unpack]
-    return [t for t in typars if not t.unpack] + tuples
+    tuples = [replace(typar, default=empty) for typar in typars if typar.unpack]
+    return [typar for typar in typars if not typar.unpack] + tuples
 
 
 def _distinct_text(nodes: Iterable[_ir.Node]) -> list[_ir.Node]:
@@ -479,17 +477,20 @@ def _constrain(
 
 
 def _merge_has(parts: Sequence[_ir.Node]) -> list[_ir.Node]:
-    """Join the `Has` members of one attribute, so its reads and writes share one."""
+    """Join the `Has` members of one attribute into one with all of their arguments."""
     out: list[_ir.Node] = []
     index: dict[str, int] = {}
     for part in parts:
-        if isinstance(part, _ir.Has) and (signed := _signed(part.args)) is not None:
+        if (
+            isinstance(part, _ir.Has)
+            and (args := _with_variance(part.args)) is not None
+        ):
             if (i := index.get(part.attr)) is not None:
                 prev = out[i]
                 assert isinstance(prev, _ir.Has)
-                merged = _signed(prev.args)
-                assert merged is not None
-                out[i] = _ir.Has(part.attr, merged + signed)
+                prev_args = _with_variance(prev.args)
+                assert prev_args is not None
+                out[i] = _ir.Has(part.attr, prev_args + args)
                 continue
             index[part.attr] = len(out)
         out.append(part)
@@ -583,14 +584,10 @@ class _SigLowerer:
         ]
         return _order_typars(kept), subst
 
-    def _node(  # ruff: ignore[too-many-return-statements]
-        self,
-        node: _ir.Node,
-        constraints: _Constraints,
-    ) -> _ir.Node:
+    def _node(self, node: _ir.Node, constraints: _Constraints) -> _ir.Node:  # ruff: ignore[too-many-return-statements]
         match node:
-            case _ir.Has(attr, signed):
-                return self._has(attr, signed, constraints)
+            case _ir.Has(attr, args):
+                return self._has(attr, args, constraints)
             case _ir.App(origin, args):
                 return self._app(origin, args, constraints)
             case _ir.Fn(params, ret):
@@ -604,7 +601,7 @@ class _SigLowerer:
                 return _ir.OBJECT
             case _ir.Unpack(part):
                 return _ir.Unpack(self._node(part, constraints))
-            case _ir.Variance(_, part):
+            case _ir.Covariant(part) | _ir.Contravariant(part):
                 return self._node(part, constraints)
             case _:
                 return node
@@ -689,8 +686,8 @@ class _SigLowerer:
         m = {name: _ir.Name(c) for name, c in zip(fv, canon_names, strict=True)}
         canon_bases = tuple(_ir.subst(b, m) for b in bases)
         canon_members = tuple(subst_member(mem, m) for mem in members)
-        tp_bounds = _inherited_bounds(canon_bases, frozenset(canon_names))
-        typars = tuple(_ir.TypeParam(c, tp_bounds.get(c)) for c in canon_names)
+        inherited = _inherited_bounds(canon_bases, frozenset(canon_names))
+        typars = tuple(_ir.TypeParam(c, inherited.get(c)) for c in canon_names)
         key = (
             tuple(type_text(b) for b in canon_bases),
             tuple(map(member_key, canon_members)),
@@ -731,7 +728,7 @@ class _SigLowerer:
     def _has(
         self,
         attr: str,
-        signed: tuple[_ir.Node, ...],
+        args: tuple[_ir.Node, ...],
         constraints: _Constraints,
     ) -> _ir.Node:
         if not attr.isidentifier() or keyword.iskeyword(attr):
@@ -740,51 +737,56 @@ class _SigLowerer:
             msg = f"cannot render attribute {attr!r} as a protocol member"
             raise InferError(msg)
 
-        member = self._has_member(attr, signed, constraints)
+        member = self._has_member(attr, args, constraints)
         candidate = "Has" + attr[:1].upper() + attr[1:]
         return self._proto_app(candidate, members=(member,))
 
     def _has_member(  # ruff: ignore[too-many-return-statements]
         self,
         attr: str,
-        signed: tuple[_ir.Node, ...],
+        args: tuple[_ir.Node, ...],
         constraints: _Constraints,
         *,
         classvar: bool = False,
     ) -> Member:
         if (
-            len(signed) == 1
-            and isinstance(signed[0], _ir.App)
-            and signed[0].origin == "ClassVar"
+            len(args) == 1
+            and isinstance(args[0], _ir.App)
+            and args[0].origin == "ClassVar"
         ):
-            inner = tuple(_ir.term_node(a) for a in signed[0].args)
+            inner = tuple(_ir.term_node(a) for a in args[0].args)
             return self._has_member(attr, inner, constraints, classvar=True)
-        if not signed:
+        if not args:
             return Attr(attr, _ir.OBJECT, classvar=classvar, readonly=not classvar)
-        if len(signed) == 1 and isinstance(signed[0], _ir.Fn):
-            fn = signed[0]
+        if len(args) == 1 and isinstance(args[0], _ir.Fn):
+            fn = args[0]
             ret = self._node(strip_variance(fn.ret), constraints)
             params = tuple(self._arg(p, constraints) for p in fn.params)
             return Method(attr, params, ret)
-        if not all(isinstance(s, _ir.Variance) for s in signed):
-            node = self._node(strip_variance(signed[0]), constraints)
+        if not all(isinstance(a, (_ir.Covariant, _ir.Contravariant)) for a in args):
+            node = self._node(strip_variance(args[0]), constraints)
             cv = classvar and not is_generic(node, self._tyvars)
             return Attr(attr, node, classvar=cv)
-        reads, writes = _reads_writes(signed)
-        read = self._node(_ir.intersection(reads) or _ir.OBJECT, constraints)
-        write = self._node(_ir.union(writes) or _ir.OBJECT, constraints)
+        co, contra = _by_variance(args)
+        getter = self._node(_ir.intersection(co) or _ir.OBJECT, constraints)
+        setter = self._node(_ir.union(contra) or _ir.OBJECT, constraints)
         # a class attribute is a plain `ClassVar`, which cannot hold a typevar; a
         # generic one demotes to the instance form
-        nodes = (read, write) if writes else (read,)
+        nodes = (getter, setter) if contra else (getter,)
         if classvar and not any(is_generic(n, self._tyvars) for n in nodes):
-            return Attr(attr, read if reads else write, classvar=True)
+            return Attr(attr, getter if co else setter, classvar=True)
         # a dunder has a declared type, which a settable property would override
         # incompatibly
-        if writes and attr.startswith("__") and attr.endswith("__"):
-            return Attr(attr, read if reads else write)
+        if contra and attr.startswith("__") and attr.endswith("__"):
+            return Attr(attr, getter if co else setter)
         # a property with a setter is what a plain attribute and a settable property
         # both satisfy; an annotation is only matched by a plain attribute
-        return Attr(attr, read, readonly=not writes, setter=write if writes else None)
+        return Attr(
+            attr,
+            getter,
+            readonly=not contra,
+            setter=setter if contra else None,
+        )
 
     def _fn(
         self,

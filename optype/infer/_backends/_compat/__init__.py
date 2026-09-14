@@ -31,14 +31,14 @@ class CompatBackend:
             for h in module.helpers
         ]
         locals_ = {h.name for h in module.helpers}
-        typevars = {
-            tp.name
+        tyvars = {
+            typar.name
             for defn in (*module.helpers, *module.funcs)
-            for tp in defn.type_params
+            for typar in defn.type_params
         }
 
         blocks: list[str] = []
-        if imports := printer.import_block(locals_, typevars):
+        if imports := printer.import_block(locals_, tyvars):
             blocks.append(imports)
         if helpers:
             blocks.append("\n".join(helpers))

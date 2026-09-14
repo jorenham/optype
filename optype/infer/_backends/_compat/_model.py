@@ -95,7 +95,7 @@ def bound_name(bound: _ir.Node, tyvar: str) -> str:
 
 
 def strip_variance(node: _ir.Node) -> _ir.Node:
-    return node.part if isinstance(node, _ir.Variance) else node
+    return node.part if isinstance(node, (_ir.Covariant, _ir.Contravariant)) else node
 
 
 def member_nodes(members: Iterable[Member]) -> Iterable[_ir.Term]:
