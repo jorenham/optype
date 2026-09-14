@@ -10,12 +10,12 @@ import pytest
 
 import optype.infer._ir as _ir  # ruff: ignore[manual-from-import]
 from optype.infer._ir import (
-    COVARIANT,
     NEVER,
     NONE,
     OBJECT,
     App,
     Arg,
+    Covariant,
     Dots,
     Fn,
     Has,
@@ -31,7 +31,6 @@ from optype.infer._ir import (
     TypeParam,
     Union,
     Unpack,
-    Variance,
     alpha_equal,
     alpha_equal_signatures,
     exclude,
@@ -311,11 +310,11 @@ def test_subst_through_every_wrapper() -> None:
     # attribute names, argument keys and defaults, and variance signs all survive
     nested = Fn(
         (Arg("k", A, (1,)), Unpack(A)),
-        Has("s", (Variance(COVARIANT, A), Not(Intersection((A, B))))),
+        Has("s", (Covariant(A), Not(Intersection((A, B))))),
     )
     assert subst(nested, {"A": C}) == Fn(
         (Arg("k", C, (1,)), Unpack(C)),
-        Has("s", (Variance(COVARIANT, C), Not(Intersection((C, B))))),
+        Has("s", (Covariant(C), Not(Intersection((C, B))))),
     )
 
 

@@ -15,10 +15,10 @@ from optype.infer._backends._base import (
 )
 from optype.infer._backends._terse import TERSE
 from optype.infer._ir import (
-    CONTRAVARIANT,
-    COVARIANT,
     App,
     Arg,
+    Contravariant,
+    Covariant,
     Dots,
     Fn,
     Has,
@@ -33,7 +33,6 @@ from optype.infer._ir import (
     TypeParam,
     Union,
     Unpack,
-    Variance,
 )
 
 A, B, C = Name("A"), Name("B"), Name("C")
@@ -111,7 +110,7 @@ TERSE_CASES: list[tuple[Node, str]] = [
     (App("X", (Arg("k", A),)), "X[k=A]"),
     (Has("spam", ()), "Has['spam']"),
     (
-        Has("spam", (Variance(CONTRAVARIANT, A), Variance(COVARIANT, B))),
+        Has("spam", (Contravariant(A), Covariant(B))),
         "Has['spam', -A, +B]",
     ),
     (Fn((Arg("k", A, (1,)), Arg(None, B)), C), "(k: A = 1, B) -> C"),
@@ -119,7 +118,7 @@ TERSE_CASES: list[tuple[Node, str]] = [
     # a prefix binds tighter than an infix, so an infix operand is parenthesized
     (Not(A), "~A"),
     (Not(Union((A, B))), "~(A | B)"),
-    (Variance(COVARIANT, Intersection((A, B))), "+(A & B)"),
+    (Covariant(Intersection((A, B))), "+(A & B)"),
     (Unpack(FN), "*((A) -> B)"),
     (Union((Not(A), B)), "~A | B"),
     # the dual infix and a function type are parenthesized inside an infix
@@ -145,7 +144,7 @@ def test_terse_signature() -> None:
         TypeParam("T", bound=Type(int), default=Lit((0,))),
     )
     params = (
-        Param("x", Name("T"), nameless=True, default=(0,)),
+        Param("x", Name("T"), pos_only=True, default=(0,)),
         Param("args", Unpack(Name("Ts")), prefix="*"),
         Param("k", A, default=([1],)),
     )
@@ -159,8 +158,8 @@ def test_terse_signature() -> None:
 def test_terse_dedups_rendered_lines() -> None:
     # two positional-only parameters render alike whatever their hidden names
     sigs = [
-        Signature((), (Param("x", A, nameless=True),), B),
-        Signature((), (Param("y", A, nameless=True),), B),
+        Signature((), (Param("x", A, pos_only=True),), B),
+        Signature((), (Param("y", A, pos_only=True),), B),
         Signature((), (Param("x", A),), C),
     ]
     assert TERSE.render(sigs) == "(A) -> B\n(x: A) -> C"

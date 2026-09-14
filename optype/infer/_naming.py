@@ -15,7 +15,7 @@ from ._analyze import (
 from ._spy import SpyObject, Traces
 from ._values import Rec, RecVar, fn_spies, walk
 
-TYPEVAR_TUPLE_NAME = "Ts"  # the PEP 646 typevar-tuple binder, used as `*Ts`
+TYVAR_TUPLE_NAME = "Ts"  # the PEP 646 typevar-tuple binder, used as `*Ts`
 
 
 def _result_tyvar(index: int) -> str:
@@ -36,14 +36,14 @@ class Naming:
     rec_tyvars: Mapping[RecVar, str]
     rec_body: Mapping[RecVar, object]
     group_traces: Traces
-    vartuple: bool  # whether the `*args` spy renders as a `*Ts` typevar tuple
+    tyvar_tuple: bool  # whether the `*args` spy renders as a `*Ts` typevar tuple
 
-    def pool(self, vartuple_id: int | None) -> dict[str, int]:
+    def pool(self, tyvar_tuple_id: int | None) -> dict[str, int]:
         """The declared `name -> representative` map the inline decision ranges over."""
         return {
             self.tyvars[sid]: self.reps.get(sid, sid)
             for spy in self.declared_spies
-            if (sid := id(spy)) != vartuple_id
+            if (sid := id(spy)) != tyvar_tuple_id
         }
 
     def inlined(
@@ -55,20 +55,20 @@ class Naming:
         """This naming with the `inline` names dropped and the survivors renumbered."""
         remap = {
             old: _ir.tyvar_name(n)
-            for n, old in enumerate(var for var in pool if var not in inline)
+            for n, old in enumerate(tyvar for tyvar in pool if tyvar not in inline)
         }
         tyvars = {
-            sid: remap.get(var, var)
-            for sid, var in self.tyvars.items()
-            if var not in inline
+            sid: remap.get(tyvar, tyvar)
+            for sid, tyvar in self.tyvars.items()
+            if tyvar not in inline
         }
         return replace(
             self,
             tyvars=tyvars,
             named={
-                rep: remap.get(var, var)
-                for rep, var in self.named.items()
-                if var not in inline
+                rep: remap.get(tyvar, tyvar)
+                for rep, tyvar in self.named.items()
+                if tyvar not in inline
             },
             declared_spies=[s for s in self.declared_spies if id(s) in tyvars],
             group_traces=group_traces(tyvars, self.reps, traces),
@@ -99,11 +99,11 @@ class _Assign:
                 if sid in param_ids or sid in self.tyvars:
                     continue
                 # results of one op-shape share a type parameter, even traced or reused
-                if (var := self.named.get(rep := self.rep(spy))) is None:
-                    var = _result_tyvar(len(result_spies))
+                if (tyvar := self.named.get(rep := self.rep(spy))) is None:
+                    tyvar = _result_tyvar(len(result_spies))
                     result_spies.append(spy)
-                    self.named[rep] = var
-                self.tyvars[sid] = var
+                    self.named[rep] = tyvar
+                self.tyvars[sid] = tyvar
         return result_spies
 
     def declare_typars(
@@ -131,14 +131,14 @@ class _Assign:
         declared: list[SpyObject] = []
         n = 0
         for spy in candidates:
-            if (var := self.named.get(rep := self.rep(spy))) is None:
-                var = self.tyvars.get(id(spy))  # a `*Ts` variadic keeps its name
-                if var is None:
-                    var = _ir.tyvar_name(n)
+            if (tyvar := self.named.get(rep := self.rep(spy))) is None:
+                tyvar = self.tyvars.get(id(spy))  # a `*Ts` variadic keeps its name
+                if tyvar is None:
+                    tyvar = _ir.tyvar_name(n)
                     n += 1
-                self.named[rep] = var
+                self.named[rep] = tyvar
                 declared.append(spy)
-            self.tyvars[id(spy)] = var
+            self.tyvars[id(spy)] = tyvar
         return declared
 
 
@@ -146,7 +146,7 @@ def build(
     results: Sequence[object],
     spies: Mapping[str, SpyObject],
     traces: Traces,
-    varpos: SpyObject | None,
+    var_pos: SpyObject | None,
     var_count: int,
 ) -> Naming:
     """Assign a type parameter to every spy that needs one, in signature order."""
@@ -156,10 +156,15 @@ def build(
     reps = representatives(order, traces)
 
     assign = _Assign(reps)
-    vartuple = varpos is not None and all_packed(varpos, results, traces, var_count)
-    if vartuple:
-        # the `tyvars` entry earns `varpos` a slot and names it; `vartuple` flags it
-        assign.tyvars[id(varpos)] = TYPEVAR_TUPLE_NAME
+    tyvar_tuple = var_pos is not None and all_packed(
+        var_pos,
+        results,
+        traces,
+        var_count,
+    )
+    if tyvar_tuple:
+        # the `tyvars` entry earns `var_pos` a slot and names it
+        assign.tyvars[id(var_pos)] = TYVAR_TUPLE_NAME
 
     result_spies = assign.name_results(results, {id(spy) for spy in param_spies})
 
@@ -183,5 +188,5 @@ def build(
         rec_tyvars,
         rec_body,
         group_traces(assign.tyvars, reps, traces),
-        vartuple,
+        tyvar_tuple,
     )

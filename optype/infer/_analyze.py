@@ -74,7 +74,7 @@ def requires_only_presence(exp: Exploration, param: str, name: str) -> bool:
     return bool(items) and all(
         item.attr == "__getattr__"
         and item.args == (name,)
-        and not exp.traces.get(id(item.return_))
+        and not exp.traces.get(id(item.ret))
         for item in items
     )
 
@@ -95,9 +95,7 @@ def _trace_order(params: Sequence[SpyObject], traces: Traces) -> list[SpyObject]
             continue
         seen.add(id(spy))
         order.append(spy)
-        stack.extend(
-            op.return_ for op in traces[id(spy)] if isinstance(op.return_, SpyObject)
-        )
+        stack.extend(op.ret for op in traces[id(spy)] if isinstance(op.ret, SpyObject))
     return order
 
 
@@ -121,7 +119,7 @@ def analyze(
         for value in (*op.args, *op.kwargs.values())
         if (arg := as_spy(value)) is not None
     )
-    appear.update(id(op.return_) for op in ops if isinstance(op.return_, SpyObject))
+    appear.update(id(op.ret) for op in ops if isinstance(op.ret, SpyObject))
 
     return order, appear
 
@@ -155,8 +153,8 @@ def representatives(order: Sequence[SpyObject], traces: Traces) -> dict[int, int
     made_by: dict[int, tuple[SpyObject, TraceItem]] = {}
     for owner in order:
         for item in traces[id(owner)]:
-            if isinstance(item.return_, SpyObject):
-                made_by.setdefault(id(item.return_), (owner, item))
+            if isinstance(item.ret, SpyObject):
+                made_by.setdefault(id(item.ret), (owner, item))
 
     keys: dict[int, _Shape] = {}
     rep: dict[_Shape, int] = {}  # op-shape -> the first spy that had it
@@ -246,7 +244,7 @@ def reflect(params: Sequence[SpyObject], traces: Traces) -> Traces:
             if item.attr in DUNDER_CAN_R and isinstance(rhs, SpyObject):
                 # since Python 3.14, ternary `pow()` reflects with the modulo kept
                 rargs = (spy, *item.args[1:]) if sys.version_info >= (3, 14) else (spy,)
-                reflected = TraceItem("__r" + item.attr[2:], rargs, {}, item.return_)
+                reflected = TraceItem("__r" + item.attr[2:], rargs, {}, item.ret)
                 added.setdefault(id(own_spy(rhs)), []).append(reflected)
             else:
                 keep.append(item)

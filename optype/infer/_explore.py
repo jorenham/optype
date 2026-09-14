@@ -152,7 +152,7 @@ def _reachable_spies(params: Iterable[object]) -> Generator[SpyObject]:
         stack.extend(
             ret
             for item in spy.__optype_trace__
-            if isinstance(ret := item.return_, SpyObject)
+            if isinstance(ret := item.ret, SpyObject)
         )
 
 
@@ -743,7 +743,7 @@ def _op_shape(items: Iterable[TraceItem]) -> frozenset[str]:
 
 # dunders `tuple` delegates to its elements (`repr`, `hash`, ...), not distribution
 _TUPLE_DUNDERS = frozenset(
-    name for klass in tuple.__mro__ for name in vars(klass) if name.startswith("__")
+    name for cls in tuple.__mro__ for name in vars(cls) if name.startswith("__")
 )
 
 

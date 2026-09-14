@@ -84,8 +84,8 @@ def _join_params(items: Sequence[tuple[str, bool]]) -> str:
     """Join rendered params, inserting `/` after a leading positional-only run."""
     parts: list[str] = []
     slash = 0
-    for decl, positional_only in items:
-        if positional_only:
+    for decl, pos_only in items:
+        if pos_only:
             slash = len(parts) + 1
         parts.append(decl)
     if slash:
@@ -177,7 +177,7 @@ class Printer:
                 return " | ".join(self.render_node(part) for part in parts)
             case _ir.Unpack(part):
                 return f"*{self.render_node(part)}"
-            case _:  # a Has/Intersection/Not/Variance survived lowering, which is a bug
+            case _:  # an unlowered Has, Intersection, Not, or Has marker: a bug
                 msg = f"cannot render {node!r} as valid Python"
                 raise AssertionError(msg)
 
@@ -206,14 +206,14 @@ class Printer:
         auto = 0
         items: list[tuple[str, bool]] = []
         for i, p in enumerate(params):
-            if p.nameless:
+            if p.pos_only:
                 decl = f"_{auto}: {self.render_node(p.node)}"
                 auto += 1
             else:
                 decl = f"{p.prefix}{p.name}: {self.render_node(p.node)}"
             if p.default is not None and show[i]:
                 decl += f" = {qualified_default_text(p.default[0], self._used.add)}"
-            items.append((decl, p.nameless))
+            items.append((decl, p.pos_only))
         return _join_params(items)
 
     def _prefixed_type(self, value: _ir.Node) -> tuple[_Prefix, str]:
@@ -243,16 +243,16 @@ class Printer:
         for i, p in enumerate(params):
             if isinstance(p, _ir.Arg) and p.key:
                 decl = f"{p.key}: {self.render_node(p.value)}"
-                positional_only = False
+                pos_only = False
             else:
                 # a `*` parameter is not positional-only, so the `/` lands before it
                 prefix, ann = self._prefixed_type(_ir.term_node(p))
                 decl = f"{prefix}_{auto}: {ann}"
-                positional_only = not prefix
+                pos_only = not prefix
                 auto += 1
             if isinstance(p, _ir.Arg) and p.default is not None and show[i]:
                 decl += f" = {qualified_default_text(p.default[0], self._used.add)}"
-            items.append((decl, positional_only))
+            items.append((decl, pos_only))
         return _join_params(items)
 
     def _member_text(self, member: Member, *, overload: bool) -> str:
@@ -313,12 +313,12 @@ class Printer:
     def import_block(
         self,
         locals_: AbstractSet[str],
-        typevars: AbstractSet[str],
+        tyvars: AbstractSet[str],
     ) -> str:
         """The import lines for referenced names that are neither helper nor typevar."""
         groups: dict[str, set[str]] = {}
         whole: set[str] = set()
-        for name in self._used - locals_ - typevars:
+        for name in self._used - locals_ - tyvars:
             if (found := import_of(name)) is None:
                 continue
             module_name, member = found

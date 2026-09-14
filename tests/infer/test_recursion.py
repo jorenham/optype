@@ -83,7 +83,7 @@ def test_collapse_recursive_pair() -> None:
     assert folded.ret == Name("T")
 
 
-def test_collapse_recursive_keeps_typevar_tuple_and_deprecation() -> None:
+def test_collapse_recursive_keeps_tyvar_tuple_and_deprecation() -> None:
     # a `*Ts` binder has no bound to fold, and stays reachable through its parameter
     params = Param("x", Name("T")), Param("args", Unpack(Name("Ts")), prefix="*")
     sig = Signature((TypeParam("Ts", unpack=True), *CHAIN), params, Name("T"), "old")

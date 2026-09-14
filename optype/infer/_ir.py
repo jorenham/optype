@@ -19,7 +19,8 @@ type Node = (
     | Union
     | Intersection
     | Not
-    | Variance
+    | Covariant
+    | Contravariant
     | Unpack
     | Dots
 )
@@ -27,18 +28,19 @@ type Term = Node | Arg
 type Terms = tuple[Term, ...]
 
 
-class Sign(StrEnum):
-    """A variance sign: covariant (read-only) or contravariant (write-only)."""
+class Variance(StrEnum):
+    """The variance of a type's argument position: covariant (`+`) or contravariant
+    (`-`)."""
 
     COVARIANT = "+"
     CONTRAVARIANT = "-"
 
 
-COVARIANT: Final = Sign.COVARIANT
-CONTRAVARIANT: Final = Sign.CONTRAVARIANT
+COVARIANT: Final = Variance.COVARIANT
+CONTRAVARIANT: Final = Variance.CONTRAVARIANT
 
 # variance per type argument; the last entry repeats variadically
-_VARIANCES: dict[str, tuple[Sign, ...]] = {
+_VARIANCES: dict[str, tuple[Variance, ...]] = {
     "AsyncGenerator": (COVARIANT, CONTRAVARIANT),
     "Generator": (COVARIANT, CONTRAVARIANT, COVARIANT),
     "frozenset": (COVARIANT,),
@@ -137,10 +139,12 @@ class Not:
 
 
 @dataclass(frozen=True, slots=True)
-class Variance:
-    """A variance-marked type: covariant (read-only) or contravariant (write-only)."""
+class Covariant:
+    part: Node
 
-    sign: Sign
+
+@dataclass(frozen=True, slots=True)
+class Contravariant:
     part: Node
 
 
@@ -187,7 +191,7 @@ class Param:
     name: str
     node: Node
     prefix: str = ""  # "", "*", or "**"
-    nameless: bool = False  # positional-only
+    pos_only: bool = False
     default: tuple[object] | None = None  # the boxed default value, if any
 
 
@@ -219,10 +223,10 @@ def _subtype_args(origin: str, args: Terms, wider: Terms) -> bool:
         if args and all(arg == NEVER for arg in args):
             return True
         return _equivalent_all(args, wider)
-    signs = variances + variances[-1:] * (len(args) - len(variances))
+    variances += variances[-1:] * (len(args) - len(variances))
     return all(
-        subtype(arg, wide) if sign == COVARIANT else subtype(wide, arg)
-        for arg, wide, sign in zip(args, wider, signs, strict=False)
+        subtype(arg, wide) if variance == COVARIANT else subtype(wide, arg)
+        for arg, wide, variance in zip(args, wider, variances, strict=False)
     )
 
 
@@ -434,7 +438,13 @@ def names(node: Term) -> Generator[str]:
     match node:
         case Name(name):
             yield name
-        case Arg(value=part) | Not(part) | Variance(part=part) | Unpack(part):
+        case (
+            Arg(value=part)
+            | Not(part)
+            | Covariant(part)
+            | Contravariant(part)
+            | Unpack(part)
+        ):
             yield from names(part)
         case App(args=parts) | Has(args=parts) | Union(parts) | Intersection(parts):
             for part in parts:
@@ -466,10 +476,8 @@ def subst(node: Node, m: Mapping[str, Node], *, dedup: bool = False) -> Node:
             if dedup:
                 new = tuple(distinct(new))
             out = new[0] if dedup and len(new) == 1 else type(node)(new)
-        case Not(part) | Unpack(part):
+        case Not(part) | Covariant(part) | Contravariant(part) | Unpack(part):
             out = type(node)(subst(part, m, dedup=dedup))
-        case Variance(sign, part):
-            out = Variance(sign, subst(part, m, dedup=dedup))
         case _:
             out = node
     return out
@@ -522,12 +530,12 @@ def rename_signature(sig: Signature, m: Mapping[str, str]) -> Signature:
 
     typars = tuple(
         replace(
-            t,
-            name=m.get(t.name, t.name),
-            bound=opt(t.bound),
-            default=opt(t.default),
+            typar,
+            name=m.get(typar.name, typar.name),
+            bound=opt(typar.bound),
+            default=opt(typar.default),
         )
-        for t in sig.type_params
+        for typar in sig.type_params
     )
     params = tuple(replace(p, node=rename(p.node, m)) for p in sig.params)
     return replace(sig, type_params=typars, params=params, ret=rename(sig.ret, m))
@@ -538,7 +546,10 @@ def alpha_equal_signatures(a: Signature, b: Signature) -> bool:
     canon = [
         rename_signature(
             sig,
-            {t.name: placeholder_name(i) for i, t in enumerate(sig.type_params)},
+            {
+                typar.name: placeholder_name(i)
+                for i, typar in enumerate(sig.type_params)
+            },
         )
         for sig in (a, b)
     ]
@@ -550,9 +561,9 @@ _TYPE_ALIASES = "LambdaType", "BuiltinMethodType"
 
 # cpython-internal `__name__`s (`ModuleType.__name__ == "module"`) to importable names
 _TYPES_NAMES: dict[type, str] = {
-    tp: name
-    for name, tp in vars(types).items()
-    if isinstance(tp, type) and tp.__name__ != name and name not in _TYPE_ALIASES
+    cls: name
+    for name, cls in vars(types).items()
+    if isinstance(cls, type) and cls.__name__ != name and name not in _TYPE_ALIASES
 }
 
 

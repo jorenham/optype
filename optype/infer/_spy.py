@@ -191,7 +191,7 @@ class TraceItem(NamedTuple):
     attr: str
     args: Args
     kwargs: Kwargs
-    return_: object
+    ret: object
 
 
 type Traces = dict[int, list[TraceItem]]
@@ -267,7 +267,7 @@ def _brief(value: Any, /) -> str:
 def _record_state(item: TraceItem, buf: mmap.mmap, /) -> None:
     # the last completed op; a crash strikes between ops, in native code (#738)
     call = f"{item.attr}({', '.join(_brief(a) for a in item.args)})"
-    ret = "" if item.return_ is None else f" -> {_brief(item.return_)}"
+    ret = "" if item.ret is None else f" -> {_brief(item.ret)}"
     data = (call + ret).encode("utf-8", "replace")[: len(buf) - 1] + b"\x00"
     buf.seek(0)
     buf.write(data)
