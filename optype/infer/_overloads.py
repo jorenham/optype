@@ -8,7 +8,6 @@ parameter's attribute.
 from collections.abc import Iterable, Mapping
 from inspect import Parameter
 from itertools import starmap
-from typing import NamedTuple
 
 from ._analyze import (
     absent_verdict,
@@ -29,12 +28,6 @@ from ._render import (
 )
 from ._spy import AnyFunc, TraceItem
 from ._values import Exploration, map_values
-
-
-class _ResolvedDefaults(NamedTuple):
-    defaults: Defaults
-    negate: bool
-    overloads: list[Signature]
 
 
 def _bind(value: object, binding: Mapping[int, object]) -> object:
@@ -89,13 +82,14 @@ def resolve_defaults(
     params: Mapping[str, Parameter],
     selected: Names,
     exploration: Exploration,
-) -> _ResolvedDefaults:
+) -> tuple[Defaults, list[Signature]]:
     """The parameter defaults if expressible as typevar defaults, else overloads.
 
     Omitting the defaulted parameters must behave like substituting their values
     into the generic signature; the function is rerun without them to check. On a
-    mismatch the omitted calls are reported as separate overloads, and a single
-    defaulted parameter's type is excluded from the generic signature.
+    mismatch the omitted calls are reported as separate overloads; a single
+    defaulted parameter is returned beside them, for the caller to exclude its type
+    from the generic signature.
     """
     defaults = declared_defaults(params)
     kinds = {p.kind for p in params.values()}
@@ -104,7 +98,7 @@ def resolve_defaults(
         Parameter.VAR_POSITIONAL in kinds
         and any(params[n].kind is not Parameter.KEYWORD_ONLY for n in defaults)
     ):
-        return _ResolvedDefaults({}, False, [])
+        return {}, []
 
     required = {name: p for name, p in params.items() if name not in defaults}
     names = list(required)
@@ -115,12 +109,12 @@ def resolve_defaults(
         # the comparison must see every required parameter, regardless of selection
         observed = render_all(omitted_renderers, names, deprecated=omitted.deprecated)
     except Exception:  # ruff: ignore[blind-except]
-        return _ResolvedDefaults({}, False, [])
+        return {}, []
 
     omitted_defaults = _bind_exploration(exploration, defaults)
     expected = signatures(omitted_defaults, required, names)
     if _same(expected, observed):
-        return _ResolvedDefaults(defaults, False, [])
+        return defaults, []
 
     overloads = render_all(
         omitted_renderers,
@@ -130,7 +124,7 @@ def resolve_defaults(
     )
 
     if len(defaults) == 1:
-        return _ResolvedDefaults(defaults, True, overloads)
+        return defaults, overloads
 
     for name, value in defaults.items():
         try:
@@ -139,7 +133,7 @@ def resolve_defaults(
             continue
         overloads += signatures(variant, params, selected, {name: value})
 
-    return _ResolvedDefaults({}, False, overloads)
+    return {}, overloads
 
 
 def dispatch_overloads(

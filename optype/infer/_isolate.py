@@ -2,7 +2,6 @@
 
 # ruff: file-ignore[blind-except, docstring-missing-exception]
 
-import enum
 import faulthandler
 import gc
 import mmap
@@ -23,12 +22,6 @@ from pathlib import Path
 import optype.infer._spy as _spy  # ruff: ignore[manual-from-import]
 from ._errors import WARN_SKIP_PREFIX, InferError, describe
 from ._gc import cyclic_gc
-
-
-class _Status(enum.Enum):
-    OK = enum.auto()
-    ERROR = enum.auto()
-
 
 _MAX_STATE_SIZE = 4096
 
@@ -64,9 +57,9 @@ def _child(work: Callable[[], object], send: Connection, buf: mmap.mmap) -> None
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         try:
-            payload, status, cause = work(), _Status.OK, None
+            payload, ok, cause = work(), True, None
         except BaseException as exc:
-            payload, status = _outcome(exc), _Status.ERROR
+            payload, ok = _outcome(exc), False
             cause = payload.__cause__
 
         warns = [(str(w.message), w.category) for w in caught]
@@ -75,7 +68,7 @@ def _child(work: Callable[[], object], send: Connection, buf: mmap.mmap) -> None
             os._exit(0)  # the target forked; only the original child may send
 
         try:
-            send.send((status, payload, cause, warns))
+            send.send((ok, payload, cause, warns))
         except Exception:
             # a spy in the exception won't pickle
             if isinstance(payload, InferError):
@@ -84,7 +77,7 @@ def _child(work: Callable[[], object], send: Connection, buf: mmap.mmap) -> None
                 fallback = InferError(describe(payload))
             else:
                 fallback = payload
-            send.send((status, fallback, None, warns))
+            send.send((ok, fallback, None, warns))
 
 
 def _read_state(buf: mmap.mmap) -> str:
@@ -260,11 +253,11 @@ def isolate[T](work: Callable[[], T]) -> T:
         if received is None:
             raise _no_result_error(proc, buf, exited=exited)
 
-        status, payload, cause, warns = received
+        ok, payload, cause, warns = received
         for message, category in warns:
             warnings.warn(message, category, skip_file_prefixes=(WARN_SKIP_PREFIX,))
 
-        if status is _Status.ERROR:
+        if not ok:
             raise payload from cause
 
         return payload

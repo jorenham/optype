@@ -16,7 +16,7 @@ from typing import Literal, final
 import optype.infer._ir as _ir  # ruff: ignore[manual-from-import]
 from ._model import Alias, Attr, Member, Method, ProtocolDef
 from optype._core import _can, _has, _just
-from optype.infer._backends._base import qualified_default_text, qualified_value_text
+from optype.infer._backends._base import default_text, value_text
 
 _ABC = frozenset({
     "Callable",
@@ -114,25 +114,22 @@ def _default_mask(defaults: Sequence[bool], end: int) -> list[bool]:
 class Printer:
     """Render the lowered model as Python text, recording the names it references."""
 
-    _used: set[str]  # every referenced name, for the import block
+    used: set[str]  # every referenced name, for the import block
     _shadowed: frozenset[str]  # names the current class body binds
     _aliases: dict[str, str]  # modules a class body shadows, by their import alias
 
     def __init__(self) -> None:
-        self._used = set()
+        self.used = set()
         self._shadowed = frozenset()
         self._aliases = {}
 
-    def record(self, name: str) -> None:
-        self._used.add(name)
-
     def _literal(self, value: object) -> str:
         paths: list[str] = []
-        text = qualified_value_text(value, paths.append)
+        text = value_text(value, paths.append)
         for path in paths:  # an enum member's `module.Class`
             module = path.rpartition(".")[0]
             if module.partition(".")[0] not in self._shadowed:
-                self._used.add(path)
+                self.used.add(path)
                 continue
             if (alias := self._aliases.get(module)) is None:
                 # a leading double underscore would be mangled in the class body
@@ -146,7 +143,7 @@ class Printer:
     def _name(self, name: str) -> str:
         if name in self._shadowed:
             name = _qualified(name)
-        self._used.add(name)
+        self.used.add(name)
         return name
 
     def render_node(self, node: _ir.Node) -> str:  # ruff: ignore[complex-structure, too-many-return-statements]
@@ -212,7 +209,7 @@ class Printer:
             else:
                 decl = f"{p.prefix}{p.name}: {self.render_node(p.node)}"
             if p.default is not None and show[i]:
-                decl += f" = {qualified_default_text(p.default[0], self._used.add)}"
+                decl += f" = {default_text(p.default[0], self.used.add)}"
             items.append((decl, p.pos_only))
         return _join_params(items)
 
@@ -251,14 +248,14 @@ class Printer:
                 pos_only = not prefix
                 auto += 1
             if isinstance(p, _ir.Arg) and p.default is not None and show[i]:
-                decl += f" = {qualified_default_text(p.default[0], self._used.add)}"
+                decl += f" = {default_text(p.default[0], self.used.add)}"
             items.append((decl, pos_only))
         return _join_params(items)
 
     def _member_text(self, member: Member, *, overload: bool) -> str:
         if isinstance(member, Attr):
             if member.classvar:
-                self.record("ClassVar")
+                self.used.add("ClassVar")
                 return f"    {member.name}: ClassVar[{self.render_node(member.type)}]"
             if member.readonly or member.setter is not None:
                 ret = self.render_node(member.type)
@@ -277,14 +274,14 @@ class Printer:
         sig = self.call_params(member.params)
         head = ""
         if overload:
-            self.record("overload")
+            self.used.add("overload")
             head = "    @overload\n"
         self_sig = f"self, {sig}" if sig else "self"
         ret = self.render_node(member.ret)
         return f"{head}    def {member.name}({self_sig}) -> {ret}: ..."
 
     def protocol_text(self, proto: ProtocolDef) -> str:
-        self.record("Protocol")
+        self.used.add("Protocol")
         bases = ", ".join([*(self.render_node(b) for b in proto.bases), "Protocol"])
         head = f"class {proto.name}{self.type_params(proto.type_params)}({bases}):"
         if not proto.members:
@@ -305,7 +302,7 @@ class Printer:
     def func_text(self, func: _ir.Signature) -> str:
         head = ""
         if func.deprecated is not None:
-            self.record("deprecated")
+            self.used.add("deprecated")
             head = f"@deprecated({func.deprecated!r})\n"
         sig = f"def f{self.type_params(func.type_params)}({self.params(func.params)})"
         return f"{head}{sig} -> {self.render_node(func.ret)}: ..."
@@ -318,7 +315,7 @@ class Printer:
         """The import lines for referenced names that are neither helper nor typevar."""
         groups: dict[str, set[str]] = {}
         whole: set[str] = set()
-        for name in self._used - locals_ - tyvars:
+        for name in self.used - locals_ - tyvars:
             if (found := import_of(name)) is None:
                 continue
             module_name, member = found

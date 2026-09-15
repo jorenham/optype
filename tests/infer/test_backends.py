@@ -7,12 +7,7 @@ import types
 
 import pytest
 
-from optype.infer._backends._base import (
-    default_text,
-    qualified_default_text,
-    qualified_value_text,
-    value_text,
-)
+from optype.infer._backends._base import default_text, value_text
 from optype.infer._backends._terse import TERSE
 from optype.infer._ir import (
     App,
@@ -92,11 +87,9 @@ def test_default_text_float_subclass() -> None:
 def test_qualified_text_records_import_path() -> None:
     recorded: list[str] = []
     status = http.HTTPStatus.NOT_FOUND
-    assert qualified_value_text(status, recorded.append) == "http.HTTPStatus.NOT_FOUND"
-    assert (
-        qualified_default_text(status, recorded.append) == "http.HTTPStatus.NOT_FOUND"
-    )
-    assert qualified_default_text(1, recorded.append) == "1"
+    assert value_text(status, recorded.append) == "http.HTTPStatus.NOT_FOUND"
+    assert default_text(status, recorded.append) == "http.HTTPStatus.NOT_FOUND"
+    assert default_text(1, recorded.append) == "1"
     assert recorded == ["http.HTTPStatus", "http.HTTPStatus"]
 
 

@@ -35,10 +35,14 @@ def _enum_member_path(value: enum.Enum) -> tuple[str, str, str] | None:
     return cls.__module__, cls.__name__, name
 
 
-def value_text(value: object) -> str:
-    """A single value's source text: an enum member's bare path, else its `repr`.
+type _Recorder = Callable[[str], None]
 
-    An inexpressible enum member falls back to its data value.
+
+def value_text(value: object, rec: _Recorder | None = None) -> str:
+    """A single value's source text: an enum member's path, else its `repr`.
+
+    An inexpressible enum member falls back to its data value. With `rec`, the enum
+    class is module-qualified and `rec` records that import path.
     """
     if not isinstance(value, enum.Enum):
         return repr(value)
@@ -46,24 +50,20 @@ def value_text(value: object) -> str:
     if (found := _enum_member_path(value)) is None:
         return repr(value.value)
 
-    _, cls, member = found
-    return f"{cls}.{member}"
-
-
-def qualified_value_text(value: object, rec: Callable[[str], None]) -> str:
-    """`value_text` with the enum class qualified; `rec` records its import path."""
-    if not isinstance(value, enum.Enum) or (found := _enum_member_path(value)) is None:
-        return value_text(value)
-
     module, cls, member = found
+    if rec is None:
+        return f"{cls}.{member}"
     rec(path := f"{module}.{cls}")
     return f"{path}.{member}"
 
 
-def default_text(value: object) -> str:
-    """The default's source text, in stub style: a literal `repr`, else `...`."""
+def default_text(value: object, rec: _Recorder | None = None) -> str:
+    """The default's source text, in stub style: a literal `repr`, else `...`.
+
+    With `rec`, an enum member's class is qualified and recorded, as in `value_text`.
+    """
     if isinstance(value, enum.Enum):
-        return value_text(value) if _enum_member_path(value) else "..."
+        return value_text(value, rec) if _enum_member_path(value) else "..."
 
     simple = (
         value is None
@@ -73,10 +73,3 @@ def default_text(value: object) -> str:
         or (isinstance(value, complex) and cmath.isfinite(value))
     )
     return repr(value) if simple else "..."
-
-
-def qualified_default_text(value: object, rec: Callable[[str], None]) -> str:
-    """`default_text` with an enum member's class qualified and recorded."""
-    if isinstance(value, enum.Enum):
-        return qualified_value_text(value, rec) if _enum_member_path(value) else "..."
-    return default_text(value)

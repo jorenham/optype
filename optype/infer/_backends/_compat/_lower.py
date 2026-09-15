@@ -9,7 +9,7 @@ import builtins
 import functools
 import keyword
 import typing
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import replace
 from itertools import count, islice, product
 from typing import final
@@ -33,7 +33,6 @@ from ._model import (
     is_protocol_node,
     member_nodes,
     resolution_order,
-    strip_variance,
     subst_member,
 )
 from ._print import OPTYPE, import_of, member_key, type_text
@@ -329,32 +328,18 @@ class Lowerer:
 
     defs: dict[str, Helper]
     groups: dict[_GroupKey, list[str]]
-    _keys: dict[_ProtoKey, str]
+    keys: dict[_ProtoKey, str]
     _names: set[str]  # every claimed helper name
 
     def __init__(self) -> None:
         self.defs = {}
         self.groups = {}
-        self._keys = {}
+        self.keys = {}
         self._names = set()
 
     def module(self, sigs: Sequence[_ir.Signature]) -> Module:
         funcs = [_SigLowerer(self, sig).func() for sig in sigs]
         return Module(tuple(_reachable(self.defs, funcs)), tuple(funcs))
-
-    def register(
-        self,
-        candidate: str,
-        key: _ProtoKey,
-        build: Callable[[str], Helper],
-    ) -> str:
-        if key in self._keys:
-            return self._keys[key]
-
-        name = self.claim(candidate)
-        self._keys[key] = name
-        self.defs[name] = build(name)
-        return name
 
     def claim(self, candidate: str) -> str:
         """A fresh helper name that collides with no real import or other helper."""
@@ -373,29 +358,11 @@ class Lowerer:
 
 def _mentions(node: _ir.Term) -> Iterable[str]:
     # the applied and bare names in `node`, helpers included
-    match node:
-        case _ir.Name(name):
-            yield name
-        case _ir.App(origin, parts) | _ir.Has(origin, parts):
-            yield origin
-            for part in parts:
-                yield from _mentions(part)
-        case _ir.Union(parts) | _ir.Intersection(parts):
-            for part in parts:
-                yield from _mentions(part)
-        case _ir.Fn(params, ret):
-            for part in (*params, ret):
-                yield from _mentions(part)
-        case (
-            _ir.Arg(value=part)
-            | _ir.Not(part)
-            | _ir.Covariant(part)
-            | _ir.Contravariant(part)
-            | _ir.Unpack(part)
-        ):
-            yield from _mentions(part)
-        case _:
-            return
+    for term in _ir.walk(node):
+        if isinstance(term, _ir.Name):
+            yield term.name
+        elif isinstance(term, _ir.App):
+            yield term.origin
 
 
 def _typar_nodes(typars: Iterable[_ir.TypeParam]) -> Iterable[_ir.Node]:
@@ -692,11 +659,10 @@ class _SigLowerer:
             tuple(type_text(b) for b in canon_bases),
             tuple(map(member_key, canon_members)),
         )
-        name = self._registry.register(
-            candidate,
-            key,
-            lambda nm: ProtocolDef(nm, typars, canon_bases, canon_members),
-        )
+        registry = self._registry
+        if (name := registry.keys.get(key)) is None:
+            name = registry.keys[key] = registry.claim(candidate)
+            registry.defs[name] = ProtocolDef(name, typars, canon_bases, canon_members)
         return _ir.App(name, tuple(_ir.Name(f) for f in fv))
 
     def _combine(self, parts: Sequence[_ir.Node]) -> _ir.Node:
@@ -760,11 +726,11 @@ class _SigLowerer:
             return Attr(attr, _ir.OBJECT, classvar=classvar, readonly=not classvar)
         if len(args) == 1 and isinstance(args[0], _ir.Fn):
             fn = args[0]
-            ret = self._node(strip_variance(fn.ret), constraints)
+            ret = self._node(fn.ret, constraints)
             params = tuple(self._arg(p, constraints) for p in fn.params)
             return Method(attr, params, ret)
         if not all(isinstance(a, (_ir.Covariant, _ir.Contravariant)) for a in args):
-            node = self._node(strip_variance(args[0]), constraints)
+            node = self._node(args[0], constraints)
             cv = classvar and not is_generic(node, self._tyvars)
             return Attr(attr, node, classvar=cv)
         co, contra = _by_variance(args)

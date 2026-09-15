@@ -1,7 +1,7 @@
 """The default terse renderer: compact, but not valid Python."""
 
 from collections.abc import Sequence
-from typing import Final, assert_never, final
+from typing import Final, final
 
 # `from . import _ir` would re-enter this package
 import optype.infer._ir as _ir  # ruff: ignore[manual-from-import]
@@ -30,7 +30,7 @@ class TerseBackend:
             line = f"@deprecated({sig.deprecated!r})\n{line}"
         return line
 
-    def _render_node(self, node: _ir.Node, /) -> str:
+    def _render_node(self, node: _ir.Node, /) -> str:  # ruff: ignore[complex-structure, too-many-branches]
         """Format a type expression, parenthesized where precedence requires."""
         match node:
             case _ir.Lit(values):
@@ -48,10 +48,18 @@ class TerseBackend:
                 out = f"Has[{', '.join(parts)}]"
             case _ir.Fn(params, ret):
                 out = self._fn(params, ret)
-            case _ir.Not() | _ir.Covariant() | _ir.Contravariant() | _ir.Unpack():
-                out = self._prefixed(node)
-            case _ir.Union() | _ir.Intersection():
-                out = self._infixed(node)
+            case _ir.Not(part):
+                out = self._prefix(_NOT, part)
+            case _ir.Covariant(part):
+                out = self._prefix(_ir.COVARIANT, part)
+            case _ir.Contravariant(part):
+                out = self._prefix(_ir.CONTRAVARIANT, part)
+            case _ir.Unpack(part):
+                out = self._prefix(_STAR, part)
+            case _ir.Union(parts):
+                out = self._infix(_OR, parts, _ir.Intersection)
+            case _ir.Intersection(parts):
+                out = self._infix(_AND, parts, _ir.Union)
         return out
 
     def _prefix(self, op: str, part: _ir.Node) -> str:
@@ -85,33 +93,12 @@ class TerseBackend:
         decls = ", ".join(map(self._arg, params))
         return f"({decls}) -> {self._render_node(ret)}"
 
-    def _prefixed(
+    def _infix(
         self,
-        node: _ir.Not | _ir.Covariant | _ir.Contravariant | _ir.Unpack,
+        sep: str,
+        parts: tuple[_ir.Node, ...],
+        dual: type[_ir.Union | _ir.Intersection],
     ) -> str:
-        match node:
-            case _ir.Covariant(part):
-                op = _ir.COVARIANT
-            case _ir.Contravariant(part):
-                op = _ir.CONTRAVARIANT
-            case _ir.Not(part):
-                op = _NOT
-            case _ir.Unpack(part):
-                op = _STAR
-            case _:
-                assert_never(node)
-
-        return self._prefix(op, part)
-
-    def _infixed(self, node: _ir.Union | _ir.Intersection) -> str:
-        match node:
-            case _ir.Union(parts):
-                sep, dual = _OR, _ir.Intersection
-            case _ir.Intersection(parts):
-                sep, dual = _AND, _ir.Union
-            case _:
-                assert_never(node)
-
         return f" {sep} ".join(
             f"({self._render_node(part)})"
             if isinstance(part, (dual, _ir.Fn))

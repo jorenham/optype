@@ -522,7 +522,7 @@ class _ResultTyper:
             _ir.Arg(
                 None if p.kind is Parameter.POSITIONAL_ONLY else name,
                 self._fn_param(fn, name),
-                _boxed_default(fn.defaults, name),
+                None if p.default is Parameter.empty else (p.default,),
             )
             for name, p in fn.params.items()
         )
@@ -533,7 +533,7 @@ class _ResultTyper:
             return self._slot(spy)
 
         value = fn.fixed[name]
-        if name in fn.defaults:
+        if fn.params[name].default is not Parameter.empty:
             # a pinned default renders as its value, like the outer parameters do
             return self.value_type(value)
 
@@ -634,17 +634,15 @@ class _ResultTyper:
 
             # a uniform spread is `tuple[T, ...]`: the placeholder (`(*args,)`) at any
             # length, or its zipped element (`zip(*args)`) only at the full count
-            full_count = len(items) == self._binding.exploration.var_count
-            for target, needs_full_count in (
-                (spy, False),
-                (spy.__optype_element__, True),
+            if all(item is spy for item in items):
+                return _ir.tuple_node_variadic(self.return_type(spy))
+            element = spy.__optype_element__
+            if (
+                element is not None
+                and len(items) == self._binding.exploration.var_count
+                and all(item is element for item in items)
             ):
-                if (
-                    target is not None
-                    and (full_count or not needs_full_count)
-                    and all(item is target for item in items)
-                ):
-                    return _ir.tuple_node_variadic(self.return_type(target))
+                return _ir.tuple_node_variadic(self.return_type(element))
 
         if len(items) > _TUPLE_LIMIT:  # e.g. `random.getstate`
             return _ir.tuple_node_variadic(self.type_union(items))
