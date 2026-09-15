@@ -159,14 +159,7 @@ def _decide_stable(spy: "SpyObject", attr: str, /, *, optional: bool = False) ->
     return value
 
 
-def _decide_keyed(
-    spy: "SpyObject",
-    attr: str,
-    item: object,
-    /,
-    *,
-    keep_arg: bool,
-) -> bool:
+def _decide_keyed(spy: "SpyObject", attr: str, item: object, /) -> bool:
     # per-operand `_decide_stable`: `y in x and y not in x` agrees within a run, while
     # `a in x` and `b in x` stay free
     plan = fork_plan.get()
@@ -182,7 +175,8 @@ def _decide_keyed(
 
     key = id(item)
     if key not in cache:
-        args = (item,) if keep_arg else ()
+        # only `CanContains` has a type parameter for its operand
+        args = (item,) if attr == "__contains__" else ()
         cache[key] = item, spy.__optype_trace_add__(attr, args, {}, int(_decide()))
     return bool(cache[key][1])
 
@@ -423,10 +417,10 @@ class SpyObject(Spy, metaclass=_SpyType):
     ###
 
     def __instancecheck__(self, instance: object, /) -> bool:
-        return _decide_keyed(self, "__instancecheck__", instance, keep_arg=False)
+        return _decide_keyed(self, "__instancecheck__", instance)
 
     def __subclasscheck__(self, subclass: object, /) -> bool:
-        return _decide_keyed(self, "__subclasscheck__", subclass, keep_arg=False)
+        return _decide_keyed(self, "__subclasscheck__", subclass)
 
     ###
 
@@ -468,7 +462,7 @@ class SpyObject(Spy, metaclass=_SpyType):
         return self.__optype_trace_add__("__reversed__", (), {}, _iterator_of(self))
 
     def __contains__(self, item: object, /) -> bool:
-        return _decide_keyed(self, "__contains__", item, keep_arg=True)
+        return _decide_keyed(self, "__contains__", item)
 
     # return `Any` instead of `SpyObject` to avoid an LSP error for `__dir__`
     def __next__(self, /) -> Any:

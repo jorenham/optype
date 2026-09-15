@@ -22,7 +22,7 @@ class CompatBackend:
         printer = Printer()
         bodies = list(dict.fromkeys(printer.func_text(f) for f in module.funcs))
         if len(bodies) > 1:
-            printer.record("overload")
+            printer.used.add("overload")
             bodies = [f"@overload\n{body}" for body in bodies]
         helpers = [
             printer.protocol_text(h)

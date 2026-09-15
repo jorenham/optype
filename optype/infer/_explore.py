@@ -266,13 +266,7 @@ def _explore_func(func: AnyFunc) -> object:
         exploration, _ = explore_lenient(func, params)
     except Exception:  # ruff: ignore[blind-except]  # an unexplorable function stays opaque
         return func
-    return FnResult(
-        params,
-        exploration.spies,
-        exploration.fixed,
-        declared_defaults(params),
-        exploration.results,
-    )
+    return FnResult(params, exploration.spies, exploration.fixed, exploration.results)
 
 
 def _wrapped_return(result: object) -> object | None:

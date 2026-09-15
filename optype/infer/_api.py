@@ -60,7 +60,9 @@ def _form_signatures(
     exploration = exploration._replace(
         tuple_params=explore_tuple_params(func, params, exploration),
     )
-    defaults, negate, overloads = resolve_defaults(func, params, selected, exploration)
+    defaults, overloads = resolve_defaults(func, params, selected, exploration)
+    # exclude the lone default's type when omitted calls need a separate overload
+    negate = bool(defaults and overloads)
     lines = signatures(exploration, params, selected, defaults, negate=negate)
     if not defaults and not overloads:
         # dispatch only when defaults didn't already split the form

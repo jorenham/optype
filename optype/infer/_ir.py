@@ -433,11 +433,10 @@ def intersection(parts: Iterable[Node]) -> Node | None:
     return flat[0] if len(flat) == 1 else Intersection(tuple(flat))
 
 
-def names(node: Term) -> Generator[str]:
-    # in order, so typevar uses can be counted
+def walk(node: Term) -> Generator[Term]:
+    # every term in pre-order, `node` itself first
+    yield node
     match node:
-        case Name(name):
-            yield name
         case (
             Arg(value=part)
             | Not(part)
@@ -445,15 +444,20 @@ def names(node: Term) -> Generator[str]:
             | Contravariant(part)
             | Unpack(part)
         ):
-            yield from names(part)
+            yield from walk(part)
         case App(args=parts) | Has(args=parts) | Union(parts) | Intersection(parts):
             for part in parts:
-                yield from names(part)
+                yield from walk(part)
         case Fn(params, ret):
             for part in (*params, ret):
-                yield from names(part)
-        case Lit() | Type() | Dots():
+                yield from walk(part)
+        case Lit() | Type() | Name() | Dots():
             return
+
+
+def names(node: Term) -> Generator[str]:
+    # in order, so typevar uses can be counted
+    return (term.name for term in walk(node) if isinstance(term, Name))
 
 
 def subst(node: Node, m: Mapping[str, Node], *, dedup: bool = False) -> Node:

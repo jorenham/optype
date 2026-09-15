@@ -58,7 +58,6 @@ class FnResult:
     params: Mapping[str, Parameter]
     spies: Mapping[str, SpyObject]
     fixed: Mapping[str, object]
-    defaults: Mapping[str, object]
     results: Sequence[object]
 
 

@@ -83,9 +83,6 @@ class _Assign:
     tyvars: dict[int, str] = field(default_factory=dict)
     named: dict[int, str] = field(default_factory=dict)  # representative id -> name
 
-    def rep(self, spy: SpyObject) -> int:
-        return self.reps.get(sid := id(spy), sid)
-
     def name_results(
         self,
         results: Sequence[object],
@@ -99,7 +96,7 @@ class _Assign:
                 if sid in param_ids or sid in self.tyvars:
                     continue
                 # results of one op-shape share a type parameter, even traced or reused
-                if (tyvar := self.named.get(rep := self.rep(spy))) is None:
+                if (tyvar := self.named.get(rep := self.reps.get(sid, sid))) is None:
                     tyvar = _result_tyvar(len(result_spies))
                     result_spies.append(spy)
                     self.named[rep] = tyvar
@@ -131,14 +128,15 @@ class _Assign:
         declared: list[SpyObject] = []
         n = 0
         for spy in candidates:
-            if (tyvar := self.named.get(rep := self.rep(spy))) is None:
-                tyvar = self.tyvars.get(id(spy))  # a `*Ts` variadic keeps its name
+            sid = id(spy)
+            if (tyvar := self.named.get(rep := self.reps.get(sid, sid))) is None:
+                tyvar = self.tyvars.get(sid)  # a `*Ts` variadic keeps its name
                 if tyvar is None:
                     tyvar = _ir.tyvar_name(n)
                     n += 1
                 self.named[rep] = tyvar
                 declared.append(spy)
-            self.tyvars[id(spy)] = tyvar
+            self.tyvars[sid] = tyvar
         return declared
 
 
