@@ -81,8 +81,9 @@ _VARIADIC_COUNTS = (2, 3, 4, 5, 6, 7, 8, 16, 32, 64, 128, 256, 512, 1024)
 # exact arity is needed, so these stay contiguous; a sparse range would skip valid ones
 _YIELD_COUNTS = tuple(range(2, 17))
 
-# the `next`-like builtins, which return their trailing argument when exhausted
-_NEXT_BUILTINS = frozenset({next, anext})
+# the `next`-like builtins, which return their trailing argument when exhausted; by
+# id, since the callable compared to them may be unhashable or compare elementwise
+_NEXT_BUILTIN_IDS = frozenset(map(id, (next, anext)))
 
 # the single-arg `itertools` iterators; with no yields they render bare, not `[Never]`
 _ITERTOOLS_TYPES: dict[type, str] = {
@@ -391,7 +392,7 @@ def _with_next_default(
     results: Sequence[object],
 ) -> Sequence[object]:
     # `next`/`anext` return `default` on an exhaustion branch the spies never reach
-    if func not in _NEXT_BUILTINS or len(spies) < 2:
+    if id(func) not in _NEXT_BUILTIN_IDS or len(spies) < 2:
         return results
     default = list(spies.values())[1]
 

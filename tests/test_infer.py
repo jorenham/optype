@@ -8,6 +8,7 @@ import ast
 import asyncio
 import builtins
 import contextvars
+import dataclasses
 import difflib
 import enum
 import fractions
@@ -110,6 +111,14 @@ def _get_class_attr(x: Any) -> None:
 class _Add1:
     def __call__(self, x: Any) -> Any:
         return x + 1
+
+
+@dataclasses.dataclass
+class _AddN:
+    n: int
+
+    def __call__(self, x: Any) -> Any:
+        return x + self.n
 
 
 UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
@@ -395,6 +404,8 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     ),
     # a callable instance explores its `__call__`
     (_Add1(), "[R](x: CanAdd[Literal[1], R]) -> R"),
+    # an unhashable one (a dataclass instance) is never hashed along the way
+    (_AddN(1), "[R](x: CanAdd[Literal[1], R]) -> R"),
 ]
 
 BINARY_CASES: list[tuple[Callable[[Any, Any], Any], str]] = [
