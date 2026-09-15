@@ -29,7 +29,6 @@ class Naming:
 
     reps: Mapping[int, int]  # spy id -> representative id
     tyvars: Mapping[int, str]  # spy id -> type parameter name
-    named: Mapping[int, str]  # representative id -> name
     param_spies: Sequence[SpyObject]
     declared_spies: Sequence[SpyObject]
     result_spies: Sequence[SpyObject]
@@ -65,11 +64,6 @@ class Naming:
         return replace(
             self,
             tyvars=tyvars,
-            named={
-                rep: remap.get(tyvar, tyvar)
-                for rep, tyvar in self.named.items()
-                if tyvar not in inline
-            },
             declared_spies=[s for s in self.declared_spies if id(s) in tyvars],
             group_traces=group_traces(tyvars, self.reps, traces),
         )
@@ -179,7 +173,6 @@ def build(
     return Naming(
         reps,
         assign.tyvars,
-        assign.named,
         param_spies,
         declared,
         result_spies,

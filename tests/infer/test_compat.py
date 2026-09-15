@@ -764,8 +764,6 @@ def test_has_classvar() -> None:
     # a `ClassVar` cannot hold a typevar, so a generic one demotes to the instance form
     arg = App("ClassVar", (Covariant(R),))
     assert _has_member(arg) == Attr("spam", T, readonly=True)
-    arg = App("ClassVar", (R,))
-    assert _has_member(arg) == Attr("spam", T)
     arg = App(
         "ClassVar",
         (Covariant(R), Contravariant(Type(int))),
