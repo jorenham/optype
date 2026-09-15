@@ -2,7 +2,7 @@
 
 # pyright: reportUnknownArgumentType=false, reportUnknownVariableType=false
 
-from collections.abc import Callable, Generator, Iterable, Mapping, Sequence
+from collections.abc import Generator, Iterable, Mapping, Sequence
 from contextvars import Context
 from dataclasses import dataclass, replace
 from enum import StrEnum
@@ -124,8 +124,8 @@ def walk(value: object) -> Generator[object]:
         yield from walk(child)
 
 
-def map_values(value: Any, leaf: Callable[[Any], Any]) -> Any:  # ruff: ignore[complex-structure, too-many-branches]
-    """Rebuild `value` with each non-composite leaf replaced via `leaf`.
+def map_values(value: Any, binding: Mapping[int, object]) -> Any:  # ruff: ignore[complex-structure, too-many-branches]
+    """Rebuild `value` with each bound spy replaced by its binding.
 
     Recurses into the same shapes as `children`, but a `tuple` subclass (namedtuple)
     is a leaf, and a `dict` subclass (e.g. `defaultdict`) collapses to a plain `dict`.
@@ -133,28 +133,28 @@ def map_values(value: Any, leaf: Callable[[Any], Any]) -> Any:  # ruff: ignore[c
 
     if isinstance(value, Spy):
         # a spy is a leaf; see `children`
-        return leaf(value)
+        return binding.get(id(value), value)
 
     match value:
         case Gen():
-            yielded = [map_values(item, leaf) for item in value.yielded]
+            yielded = [map_values(item, binding) for item in value.yielded]
             out = replace(value, yielded=yielded)
         case FnResult():
-            results = [map_values(item, leaf) for item in value.results]
+            results = [map_values(item, binding) for item in value.results]
             out = replace(value, results=results)
         case Rec():
-            out = replace(value, body=map_values(value.body, leaf))
+            out = replace(value, body=map_values(value.body, binding))
         case RecRef():
             out = value
         case tuple() if type(value) is tuple:
-            out = tuple(map_values(item, leaf) for item in value)
+            out = tuple(map_values(item, binding) for item in value)
         case list():
-            out = [map_values(item, leaf) for item in value]
+            out = [map_values(item, binding) for item in value]
         case set() | frozenset():
-            items = {map_values(item, leaf) for item in value}
+            items = {map_values(item, binding) for item in value}
             out = frozenset(items) if isinstance(value, frozenset) else items
         case _ if (pairs := mapping_items(value)) is not None:
-            rebuilt = {map_values(k, leaf): map_values(v, leaf) for k, v in pairs}
+            rebuilt = {map_values(k, binding): map_values(v, binding) for k, v in pairs}
             if isinstance(value, dict):
                 out = rebuilt  # any `dict` subclass collapses to a plain `dict`
             else:  # the `frozendict` builtin rebuilds as itself
@@ -164,12 +164,12 @@ def map_values(value: Any, leaf: Callable[[Any], Any]) -> Any:  # ruff: ignore[c
                     out = value
         case slice():
             out = slice(
-                map_values(value.start, leaf),
-                map_values(value.stop, leaf),
-                map_values(value.step, leaf),
+                map_values(value.start, binding),
+                map_values(value.stop, binding),
+                map_values(value.step, binding),
             )
         case _:
-            out = leaf(value)
+            out = binding.get(id(value), value)
     return out
 
 

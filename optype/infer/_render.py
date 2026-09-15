@@ -154,7 +154,7 @@ class _Renderer:
 
         naming = binding.naming
         self._bound_nodes = {
-            rep: self.traces(naming.group_traces.get(rep, ())) for rep in naming.named
+            rep: self.traces(items) for rep, items in naming.group_traces.items()
         }
 
     @property

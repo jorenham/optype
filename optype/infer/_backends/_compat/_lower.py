@@ -707,7 +707,7 @@ class _SigLowerer:
         candidate = "Has" + attr[:1].upper() + attr[1:]
         return self._proto_app(candidate, members=(member,))
 
-    def _has_member(  # ruff: ignore[too-many-return-statements]
+    def _has_member(
         self,
         attr: str,
         args: tuple[_ir.Node, ...],
@@ -729,10 +729,6 @@ class _SigLowerer:
             ret = self._node(fn.ret, constraints)
             params = tuple(self._arg(p, constraints) for p in fn.params)
             return Method(attr, params, ret)
-        if not all(isinstance(a, (_ir.Covariant, _ir.Contravariant)) for a in args):
-            node = self._node(args[0], constraints)
-            cv = classvar and not is_generic(node, self._tyvars)
-            return Attr(attr, node, classvar=cv)
         co, contra = _by_variance(args)
         getter = self._node(_ir.intersection(co) or _ir.OBJECT, constraints)
         setter = self._node(_ir.union(contra) or _ir.OBJECT, constraints)

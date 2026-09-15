@@ -30,11 +30,6 @@ from ._spy import AnyFunc, TraceItem
 from ._values import Exploration, map_values
 
 
-def _bind(value: object, binding: Mapping[int, object]) -> object:
-    """A deep copy of `value` with every bound spy replaced by its binding."""
-    return map_values(value, lambda v: binding.get(id(v), v))
-
-
 def _distinct(sigs: Iterable[Signature]) -> list[Signature]:
     out: list[Signature] = []
     for sig in sigs:
@@ -61,8 +56,8 @@ def _bind_exploration(exp: Exploration, defaults: Defaults) -> Exploration:
         spy_id: [
             TraceItem(
                 item.attr,
-                tuple(_bind(arg, binding) for arg in item.args),
-                {key: _bind(val, binding) for key, val in item.kwargs.items()},
+                tuple(map_values(arg, binding) for arg in item.args),
+                {key: map_values(val, binding) for key, val in item.kwargs.items()},
                 item.ret,
             )
             for item in items
@@ -72,7 +67,7 @@ def _bind_exploration(exp: Exploration, defaults: Defaults) -> Exploration:
     return exp._replace(
         spies={name: spy for name, spy in spies.items() if name not in defaults},
         traces=bound,
-        results=[_bind(result, binding) for result in exp.results],
+        results=[map_values(result, binding) for result in exp.results],
         tuple_params=exp.tuple_params - set(defaults),
     )
 
