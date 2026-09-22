@@ -80,16 +80,28 @@ class RecRef:
     var: RecVar
 
 
-def mapping_items(value: object, /) -> list[tuple[Any, Any]] | None:
-    """The items of a mapping, or `None` for anything else: a non-mapping, a `Context`,
-    or a mapping that raises when read (a closed shelf)."""
+@dataclass(frozen=True, slots=True, eq=False)  # hashable in a set, whatever it holds
+class Map:
+    """A mapping as its class and `(key, value)` pairs, which can hold explored or bound
+    values without calling the class."""
+
+    cls: type
+    pairs: Sequence[tuple[Any, Any]]
+
+
+def as_mapping(value: object, /) -> Map | None:
+    """`value` as a `Map`, or `None` for anything else: a non-mapping, a `Context`, or a
+    mapping that raises when read (a closed shelf)."""
+    if isinstance(value, Map):
+        return value
     if not isinstance(value, Mapping) or isinstance(value, Context):
         return None
     try:
         # not `list(...)`: its length hint would add a `len` requirement to the mapping
-        return [pair for pair in value.items()]  # ruff: ignore[unnecessary-comprehension]
+        pairs = [pair for pair in value.items()]  # ruff: ignore[unnecessary-comprehension]
     except Exception:  # ruff: ignore[blind-except]
         return None
+    return Map(type(value), pairs)
 
 
 def children(value: Any) -> Iterable[Any]:
@@ -109,8 +121,8 @@ def children(value: Any) -> Iterable[Any]:
             out = ()
         case tuple() | list() | set() | frozenset():
             out = value
-        case _ if (pairs := mapping_items(value)) is not None:
-            out = chain.from_iterable(pairs)
+        case _ if (mapping := as_mapping(value)) is not None:
+            out = chain.from_iterable(mapping.pairs)
         case slice():
             out = value.start, value.stop, value.step
         case _:
@@ -124,11 +136,11 @@ def walk(value: object) -> Generator[object]:
         yield from walk(child)
 
 
-def map_values(value: Any, binding: Mapping[int, object]) -> Any:  # ruff: ignore[complex-structure, too-many-branches]
+def map_values(value: Any, binding: Mapping[int, object]) -> Any:  # ruff: ignore[complex-structure]
     """Rebuild `value` with each bound spy replaced by its binding.
 
     Recurses into the same shapes as `children`, but a `tuple` subclass (namedtuple)
-    is a leaf, and a `dict` subclass (e.g. `defaultdict`) collapses to a plain `dict`.
+    is a leaf, and a mapping comes back as a `Map`.
     """
 
     if isinstance(value, Spy):
@@ -153,15 +165,12 @@ def map_values(value: Any, binding: Mapping[int, object]) -> Any:  # ruff: ignor
         case set() | frozenset():
             items = {map_values(item, binding) for item in value}
             out = frozenset(items) if isinstance(value, frozenset) else items
-        case _ if (pairs := mapping_items(value)) is not None:
-            rebuilt = {map_values(k, binding): map_values(v, binding) for k, v in pairs}
-            if isinstance(value, dict):
-                out = rebuilt  # any `dict` subclass collapses to a plain `dict`
-            else:  # the `frozendict` builtin rebuilds as itself
-                try:
-                    out = type(value)(rebuilt)
-                except TypeError:
-                    out = value
+        case _ if (mapping := as_mapping(value)) is not None:
+            pairs = [
+                (map_values(k, binding), map_values(v, binding))
+                for k, v in mapping.pairs
+            ]
+            out = Map(mapping.cls, pairs)
         case slice():
             out = slice(
                 map_values(value.start, binding),

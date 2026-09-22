@@ -1105,5 +1105,9 @@ def test_naming_helpers() -> None:
     assert combine_name(["HasA", "HasB"]) == "HasAB"
     assert combine_name(["CanNeg", "HasName"]) == "CanNegHasName"
     assert not combine_name([])
+    # a qualified origin is named after its class, which must not shadow its module
+    lowerer = Lowerer()
+    assert lowerer.claim("collections.OrderedDict") == "OrderedDict2"
+    assert lowerer.claim("registry.registry") == "registry2"
     nodes = App("X", (Name("B"), Name("A"), Name("B"))), Arg("k", Name("C"))
     assert free_tyvars(nodes, frozenset({"A", "B"})) == ["B", "A"]

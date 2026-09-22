@@ -343,10 +343,14 @@ class Lowerer:
 
     def claim(self, candidate: str) -> str:
         """A fresh helper name that collides with no real import or other helper."""
+        # a qualified origin (`collections.OrderedDict`) is named after its class,
+        # which must not shadow the module it is imported by
+        module, _, candidate = candidate.rpartition(".")
         name = candidate
         i = 2
         while (
             name in self._names
+            or name == module.partition(".")[0]
             or import_of(name) is not None
             or hasattr(builtins, name)
         ):

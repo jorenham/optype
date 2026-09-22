@@ -627,6 +627,19 @@ COMPAT_CASES: list[tuple[str, str]] = [
         ),
     ),
     (
+        # a recursive alias of a qualified class is named after the class
+        (
+            "import collections\n"
+            "def f(): d = collections.OrderedDict(); d[0] = d; return d"
+        ),
+        (
+            "import collections\n"
+            "from typing import Literal\n\n"
+            "type OrderedDict2 = collections.OrderedDict[Literal[0], OrderedDict2]\n\n"
+            "def f() -> OrderedDict2: ..."
+        ),
+    ),
+    (
         # a bounded protocol parameter hands its bound to the inferred typevar
         "lambda x: iter(x)",
         (
