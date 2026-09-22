@@ -305,6 +305,15 @@ COMPAT_CASES: list[tuple[str, str]] = [
         ),
     ),
     (
+        # two typevars substituted by one type appear once in a union
+        "def f(x, y, z): x(z); y(z); return [x, y]",
+        (
+            "from collections.abc import Callable\n\n"
+            "def f[V](x: Callable[[V], object], y: Callable[[V], object], z: V)"
+            " -> list[Callable[[V], object]]: ..."
+        ),
+    ),
+    (
         # a self-referential bound becomes a self-referential protocol
         "lambda xs: sorted(xs)",
         (

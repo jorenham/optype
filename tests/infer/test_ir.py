@@ -191,7 +191,7 @@ def test_union_and_intersection_accept_unhashable_defaults() -> None:
     assert union([fn, fn]) == fn
     assert intersection([fn, fn]) == fn
     assert union([fn, A]) == Union((fn, A))
-    assert subst(Union((fn, A)), {"A": B}, dedup=True) == Union((fn, B))
+    assert subst(Union((fn, A)), {"A": B}) == Union((fn, B))
 
 
 def test_union_and_intersection_flatten_every_level() -> None:
@@ -300,9 +300,7 @@ def test_subst() -> None:
     node = App("X", (A, Arg("k", A)))
     assert subst(node, {"A": B}) == App("X", (B, Arg("k", B)))
     assert subst(A, {}) is A
-    # members that collapse together are only merged when `dedup` asks for it
-    assert subst(Union((A, B)), {"A": B}) == Union((B, B))
-    assert subst(Union((A, B)), {"A": B}, dedup=True) == B
+    assert subst(Union((A, B)), {"A": B}) == B
     assert subst_term(Arg("k", A, (1,)), {"A": B}) == Arg("k", B, (1,))
 
 
