@@ -438,7 +438,7 @@ def _run(
             result = func(*args, **kwds)
         finally:
             # a spy the target installed as trace function (`bdb.Bdb.start_trace`)
-            # would otherwise be called on every later frame, without bound (gh-774);
+            # would otherwise be called on every later frame, without bound;
             # only when changed, since a native hook (yappi) is `None` to the getter
             if sys.gettrace() is not trace:
                 sys.settrace(trace)
@@ -449,7 +449,7 @@ def _run(
 
 
 def _scrub_deprecated(message: str | None, func: AnyFunc) -> str | None:
-    """Replace a leaked spy identity in `message` with the target's owner (#777)."""
+    """Replace a leaked spy identity in `message` with the target's owner."""
     name = SpyObject.__name__
     if message is None or name not in message:
         return message

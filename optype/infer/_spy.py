@@ -26,7 +26,7 @@ def _internal(attr: str) -> bool:
 
 
 def dynamic_name(attr: str) -> bool:
-    """Whether `attr` is spy-derived, e.g. built from a spy's type name (#777)."""
+    """Whether `attr` is spy-derived, e.g. built from a spy's type name."""
 
     if isinstance(attr, Spy):
         # e.g. `SpyStr = str & Spy`
@@ -76,11 +76,11 @@ yield_budget: ContextVar[int] = ContextVar("yield_budget", default=1)
 starved: ContextVar[bool] = ContextVar("starved", default=False)
 
 # one element exercises no pairwise op, so `sorted`/`min` never reach their elements'
-# `__lt__` (#686); a pair suffices, and `_render` inlines the extra typevar away
+# `__lt__`; a pair suffices, and `_render` inlines the extra typevar away
 _DEFAULT_YIELD = 2
 
 # `_explore._run` unpacks a real arg list, so a spy `__iter__` charged to its frame is a
-# C builtin iterating internally, not a growable star-unpack (#723)
+# C builtin iterating internally, not a growable star-unpack
 _driver_code: CodeType | None = None
 
 
@@ -91,7 +91,7 @@ def set_driver_code[T: Callable[..., object]](fn: T, /) -> T:
 
 
 # a shared buffer into which each spy operation writes itself, so the last action
-# survives a native crash for `_isolate` to report (#738)
+# survives a native crash for `_isolate` to report
 _state_buffer: mmap.mmap | None = None
 
 
@@ -242,7 +242,7 @@ class SpyBytes(bytes, Spy):
 
 def _brief(value: Any, /) -> str:
     # no arbitrary `repr` here: a container's repr reaches the dunders of its
-    # elements, recording phantom ops on any spy inside (#763)
+    # elements, recording phantom ops on any spy inside
     if isinstance(value, Spy):
         return "spy"
 
@@ -259,7 +259,7 @@ def _brief(value: Any, /) -> str:
 
 
 def _record_state(item: TraceItem, buf: mmap.mmap, /) -> None:
-    # the last completed op; a crash strikes between ops, in native code (#738)
+    # the last completed op; a crash strikes between ops, in native code
     call = f"{item.attr}({', '.join(_brief(a) for a in item.args)})"
     ret = "" if item.ret is None else f" -> {_brief(item.ret)}"
     data = (call + ret).encode("utf-8", "replace")[: len(buf) - 1] + b"\x00"
@@ -331,8 +331,6 @@ class SpyObject(Spy, metaclass=_SpyType):
         type.__setattr__(unique, "__optype_instance__", self)
         return self
 
-    ###
-
     def __getattr__(self, attr: str, /) -> "SpyObject | None":
         # TODO: specialize for known special dunder attrs, e.g. `__name__: str`
         if _internal(attr):
@@ -362,8 +360,6 @@ class SpyObject(Spy, metaclass=_SpyType):
         # TODO: maybe return specialized `SpyObject & Iterable[str]`
         return self.__optype_trace_add__("__dir__", (), {}, SpyObject())
 
-    ###
-
     @override
     def __repr__(self, /) -> SpyStr:
         return self.__optype_trace_add__("__repr__", (), {}, SpyStr())
@@ -379,8 +375,6 @@ class SpyObject(Spy, metaclass=_SpyType):
     def __bytes__(self, /) -> SpyBytes:
         return self.__optype_trace_add__("__bytes__", (), {}, SpyBytes())
 
-    ###
-
     @override
     def __eq__(self, other: object, /) -> "SpyObject":  # type:ignore[override] # pyright:ignore[reportIncompatibleMethodOverride] # ty:ignore[invalid-method-override]
         return self.__optype_trace_add__("__eq__", (other,), {}, SpyObject())
@@ -389,16 +383,12 @@ class SpyObject(Spy, metaclass=_SpyType):
     def __ne__(self, other: object, /) -> "SpyObject":  # type:ignore[override] # pyright:ignore[reportIncompatibleMethodOverride] # ty:ignore[invalid-method-override]
         return self.__optype_trace_add__("__ne__", (other,), {}, SpyObject())
 
-    ###
-
     @override
     def __hash__(self, /) -> int:
         return self.__optype_trace_add__("__hash__", (), {}, super().__hash__())
 
     def __bool__(self, /) -> bool:
         return bool(_decide_stable(self, "__bool__"))
-
-    ###
 
     def __get__(self, instance: object, owner: type | None = None) -> "SpyObject":
         return self.__optype_trace_add__("__get__", (instance, owner), {}, SpyObject())
@@ -414,20 +404,14 @@ class SpyObject(Spy, metaclass=_SpyType):
     def __set_name__(self, owner: type, name: str, /) -> None:
         self.__optype_trace_add__("__set_name__", (owner, name), {}, None)
 
-    ###
-
     def __instancecheck__(self, instance: object, /) -> bool:
         return _decide_keyed(self, "__instancecheck__", instance)
 
     def __subclasscheck__(self, subclass: object, /) -> bool:
         return _decide_keyed(self, "__subclasscheck__", subclass)
 
-    ###
-
     def __call__(self, /, *args: object, **kwargs: object) -> "SpyObject":
         return self.__optype_trace_add__("__call__", args, kwargs, SpyObject())
-
-    ###
 
     def __len__(self, /) -> int:
         # `len()` may be probed optionally (e.g. `list()` via `length_hint`)
@@ -476,8 +460,6 @@ class SpyObject(Spy, metaclass=_SpyType):
             raise StopIteration
         return self.__optype_trace_add__("__next__", (), {}, _element_of(self))
 
-    ###
-
     def __complex__(self, /) -> complex:
         return self.__optype_trace_add__("__complex__", (), {}, 0j)
 
@@ -490,8 +472,6 @@ class SpyObject(Spy, metaclass=_SpyType):
     def __index__(self, /) -> int:
         return _decide_stable(self, "__index__")
 
-    ###
-
     def __enter__(self, /) -> "SpyObject":
         return self.__optype_trace_add__("__enter__", (), {}, SpyObject())
 
@@ -499,13 +479,9 @@ class SpyObject(Spy, metaclass=_SpyType):
         # TODO: maybe fork and return falsy/truthy in case of exception??
         return self.__optype_trace_add__("__exit__", args, {}, None)
 
-    ###
-
-    # no `__release_buffer__`: its slot lookup fails uncatchably under cyclic GC (#739)
+    # no `__release_buffer__`: its slot lookup fails uncatchably under cyclic GC
     def __buffer__(self, flags: int, /) -> memoryview:
         return self.__optype_trace_add__("__buffer__", (flags,), {}, memoryview(b""))
-
-    ###
 
     # numpy looks these up on the type, so `__getattr__` won't do
     def __array_ufunc__(
@@ -532,8 +508,6 @@ class SpyObject(Spy, metaclass=_SpyType):
             {},
             SpyObject(),
         )
-
-    ###
 
     def __await__(self, /) -> Generator[Any, None, "SpyObject"]:
         out = self.__optype_trace_add__("__await__", (), {}, SpyObject())

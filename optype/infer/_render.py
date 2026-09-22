@@ -276,7 +276,7 @@ class _Renderer:
         return _ir.App(proto, args)
 
     def traces(self, items: Iterable[TraceItem]) -> _ir.Node | None:
-        # dedup the re-collected return-chain items so they can't blow up (#734)
+        # dedup the re-collected return-chain items so they can't blow up
         items = _distinct(items)
         # an absence marker means the op was optional; an attribute probe keys on its
         # name, so it spares the other reads
