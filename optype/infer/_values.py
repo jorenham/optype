@@ -81,8 +81,8 @@ class RecRef:
 
 
 def mapping_items(value: object, /) -> list[tuple[Any, Any]] | None:
-    """The items of a mapping, or `None` for anything else: a non-mapping, a `Context`
-    (gh-769), or a mapping that raises when read (a closed shelf)."""
+    """The items of a mapping, or `None` for anything else: a non-mapping, a `Context`,
+    or a mapping that raises when read (a closed shelf)."""
     if not isinstance(value, Mapping) or isinstance(value, Context):
         return None
     try:

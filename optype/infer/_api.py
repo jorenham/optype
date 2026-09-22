@@ -77,7 +77,7 @@ def _candidate_parameters(func: AnyFunc) -> list[dict[str, Parameter]]:
         raise InferError(describe(exc)) from exc
     except Exception as exc:
         # callable but no usable signature: a C builtin, or a `__text_signature__`
-        # default that does not evaluate in its module (gh-772)
+        # default that does not evaluate in its module
         if candidates := parse_text_signature(func) or probe_signatures(func):
             return candidates
         raise InferError(describe(exc)) from exc
@@ -153,5 +153,5 @@ def infer(
     def render() -> str:
         return _infer_render(func, selectors, strict=strict, backend=backend)
 
-    # even a pure-python function can reach native code that can segfault (#738, #763)
+    # even a pure-python function can reach native code that can segfault
     return isolate(render)

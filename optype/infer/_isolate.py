@@ -176,8 +176,8 @@ def _inline[T](work: Callable[[], T]) -> T:
 
     A leaked explored object can raise from its deallocator, through a spy or a
     warnings-as-errors filter; that noise dies with a fork child, so it is muted
-    here too (gh-769). A thread cannot be killed, so one that hits the timeout
-    keeps running until the process exits, and the call raises (gh-766).
+    here too. A thread cannot be killed, so one that hits the timeout keeps running
+    until the process exits, and the call raises.
     """
 
     def run() -> None:
