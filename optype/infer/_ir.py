@@ -460,8 +460,8 @@ def names(node: Term) -> Generator[str]:
     return (term.name for term in walk(node) if isinstance(term, Name))
 
 
-def subst(node: Node, m: Mapping[str, Node], *, dedup: bool = False) -> Node:
-    """Replace every `Name(n)` with `m[n]`."""
+def subst(node: Node, m: Mapping[str, Node]) -> Node:
+    """Replace every `Name(n)` with `m[n]`, merging equal `|`/`&` members."""
     if not m:
         return node
 
@@ -469,34 +469,32 @@ def subst(node: Node, m: Mapping[str, Node], *, dedup: bool = False) -> Node:
         case Name(name):
             out = m.get(name, node)
         case App(origin, args):
-            out = App(origin, tuple(subst_term(a, m, dedup=dedup) for a in args))
+            out = App(origin, tuple(subst_term(a, m) for a in args))
         case Has(attr, args):
-            out = Has(attr, tuple(subst(a, m, dedup=dedup) for a in args))
+            out = Has(attr, tuple(subst(a, m) for a in args))
         case Fn(params, ret):
-            terms = tuple(subst_term(p, m, dedup=dedup) for p in params)
-            out = Fn(terms, subst(ret, m, dedup=dedup))
+            terms = tuple(subst_term(p, m) for p in params)
+            out = Fn(terms, subst(ret, m))
         case Union(parts) | Intersection(parts):
-            new = tuple(subst(p, m, dedup=dedup) for p in parts)
-            if dedup:
-                new = tuple(distinct(new))
-            out = new[0] if dedup and len(new) == 1 else type(node)(new)
+            new = tuple(distinct(subst(p, m) for p in parts))
+            out = new[0] if len(new) == 1 else type(node)(new)
         case Not(part) | Covariant(part) | Contravariant(part) | Unpack(part):
-            out = type(node)(subst(part, m, dedup=dedup))
+            out = type(node)(subst(part, m))
         case _:
             out = node
     return out
 
 
-def subst_term(term: Term, m: Mapping[str, Node], *, dedup: bool = False) -> Term:
+def subst_term(term: Term, m: Mapping[str, Node]) -> Term:
     """`subst`, keeping any `Arg` wrapper of an `App`/`Fn` member."""
     if isinstance(term, Arg):
-        return Arg(term.key, subst(term.value, m, dedup=dedup), term.default)
-    return subst(term, m, dedup=dedup)
+        return Arg(term.key, subst(term.value, m), term.default)
+    return subst(term, m)
 
 
 def rename(node: Node, m: Mapping[str, str]) -> Node:
     """Simultaneously rename every `Name(n)` to `Name(m[n])`."""
-    return subst(node, {old: Name(new) for old, new in m.items()}, dedup=True)
+    return subst(node, {old: Name(new) for old, new in m.items()})
 
 
 def placeholder_name(n: int) -> str:
