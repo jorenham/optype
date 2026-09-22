@@ -28,7 +28,7 @@ import subprocess  # ruff: ignore[suspicious-subprocess-import]
 import sys
 import warnings
 import weakref
-from collections import Counter, defaultdict
+from collections import Counter, UserDict, defaultdict
 from collections.abc import Callable, Coroutine, Iterator, Mapping
 from inspect import currentframe
 from pathlib import Path
@@ -1130,6 +1130,14 @@ class _View(Mapping[Any, Any]):
         return len(self._source)
 
 
+class _HashableMap(UserDict[str, int]):
+    """A mapping that can be a set member."""
+
+    @override
+    def __hash__(self) -> int:
+        return hash(frozenset(self.items()))
+
+
 def _close(x: Any) -> _Closed:
     x.dict = _Closed()
     return _CLOSED
@@ -1220,6 +1228,12 @@ def _self_ref_nested() -> list[object]:
     return a
 
 
+def _self_ref_defaultdict() -> defaultdict[str, object]:
+    a: defaultdict[str, object] = defaultdict(list)
+    a["k"] = a
+    return a
+
+
 def _self_ref_mixed(x: Any) -> list[object]:
     a: list[object] = []
     a.extend((a, x + 1))
@@ -1279,14 +1293,27 @@ RESULT_CASES: list[tuple[Callable[..., Any], str]] = [
     (lambda: Counter(), "() -> collections.Counter[Never]"),
     # gh-769: a mapping whose ctor does not take items keeps its explored value
     (lambda: _DEFAULTDICT, "() -> collections.defaultdict[Literal['a'], Literal[1]]"),
+    # binding a default keeps a `dict` subclass's class, so no overload splits off
+    (lambda _d=1: defaultdict(list), "() -> collections.defaultdict[Never, Never]"),
+    (lambda _d=1: Counter(), "() -> collections.Counter[Never]"),
+    (
+        lambda _d=1: {_HashableMap(k=1)},
+        f"() -> set[{__name__}._HashableMap[Literal['k'], Literal[1]]]",
+    ),
+    # a `defaultdict`'s values are explored like a `dict`'s
+    (
+        lambda x: defaultdict(list, k=lambda: x),
+        "[T](x: T) -> collections.defaultdict[Literal['k'], () -> T]",
+    ),
     # gh-769: a `Context` renders bare, and `Context()` takes no arguments
     (lambda: _CONTEXT, "() -> contextvars.Context"),
     (_call_with_context, "(cb: (context: contextvars.Context) -> object) -> None"),
-    # gh-770, gh-771: reading a mapping's items must not add a `len` requirement
+    # gh-770, gh-771: reading a mapping's items must not add a `len` or `hash`
+    # requirement
     (
         lambda x: _View(x),
         (
-            "[R: CanHash, R2](x: CanIter[CanNext[R]] & CanGetitem[R, R2])"
+            "[R, R2](x: CanIter[CanNext[R]] & CanGetitem[R, R2])"
             f" -> {__name__}._View[R, R2]"
         ),
     ),
@@ -1357,6 +1384,7 @@ RESULT_CASES: list[tuple[Callable[..., Any], str]] = [
     (_self_ref, "[R: list[R]]() -> R"),
     # the cycle is detected by identity through any depth of intermediate containers
     (_self_ref_nested, "[R: list[list[R]]]() -> R"),
+    (_self_ref_defaultdict, "[R: collections.defaultdict[Literal['k'], R]]() -> R"),
     # a recursive container alongside a parameter and a result typevar
     (_self_ref_mixed, "[R, R2: list[R2 | R]](x: CanAdd[Literal[1], R]) -> R2"),
     # PEP 696: the defaultless recursive typevar must precede the defaulted one
@@ -2169,16 +2197,16 @@ _COMPAT_DIVERGENT = frozenset({
     f"() -> Generator[{__name__}._Base]",
     f"() -> {__name__}._Closed",
     f"(x: Has['dict', -{__name__}._Closed]) -> {__name__}._Closed",
-    (
-        "[R: CanHash, R2](x: CanIter[CanNext[R]] & CanGetitem[R, R2])"
-        f" -> {__name__}._View[R, R2]"
-    ),
+    f"[R, R2](x: CanIter[CanNext[R]] & CanGetitem[R, R2]) -> {__name__}._View[R, R2]",
+    f"() -> set[{__name__}._HashableMap[Literal['k'], Literal[1]]]",
 })
 
 
 def test_infer_shelf() -> None:
-    # gh-770, gh-771: a shelf raises when read, both before and after closing
-    assert infer(shelve.Shelf).endswith("-> shelve.Shelf")
+    # gh-770, gh-771: a shelf raises when read, both before and after closing; since
+    # Python 3.15 an open one reads through its `deserializer` parameter
+    opened = "shelve.Shelf[R, R2]" if sys.version_info >= (3, 15) else "shelve.Shelf"
+    assert infer(shelve.Shelf).endswith(f"-> {opened}")
     assert infer(shelve.Shelf.close).endswith("-> None")
 
 

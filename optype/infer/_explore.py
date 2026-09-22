@@ -62,11 +62,12 @@ from ._values import (
     FnResult,
     GapKind,
     Gen,
+    Map,
     Rec,
     RecRef,
     RecVar,
+    as_mapping,
     fn_spies,
-    mapping_items,
 )
 
 _FORK_LIMIT = 64
@@ -365,23 +366,19 @@ def _explore_result(  # ruff: ignore[complex-structure]
     elif isinstance(_unwrap(result), _FUNCTION_TYPES):
         out = _explore_func(result)
     else:
-        out = _explore_container(cls, result, path)
+        out = _explore_container(result, path)
     return Rec(var, out) if (var := path.pop(rid)) is not None else out
 
 
-def _explore_container(cls: type, result: Any, path: dict[int, RecVar | None]) -> Any:
+def _explore_container(result: Any, path: dict[int, RecVar | None]) -> Any:
     match result:
         case tuple():
             return tuple(_explore_result(item, path) for item in result)
         case list():
             return [_explore_result(item, path) for item in result]
-        case _ if (pairs := mapping_items(result)) is not None:
-            # the keys must stay hashable, so only the values recurse
-            items = {key: _explore_result(value, path) for key, value in pairs}
-            try:
-                return cls(items)
-            except TypeError:
-                return result
+        case _ if (mapping := as_mapping(result)) is not None:
+            pairs = [(k, _explore_result(v, path)) for k, v in mapping.pairs]
+            return Map(mapping.cls, pairs)
         case _:
             return result
 
