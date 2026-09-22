@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from optype.infer import InferError
-from optype.infer._backends._compat import COMPAT
+from optype.infer._backends._compat import render
 from optype.infer._backends._compat._lower import Lowerer
 from optype.infer._backends._compat._model import (
     Alias,
@@ -640,7 +640,7 @@ TEXT_CASES: list[tuple[str, tuple[Signature, ...], str]] = [
     ids=[label for label, _, _ in TEXT_CASES],
 )
 def test_text(sigs: tuple[Signature, ...], expected: str) -> None:
-    assert COMPAT.render(sigs) == expected
+    assert render(sigs) == expected
 
 
 def test_text_typechecks(
@@ -650,7 +650,7 @@ def test_text_typechecks(
     # each rendered stub must be valid, self-contained, type-checkable Python
     for label, sigs, _ in TEXT_CASES:
         stub = tmp_path / f"{label.replace(' ', '_')}.pyi"
-        stub.write_text(f"{COMPAT.render(sigs)}\n")
+        stub.write_text(f"{render(sigs)}\n")
     out = basedpyright(tmp_path)
     assert out.returncode == 0, out.stdout
 
@@ -715,7 +715,7 @@ def test_shadowed_module_aliases(
     try:
         args = tuple(Contravariant(Lit((kind["A"],))) for kind in kinds)
         attr = modules[0].partition(".")[0]
-        text = COMPAT.render([_sig((), Has(attr, args), NONE)])
+        text = render([_sig((), Has(attr, args), NONE)])
     finally:
         for name in modules:
             del sys.modules[name]
@@ -975,7 +975,7 @@ def test_helpers_are_keyed_on_their_members() -> None:
 @pytest.mark.parametrize("attr", ["a-b", "class"])
 def test_has_non_identifier_attr_is_rejected(attr: str) -> None:
     with pytest.raises(InferError, match="cannot render attribute"):
-        COMPAT.render([_sig((), Has(attr, ()), NONE)])
+        render([_sig((), Has(attr, ()), NONE)])
 
 
 def test_recursive_helper_reuse_across_binders() -> None:
@@ -1054,14 +1054,14 @@ def test_resolution_order_does_not_depend_on_the_hash_seed() -> None:
     # competing cyclic bounds resolve in one order whatever the seed
     script = """
 from optype.infer._ir import App, Name, Param, Signature, TypeParam
-from optype.infer._backends._compat import COMPAT
+from optype.infer._backends._compat import render
 T, U, X = Name("T"), Name("U"), Name("X")
 type_params = (
     TypeParam("T", App("tuple", (U, X))),
     TypeParam("U", App("list", (U,))),
     TypeParam("X", App("list", (App("tuple", (X, X)),))),
 )
-print(COMPAT.render([Signature(type_params, (Param("x", T),), T)]))
+print(render([Signature(type_params, (Param("x", T),), T)]))
 """
     outputs = {
         subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]

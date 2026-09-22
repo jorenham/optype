@@ -8,12 +8,7 @@ cache-dir = "../../.ruff_cache"
 "_numpy.py" = ["manual-from-import"]
 "_protocols.py" = ["manual-from-import"]
 "_render.py" = ["manual-from-import"]
-"_spy.py" = [
-  "missing-todo-author",
-  "missing-todo-link",
-  "non-self-return-type",
-  "too-many-public-methods",
-]
+"_spy.py" = ["non-self-return-type", "too-many-public-methods"]
 
 [lint.pylint]
 allow-dunder-method-names = [

@@ -23,7 +23,6 @@ from ._render import (
     render_all,
     renderers_of,
     signatures,
-    union_signatures,
     widened_signatures,
 )
 from ._spy import AnyFunc, TraceItem
@@ -165,6 +164,7 @@ def dispatch_overloads(
         and returns_concrete(exploration.results)
         and returns_concrete(variant.results)
     ):
-        return union_signatures(exploration, variant, params, selected)
+        combined = variant._replace(results=[*exploration.results, *variant.results])
+        return signatures(combined, params, selected)
     tail = widened_signatures(variant, params, selected)
     return baseline + tail if tail else baseline
