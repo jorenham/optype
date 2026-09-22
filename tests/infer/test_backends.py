@@ -8,7 +8,7 @@ import types
 import pytest
 
 from optype.infer._backends._base import default_text, value_text
-from optype.infer._backends._terse import TERSE
+from optype.infer._backends._terse import render
 from optype.infer._ir import (
     App,
     Arg,
@@ -128,7 +128,7 @@ TERSE_CASES: list[tuple[Node, str]] = [
     ids=[expected for _, expected in TERSE_CASES],
 )
 def test_terse_node(node: Node, expected: str) -> None:
-    assert TERSE.render([Signature((), (), node)]) == f"() -> {expected}"
+    assert render([Signature((), (), node)]) == f"() -> {expected}"
 
 
 def test_terse_signature() -> None:
@@ -142,7 +142,7 @@ def test_terse_signature() -> None:
         Param("k", A, default=([1],)),
     )
     sig = Signature(type_params, params, App("tuple", (Unpack(Name("Ts")),)), "old")
-    assert TERSE.render([sig]) == (
+    assert render([sig]) == (
         "@deprecated('old')\n"
         "[*Ts, T: int = Literal[0]](T = 0, *args: *Ts, k: A = ...) -> tuple[*Ts]"
     )
@@ -155,4 +155,4 @@ def test_terse_dedups_rendered_lines() -> None:
         Signature((), (Param("y", A, pos_only=True),), B),
         Signature((), (Param("x", A),), C),
     ]
-    assert TERSE.render(sigs) == "(A) -> B\n(x: A) -> C"
+    assert render(sigs) == "(A) -> B\n(x: A) -> C"

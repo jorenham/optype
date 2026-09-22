@@ -39,7 +39,7 @@ import pytest
 
 from optype.infer import InferError, InferWarning, _gc, infer
 from optype.infer._api import _infer_render
-from optype.infer._backends._terse import TERSE
+from optype.infer._backends._terse import render
 from optype.infer._errors import describe
 from optype.infer._ir import (
     App,
@@ -2103,7 +2103,7 @@ def test_infer_ufunc_in_function() -> None:
 
 def render_node(node: Node) -> str:
     # the backend renders signatures only, so a bare node renders as its return slot
-    return TERSE.render([Signature((), (), node)]).removeprefix("() -> ")
+    return render([Signature((), (), node)]).removeprefix("() -> ")
 
 
 def test_array_function_node() -> None:

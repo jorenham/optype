@@ -332,7 +332,6 @@ class SpyObject(Spy, metaclass=_SpyType):
         return self
 
     def __getattr__(self, attr: str, /) -> "SpyObject | None":
-        # TODO: specialize for known special dunder attrs, e.g. `__name__: str`
         if _internal(attr):
             return None
         if dynamic_name(attr):
@@ -357,7 +356,6 @@ class SpyObject(Spy, metaclass=_SpyType):
 
     @override
     def __dir__(self, /) -> "SpyObject":
-        # TODO: maybe return specialized `SpyObject & Iterable[str]`
         return self.__optype_trace_add__("__dir__", (), {}, SpyObject())
 
     @override
@@ -398,8 +396,6 @@ class SpyObject(Spy, metaclass=_SpyType):
 
     def __delete__(self, instance: object, /) -> None:
         self.__optype_trace_add__("__delete__", (instance,), {}, None)
-
-    # TODO: __objclass__ -> _SpyType
 
     def __set_name__(self, owner: type, name: str, /) -> None:
         self.__optype_trace_add__("__set_name__", (owner, name), {}, None)
@@ -476,7 +472,7 @@ class SpyObject(Spy, metaclass=_SpyType):
         return self.__optype_trace_add__("__enter__", (), {}, SpyObject())
 
     def __exit__(self, /, *args: object) -> None:
-        # TODO: maybe fork and return falsy/truthy in case of exception??
+        # never suppresses: an exception raised in the `with` body propagates
         return self.__optype_trace_add__("__exit__", args, {}, None)
 
     # no `__release_buffer__`: its slot lookup fails uncatchably under cyclic GC

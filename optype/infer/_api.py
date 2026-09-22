@@ -120,7 +120,7 @@ def _infer_render(
             raise InferError(msg)
         warnings.warn(msg, InferWarning, skip_file_prefixes=(WARN_SKIP_PREFIX,))
 
-    return BACKENDS[backend].render(sigs)
+    return BACKENDS[backend](sigs)
 
 
 def infer(

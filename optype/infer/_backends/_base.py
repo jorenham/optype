@@ -1,22 +1,17 @@
-"""The render-backend interface and the helpers its implementations share.
+"""The helpers the render backends share.
 
-A `Backend` turns the structured `Signature`s that `_render` builds into text: the
-default `TERSE` form (`[R](x: CanAdd[Literal[1], R]) -> R`), or valid `.pyi` Python.
+A backend turns the structured `Signature`s that `_render` builds into text: the
+default terse form (`[R](x: CanAdd[Literal[1], R]) -> R`), or valid `.pyi` Python.
 """
 
 import cmath
 import enum
 import math
 import sys
-from collections.abc import Callable, Sequence
-from typing import Protocol
+from collections.abc import Callable
 
 # `from . import _ir` would re-enter this package
 import optype.infer._ir as _ir  # ruff: ignore[manual-from-import]
-
-
-class Backend(Protocol):
-    def render(self, sigs: Sequence[_ir.Signature], /) -> str: ...
 
 
 def _enum_member_path(value: enum.Enum) -> tuple[str, str, str] | None:

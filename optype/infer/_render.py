@@ -740,15 +740,3 @@ def widened_signatures(
         for r in renderers_of(exploration, params)
     ]
     return [] if any(sig.type_params for sig in sigs) else sigs
-
-
-def union_signatures(
-    exploration: Exploration,
-    variant: Exploration,
-    params: Mapping[str, Parameter],
-    selected: Names,
-) -> list[_ir.Signature]:
-    """Both branches as one overload: the parameter widens to `object`, and the
-    return unions the present and absent results (`hasattr` renders `bool`)."""
-    combined = variant._replace(results=[*exploration.results, *variant.results])
-    return signatures(combined, params, selected)
