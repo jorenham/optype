@@ -680,7 +680,7 @@ def _renderer_of(
     return _Renderer(replace(binding, naming=naming))
 
 
-def renderers_of(
+def _renderers_of(
     exploration: Exploration,
     params: Mapping[str, Parameter],
 ) -> list[_Renderer]:
@@ -692,20 +692,6 @@ def renderers_of(
     return [_renderer_of(exploration, params, t) for t in (traces, reflected)]
 
 
-def render_all(
-    renderers: Iterable[_Renderer],
-    selected: Names,
-    defaults: Defaults | None = None,
-    *,
-    negate: bool = False,
-    deprecated: str | None = None,
-) -> list[_ir.Signature]:
-    return [
-        r.signature(selected, defaults, negate=negate, deprecated=deprecated)
-        for r in renderers
-    ]
-
-
 def signatures(
     exploration: Exploration,
     params: Mapping[str, Parameter],
@@ -714,13 +700,15 @@ def signatures(
     *,
     negate: bool = False,
 ) -> list[_ir.Signature]:
-    return render_all(
-        renderers_of(exploration, params),
-        selected,
-        defaults,
-        negate=negate,
-        deprecated=exploration.deprecated,
-    )
+    return [
+        r.signature(
+            selected,
+            defaults,
+            negate=negate,
+            deprecated=exploration.deprecated,
+        )
+        for r in _renderers_of(exploration, params)
+    ]
 
 
 def widened_signatures(
@@ -737,6 +725,6 @@ def widened_signatures(
     """
     sigs = [
         r.signature(selected, ret=_ir.OBJECT, deprecated=exploration.deprecated)
-        for r in renderers_of(exploration, params)
+        for r in _renderers_of(exploration, params)
     ]
     return [] if any(sig.type_params for sig in sigs) else sigs

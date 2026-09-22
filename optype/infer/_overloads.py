@@ -17,14 +17,7 @@ from ._analyze import (
 )
 from ._explore import declared_defaults, explore_spies
 from ._ir import Signature, alpha_equal_signatures
-from ._render import (
-    Defaults,
-    Names,
-    render_all,
-    renderers_of,
-    signatures,
-    widened_signatures,
-)
+from ._render import Defaults, Names, signatures, widened_signatures
 from ._spy import AnyFunc, TraceItem
 from ._values import Exploration, map_values
 
@@ -76,14 +69,14 @@ def resolve_defaults(
     params: Mapping[str, Parameter],
     selected: Names,
     exploration: Exploration,
-) -> tuple[Defaults, list[Signature]]:
-    """The parameter defaults if expressible as typevar defaults, else overloads.
+) -> list[Signature] | None:
+    """The signatures with the defaults as typevar defaults, else with overloads, or
+    `None` if the defaults need no handling.
 
     Omitting the defaulted parameters must behave like substituting their values
     into the generic signature; the function is rerun without them to check. On a
     mismatch the omitted calls are reported as separate overloads; a single
-    defaulted parameter is returned beside them, for the caller to exclude its type
-    from the generic signature.
+    defaulted parameter has its type excluded from the generic signature.
     """
     defaults = declared_defaults(params)
     kinds = {p.kind for p in params.values()}
@@ -92,33 +85,27 @@ def resolve_defaults(
         Parameter.VAR_POSITIONAL in kinds
         and any(params[n].kind is not Parameter.KEYWORD_ONLY for n in defaults)
     ):
-        return {}, []
+        return None
 
     required = {name: p for name, p in params.items() if name not in defaults}
     names = list(required)
 
     try:
         omitted = explore_spies(func, params, omit=defaults)
-        omitted_renderers = renderers_of(omitted, params)
         # the comparison must see every required parameter, regardless of selection
-        observed = render_all(omitted_renderers, names, deprecated=omitted.deprecated)
+        observed = signatures(omitted, params, names)
     except Exception:  # ruff: ignore[blind-except]
-        return {}, []
+        return None
 
     omitted_defaults = _bind_exploration(exploration, defaults)
     expected = signatures(omitted_defaults, required, names)
     if _same(expected, observed):
-        return defaults, []
+        return signatures(exploration, params, selected, defaults)
 
-    overloads = render_all(
-        omitted_renderers,
-        selected,
-        defaults,
-        deprecated=omitted.deprecated,
-    )
-
+    overloads = signatures(omitted, params, selected, defaults)
     if len(defaults) == 1:
-        return defaults, overloads
+        lines = signatures(exploration, params, selected, defaults, negate=True)
+        return [*overloads, *lines]
 
     for name, value in defaults.items():
         try:
@@ -127,7 +114,7 @@ def resolve_defaults(
             continue
         overloads += signatures(variant, params, selected, {name: value})
 
-    return {}, overloads
+    return [*overloads, *signatures(exploration, params, selected)]
 
 
 def dispatch_overloads(
