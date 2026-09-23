@@ -302,7 +302,7 @@ env_list = [
   "pyrefly",
   "mypy",
   "pyright",
-  "pyright-verify",
+  "pyrefly-coverage",
   "repo-review",
 ]
 
@@ -395,11 +395,11 @@ commands = [
   ],
 ]
 
-[tool.tox.env.pyright-verify]
-description = "basedpyright --verifytypes"
+[tool.tox.env.pyrefly-coverage]
+description = "pyrefly coverage check"
 runner = "uv-venv-lock-runner"
 dependency_groups = ["type"]
-commands = [["basedpyright", "--ignoreexternal", "--verifytypes", "optype"]]
+commands = [["pyrefly", "coverage", "check", "--public-only", "optype"]]
 
 [tool.tox.env.repo-review]
 description = "repo-review"
