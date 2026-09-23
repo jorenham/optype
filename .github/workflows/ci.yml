@@ -50,8 +50,8 @@ jobs:
       - name: ruff format
         run: uv run ruff format --check
 
-      - name: basedpyright --verifytypes
-        run: uv run basedpyright --ignoreexternal --verifytypes optype
+      - name: pyrefly coverage
+        run: uv run pyrefly coverage check --public-only --output-format=full-text-with-github optype
 
   typecheck:
     name: typecheck
