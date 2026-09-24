@@ -77,5 +77,4 @@ class UnpackAlias[Ts_co: tuple[object, ...] | TypeVarTuple | GenericType](Generi
     @property
     @override
     def __parameters__(self, /) -> tuple[()] | tuple[TypeVarTuple]: ...
-    @override
-    def __init__(self, origin: _SpecialForm, args: tuple[Ts_co], /) -> None: ...  # pyrefly:ignore[bad-override]
+    def __init__(self, origin: _SpecialForm, args: tuple[Ts_co], /) -> None: ...
