@@ -409,7 +409,7 @@ def f(x, y=None):
 ```
 
 Only `DeprecationWarning` is recognized (not `PendingDeprecationWarning`, nor a
-`@deprecated(..., category=...)` override), and a numpy ufunc is never marked.
+`@deprecated(..., category=...)` override).
 
 ## Methods
 
@@ -659,30 +659,6 @@ $ optype infer "lambda: t''"
 
 $ optype infer "lambda x: t'{x}'.interpolations[0]"
 [T](x: T) -> string.templatelib.Interpolation[T]
-```
-
-## NumPy
-
-!!! info
-
-    NumPy is not a required dependency, and `optype infer` works fine without it
-    installed.
-
-A [ufunc](https://numpy.org/doc/stable/reference/ufuncs.html) requires each operand to
-either override it (NEP 13's `CanArrayUFunc`) or be an array-like of its widest accepted
-dtype (read from its `.types`):
-
-```console
-$ optype infer "import numpy as np; np.sin"
-[R](x: CanArrayUFunc[np.ufunc, R] | ToComplexND) -> R
-```
-
-A [NEP 18](https://numpy.org/neps/nep-0018-array-function-protocol.html) function such as
-`np.mean` requires the `CanArrayFunction` override:
-
-```console
-$ optype infer "import numpy as np; np.mean"
-[R](a: CanArrayFunction[(Any) -> R, R]) -> R
 ```
 
 ## Limitations

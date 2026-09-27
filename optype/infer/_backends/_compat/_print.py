@@ -6,7 +6,6 @@ lowerer uses them to build canonical dedup keys, not output.
 """
 
 import builtins
-import functools
 import types
 import typing
 from collections.abc import Sequence, Set as AbstractSet
@@ -36,15 +35,6 @@ OPTYPE = frozenset(_can.__all__) | frozenset(_has.__all__) | frozenset(_just.__a
 type _Prefix = Literal["", "*"]
 
 
-@functools.cache
-def _optype_numpy() -> frozenset[str]:
-    try:
-        import optype.numpy as onp  # ruff: ignore[import-outside-top-level]
-    except ImportError:  # numpy is optional
-        return frozenset()
-    return frozenset(onp.__all__)  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
-
-
 def import_of(name: str) -> tuple[str, str | None] | None:  # ruff: ignore[too-many-return-statements]
     """The `(module, member)` an importable `name` comes from, or `None` for none.
 
@@ -63,8 +53,6 @@ def import_of(name: str) -> tuple[str, str | None] | None:  # ruff: ignore[too-m
         return "typing_extensions", name
     if name in OPTYPE:
         return "optype", name
-    if name in _optype_numpy():
-        return "optype.numpy", name
     if hasattr(types, name):
         return "types", name
     if hasattr(typing, name):
