@@ -479,32 +479,6 @@ class SpyObject(Spy, metaclass=_SpyType):
     def __buffer__(self, flags: int, /) -> memoryview:
         return self.__optype_trace_add__("__buffer__", (flags,), {}, memoryview(b""))
 
-    # numpy looks these up on the type, so `__getattr__` won't do
-    def __array_ufunc__(
-        self,
-        ufunc: AnyFunc,
-        method: str,
-        /,
-        *inputs: object,
-        **kwargs: object,
-    ) -> "SpyObject":
-        return self.__optype_trace_add__("__array_ufunc__", (ufunc,), {}, SpyObject())
-
-    def __array_function__(
-        self,
-        func: AnyFunc,
-        types: object,
-        args: object,
-        kwargs: object,
-        /,
-    ) -> "SpyObject":
-        return self.__optype_trace_add__(
-            "__array_function__",
-            (func,),
-            {},
-            SpyObject(),
-        )
-
     def __await__(self, /) -> Generator[Any, None, "SpyObject"]:
         out = self.__optype_trace_add__("__await__", (), {}, SpyObject())
 

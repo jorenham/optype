@@ -12,7 +12,6 @@ from typing import Any, NamedTuple, final
 
 # `from . import _ir` would re-enter this package
 import optype.infer._ir as _ir
-import optype.infer._numpy as _numpy
 from ._analyze import reflect, spy_runs
 from ._naming import TYVAR_TUPLE_NAME, Naming, build as _build_naming
 from ._protocols import Op, Proto, resolve
@@ -234,11 +233,6 @@ class _Renderer:
     def group(self, proto: Proto, members: Sequence[Op]) -> _ir.Node:
         if isinstance(proto, tuple):  # coercion protocols, which record no args
             return _ir.Union(tuple(map(_ir.Name, proto)))
-
-        if proto == "CanArrayFunction":
-            ret = _or_object(self.returns(members))
-            func: Any = members[0].args[0]
-            return _numpy.array_function_node(func, ret)
 
         pos = [
             arg

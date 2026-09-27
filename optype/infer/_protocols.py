@@ -2,8 +2,6 @@
 
 from typing import NamedTuple
 
-# `from . import _ir` would re-enter this package
-import optype.infer._numpy as _numpy
 from ._errors import InferError
 from ._spy import Args, Kwargs, Marker, TraceItem, dynamic_name
 from optype._core import _can, _has
@@ -27,7 +25,7 @@ def _get_dunder_can_map() -> dict[str, str]:
         if (dunder := next(iter(members))) not in DUNDER_ATTR
         # CanPow2, CanRound1, ... share their dunder; keep the canonical protocol
         if dunder.replace("_", "") == name.removeprefix("Can").lower()
-    } | _numpy.DUNDER_CAN_MAP
+    }
 
 
 _DUNDER_CAN_MAP = _get_dunder_can_map()

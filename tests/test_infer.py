@@ -39,17 +39,7 @@ import pytest
 
 from optype.infer import InferError, InferWarning, _gc, infer
 from optype.infer._api import _infer_render
-from optype.infer._backends._terse import render
 from optype.infer._errors import describe
-from optype.infer._ir import (
-    App,
-    Fn,
-    Name,
-    Node,
-    Signature,
-    names,
-)
-from optype.infer._numpy import array_function_node
 from optype.infer._spy import SpyObject
 
 if sys.version_info >= (3, 13):
@@ -2089,67 +2079,6 @@ def test_infer_sentinel() -> None:
         return [] if x is missing else x
 
     assert infer(g) == "(x: MISSING = MISSING) -> list[Never]\n[T: ~MISSING](x: T) -> T"
-
-
-@pytest.mark.parametrize(
-    ("name", "expected"),
-    [
-        # a ufunc's dtype table gives the widest accepted kind per input
-        ("sin", "[R](x: CanArrayUFunc[np.ufunc, R] | ToComplexND) -> R"),
-        (
-            "add",
-            "[R](x1: CanArrayUFunc[np.ufunc, R] | ToComplexND, x2: ToComplexND) -> R",
-        ),
-        (
-            "hypot",
-            "[R](x1: CanArrayUFunc[np.ufunc, R] | ToFloatND, x2: ToFloatND) -> R",
-        ),
-        ("gcd", "[R](x1: CanArrayUFunc[np.ufunc, R] | ToIntND, x2: ToIntND) -> R"),
-        # `ldexp(mantissa: float, exponent: int)`: a different widest dtype per input
-        ("ldexp", "[R](x1: CanArrayUFunc[np.ufunc, R] | ToFloatND, x2: ToIntND) -> R"),
-        # NEP-18 functions (`np.mean`, `np.strings.upper`, ...) dispatch via
-        # `__array_function__`; the func type's arity tracks the required positionals
-        ("mean", "[R](a: CanArrayFunction[(Any) -> R, R]) -> R"),
-        ("sum", "[R](a: CanArrayFunction[(Any) -> R, R]) -> R"),
-        ("outer", "[R](a: CanArrayFunction[(Any, Any) -> R, R], b: object) -> R"),
-    ],
-)
-def test_infer_numpy(name: str, expected: str) -> None:
-    np = pytest.importorskip("numpy")
-    assert infer(getattr(np, name)) == expected
-
-
-def test_infer_ufunc_in_function() -> None:
-    np = pytest.importorskip("numpy")
-
-    # a ufunc inside a traced function only reaches the spy's `__array_ufunc__`
-    def f(x: Any) -> Any:
-        return np.sin(x)
-
-    assert infer(f) == "[R](x: CanArrayUFunc[np.ufunc, R]) -> R"
-
-
-def render_node(node: Node) -> str:
-    # the backend renders signatures only, so a bare node renders as its return slot
-    return render([Signature((), (), node)]).removeprefix("() -> ")
-
-
-def test_array_function_node() -> None:
-    # a structured `App`, not a string: one `Any` per required positional parameter
-    ret = Name("R")
-
-    def f(a: object, b: object) -> object: ...
-
-    node = array_function_node(f, ret)
-    assert node == App("CanArrayFunction", (Fn((Name("Any"), Name("Any")), ret), ret))
-    assert render_node(node) == "CanArrayFunction[(Any, Any) -> R, R]"
-    # being structured, `names` reaches the inner typevar a bare string would hide
-    assert list(names(node)) == ["Any", "Any", "R", "R"]
-
-    # a variadic dispatched function has no fixed arity, rendering as `(...)`
-    def g(*args: object) -> object: ...
-
-    assert render_node(array_function_node(g, ret)) == "CanArrayFunction[(...) -> R, R]"
 
 
 def test_infer_backend() -> None:

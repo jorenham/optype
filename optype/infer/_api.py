@@ -4,7 +4,6 @@ import warnings
 from collections.abc import Iterable, Mapping
 from inspect import Parameter
 
-import optype.infer._numpy as _numpy
 from ._backends import BACKENDS, BackendName
 from ._errors import WARN_SKIP_PREFIX, InferError, InferWarning, describe
 from ._explore import explore_lenient, explore_tuple_params
@@ -80,10 +79,6 @@ def _candidate_parameters(func: AnyFunc) -> list[dict[str, Parameter]]:
 
 
 def _infer(func: AnyFunc, selectors: _Selectors, gaps: _Gaps) -> list[Signature]:
-    if nin := _numpy.ufunc_nin(func):
-        names = _numpy.ufunc_params(nin)
-        return _numpy.infer_ufunc(func, names, _select(selectors, names))
-
     sigs: list[Signature] = []
     last: Exception | None = None
     for params in _candidate_parameters(func):
