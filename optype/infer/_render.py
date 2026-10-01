@@ -381,12 +381,13 @@ class _Renderer:
         param = self._binding.params[name]
         # a positional-only parameter cannot be passed by keyword, so no name shows
         pos_only = param.kind is Parameter.POSITIONAL_ONLY
+        kw_only = param.kind is Parameter.KEYWORD_ONLY
         prefix = _PARAM_PREFIX.get(param.kind, "")
         optional = param.default is not Parameter.empty or param.kind in _PARAM_PREFIX
         if name in exploration.fixed and not optional:
             # a fixed parameter without a default is a method descriptor's `self`
             node = _ir.Type(despy_class(type(exploration.fixed[name])))
-            return _ir.Param(name, node, prefix, pos_only)
+            return _ir.Param(name, node, prefix, pos_only, kw_only=kw_only)
         if (spy := exploration.spies.get(name)) is None:
             # an omitted parameter binds its default, so passing it behaves the same
             node = self._typer.value_type(defaults[name])
@@ -396,6 +397,7 @@ class _Renderer:
                 prefix,
                 pos_only,
                 _boxed_default(defaults, name),
+                kw_only=kw_only,
             )
         node = self.slot(spy)
         if negate and name in defaults:
@@ -403,7 +405,7 @@ class _Renderer:
                 mark := self._typer.value_union((defaults[name],))
             ):
                 node = _ir.exclude(self.spy(spy), mark)
-            return _ir.Param(name, node, prefix, pos_only)
+            return _ir.Param(name, node, prefix, pos_only, kw_only=kw_only)
         if name in exploration.tuple_params and id(spy) not in self.naming.tyvars:
             # a typevar keeps its binding, so only an inlined bound widens to the union
             node = _ir.union([node, _ir.tuple_node_variadic(node)]) or node
@@ -415,6 +417,7 @@ class _Renderer:
             prefix,
             pos_only,
             _boxed_default(defaults, name),
+            kw_only=kw_only,
         )
 
 
@@ -517,6 +520,7 @@ class _ResultTyper:
                 None if p.kind is Parameter.POSITIONAL_ONLY else name,
                 self._fn_param(fn, name),
                 None if p.default is Parameter.empty else (p.default,),
+                kw_only=p.kind is Parameter.KEYWORD_ONLY,
             )
             for name, p in fn.params.items()
         )

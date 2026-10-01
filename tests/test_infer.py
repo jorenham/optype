@@ -111,6 +111,26 @@ class _AddN:
         return x + self.n
 
 
+CLASS_ATTRIBUTE_CASES: list[tuple[Callable[[Any], Any], str]] = [
+    (lambda x: type(x).spam, "[R](x: Has['spam', ClassVar[+R]]) -> R"),
+    (lambda x: x.__class__.spam, "[R](x: Has['spam', ClassVar[+R]]) -> R"),
+    (lambda x: type(x).spam(), "[R](x: Has['spam', ClassVar[() -> +R]]) -> R"),
+    (
+        lambda x: type(x).spam(1),
+        "[R](x: Has['spam', ClassVar[(Literal[1]) -> +R]]) -> R",
+    ),
+    (lambda x: type(x).spam.ham, "[R](x: Has['spam', ClassVar[+Has['ham', +R]]]) -> R"),
+    (
+        lambda x: (type(x).spam, type(x).spam),
+        "[R](x: Has['spam', ClassVar[+R]]) -> tuple[R, R]",
+    ),
+    (
+        lambda x: (x.spam, type(x).spam),
+        "[R, R2](x: Has['spam', +R] & Has['spam', ClassVar[+R2]]) -> tuple[R, R2]",
+    ),
+]
+
+
 UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     (lambda x: x + 1, "[R](x: CanAdd[Literal[1], R]) -> R"),
     (
@@ -350,22 +370,7 @@ UNARY_CASES: list[tuple[Callable[[Any], Any], str]] = [
     (_set_dunder, "(x: Has['__name__', -Literal[123]]) -> None"),
     (_del_dunder, "(x: Has['__name__']) -> None"),
     # an attribute on the class itself mirrors a `ClassVar` protocol member
-    (lambda x: type(x).spam, "[R](x: Has['spam', ClassVar[+R]]) -> R"),
-    (lambda x: x.__class__.spam, "[R](x: Has['spam', ClassVar[+R]]) -> R"),
-    (lambda x: type(x).spam(), "[R](x: Has['spam', ClassVar[() -> +R]]) -> R"),
-    (
-        lambda x: type(x).spam(1),
-        "[R](x: Has['spam', ClassVar[(Literal[1]) -> +R]]) -> R",
-    ),
-    (lambda x: type(x).spam.ham, "[R](x: Has['spam', ClassVar[+Has['ham', +R]]]) -> R"),
-    (
-        lambda x: (type(x).spam, type(x).spam),
-        "[R](x: Has['spam', ClassVar[+R]]) -> tuple[R, R]",
-    ),
-    (
-        lambda x: (x.spam, type(x).spam),
-        "[R, R2](x: Has['spam', +R] & Has['spam', ClassVar[+R2]]) -> tuple[R, R2]",
-    ),
+    *CLASS_ATTRIBUTE_CASES,
     (_set_class_attr, "(x: Has['spam', ClassVar[-Literal[1]]]) -> None"),
     (_del_class_attr, "(x: Has['spam', ClassVar]) -> None"),
     (_get_class_attr, "(x: Has['spam', ClassVar]) -> None"),
@@ -718,7 +723,7 @@ DEFAULT_CASES: list[tuple[Callable[..., Any], str]] = [
             "[T, R](x: T, y: CanRAdd[T, R] = 0) -> R"
         ),
     ),
-    (_getitem_default, "[R, T = Literal[1]](x: CanGetitem[T, R], y: T = 1) -> R"),
+    (_getitem_default, "[R, T = Literal[1]](x: CanGetitem[T, R], *, y: T = 1) -> R"),
     (_set_attr_default, "[T = Literal[1]](x: Has['spam', -T], y: T = 1) -> None"),
     (_yield_default, "[T = Literal[0]](x: T = 0) -> Generator[T]"),
     (_type_default, "[T = Literal[0]](x: T = 0) -> type[T]"),
@@ -779,7 +784,7 @@ FUNCTION_CASES: list[tuple[Callable[..., Any], str]] = [
     (lambda x: lambda y: (x, y), "[T, U](x: T) -> (y: U) -> tuple[T, U]"),
     (lambda x: lambda: x, "[T](x: T) -> () -> T"),
     (lambda x: lambda y: y, "[T](x: object) -> (y: T) -> T"),  # ruff: ignore[unused-lambda-argument]
-    (lambda x: lambda *, y: (x, y), "[T, U](x: T) -> (y: U) -> tuple[T, U]"),
+    (lambda x: lambda *, y: (x, y), "[T, U](x: T) -> (*, y: U) -> tuple[T, U]"),
     (lambda x: lambda y=1: (x, y), "[T, U](x: T) -> (y: U = 1) -> tuple[T, U]"),
     # ...except for a positional-only parameter, which renders without its name
     (lambda x: lambda y, /: (x, y), "[T, U](x: T) -> (U) -> tuple[T, U]"),
@@ -1499,7 +1504,7 @@ def _raise_if_falsy(x: Any) -> int:
 
 # statements and markers that a lambda cannot express
 STATEMENT_CASES: list[tuple[Callable[..., Any], str]] = [
-    (lambda x, *, y: x[y], "[T, R](x: CanGetitem[T, R], y: T) -> R"),
+    (lambda x, *, y: x[y], "[T, R](x: CanGetitem[T, R], *, y: T) -> R"),
     # a `with` statement requires `__enter__` and `__exit__` together, which is the
     # combined `CanWith`; its unused `__exit__` result is unconstrained
     (_with, "[R](x: CanWith[R, object]) -> R"),
@@ -1749,15 +1754,17 @@ BUILTIN_CASES: list[tuple[Any, str]] = [
         sorted,
         (
             "[R: CanLt[R, CanBool]]"
-            "(CanIter[CanNext[R]], key: None = None, reverse: Literal[False] = False)"
+            "(CanIter[CanNext[R]], *, key: None = None,"
+            " reverse: Literal[False] = False)"
             " -> list[R]\n"
             "[R: CanLt[R, CanBool]]"
-            "(CanIter[CanNext[R]], key: None = None, reverse: CanBool) -> list[R]\n"
+            "(CanIter[CanNext[R]], *, key: None = None, reverse: CanBool) -> list[R]\n"
             "[T, R]"
-            "(CanIter[CanNext[R]], key: (R) -> T & CanLt[T, CanBool],"
+            "(CanIter[CanNext[R]], *, key: (R) -> T & CanLt[T, CanBool],"
             " reverse: Literal[False] = False) -> list[R]\n"
             "[T, R]"
-            "(CanIter[CanNext[R]], key: (R) -> T & CanLt[T, CanBool], reverse: CanBool)"
+            "(CanIter[CanNext[R]], *, key: (R) -> T & CanLt[T, CanBool],"
+            " reverse: CanBool)"
             " -> list[R]"
         ),
     ),
@@ -2116,7 +2123,6 @@ _COMPAT_DIVERGENT = frozenset({
     "[R](x: HasTypeParams[R]) -> R",
     # combining two `Has` protocols (or the same attribute twice) is inexpressible
     "[R, R2](x: HasName[R] & HasQualname[R2]) -> tuple[R, R2]",
-    "[R, R2](x: Has['spam', +R] & Has['spam', ClassVar[+R2]]) -> tuple[R, R2]",
     # a generic the inference left unparametrized (reportMissingTypeArgument)
     "[T]() -> (dict, CanHash, T = None) -> T",
     "() -> functools.partial",
@@ -2139,12 +2145,125 @@ def test_infer_shelf() -> None:
     assert infer(shelve.Shelf.close).endswith("-> None")
 
 
+# Dependent bounds and intersections with type variables stay in the terse format.
+_COMPAT_DEPENDENT = frozenset({
+    ("[T: CanAdd[T, R], R](x: T) -> R\n[T: CanRAdd[T, R], R](x: T) -> R"),
+    ("[T: CanTruediv[T, R], R](x: T) -> R\n[T: CanRTruediv[T, R], R](x: T) -> R"),
+    (
+        "[T: CanAdd[T, CanNeg[R]], R](x: T) -> R\n"
+        "[T: CanRAdd[T, CanNeg[R]], R](x: T) -> R"
+    ),
+    "[T: CanGt[Literal[0], CanBool] & CanNeg[R], R](x: T) -> T | R",
+    "[T: CanBool & CanNeg[R], R](x: T) -> R | T",
+    (
+        "[T, R](x: CanGetitem[Literal[0, 1], T & CanAdd[T, R]]) -> R\n"
+        "[T, R](x: CanGetitem[Literal[0, 1], T & CanRAdd[T, R]]) -> R"
+    ),
+    (
+        "[T: CanRAdd[Literal[0], CanAdd[T, R]], R](x: CanIter[CanNext[T]]) -> R"
+        "\n"
+        "[R](x: CanIter[CanNext[CanRAdd[Literal[0] | R, R]]]) -> R"
+    ),
+    "[R: CanLt[R, CanBool]](x: CanIter[CanNext[R]]) -> list[R]",
+    "[R: CanLt[R, CanBool]](x: CanIter[CanNext[R]]) -> R",
+    "[R: CanGt[R, CanBool]](x: CanIter[CanNext[R]]) -> R",
+    (
+        "[R](x: CanGetitem[Literal[0, 1], R & (CanInt | CanIndex)]) -> "
+        "list[Literal[1] | R] | list[Literal[0] | R]"
+    ),
+    (
+        "[T: CanMul[T, U], U, R](x: CanAdd[U, R], y: T) -> R\n"
+        "[T, U: CanRMul[U, CanRAdd[T, R]], R](x: T, y: U) -> R"
+    ),
+    ("[T, R](xs: CanIter[CanNext[R]], key: (R) -> T & CanLt[T, CanBool]) -> list[R]"),
+    "[T, U: CanContains[T]](x: T, y: U) -> T | U",
+    "[T: CanContains[U], U](x: T, y: U) -> T",
+    (
+        "[T: CanContains[Literal[0] | U], U: Has['foo', () -> +R], R](x: T, y: "
+        "U) -> T | R"
+    ),
+    ("[T: CanBool & CanNeg[R], R, R2](x: T, y: CanBool & CanNeg[R2]) -> R | R2 | T"),
+    (
+        "[T, R](x: CanBool & CanAdd[T, R], y: T) -> R | T\n"
+        "[T: CanBool, U: CanRAdd[T, R], R](x: T, y: U) -> R | U"
+    ),
+    (
+        "[T, R](x: CanLen & CanAdd[T, R], y: T) -> R | T\n"
+        "[T: CanLen, U: CanRAdd[T, R], R](x: T, y: U) -> R | U"
+    ),
+    (
+        "[T: CanMul[Literal[2], R2], R, R2](x: CanAdd[T, R], y: T) -> tuple[R, "
+        "R2]\n"
+        "[T, R, R2](x: T, y: CanMul[Literal[2], R2] & CanRAdd[T, R]) -> "
+        "tuple[R, R2]"
+    ),
+    (
+        "[T: CanAdd[U, R], U: CanAdd[T, R2], R, R2](x: T, y: U) -> tuple[R, R2]"
+        "\n"
+        "[T: CanRAdd[U, R2], U: CanRAdd[T, R], R, R2](x: T, y: U) -> tuple[R, "
+        "R2]"
+    ),
+    ("[T: CanAdd[T, R], R](*args: T) -> R\n[T: CanRAdd[T, R], R](*args: T) -> R"),
+    (
+        "[T: CanRAdd[Literal[0], CanAdd[T, R2]], R, R2](x: CanIter[CanNext[R]],"
+        " z: CanIter[CanNext[T]]) -> tuple[R, R2]\n"
+        "[R, R2](x: CanIter[CanNext[R]], z: CanIter[CanNext[CanRAdd[Literal[0] "
+        "| R2, R2]]]) -> tuple[R, R2]"
+    ),
+    (
+        "[T: CanAdd[U, R], U, R](start: T) -> tuple[() -> T, (by: U) -> R]\n"
+        "[T, R](start: T) -> tuple[() -> T, (by: CanRAdd[T, R]) -> R]"
+    ),
+    (
+        "[T, U: CanDivmod[U, R], R](x: CanDivmod[T, CanIter[CanNext[U]]], y: T)"
+        " -> R\n"
+        "[T, U: CanRDivmod[U, R], R](x: T, y: CanRDivmod[T, "
+        "CanIter[CanNext[U]]]) -> R"
+    ),
+    "[R: list[R]]() -> R",
+    "[R: list[list[R]]]() -> R",
+    "[R: collections.defaultdict[Literal['k'], R]]() -> R",
+    "[R, R2: list[R2 | R]](x: CanAdd[Literal[1], R]) -> R2",
+    "[R: list[R | T], T = Literal[1]](x: T = 1) -> R",
+    (
+        "[R, R2: CanBool](x: CanMul[Literal[2], R2 & CanAdd[Literal[1, 2], R] &"
+        " CanBool] & CanBool) -> R | R2"
+    ),
+    "[T, U: CanLt[T | U, CanBool]](T, *args: U) -> U | T",
+    (
+        "[R: CanLt[R, CanBool]](CanIter[CanNext[R]], *, key: None = None, "
+        "reverse: Literal[False] = False) -> list[R]\n"
+        "[R: CanLt[R, CanBool]](CanIter[CanNext[R]], *, key: None = None, "
+        "reverse: CanBool) -> list[R]\n"
+        "[T, R](CanIter[CanNext[R]], *, key: (R) -> T & CanLt[T, CanBool], "
+        "reverse: Literal[False] = False) -> list[R]\n"
+        "[T, R](CanIter[CanNext[R]], *, key: (R) -> T & CanLt[T, CanBool], "
+        "reverse: CanBool) -> list[R]"
+    ),
+})
+
+
+def _compat_case(func: Any, terse: str) -> str | None:
+    if any(func is f for f in (list, _if_none, _add_one_default, _deprecated_y)):
+        reason = "type complements"
+    elif any(func is f for f, _ in CLASS_ATTRIBUTE_CASES):
+        reason = "class.*attributes"
+    elif terse in _COMPAT_DEPENDENT:
+        reason = r"typevar-referencing bounds|intersections with type variables"
+    else:
+        return infer(func, backend="compat")
+    with pytest.raises(InferError, match=reason):
+        infer(func, backend="compat")
+    return None
+
+
 def test_compat_renders_corpus() -> None:
-    # every terse case must lower and print without error
+    # every case exports or explicitly rejects its unsupported construct
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", InferWarning)
         for func, terse in ALL_CASES:
-            assert infer(func, backend="compat"), terse
+            result = _compat_case(func, terse)
+            assert result is None or result, terse
 
 
 def test_compat_corpus_typechecks(
@@ -2155,7 +2274,9 @@ def test_compat_corpus_typechecks(
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", InferWarning)
         rendered = [
-            (terse, infer(func, backend="compat")) for func, terse in INFER_CASES
+            (terse, stub)
+            for func, terse in INFER_CASES
+            if (stub := _compat_case(func, terse)) is not None
         ]
     terse_of = {f"case_{i:03d}": terse for i, (terse, _) in enumerate(rendered)}
     for i, (_, stub) in enumerate(rendered):

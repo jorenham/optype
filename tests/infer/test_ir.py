@@ -446,3 +446,14 @@ def test_tyvar_names_round_trip() -> None:
     assert [tyvar_index(tyvar_name(i)) for i in range(9)] == list(range(9))
     assert tyvar_index("R") is None
     assert tyvar_index("Ts") is None
+
+
+def test_keyword_only_metadata_survives_type_operations() -> None:
+    arg = Arg("x", A, (0,), kw_only=True)
+    assert subst_term(arg, {"A": B}) == Arg("x", B, (0,), kw_only=True)
+    positional = Fn((Arg("x", A, (0,)),), B)
+    keyword = Fn((arg,), B)
+    assert not _ir.equivalent(positional, keyword)
+    assert alpha_equal(positional, keyword, {"A", "B"}) is None
+    assert subtype(positional, keyword)
+    assert not subtype(keyword, positional)

@@ -13,9 +13,10 @@ from typing import Literal, final
 
 # `from . import _ir` would re-enter this package
 import optype.infer._ir as _ir  # ruff: ignore[manual-from-import]
-from ._model import Alias, Attr, Member, Method, ProtocolDef
+from ._model import Attr, Member, Method, ProtocolDef
 from optype._core import _can, _has, _just
 from optype.infer._backends._base import default_text, value_text
+from optype.infer._errors import InferError
 
 _ABC = frozenset({
     "Callable",
@@ -68,11 +69,28 @@ def _qualified(name: str) -> str:
     return name if found is None or found[1] is None else f"{found[0]}.{name}"
 
 
-def _join_params(items: Sequence[tuple[str, bool]]) -> str:
-    """Join rendered params, inserting `/` after a leading positional-only run."""
+def _param_order(param: _ir.Param) -> int:
+    """Python's declaration order, which parameter selectors must preserve."""
+    if param.pos_only:
+        return 0
+    if param.prefix == "*":
+        return 2
+    if param.prefix == "**":
+        return 4
+    return 3 if param.kw_only else 1
+
+
+def _join_params(items: Sequence[tuple[str, bool, bool]]) -> str:
+    """Join rendered params, preserving positional-only and keyword-only boundaries."""
     parts: list[str] = []
     slash = 0
-    for decl, pos_only in items:
+    keyword = False
+    for decl, pos_only, kw_only in items:
+        if kw_only and not keyword:
+            parts.append("*")
+            keyword = True
+        if decl.startswith("*"):
+            keyword = True
         if pos_only:
             slash = len(parts) + 1
         parts.append(decl)
@@ -186,11 +204,20 @@ class Printer:
         return f"{decl} = {self.render_node(typar.default)}"
 
     def params(self, params: Sequence[_ir.Param]) -> str:
-        end = next((i for i, p in enumerate(params) if p.prefix), len(params))
+        end = next(
+            (i for i, p in enumerate(params) if p.prefix or p.kw_only),
+            len(params),
+        )
         show = _default_mask([p.default is not None for p in params], end)
         auto = 0
-        items: list[tuple[str, bool]] = []
+        items: list[tuple[str, bool, bool]] = []
+        previous = -1
         for i, p in enumerate(params):
+            order = _param_order(p)
+            if order < previous or (order == previous and p.prefix):
+                msg = "compat cannot preserve parameter order; use backend='terse'"
+                raise InferError(msg)
+            previous = order
             if p.pos_only:
                 decl = f"_{auto}: {self.render_node(p.node)}"
                 auto += 1
@@ -198,7 +225,7 @@ class Printer:
                 decl = f"{p.prefix}{p.name}: {self.render_node(p.node)}"
             if p.default is not None and show[i]:
                 decl += f" = {default_text(p.default[0], self.used.add)}"
-            items.append((decl, p.pos_only))
+            items.append((decl, p.pos_only, p.kw_only))
         return _join_params(items)
 
     def _prefixed_type(self, value: _ir.Node) -> tuple[_Prefix, str]:
@@ -218,13 +245,14 @@ class Printer:
                 i
                 for i, p in enumerate(params)
                 if isinstance(_ir.term_node(p), _ir.Unpack)
+                or (isinstance(p, _ir.Arg) and p.kw_only)
             ),
             len(params),
         )
         defaults = [isinstance(p, _ir.Arg) and p.default is not None for p in params]
         show = _default_mask(defaults, end)
         auto = 0
-        items: list[tuple[str, bool]] = []
+        items: list[tuple[str, bool, bool]] = []
         for i, p in enumerate(params):
             if isinstance(p, _ir.Arg) and p.key:
                 decl = f"{p.key}: {self.render_node(p.value)}"
@@ -237,7 +265,7 @@ class Printer:
                 auto += 1
             if isinstance(p, _ir.Arg) and p.default is not None and show[i]:
                 decl += f" = {default_text(p.default[0], self.used.add)}"
-            items.append((decl, pos_only))
+            items.append((decl, pos_only, isinstance(p, _ir.Arg) and p.kw_only))
         return _join_params(items)
 
     def _member_text(self, member: Member, *, overload: bool) -> str:
@@ -282,10 +310,6 @@ class Printer:
             for m in proto.members
         )
         return f"{head}\n{body}"
-
-    def alias_text(self, alias: Alias) -> str:
-        value = self.render_node(alias.value)
-        return f"type {alias.name}{self.type_params(alias.type_params)} = {value}"
 
     def func_text(self, func: _ir.Signature) -> str:
         head = ""

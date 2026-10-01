@@ -1,7 +1,6 @@
 """The compat lowering, from hand-built `Signature`s to `.pyi` text."""
 
 import enum
-import os
 import subprocess  # ruff: ignore[suspicious-subprocess-import]
 import sys
 import types
@@ -14,17 +13,12 @@ from optype.infer import InferError
 from optype.infer._backends._compat import render
 from optype.infer._backends._compat._lower import Lowerer
 from optype.infer._backends._compat._model import (
-    Alias,
     Attr,
     Member,
     Method,
-    Module,
     ProtocolDef,
     combine_name,
-    components,
-    cyclic_names,
     free_tyvars,
-    resolution_order,
 )
 from optype.infer._backends._compat._print import OPTYPE
 from optype.infer._ir import (
@@ -83,17 +77,6 @@ TEXT_CASES: list[tuple[str, tuple[Signature, ...], str]] = [
             "\n\n"
             "def f[R](x: CanGtNeg[R]) -> R: ..."
         ),
-    ),
-    (
-        # `T & CanNeg[R]` constrains `T`; the acyclic bound then substitutes in place
-        "intersection with typevar",
-        (
-            _sig(
-                (TypeParam("T"), TypeParam("R")),
-                Intersection((T, App("CanNeg", (R,)))),
-            ),
-        ),
-        "from optype import CanNeg\n\ndef f[R](x: CanNeg[R]) -> R: ...",
     ),
     (
         "intersection distributes over union",
@@ -280,125 +263,6 @@ TEXT_CASES: list[tuple[str, tuple[Signature, ...], str]] = [
         "from optype import CanAdd\n\ndef f[R](x: CanAdd[object, R]) -> R: ...",
     ),
     (
-        # PEP 695 forbids a bound that references a type parameter; a cycle hoists
-        "cyclic protocol bound",
-        (_sig((TypeParam("T", App("CanLt", (T, App("CanBool", ())))),), T, T),),
-        (
-            "from typing import Protocol\n"
-            "from optype import CanBool, CanLt\n\n"
-            "class CanLt2(CanLt[CanLt2, CanBool], Protocol): ...\n\n"
-            "def f(x: CanLt2) -> CanLt2: ..."
-        ),
-    ),
-    (
-        "cyclic concrete bound",
-        (_sig((TypeParam("T", App("list", (T,))),), T, T),),
-        "type list2 = list[list2]\n\ndef f(x: list2) -> list2: ...",
-    ),
-    (
-        # an eliminated binder is substituted where a default mentions it
-        "default of an eliminated binder",
-        (
-            Signature(
-                (
-                    TypeParam("T", App("CanNeg", (R,))),
-                    TypeParam("R"),
-                    TypeParam("U", default=T),
-                ),
-                (Param("x", T), Param("y", U)),
-                R,
-            ),
-        ),
-        (
-            "from optype import CanNeg\n\n"
-            "def f[R, U = CanNeg[R]](x: CanNeg[R], y: U) -> R: ..."
-        ),
-    ),
-    (
-        # a hoisted bound sees the substitution of the acyclic binder it mentions
-        "recursive bound of an eliminated binder",
-        (
-            Signature(
-                (
-                    TypeParam("T", App("CanAdd", (T, U))),
-                    TypeParam("U", App("CanNeg", (R,))),
-                    TypeParam("R"),
-                ),
-                (Param("x", T),),
-                R,
-            ),
-        ),
-        (
-            "from typing import Protocol\n"
-            "from optype import CanAdd, CanNeg\n\n"
-            "class CanAdd2[T](CanAdd[CanAdd2[T], CanNeg[T]], Protocol): ...\n\n"
-            "def f[R](x: CanAdd2[R]) -> R: ..."
-        ),
-    ),
-    (
-        # a cycle, an acyclic binder, and another cycle resolve in dependency order
-        "chained bounds",
-        (
-            Signature(
-                (
-                    TypeParam("T", App("CanAdd", (T, U))),
-                    TypeParam("U", App("CanNeg", (X,))),
-                    TypeParam("X", App("list", (X,))),
-                ),
-                (Param("x", T),),
-                NONE,
-            ),
-        ),
-        (
-            "from typing import Protocol\n"
-            "from optype import CanAdd, CanNeg\n\n"
-            "type list2 = list[list2]\n"
-            "class CanAdd2(CanAdd[CanAdd2, CanNeg[list2]], Protocol): ...\n\n"
-            "def f(x: CanAdd2) -> None: ..."
-        ),
-    ),
-    (
-        # a mutually recursive pair hoists together, keeping the free typevar as an arg
-        "mutually recursive bounds",
-        (
-            Signature(
-                (
-                    TypeParam("T", App("CanAdd", (U, X))),
-                    TypeParam("U", App("CanMul", (T, X))),
-                    TypeParam("X"),
-                ),
-                (Param("x", T), Param("y", U), Param("z", X)),
-                X,
-            ),
-        ),
-        (
-            "from typing import Protocol\n"
-            "from optype import CanAdd, CanMul\n\n"
-            "class CanAdd2[T](CanAdd[CanMul2[T], T], Protocol): ...\n"
-            "class CanMul2[T](CanMul[CanAdd2[T], T], Protocol): ...\n\n"
-            "def f[X](x: CanAdd2[X], y: CanMul2[X], z: X) -> X: ..."
-        ),
-    ),
-    (
-        # an acyclic bound substitutes in place, transitively
-        "acyclic bounds",
-        (
-            Signature(
-                (
-                    TypeParam("T", App("CanAdd", (U, R))),
-                    TypeParam("U", App("CanNeg", (R,))),
-                    TypeParam("R"),
-                ),
-                (Param("x", T),),
-                R,
-            ),
-        ),
-        (
-            "from optype import CanAdd, CanNeg\n\n"
-            "def f[R](x: CanAdd[CanNeg[R], R]) -> R: ..."
-        ),
-    ),
-    (
         # a non-generic protocol drops its excess argument
         "protocol arity",
         (
@@ -575,18 +439,6 @@ TEXT_CASES: list[tuple[str, tuple[Signature, ...], str]] = [
         ),
     ),
     (
-        # `~` has no Python meaning, and a variance sign is only presentational
-        "fictional forms dropped",
-        (
-            _sig(
-                (TypeParam("T"),),
-                Intersection((T, Not(NONE))),
-                Covariant(T),
-            ),
-        ),
-        "def f[T](x: T) -> T: ...",
-    ),
-    (
         "typevar tuple",
         (
             Signature(
@@ -604,7 +456,10 @@ TEXT_CASES: list[tuple[str, tuple[Signature, ...], str]] = [
         (
             Signature(
                 (TypeParam("Ts", unpack=True), TypeParam("T", default=ZERO)),
-                (Param("args", TS, prefix="*"), Param("x", T, default=(0,))),
+                (
+                    Param("args", TS, prefix="*"),
+                    Param("x", T, default=(0,), kw_only=True),
+                ),
                 App("tuple", (App("tuple", (TS,)), T)),
             ),
         ),
@@ -655,16 +510,9 @@ def test_text_typechecks(
     assert out.returncode == 0, out.stdout
 
 
-def _protocols(module: Module) -> list[ProtocolDef]:
-    protocols = [h for h in module.helpers if isinstance(h, ProtocolDef)]
-    assert len(protocols) == len(module.helpers)
-    return protocols
-
-
 def _has_member(*args: Node) -> Member:
     module = Lowerer().module([_sig((TypeParam("R"),), Has("spam", args))])
     (helper,) = module.helpers
-    assert isinstance(helper, ProtocolDef)
     (member,) = helper.members
     return member
 
@@ -736,7 +584,7 @@ def test_has_method_merges_with_a_write_as_a_callable_read(reverse: bool) -> Non
     )
     node = Intersection(parts[::-1] if reverse else parts)
     module = Lowerer().module([_sig((), node, NONE)])
-    assert [h.members for h in _protocols(module)] == [
+    assert [h.members for h in module.helpers] == [
         (Attr("spam", Fn((), OBJECT), setter=ZERO),),
     ]
 
@@ -748,7 +596,7 @@ def test_has_of_one_attribute_merge_within_an_intersection() -> None:
         Has("spam", (Covariant(R),)),
     ))
     module = Lowerer().module([_sig((TypeParam("R"),), node)])
-    (helper,), (func,) = _protocols(module), module.funcs
+    (helper,), (func,) = module.helpers, module.funcs
     assert helper.members == (Attr("spam", T, setter=ZERO),)
     assert func.params[0].node == App(helper.name, (R,))
 
@@ -761,14 +609,6 @@ def test_has_method() -> None:
 def test_has_classvar() -> None:
     arg = App("ClassVar", (Covariant(Type(int)),))
     assert _has_member(arg) == Attr("spam", Type(int), classvar=True)
-    # a `ClassVar` cannot hold a typevar, so a generic one demotes to the instance form
-    arg = App("ClassVar", (Covariant(R),))
-    assert _has_member(arg) == Attr("spam", T, readonly=True)
-    arg = App(
-        "ClassVar",
-        (Covariant(R), Contravariant(Type(int))),
-    )
-    assert _has_member(arg) == Attr("spam", T, setter=Type(int))
     # a class attribute keeps its read type
     arg = App(
         "ClassVar",
@@ -794,7 +634,7 @@ def test_intersection_distributes_over_every_union() -> None:
         Union((App("CanAbs", (R,)), App("CanInvert", (R,)))),
     ))
     module = Lowerer().module([_sig((TypeParam("R"),), node)])
-    helpers = _protocols(module)
+    helpers = module.helpers
     assert {frozenset(h.bases) for h in helpers} == {
         frozenset({App(left, (T,)), App(right, (T,))})
         for left in ("CanNeg", "CanPos")
@@ -810,7 +650,7 @@ def test_nested_argument_lowers_into_its_own_helper() -> None:
     node = Fn((Arg("k", Has("spam", (Covariant(X),))),), R)
     sig = Signature((TypeParam("X"), TypeParam("R")), (Param("f", node),), R)
     module = Lowerer().module([sig])
-    helpers = _protocols(module)
+    helpers = module.helpers
     (attr,) = [h for h in helpers if h.members == (Attr("spam", T, readonly=True),)]
     (call,) = [h for h in helpers if h is not attr]
     assert call.type_params == (TypeParam("T"), TypeParam("U"))
@@ -829,7 +669,7 @@ def test_helpers_are_keyed_on_callable_parameters() -> None:
         Signature((TypeParam("R"),), (Param("h", call("a", (0,))),), R),
         Signature((TypeParam("X"),), (Param("i", Fn((Arg("a", Type(int)),), X)),), X),
     ])
-    by_members = {h.members: h for h in _protocols(module)}
+    by_members = {h.members: h for h in module.helpers}
     assert len(by_members) == 3
     a = by_members[Method("__call__", (Arg("a", Type(int)),), T),]
     b = by_members[Method("__call__", (Arg("b", Type(int)),), T),]
@@ -846,7 +686,7 @@ def test_intersected_callables_become_call_overloads() -> None:
     # every callable member lifts into the helper, one `__call__` overload each
     node = Intersection((Fn((Type(int),), Type(int)), Fn((Type(str),), Type(str))))
     module = Lowerer().module([Signature((), (Param("f", node),), NONE)])
-    (helper,), (func,) = _protocols(module), module.funcs
+    (helper,), (func,) = module.helpers, module.funcs
     assert helper.members == (
         Method("__call__", (Type(int),), Type(int)),
         Method("__call__", (Type(str),), Type(str)),
@@ -859,7 +699,7 @@ def test_type_parameter_default_is_lowered() -> None:
     default = Has("spam", (Covariant(Type(int)),))
     sig = Signature((TypeParam("T", default=default),), (Param("x", T),), T)
     module = Lowerer().module([sig])
-    (helper,), (func,) = _protocols(module), module.funcs
+    (helper,), (func,) = module.helpers, module.funcs
     assert helper.members == (Attr("spam", Type(int), readonly=True),)
     assert func.type_params == (TypeParam("T", default=App(helper.name, ())),)
 
@@ -871,7 +711,7 @@ def test_same_protocol_merges_beside_another_base() -> None:
         App("CanNeg", (Type(object),)),
     ))
     module = Lowerer().module([_sig((TypeParam("R"),), node)])
-    (helper,) = _protocols(module)
+    (helper,) = module.helpers
     assert helper.bases == (App("CanNeg", (Type(int),)), App("CanPos", (T,)))
 
 
@@ -913,7 +753,7 @@ def test_distribution_does_not_duplicate_a_base() -> None:
 )
 def test_same_protocol_stays_apart_when_a_join_would_change_meaning(node: Node) -> None:
     module = Lowerer().module([_sig((), node, NONE)])
-    (helper,) = _protocols(module)
+    (helper,) = module.helpers
     assert isinstance(node, Intersection)
     assert helper.bases == node.parts
 
@@ -928,7 +768,7 @@ def test_same_protocol_at_callables_of_another_layout_stays_apart(
     parts = (App("CanNeg", (fixed,)), App("CanNeg", (unpacked,)))
     node = Intersection(parts[::-1] if reverse else parts)
     module = Lowerer().module([_sig((TypeParam("T"),), node)])
-    (helper,) = _protocols(module)
+    (helper,) = module.helpers
     assert len(helper.bases) == 2
 
 
@@ -936,7 +776,7 @@ def test_same_protocol_at_unrelated_arguments_stays_apart() -> None:
     # nothing joins `int` and `str` covariantly, so both applications stay as bases
     node = Intersection((App("CanNeg", (Type(int),)), App("CanNeg", (Type(str),))))
     module = Lowerer().module([_sig((TypeParam("R"),), node)])
-    (helper,) = _protocols(module)
+    (helper,) = module.helpers
     assert helper.bases == (App("CanNeg", (Type(int),)), App("CanNeg", (Type(str),)))
 
 
@@ -958,7 +798,7 @@ def test_helpers_are_keyed_on_their_members() -> None:
             X,
         ),
     ])
-    by_members = {h.members: h for h in _protocols(module)}
+    by_members = {h.members: h for h in module.helpers}
     assert len(by_members) == 3
     spam = by_members[Attr("spam", T, readonly=True),]
     ham = by_members[Attr("ham", T, readonly=True),]
@@ -978,38 +818,12 @@ def test_has_non_identifier_attr_is_rejected(attr: str) -> None:
         render([_sig((), Has(attr, ()), NONE)])
 
 
-def test_recursive_helper_reuse_across_binders() -> None:
-    # alpha-equal cyclic bounds hoist into one helper, whatever the binders are named
-    first = Signature(
-        (TypeParam("T", App("CanAdd", (T, R))), TypeParam("R")),
-        (Param("x", T),),
-        R,
-    )
-    second = Signature(
-        (TypeParam("U", App("CanAdd", (U, X))), TypeParam("X")),
-        (Param("y", U),),
-        X,
-    )
-    module = Lowerer().module([first, second])
-    (helper,) = module.helpers
-    assert helper == ProtocolDef(
-        helper.name,
-        (TypeParam("T"),),
-        (App("CanAdd", (App(helper.name, (T,)), T)),),
-        (),
-    )
-    assert [f.params[0].node for f in module.funcs] == [
-        App(helper.name, (R,)),
-        App(helper.name, (X,)),
-    ]
-
-
 def test_callable_default_needs_call_protocol() -> None:
     # `Callable` cannot express a default, so it lifts into a `__call__` that keeps it
     module = Lowerer().module([
         _sig((TypeParam("R"),), Fn((Arg(None, ZERO, (0,)),), R)),
     ])
-    (helper,), (func,) = _protocols(module), module.funcs
+    (helper,), (func,) = module.helpers, module.funcs
     assert helper.type_params == (TypeParam("T"),)
     assert helper.members == (Method("__call__", (Arg(None, ZERO, (0,)),), T),)
     assert func.params[0].node == App(helper.name, (R,))
@@ -1019,7 +833,7 @@ def test_callable_intersected_with_protocol_lifts_into_call() -> None:
     # a callable is not a valid base, so it becomes the `__call__` member instead
     node = Intersection((Fn((T,), R), App("CanBool", ())))
     module = Lowerer().module([_sig((TypeParam("T"), TypeParam("R")), node)])
-    (helper,), (func,) = _protocols(module), module.funcs
+    (helper,), (func,) = module.helpers, module.funcs
     assert helper == ProtocolDef(
         helper.name,
         (TypeParam("T"), TypeParam("U")),
@@ -1027,77 +841,6 @@ def test_callable_intersected_with_protocol_lifts_into_call() -> None:
         (Method("__call__", (T,), U),),
     )
     assert func.params[0].node == App(helper.name, (T, R))
-
-
-def test_explicit_bound_merges_with_inferred_constraint() -> None:
-    # a declared bound and a lifted intersection member end up in one helper
-    node = Intersection((T, App("CanNeg", (R,))))
-    sig = _sig((TypeParam("T", App("CanBool", ())), TypeParam("R")), node)
-    module = Lowerer().module([sig])
-    (helper,), (func,) = _protocols(module), module.funcs
-    assert helper.bases == (App("CanBool", ()), App("CanNeg", (T,)))
-    assert func.type_params == (TypeParam("R"),)
-    assert func.params[0].node == App(helper.name, (R,))
-
-
-def test_acyclic_bound_referencing_a_cyclic_one() -> None:
-    # the cycle hoists into an alias, which the acyclic bound then substitutes with
-    type_params = TypeParam("T", App("CanNeg", (U,))), TypeParam("U", App("list", (U,)))
-    module = Lowerer().module([_sig(type_params, T, T)])
-    (alias,), (func,) = module.helpers, module.funcs
-    assert alias == Alias(alias.name, (), App("list", (App(alias.name, ()),)))
-    assert func.type_params == ()
-    assert func.params[0].node == func.ret == App("CanNeg", (App(alias.name, ()),))
-
-
-def test_resolution_order_does_not_depend_on_the_hash_seed() -> None:
-    # competing cyclic bounds resolve in one order whatever the seed
-    script = """
-from optype.infer._ir import App, Name, Param, Signature, TypeParam
-from optype.infer._backends._compat import render
-T, U, X = Name("T"), Name("U"), Name("X")
-type_params = (
-    TypeParam("T", App("tuple", (U, X))),
-    TypeParam("U", App("list", (U,))),
-    TypeParam("X", App("list", (App("tuple", (X, X)),))),
-)
-print(render([Signature(type_params, (Param("x", T),), T)]))
-"""
-    outputs = {
-        subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
-            [sys.executable, "-c", script],
-            env={**os.environ, "PYTHONHASHSEED": seed},
-            capture_output=True,
-            text=True,
-            check=True,
-        ).stdout
-        for seed in ("0", "1", "2")
-    }
-    assert len(outputs) == 1
-
-
-def test_graph_helpers() -> None:
-    deps = {
-        "a": frozenset({"b"}),
-        "b": frozenset({"a"}),
-        "c": frozenset({"c", "a"}),  # reaches the `a`/`b` cycle, but not back
-        "d": frozenset({"a"}),
-        "e": frozenset[str](),
-    }
-    cyclic = cyclic_names(deps)
-    assert cyclic == {"a", "b", "c"}
-    groups = components(cyclic, deps)
-    assert set(groups) == {frozenset({"a", "b"}), frozenset({"c"})}
-    # every unit comes after the units it depends on
-    order = resolution_order(groups, {"d", "e"}, deps)
-    assert sorted(order, key=sorted) == [
-        frozenset({"a", "b"}),
-        frozenset({"c"}),
-        frozenset({"d"}),
-        frozenset({"e"}),
-    ]
-    assert order.index(frozenset({"a", "b"})) < order.index(frozenset({"c"}))
-    assert order.index(frozenset({"a", "b"})) < order.index(frozenset({"d"}))
 
 
 def test_naming_helpers() -> None:
@@ -1111,3 +854,86 @@ def test_naming_helpers() -> None:
     assert lowerer.claim("registry.registry") == "registry2"
     nodes = App("X", (Name("B"), Name("A"), Name("B"))), Arg("k", Name("C"))
     assert free_tyvars(nodes, frozenset({"A", "B"})) == ["B", "A"]
+
+
+@pytest.mark.parametrize(
+    "node",
+    [Not(NONE), Intersection((T, Not(NONE))), App("list", (Not(NONE),))],
+)
+def test_complements_are_rejected(node: Node) -> None:
+    # Check both parameter and bound positions, before lowering can erase a complement.
+    for sig in (_sig((TypeParam("T"),), node), _sig((TypeParam("T", node),), T)):
+        with pytest.raises(InferError, match="type complements"):
+            render([sig])
+
+
+@pytest.mark.parametrize(
+    "args",
+    [(Covariant(R),), (Covariant(R), Contravariant(Type(int)))],
+)
+def test_generic_class_attributes_are_rejected(args: tuple[Node, ...]) -> None:
+    with pytest.raises(InferError, match="generic class attributes"):
+        _has_member(App("ClassVar", args))
+
+
+@pytest.mark.parametrize(
+    "typars",
+    [
+        (TypeParam("T", App("CanNeg", (R,))), TypeParam("R")),
+        (TypeParam("T", App("CanNeg", (T,))),),
+        (TypeParam("T", App("list", (T,))),),
+        (TypeParam("T", App("CanNeg", (U,))), TypeParam("U", App("CanPos", (T,)))),
+    ],
+)
+def test_dependent_bounds_are_rejected(typars: tuple[TypeParam, ...]) -> None:
+    with pytest.raises(InferError, match=r"typevar-referencing bounds.*terse"):
+        render([_sig(typars, T, T)])
+
+
+@pytest.mark.parametrize(
+    "node",
+    [
+        Intersection((T, App("CanNeg", (R,)))),
+        Intersection((Union((T, U)), App("CanBool", ()))),
+        App("list", (Intersection((T, App("CanBool", ()))),)),
+    ],
+)
+def test_typevar_intersections_are_rejected(node: Node) -> None:
+    with pytest.raises(InferError, match=r"intersections with type variables.*terse"):
+        render([_sig((TypeParam("T"), TypeParam("U"), TypeParam("R")), node)])
+
+
+@pytest.mark.parametrize(
+    "node",
+    [
+        App("CanLen", (Has("spam", (Covariant(R),)),)),
+        Has("__foo__", (Covariant(R), Contravariant(Fn((Arg("k", ZERO),), NONE)))),
+        Has(
+            "foo",
+            (
+                App(
+                    "ClassVar",
+                    (Covariant(NONE), Contravariant(Fn((Arg("k", ZERO),), NONE))),
+                ),
+            ),
+        ),
+    ],
+)
+def test_discarded_nodes_do_not_create_helpers(node: Node) -> None:
+    module = Lowerer().module([_sig((TypeParam("R"),), node, NONE)])
+    assert not any(h.name.startswith(("HasSpam", "CanCallP")) for h in module.helpers)
+
+
+@pytest.mark.parametrize("reverse", [False, True])
+@pytest.mark.parametrize("nested", [False, True])
+def test_absorbed_union_members_do_not_create_helpers(
+    reverse: bool,
+    nested: bool,
+) -> None:
+    parts = (OBJECT, Has("spam", ()))
+    node: Node = Union(parts[::-1] if reverse else parts)
+    if nested:
+        node = Union((Intersection((node, OBJECT)), Has("eggs", ())))
+    module = Lowerer().module([_sig((), node, NONE)])
+    assert module.helpers == ()
+    assert module.funcs[0].params[0].node == OBJECT

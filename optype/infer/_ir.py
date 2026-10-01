@@ -99,6 +99,7 @@ class Arg:
     key: str | None
     value: Node
     default: tuple[object] | None = None  # the boxed default value, if any
+    kw_only: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -193,6 +194,7 @@ class Param:
     prefix: str = ""  # "", "*", or "**"
     pos_only: bool = False
     default: tuple[object] | None = None  # the boxed default value, if any
+    kw_only: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -253,7 +255,9 @@ def equivalent(a: Term, b: Term) -> bool:  # ruff: ignore[too-many-return-statem
             same = len(params) == len(other_params) and equivalent(ret, other_ret)
             return same and _equivalent_all(params, other_params)
         case Arg(key, value, default), Arg(other_key, other_value, other_default):
-            same = key == other_key and default == other_default
+            same = (
+                key == other_key and default == other_default and a.kw_only == b.kw_only
+            )
             return same and equivalent(value, other_value)
         case Unpack(part), Unpack(other):
             return equivalent(part, other)
@@ -300,6 +304,12 @@ def subtype(sub: Term, sup: Term) -> bool:
 
 def _param_subtype(param: Term, wider: Term) -> bool:
     """Whether `param` takes every argument its `wider` counterpart takes."""
+    if (
+        isinstance(param, Arg)
+        and param.kw_only
+        and not (isinstance(wider, Arg) and wider.kw_only)
+    ):
+        return False
     key, default = (
         (param.key, param.default) if isinstance(param, Arg) else (None, None)
     )
@@ -488,7 +498,7 @@ def subst(node: Node, m: Mapping[str, Node]) -> Node:
 def subst_term(term: Term, m: Mapping[str, Node]) -> Term:
     """`subst`, keeping any `Arg` wrapper of an `App`/`Fn` member."""
     if isinstance(term, Arg):
-        return Arg(term.key, subst(term.value, m), term.default)
+        return replace(term, value=subst(term.value, m))
     return subst(term, m)
 
 

@@ -98,7 +98,7 @@ def test_builtin_dict_pop() -> None:
 def test_builtin_bytes_hex() -> None:
     _skip_if_signature(bytes.hex)
     # the str-typed `sep` rejects placeholders; the sep-less candidate renders
-    assert infer(bytes.hex) == "(bytes, bytes_per_sep: CanIndex = 1) -> str"
+    assert infer(bytes.hex) == "(bytes, *, bytes_per_sep: CanIndex = 1) -> str"
 
 
 def test_builtin_str_index() -> None:

@@ -7,6 +7,7 @@ import subprocess  # ruff: ignore[suspicious-subprocess-import]
 import sys
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -31,185 +32,6 @@ def _compat(source: str) -> str:
 
 # one representative input per construct, paired with its valid-Python `.pyi` rendering
 COMPAT_CASES: list[tuple[str, str]] = [
-    (
-        # a requirement lifted into a typevar's bound joins with the bound's own
-        "def f(make): a = make(0); -make(1); return a, -a",
-        (
-            "from collections.abc import Callable\n"
-            "from typing import Literal\n"
-            "from optype import CanNeg\n\n"
-            "def f[R2](make: Callable[[Literal[0, 1]], CanNeg[R2]])"
-            " -> tuple[CanNeg[R2], R2]: ..."
-        ),
-    ),
-    (
-        # the same, one application deep
-        "def f(make): a = make(0); abs(-make(1)); return a, abs(-a)",
-        (
-            "from collections.abc import Callable\n"
-            "from typing import Literal\n"
-            "from optype import CanAbs, CanNeg\n\n"
-            "def f[R2](make: Callable[[Literal[0, 1]], CanNeg[CanAbs[R2]]])"
-            " -> tuple[CanNeg[CanAbs[R2]], R2]: ..."
-        ),
-    ),
-    (
-        # the same, with the narrower argument known only through its typevar's bound
-        "def f(make): a = make(0); abs(-make(1)); b = -a; return a, b, abs(b)",
-        (
-            "from collections.abc import Callable\n"
-            "from typing import Literal\n"
-            "from optype import CanAbs, CanNeg\n\n"
-            "def f[R3](make: Callable[[Literal[0, 1]], CanNeg[CanAbs[R3]]])"
-            " -> tuple[CanNeg[CanAbs[R3]], CanAbs[R3], R3]: ..."
-        ),
-    ),
-    (
-        # the same, inside a callable's return type
-        "def f(make): a = make(0); abs((-make(1))()); return a, abs((-a)())",
-        (
-            "from collections.abc import Callable\n"
-            "from typing import Literal\n"
-            "from optype import CanAbs, CanNeg\n\n"
-            "def f[R2](make: Callable[[Literal[0, 1]], CanNeg[Callable[[],"
-            " CanAbs[R2]]]]) -> tuple[CanNeg[Callable[[], CanAbs[R2]]], R2]: ..."
-        ),
-    ),
-    (
-        # the same, between reads of an attribute
-        "def f(make): a = make(0); (-make(1)).x; return a, (-a).x",
-        (
-            "from collections.abc import Callable\n"
-            "from typing import Literal, Protocol\n"
-            "from optype import CanNeg\n\n"
-            "class HasX[T](Protocol):\n"
-            "    @property\n"
-            "    def x(self) -> T: ...\n\n"
-            "def f[R2](make: Callable[[Literal[0, 1]], CanNeg[HasX[R2]]])"
-            " -> tuple[CanNeg[HasX[R2]], R2]: ..."
-        ),
-    ),
-    (
-        # the same, through a bound that is an intersection
-        ("def f(make): a = make(0); abs(-make(1)); b = -a; return a, b, abs(b), +b"),
-        (
-            "from collections.abc import Callable\n"
-            "from typing import Literal, Protocol\n"
-            "from optype import CanAbs, CanNeg, CanPos\n\n"
-            "class CanAbsPos[T, U](CanAbs[T], CanPos[U], Protocol): ...\n\n"
-            "def f[R3, R4](make: Callable[[Literal[0, 1]], CanNeg[CanAbsPos[R3, R4]]])"
-            " -> tuple[CanNeg[CanAbsPos[R3, R4]], CanAbsPos[R3, R4], R3, R4]: ..."
-        ),
-    ),
-    (
-        # the same, through a method's return
-        "def f(make): a = make(0); abs((-make(1)).x()); return a, abs((-a).x())",
-        (
-            "from collections.abc import Callable\n"
-            "from typing import Literal, Protocol\n"
-            "from optype import CanAbs, CanNeg\n\n"
-            "class HasX[T](Protocol):\n"
-            "    def x(self) -> CanAbs[T]: ...\n\n"
-            "def f[R2](make: Callable[[Literal[0, 1]], CanNeg[HasX[R2]]])"
-            " -> tuple[CanNeg[HasX[R2]], R2]: ..."
-        ),
-    ),
-    (
-        # the same, between two intersections
-        (
-            "def f(make): a = make(0); abs(-make(1)); +(-make(1));"
-            " return a, abs(-a), +(-a)"
-        ),
-        (
-            "from collections.abc import Callable\n"
-            "from typing import Literal, Protocol\n"
-            "from optype import CanAbs, CanNeg, CanPos\n\n"
-            "class CanAbsPos[T, U](CanAbs[T], CanPos[U], Protocol): ...\n\n"
-            "def f[R2, R3](make: Callable[[Literal[0, 1]], CanNeg[CanAbsPos[R2,"
-            " R3]]]) -> tuple[CanNeg[CanAbsPos[R2, R3]], R2, R3]: ..."
-        ),
-    ),
-    (
-        # a requirement lifted while lowering a bound is kept as a constraint
-        (
-            "def f(make, take): a = make(0); b = make(1); take(-a); abs(-b);"
-            " abs(-make(2)); return a, b"
-        ),
-        (
-            "from collections.abc import Callable\n"
-            "from typing import Literal\n"
-            "from optype import CanAbs, CanNeg\n\n"
-            "def f[T: CanAbs[object]](make: Callable[[Literal[0, 1, 2]],"
-            " CanNeg[T]], take: Callable[[T], object])"
-            " -> tuple[CanNeg[T], CanNeg[T]]: ..."
-        ),
-    ),
-    (
-        # a bound that adds a shipped protocol's bound to a typevar is lowered once
-        "lambda x: (x, iter(x))",
-        (
-            "from optype import CanIter, CanNext\n\n"
-            "def f[R: CanNext[object]](x: CanIter[R]) -> tuple[CanIter[R], R]: ..."
-        ),
-    ),
-    (
-        # a helper an earlier lowering of a bound registered is not emitted
-        "def f(make): a = make(0); next(iter(make(1))); return a, iter(a)",
-        (
-            "from collections.abc import Callable\n"
-            "from typing import Literal\n"
-            "from optype import CanIter, CanNext\n\n"
-            "def f[R2: CanNext[object]](make: Callable[[Literal[0, 1]],"
-            " CanIter[R2]]) -> tuple[CanIter[R2], R2]: ..."
-        ),
-    ),
-    (
-        # a bound and a lifted requirement that are one union distribute once
-        "def f(make): a = make(0); int(make(1)); return a, int(a)",
-        (
-            "from collections.abc import Callable\n"
-            "from typing import Literal\n"
-            "from optype import CanIndex, CanInt\n\n"
-            "def f[R: CanInt | CanIndex](make: Callable[[int], R])"
-            " -> tuple[R, Literal[1]] | tuple[R, Literal[0]]: ..."
-        ),
-    ),
-    (
-        # an arity form of `round` joins by the shipped protocol's variance
-        "def f(make): a = make(0); round(make(1)); return a, round(a)",
-        (
-            "from collections.abc import Callable\n"
-            "from typing import Literal\n"
-            "from optype import CanRound1\n\n"
-            "def f[R2](make: Callable[[Literal[0, 1]], CanRound1[R2]])"
-            " -> tuple[CanRound1[R2], R2]: ..."
-        ),
-    ),
-    (
-        # the same for `pow`
-        "def f(make): a = make(0); pow(make(1), 2, 3); return a, pow(a, 2, 3)",
-        (
-            "from collections.abc import Callable\n"
-            "from typing import Literal\n"
-            "from optype import CanPow3\n\n"
-            "def f[R2](make: Callable[[Literal[0, 1]], CanPow3[Literal[2],"
-            " Literal[3], R2]]) -> tuple[CanPow3[Literal[2], Literal[3], R2], R2]: ..."
-        ),
-    ),
-    (
-        # a builtin argument joins by the IR's variance
-        (
-            "def f(make): a = make(0); frozenset((1, 2)) in make(1);"
-            " return a, frozenset((1,)) in a"
-        ),
-        (
-            "from collections.abc import Callable\n"
-            "from typing import Literal\n"
-            "from optype import CanContains\n\n"
-            "def f[R: CanContains[frozenset[Literal[1, 2]]]](make: Callable[[int],"
-            " R]) -> tuple[R, Literal[True]] | tuple[R, Literal[False]]: ..."
-        ),
-    ),
     (
         # the two arities of `round` fold into the shipped three-parameter protocol
         "lambda x: (round(x), round(x, 2))",
@@ -291,36 +113,6 @@ COMPAT_CASES: list[tuple[str, str]] = [
             "def f[T, R](x: CanMul[T, R], y: T) -> R: ...\n"
             "@overload\n"
             "def f[T, R](x: T, y: CanRMul[T, R]) -> R: ..."
-        ),
-    ),
-    (
-        # an intersection becomes a combined protocol, used as a substituted bound
-        "lambda x: x if x > 0 else -x",
-        (
-            "from typing import Literal, Protocol\n"
-            "from optype import CanBool, CanGt, CanNeg\n\n"
-            "class CanGtNeg[T]"
-            "(CanGt[Literal[0], CanBool], CanNeg[T], Protocol): ...\n\n"
-            "def f[R](x: CanGtNeg[R]) -> CanGtNeg[R] | R: ..."
-        ),
-    ),
-    (
-        # two typevars substituted by one type appear once in a union
-        "def f(x, y, z): x(z); y(z); return [x, y]",
-        (
-            "from collections.abc import Callable\n\n"
-            "def f[V](x: Callable[[V], object], y: Callable[[V], object], z: V)"
-            " -> list[Callable[[V], object]]: ..."
-        ),
-    ),
-    (
-        # a self-referential bound becomes a self-referential protocol
-        "lambda xs: sorted(xs)",
-        (
-            "from typing import Protocol\n"
-            "from optype import CanBool, CanIter, CanLt, CanNext\n\n"
-            "class CanLt2(CanLt[CanLt2, CanBool], Protocol): ...\n\n"
-            "def f(xs: CanIter[CanNext[CanLt2]]) -> list[CanLt2]: ..."
         ),
     ),
     (
@@ -510,7 +302,7 @@ COMPAT_CASES: list[tuple[str, str]] = [
         (
             "from typing import Protocol\n\n"
             "class CanCallP[T, U](Protocol):\n"
-            "    def __call__(self, _0: T, /, y: U) -> tuple[T, U]: ...\n\n"
+            "    def __call__(self, _0: T = 0, /, *, y: U) -> tuple[T, U]: ...\n\n"
             "def f[T, U]() -> CanCallP[T, U]: ..."
         ),
     ),
@@ -525,17 +317,6 @@ COMPAT_CASES: list[tuple[str, str]] = [
             "    def __call__(self, _0: T, /) -> U: ...\n\n"
             "def f[T, R, R2](f: Callable[[T], R], g: CanBool2[T, R2], x: T)"
             " -> R | R2: ..."
-        ),
-    ),
-    (
-        # the `~None` complement is dropped: overloads are matched in order
-        "def f(x=None): return [] if x is None else x",
-        (
-            "from typing import Never, overload\n\n"
-            "@overload\n"
-            "def f(x: None = None) -> list[Never]: ...\n"
-            "@overload\n"
-            "def f[T](x: T) -> T: ..."
         ),
     ),
     (
@@ -624,19 +405,6 @@ COMPAT_CASES: list[tuple[str, str]] = [
             "import collections\n"
             "from typing import Literal\n\n"
             "def f() -> collections.Counter[Literal['a']]: ..."
-        ),
-    ),
-    (
-        # a recursive alias of a qualified class is named after the class
-        (
-            "import collections\n"
-            "def f(): d = collections.OrderedDict(); d[0] = d; return d"
-        ),
-        (
-            "import collections\n"
-            "from typing import Literal\n\n"
-            "type OrderedDict2 = collections.OrderedDict[Literal[0], OrderedDict2]\n\n"
-            "def f() -> OrderedDict2: ..."
         ),
     ),
     (
@@ -758,3 +526,162 @@ def test_compat_template_strings(tmp_path: Path, basedpyright: _Check) -> None:
         (tmp_path / f"case_{i}.pyi").write_text(f"{_compat(source)}\n")
     out = basedpyright(tmp_path)
     assert out.returncode == 0, out.stdout
+
+
+@pytest.mark.parametrize(
+    ("source", "reason"),
+    [
+        ("def f(x=None): return [] if x is None else x", "type complements"),
+        ("lambda x: type(x).spam", "generic class attributes"),
+        ("lambda x: type(x).spam()", "class-level callable attributes"),
+    ],
+)
+def test_compat_rejects_lossy_exports(source: str, reason: str) -> None:
+    with pytest.raises(InferError, match=reason):
+        _compat(source)
+
+
+@pytest.mark.parametrize(
+    ("source", "calls"),
+    [
+        ("def f(*, x): return x", "f(x=1)\nf(1)  # error"),
+        ("lambda: (lambda *, x: x)", "g = f()\ng(x=1)\ng(1)  # error"),
+        ("def f(x=0, /, *, y): return x, y", "f(y=1)\nf(0, y=1)\nf(0, 1)  # error"),
+        ("lambda *args, x: (args, x)", "f(1, 2, x=3)\nf(1, 2)  # error"),
+    ],
+)
+def test_compat_keyword_only_callers(
+    source: str,
+    calls: str,
+    tmp_path: Path,
+    basedpyright: _Check,
+) -> None:
+    (tmp_path / "subject.pyi").write_text(_compat(source))
+    (tmp_path / "subject.py").touch()
+    client = "from subject import f\n" + calls + "\n"
+    (tmp_path / "client.py").write_text(client)
+    out = basedpyright(tmp_path)
+    errors = [int(n) for n in re.findall(r"client\.py:(\d+):\d+ - error:", out.stdout)]
+    expected = [
+        i for i, line in enumerate(client.splitlines(), 1) if line.endswith("# error")
+    ]
+    assert out.returncode == 1, out.stdout + out.stderr
+    assert errors == expected, out.stdout
+    assert f"{len(expected)} error" in out.stdout, out.stdout
+
+
+@pytest.mark.parametrize(
+    "selected",
+    [
+        ("c", "a"),
+        ("c", "b"),
+        ("c", "args"),
+        ("args", "a"),
+        ("kwargs", "c"),
+        ("kwargs", "a"),
+        ("args", "b"),
+        ("b", "a"),
+        ("args", "args"),
+        ("kwargs", "kwargs"),
+    ],
+)
+def test_compat_rejects_reordered_parameters(selected: tuple[str, ...]) -> None:
+    def f(a: Any, /, b: Any, *args: Any, c: Any, **kwargs: Any) -> Any:
+        return a, b, args, c, kwargs
+
+    assert infer(f, *selected)  # terse reporting still allows arbitrary selection order
+    with pytest.raises(InferError, match="cannot preserve parameter order"):
+        infer(f, *selected, backend="compat")
+    for valid in (("a", "b", "args", "c", "kwargs"), ("c", "kwargs"), ("args", "c")):
+        ast.parse(infer(f, *valid, backend="compat"))
+
+
+@pytest.mark.parametrize(
+    ("source", "reason"),
+    [
+        (
+            "def f(make): a = make(0); -make(1); return a, -a",
+            "typevar-referencing bounds",
+        ),
+        (
+            "def f(make): a = make(0); abs(-make(1)); return a, abs(-a)",
+            "typevar-referencing bounds",
+        ),
+        (
+            ("def f(make): a = make(0); abs(-make(1)); b = -a; return a, b, abs(b)"),
+            "typevar-referencing bounds",
+        ),
+        (
+            "def f(make): a = make(0); abs((-make(1))()); return a, abs((-a)())",
+            "typevar-referencing bounds",
+        ),
+        (
+            "def f(make): a = make(0); (-make(1)).x; return a, (-a).x",
+            "typevar-referencing bounds",
+        ),
+        (
+            (
+                "def f(make): a = make(0); abs(-make(1)); b = -a; return a, b, "
+                "abs(b), +b"
+            ),
+            "typevar-referencing bounds",
+        ),
+        (
+            ("def f(make): a = make(0); abs((-make(1)).x()); return a, abs((-a).x())"),
+            "typevar-referencing bounds",
+        ),
+        (
+            (
+                "def f(make): a = make(0); abs(-make(1)); +(-make(1)); return a, "
+                "abs(-a), +(-a)"
+            ),
+            "typevar-referencing bounds",
+        ),
+        (
+            (
+                "def f(make, take): a = make(0); b = make(1); take(-a); abs(-b); "
+                "abs(-make(2)); return a, b"
+            ),
+            "typevar-referencing bounds",
+        ),
+        ("lambda x: (x, iter(x))", "typevar-referencing bounds"),
+        (
+            "def f(make): a = make(0); next(iter(make(1))); return a, iter(a)",
+            "typevar-referencing bounds",
+        ),
+        (
+            "def f(make): a = make(0); int(make(1)); return a, int(a)",
+            "intersections with type variables",
+        ),
+        (
+            "def f(make): a = make(0); round(make(1)); return a, round(a)",
+            "typevar-referencing bounds",
+        ),
+        (
+            ("def f(make): a = make(0); pow(make(1), 2, 3); return a, pow(a, 2, 3)"),
+            "typevar-referencing bounds",
+        ),
+        (
+            (
+                "def f(make): a = make(0); frozenset((1, 2)) in make(1); return a, "
+                "frozenset((1,)) in a"
+            ),
+            "intersections with type variables",
+        ),
+        ("lambda x: x if x > 0 else -x", "typevar-referencing bounds"),
+        ("def f(x, y, z): x(z); y(z); return [x, y]", "typevar-referencing bounds"),
+        ("lambda xs: sorted(xs)", "typevar-referencing bounds"),
+        (
+            (
+                "import collections\ndef f(): d = collections.OrderedDict(); d[0] = "
+                "d; return d"
+            ),
+            "typevar-referencing bounds",
+        ),
+        ("lambda xs, key: sorted(xs, key=key)", "intersections with type variables"),
+    ],
+)
+def test_compat_rejects_dependent_constraints(source: str, reason: str) -> None:
+    with pytest.raises(InferError, match=reason) as exc:
+        _compat(source)
+    assert "backend='terse'" in str(exc.value)
