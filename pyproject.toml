@@ -71,7 +71,7 @@ extra = [
 ]
 doc = [
   # https://github.com/zensical/zensical/issues/735
-  "zensical==0.0.62",
+  "zensical==0.0.64",
   "pygments==2.21.0",
 ]
 lint = [
