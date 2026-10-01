@@ -52,7 +52,7 @@ $ optype infer "import math; math.sqrt"
 
 The terse form above is compact but not valid Python. Pass `--format compat` (or
 `backend="compat"` to `infer`) to emit a self-contained, type-checkable `.pyi` stub
-instead:
+for the supported subset:
 
 ```console
 $ optype infer --format compat "lambda x, y: x * y"
@@ -65,9 +65,13 @@ def f[T, R](x: CanMul[T, R], y: T) -> R: ...
 def f[T, R](x: T, y: CanRMul[T, R]) -> R: ...
 ```
 
-The fictional forms below are lowered to valid Python: [intersections](#intersections)
-and the inline [`Has[...]`](#attributes) form become protocols, and the
-[`~` complement](#parameter-defaults) is dropped.
+`compat` exports [intersections](#intersections) and [`Has[...]`](#attributes) as
+protocols, preserving calling conventions. Typevar-referencing bounds, intersections
+with type variables, complements, and generic or callable class attributes raise
+`InferError`; use the terse format instead. This includes `sorted` and recursive
+containers.
+
+Successful export still inherits the [exploration limitations](#limitations).
 
 ## Overloads
 
@@ -364,8 +368,9 @@ $ optype infer "def f(x=None): return [] if x is None else x"
 ```
 
 The `~None` complement makes the overloads disjoint: the first one covers `f()` and
-`f(None)`, and the second one everything else. Like `&`, the `~` is not valid Python;
-in practice it's fine to omit it, as overloads are matched in order anyway.
+`f(None)`, and the second one everything else. Like `&`, the `~` is not valid Python.
+The compat backend rejects complements: it does not assume that dropping an exclusion
+preserves the contract through overload resolution or nested type expressions.
 
 A Python 3.15+ `sentinel` is its own type per
 [PEP 661](https://peps.python.org/pep-0661/), spelled as its declared name. The common

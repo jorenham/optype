@@ -8,30 +8,21 @@ from collections.abc import Sequence
 
 import optype.infer._ir as _ir  # ruff: ignore[manual-from-import]
 from ._lower import Lowerer
-from ._model import ProtocolDef
 from ._print import Printer
 
 
 def render(sigs: Sequence[_ir.Signature], /) -> str:
-    """Render the signatures as a self-contained, type-checkable `.pyi` stub."""
+    """Export supported signatures as a `.pyi` stub, rejecting known lossy forms."""
     module = Lowerer().module(sigs)
     printer = Printer()
     bodies = list(dict.fromkeys(printer.func_text(f) for f in module.funcs))
     if len(bodies) > 1:
         printer.used.add("overload")
         bodies = [f"@overload\n{body}" for body in bodies]
-    helpers = [
-        printer.protocol_text(h)
-        if isinstance(h, ProtocolDef)
-        else printer.alias_text(h)
-        for h in module.helpers
-    ]
+    helpers = [printer.protocol_text(h) for h in module.helpers]
     locals_ = {h.name for h in module.helpers}
-    tyvars = {
-        typar.name
-        for defn in (*module.helpers, *module.funcs)
-        for typar in defn.type_params
-    }
+    tyvars = {p.name for h in module.helpers for p in h.type_params}
+    tyvars.update(p.name for f in module.funcs for p in f.type_params)
 
     blocks: list[str] = []
     if imports := printer.import_block(locals_, tyvars):

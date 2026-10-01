@@ -14,7 +14,7 @@ def render(sigs: Sequence[_ir.Signature], /) -> str:
 def _line(sig: _ir.Signature, /) -> str:
     type_params = ", ".join(map(_type_param, sig.type_params))
     type_params = f"[{type_params}]" if sig.type_params else ""
-    params = ", ".join(map(_param, sig.params))
+    params = _params([(_param(p), p.kw_only, bool(p.prefix)) for p in sig.params])
     line = f"{type_params}({params}) -> {_render_node(sig.ret)}"
     if sig.deprecated is not None:
         line = f"@deprecated({sig.deprecated!r})\n{line}"
@@ -84,8 +84,23 @@ def _arg(param: _ir.Term) -> str:
     return decl
 
 
+def _params(items: Sequence[tuple[str, bool, bool]]) -> str:
+    parts: list[str] = []
+    keyword = False
+    for text, kw_only, variadic in items:
+        if kw_only and not keyword:
+            parts.append("*")
+            keyword = True
+        keyword = keyword or variadic
+        parts.append(text)
+    return ", ".join(parts)
+
+
 def _fn(params: _ir.Terms, ret: _ir.Node) -> str:
-    decls = ", ".join(map(_arg, params))
+    decls = _params([
+        (_arg(p), isinstance(p, _ir.Arg) and p.kw_only, isinstance(p, _ir.Unpack))
+        for p in params
+    ])
     return f"({decls}) -> {_render_node(ret)}"
 
 

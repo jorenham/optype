@@ -139,7 +139,7 @@ def test_terse_signature() -> None:
     params = (
         Param("x", Name("T"), pos_only=True, default=(0,)),
         Param("args", Unpack(Name("Ts")), prefix="*"),
-        Param("k", A, default=([1],)),
+        Param("k", A, default=([1],), kw_only=True),
     )
     sig = Signature(type_params, params, App("tuple", (Unpack(Name("Ts")),)), "old")
     assert render([sig]) == (

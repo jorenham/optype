@@ -131,8 +131,9 @@ def infer(
     When exploration is incomplete it emits an `InferWarning` naming the affected
     call form; pass `strict=True` to raise an `InferError` instead.
 
-    Pass `backend="compat"` to render a self-contained, type-checkable `.pyi`-style
-    stub instead of the default terse form.
+    Pass `backend="compat"` to export the supported subset as a `.pyi`-style stub.
+    Complements and unsupported class attributes raise `InferError`; the terse form
+    preserves those constructs. Export does not certify exhaustive inference.
 
     Raises:
         InferError: If `func` is not supported, such as a non-callable, an

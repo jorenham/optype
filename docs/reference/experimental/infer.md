@@ -58,8 +58,9 @@ compact form shown above, or [`"compat"`](#compat) for valid, type-checkable Pyt
 ## `"compat"`
 
 `backend="compat"` (or `--format compat` on the command line) renders the result as a
-self-contained, type-checkable `.pyi`-style stub: imports, any synthesized helper
-`Protocol`s, and `@overload`-decorated `def`s.
+`.pyi`-style stub for the supported subset: imports, any synthesized helper
+`Protocol`s, and `@overload`-decorated `def`s. This experimental exporter prioritizes
+contract preservation over additional Python coverage.
 
 ```console
 $ optype infer --format compat "lambda x: x + 1"
@@ -69,11 +70,12 @@ from optype import CanAdd
 def f[R](x: CanAdd[Literal[1], R]) -> R: ...
 ```
 
-Constructs the typing spec cannot express are lowered: an intersection or the inline
-`Has['name', T]` form becomes a `Protocol`, a typevar-referencing bound becomes a
-(possibly self-referential) `Protocol`, and the `~` complement is dropped. A few
-inferences still fall outside the type system, such as a non-generic protocol read as
-generic, or a same-attribute intersection.
+Intersections and `Has[...]` become helper protocols. Parameter kinds are preserved.
+
+Typevar-referencing bounds, intersections with type variables, complements, generic
+or callable class attributes, and reordered parameter kinds raise `InferError`; use
+`backend="terse"` instead. Some types remain inexpressible, and the
+[exploration limitations](../../infer.md#limitations) still apply.
 
 ## `InferError`
 

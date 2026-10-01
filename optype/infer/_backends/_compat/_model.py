@@ -3,7 +3,6 @@
 `Lowerer` builds these definitions; `_print` emits them.
 """
 
-import graphlib
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, replace
 
@@ -46,20 +45,8 @@ class ProtocolDef:
 
 
 @dataclass(frozen=True, slots=True)
-class Alias:
-    """A (possibly recursive) `type` alias, for a self-referential concrete bound."""
-
-    name: str
-    type_params: tuple[_ir.TypeParam, ...]
-    value: _ir.Node
-
-
-type Helper = ProtocolDef | Alias  # a synthesized helper definition
-
-
-@dataclass(frozen=True, slots=True)
 class Module:
-    helpers: tuple[Helper, ...]
+    helpers: tuple[ProtocolDef, ...]
     funcs: tuple[_ir.Signature, ...]
 
 
@@ -78,20 +65,12 @@ def is_generic(node: _ir.Node, tyvars: frozenset[str]) -> bool:
     return not frozenset(_ir.names(node)).isdisjoint(tyvars)
 
 
-def is_protocol_node(node: _ir.Node) -> bool:
-    return isinstance(node, _ir.App) and node.origin.startswith(("Can", "Has", "Just"))
-
-
 def combine_name(bases: Sequence[str]) -> str:
     """The combined-protocol name, e.g. `CanNeg` + `CanRAdd` -> `CanNegRAdd`."""
     for prefix in ("Can", "Has", "Just"):
         if bases and all(b.startswith(prefix) for b in bases):
             return prefix + "".join(b.removeprefix(prefix) for b in bases)
     return "".join(bases)
-
-
-def bound_name(bound: _ir.Node, tyvar: str) -> str:
-    return bound.origin if isinstance(bound, _ir.App) else f"Bound{tyvar}"
 
 
 def member_nodes(members: Iterable[Member]) -> Iterable[_ir.Term]:
@@ -111,63 +90,3 @@ def subst_member(member: Member, m: Mapping[str, _ir.Node]) -> Member:
         return replace(member, type=_ir.subst(member.type, m), setter=setter)
     params = tuple(_ir.subst_term(p, m) for p in member.params)
     return replace(member, params=params, ret=_ir.subst(member.ret, m))
-
-
-def _reachable(deps: Mapping[str, frozenset[str]], start: str) -> set[str]:
-    seen: set[str] = set()
-    stack = list(deps.get(start, ()))
-    while stack:
-        node = stack.pop()
-        if node not in seen:
-            seen.add(node)
-            stack.extend(deps.get(node, ()))
-    return seen
-
-
-def cyclic_names(deps: Mapping[str, frozenset[str]]) -> frozenset[str]:
-    """The nodes that lie on a cycle (a self-loop or a mutual reference)."""
-    return frozenset(node for node in deps if node in _reachable(deps, node))
-
-
-def components(
-    cyclic: frozenset[str],
-    deps: Mapping[str, frozenset[str]],
-) -> list[frozenset[str]]:
-    """The mutually-reachable groups within the cyclic nodes."""
-    groups: list[frozenset[str]] = []
-    seen: set[str] = set()
-    for node in sorted(cyclic):
-        if node in seen:
-            continue
-        reach = _reachable(deps, node)
-        group = frozenset(
-            {node} | {m for m in cyclic if m in reach and node in _reachable(deps, m)},
-        )
-        seen |= group
-        groups.append(group)
-    return groups
-
-
-def resolution_order(
-    groups: Iterable[frozenset[str]],
-    singles: Iterable[str],
-    deps: Mapping[str, frozenset[str]],
-) -> list[frozenset[str]]:
-    """The cyclic `groups` and acyclic `singles` as units, in dependency order."""
-    unit_of = {name: group for group in groups for name in group}
-    unit_of |= {name: frozenset({name}) for name in singles}
-    # sorted insertion keeps the order deterministic; `deps` is the predecessor map
-    units = sorted(set(unit_of.values()), key=sorted)
-    graph = {
-        unit: sorted(
-            {
-                unit_of[dep]
-                for name in unit
-                for dep in deps.get(name, ())
-                if dep not in unit
-            },
-            key=sorted,
-        )
-        for unit in units
-    }
-    return list(graphlib.TopologicalSorter(graph).static_order())
