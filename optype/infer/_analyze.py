@@ -19,10 +19,9 @@ from ._spy import (
 )
 from ._values import Exploration, children, walk
 
-type _Producer = Mapping[int, tuple[SpyObject, TraceItem]]
-
-# a spy's op-shape: its own id when it is a leaf, else the producing operation
-type _Shape = int | tuple[str, _Shape, str, object, tuple[str, ...]]
+# a spy's op-shape: its own id when it is a leaf, else the producing operation on its
+# owner's representative
+type _Shape = int | tuple[str, int, str, object, tuple[str, ...]]
 
 
 def return_spies(value: object) -> Generator[SpyObject]:
@@ -124,26 +123,6 @@ def analyze(
     return order, appear
 
 
-def _shape(spy: SpyObject, made_by: _Producer, keys: dict[int, _Shape]) -> _Shape:
-    """A structural key over op-shape, not operands: `x[y]` and `x[z]` share one."""
-    sid = id(spy)
-    if sid in keys:
-        return keys[sid]
-    keys[sid] = sid  # a parameter or leaf is its own key
-    if (made := made_by.get(sid)) is not None:
-        owner, item = made
-        # an attribute name replaces the fixed arity: `x.spam` is not `x.ham`
-        attr = item.attr
-        arity: object = (
-            item.args[0]
-            if attr in DUNDER_ATTR or attr in DUNDER_CLASS_ATTR
-            else len(item.args)
-        )
-        owner_key = _shape(owner, made_by, keys)
-        keys[sid] = "op", owner_key, attr, arity, tuple(sorted(item.kwargs))
-    return keys[sid]
-
-
 def representatives(order: Sequence[SpyObject], traces: Traces) -> dict[int, int]:
     """Map each spy to a representative: the same operation on an owner of the same
     shape shares one, so the fresh placeholder each forked run allocates for a
@@ -156,11 +135,24 @@ def representatives(order: Sequence[SpyObject], traces: Traces) -> dict[int, int
             if isinstance(item.ret, SpyObject):
                 made_by.setdefault(id(item.ret), (owner, item))
 
-    keys: dict[int, _Shape] = {}
-    rep: dict[_Shape, int] = {}  # op-shape -> the first spy that had it
+    # a structural key over op-shape, not operands: `x[y]` and `x[z]` share one; an
+    # owner precedes what it makes in `order`, so its representative is already there
     reps: dict[int, int] = {}
+    rep: dict[_Shape, int] = {}  # op-shape -> the first spy that had it
     for spy in order:
-        reps[id(spy)] = rep.setdefault(_shape(spy, made_by, keys), id(spy))
+        sid = id(spy)
+        key: _Shape = sid  # a parameter or leaf is its own key
+        if (made := made_by.get(sid)) is not None:
+            owner, item = made
+            # an attribute name replaces the fixed arity: `x.spam` is not `x.ham`
+            attr = item.attr
+            arity: object = (
+                item.args[0]
+                if attr in DUNDER_ATTR or attr in DUNDER_CLASS_ATTR
+                else len(item.args)
+            )
+            key = "op", reps[id(owner)], attr, arity, tuple(sorted(item.kwargs))
+        reps[sid] = rep.setdefault(key, sid)
     return reps
 
 
