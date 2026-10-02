@@ -17,7 +17,7 @@ from ._analyze import (
 )
 from ._explore import declared_defaults, explore_spies
 from ._ir import Signature, alpha_equal_signatures
-from ._render import Defaults, Names, signatures, widened_signatures
+from ._render import Defaults, Names, renderers_of, signatures, widened_signatures
 from ._spy import AnyFunc, TraceItem
 from ._values import Exploration, map_values
 
@@ -91,9 +91,9 @@ def resolve_defaults(
     names = list(required)
 
     try:
-        omitted = explore_spies(func, params, omit=defaults)
+        omitted = renderers_of(explore_spies(func, params, omit=defaults), params)
         # the comparison must see every required parameter, regardless of selection
-        observed = signatures(omitted, params, names)
+        observed = [r.signature(names) for r in omitted]
     except Exception:  # ruff: ignore[blind-except]
         return None
 
@@ -102,7 +102,7 @@ def resolve_defaults(
     if _same(expected, observed):
         return signatures(exploration, params, selected, defaults)
 
-    overloads = signatures(omitted, params, selected, defaults)
+    overloads = [r.signature(selected, defaults) for r in omitted]
     if len(defaults) == 1:
         lines = signatures(exploration, params, selected, defaults, negate=True)
         return [*overloads, *lines]
