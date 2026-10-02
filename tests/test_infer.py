@@ -2251,19 +2251,12 @@ def _compat_case(func: Any, terse: str) -> str | None:
     elif terse in _COMPAT_DEPENDENT:
         reason = r"typevar-referencing bounds|intersections with type variables"
     else:
-        return infer(func, backend="compat")
+        result = infer(func, backend="compat")
+        assert result, terse
+        return result
     with pytest.raises(InferError, match=reason):
         infer(func, backend="compat")
     return None
-
-
-def test_compat_renders_corpus() -> None:
-    # every case exports or explicitly rejects its unsupported construct
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", InferWarning)
-        for func, terse in ALL_CASES:
-            result = _compat_case(func, terse)
-            assert result is None or result, terse
 
 
 def test_compat_corpus_typechecks(
@@ -2278,6 +2271,9 @@ def test_compat_corpus_typechecks(
             for func, terse in INFER_CASES
             if (stub := _compat_case(func, terse)) is not None
         ]
+        # Builtins must export or reject, but their internal types aren't checked.
+        for func, terse in BUILTIN_CASES:
+            _compat_case(func, terse)
     terse_of = {f"case_{i:03d}": terse for i, (terse, _) in enumerate(rendered)}
     for i, (_, stub) in enumerate(rendered):
         (tmp_path / f"case_{i:03d}.pyi").write_text(f"{stub}\n")

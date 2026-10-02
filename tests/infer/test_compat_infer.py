@@ -522,8 +522,9 @@ _TEMPLATE_COMPAT_CASES: list[tuple[str, str]] = [
 @pytest.mark.skipif(sys.version_info < (3, 14), reason="requires Python 3.14+")
 def test_compat_template_strings(tmp_path: Path, basedpyright: _Check) -> None:
     for i, (source, expected) in enumerate(_TEMPLATE_COMPAT_CASES):
-        assert _compat(source) == expected
-        (tmp_path / f"case_{i}.pyi").write_text(f"{_compat(source)}\n")
+        stub = _compat(source)
+        assert stub == expected, source
+        (tmp_path / f"case_{i}.pyi").write_text(f"{stub}\n")
     out = basedpyright(tmp_path)
     assert out.returncode == 0, out.stdout
 
