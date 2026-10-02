@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.12"
 resolution-markers = [
     "python_full_version >= '3.15'",
@@ -130,6 +130,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/82/76/f930ee8549b7ae747585bab450b7e29e79f9b0542bd6c04febb52e3e5097/dprint_py-0.57.4.0-py3-none-manylinux_2_17_x86_64.whl", hash = "sha256:03ab84a67d0a9fdcc0a520b0be8b2bbd6c0cbe96343332550671c0c1830971f7", size = 23874990, upload-time = "2026-09-06T00:39:08.476Z" },
     { url = "https://files.pythonhosted.org/packages/19/21/ae697942a8e0157d3f0dd933e368cc682682f816ac91a1eab0e33853c405/dprint_py-0.57.4.0-py3-none-win_amd64.whl", hash = "sha256:1e78c6a00c92f5cf405195c96cab19d59a6e6f0abf30affddfd2ad410e2c5f7b", size = 26610837, upload-time = "2026-09-06T00:39:10.987Z" },
     { url = "https://files.pythonhosted.org/packages/7f/3f/ee391ef37943c69e1b29d77c37782e1713a16df01ea692adf084f7d343b0/dprint_py-0.57.4.0-py3-none-win_arm64.whl", hash = "sha256:1bbb543ecd19abd1b49e13800fb3efb73d44b6008eae59f5300b6f1f866981df", size = 20378773, upload-time = "2026-09-06T00:39:13.444Z" },
+]
+
+[[package]]
+name = "execnet"
+version = "2.1.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/bf/89/780e11f9588d9e7128a3f87788354c7946a9cbb1401ad38a48c4db9a4f07/execnet-2.1.2.tar.gz", hash = "sha256:63d83bfdd9a23e35b9c6a3261412324f964c2ec8dcd8d3c6916ee9373e0befcd", size = 166622, upload-time = "2025-11-12T09:56:37.75Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ab/84/02fc1827e8cdded4aa65baef11296a9bbe595c474f0d6d758af082d849fd/execnet-2.1.2-py3-none-any.whl", hash = "sha256:67fba928dd5a544b783f6056f449e5e3931a5c378b128bc18501f7ea79e296ec", size = 40708, upload-time = "2025-11-12T09:56:36.333Z" },
 ]
 
 [[package]]
@@ -540,6 +549,7 @@ dev = [
     { name = "pygments" },
     { name = "pyrefly" },
     { name = "pytest" },
+    { name = "pytest-xdist" },
     { name = "ruff" },
     { name = "sp-repo-review", extra = ["cli"] },
     { name = "ty" },
@@ -564,6 +574,7 @@ test = [
     { name = "mypy", extra = ["faster-cache"] },
     { name = "optype", extra = ["numpy"] },
     { name = "pytest" },
+    { name = "pytest-xdist" },
     { name = "typing-extensions" },
 ]
 type = [
@@ -573,6 +584,7 @@ type = [
     { name = "optype", extra = ["numpy"] },
     { name = "pyrefly" },
     { name = "pytest" },
+    { name = "pytest-xdist" },
     { name = "ty" },
     { name = "typing-extensions" },
 ]
@@ -595,6 +607,7 @@ dev = [
     { name = "pygments", specifier = "==2.21.0" },
     { name = "pyrefly", specifier = "==1.3.1" },
     { name = "pytest", specifier = ">=9.1.1" },
+    { name = "pytest-xdist", specifier = ">=3.8.0" },
     { name = "ruff", specifier = "==0.16.8" },
     { name = "sp-repo-review", extras = ["cli"], specifier = "==2026.8.14" },
     { name = "ty", specifier = "==0.0.84" },
@@ -617,6 +630,7 @@ test = [
     { name = "mypy", extras = ["faster-cache"], specifier = "==2.3.1" },
     { name = "optype", extras = ["numpy"] },
     { name = "pytest", specifier = ">=9.1.1" },
+    { name = "pytest-xdist", specifier = ">=3.8.0" },
     { name = "typing-extensions", specifier = ">=4.16.0" },
 ]
 type = [
@@ -626,6 +640,7 @@ type = [
     { name = "optype", extras = ["numpy"] },
     { name = "pyrefly", specifier = "==1.3.1" },
     { name = "pytest", specifier = ">=9.1.1" },
+    { name = "pytest-xdist", specifier = ">=3.8.0" },
     { name = "ty", specifier = "==0.0.84" },
     { name = "typing-extensions", specifier = ">=4.16.0" },
 ]
@@ -764,6 +779,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/e4/47/b9efed96c114afcfa3c9d3fe98a76a1d14c74a9e266d397cf6eb64be5e01/pytest-9.1.1.tar.gz", hash = "sha256:1088fbde8f2b49d95a549a195707afa7a76a3ce9bcadc26b6d71f0ffda5fe313", size = 1636369, upload-time = "2026-06-19T10:58:32.857Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/24/25/1de2678b631f5a49215c6c96fff41ba892b0a34df68d6d80292b1b48aa7f/pytest-9.1.1-py3-none-any.whl", hash = "sha256:37a86b45efb9a47a61a36449063e8e18d0cab3161329fc099eb21783169c4f0c", size = 386536, upload-time = "2026-06-19T10:58:31.347Z" },
+]
+
+[[package]]
+name = "pytest-xdist"
+version = "3.8.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "execnet" },
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/78/b4/439b179d1ff526791eb921115fca8e44e596a13efeda518b9d845a619450/pytest_xdist-3.8.0.tar.gz", hash = "sha256:7e578125ec9bc6050861aa93f2d59f1d8d085595d6551c2c90b6f4fad8d3a9f1", size = 88069, upload-time = "2025-07-01T13:30:59.346Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ca/31/d4e37e9e550c2b92a9cbc2e4d0b7420a27224968580b5a447f420847c975/pytest_xdist-3.8.0-py3-none-any.whl", hash = "sha256:202ca578cfeb7370784a8c33d6d05bc6e13b4f25b5053c30a152269fd10f0b88", size = 46396, upload-time = "2025-07-01T13:30:56.632Z" },
 ]
 
 [[package]]

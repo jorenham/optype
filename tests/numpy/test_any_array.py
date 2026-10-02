@@ -118,7 +118,7 @@ def test_any_array() -> None:
     assert _shape(x2_np) == (1, 1)
 
 
-@pytest.mark.parametrize("sctype", UNSIGNED_INTEGER)
+@pytest.mark.parametrize("sctype", sorted(UNSIGNED_INTEGER, key=str))
 def test_any_unsigned_integer_array(
     sctype: type[_sc.uinteger | _ct.UnsignedInteger],
 ) -> None:
@@ -127,7 +127,7 @@ def test_any_unsigned_integer_array(
     assert np.issubdtype(x.dtype, np.unsignedinteger)
 
 
-@pytest.mark.parametrize("sctype", SIGNED_INTEGER)
+@pytest.mark.parametrize("sctype", sorted(SIGNED_INTEGER, key=str))
 def test_any_signed_integer_array(
     sctype: type[_sc.sinteger | _ct.SignedInteger],
 ) -> None:
@@ -136,21 +136,21 @@ def test_any_signed_integer_array(
     assert np.issubdtype(x.dtype, np.signedinteger)
 
 
-@pytest.mark.parametrize("sctype", INTEGER)
+@pytest.mark.parametrize("sctype", sorted(INTEGER, key=str))
 def test_any_integer_array(sctype: type[_sc.integer | _ct.Integer]) -> None:
     x = np.array(sctype(42))
     x_any: onp.AnyIntegerArray = x
     assert np.issubdtype(x.dtype, np.integer)
 
 
-@pytest.mark.parametrize("sctype", FLOATING)
+@pytest.mark.parametrize("sctype", sorted(FLOATING, key=str))
 def test_any_floating_array(sctype: type[_sc.floating | _ct.Floating]) -> None:
     x = np.array(sctype(42))
     x_any: onp.AnyFloatingArray = x
     assert np.issubdtype(x.dtype, np.floating)
 
 
-@pytest.mark.parametrize("sctype", COMPLEX_FLOATING)
+@pytest.mark.parametrize("sctype", sorted(COMPLEX_FLOATING, key=str))
 def test_any_complex_floating_array(sctype: type[_sc.cfloating]) -> None:
     x = np.array(sctype(42 + 42j))
     x_any: onp.AnyComplexFloatingArray = x
@@ -183,21 +183,21 @@ def test_any_timedelta64_array() -> None:
     assert np.issubdtype(x.dtype, np.timedelta64)
 
 
-@pytest.mark.parametrize("sctype", STR)
+@pytest.mark.parametrize("sctype", sorted(STR, key=str))
 def test_any_str_array(sctype: type[str | np.str_]) -> None:
     x = np.array(sctype())
     x_any: onp.AnyStrArray = x
     assert np.issubdtype(x.dtype, np.str_)
 
 
-@pytest.mark.parametrize("sctype", BYTES)
+@pytest.mark.parametrize("sctype", sorted(BYTES, key=str))
 def test_any_bytes_array(sctype: type[bytes | np.bytes_ | _ct.Bytes]) -> None:
     x = np.array(sctype())
     x_any: onp.AnyBytesArray = x
     assert np.issubdtype(x.dtype, np.bytes_)
 
 
-@pytest.mark.parametrize("sctype", CHARACTER)
+@pytest.mark.parametrize("sctype", sorted(CHARACTER, key=str))
 def test_any_character_array(
     sctype: type[str | bytes | np.character | _ct.Bytes],
 ) -> None:
@@ -206,14 +206,14 @@ def test_any_character_array(
     assert np.issubdtype(x.dtype, np.character)
 
 
-@pytest.mark.parametrize("sctype", VOID)
+@pytest.mark.parametrize("sctype", sorted(VOID, key=str))
 def test_any_void_array(sctype: type[memoryview | np.void]) -> None:
     x = np.array(sctype(b""))
     x_any: onp.AnyVoidArray = x
     assert np.issubdtype(x.dtype, np.void)
 
 
-@pytest.mark.parametrize("sctype", FLEXIBLE)
+@pytest.mark.parametrize("sctype", sorted(FLEXIBLE, key=str))
 def test_any_flexible_array(
     sctype: type[bytes | str | np.flexible | _ct.Flexible],
 ) -> None:
@@ -222,14 +222,18 @@ def test_any_flexible_array(
     assert np.issubdtype(x.dtype, np.flexible)
 
 
-@pytest.mark.parametrize("sctype", BOOL, ids="{0.__module__}.{0.__qualname__}".format)
+@pytest.mark.parametrize(
+    "sctype",
+    sorted(BOOL, key=str),
+    ids="{0.__module__}.{0.__qualname__}".format,
+)
 def test_any_bool_array(sctype: type[bool | np.bool | _ct.Bool]) -> None:
     x = np.array(sctype(True))
     x_any: onp.AnyBoolArray = x
     assert np.issubdtype(x.dtype, np.bool)
 
 
-@pytest.mark.parametrize("sctype", OBJECT)
+@pytest.mark.parametrize("sctype", sorted(OBJECT, key=str))
 def test_any_object_array(sctype: type[np.object_ | _ct.Object]) -> None:
     x = np.array(sctype())
     x_any: onp.AnyObjectArray = x

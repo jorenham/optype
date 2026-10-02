@@ -380,7 +380,10 @@ def _get_protocols_with_suffix(
     )
 
 
-@pytest.mark.parametrize("cls", _get_protocols_with_suffix(_can, "Same"))
+@pytest.mark.parametrize(
+    "cls",
+    sorted(_get_protocols_with_suffix(_can, "Same"), key=str),
+)
 def test_can_same_self(cls: type) -> None:
     """
     Ensure that for each `Can{}Same` protocol there also exist the `Can{}Self`, `Can{}`,

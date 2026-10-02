@@ -83,6 +83,7 @@ test = [
   { include-group = "extra" },
   "beartype>=0.23.0rc1",
   "pytest>=9.1.1",
+  "pytest-xdist>=3.8.0",
   "typing-extensions>=4.16.0",
   "basedpyright==1.40.1",
   "mypy[faster-cache]==2.3.1",
@@ -192,7 +193,7 @@ possibly-unresolved-reference = "error"
 [tool.pytest]
 minversion = "9.0"
 testpaths = ["optype", "examples", "tests"]
-addopts = ["-ra", "--doctest-modules"]
+addopts = ["-ra", "--doctest-modules", "-n", "auto", "--maxprocesses", "8"]
 doctest_optionflags = ["NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL", "ELLIPSIS"]
 filterwarnings = ["error"]
 log_level = "INFO"

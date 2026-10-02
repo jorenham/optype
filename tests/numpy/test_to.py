@@ -74,6 +74,8 @@ def test_annotated(name: str) -> None:
 
 
 def _id(v: object) -> str:
+    if type(v) is object:
+        return "object()"
     return f"np.{type(v).__name__}" if isinstance(v, np.generic) else repr(v)[:30]
 
 
