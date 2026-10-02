@@ -10,14 +10,16 @@ _PENDING_MAX: Final = 100_000
 
 @final
 class _CyclicGC:
-    __slots__ = "_paused", "_promoted"
+    __slots__ = "_paused", "_promoted", "_resume"
 
     _paused: bool
     _promoted: bool  # whether a drain moved the live graph to the older generation
+    _resume: bool
 
     def __init__(self) -> None:
         self._paused = False
         self._promoted = False
+        self._resume = True
 
     @contextmanager
     def pause(self) -> Generator[None]:
@@ -32,9 +34,14 @@ class _CyclicGC:
             yield
         finally:
             self._paused = False
-            gc.enable()
-            # a drain promoted the live graph to the older generation; sweep it there
-            gc.collect(1 if self._promoted else 0)
+            if self._resume:
+                gc.enable()
+                # a drain promoted the live graph to the older generation; sweep there
+                gc.collect(1 if self._promoted else 0)
+
+    def stay_paused(self) -> None:
+        """Leave collection off after a pause, for a process that exits right after."""
+        self._resume = False
 
     def drain(self) -> None:
         """A young sweep once enough garbage pends while collection is paused."""

@@ -53,6 +53,7 @@ def _child(work: Callable[[], object], send: Connection, buf: mmap.mmap) -> None
     pid = os.getpid()
     faulthandler.disable()  # report a native crash via InferError, not a C-level dump
     _spy.set_state_buffer(buf)
+    cyclic_gc.stay_paused()  # the garbage dies with this process
 
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
