@@ -333,7 +333,6 @@ class _Renderer:
         *,
         negate: bool = False,
         ret: _ir.Node | None = None,
-        deprecated: str | None = None,
     ) -> _ir.Signature:
         defaults = defaults or {}
         spies = self._binding.exploration.spies
@@ -366,7 +365,7 @@ class _Renderer:
             (*plain, *recursive, *tail),
             tuple(params),
             self._ret_node if ret is None else ret,
-            deprecated,
+            self._binding.exploration.deprecated,
         )
         return collapse_recursive(sig)
 
@@ -679,7 +678,7 @@ def _renderer_of(
     return _Renderer(replace(binding, naming=naming))
 
 
-def _renderers_of(
+def renderers_of(
     exploration: Exploration,
     params: Mapping[str, Parameter],
 ) -> list[_Renderer]:
@@ -700,13 +699,8 @@ def signatures(
     negate: bool = False,
 ) -> list[_ir.Signature]:
     return [
-        r.signature(
-            selected,
-            defaults,
-            negate=negate,
-            deprecated=exploration.deprecated,
-        )
-        for r in _renderers_of(exploration, params)
+        r.signature(selected, defaults, negate=negate)
+        for r in renderers_of(exploration, params)
     ]
 
 
@@ -723,7 +717,6 @@ def widened_signatures(
     one, so a parameter-only typevar would dangle.
     """
     sigs = [
-        r.signature(selected, ret=_ir.OBJECT, deprecated=exploration.deprecated)
-        for r in _renderers_of(exploration, params)
+        r.signature(selected, ret=_ir.OBJECT) for r in renderers_of(exploration, params)
     ]
     return [] if any(sig.type_params for sig in sigs) else sigs
