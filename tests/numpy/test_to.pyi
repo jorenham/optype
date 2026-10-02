@@ -101,6 +101,8 @@ type _Arr3_c_co = onp.Array3D[_Sca_c_co] | Seq[_Arr2_c_co]
 type _Arr3_f8_co = onp.Array3D[_Sca_f8_co] | Seq[_Arr2_f8_co]
 type _Arr3_c16_co = onp.Array3D[_Sca_c16_co] | Seq[_Arr2_c16_co]
 
+type _Arr4_x = onp.Array4D[_Sca_x] | Seq[_Arr3_x]
+
 x_: _Val_x
 b_: _Val_b
 i_: _Val_i
@@ -165,6 +167,8 @@ f_co_3d: _Arr3_f_co
 c_co_3d: _Arr3_c_co
 f8_co_3d: _Arr3_f8_co
 c16_co_3d: _Arr3_c16_co
+
+x_4d: _Arr4_x
 
 # scalar
 
@@ -357,6 +361,19 @@ def s3d_a3d() -> None:
     c16_co__c16: onp.ToComplex128Strict3D = c16_co_3d
     f8_co__f: onp.ToFloat64Strict3D = f_co_3d  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     c16_co__c: onp.ToComplex128Strict3D = c_co_3d  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+
+# 4-d
+
+def a4d() -> None:
+    x__sca: onp.ToArray4D = x_  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    x__a3d: onp.ToArray4D = x_3d  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+    x__a4d: onp.ToArray4D = x_4d
+    x__s4d: onp.ToArrayStrict4D = x_4d
+
+def nd_4d() -> None:
+    to_x_4d: onp.ToArray4D
+
+    x__x: onp.ToArrayND = to_x_4d
 
 # n-d
 

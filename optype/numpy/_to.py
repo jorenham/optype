@@ -27,6 +27,7 @@ __all__ = [  # ruff: ignore[unsorted-dunder-all]
     "ToArray1D", "ToArrayStrict1D",
     "ToArray2D", "ToArrayStrict2D",
     "ToArray3D", "ToArrayStrict3D",
+    "ToArray4D", "ToArrayStrict4D",
     "ToArrayND",
 
     "ToFalse", "ToTrue",
@@ -159,6 +160,11 @@ if TYPE_CHECKING:
         nptc.CanArray[tuple[int, int, int], np.dtype[SCT]],
         type_params=(SCT,),
     )
+    _CanArrayStrict4D = TypeAliasType(
+        "_CanArrayStrict4D",
+        nptc.CanArray[tuple[int, int, int, int], np.dtype[SCT]],
+        type_params=(SCT,),
+    )
 
 else:
 
@@ -174,6 +180,12 @@ else:
     class _CanArrayStrict3D(Protocol[SCT_co]):
         def __array__(self) -> np.ndarray[tuple[int, int, int], np.dtype[SCT_co]]: ...
 
+    @runtime_checkable
+    class _CanArrayStrict4D(Protocol[SCT_co]):
+        def __array__(
+            self,
+        ) -> np.ndarray[tuple[int, int, int, int], np.dtype[SCT_co]]: ...
+
 
 type _To1D1[SCT: np.generic] = _CanArrayND[SCT] | Seq[SCT]
 type _To1D2[T, SCT: np.generic] = _CanArrayND[SCT] | Seq[T | SCT]
@@ -183,6 +195,8 @@ type _To2D2[T, SCT: np.generic] = _CanArrayND[SCT] | Seq[_To1D2[T, SCT]]
 
 type _To3D1[SCT: np.generic] = _CanArrayND[SCT] | Seq[_To2D1[SCT]]
 type _To3D2[T, SCT: np.generic] = _CanArrayND[SCT] | Seq[_To2D2[T, SCT]]
+
+type _To4D2[T, SCT: np.generic] = _CanArrayND[SCT] | Seq[_To3D2[T, SCT]]
 
 type _ToND1[SCT: np.generic] = _CanArrayND[SCT] | SeqND[_CanArray[SCT]]
 type _ToND2[T, SCT: np.generic] = _CanArrayND[SCT] | SeqND[T | _CanArray[SCT]]
@@ -198,6 +212,10 @@ type _ToStrict2D2[T, SCT: np.generic] = (
 type _ToStrict3D1[SCT: np.generic] = _CanArrayStrict3D[SCT] | Seq[_ToStrict2D1[SCT]]
 type _ToStrict3D2[T, SCT: np.generic] = (
     _CanArrayStrict3D[SCT] | Seq[_ToStrict2D2[T, SCT]]
+)
+
+type _ToStrict4D2[T, SCT: np.generic] = (
+    _CanArrayStrict4D[SCT] | Seq[_ToStrict3D2[T, SCT]]
 )
 
 
@@ -237,6 +255,7 @@ type ToScalar = _PyScalar | np.generic
 ToArray1D = TypeAliasType("ToArray1D", _To1D2[T, SCT], type_params=(T, SCT))
 ToArray2D = TypeAliasType("ToArray2D", _To2D2[T, SCT], type_params=(T, SCT))
 ToArray3D = TypeAliasType("ToArray3D", _To3D2[T, SCT], type_params=(T, SCT))
+ToArray4D = TypeAliasType("ToArray4D", _To4D2[T, SCT], type_params=(T, SCT))
 ToArrayND = TypeAliasType("ToArrayND", _ToND2[T, SCT], type_params=(T, SCT))
 
 type ToFalse = nptc.LiteralFalse | Literal[0]
@@ -388,6 +407,11 @@ ToArrayStrict2D = TypeAliasType(
 ToArrayStrict3D = TypeAliasType(
     "ToArrayStrict3D",
     _ToStrict3D2[T, SCT],
+    type_params=(T, SCT),
+)
+ToArrayStrict4D = TypeAliasType(
+    "ToArrayStrict4D",
+    _ToStrict4D2[T, SCT],
     type_params=(T, SCT),
 )
 

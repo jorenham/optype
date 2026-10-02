@@ -44,9 +44,9 @@ their differences become clear:
     </tr>
 </table>
 
-Additionally, there are the four `Array{0,1,2,3}D` aliases, which are
-equivalent to `Array` with `tuple[()]`, `tuple[int]`, `tuple[int, int]` and
-`tuple[int, int, int]` as shape-type, respectively.
+Additionally, there are the five `Array{0,1,2,3,4}D` aliases, which are
+equivalent to `Array` with `tuple[()]`, `tuple[int]`, `tuple[int, int]`,
+`tuple[int, int, int]` and `tuple[int, int, int, int]` as shape-type, respectively.
 
 !!! info
 
@@ -102,12 +102,12 @@ In the same way as `ArrayND` for `ndarray` (shown for reference), its subtypes
     </tr>
 </table>
 
-For masked arrays with specific `ndim`, you could also use one of the four
-`MArray{0,1,2,3}D` aliases.
+For masked arrays with specific `ndim`, you could also use one of the five
+`MArray{0,1,2,3,4}D` aliases.
 
 ## Array typeguards
 
-To check whether a given object is an instance of `Array{0,1,2,3,N}D`, in a way that
+To check whether a given object is an instance of `Array{0,1,2,3,4,N}D`, in a way that
 static type-checkers also understand it, the following [PEP 742][PEP742] typeguards can
 be used:
 
@@ -145,6 +145,11 @@ be used:
         <td><code>is_array_3d</code></td>
         <td><code>Array3D[ST]</code></td>
         <td><code>tuple[int, int, int]</code></td>
+    </tr>
+    <tr>
+        <td><code>is_array_4d</code></td>
+        <td><code>Array4D[ST]</code></td>
+        <td><code>tuple[int, int, int, int]</code></td>
     </tr>
 </table>
 
