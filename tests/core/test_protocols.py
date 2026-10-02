@@ -58,19 +58,22 @@ def test_all_public() -> None:
 _NOT_RUNTIME_CHECKABLE = frozenset({_can.CanSubclasscheck})
 
 
-@pytest.mark.parametrize("cls", get_protocols(_can) - _NOT_RUNTIME_CHECKABLE)
+@pytest.mark.parametrize(
+    "cls",
+    sorted(get_protocols(_can) - _NOT_RUNTIME_CHECKABLE, key=str),
+)
 def test_can_runtime_checkable(cls: type) -> None:
     """Ensure that all `Can*` protocols are `@runtime_checkable`."""
     assert is_runtime_protocol(cls)
 
 
-@pytest.mark.parametrize("cls", get_protocols(_has))
+@pytest.mark.parametrize("cls", sorted(get_protocols(_has), key=str))
 def test_has_runtime_checkable(cls: type) -> None:
     """Ensure that all `Has*` protocols are `@runtime_checkable`."""
     assert is_runtime_protocol(cls)
 
 
-@pytest.mark.parametrize("cls", get_protocols(_does))
+@pytest.mark.parametrize("cls", sorted(get_protocols(_does), key=str))
 def test_does_not_runtime_checkable(cls: type) -> None:
     """Ensure that all `Does*` protocols are **not** `@runtime_checkable`."""
     assert not is_runtime_protocol(cls)
@@ -88,7 +91,7 @@ def test_num_does_eq_num_do() -> None:
     }
 
 
-@pytest.mark.parametrize("cls", get_protocols(_does))
+@pytest.mark.parametrize("cls", sorted(get_protocols(_does), key=str))
 def test_does_has_do(cls: type) -> None:
     """Ensure that all `Does*` protocols have a corresponding `do_` op."""
     name = cls.__name__.removeprefix("Does")
@@ -100,7 +103,10 @@ def test_does_has_do(cls: type) -> None:
     assert callable(do_op), do_name
 
 
-@pytest.mark.parametrize("cls", get_protocols(_can) | get_protocols(_has))
+@pytest.mark.parametrize(
+    "cls",
+    sorted(get_protocols(_can) | get_protocols(_has), key=str),
+)
 def test_name_matches_dunder(cls: type) -> None:
     """
     Ensure that each single-member `Can*` and `Has*` name matches the name of

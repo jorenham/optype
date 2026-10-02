@@ -15,8 +15,10 @@ else:
     CHARS = "?BbHhIiLlQqPpefdgFDGSUVOMm"  # pyright: ignore[reportConstantRedefinition]
 
 # dtypes aren't hashable on numpy<2
-DTYPES = set({str(np.dtype(char)): np.dtype(char) for char in CHARS}.values())
-SCTYPES = {dtype.type for dtype in DTYPES if issubclass(dtype.type, np.generic)}
+DTYPES = list({str(np.dtype(char)): np.dtype(char) for char in CHARS}.values())
+SCTYPES = list(
+    dict.fromkeys(dtype.type for dtype in DTYPES if issubclass(dtype.type, np.generic)),
+)
 NDARRAY_TYPES = np.ndarray, np.ma.MaskedArray
 
 
