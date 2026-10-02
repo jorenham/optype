@@ -9,7 +9,7 @@ import builtins
 import types
 import typing
 from collections.abc import Sequence, Set as AbstractSet
-from typing import Literal, final
+from typing import final
 
 # `from . import _ir` would re-enter this package
 import optype.infer._ir as _ir  # ruff: ignore[manual-from-import]
@@ -32,8 +32,6 @@ _ABC = frozenset({
 _TYPING = frozenset({"Any", "ClassVar", "Literal", "Never", "Protocol", "overload"})
 _TYPING_EXT = frozenset({"TypeForm", "deprecated"})
 OPTYPE = frozenset(_can.__all__) | frozenset(_has.__all__) | frozenset(_just.__all__)
-
-type _Prefix = Literal["", "*"]
 
 
 def import_of(name: str) -> tuple[str, str | None] | None:  # ruff: ignore[too-many-return-statements]
@@ -211,13 +209,7 @@ class Printer:
         show = _default_mask([p.default is not None for p in params], end)
         auto = 0
         items: list[tuple[str, bool, bool]] = []
-        previous = -1
         for i, p in enumerate(params):
-            order = _param_order(p)
-            if order < previous or (order == previous and p.prefix):
-                msg = "compat cannot preserve parameter order; use backend='terse'"
-                raise InferError(msg)
-            previous = order
             if p.pos_only:
                 decl = f"_{auto}: {self.render_node(p.node)}"
                 auto += 1
@@ -228,45 +220,38 @@ class Printer:
             items.append((decl, p.pos_only, p.kw_only))
         return _join_params(items)
 
-    def _prefixed_type(self, value: _ir.Node) -> tuple[_Prefix, str]:
-        """A parameter's `(prefix, annotation)`; an unpack becomes a `*` parameter."""
-        match value:
-            case _ir.Unpack(_ir.App("tuple", (elem, _ir.Dots()))):
-                prefix, value = "*", _ir.term_node(elem)
-            case _ir.Unpack():
-                prefix = "*"
-            case _:
-                prefix = ""
-        return prefix, self.render_node(value)  # type:ignore[return-value]  # mypy fail
-
-    def call_params(self, params: Sequence[_ir.Term]) -> str:
-        end = next(
-            (
-                i
-                for i, p in enumerate(params)
-                if isinstance(_ir.term_node(p), _ir.Unpack)
-                or (isinstance(p, _ir.Arg) and p.kw_only)
-            ),
-            len(params),
-        )
-        defaults = [isinstance(p, _ir.Arg) and p.default is not None for p in params]
-        show = _default_mask(defaults, end)
+    def call_params(self, terms: Sequence[_ir.Term]) -> str:
+        """Normalize callable terms to declaration parameters before printing."""
+        params: list[_ir.Param] = []
         auto = 0
-        items: list[tuple[str, bool, bool]] = []
-        for i, p in enumerate(params):
-            if isinstance(p, _ir.Arg) and p.key:
-                decl = f"{p.key}: {self.render_node(p.value)}"
+        for term in terms:
+            value = _ir.term_node(term)
+            prefix = ""
+            if isinstance(term, _ir.Arg) and term.key:
+                name = term.key
                 pos_only = False
             else:
-                # a `*` parameter is not positional-only, so the `/` lands before it
-                prefix, ann = self._prefixed_type(_ir.term_node(p))
-                decl = f"{prefix}_{auto}: {ann}"
+                match value:
+                    case _ir.Unpack(_ir.App("tuple", (elem, _ir.Dots()))):
+                        prefix, value = "*", _ir.term_node(elem)
+                    case _ir.Unpack():
+                        prefix = "*"
+                    case _:
+                        pass
+                name = f"_{auto}"
                 pos_only = not prefix
                 auto += 1
-            if isinstance(p, _ir.Arg) and p.default is not None and show[i]:
-                decl += f" = {default_text(p.default[0], self.used.add)}"
-            items.append((decl, pos_only, isinstance(p, _ir.Arg) and p.kw_only))
-        return _join_params(items)
+            params.append(
+                _ir.Param(
+                    name,
+                    value,
+                    prefix,
+                    pos_only,
+                    term.default if isinstance(term, _ir.Arg) else None,
+                    kw_only=isinstance(term, _ir.Arg) and term.kw_only,
+                ),
+            )
+        return self.params(params)
 
     def _member_text(self, member: Member, *, overload: bool) -> str:
         if isinstance(member, Attr):
@@ -312,6 +297,13 @@ class Printer:
         return f"{head}\n{body}"
 
     def func_text(self, func: _ir.Signature) -> str:
+        previous = -1
+        for p in func.params:
+            order = _param_order(p)
+            if order < previous or (order == previous and p.prefix):
+                msg = "compat cannot preserve parameter order; use backend='terse'"
+                raise InferError(msg)
+            previous = order
         head = ""
         if func.deprecated is not None:
             self.used.add("deprecated")
