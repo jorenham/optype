@@ -8,7 +8,7 @@ else:
 
 import numpy as np
 
-from ._array import Array0D, Array1D, Array2D, Array3D, ArrayND
+from ._array import Array0D, Array1D, Array2D, Array3D, Array4D, ArrayND
 from ._dtype import ToDType
 
 __all__ = [
@@ -16,6 +16,7 @@ __all__ = [
     "is_array_1d",
     "is_array_2d",
     "is_array_3d",
+    "is_array_4d",
     "is_array_nd",
     "is_dtype",
     "is_sctype",
@@ -100,3 +101,12 @@ def is_array_3d(
 ) -> TypeIs[Array3D[ScalarT]]:
     """Checks if `a` is a 3-d `ndarray` of the given dtype (defaults to `generic`)."""
     return is_array_nd(a, dtype) and a.ndim == 3
+
+
+def is_array_4d(
+    a: Any,
+    /,
+    dtype: ToDType[ScalarT] | None = None,
+) -> TypeIs[Array4D[ScalarT]]:
+    """Checks if `a` is a 4-d `ndarray` of the given dtype (defaults to `generic`)."""
+    return is_array_nd(a, dtype) and a.ndim == 4

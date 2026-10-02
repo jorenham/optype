@@ -51,7 +51,7 @@ def test_is_sctype(sctype: type[np.generic]) -> None:
 )
 @pytest.mark.parametrize("dtype", DTYPES, ids=str)
 @pytest.mark.parametrize("ndtype", NDARRAY_TYPES)
-def test_is_array(
+def test_is_array(  # ruff: ignore[too-many-statements]
     ndtype: type[onp.Array],
     dtype: onp.DType,
     dtype_map: Callable[[onp.DType], onp.DType | type[np.generic]],
@@ -63,42 +63,49 @@ def test_is_array(
     assert not onp.is_array_1d(arr[0])
     assert not onp.is_array_2d(arr[0])
     assert not onp.is_array_3d(arr[0])
+    assert not onp.is_array_4d(arr[0])
 
     assert onp.is_array_nd(arr[1])
     assert not onp.is_array_0d(arr[1])
     assert onp.is_array_1d(arr[1])
     assert not onp.is_array_2d(arr[1])
     assert not onp.is_array_3d(arr[1])
+    assert not onp.is_array_4d(arr[1])
 
     assert onp.is_array_nd(arr[2])
     assert not onp.is_array_0d(arr[2])
     assert not onp.is_array_1d(arr[2])
     assert onp.is_array_2d(arr[2])
     assert not onp.is_array_3d(arr[2])
+    assert not onp.is_array_4d(arr[2])
 
     assert onp.is_array_nd(arr[2].view(np.matrix))
     assert not onp.is_array_0d(arr[2].view(np.matrix))
     assert not onp.is_array_1d(arr[2].view(np.matrix))
     assert onp.is_array_2d(arr[2].view(np.matrix))
     assert not onp.is_array_3d(arr[2].view(np.matrix))
+    assert not onp.is_array_4d(arr[2].view(np.matrix))
 
     assert onp.is_array_nd(arr[3])
     assert not onp.is_array_0d(arr[3])
     assert not onp.is_array_1d(arr[3])
     assert not onp.is_array_2d(arr[3])
     assert onp.is_array_3d(arr[3])
+    assert not onp.is_array_4d(arr[3])
 
     assert onp.is_array_nd(arr[4])
     assert not onp.is_array_0d(arr[4])
     assert not onp.is_array_1d(arr[4])
     assert not onp.is_array_2d(arr[4])
     assert not onp.is_array_3d(arr[4])
+    assert onp.is_array_4d(arr[4])
 
     dtype_is = dtype_map(dtype)
     assert onp.is_array_0d(arr[0], dtype=dtype_is)
     assert onp.is_array_1d(arr[1], dtype=dtype_is)
     assert onp.is_array_2d(arr[2], dtype=dtype_is)
     assert onp.is_array_3d(arr[3], dtype=dtype_is)
+    assert onp.is_array_4d(arr[4], dtype=dtype_is)
     assert onp.is_array_nd(arr[4], dtype=dtype_is)
 
     dtype_not = np.dtype("?") if dtype.char != "?" else np.dtype("B")
@@ -106,4 +113,5 @@ def test_is_array(
     assert not onp.is_array_1d(arr[1], dtype=dtype_not)
     assert not onp.is_array_2d(arr[2], dtype=dtype_not)
     assert not onp.is_array_3d(arr[3], dtype=dtype_not)
+    assert not onp.is_array_4d(arr[4], dtype=dtype_not)
     assert not onp.is_array_nd(arr[4], dtype=dtype_not)

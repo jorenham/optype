@@ -311,6 +311,10 @@ matrix-likes, and cuboid-likes, and the `To{}` aliases for "bare" scalar types.
 
 !!! note
 
+    For 4-d array-likes there are only the generic `ToArray4D` and `ToArrayStrict4D`.
+
+!!! note
+
     The `ToArrayStrict{1,2,3}D` types are generic since `optype 0.9.1`, analogous to
     their non-strict dual type, `ToArray{1,2,3}D`.
 

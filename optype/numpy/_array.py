@@ -13,11 +13,11 @@ from ._shape import AnyShape, Shape
 from optype._utils import set_module
 
 __all__ = [  # ruff: ignore[unsorted-dunder-all]
-    "Array", "Array0D", "Array1D", "Array2D", "Array3D", "ArrayND",
-    "MArray", "MArray0D", "MArray1D", "MArray2D", "MArray3D",
+    "Array", "Array0D", "Array1D", "Array2D", "Array3D", "Array4D", "ArrayND",
+    "MArray", "MArray0D", "MArray1D", "MArray2D", "MArray3D", "MArray4D",
     "Matrix",
     "CanArray", "CanArray0",
-    "CanArrayND", "CanArray0D", "CanArray1D", "CanArray2D", "CanArray3D",
+    "CanArrayND", "CanArray0D", "CanArray1D", "CanArray2D", "CanArray3D", "CanArray4D",
     "CanArrayFinalize", "CanArrayWrap",
     "HasArrayInterface", "HasArrayPriority",
 ]  # fmt: skip
@@ -148,6 +148,11 @@ Array3D = TypeAliasType(
     np.ndarray[tuple[int, int, int], np.dtype[_SCT]],
     type_params=(_SCT,),
 )
+Array4D = TypeAliasType(
+    "Array4D",
+    np.ndarray[tuple[int, int, int, int], np.dtype[_SCT]],
+    type_params=(_SCT,),
+)
 
 MArray0D = TypeAliasType(
     "MArray0D",
@@ -167,6 +172,11 @@ MArray2D = TypeAliasType(
 MArray3D = TypeAliasType(
     "MArray3D",
     np.ma.MaskedArray[tuple[int, int, int], np.dtype[_SCT]],
+    type_params=(_SCT,),
+)
+MArray4D = TypeAliasType(
+    "MArray4D",
+    np.ma.MaskedArray[tuple[int, int, int, int], np.dtype[_SCT]],
     type_params=(_SCT,),
 )
 
@@ -231,6 +241,18 @@ class CanArray3D(Protocol[_SCT_co]):
 
     def __len__(self, /) -> int: ...
     def __array__(self, /) -> np.ndarray[tuple[int, int, int], np.dtype[_SCT_co]]: ...
+
+
+@runtime_checkable
+@set_module("optype.numpy")
+class CanArray4D(Protocol[_SCT_co]):
+    """The 4-d variant of `optype.numpy.CanArrayND`."""
+
+    def __len__(self, /) -> int: ...
+    def __array__(
+        self,
+        /,
+    ) -> np.ndarray[tuple[int, int, int, int], np.dtype[_SCT_co]]: ...
 
 
 # this is almost always a `ndarray`, but setting a `bound` might break in some
