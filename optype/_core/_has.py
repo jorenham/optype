@@ -152,7 +152,7 @@ class HasDoc(Protocol[_StrT_co]):
 
 @runtime_checkable
 class HasAnnotations(Protocol[_DictT_co]):  # pyright: ignore[reportInvalidTypeVarUse]
-    __annotations__: _DictT_co  # type: ignore[assignment]  # pyright: ignore[reportIncompatibleVariableOverride]
+    __annotations__: _DictT_co  # type: ignore[assignment]  # pyright: ignore[reportIncompatibleVariableOverride]  # ty: ignore[invalid-attribute-override]
 
 
 @runtime_checkable
