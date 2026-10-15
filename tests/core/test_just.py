@@ -1,9 +1,12 @@
 # ruff: file-ignore[call-datetime-now-without-tzinfo, call-date-today]
 
 import datetime as dt
+import re
 from typing import Any, cast
 
 import pytest
+from beartype import beartype
+from beartype.roar import BeartypeCallHintParamViolation
 
 import optype as op
 
@@ -142,3 +145,19 @@ def test_just_any() -> None:
     tn_any_type: type[op.JustAny] = t_any
     tp_obj_type: type[op.JustAny] = t_obj  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
     tp_set_type: type[op.JustAny] = t_set  # type: ignore[assignment]  # pyright: ignore[reportAssignmentType]
+
+
+def test_just_instancecheck_str() -> None:
+
+    @beartype
+    def foo(_x: op.JustInt) -> None:
+        pass
+
+    with pytest.raises(
+        BeartypeCallHintParamViolation,
+        match=re.escape(
+            "instance has type 'bool', but JustInt requires exactly 'int' "
+            "(subclasses are not accepted)",
+        ),
+    ):
+        foo(True)  # type: ignore[arg-type]  # pyright: ignore[reportArgumentType]  # pyrefly: ignore[bad-argument-type]
