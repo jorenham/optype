@@ -1585,7 +1585,7 @@ class CanExit(Protocol[_T_None_co]):
         exc: BaseException | None,
         tb: types.TracebackType | None,
         /,
-    ) -> _T_None_co: ...
+    ) -> _T_None_co | None: ...
 
 
 @runtime_checkable
