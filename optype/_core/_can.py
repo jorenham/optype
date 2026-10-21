@@ -1579,14 +1579,11 @@ class CanEnterSelf(Protocol):
 
 @runtime_checkable
 class CanExit(Protocol[_T_None_co]):
-    @overload
-    def __exit__(self, exc_type: None, exc: None, tb: None, /) -> None: ...
-    @overload
-    def __exit__[ExcT: BaseException](  # ruff: ignore[bad-exit-annotation]
+    def __exit__(
         self,
-        exc_type: type[ExcT],
-        exc: ExcT,
-        tb: types.TracebackType,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: types.TracebackType | None,
         /,
     ) -> _T_None_co: ...
 
@@ -1617,14 +1614,11 @@ class CanAEnterSelf(Protocol):
 
 @runtime_checkable
 class CanAExit(Protocol[_T_None_co]):
-    @overload
-    def __aexit__(self, exc_type: None, exc: None, tb: None, /) -> CanAwait[None]: ...
-    @overload
-    def __aexit__[ExcT: BaseException](
+    def __aexit__(
         self,
-        exc_type: type[ExcT],
-        exc_: ExcT,
-        tb: types.TracebackType,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: types.TracebackType | None,
         /,
     ) -> CanAwait[_T_None_co]: ...
 
