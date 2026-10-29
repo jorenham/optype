@@ -71,11 +71,11 @@ extra = [
 ]
 doc = [
   # https://github.com/zensical/zensical/issues/735
-  "zensical==0.0.70",
+  "zensical==0.0.71",
   "pygments==2.21.0",
 ]
 lint = [
-  "dprint-py==0.63.0.0",
+  "dprint-py==0.64.1.0",
   "ruff==0.17.1",
   "sp-repo-review[cli]==2026.8.14",
 ]
@@ -92,7 +92,7 @@ type = [
   { include-group = "extra" },
   { include-group = "test" },
   "pyrefly==1.4.0",
-  "ty==0.0.88",
+  "ty==0.0.90",
 ]
 dev = [
   { include-group = "extra" },
