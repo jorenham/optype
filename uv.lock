@@ -584,6 +584,9 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+beartype = [
+    { name = "beartype" },
+]
 numpy = [
     { name = "numpy" },
     { name = "numpy-typing-compat" },
@@ -595,7 +598,7 @@ dev = [
     { name = "beartype" },
     { name = "dprint-py" },
     { name = "mypy", extra = ["faster-cache"] },
-    { name = "optype", extra = ["numpy"] },
+    { name = "optype", extra = ["beartype", "numpy"] },
     { name = "pygments" },
     { name = "pyrefly" },
     { name = "pytest" },
@@ -611,7 +614,7 @@ doc = [
     { name = "zensical" },
 ]
 extra = [
-    { name = "optype", extra = ["numpy"] },
+    { name = "optype", extra = ["beartype", "numpy"] },
 ]
 lint = [
     { name = "dprint-py" },
@@ -622,7 +625,7 @@ test = [
     { name = "basedpyright" },
     { name = "beartype" },
     { name = "mypy", extra = ["faster-cache"] },
-    { name = "optype", extra = ["numpy"] },
+    { name = "optype", extra = ["beartype", "numpy"] },
     { name = "pytest" },
     { name = "pytest-xdist" },
     { name = "typing-extensions" },
@@ -631,7 +634,7 @@ type = [
     { name = "basedpyright" },
     { name = "beartype" },
     { name = "mypy", extra = ["faster-cache"] },
-    { name = "optype", extra = ["numpy"] },
+    { name = "optype", extra = ["beartype", "numpy"] },
     { name = "pyrefly" },
     { name = "pytest" },
     { name = "pytest-xdist" },
@@ -641,11 +644,12 @@ type = [
 
 [package.metadata]
 requires-dist = [
+    { name = "beartype", marker = "extra == 'beartype'", specifier = ">=0.23.1,<1" },
     { name = "numpy", marker = "extra == 'numpy'", specifier = ">=2.0,<2.8" },
     { name = "numpy-typing-compat", marker = "extra == 'numpy'", specifier = ">=20260602.2.0,<20260603" },
     { name = "typing-extensions", marker = "python_full_version < '3.13'", specifier = ">=4.10" },
 ]
-provides-extras = ["numpy"]
+provides-extras = ["beartype", "numpy"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -653,6 +657,7 @@ dev = [
     { name = "beartype", specifier = ">=0.23.0" },
     { name = "dprint-py", specifier = "==0.64.3.0" },
     { name = "mypy", extras = ["faster-cache"], specifier = "==2.4.1" },
+    { name = "optype", extras = ["beartype"] },
     { name = "optype", extras = ["numpy"] },
     { name = "pygments", specifier = "==2.21.0" },
     { name = "pyrefly", specifier = "==1.4.0" },
@@ -668,7 +673,10 @@ doc = [
     { name = "pygments", specifier = "==2.21.0" },
     { name = "zensical", specifier = "==0.0.73" },
 ]
-extra = [{ name = "optype", extras = ["numpy"] }]
+extra = [
+    { name = "optype", extras = ["beartype"] },
+    { name = "optype", extras = ["numpy"] },
+]
 lint = [
     { name = "dprint-py", specifier = "==0.64.3.0" },
     { name = "ruff", specifier = "==0.17.3" },
@@ -678,6 +686,7 @@ test = [
     { name = "basedpyright", specifier = "==1.40.2" },
     { name = "beartype", specifier = ">=0.23.0" },
     { name = "mypy", extras = ["faster-cache"], specifier = "==2.4.1" },
+    { name = "optype", extras = ["beartype"] },
     { name = "optype", extras = ["numpy"] },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "pytest-xdist", specifier = ">=3.8.0" },
@@ -687,6 +696,7 @@ type = [
     { name = "basedpyright", specifier = "==1.40.2" },
     { name = "beartype", specifier = ">=0.23.0" },
     { name = "mypy", extras = ["faster-cache"], specifier = "==2.4.1" },
+    { name = "optype", extras = ["beartype"] },
     { name = "optype", extras = ["numpy"] },
     { name = "pyrefly", specifier = "==1.4.0" },
     { name = "pytest", specifier = ">=9.1.1" },
