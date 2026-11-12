@@ -1,11 +1,14 @@
 """Pause and drain the cyclic garbage collector around exploration runs."""
 
 import gc
+import sys
 from collections.abc import Generator
 from contextlib import contextmanager
 from typing import Final, final
 
 _PENDING_MAX: Final = 100_000
+# the incremental collector of 3.14.0 to 3.14.4 only sweeps an increment at generation 1
+_OLDER_GEN: Final = 2 if (3, 14) <= sys.version_info < (3, 14, 5) else 1
 
 
 @final
@@ -37,7 +40,7 @@ class _CyclicGC:
             if self._resume:
                 gc.enable()
                 # a drain promoted the live graph to the older generation; sweep there
-                gc.collect(1 if self._promoted else 0)
+                gc.collect(_OLDER_GEN if self._promoted else 0)
 
     def stay_paused(self) -> None:
         """Leave collection off after a pause, for a process that exits right after."""
