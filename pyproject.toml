@@ -71,7 +71,7 @@ extra = [
 ]
 doc = [
   # https://github.com/zensical/zensical/issues/735
-  "zensical==0.0.73",
+  "zensical==0.1.0",
   "pygments==2.21.0",
 ]
 lint = [
@@ -91,8 +91,8 @@ test = [
 type = [
   { include-group = "extra" },
   { include-group = "test" },
-  "pyrefly==1.4.0",
-  "ty==0.0.94",
+  "pyrefly==1.4.1",
+  "ty==0.0.98",
 ]
 dev = [
   { include-group = "extra" },
