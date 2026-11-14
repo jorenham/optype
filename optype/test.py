@@ -51,7 +51,8 @@ def assert_type[T](val: T, typ: Any, /) -> T:
 
 @final
 class assert_subtype:  # ruff: ignore[invalid-class-name]
-    def __class_getitem__(cls, typ: Any, /) -> Callable[[object], Self]:
+    @classmethod
+    def __class_getitem__(cls, typ: object, /) -> Callable[[object], Self]:
         def assert_subtype(val: object, /) -> Self:
             __tracebackhide__ = True
 
