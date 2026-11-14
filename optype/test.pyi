@@ -1,10 +1,14 @@
 # experimental module for testing static types
 
-from typing import Self, final, type_check_only
+from collections.abc import Callable
+from typing import Self, assert_type, final
 
-__all__ = ("assert_subtype",)
+__all__ = ("UncheckedWarning", "assert_subtype", "assert_type")
 
-@type_check_only
+class UncheckedWarning(UserWarning): ...
+
 @final
 class assert_subtype[T]:  # ruff: ignore[invalid-class-name]
     def __new__(cls, value: T, /) -> Self: ...
+    @classmethod
+    def __class_getitem__(cls, typ: object, /) -> Callable[[object], Self]: ...

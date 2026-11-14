@@ -53,6 +53,9 @@ dependencies = ["typing-extensions>=4.10; python_version<'3.13'"]
 optype = "optype.__main__:main"
 
 [project.optional-dependencies]
+beartype = [
+  "beartype>=0.23.1,<1",
+]
 numpy = [
   "numpy>=2.0,<2.8",
   "numpy-typing-compat>=20260602.2.0,<20260603",
@@ -67,6 +70,7 @@ Funding = "https://github.com/sponsors/jorenham"
 
 [dependency-groups]
 extra = [
+  "optype[beartype]",
   "optype[numpy]",
 ]
 doc = [

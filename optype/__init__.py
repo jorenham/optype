@@ -19,6 +19,7 @@ _submodules = {
     "numpy": "numpy",
     "pickle": "pickle",
     "string": "string",
+    "test": "test",
     "types": "types",
     "typing": "typing",
 }
