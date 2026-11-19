@@ -86,7 +86,7 @@ _driver_code: CodeType | None = None
 
 def set_driver_code[T: Callable[..., object]](fn: T, /) -> T:
     global _driver_code  # ruff: ignore[global-statement]
-    _driver_code = fn.__code__  # ty: ignore[unresolved-attribute]
+    _driver_code = fn.__code__  # ty: ignore[missing-attribute]
     return fn
 
 
@@ -374,11 +374,11 @@ class SpyObject(Spy, metaclass=_SpyType):
         return self.__optype_trace_add__("__bytes__", (), {}, SpyBytes())
 
     @override
-    def __eq__(self, other: object, /) -> "SpyObject":  # type:ignore[override] # pyright:ignore[reportIncompatibleMethodOverride] # ty:ignore[invalid-method-override]
+    def __eq__(self, other: object, /) -> "SpyObject":  # type:ignore[override] # pyright:ignore[reportIncompatibleMethodOverride] # ty:ignore[incompatible-method-override]
         return self.__optype_trace_add__("__eq__", (other,), {}, SpyObject())
 
     @override
-    def __ne__(self, other: object, /) -> "SpyObject":  # type:ignore[override] # pyright:ignore[reportIncompatibleMethodOverride] # ty:ignore[invalid-method-override]
+    def __ne__(self, other: object, /) -> "SpyObject":  # type:ignore[override] # pyright:ignore[reportIncompatibleMethodOverride] # ty:ignore[incompatible-method-override]
         return self.__optype_trace_add__("__ne__", (other,), {}, SpyObject())
 
     @override
