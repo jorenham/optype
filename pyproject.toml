@@ -75,12 +75,12 @@ extra = [
 ]
 doc = [
   # https://github.com/zensical/zensical/issues/735
-  "zensical==0.1.0",
+  "zensical==0.1.1",
   "pygments==2.21.0",
 ]
 lint = [
   "dprint-py==0.64.3.0",
-  "ruff==0.17.4",
+  "ruff==0.17.5",
   "sp-repo-review[cli]==2026.8.14",
 ]
 test = [
