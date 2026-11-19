@@ -4,7 +4,7 @@ The names are analogous to those in `numpy.dtypes`.
 """
 
 from collections.abc import Sequence
-from typing import Any, Protocol
+from typing import Any, NotRequired, Protocol, TypedDict
 
 import numpy as np
 import numpy_typing_compat
@@ -158,19 +158,42 @@ type AnyBytesDType = S_cls | To[np.bytes_] | a.S0_code
 type AnyBytes8DType = a.S1_code
 type AnyStrDType = S_cls | To[np.str_] | a.U0_code
 
-type _ToShape = tuple[int, ...] | int
-type _ToName = str | tuple[str, str]
-type _ToDType = To[Any] | str
-type _ToStructured = (
-    tuple[_ToDType, _ToShape]
-    | Sequence[tuple[_ToName, _ToDType] | tuple[_ToName, _ToDType, _ToShape]]
+# Structured dtype specifiers for np.void: covers all 4 NumPy forms.
+# See: https://numpy.org/doc/stable/user/basics.rec.html
+type _StructuredDTypeField = (
+    tuple[str, AnyDType]
+    | tuple[str, AnyDType, int | tuple[int, ...]]
+    | tuple[tuple[Any, str], AnyDType]
+    | tuple[tuple[Any, str], AnyDType, int | tuple[int, ...]]
 )
-type AnyVoidDType = V_cls | To[np.void] | a.V0_code | _ToStructured
+type _StructuredDTypeListForm = Sequence[_StructuredDTypeField]
+type _ToDType = To[Any] | str
+
+
+class _StructuredDTypeDictForm1(TypedDict):
+    names: Sequence[str]
+    formats: Sequence["AnyDType"]
+    offsets: NotRequired[Sequence[int]]
+    itemsize: NotRequired[int]
+    aligned: NotRequired[bool]
+    titles: NotRequired[Sequence[Any]]
+
+
+type _StructuredDTypeDictForm2 = dict[
+    str,
+    tuple[AnyDType, int] | tuple[AnyDType, int, Any],
+]
+
+type _StructuredDTypeLike = (
+    _StructuredDTypeListForm | _StructuredDTypeDictForm1 | _StructuredDTypeDictForm2
+)
+
+type AnyVoidDType = V_cls | To[np.void] | a.V0_code | _StructuredDTypeLike
 
 # object
 
 type AnyObjectDType = O_cls | To[np.object_] | a.O_code
-type AnyDType = _ToDType | _ToStructured
+type AnyDType = _ToDType | _StructuredDTypeLike
 
 # abstract
 
