@@ -197,7 +197,16 @@ possibly-unresolved-reference = "error"
 [tool.pytest]
 minversion = "9.0"
 testpaths = ["optype", "examples", "tests"]
-addopts = ["-ra", "--doctest-modules", "-n", "auto", "--maxprocesses", "8"]
+addopts = [
+  "-ra",
+  "--doctest-modules",
+  "-n",
+  "auto",
+  "--maxprocesses",
+  "8",
+  "--dist",
+  "worksteal",
+]
 doctest_optionflags = ["NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL", "ELLIPSIS"]
 filterwarnings = ["error"]
 log_level = "INFO"
