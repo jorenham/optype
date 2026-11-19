@@ -61,8 +61,8 @@ def _form_signatures(
     )
     if (sigs := resolve_defaults(func, params, selected, exploration)) is not None:
         return sigs
-    lines = signatures(exploration, params, selected)
-    return dispatch_overloads(func, params, selected, exploration, lines)
+    baseline = signatures(exploration, params, selected)
+    return dispatch_overloads(func, params, selected, exploration, baseline)
 
 
 def _candidate_parameters(func: AnyFunc) -> list[dict[str, Parameter]]:

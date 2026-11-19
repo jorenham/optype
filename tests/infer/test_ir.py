@@ -31,8 +31,8 @@ from optype.infer._ir import (
     TypeParam,
     Union,
     Unpack,
-    alpha_equal,
-    alpha_equal_signatures,
+    alpha_equivalent,
+    alpha_equivalent_signatures,
     exclude,
     intersection,
     names,
@@ -41,10 +41,10 @@ from optype.infer._ir import (
     subst_term,
     subtype,
     tuple_node,
-    tuple_node_variadic,
     type_name,
     tyvar_index,
     tyvar_name,
+    unbounded_tuple,
     union,
 )
 
@@ -324,51 +324,54 @@ def test_names_in_order_with_repeats() -> None:
     assert list(names(Dots())) == []
 
 
-def test_alpha_equal_and_rename() -> None:
+def test_alpha_equivalent_and_rename() -> None:
     # the fold's primitives: structural equality up to a consistent name bijection,
     # and a simultaneous rename that drops union members which collapse together
     a = App("CanAdd", (Name("A"), App("CanMul", (Name("B"), Name("A")))))
     b = App("CanAdd", (Name("X"), App("CanMul", (Name("Y"), Name("X")))))
     tyvars = {"A", "B", "X", "Y"}
-    assert alpha_equal(a, b, tyvars) == {"A": "X", "B": "Y"}
-    assert alpha_equal(a, App("CanAdd", (Name("X"), Name("X"))), tyvars) is None
+    assert alpha_equivalent(a, b, tyvars) == {"A": "X", "B": "Y"}
+    assert alpha_equivalent(a, App("CanAdd", (Name("X"), Name("X"))), tyvars) is None
     assert rename(a, {"A": "X", "B": "Y"}) == b
     assert rename(Union((Name("A"), Name("B"))), {"A": "C", "B": "C"}) == Name("C")
 
 
-def test_alpha_equal_is_a_bijection() -> None:
+def test_alpha_equivalent_is_a_bijection() -> None:
     # the same shape with a name used twice on one side only is not a bijection
     tyvars = {"A", "B", "C"}
-    assert alpha_equal(App("X", (A, A)), App("X", (B, C)), tyvars) is None
-    assert alpha_equal(App("X", (B, C)), App("X", (A, A)), tyvars) is None
+    assert alpha_equivalent(App("X", (A, A)), App("X", (B, C)), tyvars) is None
+    assert alpha_equivalent(App("X", (B, C)), App("X", (A, A)), tyvars) is None
     # a swap is a bijection, and renames simultaneously
-    assert alpha_equal(App("X", (A, B)), App("X", (B, A)), tyvars) == {
+    assert alpha_equivalent(App("X", (A, B)), App("X", (B, A)), tyvars) == {
         "A": "B",
         "B": "A",
     }
     assert rename(App("X", (A, B)), {"A": "B", "B": "A"}) == App("X", (B, A))
 
 
-def test_alpha_equal_keeps_callable_metadata() -> None:
+def test_alpha_equivalent_keeps_callable_metadata() -> None:
     # an argument's keyword and default are structure, not names, so they must match
     fn = Fn((Arg("x", A, (0,)),), B)
     tyvars = {"A", "B", "C"}
-    assert alpha_equal(fn, Fn((Arg("x", C, (0,)),), A), tyvars) == {"A": "C", "B": "A"}
-    assert alpha_equal(fn, Fn((Arg("y", A, (0,)),), B), tyvars) is None
-    assert alpha_equal(fn, Fn((Arg("x", A, (1,)),), B), tyvars) is None
-    assert alpha_equal(fn, Fn((Arg("x", A),), B), tyvars) is None
+    assert alpha_equivalent(fn, Fn((Arg("x", C, (0,)),), A), tyvars) == {
+        "A": "C",
+        "B": "A",
+    }
+    assert alpha_equivalent(fn, Fn((Arg("y", A, (0,)),), B), tyvars) is None
+    assert alpha_equivalent(fn, Fn((Arg("x", A, (1,)),), B), tyvars) is None
+    assert alpha_equivalent(fn, Fn((Arg("x", A),), B), tyvars) is None
 
 
-def test_alpha_equal_renames_only_type_parameters() -> None:
+def test_alpha_equivalent_renames_only_type_parameters() -> None:
     # `None` and `object` are names too, but not ones that a renaming may touch
     a, b = App("CanAdd", (NONE, A)), App("CanAdd", (OBJECT, B))
-    assert alpha_equal(a, b, {"A", "B"}) is None
-    assert alpha_equal(a, App("CanAdd", (NONE, B)), {"A", "B"}) == {"A": "B"}
+    assert alpha_equivalent(a, b, {"A", "B"}) is None
+    assert alpha_equivalent(a, App("CanAdd", (NONE, B)), {"A", "B"}) == {"A": "B"}
     # nor is an attribute name
-    assert alpha_equal(Has("spam", (A,)), Has("ham", (B,)), {"A", "B"}) is None
+    assert alpha_equivalent(Has("spam", (A,)), Has("ham", (B,)), {"A", "B"}) is None
 
 
-def test_alpha_equal_signatures() -> None:
+def test_alpha_equivalent_signatures() -> None:
     def sig(t: str, u: str, *, default: tuple[object] | None = (0,)) -> Signature:
         return Signature(
             (TypeParam(t, App("CanAdd", (Name(u), Name(t)))), TypeParam(u)),
@@ -376,23 +379,23 @@ def test_alpha_equal_signatures() -> None:
             Name(t),
         )
 
-    assert alpha_equal_signatures(sig("T", "U"), sig("A", "B"))
-    assert alpha_equal_signatures(sig("T", "U"), sig("U", "T"))
+    assert alpha_equivalent_signatures(sig("T", "U"), sig("A", "B"))
+    assert alpha_equivalent_signatures(sig("T", "U"), sig("U", "T"))
     # the type parameters' names are the only freedom
-    assert not alpha_equal_signatures(sig("T", "U"), sig("T", "U", default=(1,)))
+    assert not alpha_equivalent_signatures(sig("T", "U"), sig("T", "U", default=(1,)))
     swapped = Signature(
         sig("T", "U").type_params[::-1],
         sig("T", "U").params,
         Name("T"),
     )
-    assert not alpha_equal_signatures(sig("T", "U"), swapped)
-    unpacked = Signature((TypeParam("Ts", unpack=True),), (), Name("Ts"))
-    assert not alpha_equal_signatures(
+    assert not alpha_equivalent_signatures(sig("T", "U"), swapped)
+    unpacked = Signature((TypeParam("Ts", tyvar_tuple=True),), (), Name("Ts"))
+    assert not alpha_equivalent_signatures(
         unpacked,
         Signature((TypeParam("Ts"),), (), Name("Ts")),
     )
     # a concrete name is not a type parameter, whatever it is called
-    assert not alpha_equal_signatures(
+    assert not alpha_equivalent_signatures(
         Signature((), (Param("x", Name("None")),), Name("None")),
         Signature((), (Param("x", Name("object")),), Name("object")),
     )
@@ -400,7 +403,7 @@ def test_alpha_equal_signatures() -> None:
     plain = Signature((TypeParam("T"),), (Param("x", Name("T")),), Name("T"))
     for typar in (TypeParam("T", bound=OBJECT), TypeParam("T", default=OBJECT)):
         alike = Signature((typar,), plain.params, plain.ret)
-        assert not alpha_equal_signatures(plain, alike)
+        assert not alpha_equivalent_signatures(plain, alike)
     # a name is renameable in the signature that declares it, and only there
     ints = Signature(
         (TypeParam("int"),),
@@ -412,18 +415,18 @@ def test_alpha_equal_signatures() -> None:
         (Param("x", Name("str")), Param("y", Name("int"))),
         Name("str"),
     )
-    assert not alpha_equal_signatures(ints, strs)
+    assert not alpha_equivalent_signatures(ints, strs)
     objs = Signature(
         (TypeParam("object"),),
         (Param("x", Name("object")),),
         Name("object"),
     )
-    assert alpha_equal_signatures(plain, objs)
+    assert alpha_equivalent_signatures(plain, objs)
 
 
 def test_tuple_nodes() -> None:
     assert tuple_node([A, B]) == App("tuple", (A, B))
-    assert tuple_node_variadic(A) == App("tuple", (A, Dots()))
+    assert unbounded_tuple(A) == App("tuple", (A, Dots()))
 
 
 @pytest.mark.parametrize(
@@ -454,6 +457,6 @@ def test_keyword_only_metadata_survives_type_operations() -> None:
     positional = Fn((Arg("x", A, (0,)),), B)
     keyword = Fn((arg,), B)
     assert not _ir.equivalent(positional, keyword)
-    assert alpha_equal(positional, keyword, {"A", "B"}) is None
+    assert alpha_equivalent(positional, keyword, {"A", "B"}) is None
     assert subtype(positional, keyword)
     assert not subtype(keyword, positional)

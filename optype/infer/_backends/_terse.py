@@ -118,7 +118,7 @@ def _infix(
 
 
 def _type_param(typar: _ir.TypeParam) -> str:
-    if typar.unpack:
+    if typar.tyvar_tuple:
         return f"*{typar.name}"
 
     decl = (
@@ -133,7 +133,7 @@ def _type_param(typar: _ir.TypeParam) -> str:
 
 def _param(param: _ir.Param) -> str:
     label = "" if param.pos_only else f"{param.prefix}{param.name}: "
-    decl = f"{label}{_render_node(param.node)}"
+    decl = f"{label}{_render_node(param.annotation)}"
     if param.default is not None:
         decl += f" = {default_text(param.default[0])}"
     return decl

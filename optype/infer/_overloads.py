@@ -1,6 +1,6 @@
 """Synthesize the overload variants of a single call form.
 
-Two situations split one generic signature into separate overload lines: parameter
+Two situations split one generic signature into separate overloads: parameter
 defaults that cannot be expressed as typevar defaults, and a presence-test on a single
 parameter's attribute.
 """
@@ -16,7 +16,7 @@ from ._analyze import (
     returns_concrete,
 )
 from ._explore import declared_defaults, explore_spies
-from ._ir import Signature, alpha_equal_signatures
+from ._ir import Signature, alpha_equivalent_signatures
 from ._render import Defaults, Names, renderers_of, signatures, widened_signatures
 from ._spy import AnyFunc, TraceItem
 from ._values import Exploration, map_values
@@ -25,7 +25,7 @@ from ._values import Exploration, map_values
 def _distinct(sigs: Iterable[Signature]) -> list[Signature]:
     out: list[Signature] = []
     for sig in sigs:
-        if not any(alpha_equal_signatures(sig, seen) for seen in out):
+        if not any(alpha_equivalent_signatures(sig, seen) for seen in out):
             out.append(sig)
     return out
 
@@ -34,7 +34,7 @@ def _same(expected: Iterable[Signature], observed: Iterable[Signature]) -> bool:
     """Whether the two renders agree, up to how their type parameters are named."""
     expected, observed = _distinct(expected), _distinct(observed)
     return len(expected) == len(observed) and all(
-        starmap(alpha_equal_signatures, zip(expected, observed, strict=True)),
+        starmap(alpha_equivalent_signatures, zip(expected, observed, strict=True)),
     )
 
 
@@ -104,8 +104,8 @@ def resolve_defaults(
 
     overloads = [r.signature(selected, defaults) for r in omitted]
     if len(defaults) == 1:
-        lines = signatures(exploration, params, selected, defaults, negate=True)
-        return [*overloads, *lines]
+        generic = signatures(exploration, params, selected, defaults, negate=True)
+        return [*overloads, *generic]
 
     for name, value in defaults.items():
         try:

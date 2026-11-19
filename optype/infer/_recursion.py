@@ -27,7 +27,7 @@ def _shift_edges(
             if y == x or y not in bounded:
                 continue
 
-            mapping = _ir.alpha_equal(bound, bounded[y], tyvars)
+            mapping = _ir.alpha_equivalent(bound, bounded[y], tyvars)
             if mapping is not None and mapping.get(y) in bounded and mapping[y] != y:
                 edge[x] = y
                 break
@@ -38,7 +38,7 @@ def _gc_typars(sig: _ir.Signature) -> _ir.Signature:
     """Drop the type parameters that nothing mentions any more."""
     by_name = {typar.name: typar for typar in sig.type_params}
     reach: set[str] = set()
-    stack = [name for p in sig.params for name in _ir.names(p.node)]
+    stack = [name for p in sig.params for name in _ir.names(p.annotation)]
     stack += _ir.names(sig.ret)
     while stack:
         if (name := stack.pop()) in reach:
@@ -63,7 +63,7 @@ def _renumber_tyvars(sig: _ir.Signature) -> _ir.Signature:
                 remap[typar.name] = new
             n += 1
 
-    return _ir.rename_signature(sig, remap) if remap else sig
+    return _ir.rename_signature(sig, remap)
 
 
 def _collapse_renaming(
@@ -108,7 +108,7 @@ def collapse_recursive(sig: _ir.Signature) -> _ir.Signature:
     bounded = {
         typar.name: typar.bound
         for typar in sig.type_params
-        if typar.bound is not None and not typar.unpack
+        if typar.bound is not None and not typar.tyvar_tuple
     }
     tyvars = {typar.name for typar in sig.type_params}
     if len(bounded) < _LOOP_MIN or not (edge := _shift_edges(bounded, tyvars)):

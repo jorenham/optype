@@ -209,7 +209,7 @@ def _merge_apps(first: _ir.App, second: _ir.App) -> _ir.App | None:
     most one argument differs and the two are ordered by implication: the narrower
     one wins in a covariant position, the wider one in a contravariant position.
 
-    Both must apply every parameter: an omitted one defaults to another, which a join
+    Both must apply every parameter: an omitted one defaults to another, which a merge
     would then change as well. Two differing arguments may be correlated, as in
     `CanSetitem[int, int] & CanSetitem[str, str]`, so they stay apart.
     """
@@ -231,16 +231,16 @@ def _merge_apps(first: _ir.App, second: _ir.App) -> _ir.App | None:
     else:
         return None
     if variances[i] == _ir.COVARIANT:
-        joined = narrower
+        merged = narrower
     elif variances[i] == _ir.CONTRAVARIANT:
-        joined = wider
+        merged = wider
     else:
         return None
-    return _ir.App(first.origin, (*first.args[:i], joined, *first.args[i + 1 :]))
+    return _ir.App(first.origin, (*first.args[:i], merged, *first.args[i + 1 :]))
 
 
 def _merge_parts(parts: Sequence[_ir.Node]) -> list[_ir.Node]:
-    """Join the applications of one protocol, which a class cannot inherit twice."""
+    """Merge the applications of one protocol, which a class cannot inherit twice."""
     out: list[_ir.Node] = []
     for part in parts:
         for i, prev in enumerate(out):
@@ -248,9 +248,9 @@ def _merge_parts(parts: Sequence[_ir.Node]) -> list[_ir.Node]:
                 isinstance(part, _ir.App)
                 and isinstance(prev, _ir.App)
                 and prev.origin == part.origin
-                and (joined := _merge_apps(prev, part)) is not None
+                and (merged := _merge_apps(prev, part)) is not None
             ):
-                out[i] = joined
+                out[i] = merged
                 break
         else:
             out.append(part)
@@ -258,7 +258,7 @@ def _merge_parts(parts: Sequence[_ir.Node]) -> list[_ir.Node]:
 
 
 def _fold_arities(parts: list[_ir.Node]) -> list[_ir.Node]:
-    """Join the two arity forms of an operation into the protocol that has both."""
+    """Merge the two arity forms of an operation into the protocol that has both."""
     for origin, (one, two) in (("CanRound", (1, 2)), ("CanPow", (2, 3))):
         apps = {
             len(p.args): p
@@ -270,13 +270,13 @@ def _fold_arities(parts: list[_ir.Node]) -> list[_ir.Node]:
         first, second = apps[one], apps[two]
         if origin == "CanRound":
             (r1,), (n, r2) = first.args, second.args
-            joined = _ir.App(origin, (n, r1, r2))
+            merged = _ir.App(origin, (n, r1, r2))
         else:
             (t, r2), (t2, v, r3) = first.args, second.args
             if not (_ir.subtype(t, t2) and _ir.subtype(t2, t)):
                 continue
-            joined = _ir.App(origin, (t, v, r2, r3))
-        parts = [joined if p is first else p for p in parts if p is not second]
+            merged = _ir.App(origin, (t, v, r2, r3))
+        parts = [merged if p is first else p for p in parts if p is not second]
     return parts
 
 
@@ -322,7 +322,7 @@ class Lowerer:
         # Reject complements before intersections or bounds can erase them.
         for sig in sigs:
             nodes = [
-                *(p.node for p in sig.params),
+                *(p.annotation for p in sig.params),
                 sig.ret,
                 *_typar_nodes(sig.type_params),
             ]
@@ -383,7 +383,11 @@ def _used_helpers(
     needed = references(
         node
         for f in funcs
-        for node in (*(p.node for p in f.params), f.ret, *_typar_nodes(f.type_params))
+        for node in (
+            *(p.annotation for p in f.params),
+            f.ret,
+            *_typar_nodes(f.type_params),
+        )
     )
     used: list[ProtocolDef] = []
     # Helpers are registered after their dependencies; none are recursive.
@@ -417,22 +421,19 @@ def _order_typars(typars: list[_ir.TypeParam]) -> list[_ir.TypeParam]:
     if not any(typar.default is not None for typar in typars):
         return typars
     empty = _ir.Unpack(_ir.App("tuple", ()))
-    tuples = [replace(typar, default=empty) for typar in typars if typar.unpack]
-    return [typar for typar in typars if not typar.unpack] + tuples
+    tuples = [replace(typar, default=empty) for typar in typars if typar.tyvar_tuple]
+    return [typar for typar in typars if not typar.tyvar_tuple] + tuples
 
 
 def _distinct_text(nodes: Iterable[_ir.Node]) -> list[_ir.Node]:
-    out: list[_ir.Node] = []
-    seen: set[str] = set()
+    out: dict[str, _ir.Node] = {}
     for node in nodes:
-        if (key := type_text(node)) not in seen:
-            seen.add(key)
-            out.append(node)
-    return out
+        out.setdefault(type_text(node), node)
+    return list(out.values())
 
 
 def _merge_has(parts: Sequence[_ir.Node]) -> list[_ir.Node]:
-    """Join the `Has` members of one attribute into one with all of their arguments."""
+    """Merge the `Has` members of one attribute into one with all of their arguments."""
     out: list[_ir.Node] = []
     index: dict[str, int] = {}
     for part in parts:
@@ -469,7 +470,9 @@ class _SigLowerer:
 
     def func(self) -> _ir.Signature:
         sig = self._sig
-        params = tuple(replace(p, node=self._node(p.node)) for p in sig.params)
+        params = tuple(
+            replace(p, annotation=self._node(p.annotation)) for p in sig.params
+        )
         ret = self._node(sig.ret)
         defaults = {
             p.name: None if p.default is None else self._node(p.default)
@@ -544,8 +547,8 @@ class _SigLowerer:
 
         variants: list[_ir.Node] = []
         for picks in product(*(u.parts for u in unions)):
-            joined = _fold_arities(_merge_parts([*rest, *picks]))
-            variants.append(self._combine(_distinct_text(map(lower, joined))))
+            merged = _fold_arities(_merge_parts([*rest, *picks]))
+            variants.append(self._combine(_distinct_text(map(lower, merged))))
         return _ir.union(variants) or _ir.OBJECT
 
     def _proto_app(
