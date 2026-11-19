@@ -96,7 +96,7 @@ type = [
   { include-group = "extra" },
   { include-group = "test" },
   "pyrefly==1.4.1",
-  "ty==0.0.98",
+  "ty==0.0.107",
 ]
 dev = [
   { include-group = "extra" },
