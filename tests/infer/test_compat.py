@@ -442,7 +442,7 @@ TEXT_CASES: list[tuple[str, tuple[Signature, ...], str]] = [
         "typevar tuple",
         (
             Signature(
-                (TypeParam("Ts", unpack=True),),
+                (TypeParam("Ts", tyvar_tuple=True),),
                 (Param("args", TS, prefix="*"),),
                 App("tuple", (TS,)),
             ),
@@ -455,7 +455,7 @@ TEXT_CASES: list[tuple[str, tuple[Signature, ...], str]] = [
         "typevar tuple beside a typevar default",
         (
             Signature(
-                (TypeParam("Ts", unpack=True), TypeParam("T", default=ZERO)),
+                (TypeParam("Ts", tyvar_tuple=True), TypeParam("T", default=ZERO)),
                 (
                     Param("args", TS, prefix="*"),
                     Param("x", T, default=(0,), kw_only=True),
@@ -598,7 +598,7 @@ def test_has_of_one_attribute_merge_within_an_intersection() -> None:
     module = Lowerer().module([_sig((TypeParam("R"),), node)])
     (helper,), (func,) = module.helpers, module.funcs
     assert helper.members == (Attr("spam", T, setter=ZERO),)
-    assert func.params[0].node == App(helper.name, (R,))
+    assert func.params[0].annotation == App(helper.name, (R,))
 
 
 def test_has_method() -> None:
@@ -624,7 +624,7 @@ def test_has_helper_name_avoids_shipped_protocol() -> None:
     ])
     (helper,), (func,) = module.helpers, module.funcs
     assert helper.name not in OPTYPE
-    assert func.params[0].node == App(helper.name, (R,))
+    assert func.params[0].annotation == App(helper.name, (R,))
 
 
 def test_intersection_distributes_over_every_union() -> None:
@@ -640,7 +640,7 @@ def test_intersection_distributes_over_every_union() -> None:
         for left in ("CanNeg", "CanPos")
         for right in ("CanAbs", "CanInvert")
     }
-    lowered = module.funcs[0].params[0].node
+    lowered = module.funcs[0].params[0].annotation
     assert isinstance(lowered, Union)
     assert set(lowered.parts) == {App(h.name, (R,)) for h in helpers}
 
@@ -655,7 +655,7 @@ def test_nested_argument_lowers_into_its_own_helper() -> None:
     (call,) = [h for h in helpers if h is not attr]
     assert call.type_params == (TypeParam("T"), TypeParam("U"))
     assert call.members == (Method("__call__", (Arg("k", App(attr.name, (T,))),), U),)
-    assert module.funcs[0].params[0].node == App(call.name, (X, R))
+    assert module.funcs[0].params[0].annotation == App(call.name, (X, R))
 
 
 def test_helpers_are_keyed_on_callable_parameters() -> None:
@@ -674,7 +674,7 @@ def test_helpers_are_keyed_on_callable_parameters() -> None:
     a = by_members[Method("__call__", (Arg("a", Type(int)),), T),]
     b = by_members[Method("__call__", (Arg("b", Type(int)),), T),]
     a0 = by_members[Method("__call__", (Arg("a", Type(int), (0,)),), T),]
-    assert [f.params[0].node for f in module.funcs] == [
+    assert [f.params[0].annotation for f in module.funcs] == [
         App(a.name, (R,)),
         App(b.name, (R,)),
         App(a0.name, (R,)),
@@ -691,7 +691,7 @@ def test_intersected_callables_become_call_overloads() -> None:
         Method("__call__", (Type(int),), Type(int)),
         Method("__call__", (Type(str),), Type(str)),
     )
-    assert func.params[0].node == App(helper.name, ())
+    assert func.params[0].annotation == App(helper.name, ())
 
 
 def test_type_parameter_default_is_lowered() -> None:
@@ -722,7 +722,7 @@ def test_same_protocol_joins_in_declared_parameter_order() -> None:
         App("CanRound", (Type(int), Type(object), Type(float))),
     ))
     module = Lowerer().module([_sig((), node, NONE)])
-    assert module.funcs[0].params[0].node == App(
+    assert module.funcs[0].params[0].annotation == App(
         "CanRound",
         (Type(int), Type(int), Type(float)),
     )
@@ -733,7 +733,7 @@ def test_distribution_does_not_duplicate_a_base() -> None:
     arms = Union((App("CanNeg", (Type(int),)), App("CanPos", (R,))))
     node = Intersection((arms, App("CanNeg", (Type(int),))))
     module = Lowerer().module([_sig((TypeParam("R"),), node)])
-    lowered = module.funcs[0].params[0].node
+    lowered = module.funcs[0].params[0].annotation
     assert isinstance(lowered, Union)
     assert lowered.parts[0] == App("CanNeg", (Type(int),))
 
@@ -804,7 +804,7 @@ def test_helpers_are_keyed_on_their_members() -> None:
     ham = by_members[Attr("ham", T, readonly=True),]
     spam_rw = by_members[Attr("spam", T, setter=T),]
     assert len({spam.name, ham.name, spam_rw.name}) == 3
-    assert [f.params[0].node for f in module.funcs] == [
+    assert [f.params[0].annotation for f in module.funcs] == [
         App(spam.name, (R,)),
         App(ham.name, (R,)),
         App(spam_rw.name, (R,)),
@@ -826,7 +826,7 @@ def test_callable_default_needs_call_protocol() -> None:
     (helper,), (func,) = module.helpers, module.funcs
     assert helper.type_params == (TypeParam("T"),)
     assert helper.members == (Method("__call__", (Arg(None, ZERO, (0,)),), T),)
-    assert func.params[0].node == App(helper.name, (R,))
+    assert func.params[0].annotation == App(helper.name, (R,))
 
 
 def test_callable_intersected_with_protocol_lifts_into_call() -> None:
@@ -840,7 +840,7 @@ def test_callable_intersected_with_protocol_lifts_into_call() -> None:
         (App("CanBool", ()),),
         (Method("__call__", (T,), U),),
     )
-    assert func.params[0].node == App(helper.name, (T, R))
+    assert func.params[0].annotation == App(helper.name, (T, R))
 
 
 def test_naming_helpers() -> None:
@@ -936,4 +936,4 @@ def test_absorbed_union_members_do_not_create_helpers(
         node = Union((Intersection((node, OBJECT)), Has("eggs", ())))
     module = Lowerer().module([_sig((), node, NONE)])
     assert module.helpers == ()
-    assert module.funcs[0].params[0].node == OBJECT
+    assert module.funcs[0].params[0].annotation == OBJECT

@@ -155,7 +155,7 @@ def build(
         var_count,
     )
     if tyvar_tuple:
-        # the `tyvars` entry earns `var_pos` a slot and names it
+        # the `tyvars` entry declares `var_pos` and names it
         assign.tyvars[id(var_pos)] = TYVAR_TUPLE_NAME
 
     result_spies = assign.name_results(results, {id(spy) for spy in param_spies})

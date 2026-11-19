@@ -20,12 +20,12 @@ def render(sigs: Sequence[_ir.Signature], /) -> str:
         printer.used.add("overload")
         bodies = [f"@overload\n{body}" for body in bodies]
     helpers = [printer.protocol_text(h) for h in module.helpers]
-    locals_ = {h.name for h in module.helpers}
-    tyvars = {p.name for h in module.helpers for p in h.type_params}
-    tyvars.update(p.name for f in module.funcs for p in f.type_params)
+    declared = {h.name for h in module.helpers}
+    declared.update(p.name for h in module.helpers for p in h.type_params)
+    declared.update(p.name for f in module.funcs for p in f.type_params)
 
     blocks: list[str] = []
-    if imports := printer.import_block(locals_, tyvars):
+    if imports := printer.import_block(declared):
         blocks.append(imports)
     if helpers:
         blocks.append("\n".join(helpers))

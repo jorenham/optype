@@ -121,7 +121,7 @@ class Has:
 
 @dataclass(frozen=True, slots=True)
 class Fn:
-    """A function type in signature syntax, e.g. `(x: T) -> R` or `(T) -> R`."""
+    """A callable type in signature syntax, e.g. `(x: T) -> R` or `(T) -> R`."""
 
     params: Terms
     ret: Node
@@ -182,7 +182,7 @@ class TypeParam:
     name: str
     bound: Node | None = None
     default: Node | None = None
-    unpack: bool = False
+    tyvar_tuple: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -190,7 +190,7 @@ class Param:
     """One signature parameter: a prefix, name, type, and optional default suffix."""
 
     name: str
-    node: Node
+    annotation: Node
     prefix: str = ""  # "", "*", or "**"
     pos_only: bool = False
     default: tuple[object] | None = None  # the boxed default value, if any
@@ -211,7 +211,7 @@ def tuple_node(parts: Iterable[Node]) -> App:
     return App("tuple", tuple(parts))
 
 
-def tuple_node_variadic(element: Node) -> App:
+def unbounded_tuple(element: Node) -> App:
     return tuple_node((element, Dots()))
 
 
@@ -353,7 +353,7 @@ def _fixed_tuple_arity(node: Node) -> int | None:
     if not isinstance(node, App) or node.origin != "tuple" or not node.args:
         return None
     if any(isinstance(arg, (Arg, Dots, Unpack)) for arg in node.args):
-        return None  # a variadic `tuple[X, ...]` or `tuple[*Ts]` has no fixed arity
+        return None  # an unbounded `tuple[X, ...]` or a `tuple[*Ts]` has no fixed arity
     return len(node.args)
 
 
@@ -401,17 +401,16 @@ def distinct(nodes: Iterable[Node]) -> list[Node]:
     return out
 
 
-def _flatten(parts: Iterable[Node], kind: type[Union | Intersection]) -> list[Node]:
-    """The distinct members of `parts`, with every nested `kind` opened up."""
-    flat: list[Node] = []
-    stack = list(parts)[::-1]
-    while stack:
-        part = stack.pop()
-        if isinstance(part, kind):
-            stack.extend(reversed(part.parts))
-        elif part not in flat:
-            flat.append(part)
-    return flat
+def _flatten(
+    parts: Iterable[Node],
+    cls: type[Union | Intersection],
+) -> Generator[Node]:
+    # the members of `parts`, with every nested `cls` node opened up
+    for part in parts:
+        if isinstance(part, cls):
+            yield from _flatten(part.parts, cls)
+        else:
+            yield part
 
 
 def union(parts: Iterable[Node], *, tuples: bool = False) -> Node | None:
@@ -420,7 +419,7 @@ def union(parts: Iterable[Node], *, tuples: bool = False) -> Node | None:
     With `tuples=True`, a wide union of same-arity tuples collapses per position;
     pass it only in covariant positions, where widening a tuple stays sound.
     """
-    flat = _flatten(parts, Union)
+    flat = distinct(_flatten(parts, Union))
     if not flat:
         return None
     nodes = _absorb(flat)
@@ -437,7 +436,7 @@ def exclude(base: Node | None, part: Node) -> Node:
 
 def intersection(parts: Iterable[Node]) -> Node | None:
     """The flat intersection of `parts`, unwrapped if singular, or `None`."""
-    flat = _flatten(parts, Intersection)
+    flat = distinct(_flatten(parts, Intersection))
     if not flat:
         return None
     return flat[0] if len(flat) == 1 else Intersection(tuple(flat))
@@ -522,7 +521,11 @@ def _canonical_renaming(node: Node, tyvars: Collection[str]) -> dict[str, str]:
     return m
 
 
-def alpha_equal(a: Node, b: Node, tyvars: Collection[str]) -> dict[str, str] | None:
+def alpha_equivalent(
+    a: Node,
+    b: Node,
+    tyvars: Collection[str],
+) -> dict[str, str] | None:
     """A bijection over the `tyvars` making `a` and `b` identical, or `None`.
 
     Any other name, such as `None` or `object`, has to match as it is.
@@ -549,11 +552,11 @@ def rename_signature(sig: Signature, m: Mapping[str, str]) -> Signature:
         )
         for typar in sig.type_params
     )
-    params = tuple(replace(p, node=rename(p.node, m)) for p in sig.params)
+    params = tuple(replace(p, annotation=rename(p.annotation, m)) for p in sig.params)
     return replace(sig, type_params=typars, params=params, ret=rename(sig.ret, m))
 
 
-def alpha_equal_signatures(a: Signature, b: Signature) -> bool:
+def alpha_equivalent_signatures(a: Signature, b: Signature) -> bool:
     """Whether `a` and `b` are one signature up to their type parameters' names."""
     canon = [
         rename_signature(

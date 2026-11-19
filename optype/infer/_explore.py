@@ -282,8 +282,7 @@ def _wrapped_return(result: object) -> object | None:
 
 
 def _wrapper(
-    cls: type,
-    name: str,
+    origin: str,
     result: Any,
     path: dict[int, RecVar | None],
 ) -> object:
@@ -292,7 +291,7 @@ def _wrapper(
     # a `partial` of a real function keeps its richer call signature; exploring a
     # spy-wrapped one would pollute the spy with signature probes
     if (
-        cls is functools.partial
+        type(result) is functools.partial
         and isinstance(_unwrap(result), _FUNCTION_TYPES)
         and isinstance(explored := _explore_func(result), FnResult)
     ):
@@ -300,7 +299,7 @@ def _wrapper(
 
     ret = _wrapped_return(result)
     yields = [] if ret is None else [_explore_result(ret, path)]
-    return Gen(yields, name, bare_when_empty=True)
+    return Gen(yields, origin, bare_when_empty=True)
 
 
 def _source_element(result: object) -> SpyObject | None:
@@ -333,7 +332,7 @@ def _explore_result(  # ruff: ignore[complex-structure]
     elif isinstance(result, Coroutine):
         # a returned coroutine value (e.g. 2-arg `anext`'s `anext_awaitable`)
         out = Gen([_explore_result(_await(result), path)], COROUTINE)
-    elif (kind := _ITERATOR_TYPES.get(cls)) is not None:
+    elif (origin := _ITERATOR_TYPES.get(cls)) is not None:
         values = _yields(result)
         if cls is enumerate:
             # `enumerate[R]` is parameterized by the element type, not the yields
@@ -344,7 +343,7 @@ def _explore_result(  # ruff: ignore[complex-structure]
             values = [element] if element is not None else values
         out = Gen(
             [_explore_result(v, path) for v in values],
-            kind,
+            origin,
             bare_when_empty=cls in _ITERTOOLS_TYPES,
         )
     elif (
@@ -357,12 +356,12 @@ def _explore_result(  # ruff: ignore[complex-structure]
         # since the sentinel may be a spy too. Calling it is deliberate: the recorded
         # `__call__` is what renders the parameter as `() -> R`.
         out = Gen([_explore_result(fn(), path)], "Iterator")
-    elif (name := _WRAPPER_TYPES.get(cls)) is not None:
-        out = _wrapper(cls, name, result, path)
+    elif (origin := _WRAPPER_TYPES.get(cls)) is not None:
+        out = _wrapper(origin, result, path)
     elif (tpl := _TEMPLATE_TYPES.get(cls)) is not None:
-        kind, attr = tpl
+        origin, attr = tpl
         yields = [] if attr is None else [_explore_result(getattr(result, attr), path)]
-        out = Gen(yields, kind, bare_when_empty=True)
+        out = Gen(yields, origin, bare_when_empty=True)
     elif isinstance(_unwrap(result), _FUNCTION_TYPES):
         out = _explore_func(result)
     else:
@@ -397,7 +396,7 @@ def _with_next_default(
     merged: list[object] = []
     awaitable = False
     for r in results:
-        if isinstance(r, Gen) and r.kind == COROUTINE:
+        if isinstance(r, Gen) and r.origin == COROUTINE:
             awaitable = True
             merged.append(Gen([*r.yielded, default], COROUTINE))
         else:
@@ -470,7 +469,7 @@ def _drain_untraced() -> None:
         journal_rollback(marks)
 
 
-def _explore[T](  # ruff: ignore[complex-structure, too-many-branches]
+def _explore_paths[T](  # ruff: ignore[complex-structure, too-many-branches]
     func: Callable[..., T] | Callable[..., Coroutine[Any, None, T]],
     args: Sequence[object],
     kwds: Mapping[str, object],
@@ -625,7 +624,6 @@ def explore_spies(
     absent: Mapping[str, Collection[str]] | None = None,
 ) -> Exploration:
     kinds = {p.kind for p in params.values()}
-    forced_absent = absent or {}
 
     counts = iter(_VARIADIC_COUNTS)
     count = next(counts)
@@ -656,9 +654,9 @@ def explore_spies(
                 omit=omit,
                 fixed=fixed,
             )
-            _force_absent(spies, forced_absent)
+            _force_absent(spies, absent or {})
             try:
-                results, deprecated, gaps = _explore(func, args, kwds)
+                results, deprecated, gaps = _explore_paths(func, args, kwds)
                 explored, deprecated = _drain(func, results, deprecated)
                 results = _with_next_default(func, spies, explored)
             except KeyError as exc:
@@ -770,7 +768,7 @@ def explore_tuple_params(
         kwds = {key: elems if value is target else value for key, value in kwds.items()}
         try:
             # a bare run: results aren't re-explored, so no recursion guard is needed
-            _explore(func, args, kwds)
+            _explore_paths(func, args, kwds)
         except Exception:  # ruff: ignore[blind-except, try-except-continue]
             continue
         traces = _snapshot(elems)

@@ -43,11 +43,11 @@ class Gen:
     """An explored generator, iterator, or coroutine result, e.g. `Generator[R]`."""
 
     yielded: Sequence[object]
-    kind: str
+    origin: str
     bare_when_empty: bool = False
 
 
-# the `Gen.kind` of an awaited coroutine, rendered as `Coroutine[object, None, R]`
+# the `Gen.origin` of an awaited coroutine, rendered as `Coroutine[object, None, R]`
 COROUTINE = "Coroutine"
 
 

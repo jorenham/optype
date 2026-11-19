@@ -68,36 +68,36 @@ class Op(NamedTuple):
     classvar: bool = False  # a class-level attribute, i.e. a `ClassVar` member
 
 
-def resolve(trace: TraceItem) -> Op:
-    if trace.attr in DUNDER_ATTR or trace.attr in DUNDER_CLASS_ATTR:
-        name = trace.args[0]
+def resolve(item: TraceItem) -> Op:
+    if item.attr in DUNDER_ATTR or item.attr in DUNDER_CLASS_ATTR:
+        name = item.args[0]
         if not isinstance(name, str) or dynamic_name(name):
             msg = "no protocol for a dynamic attribute name"
             raise InferError(msg)
 
         # a class-level attribute mirrors a `ClassVar` protocol member, which no
         # shipped instance-member `Has*` protocol declares
-        if trace.attr in DUNDER_CLASS_ATTR:
-            return Op("Has", trace.args[1:], {}, trace.ret, name, classvar=True)
+        if item.attr in DUNDER_CLASS_ATTR:
+            return Op("Has", item.args[1:], {}, item.ret, name, classvar=True)
 
         # a read of an attribute with a shipped single-member `Has*` protocol
-        if name in _DUNDER_HAS_MAP and trace.attr not in _DUNDER_ATTR_WRITE:
-            return Op(_DUNDER_HAS_MAP[name], (), {}, trace.ret)
+        if name in _DUNDER_HAS_MAP and item.attr not in _DUNDER_ATTR_WRITE:
+            return Op(_DUNDER_HAS_MAP[name], (), {}, item.ret)
 
         # everything else synthesizes the inline `Has['name', T]` form; a write
         # binds the assigned value's type, which a bounded `Has*` could reject
-        return Op("Has", trace.args[1:], {}, trace.ret, name)
+        return Op("Has", item.args[1:], {}, item.ret, name)
 
     # checked before _DUNDER_CAN_MAP, which also contains the coercion dunders
-    if trace.attr in _COERCION_PROTOS:
-        return Op(_COERCION_PROTOS[trace.attr], (), {}, trace.ret)
+    if item.attr in _COERCION_PROTOS:
+        return Op(_COERCION_PROTOS[item.attr], (), {}, item.ret)
 
-    if trace.attr in _DUNDER_CAN_MAP:
-        proto = _DUNDER_CAN_MAP[trace.attr]
+    if item.attr in _DUNDER_CAN_MAP:
+        proto = _DUNDER_CAN_MAP[item.attr]
         # a modulo arg makes `__rpow__` the 3-parameter `CanRPow3`, not `CanRPow`
-        if trace.attr == "__rpow__" and len(trace.args) > 1:
+        if item.attr == "__rpow__" and len(item.args) > 1:
             proto = "CanRPow3"
-        return Op(proto, trace.args, trace.kwargs, trace.ret)
+        return Op(proto, item.args, item.kwargs, item.ret)
 
-    msg = f"no protocol for {trace.attr!r}"
+    msg = f"no protocol for {item.attr!r}"
     raise InferError(msg)

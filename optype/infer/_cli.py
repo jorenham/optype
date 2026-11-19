@@ -13,7 +13,7 @@ from optype.infer import InferError, InferWarning, infer
 from optype.infer._errors import describe
 
 _FORMATS: Final[tuple[BackendName, ...]] = "terse", "compat"
-_COLORS: Final[tuple[ColorMode, ...]] = "auto", "always", "never"
+_COLOR_MODES: Final[tuple[ColorMode, ...]] = "auto", "always", "never"
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -22,7 +22,7 @@ def _parser() -> argparse.ArgumentParser:
         description="Infer the `optype` protocols required of a callable.",
     )
     parser.add_argument("--format", choices=_FORMATS, default=_FORMATS[0])
-    parser.add_argument("--color", choices=_COLORS, default=_COLORS[0])
+    parser.add_argument("--color", choices=_COLOR_MODES, default=_COLOR_MODES[0])
     # REMAINDER stops flag parsing at the expression, so a `-1` parameter position
     # (and an expression containing `--`) reaches us intact
     parser.add_argument("rest", nargs=argparse.REMAINDER, metavar="EXPR [PARAM ...]")

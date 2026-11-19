@@ -133,7 +133,7 @@ def test_terse_node(node: Node, expected: str) -> None:
 
 def test_terse_signature() -> None:
     type_params = (
-        TypeParam("Ts", unpack=True),
+        TypeParam("Ts", tyvar_tuple=True),
         TypeParam("T", bound=Type(int), default=Lit((0,))),
     )
     params = (

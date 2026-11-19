@@ -8,6 +8,7 @@ lowerer uses them to build canonical dedup keys, not output.
 import builtins
 import types
 import typing
+from collections import Counter
 from collections.abc import Sequence, Set as AbstractSet
 from typing import final
 
@@ -178,7 +179,7 @@ class Printer:
                 return " | ".join(self.render_node(part) for part in parts)
             case _ir.Unpack(part):
                 return f"*{self.render_node(part)}"
-            case _:  # an unlowered Has, Intersection, Not, or Has marker: a bug
+            case _:  # an unlowered Has, Intersection, Not, or variance marker: a bug
                 msg = f"cannot render {node!r} as valid Python"
                 raise AssertionError(msg)
 
@@ -191,7 +192,7 @@ class Printer:
         return f"[{', '.join(self._type_param(typar) for typar in typars)}]"
 
     def _type_param(self, typar: _ir.TypeParam) -> str:
-        if typar.unpack:
+        if typar.tyvar_tuple:
             decl = f"*{typar.name}"
         elif typar.bound is not None:
             decl = f"{typar.name}: {self.render_node(typar.bound)}"
@@ -211,10 +212,10 @@ class Printer:
         items: list[tuple[str, bool, bool]] = []
         for i, p in enumerate(params):
             if p.pos_only:
-                decl = f"_{auto}: {self.render_node(p.node)}"
+                decl = f"_{auto}: {self.render_node(p.annotation)}"
                 auto += 1
             else:
-                decl = f"{p.prefix}{p.name}: {self.render_node(p.node)}"
+                decl = f"{p.prefix}{p.name}: {self.render_node(p.annotation)}"
             if p.default is not None and show[i]:
                 decl += f" = {default_text(p.default[0], self.used.add)}"
             items.append((decl, p.pos_only, p.kw_only))
@@ -287,9 +288,7 @@ class Printer:
         head = f"class {proto.name}{self.type_params(proto.type_params)}({bases}):"
         if not proto.members:
             return f"{head} ..."
-        counts = {m.name: 0 for m in proto.members}
-        for m in proto.members:
-            counts[m.name] += 1
+        counts = Counter(m.name for m in proto.members)
         body = "\n".join(
             self._member_text(m, overload=isinstance(m, Method) and counts[m.name] > 1)
             for m in proto.members
@@ -311,15 +310,11 @@ class Printer:
         sig = f"def f{self.type_params(func.type_params)}({self.params(func.params)})"
         return f"{head}{sig} -> {self.render_node(func.ret)}: ..."
 
-    def import_block(
-        self,
-        locals_: AbstractSet[str],
-        tyvars: AbstractSet[str],
-    ) -> str:
+    def import_block(self, declared: AbstractSet[str]) -> str:
         """The import lines for referenced names that are neither helper nor typevar."""
         groups: dict[str, set[str]] = {}
         whole: set[str] = set()
-        for name in self.used - locals_ - tyvars:
+        for name in self.used - declared:
             if (found := import_of(name)) is None:
                 continue
             module_name, member = found

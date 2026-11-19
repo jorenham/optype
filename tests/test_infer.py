@@ -40,6 +40,7 @@ import pytest
 from optype.infer import InferError, InferWarning, _gc, infer
 from optype.infer._api import _infer_render
 from optype.infer._errors import describe
+from optype.infer._isolate import isolate
 from optype.infer._spy import SpyObject
 
 if sys.version_info >= (3, 13):
@@ -2003,14 +2004,16 @@ def test_attribute_name_is_not_a_typevar() -> None:
 # `Fraction.limit_denominator` calls `Fraction(self)`; only 3.14+ accepts a duck-typed
 # `as_integer_ratio` object there, so before then the spy is rejected, leaving nothing
 @pytest.mark.skipif(sys.version_info < (3, 14), reason="requires Python 3.14+")
-def test_loop_signature_folds() -> None:
+def test_loop_signature_folds(monkeypatch: pytest.MonkeyPatch) -> None:
     # #736: a function whose loop the explorer unrolls used to emit a ~250-typevar,
     # 80kb transcript; the run now folds into a small recursive signature
+    # the explored graph grows with the square of the run budget, so use a quarter
+    monkeypatch.setattr("optype.infer._explore._RUN_LIMIT", 64)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", InferWarning)
         out = infer(fractions.Fraction.limit_denominator)
-    assert len(out) < 10000  # was ~82kb
-    assert all(len(line) < 6000 for line in out.splitlines())  # no giant transcript
+    assert len(out) < 10000  # 19kb unfolded at this budget
+    assert all(len(line) < 3000 for line in out.splitlines())  # no giant transcript
 
 
 def test_wide_literal_union_capped() -> None:
@@ -2243,7 +2246,14 @@ _COMPAT_DEPENDENT = frozenset({
 })
 
 
-def _compat_case(func: Any, terse: str) -> str | None:
+def _compat(func: Any) -> str | InferError:
+    try:
+        return _infer_render(func, (), strict=False, backend="compat")
+    except InferError as exc:
+        return exc
+
+
+def _compat_case(func: Any, terse: str, compat: str | InferError) -> str | None:
     if any(func is f for f in (list, _if_none, _add_one_default, _deprecated_y)):
         reason = "type complements"
     elif any(func is f for f, _ in CLASS_ATTRIBUTE_CASES):
@@ -2251,11 +2261,11 @@ def _compat_case(func: Any, terse: str) -> str | None:
     elif terse in _COMPAT_DEPENDENT:
         reason = r"typevar-referencing bounds|intersections with type variables"
     else:
-        result = infer(func, backend="compat")
-        assert result, terse
-        return result
-    with pytest.raises(InferError, match=reason):
-        infer(func, backend="compat")
+        assert isinstance(compat, str), terse
+        assert compat, terse
+        return compat
+    assert isinstance(compat, InferError), terse
+    assert re.search(reason, str(compat)), compat
     return None
 
 
@@ -2266,14 +2276,18 @@ def test_compat_corpus_typechecks(
     # render every terse case through compat and type-check the lot at once
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", InferWarning)
-        rendered = [
-            (terse, stub)
-            for func, terse in INFER_CASES
-            if (stub := _compat_case(func, terse)) is not None
-        ]
-        # Builtins must export or reject, but their internal types aren't checked.
-        for func, terse in BUILTIN_CASES:
-            _compat_case(func, terse)
+        # in one fork: `test_infer` already isolates each case
+        compats = isolate(lambda: [_compat(func) for func, _ in ALL_CASES])
+    stubs = [
+        _compat_case(func, terse, compat)
+        for (func, terse), compat in zip(ALL_CASES, compats, strict=True)
+    ]
+    # Builtins must export or reject, but their internal types aren't checked.
+    rendered = [
+        (terse, stub)
+        for (_, terse), stub in zip(INFER_CASES, stubs, strict=False)
+        if stub is not None
+    ]
     terse_of = {f"case_{i:03d}": terse for i, (terse, _) in enumerate(rendered)}
     for i, (_, stub) in enumerate(rendered):
         (tmp_path / f"case_{i:03d}.pyi").write_text(f"{stub}\n")

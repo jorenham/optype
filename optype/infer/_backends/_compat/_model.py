@@ -62,7 +62,7 @@ def free_tyvars(nodes: Iterable[_ir.Term], tyvars: frozenset[str]) -> list[str]:
 
 def is_generic(node: _ir.Node, tyvars: frozenset[str]) -> bool:
     """Whether `node` references any of the signature's type variables."""
-    return not frozenset(_ir.names(node)).isdisjoint(tyvars)
+    return not tyvars.isdisjoint(_ir.names(node))
 
 
 def combine_name(bases: Sequence[str]) -> str:

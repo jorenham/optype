@@ -212,8 +212,8 @@ class Spy:
         self.__optype_trace__ = []
 
 
-# while a run explores, each touched spy's pre-run trace length, so `_explore` can
-# undo a rejected run by truncating only the spies it actually appended to
+# while a run explores, each touched spy's pre-run trace length, so `_explore_paths`
+# can undo a rejected run by truncating only the spies it actually appended to
 journal: ContextVar[dict[int, tuple[Spy, int]] | None] = ContextVar(
     "journal",
     default=None,
