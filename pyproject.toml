@@ -286,6 +286,7 @@ allow-dunder-method-names = [
   "__objclass__",
   "__self__",
   "__wrapped__",
+  "__instancecheck_str__",
   # `dlpack`
   "__dlpack__",
   "__dlpack_device__",
